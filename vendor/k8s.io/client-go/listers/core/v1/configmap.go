@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ConfigMapLister interface {
 	// List lists all ConfigMaps in the indexer.
@@ -173,6 +174,45 @@ type ConfigMapNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ConfigMapLister interface {
+	// List lists all ConfigMaps in the indexer.
+	List(selector labels.Selector) (ret []*v1.ConfigMap, err error)
+	// ConfigMaps returns an object that can list and get ConfigMaps.
+	ConfigMaps(namespace string) ConfigMapNamespaceLister
+	ConfigMapListerExpansion
+}
+
+// configMapLister implements the ConfigMapLister interface.
+type configMapLister struct {
+	indexer cache.Indexer
+}
+
+// NewConfigMapLister returns a new ConfigMapLister.
+func NewConfigMapLister(indexer cache.Indexer) ConfigMapLister {
+	return &configMapLister{indexer: indexer}
+}
+
+// List lists all ConfigMaps in the indexer.
+func (s *configMapLister) List(selector labels.Selector) (ret []*v1.ConfigMap, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.ConfigMap))
+	})
+	return ret, err
+}
+
+// ConfigMaps returns an object that can list and get ConfigMaps.
+func (s *configMapLister) ConfigMaps(namespace string) ConfigMapNamespaceLister {
+	return configMapNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ConfigMapNamespaceLister helps list and get ConfigMaps.
+type ConfigMapNamespaceLister interface {
+	// List lists all ConfigMaps in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.ConfigMap, err error)
+	// Get retrieves the ConfigMap from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ConfigMap, error)
 	ConfigMapNamespaceListerExpansion
 }

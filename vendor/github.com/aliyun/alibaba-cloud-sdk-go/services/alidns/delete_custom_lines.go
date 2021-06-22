@@ -21,6 +21,7 @@ import (
 )
 
 // DeleteCustomLines invokes the alidns.DeleteCustomLines API synchronously
+<<<<<<< HEAD
 func (client *Client) DeleteCustomLines(request *DeleteCustomLinesRequest) (response *DeleteCustomLinesResponse, err error) {
 	response = CreateDeleteCustomLinesResponse()
 	err = client.DoAction(request, response)
@@ -89,6 +90,81 @@ func CreateDeleteCustomLinesRequest() (request *DeleteCustomLinesRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteCustomLines", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
+func (client *Client) DeleteCustomLines(request *DeleteCustomLinesRequest) (response *DeleteCustomLinesResponse, err error) {
+	response = CreateDeleteCustomLinesResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DeleteCustomLinesWithChan invokes the alidns.DeleteCustomLines API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteCustomLinesWithChan(request *DeleteCustomLinesRequest) (<-chan *DeleteCustomLinesResponse, <-chan error) {
+	responseChan := make(chan *DeleteCustomLinesResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DeleteCustomLines(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DeleteCustomLinesWithCallback invokes the alidns.DeleteCustomLines API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteCustomLinesWithCallback(request *DeleteCustomLinesRequest, callback func(response *DeleteCustomLinesResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DeleteCustomLinesResponse
+		var err error
+		defer close(result)
+		response, err = client.DeleteCustomLines(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DeleteCustomLinesRequest is the request struct for api DeleteCustomLines
+type DeleteCustomLinesRequest struct {
+	*requests.RpcRequest
+	LineIds      string `position:"Query" name:"LineIds"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DeleteCustomLinesResponse is the response struct for api DeleteCustomLines
+type DeleteCustomLinesResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateDeleteCustomLinesRequest creates a request to invoke DeleteCustomLines API
+func CreateDeleteCustomLinesRequest() (request *DeleteCustomLinesRequest) {
+	request = &DeleteCustomLinesRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteCustomLines", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

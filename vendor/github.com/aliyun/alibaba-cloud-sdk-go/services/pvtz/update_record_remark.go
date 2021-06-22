@@ -21,6 +21,7 @@ import (
 )
 
 // UpdateRecordRemark invokes the pvtz.UpdateRecordRemark API synchronously
+<<<<<<< HEAD
 func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (response *UpdateRecordRemarkResponse, err error) {
 	response = CreateUpdateRecordRemarkResponse()
 	err = client.DoAction(request, response)
@@ -91,6 +92,83 @@ func CreateUpdateRecordRemarkRequest() (request *UpdateRecordRemarkRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateRecordRemark", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
+func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (response *UpdateRecordRemarkResponse, err error) {
+	response = CreateUpdateRecordRemarkResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateRecordRemarkWithChan invokes the pvtz.UpdateRecordRemark API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateRecordRemarkWithChan(request *UpdateRecordRemarkRequest) (<-chan *UpdateRecordRemarkResponse, <-chan error) {
+	responseChan := make(chan *UpdateRecordRemarkResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateRecordRemark(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateRecordRemarkWithCallback invokes the pvtz.UpdateRecordRemark API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateRecordRemarkWithCallback(request *UpdateRecordRemarkRequest, callback func(response *UpdateRecordRemarkResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateRecordRemarkResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateRecordRemark(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateRecordRemarkRequest is the request struct for api UpdateRecordRemark
+type UpdateRecordRemarkRequest struct {
+	*requests.RpcRequest
+	Remark       string           `position:"Query" name:"Remark"`
+	RecordId     requests.Integer `position:"Query" name:"RecordId"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Lang         string           `position:"Query" name:"Lang"`
+}
+
+// UpdateRecordRemarkResponse is the response struct for api UpdateRecordRemark
+type UpdateRecordRemarkResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	RecordId  int64  `json:"RecordId" xml:"RecordId"`
+}
+
+// CreateUpdateRecordRemarkRequest creates a request to invoke UpdateRecordRemark API
+func CreateUpdateRecordRemarkRequest() (request *UpdateRecordRemarkRequest) {
+	request = &UpdateRecordRemarkRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateRecordRemark", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

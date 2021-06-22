@@ -138,6 +138,7 @@ func Fatal(args ...interface{}) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // TraceFn logs a message from a func at level Trace on the standard logger.
 func TraceFn(fn LogFunction) {
 	std.TraceFn(fn)
@@ -285,6 +286,9 @@ func FatalFn(fn LogFunction) {
 }
 
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // Tracef logs a message at level Trace on the standard logger.
 func Tracef(format string, args ...interface{}) {
 	std.Tracef(format, args...)

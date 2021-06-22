@@ -1317,6 +1317,7 @@ func (r1 *X25) isDuplicate(_r2 RR) bool {
 	}
 	return true
 }
+<<<<<<< HEAD
 
 func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
 	r2, ok := _r2.(*ZONEMD)
@@ -1338,3 +1339,6 @@ func (r1 *ZONEMD) isDuplicate(_r2 RR) bool {
 	}
 	return true
 }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

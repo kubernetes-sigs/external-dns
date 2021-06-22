@@ -19,7 +19,11 @@
 // when the code is running on Google App Engine, compiled by GopherJS, or
 // "-tags safe" is added to the go build command line.  The "disableunsafe"
 // tag is deprecated and thus should not be used.
+<<<<<<< HEAD
 //go:build js || appengine || safe || disableunsafe || !go1.4
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build js appengine safe disableunsafe !go1.4
 
 package dark

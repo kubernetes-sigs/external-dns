@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EndpointSliceLister interface {
 	// List lists all EndpointSlices in the indexer.
@@ -173,6 +174,45 @@ type EndpointSliceNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type EndpointSliceLister interface {
+	// List lists all EndpointSlices in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.EndpointSlice, err error)
+	// EndpointSlices returns an object that can list and get EndpointSlices.
+	EndpointSlices(namespace string) EndpointSliceNamespaceLister
+	EndpointSliceListerExpansion
+}
+
+// endpointSliceLister implements the EndpointSliceLister interface.
+type endpointSliceLister struct {
+	indexer cache.Indexer
+}
+
+// NewEndpointSliceLister returns a new EndpointSliceLister.
+func NewEndpointSliceLister(indexer cache.Indexer) EndpointSliceLister {
+	return &endpointSliceLister{indexer: indexer}
+}
+
+// List lists all EndpointSlices in the indexer.
+func (s *endpointSliceLister) List(selector labels.Selector) (ret []*v1beta1.EndpointSlice, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.EndpointSlice))
+	})
+	return ret, err
+}
+
+// EndpointSlices returns an object that can list and get EndpointSlices.
+func (s *endpointSliceLister) EndpointSlices(namespace string) EndpointSliceNamespaceLister {
+	return endpointSliceNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// EndpointSliceNamespaceLister helps list and get EndpointSlices.
+type EndpointSliceNamespaceLister interface {
+	// List lists all EndpointSlices in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.EndpointSlice, err error)
+	// Get retrieves the EndpointSlice from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.EndpointSlice, error)
 	EndpointSliceNamespaceListerExpansion
 }

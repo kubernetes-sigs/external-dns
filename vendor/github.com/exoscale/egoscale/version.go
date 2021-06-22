@@ -3,6 +3,7 @@ package egoscale
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "github.com/exoscale/egoscale/version"
 
 // Version of the library
@@ -36,3 +37,8 @@ const Version = "0.18.1"
 =======
 const Version = "0.19.0"
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Version of the library
+const Version = "0.18.1"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

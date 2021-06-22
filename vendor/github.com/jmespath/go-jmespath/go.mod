@@ -5,6 +5,7 @@ go 1.14
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 require github.com/jmespath/go-jmespath/internal/testify v1.5.1
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -19,3 +20,7 @@ require github.com/jmespath/go-jmespath/internal/testify v1.5.1
 =======
 require github.com/stretchr/testify v1.5.1
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require github.com/stretchr/testify v1.5.1
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

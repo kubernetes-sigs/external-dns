@@ -68,6 +68,7 @@ var map_CronJobStatus = map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"":                   "CronJobStatus represents the current state of a cron job.",
 	"active":             "A list of pointers to currently running jobs.",
 	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
@@ -104,6 +105,12 @@ var map_CronJobStatus = map[string]string{
 	"lastScheduleTime":   "Information when was the last time the job was successfully scheduled.",
 	"lastSuccessfulTime": "Information when was the last time the job successfully completed.",
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"":                 "CronJobStatus represents the current state of a cron job.",
+	"active":           "A list of pointers to currently running jobs.",
+	"lastScheduleTime": "Information when was the last time the job was successfully scheduled.",
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (CronJobStatus) SwaggerDoc() map[string]string {

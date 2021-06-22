@@ -21,6 +21,7 @@ import (
 )
 
 // RetrieveDomain invokes the alidns.RetrieveDomain API synchronously
+<<<<<<< HEAD
 func (client *Client) RetrieveDomain(request *RetrieveDomainRequest) (response *RetrieveDomainResponse, err error) {
 	response = CreateRetrieveDomainResponse()
 	err = client.DoAction(request, response)
@@ -89,6 +90,81 @@ func CreateRetrieveDomainRequest() (request *RetrieveDomainRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "RetrieveDomain", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/retrievedomain.html
+func (client *Client) RetrieveDomain(request *RetrieveDomainRequest) (response *RetrieveDomainResponse, err error) {
+	response = CreateRetrieveDomainResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// RetrieveDomainWithChan invokes the alidns.RetrieveDomain API asynchronously
+// api document: https://help.aliyun.com/api/alidns/retrievedomain.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) RetrieveDomainWithChan(request *RetrieveDomainRequest) (<-chan *RetrieveDomainResponse, <-chan error) {
+	responseChan := make(chan *RetrieveDomainResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.RetrieveDomain(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// RetrieveDomainWithCallback invokes the alidns.RetrieveDomain API asynchronously
+// api document: https://help.aliyun.com/api/alidns/retrievedomain.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) RetrieveDomainWithCallback(request *RetrieveDomainRequest, callback func(response *RetrieveDomainResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *RetrieveDomainResponse
+		var err error
+		defer close(result)
+		response, err = client.RetrieveDomain(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// RetrieveDomainRequest is the request struct for api RetrieveDomain
+type RetrieveDomainRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// RetrieveDomainResponse is the response struct for api RetrieveDomain
+type RetrieveDomainResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateRetrieveDomainRequest creates a request to invoke RetrieveDomain API
+func CreateRetrieveDomainRequest() (request *RetrieveDomainRequest) {
+	request = &RetrieveDomainRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "RetrieveDomain", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

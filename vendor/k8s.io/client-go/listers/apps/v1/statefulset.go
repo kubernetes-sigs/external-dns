@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type StatefulSetLister interface {
 	// List lists all StatefulSets in the indexer.
@@ -173,6 +174,45 @@ type StatefulSetNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type StatefulSetLister interface {
+	// List lists all StatefulSets in the indexer.
+	List(selector labels.Selector) (ret []*v1.StatefulSet, err error)
+	// StatefulSets returns an object that can list and get StatefulSets.
+	StatefulSets(namespace string) StatefulSetNamespaceLister
+	StatefulSetListerExpansion
+}
+
+// statefulSetLister implements the StatefulSetLister interface.
+type statefulSetLister struct {
+	indexer cache.Indexer
+}
+
+// NewStatefulSetLister returns a new StatefulSetLister.
+func NewStatefulSetLister(indexer cache.Indexer) StatefulSetLister {
+	return &statefulSetLister{indexer: indexer}
+}
+
+// List lists all StatefulSets in the indexer.
+func (s *statefulSetLister) List(selector labels.Selector) (ret []*v1.StatefulSet, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.StatefulSet))
+	})
+	return ret, err
+}
+
+// StatefulSets returns an object that can list and get StatefulSets.
+func (s *statefulSetLister) StatefulSets(namespace string) StatefulSetNamespaceLister {
+	return statefulSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// StatefulSetNamespaceLister helps list and get StatefulSets.
+type StatefulSetNamespaceLister interface {
+	// List lists all StatefulSets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.StatefulSet, err error)
+	// Get retrieves the StatefulSet from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.StatefulSet, error)
 	StatefulSetNamespaceListerExpansion
 }

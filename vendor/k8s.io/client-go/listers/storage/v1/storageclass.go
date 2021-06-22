@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type StorageClassLister interface {
 	// List lists all StorageClasses in the indexer.
@@ -71,6 +72,13 @@ type StorageClassLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type StorageClassLister interface {
+	// List lists all StorageClasses in the indexer.
+	List(selector labels.Selector) (ret []*v1.StorageClass, err error)
+	// Get retrieves the StorageClass from the index for a given name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.StorageClass, error)
 	StorageClassListerExpansion
 }

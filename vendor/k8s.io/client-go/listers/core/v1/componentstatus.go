@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ComponentStatusLister interface {
 	// List lists all ComponentStatuses in the indexer.
@@ -71,6 +72,13 @@ type ComponentStatusLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ComponentStatusLister interface {
+	// List lists all ComponentStatuses in the indexer.
+	List(selector labels.Selector) (ret []*v1.ComponentStatus, err error)
+	// Get retrieves the ComponentStatus from the index for a given name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ComponentStatus, error)
 	ComponentStatusListerExpansion
 }

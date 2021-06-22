@@ -21,6 +21,7 @@ import (
 )
 
 // AddGtmRecoveryPlan invokes the alidns.AddGtmRecoveryPlan API synchronously
+<<<<<<< HEAD
 func (client *Client) AddGtmRecoveryPlan(request *AddGtmRecoveryPlanRequest) (response *AddGtmRecoveryPlanResponse, err error) {
 	response = CreateAddGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -92,6 +93,84 @@ func CreateAddGtmRecoveryPlanRequest() (request *AddGtmRecoveryPlanRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmRecoveryPlan", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/addgtmrecoveryplan.html
+func (client *Client) AddGtmRecoveryPlan(request *AddGtmRecoveryPlanRequest) (response *AddGtmRecoveryPlanResponse, err error) {
+	response = CreateAddGtmRecoveryPlanResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// AddGtmRecoveryPlanWithChan invokes the alidns.AddGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/addgtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddGtmRecoveryPlanWithChan(request *AddGtmRecoveryPlanRequest) (<-chan *AddGtmRecoveryPlanResponse, <-chan error) {
+	responseChan := make(chan *AddGtmRecoveryPlanResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.AddGtmRecoveryPlan(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// AddGtmRecoveryPlanWithCallback invokes the alidns.AddGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/addgtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddGtmRecoveryPlanWithCallback(request *AddGtmRecoveryPlanRequest, callback func(response *AddGtmRecoveryPlanResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *AddGtmRecoveryPlanResponse
+		var err error
+		defer close(result)
+		response, err = client.AddGtmRecoveryPlan(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// AddGtmRecoveryPlanRequest is the request struct for api AddGtmRecoveryPlan
+type AddGtmRecoveryPlanRequest struct {
+	*requests.RpcRequest
+	FaultAddrPool string `position:"Query" name:"FaultAddrPool"`
+	Remark        string `position:"Query" name:"Remark"`
+	UserClientIp  string `position:"Query" name:"UserClientIp"`
+	Name          string `position:"Query" name:"Name"`
+	Lang          string `position:"Query" name:"Lang"`
+}
+
+// AddGtmRecoveryPlanResponse is the response struct for api AddGtmRecoveryPlan
+type AddGtmRecoveryPlanResponse struct {
+	*responses.BaseResponse
+	RequestId      string `json:"RequestId" xml:"RequestId"`
+	RecoveryPlanId string `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
+}
+
+// CreateAddGtmRecoveryPlanRequest creates a request to invoke AddGtmRecoveryPlan API
+func CreateAddGtmRecoveryPlanRequest() (request *AddGtmRecoveryPlanRequest) {
+	request = &AddGtmRecoveryPlanRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmRecoveryPlan", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

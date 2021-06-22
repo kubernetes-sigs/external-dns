@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen:introduced=1.11
 // +k8s:prerelease-lifecycle-gen:deprecated=1.14
 // +k8s:prerelease-lifecycle-gen:removed=1.22
@@ -183,6 +184,46 @@ type PriorityClass struct {
 // +k8s:prerelease-lifecycle-gen:removed=1.22
 // +k8s:prerelease-lifecycle-gen:replacement=scheduling.k8s.io,v1,PriorityClassList
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+// DEPRECATED - This group version of PriorityClass is deprecated by scheduling.k8s.io/v1/PriorityClass.
+// PriorityClass defines mapping from a priority class name to the priority
+// integer value. The value can be any valid integer.
+type PriorityClass struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// The value of this priority class. This is the actual priority that pods
+	// receive when they have the name of this class in their pod spec.
+	Value int32 `json:"value" protobuf:"bytes,2,opt,name=value"`
+
+	// globalDefault specifies whether this PriorityClass should be considered as
+	// the default priority for pods that do not have any priority class.
+	// Only one PriorityClass can be marked as `globalDefault`. However, if more than
+	// one PriorityClasses exists with their `globalDefault` field set to true,
+	// the smallest value of such global default PriorityClasses will be used as the default priority.
+	// +optional
+	GlobalDefault bool `json:"globalDefault,omitempty" protobuf:"bytes,3,opt,name=globalDefault"`
+
+	// description is an arbitrary string that usually provides guidelines on
+	// when this priority class should be used.
+	// +optional
+	Description string `json:"description,omitempty" protobuf:"bytes,4,opt,name=description"`
+
+	// PreemptionPolicy is the Policy for preempting pods with lower priority.
+	// One of Never, PreemptLowerPriority.
+	// Defaults to PreemptLowerPriority if unset.
+	// This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
+	// +optional
+	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // PriorityClassList is a collection of priority classes.
 type PriorityClassList struct {

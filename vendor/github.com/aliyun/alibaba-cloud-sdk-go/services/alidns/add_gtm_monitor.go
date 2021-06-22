@@ -21,6 +21,7 @@ import (
 )
 
 // AddGtmMonitor invokes the alidns.AddGtmMonitor API synchronously
+<<<<<<< HEAD
 func (client *Client) AddGtmMonitor(request *AddGtmMonitorRequest) (response *AddGtmMonitorResponse, err error) {
 	response = CreateAddGtmMonitorResponse()
 	err = client.DoAction(request, response)
@@ -102,6 +103,94 @@ func CreateAddGtmMonitorRequest() (request *AddGtmMonitorRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmMonitor", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/addgtmmonitor.html
+func (client *Client) AddGtmMonitor(request *AddGtmMonitorRequest) (response *AddGtmMonitorResponse, err error) {
+	response = CreateAddGtmMonitorResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// AddGtmMonitorWithChan invokes the alidns.AddGtmMonitor API asynchronously
+// api document: https://help.aliyun.com/api/alidns/addgtmmonitor.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddGtmMonitorWithChan(request *AddGtmMonitorRequest) (<-chan *AddGtmMonitorResponse, <-chan error) {
+	responseChan := make(chan *AddGtmMonitorResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.AddGtmMonitor(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// AddGtmMonitorWithCallback invokes the alidns.AddGtmMonitor API asynchronously
+// api document: https://help.aliyun.com/api/alidns/addgtmmonitor.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddGtmMonitorWithCallback(request *AddGtmMonitorRequest, callback func(response *AddGtmMonitorResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *AddGtmMonitorResponse
+		var err error
+		defer close(result)
+		response, err = client.AddGtmMonitor(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// AddGtmMonitorRequest is the request struct for api AddGtmMonitor
+type AddGtmMonitorRequest struct {
+	*requests.RpcRequest
+	MonitorExtendInfo string                      `position:"Query" name:"MonitorExtendInfo"`
+	Timeout           requests.Integer            `position:"Query" name:"Timeout"`
+	AddrPoolId        string                      `position:"Query" name:"AddrPoolId"`
+	UserClientIp      string                      `position:"Query" name:"UserClientIp"`
+	EvaluationCount   requests.Integer            `position:"Query" name:"EvaluationCount"`
+	ProtocolType      string                      `position:"Query" name:"ProtocolType"`
+	Interval          requests.Integer            `position:"Query" name:"Interval"`
+	Lang              string                      `position:"Query" name:"Lang"`
+	IspCityNode       *[]AddGtmMonitorIspCityNode `position:"Query" name:"IspCityNode"  type:"Repeated"`
+}
+
+// AddGtmMonitorIspCityNode is a repeated param struct in AddGtmMonitorRequest
+type AddGtmMonitorIspCityNode struct {
+	CityCode string `name:"CityCode"`
+	IspCode  string `name:"IspCode"`
+}
+
+// AddGtmMonitorResponse is the response struct for api AddGtmMonitor
+type AddGtmMonitorResponse struct {
+	*responses.BaseResponse
+	RequestId       string `json:"RequestId" xml:"RequestId"`
+	MonitorConfigId string `json:"MonitorConfigId" xml:"MonitorConfigId"`
+}
+
+// CreateAddGtmMonitorRequest creates a request to invoke AddGtmMonitor API
+func CreateAddGtmMonitorRequest() (request *AddGtmMonitorRequest) {
+	request = &AddGtmMonitorRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "AddGtmMonitor", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

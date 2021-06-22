@@ -80,6 +80,7 @@ let it know that a system call is running.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 When porting Go to a new architecture/OS, this file must be implemented for
 each GOOS/GOARCH pair.
 
@@ -306,6 +307,83 @@ Then, edit the regex (if necessary) to match the desired constant. Avoid making
 the regex too broad to avoid matching unintended constants.
 
 ### internal/mkmerge
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+When porting Go to an new architecture/OS, this file must be implemented for
+each GOOS/GOARCH pair.
+
+### mksysnum
+
+Mksysnum is a Go program located at `${GOOS}/mksysnum.go` (or `mksysnum_${GOOS}.go`
+for the old system). This program takes in a list of header files containing the
+syscall number declarations and parses them to produce the corresponding list of
+Go numeric constants. See `zsysnum_${GOOS}_${GOARCH}.go` for the generated
+constants.
+
+Adding new syscall numbers is mostly done by running the build on a sufficiently
+new installation of the target OS (or updating the source checkouts for the
+new build system). However, depending on the OS, you may need to update the
+parsing in mksysnum.
+
+### mksyscall.go
+
+The `syscall.go`, `syscall_${GOOS}.go`, `syscall_${GOOS}_${GOARCH}.go` are
+hand-written Go files which implement system calls (for unix, the specific OS,
+or the specific OS/Architecture pair respectively) that need special handling
+and list `//sys` comments giving prototypes for ones that can be generated.
+
+The mksyscall.go program takes the `//sys` and `//sysnb` comments and converts
+them into syscalls. This requires the name of the prototype in the comment to
+match a syscall number in the `zsysnum_${GOOS}_${GOARCH}.go` file. The function
+prototype can be exported (capitalized) or not.
+
+Adding a new syscall often just requires adding a new `//sys` function prototype
+with the desired arguments and a capitalized name so it is exported. However, if
+you want the interface to the syscall to be different, often one will make an
+unexported `//sys` prototype, an then write a custom wrapper in
+`syscall_${GOOS}.go`.
+
+### types files
+
+For each OS, there is a hand-written Go file at `${GOOS}/types.go` (or
+`types_${GOOS}.go` on the old system). This file includes standard C headers and
+creates Go type aliases to the corresponding C types. The file is then fed
+through godef to get the Go compatible definitions. Finally, the generated code
+is fed though mkpost.go to format the code correctly and remove any hidden or
+private identifiers. This cleaned-up code is written to
+`ztypes_${GOOS}_${GOARCH}.go`.
+
+The hardest part about preparing this file is figuring out which headers to
+include and which symbols need to be `#define`d to get the actual data
+structures that pass through to the kernel system calls. Some C libraries
+preset alternate versions for binary compatibility and translate them on the
+way in and out of system calls, but there is almost always a `#define` that can
+get the real ones.
+See `types_darwin.go` and `linux/types.go` for examples.
+
+To add a new type, add in the necessary include statement at the top of the
+file (if it is not already there) and add in a type alias line. Note that if
+your type is significantly different on different architectures, you may need
+some `#if/#elif` macros in your include statements.
+
+### mkerrors.sh
+
+This script is used to generate the system's various constants. This doesn't
+just include the error numbers and error strings, but also the signal numbers
+an a wide variety of miscellaneous constants. The constants come from the list
+of include files in the `includes_${uname}` variable. A regex then picks out
+the desired `#define` statements, and generates the corresponding Go constants.
+The error numbers and strings are generated from `#include <errno.h>`, and the
+signal numbers and strings are generated from `#include <signal.h>`. All of
+these constants are written to `zerrors_${GOOS}_${GOARCH}.go` via a C program,
+`_errors.c`, which prints out all the constants.
+
+To add a constant, add the header that includes it to the appropriate variable.
+Then, edit the regex (if necessary) to match the desired constant. Avoid making
+the regex too broad to avoid matching unintended constants.
+
+### mkmerge.go
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 This program is used to extract duplicate const, func, and type declarations
 from the generated architecture-specific files listed below, and merge these

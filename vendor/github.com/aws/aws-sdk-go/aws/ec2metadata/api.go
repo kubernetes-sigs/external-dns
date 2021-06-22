@@ -24,6 +24,7 @@ func (c *EC2Metadata) getToken(ctx aws.Context, duration time.Duration) (tokenOu
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		HTTPPath:   "/latest/api/token",
 	}
 
@@ -334,6 +335,103 @@ func (c *EC2Metadata) GetDynamicDataWithContext(ctx aws.Context, p string) (stri
 =======
 		HTTPPath:   sdkuri.PathJoin("/latest/dynamic", p),
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		HTTPPath:   "/api/token",
+	}
+
+	var output tokenOutput
+	req := c.NewRequest(op, nil, &output)
+	req.SetContext(ctx)
+
+	// remove the fetch token handler from the request handlers to avoid infinite recursion
+	req.Handlers.Sign.RemoveByName(fetchTokenHandlerName)
+
+	// Swap the unmarshalMetadataHandler with unmarshalTokenHandler on this request.
+	req.Handlers.Unmarshal.Swap(unmarshalMetadataHandlerName, unmarshalTokenHandler)
+
+	ttl := strconv.FormatInt(int64(duration/time.Second), 10)
+	req.HTTPRequest.Header.Set(ttlHeader, ttl)
+
+	err := req.Send()
+
+	// Errors with bad request status should be returned.
+	if err != nil {
+		err = awserr.NewRequestFailure(
+			awserr.New(req.HTTPResponse.Status, http.StatusText(req.HTTPResponse.StatusCode), err),
+			req.HTTPResponse.StatusCode, req.RequestID)
+	}
+
+	return output, err
+}
+
+// GetMetadata uses the path provided to request information from the EC2
+// instance metadata service. The content will be returned as a string, or
+// error if the request failed.
+func (c *EC2Metadata) GetMetadata(p string) (string, error) {
+	return c.GetMetadataWithContext(aws.BackgroundContext(), p)
+}
+
+// GetMetadataWithContext uses the path provided to request information from the EC2
+// instance metadata service. The content will be returned as a string, or
+// error if the request failed.
+func (c *EC2Metadata) GetMetadataWithContext(ctx aws.Context, p string) (string, error) {
+	op := &request.Operation{
+		Name:       "GetMetadata",
+		HTTPMethod: "GET",
+		HTTPPath:   sdkuri.PathJoin("/meta-data", p),
+	}
+	output := &metadataOutput{}
+
+	req := c.NewRequest(op, nil, output)
+
+	req.SetContext(ctx)
+
+	err := req.Send()
+	return output.Content, err
+}
+
+// GetUserData returns the userdata that was configured for the service. If
+// there is no user-data setup for the EC2 instance a "NotFoundError" error
+// code will be returned.
+func (c *EC2Metadata) GetUserData() (string, error) {
+	return c.GetUserDataWithContext(aws.BackgroundContext())
+}
+
+// GetUserDataWithContext returns the userdata that was configured for the service. If
+// there is no user-data setup for the EC2 instance a "NotFoundError" error
+// code will be returned.
+func (c *EC2Metadata) GetUserDataWithContext(ctx aws.Context) (string, error) {
+	op := &request.Operation{
+		Name:       "GetUserData",
+		HTTPMethod: "GET",
+		HTTPPath:   "/user-data",
+	}
+
+	output := &metadataOutput{}
+	req := c.NewRequest(op, nil, output)
+	req.SetContext(ctx)
+
+	err := req.Send()
+	return output.Content, err
+}
+
+// GetDynamicData uses the path provided to request information from the EC2
+// instance metadata service for dynamic data. The content will be returned
+// as a string, or error if the request failed.
+func (c *EC2Metadata) GetDynamicData(p string) (string, error) {
+	return c.GetDynamicDataWithContext(aws.BackgroundContext(), p)
+}
+
+// GetDynamicDataWithContext uses the path provided to request information from the EC2
+// instance metadata service for dynamic data. The content will be returned
+// as a string, or error if the request failed.
+func (c *EC2Metadata) GetDynamicDataWithContext(ctx aws.Context, p string) (string, error) {
+	op := &request.Operation{
+		Name:       "GetDynamicData",
+		HTTPMethod: "GET",
+		HTTPPath:   sdkuri.PathJoin("/dynamic", p),
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	output := &metadataOutput{}

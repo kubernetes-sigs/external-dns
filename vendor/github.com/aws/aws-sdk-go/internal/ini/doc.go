@@ -17,6 +17,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //  Grammar:
 //  stmt -> section | stmt'
 //  stmt' -> epsilon | expr
@@ -139,4 +140,20 @@
 //  comment -> # comment' | ; comment'
 //  comment' -> epsilon | value
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//	Grammar:
+//	stmt -> value stmt'
+//	stmt' -> epsilon | op stmt
+//	value -> number | string | boolean | quoted_string
+//
+//	section -> [ section'
+//	section' -> value section_close
+//	section_close -> ]
+//
+//	SkipState will skip (NL WS)+
+//
+//	comment -> # comment' | ; comment'
+//	comment' -> epsilon | value
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ini

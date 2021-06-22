@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Directory to put `go install`ed binaries in.
 export GOBIN ?= $(shell pwd)/bin
 
@@ -176,3 +177,11 @@ staticcheck: bin/staticcheck
 test:
 	go test -race ./...
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+test:
+	go test .
+cover:
+	go test . -coverprofile=cover.out
+	go tool cover -html=cover.out
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

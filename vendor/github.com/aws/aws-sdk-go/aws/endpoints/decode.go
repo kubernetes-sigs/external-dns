@@ -85,6 +85,7 @@ func decodeV3Endpoints(modelDef modelDefinition, opts DecodeModelOptions) (Resol
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		custAddS3DualStack(p)
 		custRegionalS3(p)
 		custRmIotDataService(p)
@@ -398,6 +399,129 @@ func custFixAppAutoscalingUsGov(p *partition) {
 	}
 
 	s.Defaults[defaultKey{}] = serviceDefault
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		custAddEC2Metadata(p)
+		custAddS3DualStack(p)
+		custRegionalS3(p)
+		custRmIotDataService(p)
+		custFixAppAutoscalingChina(p)
+		custFixAppAutoscalingUsGov(p)
+	}
+
+	return ps, nil
+}
+
+func custAddS3DualStack(p *partition) {
+	if !(p.ID == "aws" || p.ID == "aws-cn" || p.ID == "aws-us-gov") {
+		return
+	}
+
+	custAddDualstack(p, "s3")
+	custAddDualstack(p, "s3-control")
+}
+
+func custRegionalS3(p *partition) {
+	if p.ID != "aws" {
+		return
+	}
+
+	service, ok := p.Services["s3"]
+	if !ok {
+		return
+	}
+
+	// If global endpoint already exists no customization needed.
+	if _, ok := service.Endpoints["aws-global"]; ok {
+		return
+	}
+
+	service.PartitionEndpoint = "aws-global"
+	service.Endpoints["us-east-1"] = endpoint{}
+	service.Endpoints["aws-global"] = endpoint{
+		Hostname: "s3.amazonaws.com",
+		CredentialScope: credentialScope{
+			Region: "us-east-1",
+		},
+	}
+
+	p.Services["s3"] = service
+}
+
+func custAddDualstack(p *partition, svcName string) {
+	s, ok := p.Services[svcName]
+	if !ok {
+		return
+	}
+
+	s.Defaults.HasDualStack = boxedTrue
+	s.Defaults.DualStackHostname = "{service}.dualstack.{region}.{dnsSuffix}"
+
+	p.Services[svcName] = s
+}
+
+func custAddEC2Metadata(p *partition) {
+	p.Services["ec2metadata"] = service{
+		IsRegionalized:    boxedFalse,
+		PartitionEndpoint: "aws-global",
+		Endpoints: endpoints{
+			"aws-global": endpoint{
+				Hostname:  "169.254.169.254/latest",
+				Protocols: []string{"http"},
+			},
+		},
+	}
+}
+
+func custRmIotDataService(p *partition) {
+	delete(p.Services, "data.iot")
+}
+
+func custFixAppAutoscalingChina(p *partition) {
+	if p.ID != "aws-cn" {
+		return
+	}
+
+	const serviceName = "application-autoscaling"
+	s, ok := p.Services[serviceName]
+	if !ok {
+		return
+	}
+
+	const expectHostname = `autoscaling.{region}.amazonaws.com`
+	if e, a := s.Defaults.Hostname, expectHostname; e != a {
+		fmt.Printf("custFixAppAutoscalingChina: ignoring customization, expected %s, got %s\n", e, a)
+		return
+	}
+
+	s.Defaults.Hostname = expectHostname + ".cn"
+	p.Services[serviceName] = s
+}
+
+func custFixAppAutoscalingUsGov(p *partition) {
+	if p.ID != "aws-us-gov" {
+		return
+	}
+
+	const serviceName = "application-autoscaling"
+	s, ok := p.Services[serviceName]
+	if !ok {
+		return
+	}
+
+	if a := s.Defaults.CredentialScope.Service; a != "" {
+		fmt.Printf("custFixAppAutoscalingUsGov: ignoring customization, expected empty credential scope service, got %s\n", a)
+		return
+	}
+
+	if a := s.Defaults.Hostname; a != "" {
+		fmt.Printf("custFixAppAutoscalingUsGov: ignoring customization, expected empty hostname, got %s\n", a)
+		return
+	}
+
+	s.Defaults.CredentialScope.Service = "application-autoscaling"
+	s.Defaults.Hostname = "autoscaling.{region}.amazonaws.com"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	p.Services[serviceName] = s
 }

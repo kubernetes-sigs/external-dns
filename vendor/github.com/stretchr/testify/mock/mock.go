@@ -301,6 +301,7 @@ func (m *Mock) findExpectedCall(method string, arguments ...interface{}) (int, *
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type matchCandidate struct {
 	call      *Call
 	mismatch  string
@@ -463,6 +464,28 @@ func (m *Mock) findClosestCall(method string, arguments ...interface{}) (*Call, 
 =======
 	return bestMatch.call, bestMatch.mismatch
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (m *Mock) findClosestCall(method string, arguments ...interface{}) (*Call, string) {
+	var diffCount int
+	var closestCall *Call
+	var err string
+
+	for _, call := range m.expectedCalls() {
+		if call.Method == method {
+
+			errInfo, tempDiffCount := call.Arguments.Diff(arguments)
+			if tempDiffCount < diffCount || diffCount == 0 {
+				diffCount = tempDiffCount
+				closestCall = call
+				err = errInfo
+			}
+
+		}
+	}
+
+	return closestCall, err
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func callString(method string, arguments Arguments, includeArgumentValues bool) string {

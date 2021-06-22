@@ -148,6 +148,7 @@ func (c *Client) ListTaggedObjects(ctx context.Context, label string, opts *List
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -392,6 +393,83 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range response.Data {
+		if _, err := response.Data[i].fixData(); err != nil {
+			return nil, err
+		}
+	}
+	return response.Data, nil
+}
+
+// SortedObjects converts a list of TaggedObjects into a Sorted Objects struct, for easier access
+func (t TaggedObjectList) SortedObjects() (SortedObjects, error) {
+	so := SortedObjects{}
+
+	for _, o := range t {
+		switch o.Type {
+		case "linode":
+			if instance, ok := o.Data.(Instance); ok {
+				so.Instances = append(so.Instances, instance)
+			} else {
+				return so, errors.New("expected an Instance when Type was \"linode\"")
+			}
+		case "lke_cluster":
+			if lkeCluster, ok := o.Data.(LKECluster); ok {
+				so.LKEClusters = append(so.LKEClusters, lkeCluster)
+			} else {
+				return so, errors.New("expected an LKECluster when Type was \"lke_cluster\"")
+			}
+		case "domain":
+			if domain, ok := o.Data.(Domain); ok {
+				so.Domains = append(so.Domains, domain)
+			} else {
+				return so, errors.New("expected a Domain when Type was \"domain\"")
+			}
+		case "volume":
+			if volume, ok := o.Data.(Volume); ok {
+				so.Volumes = append(so.Volumes, volume)
+			} else {
+				return so, errors.New("expected an Volume when Type was \"volume\"")
+			}
+		case "nodebalancer":
+			if nodebalancer, ok := o.Data.(NodeBalancer); ok {
+				so.NodeBalancers = append(so.NodeBalancers, nodebalancer)
+			} else {
+				return so, errors.New("expected an NodeBalancer when Type was \"nodebalancer\"")
+			}
+		}
+	}
+	return so, nil
+}
+
+// CreateTag creates a Tag
+func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*Tag, error) {
+	var body string
+	e, err := c.Tags.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&Tag{})
+
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

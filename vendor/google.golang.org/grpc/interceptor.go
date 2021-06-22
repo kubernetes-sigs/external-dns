@@ -29,6 +29,7 @@ type UnaryInvoker func(ctx context.Context, method string, req, reply interface{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // UnaryClientInterceptor intercepts the execution of a unary RPC on the client.
 // Unary interceptors can be specified as a DialOption, using
 // WithUnaryInterceptor() or WithChainUnaryInterceptor(), when creating a
@@ -196,6 +197,35 @@ type UnaryServerInfo struct {
 // status package, or be one of the context errors. Otherwise, gRPC will use
 // codes.Unknown as the status code and err.Error() as the status message of the
 // RPC.
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// UnaryClientInterceptor intercepts the execution of a unary RPC on the client. invoker is the handler to complete the RPC
+// and it is the responsibility of the interceptor to call it.
+// This is an EXPERIMENTAL API.
+type UnaryClientInterceptor func(ctx context.Context, method string, req, reply interface{}, cc *ClientConn, invoker UnaryInvoker, opts ...CallOption) error
+
+// Streamer is called by StreamClientInterceptor to create a ClientStream.
+type Streamer func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, opts ...CallOption) (ClientStream, error)
+
+// StreamClientInterceptor intercepts the creation of ClientStream. It may return a custom ClientStream to intercept all I/O
+// operations. streamer is the handler to create a ClientStream and it is the responsibility of the interceptor to call it.
+// This is an EXPERIMENTAL API.
+type StreamClientInterceptor func(ctx context.Context, desc *StreamDesc, cc *ClientConn, method string, streamer Streamer, opts ...CallOption) (ClientStream, error)
+
+// UnaryServerInfo consists of various information about a unary RPC on
+// server side. All per-rpc information may be mutated by the interceptor.
+type UnaryServerInfo struct {
+	// Server is the service implementation the user provides. This is read-only.
+	Server interface{}
+	// FullMethod is the full RPC method string, i.e., /package.service/method.
+	FullMethod string
+}
+
+// UnaryHandler defines the handler invoked by UnaryServerInterceptor to complete the normal
+// execution of a unary RPC. If a UnaryHandler returns an error, it should be produced by the
+// status package, or else gRPC will use codes.Unknown as the status code and err.Error() as
+// the status message of the RPC.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type UnaryHandler func(ctx context.Context, req interface{}) (interface{}, error)
 
 // UnaryServerInterceptor provides a hook to intercept the execution of a unary RPC on the server. info

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix && ppc64 && gc
 // +build aix,ppc64,gc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -544,6 +545,524 @@ func callfchownat(dirfd int, _p0 uintptr, uid int, gid int, flags int) (r1 uintp
 
 func callfdatasync(fd int) (r1 uintptr, e1 Errno) {
 	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fdatasync)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix,ppc64
+// +build gc
+
+package unix
+
+import (
+	"unsafe"
+)
+
+//go:cgo_import_dynamic libc_utimes utimes "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_utimensat utimensat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getcwd getcwd "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_accept accept "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getdirent getdirent "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_wait4 wait4 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_ioctl ioctl "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fcntl fcntl "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_acct acct "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_chdir chdir "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_chroot chroot "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_close close "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_dup dup "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_exit exit "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_faccessat faccessat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fchdir fchdir "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fchmod fchmod "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fchmodat fchmodat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fchownat fchownat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fdatasync fdatasync "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fsync fsync "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getpgid getpgid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getpgrp getpgrp "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getpid getpid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getppid getppid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getpriority getpriority "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getrusage getrusage "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getsid getsid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_kill kill "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_syslog syslog "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mkdir mkdir "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mkdirat mkdirat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mkfifo mkfifo "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mknod mknod "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mknodat mknodat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_nanosleep nanosleep "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_open64 open64 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_openat openat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_read read "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_readlink readlink "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_renameat renameat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setdomainname setdomainname "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_sethostname sethostname "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setpgid setpgid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setsid setsid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_settimeofday settimeofday "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setuid setuid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setgid setgid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setpriority setpriority "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_statx statx "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_sync sync "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_times times "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_umask umask "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_uname uname "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_unlink unlink "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_unlinkat unlinkat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_ustat ustat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_write write "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_dup2 dup2 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_posix_fadvise64 posix_fadvise64 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fchown fchown "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fstat fstat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fstatat fstatat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_fstatfs fstatfs "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_ftruncate ftruncate "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getegid getegid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_geteuid geteuid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getgid getgid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getuid getuid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_lchown lchown "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_listen listen "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_lstat lstat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_pause pause "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_pread64 pread64 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_pwrite64 pwrite64 "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_select select "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_pselect pselect "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setregid setregid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setreuid setreuid "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_shutdown shutdown "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_splice splice "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_stat stat "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_statfs statfs "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_truncate truncate "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_bind bind "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_connect connect "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getgroups getgroups "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setgroups setgroups "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getsockopt getsockopt "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setsockopt setsockopt "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_socket socket "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_socketpair socketpair "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getpeername getpeername "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getsockname getsockname "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_recvfrom recvfrom "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_sendto sendto "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_nrecvmsg nrecvmsg "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_nsendmsg nsendmsg "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_munmap munmap "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_madvise madvise "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mprotect mprotect "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mlock mlock "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mlockall mlockall "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_msync msync "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_munlock munlock "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_munlockall munlockall "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_pipe pipe "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_poll poll "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_gettimeofday gettimeofday "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_time time "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_utime utime "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getsystemcfg getsystemcfg "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_umount umount "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_getrlimit getrlimit "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_setrlimit setrlimit "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_lseek lseek "libc.a/shr_64.o"
+//go:cgo_import_dynamic libc_mmap64 mmap64 "libc.a/shr_64.o"
+
+//go:linkname libc_utimes libc_utimes
+//go:linkname libc_utimensat libc_utimensat
+//go:linkname libc_getcwd libc_getcwd
+//go:linkname libc_accept libc_accept
+//go:linkname libc_getdirent libc_getdirent
+//go:linkname libc_wait4 libc_wait4
+//go:linkname libc_ioctl libc_ioctl
+//go:linkname libc_fcntl libc_fcntl
+//go:linkname libc_acct libc_acct
+//go:linkname libc_chdir libc_chdir
+//go:linkname libc_chroot libc_chroot
+//go:linkname libc_close libc_close
+//go:linkname libc_dup libc_dup
+//go:linkname libc_exit libc_exit
+//go:linkname libc_faccessat libc_faccessat
+//go:linkname libc_fchdir libc_fchdir
+//go:linkname libc_fchmod libc_fchmod
+//go:linkname libc_fchmodat libc_fchmodat
+//go:linkname libc_fchownat libc_fchownat
+//go:linkname libc_fdatasync libc_fdatasync
+//go:linkname libc_fsync libc_fsync
+//go:linkname libc_getpgid libc_getpgid
+//go:linkname libc_getpgrp libc_getpgrp
+//go:linkname libc_getpid libc_getpid
+//go:linkname libc_getppid libc_getppid
+//go:linkname libc_getpriority libc_getpriority
+//go:linkname libc_getrusage libc_getrusage
+//go:linkname libc_getsid libc_getsid
+//go:linkname libc_kill libc_kill
+//go:linkname libc_syslog libc_syslog
+//go:linkname libc_mkdir libc_mkdir
+//go:linkname libc_mkdirat libc_mkdirat
+//go:linkname libc_mkfifo libc_mkfifo
+//go:linkname libc_mknod libc_mknod
+//go:linkname libc_mknodat libc_mknodat
+//go:linkname libc_nanosleep libc_nanosleep
+//go:linkname libc_open64 libc_open64
+//go:linkname libc_openat libc_openat
+//go:linkname libc_read libc_read
+//go:linkname libc_readlink libc_readlink
+//go:linkname libc_renameat libc_renameat
+//go:linkname libc_setdomainname libc_setdomainname
+//go:linkname libc_sethostname libc_sethostname
+//go:linkname libc_setpgid libc_setpgid
+//go:linkname libc_setsid libc_setsid
+//go:linkname libc_settimeofday libc_settimeofday
+//go:linkname libc_setuid libc_setuid
+//go:linkname libc_setgid libc_setgid
+//go:linkname libc_setpriority libc_setpriority
+//go:linkname libc_statx libc_statx
+//go:linkname libc_sync libc_sync
+//go:linkname libc_times libc_times
+//go:linkname libc_umask libc_umask
+//go:linkname libc_uname libc_uname
+//go:linkname libc_unlink libc_unlink
+//go:linkname libc_unlinkat libc_unlinkat
+//go:linkname libc_ustat libc_ustat
+//go:linkname libc_write libc_write
+//go:linkname libc_dup2 libc_dup2
+//go:linkname libc_posix_fadvise64 libc_posix_fadvise64
+//go:linkname libc_fchown libc_fchown
+//go:linkname libc_fstat libc_fstat
+//go:linkname libc_fstatat libc_fstatat
+//go:linkname libc_fstatfs libc_fstatfs
+//go:linkname libc_ftruncate libc_ftruncate
+//go:linkname libc_getegid libc_getegid
+//go:linkname libc_geteuid libc_geteuid
+//go:linkname libc_getgid libc_getgid
+//go:linkname libc_getuid libc_getuid
+//go:linkname libc_lchown libc_lchown
+//go:linkname libc_listen libc_listen
+//go:linkname libc_lstat libc_lstat
+//go:linkname libc_pause libc_pause
+//go:linkname libc_pread64 libc_pread64
+//go:linkname libc_pwrite64 libc_pwrite64
+//go:linkname libc_select libc_select
+//go:linkname libc_pselect libc_pselect
+//go:linkname libc_setregid libc_setregid
+//go:linkname libc_setreuid libc_setreuid
+//go:linkname libc_shutdown libc_shutdown
+//go:linkname libc_splice libc_splice
+//go:linkname libc_stat libc_stat
+//go:linkname libc_statfs libc_statfs
+//go:linkname libc_truncate libc_truncate
+//go:linkname libc_bind libc_bind
+//go:linkname libc_connect libc_connect
+//go:linkname libc_getgroups libc_getgroups
+//go:linkname libc_setgroups libc_setgroups
+//go:linkname libc_getsockopt libc_getsockopt
+//go:linkname libc_setsockopt libc_setsockopt
+//go:linkname libc_socket libc_socket
+//go:linkname libc_socketpair libc_socketpair
+//go:linkname libc_getpeername libc_getpeername
+//go:linkname libc_getsockname libc_getsockname
+//go:linkname libc_recvfrom libc_recvfrom
+//go:linkname libc_sendto libc_sendto
+//go:linkname libc_nrecvmsg libc_nrecvmsg
+//go:linkname libc_nsendmsg libc_nsendmsg
+//go:linkname libc_munmap libc_munmap
+//go:linkname libc_madvise libc_madvise
+//go:linkname libc_mprotect libc_mprotect
+//go:linkname libc_mlock libc_mlock
+//go:linkname libc_mlockall libc_mlockall
+//go:linkname libc_msync libc_msync
+//go:linkname libc_munlock libc_munlock
+//go:linkname libc_munlockall libc_munlockall
+//go:linkname libc_pipe libc_pipe
+//go:linkname libc_poll libc_poll
+//go:linkname libc_gettimeofday libc_gettimeofday
+//go:linkname libc_time libc_time
+//go:linkname libc_utime libc_utime
+//go:linkname libc_getsystemcfg libc_getsystemcfg
+//go:linkname libc_umount libc_umount
+//go:linkname libc_getrlimit libc_getrlimit
+//go:linkname libc_setrlimit libc_setrlimit
+//go:linkname libc_lseek libc_lseek
+//go:linkname libc_mmap64 libc_mmap64
+
+type syscallFunc uintptr
+
+var (
+	libc_utimes,
+	libc_utimensat,
+	libc_getcwd,
+	libc_accept,
+	libc_getdirent,
+	libc_wait4,
+	libc_ioctl,
+	libc_fcntl,
+	libc_acct,
+	libc_chdir,
+	libc_chroot,
+	libc_close,
+	libc_dup,
+	libc_exit,
+	libc_faccessat,
+	libc_fchdir,
+	libc_fchmod,
+	libc_fchmodat,
+	libc_fchownat,
+	libc_fdatasync,
+	libc_fsync,
+	libc_getpgid,
+	libc_getpgrp,
+	libc_getpid,
+	libc_getppid,
+	libc_getpriority,
+	libc_getrusage,
+	libc_getsid,
+	libc_kill,
+	libc_syslog,
+	libc_mkdir,
+	libc_mkdirat,
+	libc_mkfifo,
+	libc_mknod,
+	libc_mknodat,
+	libc_nanosleep,
+	libc_open64,
+	libc_openat,
+	libc_read,
+	libc_readlink,
+	libc_renameat,
+	libc_setdomainname,
+	libc_sethostname,
+	libc_setpgid,
+	libc_setsid,
+	libc_settimeofday,
+	libc_setuid,
+	libc_setgid,
+	libc_setpriority,
+	libc_statx,
+	libc_sync,
+	libc_times,
+	libc_umask,
+	libc_uname,
+	libc_unlink,
+	libc_unlinkat,
+	libc_ustat,
+	libc_write,
+	libc_dup2,
+	libc_posix_fadvise64,
+	libc_fchown,
+	libc_fstat,
+	libc_fstatat,
+	libc_fstatfs,
+	libc_ftruncate,
+	libc_getegid,
+	libc_geteuid,
+	libc_getgid,
+	libc_getuid,
+	libc_lchown,
+	libc_listen,
+	libc_lstat,
+	libc_pause,
+	libc_pread64,
+	libc_pwrite64,
+	libc_select,
+	libc_pselect,
+	libc_setregid,
+	libc_setreuid,
+	libc_shutdown,
+	libc_splice,
+	libc_stat,
+	libc_statfs,
+	libc_truncate,
+	libc_bind,
+	libc_connect,
+	libc_getgroups,
+	libc_setgroups,
+	libc_getsockopt,
+	libc_setsockopt,
+	libc_socket,
+	libc_socketpair,
+	libc_getpeername,
+	libc_getsockname,
+	libc_recvfrom,
+	libc_sendto,
+	libc_nrecvmsg,
+	libc_nsendmsg,
+	libc_munmap,
+	libc_madvise,
+	libc_mprotect,
+	libc_mlock,
+	libc_mlockall,
+	libc_msync,
+	libc_munlock,
+	libc_munlockall,
+	libc_pipe,
+	libc_poll,
+	libc_gettimeofday,
+	libc_time,
+	libc_utime,
+	libc_getsystemcfg,
+	libc_umount,
+	libc_getrlimit,
+	libc_setrlimit,
+	libc_lseek,
+	libc_mmap64 syscallFunc
+)
+
+// Implemented in runtime/syscall_aix.go.
+func rawSyscall6(trap, nargs, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errno)
+func syscall6(trap, nargs, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err Errno)
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callutimes(_p0 uintptr, times uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_utimes)), 2, _p0, times, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callutimensat(dirfd int, _p0 uintptr, times uintptr, flag int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_utimensat)), 4, uintptr(dirfd), _p0, times, uintptr(flag), 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callgetcwd(_p0 uintptr, _lenp0 int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_getcwd)), 2, _p0, uintptr(_lenp0), 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callaccept(s int, rsa uintptr, addrlen uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_accept)), 3, uintptr(s), rsa, addrlen, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callgetdirent(fd int, _p0 uintptr, _lenp0 int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_getdirent)), 3, uintptr(fd), _p0, uintptr(_lenp0), 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callwait4(pid int, status uintptr, options int, rusage uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_wait4)), 4, uintptr(pid), status, uintptr(options), rusage, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callioctl(fd int, req int, arg uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_ioctl)), 3, uintptr(fd), uintptr(req), arg, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfcntl(fd uintptr, cmd int, arg uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fcntl)), 3, fd, uintptr(cmd), arg, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callacct(_p0 uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_acct)), 1, _p0, 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callchdir(_p0 uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_chdir)), 1, _p0, 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callchroot(_p0 uintptr) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_chroot)), 1, _p0, 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callclose(fd int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_close)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func calldup(oldfd int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_dup)), 1, uintptr(oldfd), 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callexit(code int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_exit)), 1, uintptr(code), 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfaccessat(dirfd int, _p0 uintptr, mode uint32, flags int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_faccessat)), 4, uintptr(dirfd), _p0, uintptr(mode), uintptr(flags), 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfchdir(fd int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fchdir)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfchmod(fd int, mode uint32) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fchmod)), 2, uintptr(fd), uintptr(mode), 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfchmodat(dirfd int, _p0 uintptr, mode uint32, flags int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fchmodat)), 4, uintptr(dirfd), _p0, uintptr(mode), uintptr(flags), 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfchownat(dirfd int, _p0 uintptr, uid int, gid int, flags int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fchownat)), 5, uintptr(dirfd), _p0, uintptr(uid), uintptr(gid), uintptr(flags), 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfdatasync(fd int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fdatasync)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+	return
+}
+
+// THIS FILE IS GENERATED BY THE COMMAND AT THE TOP; DO NOT EDIT
+
+func callfsync(fd int) (r1 uintptr, e1 Errno) {
+	r1, _, e1 = syscall6(uintptr(unsafe.Pointer(&libc_fsync)), 1, uintptr(fd), 0, 0, 0, 0, 0)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

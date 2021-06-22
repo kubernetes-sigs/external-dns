@@ -19,6 +19,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+<<<<<<< HEAD
 	"net/http"
 
 	v1alpha1 "k8s.io/api/rbac/v1alpha1"
@@ -78,6 +79,50 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*RbacV1alpha1Client,
 		return nil, err
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1alpha1 "k8s.io/api/rbac/v1alpha1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type RbacV1alpha1Interface interface {
+	RESTClient() rest.Interface
+	ClusterRolesGetter
+	ClusterRoleBindingsGetter
+	RolesGetter
+	RoleBindingsGetter
+}
+
+// RbacV1alpha1Client is used to interact with features provided by the rbac.authorization.k8s.io group.
+type RbacV1alpha1Client struct {
+	restClient rest.Interface
+}
+
+func (c *RbacV1alpha1Client) ClusterRoles() ClusterRoleInterface {
+	return newClusterRoles(c)
+}
+
+func (c *RbacV1alpha1Client) ClusterRoleBindings() ClusterRoleBindingInterface {
+	return newClusterRoleBindings(c)
+}
+
+func (c *RbacV1alpha1Client) Roles(namespace string) RoleInterface {
+	return newRoles(c, namespace)
+}
+
+func (c *RbacV1alpha1Client) RoleBindings(namespace string) RoleBindingInterface {
+	return newRoleBindings(c, namespace)
+}
+
+// NewForConfig creates a new RbacV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*RbacV1alpha1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

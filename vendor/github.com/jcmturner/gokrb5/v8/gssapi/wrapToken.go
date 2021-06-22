@@ -16,9 +16,14 @@ import (
 // RFC 4121, section 4.2.6.2
 
 const (
+<<<<<<< HEAD
 	// HdrLen is the length of the Wrap Token's header
 	HdrLen = 16
 	// FillerByte is a filler in the WrapToken structure
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	HdrLen          = 16 // Length of the Wrap Token's header
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	FillerByte byte = 0xFF
 )
 

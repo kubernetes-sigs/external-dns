@@ -624,6 +624,7 @@ func UnpackRRWithHeader(h RR_Header, msg []byte, off int) (rr RR, off1 int, err 
 		rr = &RFC3597{Hdr: h}
 	}
 
+<<<<<<< HEAD
 	if off < 0 || off > len(msg) {
 		return &h, off, &Error{err: "bad off"}
 	}
@@ -932,6 +933,305 @@ func (dns *Msg) String() string {
 		s += "\n;; ADDITIONAL SECTION:\n"
 		for _, r := range dns.Extra {
 			if r != nil && r.Header().Rrtype != TypeOPT {
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if noRdata(h) {
+		return rr, off, nil
+	}
+
+	end := off + int(h.Rdlength)
+
+	off, err = rr.unpack(msg, off)
+	if err != nil {
+		return nil, end, err
+	}
+	if off != end {
+		return &h, end, &Error{err: "bad rdlength"}
+	}
+
+	return rr, off, nil
+}
+
+// unpackRRslice unpacks msg[off:] into an []RR.
+// If we cannot unpack the whole array, then it will return nil
+func unpackRRslice(l int, msg []byte, off int) (dst1 []RR, off1 int, err error) {
+	var r RR
+	// Don't pre-allocate, l may be under attacker control
+	var dst []RR
+	for i := 0; i < l; i++ {
+		off1 := off
+		r, off, err = UnpackRR(msg, off)
+		if err != nil {
+			off = len(msg)
+			break
+		}
+		// If offset does not increase anymore, l is a lie
+		if off1 == off {
+			break
+		}
+		dst = append(dst, r)
+	}
+	if err != nil && off == len(msg) {
+		dst = nil
+	}
+	return dst, off, err
+}
+
+// Convert a MsgHdr to a string, with dig-like headers:
+//
+//;; opcode: QUERY, status: NOERROR, id: 48404
+//
+//;; flags: qr aa rd ra;
+func (h *MsgHdr) String() string {
+	if h == nil {
+		return "<nil> MsgHdr"
+	}
+
+	s := ";; opcode: " + OpcodeToString[h.Opcode]
+	s += ", status: " + RcodeToString[h.Rcode]
+	s += ", id: " + strconv.Itoa(int(h.Id)) + "\n"
+
+	s += ";; flags:"
+	if h.Response {
+		s += " qr"
+	}
+	if h.Authoritative {
+		s += " aa"
+	}
+	if h.Truncated {
+		s += " tc"
+	}
+	if h.RecursionDesired {
+		s += " rd"
+	}
+	if h.RecursionAvailable {
+		s += " ra"
+	}
+	if h.Zero { // Hmm
+		s += " z"
+	}
+	if h.AuthenticatedData {
+		s += " ad"
+	}
+	if h.CheckingDisabled {
+		s += " cd"
+	}
+
+	s += ";"
+	return s
+}
+
+// Pack packs a Msg: it is converted to to wire format.
+// If the dns.Compress is true the message will be in compressed wire format.
+func (dns *Msg) Pack() (msg []byte, err error) {
+	return dns.PackBuffer(nil)
+}
+
+// PackBuffer packs a Msg, using the given buffer buf. If buf is too small a new buffer is allocated.
+func (dns *Msg) PackBuffer(buf []byte) (msg []byte, err error) {
+	// If this message can't be compressed, avoid filling the
+	// compression map and creating garbage.
+	if dns.Compress && dns.isCompressible() {
+		compression := make(map[string]uint16) // Compression pointer mappings.
+		return dns.packBufferWithCompressionMap(buf, compressionMap{int: compression}, true)
+	}
+
+	return dns.packBufferWithCompressionMap(buf, compressionMap{}, false)
+}
+
+// packBufferWithCompressionMap packs a Msg, using the given buffer buf.
+func (dns *Msg) packBufferWithCompressionMap(buf []byte, compression compressionMap, compress bool) (msg []byte, err error) {
+	if dns.Rcode < 0 || dns.Rcode > 0xFFF {
+		return nil, ErrRcode
+	}
+
+	// Set extended rcode unconditionally if we have an opt, this will allow
+	// reseting the extended rcode bits if they need to.
+	if opt := dns.IsEdns0(); opt != nil {
+		opt.SetExtendedRcode(uint16(dns.Rcode))
+	} else if dns.Rcode > 0xF {
+		// If Rcode is an extended one and opt is nil, error out.
+		return nil, ErrExtendedRcode
+	}
+
+	// Convert convenient Msg into wire-like Header.
+	var dh Header
+	dh.Id = dns.Id
+	dh.Bits = uint16(dns.Opcode)<<11 | uint16(dns.Rcode&0xF)
+	if dns.Response {
+		dh.Bits |= _QR
+	}
+	if dns.Authoritative {
+		dh.Bits |= _AA
+	}
+	if dns.Truncated {
+		dh.Bits |= _TC
+	}
+	if dns.RecursionDesired {
+		dh.Bits |= _RD
+	}
+	if dns.RecursionAvailable {
+		dh.Bits |= _RA
+	}
+	if dns.Zero {
+		dh.Bits |= _Z
+	}
+	if dns.AuthenticatedData {
+		dh.Bits |= _AD
+	}
+	if dns.CheckingDisabled {
+		dh.Bits |= _CD
+	}
+
+	dh.Qdcount = uint16(len(dns.Question))
+	dh.Ancount = uint16(len(dns.Answer))
+	dh.Nscount = uint16(len(dns.Ns))
+	dh.Arcount = uint16(len(dns.Extra))
+
+	// We need the uncompressed length here, because we first pack it and then compress it.
+	msg = buf
+	uncompressedLen := msgLenWithCompressionMap(dns, nil)
+	if packLen := uncompressedLen + 1; len(msg) < packLen {
+		msg = make([]byte, packLen)
+	}
+
+	// Pack it in: header and then the pieces.
+	off := 0
+	off, err = dh.pack(msg, off, compression, compress)
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range dns.Question {
+		off, err = r.pack(msg, off, compression, compress)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, r := range dns.Answer {
+		_, off, err = packRR(r, msg, off, compression, compress)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, r := range dns.Ns {
+		_, off, err = packRR(r, msg, off, compression, compress)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, r := range dns.Extra {
+		_, off, err = packRR(r, msg, off, compression, compress)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return msg[:off], nil
+}
+
+func (dns *Msg) unpack(dh Header, msg []byte, off int) (err error) {
+	// If we are at the end of the message we should return *just* the
+	// header. This can still be useful to the caller. 9.9.9.9 sends these
+	// when responding with REFUSED for instance.
+	if off == len(msg) {
+		// reset sections before returning
+		dns.Question, dns.Answer, dns.Ns, dns.Extra = nil, nil, nil, nil
+		return nil
+	}
+
+	// Qdcount, Ancount, Nscount, Arcount can't be trusted, as they are
+	// attacker controlled. This means we can't use them to pre-allocate
+	// slices.
+	dns.Question = nil
+	for i := 0; i < int(dh.Qdcount); i++ {
+		off1 := off
+		var q Question
+		q, off, err = unpackQuestion(msg, off)
+		if err != nil {
+			return err
+		}
+		if off1 == off { // Offset does not increase anymore, dh.Qdcount is a lie!
+			dh.Qdcount = uint16(i)
+			break
+		}
+		dns.Question = append(dns.Question, q)
+	}
+
+	dns.Answer, off, err = unpackRRslice(int(dh.Ancount), msg, off)
+	// The header counts might have been wrong so we need to update it
+	dh.Ancount = uint16(len(dns.Answer))
+	if err == nil {
+		dns.Ns, off, err = unpackRRslice(int(dh.Nscount), msg, off)
+	}
+	// The header counts might have been wrong so we need to update it
+	dh.Nscount = uint16(len(dns.Ns))
+	if err == nil {
+		dns.Extra, off, err = unpackRRslice(int(dh.Arcount), msg, off)
+	}
+	// The header counts might have been wrong so we need to update it
+	dh.Arcount = uint16(len(dns.Extra))
+
+	// Set extended Rcode
+	if opt := dns.IsEdns0(); opt != nil {
+		dns.Rcode |= opt.ExtendedRcode()
+	}
+
+	if off != len(msg) {
+		// TODO(miek) make this an error?
+		// use PackOpt to let people tell how detailed the error reporting should be?
+		// println("dns: extra bytes in dns packet", off, "<", len(msg))
+	}
+	return err
+
+}
+
+// Unpack unpacks a binary message to a Msg structure.
+func (dns *Msg) Unpack(msg []byte) (err error) {
+	dh, off, err := unpackMsgHdr(msg, 0)
+	if err != nil {
+		return err
+	}
+
+	dns.setHdr(dh)
+	return dns.unpack(dh, msg, off)
+}
+
+// Convert a complete message to a string with dig-like output.
+func (dns *Msg) String() string {
+	if dns == nil {
+		return "<nil> MsgHdr"
+	}
+	s := dns.MsgHdr.String() + " "
+	s += "QUERY: " + strconv.Itoa(len(dns.Question)) + ", "
+	s += "ANSWER: " + strconv.Itoa(len(dns.Answer)) + ", "
+	s += "AUTHORITY: " + strconv.Itoa(len(dns.Ns)) + ", "
+	s += "ADDITIONAL: " + strconv.Itoa(len(dns.Extra)) + "\n"
+	if len(dns.Question) > 0 {
+		s += "\n;; QUESTION SECTION:\n"
+		for _, r := range dns.Question {
+			s += r.String() + "\n"
+		}
+	}
+	if len(dns.Answer) > 0 {
+		s += "\n;; ANSWER SECTION:\n"
+		for _, r := range dns.Answer {
+			if r != nil {
+				s += r.String() + "\n"
+			}
+		}
+	}
+	if len(dns.Ns) > 0 {
+		s += "\n;; AUTHORITY SECTION:\n"
+		for _, r := range dns.Ns {
+			if r != nil {
+				s += r.String() + "\n"
+			}
+		}
+	}
+	if len(dns.Extra) > 0 {
+		s += "\n;; ADDITIONAL SECTION:\n"
+		for _, r := range dns.Extra {
+			if r != nil {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				s += r.String() + "\n"
 			}
 		}

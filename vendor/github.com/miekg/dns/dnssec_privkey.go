@@ -3,10 +3,19 @@ package dns
 import (
 	"crypto"
 	"crypto/ecdsa"
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"math/big"
 	"strconv"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"crypto/rsa"
+	"math/big"
+	"strconv"
+
+	"golang.org/x/crypto/ed25519"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 const format = "Private-key-format: v1.3\n"

@@ -40,6 +40,7 @@ func (c *FakeStorageV1beta1) CSINodes() v1beta1.CSINodeInterface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (c *FakeStorageV1beta1) CSIStorageCapacities(namespace string) v1beta1.CSIStorageCapacityInterface {
 	return &FakeCSIStorageCapacities{c, namespace}
 }
@@ -64,6 +65,9 @@ func (c *FakeStorageV1beta1) CSIStorageCapacities(namespace string) v1beta1.CSIS
 }
 
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *FakeStorageV1beta1) StorageClasses() v1beta1.StorageClassInterface {
 	return &FakeStorageClasses{c}
 }

@@ -11,8 +11,14 @@ import (
 )
 
 const (
+<<<<<<< HEAD
 	major = "24"
 	minor = "3"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	major = "21"
+	minor = "4"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	patch = "0"
 	tag   = ""
 )

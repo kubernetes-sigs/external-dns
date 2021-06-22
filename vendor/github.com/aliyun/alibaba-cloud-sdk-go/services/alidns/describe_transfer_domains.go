@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeTransferDomains invokes the alidns.DescribeTransferDomains API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeTransferDomains(request *DescribeTransferDomainsRequest) (response *DescribeTransferDomainsResponse, err error) {
 	response = CreateDescribeTransferDomainsResponse()
 	err = client.DoAction(request, response)
@@ -98,6 +99,90 @@ func CreateDescribeTransferDomainsRequest() (request *DescribeTransferDomainsReq
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeTransferDomains", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
+func (client *Client) DescribeTransferDomains(request *DescribeTransferDomainsRequest) (response *DescribeTransferDomainsResponse, err error) {
+	response = CreateDescribeTransferDomainsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeTransferDomainsWithChan invokes the alidns.DescribeTransferDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeTransferDomainsWithChan(request *DescribeTransferDomainsRequest) (<-chan *DescribeTransferDomainsResponse, <-chan error) {
+	responseChan := make(chan *DescribeTransferDomainsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeTransferDomains(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeTransferDomainsWithCallback invokes the alidns.DescribeTransferDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeTransferDomainsWithCallback(request *DescribeTransferDomainsRequest, callback func(response *DescribeTransferDomainsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeTransferDomainsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeTransferDomains(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeTransferDomainsRequest is the request struct for api DescribeTransferDomains
+type DescribeTransferDomainsRequest struct {
+	*requests.RpcRequest
+	FromUserId   requests.Integer `position:"Query" name:"FromUserId"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	TargetUserId requests.Integer `position:"Query" name:"TargetUserId"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	DomainName   string           `position:"Query" name:"DomainName"`
+	TransferType string           `position:"Query" name:"TransferType"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+}
+
+// DescribeTransferDomainsResponse is the response struct for api DescribeTransferDomains
+type DescribeTransferDomainsResponse struct {
+	*responses.BaseResponse
+	RequestId       string          `json:"RequestId" xml:"RequestId"`
+	TotalCount      int64           `json:"TotalCount" xml:"TotalCount"`
+	PageNumber      int64           `json:"PageNumber" xml:"PageNumber"`
+	PageSize        int64           `json:"PageSize" xml:"PageSize"`
+	DomainTransfers DomainTransfers `json:"DomainTransfers" xml:"DomainTransfers"`
+}
+
+// CreateDescribeTransferDomainsRequest creates a request to invoke DescribeTransferDomains API
+func CreateDescribeTransferDomainsRequest() (request *DescribeTransferDomainsRequest) {
+	request = &DescribeTransferDomainsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeTransferDomains", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

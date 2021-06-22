@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeRequestGraph invokes the pvtz.DescribeRequestGraph API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeRequestGraph(request *DescribeRequestGraphRequest) (response *DescribeRequestGraphResponse, err error) {
 	response = CreateDescribeRequestGraphResponse()
 	err = client.DoAction(request, response)
@@ -95,6 +96,85 @@ func CreateDescribeRequestGraphRequest() (request *DescribeRequestGraphRequest) 
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRequestGraph", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
+func (client *Client) DescribeRequestGraph(request *DescribeRequestGraphRequest) (response *DescribeRequestGraphResponse, err error) {
+	response = CreateDescribeRequestGraphResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeRequestGraphWithChan invokes the pvtz.DescribeRequestGraph API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRequestGraphWithChan(request *DescribeRequestGraphRequest) (<-chan *DescribeRequestGraphResponse, <-chan error) {
+	responseChan := make(chan *DescribeRequestGraphResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeRequestGraph(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeRequestGraphWithCallback invokes the pvtz.DescribeRequestGraph API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRequestGraphWithCallback(request *DescribeRequestGraphRequest, callback func(response *DescribeRequestGraphResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeRequestGraphResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeRequestGraph(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeRequestGraphRequest is the request struct for api DescribeRequestGraph
+type DescribeRequestGraphRequest struct {
+	*requests.RpcRequest
+	StartTimestamp requests.Integer `position:"Query" name:"StartTimestamp"`
+	EndTimestamp   requests.Integer `position:"Query" name:"EndTimestamp"`
+	VpcId          string           `position:"Query" name:"VpcId"`
+	UserClientIp   string           `position:"Query" name:"UserClientIp"`
+	ZoneId         string           `position:"Query" name:"ZoneId"`
+	Lang           string           `position:"Query" name:"Lang"`
+}
+
+// DescribeRequestGraphResponse is the response struct for api DescribeRequestGraph
+type DescribeRequestGraphResponse struct {
+	*responses.BaseResponse
+	RequestId      string         `json:"RequestId" xml:"RequestId"`
+	RequestDetails RequestDetails `json:"RequestDetails" xml:"RequestDetails"`
+}
+
+// CreateDescribeRequestGraphRequest creates a request to invoke DescribeRequestGraph API
+func CreateDescribeRequestGraphRequest() (request *DescribeRequestGraphRequest) {
+	request = &DescribeRequestGraphRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRequestGraph", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

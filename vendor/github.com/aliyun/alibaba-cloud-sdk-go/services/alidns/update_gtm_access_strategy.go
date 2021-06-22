@@ -21,6 +21,7 @@ import (
 )
 
 // UpdateGtmAccessStrategy invokes the alidns.UpdateGtmAccessStrategy API synchronously
+<<<<<<< HEAD
 func (client *Client) UpdateGtmAccessStrategy(request *UpdateGtmAccessStrategyRequest) (response *UpdateGtmAccessStrategyResponse, err error) {
 	response = CreateUpdateGtmAccessStrategyResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,85 @@ func CreateUpdateGtmAccessStrategyRequest() (request *UpdateGtmAccessStrategyReq
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmAccessStrategy", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
+func (client *Client) UpdateGtmAccessStrategy(request *UpdateGtmAccessStrategyRequest) (response *UpdateGtmAccessStrategyResponse, err error) {
+	response = CreateUpdateGtmAccessStrategyResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateGtmAccessStrategyWithChan invokes the alidns.UpdateGtmAccessStrategy API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmAccessStrategyWithChan(request *UpdateGtmAccessStrategyRequest) (<-chan *UpdateGtmAccessStrategyResponse, <-chan error) {
+	responseChan := make(chan *UpdateGtmAccessStrategyResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateGtmAccessStrategy(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateGtmAccessStrategyWithCallback invokes the alidns.UpdateGtmAccessStrategy API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmAccessStrategyWithCallback(request *UpdateGtmAccessStrategyRequest, callback func(response *UpdateGtmAccessStrategyResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateGtmAccessStrategyResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateGtmAccessStrategy(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateGtmAccessStrategyRequest is the request struct for api UpdateGtmAccessStrategy
+type UpdateGtmAccessStrategyRequest struct {
+	*requests.RpcRequest
+	DefaultAddrPoolId  string `position:"Query" name:"DefaultAddrPoolId"`
+	FailoverAddrPoolId string `position:"Query" name:"FailoverAddrPoolId"`
+	StrategyName       string `position:"Query" name:"StrategyName"`
+	AccessLines        string `position:"Query" name:"AccessLines"`
+	UserClientIp       string `position:"Query" name:"UserClientIp"`
+	StrategyId         string `position:"Query" name:"StrategyId"`
+	Lang               string `position:"Query" name:"Lang"`
+}
+
+// UpdateGtmAccessStrategyResponse is the response struct for api UpdateGtmAccessStrategy
+type UpdateGtmAccessStrategyResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateUpdateGtmAccessStrategyRequest creates a request to invoke UpdateGtmAccessStrategy API
+func CreateUpdateGtmAccessStrategyRequest() (request *UpdateGtmAccessStrategyRequest) {
+	request = &UpdateGtmAccessStrategyRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmAccessStrategy", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

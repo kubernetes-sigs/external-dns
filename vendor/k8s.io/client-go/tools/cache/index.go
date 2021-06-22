@@ -78,6 +78,7 @@ func IndexFuncToKeyFuncAdapter(indexFunc IndexFunc) KeyFunc {
 }
 
 const (
+<<<<<<< HEAD
 	// NamespaceIndex is the lookup name for the most common index function, which is to index by the namespace field.
 	NamespaceIndex string = "namespace"
 )
@@ -95,6 +96,26 @@ func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
 type Index map[string]sets.String
 
 // Indexers maps a name to an IndexFunc
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// NamespaceIndex is the lookup name for the most comment index function, which is to index by the namespace field.
+	NamespaceIndex string = "namespace"
+)
+
+// MetaNamespaceIndexFunc is a default index function that indexes based on an object's namespace
+func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return []string{""}, fmt.Errorf("object has no meta: %v", err)
+	}
+	return []string{meta.GetNamespace()}, nil
+}
+
+// Index maps the indexed value to a set of keys in the store that match on that value
+type Index map[string]sets.String
+
+// Indexers maps a name to a IndexFunc
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type Indexers map[string]IndexFunc
 
 // Indices maps a name to an Index

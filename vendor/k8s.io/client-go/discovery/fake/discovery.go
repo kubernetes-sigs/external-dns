@@ -18,6 +18,7 @@ package fake
 
 import (
 	"fmt"
+<<<<<<< HEAD
 	"net/http"
 
 <<<<<<< HEAD
@@ -80,6 +81,41 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 			Reason:  metav1.StatusReasonNotFound,
 			Message: fmt.Sprintf("the server could not find the requested resource, GroupVersion %q not found", groupVersion),
 		}}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	"github.com/googleapis/gnostic/OpenAPIv2"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
+	kubeversion "k8s.io/client-go/pkg/version"
+	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/testing"
+)
+
+// FakeDiscovery implements discovery.DiscoveryInterface and sometimes calls testing.Fake.Invoke with an action,
+// but doesn't respect the return value if any. There is a way to fake static values like ServerVersion by using the Faked... fields on the struct.
+type FakeDiscovery struct {
+	*testing.Fake
+	FakedServerVersion *version.Info
+}
+
+// ServerResourcesForGroupVersion returns the supported resources for a group
+// and version.
+func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*metav1.APIResourceList, error) {
+	action := testing.ActionImpl{
+		Verb:     "get",
+		Resource: schema.GroupVersionResource{Resource: "resource"},
+	}
+	c.Invokes(action, nil)
+	for _, resourceList := range c.Resources {
+		if resourceList.GroupVersion == groupVersion {
+			return resourceList, nil
+		}
+	}
+	return nil, fmt.Errorf("GroupVersion %q not found", groupVersion)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // ServerResources returns the supported resources for all groups and versions.

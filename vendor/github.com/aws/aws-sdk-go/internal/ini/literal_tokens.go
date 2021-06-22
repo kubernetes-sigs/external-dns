@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+<<<<<<< HEAD
 	"unicode"
 )
 
@@ -194,6 +195,183 @@ func newValue(t ValueType, base int, raw []rune) (Value, error) {
 		v.str = string(raw[1 : len(raw)-1])
 	case BoolType:
 		v.boolean = isCaselessLitValue(runesTrue, v.raw)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+var (
+	runesTrue  = []rune("true")
+	runesFalse = []rune("false")
+)
+
+var literalValues = [][]rune{
+	runesTrue,
+	runesFalse,
+}
+
+func isBoolValue(b []rune) bool {
+	for _, lv := range literalValues {
+		if isLitValue(lv, b) {
+			return true
+		}
+	}
+	return false
+}
+
+func isLitValue(want, have []rune) bool {
+	if len(have) < len(want) {
+		return false
+	}
+
+	for i := 0; i < len(want); i++ {
+		if want[i] != have[i] {
+			return false
+		}
+	}
+
+	return true
+}
+
+// isNumberValue will return whether not the leading characters in
+// a byte slice is a number. A number is delimited by whitespace or
+// the newline token.
+//
+// A number is defined to be in a binary, octal, decimal (int | float), hex format,
+// or in scientific notation.
+func isNumberValue(b []rune) bool {
+	negativeIndex := 0
+	helper := numberHelper{}
+	needDigit := false
+
+	for i := 0; i < len(b); i++ {
+		negativeIndex++
+
+		switch b[i] {
+		case '-':
+			if helper.IsNegative() || negativeIndex != 1 {
+				return false
+			}
+			helper.Determine(b[i])
+			needDigit = true
+			continue
+		case 'e', 'E':
+			if err := helper.Determine(b[i]); err != nil {
+				return false
+			}
+			negativeIndex = 0
+			needDigit = true
+			continue
+		case 'b':
+			if helper.numberFormat == hex {
+				break
+			}
+			fallthrough
+		case 'o', 'x':
+			needDigit = true
+			if i == 0 {
+				return false
+			}
+
+			fallthrough
+		case '.':
+			if err := helper.Determine(b[i]); err != nil {
+				return false
+			}
+			needDigit = true
+			continue
+		}
+
+		if i > 0 && (isNewline(b[i:]) || isWhitespace(b[i])) {
+			return !needDigit
+		}
+
+		if !helper.CorrectByte(b[i]) {
+			return false
+		}
+		needDigit = false
+	}
+
+	return !needDigit
+}
+
+func isValid(b []rune) (bool, int, error) {
+	if len(b) == 0 {
+		// TODO: should probably return an error
+		return false, 0, nil
+	}
+
+	return isValidRune(b[0]), 1, nil
+}
+
+func isValidRune(r rune) bool {
+	return r != ':' && r != '=' && r != '[' && r != ']' && r != ' ' && r != '\n'
+}
+
+// ValueType is an enum that will signify what type
+// the Value is
+type ValueType int
+
+func (v ValueType) String() string {
+	switch v {
+	case NoneType:
+		return "NONE"
+	case DecimalType:
+		return "FLOAT"
+	case IntegerType:
+		return "INT"
+	case StringType:
+		return "STRING"
+	case BoolType:
+		return "BOOL"
+	}
+
+	return ""
+}
+
+// ValueType enums
+const (
+	NoneType = ValueType(iota)
+	DecimalType
+	IntegerType
+	StringType
+	QuotedStringType
+	BoolType
+)
+
+// Value is a union container
+type Value struct {
+	Type ValueType
+	raw  []rune
+
+	integer int64
+	decimal float64
+	boolean bool
+	str     string
+}
+
+func newValue(t ValueType, base int, raw []rune) (Value, error) {
+	v := Value{
+		Type: t,
+		raw:  raw,
+	}
+	var err error
+
+	switch t {
+	case DecimalType:
+		v.decimal, err = strconv.ParseFloat(string(raw), 64)
+	case IntegerType:
+		if base != 10 {
+			raw = raw[2:]
+		}
+
+		v.integer, err = strconv.ParseInt(string(raw), base, 64)
+	case StringType:
+		v.str = string(raw)
+	case QuotedStringType:
+		v.str = string(raw[1 : len(raw)-1])
+	case BoolType:
+		v.boolean = runeCompare(v.raw, runesTrue)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	// issue 2253

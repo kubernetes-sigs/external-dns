@@ -98,6 +98,7 @@ type RESTClient struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// warningHandler is shared among all requests created by this client.
 	// If not set, defaultWarningHandler is used.
 	warningHandler WarningHandler
@@ -224,6 +225,39 @@ func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ClientConte
 =======
 // GetRateLimiter returns rate limiter for a given client, or nil if it's called on a nil client
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Set specific behavior of the client.  If not set http.DefaultClient will be used.
+	Client *http.Client
+}
+
+// NewRESTClient creates a new RESTClient. This client performs generic REST functions
+// such as Get, Put, Post, and Delete on specified paths.
+func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ClientContentConfig, rateLimiter flowcontrol.RateLimiter, client *http.Client) (*RESTClient, error) {
+	if len(config.ContentType) == 0 {
+		config.ContentType = "application/json"
+	}
+
+	base := *baseURL
+	if !strings.HasSuffix(base.Path, "/") {
+		base.Path += "/"
+	}
+	base.RawQuery = ""
+	base.Fragment = ""
+
+	return &RESTClient{
+		base:             &base,
+		versionedAPIPath: versionedAPIPath,
+		content:          config,
+		createBackoffMgr: readExpBackoffConfig,
+		rateLimiter:      rateLimiter,
+
+		Client: client,
+	}, nil
+}
+
+// GetRateLimiter returns rate limier for a given client, or nil if it's called on a nil client
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *RESTClient) GetRateLimiter() flowcontrol.RateLimiter {
 	if c == nil {
 		return nil

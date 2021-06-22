@@ -65,6 +65,7 @@ func (vol Volume) ListRequest() (ListCommand, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		ID:               vol.ID,
 		Name:             vol.Name,
 		Type:             vol.Type,
@@ -196,6 +197,47 @@ type ListVolumes struct {
 	PageSize         int           `json:"pagesize,omitempty"`
 	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		Name:             vol.Name,
+		Type:             vol.Type,
+		VirtualMachineID: vol.VirtualMachineID,
+		ZoneID:           vol.ZoneID,
+	}
+
+	return req, nil
+}
+
+// ResizeVolume (Async) resizes a volume
+type ResizeVolume struct {
+	ID             *UUID `json:"id" doc:"the ID of the disk volume"`
+	DiskOfferingID *UUID `json:"diskofferingid,omitempty" doc:"new disk offering id"`
+	Size           int64 `json:"size,omitempty" doc:"New volume size in G (must be larger than current size since shrinking the disk is not supported)"`
+	_              bool  `name:"resizeVolume" description:"Resizes a volume"`
+}
+
+// Response returns the struct to unmarshal
+func (ResizeVolume) Response() interface{} {
+	return new(AsyncJobResult)
+}
+
+// AsyncResponse returns the struct to unmarshal the async job
+func (ResizeVolume) AsyncResponse() interface{} {
+	return new(Volume)
+}
+
+//go:generate go run generate/main.go -interface=Listable ListVolumes
+
+// ListVolumes represents a query listing volumes
+type ListVolumes struct {
+	DiskOfferingID   *UUID         `json:"diskofferingid,omitempty" doc:"List volumes by disk offering"`
+	ID               *UUID         `json:"id,omitempty" doc:"The ID of the disk volume"`
+	Keyword          string        `json:"keyword,omitempty" doc:"List by keyword"`
+	Name             string        `json:"name,omitempty" doc:"The name of the disk volume"`
+	Page             int           `json:"page,omitempty"`
+	PageSize         int           `json:"pagesize,omitempty"`
+	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Type             string        `json:"type,omitempty" doc:"The type of disk volume"`
 	VirtualMachineID *UUID         `json:"virtualmachineid,omitempty" doc:"The ID of the virtual machine"`
 	ZoneID           *UUID         `json:"zoneid,omitempty" doc:"The ID of the availability zone"`

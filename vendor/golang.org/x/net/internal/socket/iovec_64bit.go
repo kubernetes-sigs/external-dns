@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (arm64 || amd64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && (aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || zos)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -24,6 +25,10 @@
 //go:build (arm64 || amd64 || loong64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && (aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || zos)
 // +build arm64 amd64 loong64 ppc64 ppc64le mips64 mips64le riscv64 s390x
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build arm64 amd64 ppc64 ppc64le mips64 mips64le riscv64 s390x
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build aix darwin dragonfly freebsd linux netbsd openbsd zos
 
 package socket

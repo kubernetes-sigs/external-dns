@@ -21,6 +21,7 @@ import (
 )
 
 // ChangeDomainOfDnsProduct invokes the alidns.ChangeDomainOfDnsProduct API synchronously
+<<<<<<< HEAD
 func (client *Client) ChangeDomainOfDnsProduct(request *ChangeDomainOfDnsProductRequest) (response *ChangeDomainOfDnsProductResponse, err error) {
 	response = CreateChangeDomainOfDnsProductResponse()
 	err = client.DoAction(request, response)
@@ -92,6 +93,84 @@ func CreateChangeDomainOfDnsProductRequest() (request *ChangeDomainOfDnsProductR
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ChangeDomainOfDnsProduct", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
+func (client *Client) ChangeDomainOfDnsProduct(request *ChangeDomainOfDnsProductRequest) (response *ChangeDomainOfDnsProductResponse, err error) {
+	response = CreateChangeDomainOfDnsProductResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// ChangeDomainOfDnsProductWithChan invokes the alidns.ChangeDomainOfDnsProduct API asynchronously
+// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ChangeDomainOfDnsProductWithChan(request *ChangeDomainOfDnsProductRequest) (<-chan *ChangeDomainOfDnsProductResponse, <-chan error) {
+	responseChan := make(chan *ChangeDomainOfDnsProductResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.ChangeDomainOfDnsProduct(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// ChangeDomainOfDnsProductWithCallback invokes the alidns.ChangeDomainOfDnsProduct API asynchronously
+// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ChangeDomainOfDnsProductWithCallback(request *ChangeDomainOfDnsProductRequest, callback func(response *ChangeDomainOfDnsProductResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *ChangeDomainOfDnsProductResponse
+		var err error
+		defer close(result)
+		response, err = client.ChangeDomainOfDnsProduct(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// ChangeDomainOfDnsProductRequest is the request struct for api ChangeDomainOfDnsProduct
+type ChangeDomainOfDnsProductRequest struct {
+	*requests.RpcRequest
+	InstanceId   string           `position:"Query" name:"InstanceId"`
+	NewDomain    string           `position:"Query" name:"NewDomain"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Force        requests.Boolean `position:"Query" name:"Force"`
+	Lang         string           `position:"Query" name:"Lang"`
+}
+
+// ChangeDomainOfDnsProductResponse is the response struct for api ChangeDomainOfDnsProduct
+type ChangeDomainOfDnsProductResponse struct {
+	*responses.BaseResponse
+	RequestId      string `json:"RequestId" xml:"RequestId"`
+	OriginalDomain string `json:"OriginalDomain" xml:"OriginalDomain"`
+}
+
+// CreateChangeDomainOfDnsProductRequest creates a request to invoke ChangeDomainOfDnsProduct API
+func CreateChangeDomainOfDnsProductRequest() (request *ChangeDomainOfDnsProductRequest) {
+	request = &ChangeDomainOfDnsProductRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "ChangeDomainOfDnsProduct", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

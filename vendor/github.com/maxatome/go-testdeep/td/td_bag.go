@@ -26,6 +26,7 @@ package td
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 //   // works with slices/arrays of any type
 //   td.Cmp(t, personSlice, td.Bag(
@@ -379,4 +380,51 @@ func SuperBagOf(expectedItems ...interface{}) TestDeep {
 =======
 	return newSetBase(superSet, false, expectedItems)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func Bag(expectedItems ...interface{}) TestDeep {
+	bag := newSetBase(allSet, false)
+	bag.Add(expectedItems...)
+	return &bag
+}
+
+// summary(SubBagOf): compares the contents of an array or a slice
+// without taking care of the order of items but with potentially some
+// exclusions
+// input(SubBagOf): array,slice,ptr(ptr on array/slice)
+
+// SubBagOf operator compares the contents of an array or a slice (or a
+// pointer on array/slice) without taking care of the order of items.
+//
+// During a match, each array/slice item should be matched by an
+// expected item to succeed. But some expected items can be missing
+// from the compared array/slice.
+//
+//   td.Cmp(t, []int{1}, td.SubBagOf(1, 1, 2))       // succeeds
+//   td.Cmp(t, []int{1, 1, 1}, td.SubBagOf(1, 1, 2)) // fails, one 1 is an extra item
+func SubBagOf(expectedItems ...interface{}) TestDeep {
+	bag := newSetBase(subSet, false)
+	bag.Add(expectedItems...)
+	return &bag
+}
+
+// summary(SuperBagOf): compares the contents of an array or a slice
+// without taking care of the order of items but with potentially some
+// extra items
+// input(SuperBagOf): array,slice,ptr(ptr on array/slice)
+
+// SuperBagOf operator compares the contents of an array or a slice (or a
+// pointer on array/slice) without taking care of the order of items.
+//
+// During a match, each expected item should match in the compared
+// array/slice. But some items in the compared array/slice may not be
+// expected.
+//
+//   td.Cmp(t, []int{1, 1, 2}, td.SuperBagOf(1))       // succeeds
+//   td.Cmp(t, []int{1, 1, 2}, td.SuperBagOf(1, 1, 1)) // fails, one 1 is missing
+func SuperBagOf(expectedItems ...interface{}) TestDeep {
+	bag := newSetBase(superSet, false)
+	bag.Add(expectedItems...)
+	return &bag
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

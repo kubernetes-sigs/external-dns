@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // credentials, service accounts, Google Compute Engine service accounts,
 // Google App Engine service accounts and workload identity federation
 // from non-Google cloud platforms.
@@ -217,6 +218,33 @@
 // OpenID Connect (OIDC). Workload identity federation is recommended for
 // non-Google Cloud environments as it avoids the need to download, manage and
 // store service account private keys locally.
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// credentials, service accounts, Google Compute Engine service accounts, and Google
+// App Engine service accounts.
+//
+// A brief overview of the package follows. For more information, please read
+// https://developers.google.com/accounts/docs/OAuth2
+// and
+// https://developers.google.com/accounts/docs/application-default-credentials.
+//
+// OAuth2 Configs
+//
+// Two functions in this package return golang.org/x/oauth2.Config values from Google credential
+// data. Google supports two JSON formats for OAuth2 credentials: one is handled by ConfigFromJSON,
+// the other by JWTConfigFromJSON. The returned Config can be used to obtain a TokenSource or
+// create an http.Client.
+//
+//
+// Credentials
+//
+// The Credentials type represents Google credentials, including Application Default
+// Credentials.
+//
+// Use FindDefaultCredentials to obtain Application Default Credentials.
+// FindDefaultCredentials looks in some well-known places for a credentials file, and
+// will call AppEngineTokenSource or ComputeTokenSource as needed.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // DefaultClient and DefaultTokenSource are convenience methods. They first call FindDefaultCredentials,
 // then use the credentials to construct an http.Client or an oauth2.TokenSource.

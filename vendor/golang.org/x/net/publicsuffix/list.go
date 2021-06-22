@@ -33,10 +33,17 @@
 // the last two are not (but share the same eTLD+1: "google.com").
 //
 // All of these domains have the same eTLD+1:
+<<<<<<< HEAD
 //   - "www.books.amazon.co.uk"
 //   - "books.amazon.co.uk"
 //   - "amazon.co.uk"
 //
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//  - "www.books.amazon.co.uk"
+//  - "books.amazon.co.uk"
+//  - "amazon.co.uk"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // Specifically, the eTLD+1 is "amazon.co.uk", because the eTLD is "co.uk".
 //
 // There is no closed form algorithm to calculate the eTLD of a domain.

@@ -74,6 +74,7 @@ func (key tsigHMACProvider) Verify(msg []byte, t *TSIG) error {
 	return nil
 }
 
+<<<<<<< HEAD
 type tsigSecretProvider map[string]string
 
 func (ts tsigSecretProvider) Generate(msg []byte, t *TSIG) ([]byte, error) {
@@ -203,6 +204,111 @@ func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, time
 		t.MAC = hex.EncodeToString(mac)
 		t.MACSize = uint16(len(t.MAC) / 2) // Size is half!
 	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// TSIG is the RR the holds the transaction signature of a message.
+// See RFC 2845 and RFC 4635.
+type TSIG struct {
+	Hdr        RR_Header
+	Algorithm  string `dns:"domain-name"`
+	TimeSigned uint64 `dns:"uint48"`
+	Fudge      uint16
+	MACSize    uint16
+	MAC        string `dns:"size-hex:MACSize"`
+	OrigId     uint16
+	Error      uint16
+	OtherLen   uint16
+	OtherData  string `dns:"size-hex:OtherLen"`
+}
+
+// TSIG has no official presentation format, but this will suffice.
+
+func (rr *TSIG) String() string {
+	s := "\n;; TSIG PSEUDOSECTION:\n; " // add another semi-colon to signify TSIG does not have a presentation format
+	s += rr.Hdr.String() +
+		" " + rr.Algorithm +
+		" " + tsigTimeToString(rr.TimeSigned) +
+		" " + strconv.Itoa(int(rr.Fudge)) +
+		" " + strconv.Itoa(int(rr.MACSize)) +
+		" " + strings.ToUpper(rr.MAC) +
+		" " + strconv.Itoa(int(rr.OrigId)) +
+		" " + strconv.Itoa(int(rr.Error)) + // BIND prints NOERROR
+		" " + strconv.Itoa(int(rr.OtherLen)) +
+		" " + rr.OtherData
+	return s
+}
+
+func (rr *TSIG) parse(c *zlexer, origin string) *ParseError {
+	panic("dns: internal error: parse should never be called on TSIG")
+}
+
+// The following values must be put in wireformat, so that the MAC can be calculated.
+// RFC 2845, section 3.4.2. TSIG Variables.
+type tsigWireFmt struct {
+	// From RR_Header
+	Name  string `dns:"domain-name"`
+	Class uint16
+	Ttl   uint32
+	// Rdata of the TSIG
+	Algorithm  string `dns:"domain-name"`
+	TimeSigned uint64 `dns:"uint48"`
+	Fudge      uint16
+	// MACSize, MAC and OrigId excluded
+	Error     uint16
+	OtherLen  uint16
+	OtherData string `dns:"size-hex:OtherLen"`
+}
+
+// If we have the MAC use this type to convert it to wiredata. Section 3.4.3. Request MAC
+type macWireFmt struct {
+	MACSize uint16
+	MAC     string `dns:"size-hex:MACSize"`
+}
+
+// 3.3. Time values used in TSIG calculations
+type timerWireFmt struct {
+	TimeSigned uint64 `dns:"uint48"`
+	Fudge      uint16
+}
+
+// TsigGenerate fills out the TSIG record attached to the message.
+// The message should contain
+// a "stub" TSIG RR with the algorithm, key name (owner name of the RR),
+// time fudge (defaults to 300 seconds) and the current time
+// The TSIG MAC is saved in that Tsig RR.
+// When TsigGenerate is called for the first time requestMAC is set to the empty string and
+// timersOnly is false.
+// If something goes wrong an error is returned, otherwise it is nil.
+func TsigGenerate(m *Msg, secret, requestMAC string, timersOnly bool) ([]byte, string, error) {
+	return tsigGenerateProvider(m, tsigHMACProvider(secret), requestMAC, timersOnly)
+}
+
+func tsigGenerateProvider(m *Msg, provider TsigProvider, requestMAC string, timersOnly bool) ([]byte, string, error) {
+	if m.IsTsig() == nil {
+		panic("dns: TSIG not last RR in additional")
+	}
+
+	rr := m.Extra[len(m.Extra)-1].(*TSIG)
+	m.Extra = m.Extra[0 : len(m.Extra)-1] // kill the TSIG from the msg
+	mbuf, err := m.Pack()
+	if err != nil {
+		return nil, "", err
+	}
+	buf, err := tsigBuffer(mbuf, rr, requestMAC, timersOnly)
+	if err != nil {
+		return nil, "", err
+	}
+
+	t := new(TSIG)
+	// Copy all TSIG fields except MAC and its size, which are filled using the computed digest.
+	*t = *rr
+	mac, err := provider.Generate(buf, rr)
+	if err != nil {
+		return nil, "", err
+	}
+	t.MAC = hex.EncodeToString(mac)
+	t.MACSize = uint16(len(t.MAC) / 2) // Size is half!
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	tbuf := make([]byte, Len(t))
 	off, err := PackRR(t, tbuf, 0, nil, false)

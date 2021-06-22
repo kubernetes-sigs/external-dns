@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/authentication/v1"
@@ -63,6 +64,35 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AuthenticationV1Cli
 		return nil, err
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1 "k8s.io/api/authentication/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type AuthenticationV1Interface interface {
+	RESTClient() rest.Interface
+	TokenReviewsGetter
+}
+
+// AuthenticationV1Client is used to interact with features provided by the authentication.k8s.io group.
+type AuthenticationV1Client struct {
+	restClient rest.Interface
+}
+
+func (c *AuthenticationV1Client) TokenReviews() TokenReviewInterface {
+	return newTokenReviews(c)
+}
+
+// NewForConfig creates a new AuthenticationV1Client for the given config.
+func NewForConfig(c *rest.Config) (*AuthenticationV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

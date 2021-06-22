@@ -35,6 +35,7 @@ func (e noWrapper) FormatError(p Printer) (next error) {
 
 // Unwrap returns the result of calling the Unwrap method on err, if err implements
 // Unwrap. Otherwise, Unwrap returns nil.
+<<<<<<< HEAD
 //
 // Deprecated: As of Go 1.13, use errors.Unwrap instead.
 func Unwrap(err error) error {
@@ -83,6 +84,51 @@ func Is(err, target error) bool {
 // matches the type to which target points.
 //
 // Deprecated: As of Go 1.13, use errors.As instead.
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func Unwrap(err error) error {
+	u, ok := err.(Wrapper)
+	if !ok {
+		return nil
+	}
+	return u.Unwrap()
+}
+
+// Is reports whether any error in err's chain matches target.
+//
+// An error is considered to match a target if it is equal to that target or if
+// it implements a method Is(error) bool such that Is(target) returns true.
+func Is(err, target error) bool {
+	if target == nil {
+		return err == target
+	}
+
+	isComparable := reflect.TypeOf(target).Comparable()
+	for {
+		if isComparable && err == target {
+			return true
+		}
+		if x, ok := err.(interface{ Is(error) bool }); ok && x.Is(target) {
+			return true
+		}
+		// TODO: consider supporing target.Is(err). This would allow
+		// user-definable predicates, but also may allow for coping with sloppy
+		// APIs, thereby making it easier to get away with them.
+		if err = Unwrap(err); err == nil {
+			return false
+		}
+	}
+}
+
+// As finds the first error in err's chain that matches the type to which target
+// points, and if so, sets the target to its value and returns true. An error
+// matches a type if it is assignable to the target type, or if it has a method
+// As(interface{}) bool such that As(target) returns true. As will panic if target
+// is not a non-nil pointer to a type which implements error or is of interface type.
+//
+// The As method should set the target to its value and return true if err
+// matches the type to which target points.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func As(err error, target interface{}) bool {
 	if target == nil {
 		panic("errors: target cannot be nil")

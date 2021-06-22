@@ -81,6 +81,7 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		su := mi.getUnknownBytes(src)
 		if su != nil && len(*su) > 0 {
 			du := mi.mutableUnknownBytes(dst)
@@ -114,6 +115,12 @@ func (mi *MessageInfo) mergePointer(dst, src pointer, opts mergeOptions) {
 		if su != nil && len(*su) > 0 {
 			du := mi.mutableUnknownBytes(dst)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		du := dst.Apply(mi.unknownOffset).Bytes()
+		su := src.Apply(mi.unknownOffset).Bytes()
+		if len(*su) > 0 {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			*du = append(*du, *su...)
 		}
 	}

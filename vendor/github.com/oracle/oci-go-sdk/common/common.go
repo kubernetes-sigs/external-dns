@@ -23,6 +23,7 @@ const (
 
 	//RegionSEA region SEA
 	RegionSEA Region = "sea"
+<<<<<<< HEAD
 	//RegionCAToronto1 region for Toronto
 	RegionCAToronto1 Region = "ca-toronto-1"
 	//RegionCAMontreal1 region for Montreal
@@ -158,6 +159,130 @@ var regionRealm = map[Region]string{
 	RegionUKGovLondon1:  "oc4",
 
 	RegionAPChiyoda1: "oc8",
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	//RegionCAToronto1 region for toronto
+	RegionCAToronto1 Region = "ca-toronto-1"
+	//RegionCAMontreal1 region for Montreal
+	RegionCAMontreal1 Region = "ca-montreal-1"
+	//RegionPHX region PHX
+	RegionPHX Region = "us-phoenix-1"
+	//RegionIAD region IAD
+	RegionIAD Region = "us-ashburn-1"
+	//RegionFRA region FRA
+	RegionFRA Region = "eu-frankfurt-1"
+	//RegionLHR region LHR
+	RegionLHR Region = "uk-london-1"
+	//RegionAPTokyo1 region for tokyo
+	RegionAPTokyo1 Region = "ap-tokyo-1"
+	//RegionAPOsaka1 region for Osaka
+	RegionAPOsaka1 Region = "ap-osaka-1"
+	//RegionAPSeoul1 region for seoul
+	RegionAPSeoul1 Region = "ap-seoul-1"
+	//RegionAPChuncheon1 region for Chuncheon
+	RegionAPChuncheon1 Region = "ap-chuncheon-1"
+	//RegionAPMumbai1 region for mumbai
+	RegionAPMumbai1 Region = "ap-mumbai-1"
+	//RegionAPHyderabad1 region for Hyderabad
+	RegionAPHyderabad1 Region = "ap-hyderabad-1"
+	//RegionAPMelbourne1 region for Melbourne
+	RegionAPMelbourne1 Region = "ap-melbourne-1"
+	//RegionAPSydney1 region for Sydney
+	RegionAPSydney1 Region = "ap-sydney-1"
+	//RegionMEJeddah1 region for Jeddah
+	RegionMEJeddah1 Region = "me-jeddah-1"
+	//RegionEUZurich1 region for Zurich
+	RegionEUZurich1 Region = "eu-zurich-1"
+	//RegionEUAmsterdam1 region for Amsterdam
+	RegionEUAmsterdam1 Region = "eu-amsterdam-1"
+	//RegionSASaopaulo1 region for Sao Paulo
+	RegionSASaopaulo1 Region = "sa-saopaulo-1"
+
+	//RegionUSLangley1 region for langley
+	RegionUSLangley1 Region = "us-langley-1"
+	//RegionUSLuke1 region for luke
+	RegionUSLuke1 Region = "us-luke-1"
+
+	//RegionUSGovAshburn1 region for langley
+	RegionUSGovAshburn1 Region = "us-gov-ashburn-1"
+	//RegionUSGovChicago1 region for luke
+	RegionUSGovChicago1 Region = "us-gov-chicago-1"
+	//RegionUSGovPhoenix1 region for luke
+	RegionUSGovPhoenix1 Region = "us-gov-phoenix-1"
+	//RegionUKGovLondon1 gov region London
+	RegionUKGovLondon1 Region = "uk-gov-london-1"
+
+	// Region Metadata Configuration File
+	regionMetadataCfgDirName  = ".oci"
+	regionMetadataCfgFileName = "regions-config.json"
+
+	// Region Metadata Environment Variable
+	regionMetadataEnvVarName = "OCI_REGION_METADATA"
+
+	// Region Metadata
+	regionIdentifierPropertyName     = "regionIdentifier"     // e.g. "ap-sydney-1"
+	realmKeyPropertyName             = "realmKey"             // e.g. "oc1"
+	realmDomainComponentPropertyName = "realmDomainComponent" // e.g. "oraclecloud.com"
+	regionKeyPropertyName            = "regionKey"            // e.g. "SYD"
+)
+
+var shortNameRegion = map[string]Region{
+	"sea": RegionSEA,
+	"phx": RegionPHX,
+	"iad": RegionIAD,
+	"fra": RegionFRA,
+	"lhr": RegionLHR,
+	"ams": RegionEUAmsterdam1,
+	"zrh": RegionEUZurich1,
+	"mel": RegionAPMelbourne1,
+	"bom": RegionAPMumbai1,
+	"hyd": RegionAPHyderabad1,
+	"gru": RegionSASaopaulo1,
+	"icn": RegionAPSeoul1,
+	"yny": RegionAPChuncheon1,
+	"nrt": RegionAPTokyo1,
+	"kix": RegionAPOsaka1,
+	"yul": RegionCAMontreal1,
+	"yyz": RegionCAToronto1,
+	"jed": RegionMEJeddah1,
+	"syd": RegionAPSydney1,
+	"ltn": RegionUKGovLondon1,
+}
+
+var realm = map[string]string{
+	"oc1": "oraclecloud.com",
+	"oc2": "oraclegovcloud.com",
+	"oc3": "oraclegovcloud.com",
+	"oc4": "oraclegovcloud.uk",
+}
+
+var regionRealm = map[Region]string{
+	RegionPHX:          "oc1",
+	RegionIAD:          "oc1",
+	RegionFRA:          "oc1",
+	RegionLHR:          "oc1",
+	RegionCAToronto1:   "oc1",
+	RegionCAMontreal1:  "oc1",
+	RegionAPTokyo1:     "oc1",
+	RegionAPOsaka1:     "oc1",
+	RegionAPSeoul1:     "oc1",
+	RegionAPChuncheon1: "oc1",
+	RegionAPSydney1:    "oc1",
+	RegionAPMumbai1:    "oc1",
+	RegionAPHyderabad1: "oc1",
+	RegionAPMelbourne1: "oc1",
+	RegionMEJeddah1:    "oc1",
+	RegionEUZurich1:    "oc1",
+	RegionEUAmsterdam1: "oc1",
+	RegionSASaopaulo1:  "oc1",
+
+	RegionUSLangley1:    "oc2",
+	RegionUSLuke1:       "oc2",
+	RegionUSGovAshburn1: "oc3",
+	RegionUSGovChicago1: "oc3",
+	RegionUSGovPhoenix1: "oc3",
+	RegionUKGovLondon1:  "oc4",
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // External region metadata info flag, used to control adding these metadata region info only once.

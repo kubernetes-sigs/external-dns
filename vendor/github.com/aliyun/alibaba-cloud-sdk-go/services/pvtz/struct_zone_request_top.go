@@ -18,7 +18,11 @@ package pvtz
 // ZoneRequestTop is a nested struct in pvtz response
 type ZoneRequestTop struct {
 	Time         string `json:"Time" xml:"Time"`
+<<<<<<< HEAD
 	BizType      string `json:"BizType" xml:"BizType"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	RequestCount int64  `json:"RequestCount" xml:"RequestCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
 	ZoneName     string `json:"ZoneName" xml:"ZoneName"`

@@ -11,6 +11,7 @@ package gcimporter
 import (
 	"bytes"
 	"encoding/binary"
+<<<<<<< HEAD
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -774,6 +775,504 @@ func (w *exportWriter) value(typ types.Type, v constant.Value) {
 // big.Float.
 func constantToFloat(x constant.Value) *big.Float {
 	x = constant.ToFloat(x)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"go/ast"
+	"go/constant"
+	"go/token"
+	"go/types"
+	"io"
+	"math/big"
+	"reflect"
+	"sort"
+)
+
+// Current indexed export format version. Increase with each format change.
+// 0: Go1.11 encoding
+const iexportVersion = 0
+
+// IExportData returns the binary export data for pkg.
+//
+// If no file set is provided, position info will be missing.
+// The package path of the top-level package will not be recorded,
+// so that calls to IImportData can override with a provided package path.
+func IExportData(fset *token.FileSet, pkg *types.Package) (b []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			if ierr, ok := e.(internalError); ok {
+				err = ierr
+				return
+			}
+			// Not an internal error; panic again.
+			panic(e)
+		}
+	}()
+
+	p := iexporter{
+		out:         bytes.NewBuffer(nil),
+		fset:        fset,
+		allPkgs:     map[*types.Package]bool{},
+		stringIndex: map[string]uint64{},
+		declIndex:   map[types.Object]uint64{},
+		typIndex:    map[types.Type]uint64{},
+		localpkg:    pkg,
+	}
+
+	for i, pt := range predeclared() {
+		p.typIndex[pt] = uint64(i)
+	}
+	if len(p.typIndex) > predeclReserved {
+		panic(internalErrorf("too many predeclared types: %d > %d", len(p.typIndex), predeclReserved))
+	}
+
+	// Initialize work queue with exported declarations.
+	scope := pkg.Scope()
+	for _, name := range scope.Names() {
+		if ast.IsExported(name) {
+			p.pushDecl(scope.Lookup(name))
+		}
+	}
+
+	// Loop until no more work.
+	for !p.declTodo.empty() {
+		p.doDecl(p.declTodo.popHead())
+	}
+
+	// Append indices to data0 section.
+	dataLen := uint64(p.data0.Len())
+	w := p.newWriter()
+	w.writeIndex(p.declIndex)
+	w.flush()
+
+	// Assemble header.
+	var hdr intWriter
+	hdr.WriteByte('i')
+	hdr.uint64(iexportVersion)
+	hdr.uint64(uint64(p.strings.Len()))
+	hdr.uint64(dataLen)
+
+	// Flush output.
+	io.Copy(p.out, &hdr)
+	io.Copy(p.out, &p.strings)
+	io.Copy(p.out, &p.data0)
+
+	return p.out.Bytes(), nil
+}
+
+// writeIndex writes out an object index. mainIndex indicates whether
+// we're writing out the main index, which is also read by
+// non-compiler tools and includes a complete package description
+// (i.e., name and height).
+func (w *exportWriter) writeIndex(index map[types.Object]uint64) {
+	// Build a map from packages to objects from that package.
+	pkgObjs := map[*types.Package][]types.Object{}
+
+	// For the main index, make sure to include every package that
+	// we reference, even if we're not exporting (or reexporting)
+	// any symbols from it.
+	pkgObjs[w.p.localpkg] = nil
+	for pkg := range w.p.allPkgs {
+		pkgObjs[pkg] = nil
+	}
+
+	for obj := range index {
+		pkgObjs[obj.Pkg()] = append(pkgObjs[obj.Pkg()], obj)
+	}
+
+	var pkgs []*types.Package
+	for pkg, objs := range pkgObjs {
+		pkgs = append(pkgs, pkg)
+
+		sort.Slice(objs, func(i, j int) bool {
+			return objs[i].Name() < objs[j].Name()
+		})
+	}
+
+	sort.Slice(pkgs, func(i, j int) bool {
+		return w.exportPath(pkgs[i]) < w.exportPath(pkgs[j])
+	})
+
+	w.uint64(uint64(len(pkgs)))
+	for _, pkg := range pkgs {
+		w.string(w.exportPath(pkg))
+		w.string(pkg.Name())
+		w.uint64(uint64(0)) // package height is not needed for go/types
+
+		objs := pkgObjs[pkg]
+		w.uint64(uint64(len(objs)))
+		for _, obj := range objs {
+			w.string(obj.Name())
+			w.uint64(index[obj])
+		}
+	}
+}
+
+type iexporter struct {
+	fset *token.FileSet
+	out  *bytes.Buffer
+
+	localpkg *types.Package
+
+	// allPkgs tracks all packages that have been referenced by
+	// the export data, so we can ensure to include them in the
+	// main index.
+	allPkgs map[*types.Package]bool
+
+	declTodo objQueue
+
+	strings     intWriter
+	stringIndex map[string]uint64
+
+	data0     intWriter
+	declIndex map[types.Object]uint64
+	typIndex  map[types.Type]uint64
+}
+
+// stringOff returns the offset of s within the string section.
+// If not already present, it's added to the end.
+func (p *iexporter) stringOff(s string) uint64 {
+	off, ok := p.stringIndex[s]
+	if !ok {
+		off = uint64(p.strings.Len())
+		p.stringIndex[s] = off
+
+		p.strings.uint64(uint64(len(s)))
+		p.strings.WriteString(s)
+	}
+	return off
+}
+
+// pushDecl adds n to the declaration work queue, if not already present.
+func (p *iexporter) pushDecl(obj types.Object) {
+	// Package unsafe is known to the compiler and predeclared.
+	assert(obj.Pkg() != types.Unsafe)
+
+	if _, ok := p.declIndex[obj]; ok {
+		return
+	}
+
+	p.declIndex[obj] = ^uint64(0) // mark n present in work queue
+	p.declTodo.pushTail(obj)
+}
+
+// exportWriter handles writing out individual data section chunks.
+type exportWriter struct {
+	p *iexporter
+
+	data     intWriter
+	currPkg  *types.Package
+	prevFile string
+	prevLine int64
+}
+
+func (w *exportWriter) exportPath(pkg *types.Package) string {
+	if pkg == w.p.localpkg {
+		return ""
+	}
+	return pkg.Path()
+}
+
+func (p *iexporter) doDecl(obj types.Object) {
+	w := p.newWriter()
+	w.setPkg(obj.Pkg(), false)
+
+	switch obj := obj.(type) {
+	case *types.Var:
+		w.tag('V')
+		w.pos(obj.Pos())
+		w.typ(obj.Type(), obj.Pkg())
+
+	case *types.Func:
+		sig, _ := obj.Type().(*types.Signature)
+		if sig.Recv() != nil {
+			panic(internalErrorf("unexpected method: %v", sig))
+		}
+		w.tag('F')
+		w.pos(obj.Pos())
+		w.signature(sig)
+
+	case *types.Const:
+		w.tag('C')
+		w.pos(obj.Pos())
+		w.value(obj.Type(), obj.Val())
+
+	case *types.TypeName:
+		if obj.IsAlias() {
+			w.tag('A')
+			w.pos(obj.Pos())
+			w.typ(obj.Type(), obj.Pkg())
+			break
+		}
+
+		// Defined type.
+		w.tag('T')
+		w.pos(obj.Pos())
+
+		underlying := obj.Type().Underlying()
+		w.typ(underlying, obj.Pkg())
+
+		t := obj.Type()
+		if types.IsInterface(t) {
+			break
+		}
+
+		named, ok := t.(*types.Named)
+		if !ok {
+			panic(internalErrorf("%s is not a defined type", t))
+		}
+
+		n := named.NumMethods()
+		w.uint64(uint64(n))
+		for i := 0; i < n; i++ {
+			m := named.Method(i)
+			w.pos(m.Pos())
+			w.string(m.Name())
+			sig, _ := m.Type().(*types.Signature)
+			w.param(sig.Recv())
+			w.signature(sig)
+		}
+
+	default:
+		panic(internalErrorf("unexpected object: %v", obj))
+	}
+
+	p.declIndex[obj] = w.flush()
+}
+
+func (w *exportWriter) tag(tag byte) {
+	w.data.WriteByte(tag)
+}
+
+func (w *exportWriter) pos(pos token.Pos) {
+	if w.p.fset == nil {
+		w.int64(0)
+		return
+	}
+
+	p := w.p.fset.Position(pos)
+	file := p.Filename
+	line := int64(p.Line)
+
+	// When file is the same as the last position (common case),
+	// we can save a few bytes by delta encoding just the line
+	// number.
+	//
+	// Note: Because data objects may be read out of order (or not
+	// at all), we can only apply delta encoding within a single
+	// object. This is handled implicitly by tracking prevFile and
+	// prevLine as fields of exportWriter.
+
+	if file == w.prevFile {
+		delta := line - w.prevLine
+		w.int64(delta)
+		if delta == deltaNewFile {
+			w.int64(-1)
+		}
+	} else {
+		w.int64(deltaNewFile)
+		w.int64(line) // line >= 0
+		w.string(file)
+		w.prevFile = file
+	}
+	w.prevLine = line
+}
+
+func (w *exportWriter) pkg(pkg *types.Package) {
+	// Ensure any referenced packages are declared in the main index.
+	w.p.allPkgs[pkg] = true
+
+	w.string(w.exportPath(pkg))
+}
+
+func (w *exportWriter) qualifiedIdent(obj types.Object) {
+	// Ensure any referenced declarations are written out too.
+	w.p.pushDecl(obj)
+
+	w.string(obj.Name())
+	w.pkg(obj.Pkg())
+}
+
+func (w *exportWriter) typ(t types.Type, pkg *types.Package) {
+	w.data.uint64(w.p.typOff(t, pkg))
+}
+
+func (p *iexporter) newWriter() *exportWriter {
+	return &exportWriter{p: p}
+}
+
+func (w *exportWriter) flush() uint64 {
+	off := uint64(w.p.data0.Len())
+	io.Copy(&w.p.data0, &w.data)
+	return off
+}
+
+func (p *iexporter) typOff(t types.Type, pkg *types.Package) uint64 {
+	off, ok := p.typIndex[t]
+	if !ok {
+		w := p.newWriter()
+		w.doTyp(t, pkg)
+		off = predeclReserved + w.flush()
+		p.typIndex[t] = off
+	}
+	return off
+}
+
+func (w *exportWriter) startType(k itag) {
+	w.data.uint64(uint64(k))
+}
+
+func (w *exportWriter) doTyp(t types.Type, pkg *types.Package) {
+	switch t := t.(type) {
+	case *types.Named:
+		w.startType(definedType)
+		w.qualifiedIdent(t.Obj())
+
+	case *types.Pointer:
+		w.startType(pointerType)
+		w.typ(t.Elem(), pkg)
+
+	case *types.Slice:
+		w.startType(sliceType)
+		w.typ(t.Elem(), pkg)
+
+	case *types.Array:
+		w.startType(arrayType)
+		w.uint64(uint64(t.Len()))
+		w.typ(t.Elem(), pkg)
+
+	case *types.Chan:
+		w.startType(chanType)
+		// 1 RecvOnly; 2 SendOnly; 3 SendRecv
+		var dir uint64
+		switch t.Dir() {
+		case types.RecvOnly:
+			dir = 1
+		case types.SendOnly:
+			dir = 2
+		case types.SendRecv:
+			dir = 3
+		}
+		w.uint64(dir)
+		w.typ(t.Elem(), pkg)
+
+	case *types.Map:
+		w.startType(mapType)
+		w.typ(t.Key(), pkg)
+		w.typ(t.Elem(), pkg)
+
+	case *types.Signature:
+		w.startType(signatureType)
+		w.setPkg(pkg, true)
+		w.signature(t)
+
+	case *types.Struct:
+		w.startType(structType)
+		w.setPkg(pkg, true)
+
+		n := t.NumFields()
+		w.uint64(uint64(n))
+		for i := 0; i < n; i++ {
+			f := t.Field(i)
+			w.pos(f.Pos())
+			w.string(f.Name())
+			w.typ(f.Type(), pkg)
+			w.bool(f.Anonymous())
+			w.string(t.Tag(i)) // note (or tag)
+		}
+
+	case *types.Interface:
+		w.startType(interfaceType)
+		w.setPkg(pkg, true)
+
+		n := t.NumEmbeddeds()
+		w.uint64(uint64(n))
+		for i := 0; i < n; i++ {
+			f := t.Embedded(i)
+			w.pos(f.Obj().Pos())
+			w.typ(f.Obj().Type(), f.Obj().Pkg())
+		}
+
+		n = t.NumExplicitMethods()
+		w.uint64(uint64(n))
+		for i := 0; i < n; i++ {
+			m := t.ExplicitMethod(i)
+			w.pos(m.Pos())
+			w.string(m.Name())
+			sig, _ := m.Type().(*types.Signature)
+			w.signature(sig)
+		}
+
+	default:
+		panic(internalErrorf("unexpected type: %v, %v", t, reflect.TypeOf(t)))
+	}
+}
+
+func (w *exportWriter) setPkg(pkg *types.Package, write bool) {
+	if write {
+		w.pkg(pkg)
+	}
+
+	w.currPkg = pkg
+}
+
+func (w *exportWriter) signature(sig *types.Signature) {
+	w.paramList(sig.Params())
+	w.paramList(sig.Results())
+	if sig.Params().Len() > 0 {
+		w.bool(sig.Variadic())
+	}
+}
+
+func (w *exportWriter) paramList(tup *types.Tuple) {
+	n := tup.Len()
+	w.uint64(uint64(n))
+	for i := 0; i < n; i++ {
+		w.param(tup.At(i))
+	}
+}
+
+func (w *exportWriter) param(obj types.Object) {
+	w.pos(obj.Pos())
+	w.localIdent(obj)
+	w.typ(obj.Type(), obj.Pkg())
+}
+
+func (w *exportWriter) value(typ types.Type, v constant.Value) {
+	w.typ(typ, nil)
+
+	switch v.Kind() {
+	case constant.Bool:
+		w.bool(constant.BoolVal(v))
+	case constant.Int:
+		var i big.Int
+		if i64, exact := constant.Int64Val(v); exact {
+			i.SetInt64(i64)
+		} else if ui64, exact := constant.Uint64Val(v); exact {
+			i.SetUint64(ui64)
+		} else {
+			i.SetString(v.ExactString(), 10)
+		}
+		w.mpint(&i, typ)
+	case constant.Float:
+		f := constantToFloat(v)
+		w.mpfloat(f, typ)
+	case constant.Complex:
+		w.mpfloat(constantToFloat(constant.Real(v)), typ)
+		w.mpfloat(constantToFloat(constant.Imag(v)), typ)
+	case constant.String:
+		w.string(constant.StringVal(v))
+	case constant.Unknown:
+		// package contains type errors
+	default:
+		panic(internalErrorf("unexpected value %v (%T)", v, v))
+	}
+}
+
+// constantToFloat converts a constant.Value with kind constant.Float to a
+// big.Float.
+func constantToFloat(x constant.Value) *big.Float {
+	assert(x.Kind() == constant.Float)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// Use the same floating-point precision (512) as cmd/compile
 	// (see Mpprec in cmd/compile/internal/gc/mpfloat.go).
 	const mpprec = 512

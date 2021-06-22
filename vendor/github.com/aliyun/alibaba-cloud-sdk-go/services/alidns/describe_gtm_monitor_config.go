@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeGtmMonitorConfig invokes the alidns.DescribeGtmMonitorConfig API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfigRequest) (response *DescribeGtmMonitorConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorConfigResponse()
 	err = client.DoAction(request, response)
@@ -100,6 +101,92 @@ func CreateDescribeGtmMonitorConfigRequest() (request *DescribeGtmMonitorConfigR
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorConfig", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
+func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfigRequest) (response *DescribeGtmMonitorConfigResponse, err error) {
+	response = CreateDescribeGtmMonitorConfigResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeGtmMonitorConfigWithChan invokes the alidns.DescribeGtmMonitorConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmMonitorConfigWithChan(request *DescribeGtmMonitorConfigRequest) (<-chan *DescribeGtmMonitorConfigResponse, <-chan error) {
+	responseChan := make(chan *DescribeGtmMonitorConfigResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeGtmMonitorConfig(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeGtmMonitorConfigWithCallback invokes the alidns.DescribeGtmMonitorConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmMonitorConfigWithCallback(request *DescribeGtmMonitorConfigRequest, callback func(response *DescribeGtmMonitorConfigResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeGtmMonitorConfigResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeGtmMonitorConfig(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeGtmMonitorConfigRequest is the request struct for api DescribeGtmMonitorConfig
+type DescribeGtmMonitorConfigRequest struct {
+	*requests.RpcRequest
+	MonitorConfigId string `position:"Query" name:"MonitorConfigId"`
+	UserClientIp    string `position:"Query" name:"UserClientIp"`
+	Lang            string `position:"Query" name:"Lang"`
+}
+
+// DescribeGtmMonitorConfigResponse is the response struct for api DescribeGtmMonitorConfig
+type DescribeGtmMonitorConfigResponse struct {
+	*responses.BaseResponse
+	RequestId         string                                 `json:"RequestId" xml:"RequestId"`
+	MonitorConfigId   string                                 `json:"MonitorConfigId" xml:"MonitorConfigId"`
+	CreateTime        string                                 `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp   int64                                  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	UpdateTime        string                                 `json:"UpdateTime" xml:"UpdateTime"`
+	UpdateTimestamp   int64                                  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	ProtocolType      string                                 `json:"ProtocolType" xml:"ProtocolType"`
+	Interval          int                                    `json:"Interval" xml:"Interval"`
+	EvaluationCount   int                                    `json:"EvaluationCount" xml:"EvaluationCount"`
+	Timeout           int                                    `json:"Timeout" xml:"Timeout"`
+	MonitorExtendInfo string                                 `json:"MonitorExtendInfo" xml:"MonitorExtendInfo"`
+	IspCityNodes      IspCityNodesInDescribeGtmMonitorConfig `json:"IspCityNodes" xml:"IspCityNodes"`
+}
+
+// CreateDescribeGtmMonitorConfigRequest creates a request to invoke DescribeGtmMonitorConfig API
+func CreateDescribeGtmMonitorConfigRequest() (request *DescribeGtmMonitorConfigRequest) {
+	request = &DescribeGtmMonitorConfigRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorConfig", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

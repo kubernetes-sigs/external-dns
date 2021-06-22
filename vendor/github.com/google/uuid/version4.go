@@ -31,6 +31,7 @@ func NewRandom() (UUID, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return NewRandomFromReader(rander)
 }
 
@@ -76,6 +77,11 @@ func NewRandomFromReader(r io.Reader) (UUID, error) {
 =======
 	_, err := io.ReadFull(r, uuid[:])
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	var uuid UUID
+	_, err := io.ReadFull(rander, uuid[:])
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return Nil, err
 	}

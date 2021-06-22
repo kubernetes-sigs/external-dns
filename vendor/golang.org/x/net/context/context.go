@@ -21,9 +21,16 @@
 // explicitly to each function that needs it. The Context should be the first
 // parameter, typically named ctx:
 //
+<<<<<<< HEAD
 //	func DoSomething(ctx context.Context, arg Arg) error {
 //		// ... use ctx ...
 //	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// 	func DoSomething(ctx context.Context, arg Arg) error {
+// 		// ... use ctx ...
+// 	}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Do not pass a nil Context, even if a function permits it. Pass context.TODO
 // if you are unsure about which Context to use.

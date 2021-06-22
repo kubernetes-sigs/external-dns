@@ -32,6 +32,7 @@ type WriteScheduler interface {
 
 	// Pop dequeues the next frame to write. Returns false if no frames can
 	// be written. Frames with a given wr.StreamID() are Pop'd in the same
+<<<<<<< HEAD
 	// order they are Push'd, except RST_STREAM frames. No frames should be
 	// discarded except by CloseStream.
 	Pop() (wr FrameWriteRequest, ok bool)
@@ -54,6 +55,29 @@ type FrameWriteRequest struct {
 	// stream is the stream on which this frame will be written.
 	// nil for non-stream frames like PING and SETTINGS.
 	// nil for RST_STREAM streams, which use the StreamError.StreamID field instead.
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// order they are Push'd. No frames should be discarded except by CloseStream.
+	Pop() (wr FrameWriteRequest, ok bool)
+}
+
+// OpenStreamOptions specifies extra options for WriteScheduler.OpenStream.
+type OpenStreamOptions struct {
+	// PusherID is zero if the stream was initiated by the client. Otherwise,
+	// PusherID names the stream that pushed the newly opened stream.
+	PusherID uint32
+}
+
+// FrameWriteRequest is a request to write a frame.
+type FrameWriteRequest struct {
+	// write is the interface value that does the writing, once the
+	// WriteScheduler has selected this frame to write. The write
+	// functions are all defined in write.go.
+	write writeFramer
+
+	// stream is the stream on which this frame will be written.
+	// nil for non-stream frames like PING and SETTINGS.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	stream *stream
 
 	// done, if non-nil, must be a buffered channel with space for

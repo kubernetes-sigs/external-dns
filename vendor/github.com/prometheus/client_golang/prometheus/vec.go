@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // MetricVec is a Collector to bundle metrics of the same name that differ in
 // their label values. MetricVec is not used directly but as a building block
 // for implementations of vectors of a given metric type, like GaugeVec,
@@ -1133,6 +1134,292 @@ func (m *metricMap) deleteByHashWithLabels(
 =======
 		old[len(old)-1] = metricWithLabelValues{}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// metricVec is a Collector to bundle metrics of the same name that differ in
+// their label values. metricVec is not used directly (and therefore
+// unexported). It is used as a building block for implementations of vectors of
+// a given metric type, like GaugeVec, CounterVec, SummaryVec, and HistogramVec.
+// It also handles label currying.
+type metricVec struct {
+	*metricMap
+
+	curry []curriedLabelValue
+
+	// hashAdd and hashAddByte can be replaced for testing collision handling.
+	hashAdd     func(h uint64, s string) uint64
+	hashAddByte func(h uint64, b byte) uint64
+}
+
+// newMetricVec returns an initialized metricVec.
+func newMetricVec(desc *Desc, newMetric func(lvs ...string) Metric) *metricVec {
+	return &metricVec{
+		metricMap: &metricMap{
+			metrics:   map[uint64][]metricWithLabelValues{},
+			desc:      desc,
+			newMetric: newMetric,
+		},
+		hashAdd:     hashAdd,
+		hashAddByte: hashAddByte,
+	}
+}
+
+// DeleteLabelValues removes the metric where the variable labels are the same
+// as those passed in as labels (same order as the VariableLabels in Desc). It
+// returns true if a metric was deleted.
+//
+// It is not an error if the number of label values is not the same as the
+// number of VariableLabels in Desc. However, such inconsistent label count can
+// never match an actual metric, so the method will always return false in that
+// case.
+//
+// Note that for more than one label value, this method is prone to mistakes
+// caused by an incorrect order of arguments. Consider Delete(Labels) as an
+// alternative to avoid that type of mistake. For higher label numbers, the
+// latter has a much more readable (albeit more verbose) syntax, but it comes
+// with a performance overhead (for creating and processing the Labels map).
+// See also the CounterVec example.
+func (m *metricVec) DeleteLabelValues(lvs ...string) bool {
+	h, err := m.hashLabelValues(lvs)
+	if err != nil {
+		return false
+	}
+
+	return m.metricMap.deleteByHashWithLabelValues(h, lvs, m.curry)
+}
+
+// Delete deletes the metric where the variable labels are the same as those
+// passed in as labels. It returns true if a metric was deleted.
+//
+// It is not an error if the number and names of the Labels are inconsistent
+// with those of the VariableLabels in Desc. However, such inconsistent Labels
+// can never match an actual metric, so the method will always return false in
+// that case.
+//
+// This method is used for the same purpose as DeleteLabelValues(...string). See
+// there for pros and cons of the two methods.
+func (m *metricVec) Delete(labels Labels) bool {
+	h, err := m.hashLabels(labels)
+	if err != nil {
+		return false
+	}
+
+	return m.metricMap.deleteByHashWithLabels(h, labels, m.curry)
+}
+
+// Without explicit forwarding of Describe, Collect, Reset, those methods won't
+// show up in GoDoc.
+
+// Describe implements Collector.
+func (m *metricVec) Describe(ch chan<- *Desc) { m.metricMap.Describe(ch) }
+
+// Collect implements Collector.
+func (m *metricVec) Collect(ch chan<- Metric) { m.metricMap.Collect(ch) }
+
+// Reset deletes all metrics in this vector.
+func (m *metricVec) Reset() { m.metricMap.Reset() }
+
+func (m *metricVec) curryWith(labels Labels) (*metricVec, error) {
+	var (
+		newCurry []curriedLabelValue
+		oldCurry = m.curry
+		iCurry   int
+	)
+	for i, label := range m.desc.variableLabels {
+		val, ok := labels[label]
+		if iCurry < len(oldCurry) && oldCurry[iCurry].index == i {
+			if ok {
+				return nil, fmt.Errorf("label name %q is already curried", label)
+			}
+			newCurry = append(newCurry, oldCurry[iCurry])
+			iCurry++
+		} else {
+			if !ok {
+				continue // Label stays uncurried.
+			}
+			newCurry = append(newCurry, curriedLabelValue{i, val})
+		}
+	}
+	if l := len(oldCurry) + len(labels) - len(newCurry); l > 0 {
+		return nil, fmt.Errorf("%d unknown label(s) found during currying", l)
+	}
+
+	return &metricVec{
+		metricMap:   m.metricMap,
+		curry:       newCurry,
+		hashAdd:     m.hashAdd,
+		hashAddByte: m.hashAddByte,
+	}, nil
+}
+
+func (m *metricVec) getMetricWithLabelValues(lvs ...string) (Metric, error) {
+	h, err := m.hashLabelValues(lvs)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.metricMap.getOrCreateMetricWithLabelValues(h, lvs, m.curry), nil
+}
+
+func (m *metricVec) getMetricWith(labels Labels) (Metric, error) {
+	h, err := m.hashLabels(labels)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.metricMap.getOrCreateMetricWithLabels(h, labels, m.curry), nil
+}
+
+func (m *metricVec) hashLabelValues(vals []string) (uint64, error) {
+	if err := validateLabelValues(vals, len(m.desc.variableLabels)-len(m.curry)); err != nil {
+		return 0, err
+	}
+
+	var (
+		h             = hashNew()
+		curry         = m.curry
+		iVals, iCurry int
+	)
+	for i := 0; i < len(m.desc.variableLabels); i++ {
+		if iCurry < len(curry) && curry[iCurry].index == i {
+			h = m.hashAdd(h, curry[iCurry].value)
+			iCurry++
+		} else {
+			h = m.hashAdd(h, vals[iVals])
+			iVals++
+		}
+		h = m.hashAddByte(h, model.SeparatorByte)
+	}
+	return h, nil
+}
+
+func (m *metricVec) hashLabels(labels Labels) (uint64, error) {
+	if err := validateValuesInLabels(labels, len(m.desc.variableLabels)-len(m.curry)); err != nil {
+		return 0, err
+	}
+
+	var (
+		h      = hashNew()
+		curry  = m.curry
+		iCurry int
+	)
+	for i, label := range m.desc.variableLabels {
+		val, ok := labels[label]
+		if iCurry < len(curry) && curry[iCurry].index == i {
+			if ok {
+				return 0, fmt.Errorf("label name %q is already curried", label)
+			}
+			h = m.hashAdd(h, curry[iCurry].value)
+			iCurry++
+		} else {
+			if !ok {
+				return 0, fmt.Errorf("label name %q missing in label map", label)
+			}
+			h = m.hashAdd(h, val)
+		}
+		h = m.hashAddByte(h, model.SeparatorByte)
+	}
+	return h, nil
+}
+
+// metricWithLabelValues provides the metric and its label values for
+// disambiguation on hash collision.
+type metricWithLabelValues struct {
+	values []string
+	metric Metric
+}
+
+// curriedLabelValue sets the curried value for a label at the given index.
+type curriedLabelValue struct {
+	index int
+	value string
+}
+
+// metricMap is a helper for metricVec and shared between differently curried
+// metricVecs.
+type metricMap struct {
+	mtx       sync.RWMutex // Protects metrics.
+	metrics   map[uint64][]metricWithLabelValues
+	desc      *Desc
+	newMetric func(labelValues ...string) Metric
+}
+
+// Describe implements Collector. It will send exactly one Desc to the provided
+// channel.
+func (m *metricMap) Describe(ch chan<- *Desc) {
+	ch <- m.desc
+}
+
+// Collect implements Collector.
+func (m *metricMap) Collect(ch chan<- Metric) {
+	m.mtx.RLock()
+	defer m.mtx.RUnlock()
+
+	for _, metrics := range m.metrics {
+		for _, metric := range metrics {
+			ch <- metric.metric
+		}
+	}
+}
+
+// Reset deletes all metrics in this vector.
+func (m *metricMap) Reset() {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	for h := range m.metrics {
+		delete(m.metrics, h)
+	}
+}
+
+// deleteByHashWithLabelValues removes the metric from the hash bucket h. If
+// there are multiple matches in the bucket, use lvs to select a metric and
+// remove only that metric.
+func (m *metricMap) deleteByHashWithLabelValues(
+	h uint64, lvs []string, curry []curriedLabelValue,
+) bool {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	metrics, ok := m.metrics[h]
+	if !ok {
+		return false
+	}
+
+	i := findMetricWithLabelValues(metrics, lvs, curry)
+	if i >= len(metrics) {
+		return false
+	}
+
+	if len(metrics) > 1 {
+		m.metrics[h] = append(metrics[:i], metrics[i+1:]...)
+	} else {
+		delete(m.metrics, h)
+	}
+	return true
+}
+
+// deleteByHashWithLabels removes the metric from the hash bucket h. If there
+// are multiple matches in the bucket, use lvs to select a metric and remove
+// only that metric.
+func (m *metricMap) deleteByHashWithLabels(
+	h uint64, labels Labels, curry []curriedLabelValue,
+) bool {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	metrics, ok := m.metrics[h]
+	if !ok {
+		return false
+	}
+	i := findMetricWithLabels(m.desc, metrics, labels, curry)
+	if i >= len(metrics) {
+		return false
+	}
+
+	if len(metrics) > 1 {
+		m.metrics[h] = append(metrics[:i], metrics[i+1:]...)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	} else {
 		delete(m.metrics, h)
 	}

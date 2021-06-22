@@ -31,6 +31,7 @@ type PatchMeta struct {
 	patchMergeKey   string
 }
 
+<<<<<<< HEAD
 func (pm *PatchMeta) GetPatchStrategies() []string {
 	if pm.patchStrategies == nil {
 		return []string{}
@@ -47,6 +48,25 @@ func (pm *PatchMeta) GetPatchMergeKey() string {
 }
 
 func (pm *PatchMeta) SetPatchMergeKey(pmk string) {
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (pm PatchMeta) GetPatchStrategies() []string {
+	if pm.patchStrategies == nil {
+		return []string{}
+	}
+	return pm.patchStrategies
+}
+
+func (pm PatchMeta) SetPatchStrategies(ps []string) {
+	pm.patchStrategies = ps
+}
+
+func (pm PatchMeta) GetPatchMergeKey() string {
+	return pm.patchMergeKey
+}
+
+func (pm PatchMeta) SetPatchMergeKey(pmk string) {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	pm.patchMergeKey = pmk
 }
 

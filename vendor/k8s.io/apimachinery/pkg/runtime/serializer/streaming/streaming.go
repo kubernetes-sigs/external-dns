@@ -90,6 +90,11 @@ func (d *decoder) Decode(defaults *schema.GroupVersionKind, into runtime.Object)
 			}
 			// must read the rest of the frame (until we stop getting ErrShortBuffer)
 			d.resetRead = true
+<<<<<<< HEAD
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			base = 0
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return nil, nil, ErrObjectTooLarge
 		}
 		if err != nil {

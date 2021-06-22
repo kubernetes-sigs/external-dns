@@ -115,6 +115,7 @@ func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	switch fd.Kind() {
 	case pref.BoolKind:
 		return x.Bool() == y.Bool()
@@ -234,6 +235,21 @@ func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
 	case pref.MessageKind, pref.GroupKind:
 		return equalMessage(x.Message(), y.Message())
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	switch {
+	case fd.Message() != nil:
+		return equalMessage(x.Message(), y.Message())
+	case fd.Kind() == pref.BytesKind:
+		return bytes.Equal(x.Bytes(), y.Bytes())
+	case fd.Kind() == pref.FloatKind, fd.Kind() == pref.DoubleKind:
+		fx := x.Float()
+		fy := y.Float()
+		if math.IsNaN(fx) || math.IsNaN(fy) {
+			return math.IsNaN(fx) && math.IsNaN(fy)
+		}
+		return fx == fy
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		return x.Interface() == y.Interface()
 	}

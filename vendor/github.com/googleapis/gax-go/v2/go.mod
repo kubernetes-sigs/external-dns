@@ -3,6 +3,7 @@ module github.com/googleapis/gax-go/v2
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 go 1.11
 
 require (
@@ -35,3 +36,7 @@ require (
 =======
 require google.golang.org/grpc v1.19.0
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require google.golang.org/grpc v1.19.0
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

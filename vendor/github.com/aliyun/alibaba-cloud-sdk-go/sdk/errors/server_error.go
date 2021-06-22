@@ -26,6 +26,7 @@ var wrapperList = []ServerErrorWrapper{
 }
 
 type ServerError struct {
+<<<<<<< HEAD
 	RespHeaders map[string][]string
 	httpStatus  int
 	requestId   string
@@ -43,6 +44,25 @@ type ServerErrorWrapper interface {
 func (err *ServerError) Error() string {
 	return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s\nRespHeaders: %s",
 		err.errorCode, err.comment+err.recommend, err.requestId, err.message, err.RespHeaders)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	httpStatus int
+	requestId  string
+	hostId     string
+	errorCode  string
+	recommend  string
+	message    string
+	comment    string
+}
+
+type ServerErrorWrapper interface {
+	tryWrap(error *ServerError, wrapInfo map[string]string) bool
+}
+
+func (err *ServerError) Error() string {
+	return fmt.Sprintf("SDK.ServerError\nErrorCode: %s\nRecommend: %s\nRequestId: %s\nMessage: %s",
+		err.errorCode, err.comment+err.recommend, err.requestId, err.message)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func NewServerError(httpStatus int, responseContent, comment string) Error {

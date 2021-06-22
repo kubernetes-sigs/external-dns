@@ -12,6 +12,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Image-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -38,6 +39,17 @@ type ImageActionsService interface {
 }
 
 // ImageActionsServiceOp handles communication with the image action related methods of the
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#image-actions
+type ImageActionsService interface {
+	Get(context.Context, int, int) (*Action, *Response, error)
+	Transfer(context.Context, int, *ActionRequest) (*Action, *Response, error)
+	Convert(context.Context, int) (*Action, *Response, error)
+}
+
+// ImageActionsServiceOp handles communition with the image action related methods of the
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // DigitalOcean API.
 type ImageActionsServiceOp struct {
 	client *Client

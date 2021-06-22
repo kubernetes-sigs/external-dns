@@ -230,6 +230,7 @@ func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.Private
 			}
 		}
 
+<<<<<<< HEAD
 		key, e = parsePKCSPrivateKey(decrypted)
 
 	} else {
@@ -253,6 +254,16 @@ func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
 		}
 	}
 	return nil, fmt.Errorf("failed to parse private key")
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		key, e = x509.ParsePKCS1PrivateKey(decrypted)
+
+	} else {
+		e = fmt.Errorf("PEM data was not found in buffer")
+		return
+	}
+	return
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func generateRandUUID() (string, error) {

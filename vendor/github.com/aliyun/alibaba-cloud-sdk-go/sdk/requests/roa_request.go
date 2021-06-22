@@ -123,6 +123,7 @@ func (request *RoaRequest) InitWithApiInfo(product, version, action, uriPattern,
 	request.baseRequest = defaultBaseRequest()
 	request.PathParams = make(map[string]string)
 	request.Headers["x-acs-version"] = version
+<<<<<<< HEAD
 	request.Headers["x-acs-action"] = action
 	request.pathPattern = uriPattern
 	request.locationServiceCode = serviceCode
@@ -141,6 +142,23 @@ func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
 	if commonRequest.ApiName != "" {
 		request.Headers["x-acs-action"] = commonRequest.ApiName
 	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	request.pathPattern = uriPattern
+	request.locationServiceCode = serviceCode
+	request.locationEndpointType = endpointType
+	request.product = product
+	//request.version = version
+	request.actionName = action
+}
+
+func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
+	request.baseRequest = commonRequest.baseRequest
+	request.PathParams = commonRequest.PathParams
+	request.product = commonRequest.Product
+	//request.version = commonRequest.Version
+	request.Headers["x-acs-version"] = commonRequest.Version
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	request.actionName = commonRequest.ApiName
 	request.pathPattern = commonRequest.PathPattern
 	request.locationServiceCode = commonRequest.ServiceCode

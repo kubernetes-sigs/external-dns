@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build riscv64
 // +build riscv64
 
@@ -145,4 +146,60 @@ const (
 	sizeofSockaddrInet6 = 0x1c
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build riscv64
+
+package socket
+
+type iovec struct {
+	Base *byte
+	Len  uint64
+}
+
+type msghdr struct {
+	Name       *byte
+	Namelen    uint32
+	Iov        *iovec
+	Iovlen     uint64
+	Control    *byte
+	Controllen uint64
+	Flags      int32
+	Pad_cgo_0  [4]byte
+}
+
+type mmsghdr struct {
+	Hdr       msghdr
+	Len       uint32
+	Pad_cgo_0 [4]byte
+}
+
+type cmsghdr struct {
+	Len   uint64
+	Level int32
+	Type  int32
+}
+
+type sockaddrInet struct {
+	Family uint16
+	Port   uint16
+	Addr   [4]byte /* in_addr */
+	X__pad [8]uint8
+}
+
+type sockaddrInet6 struct {
+	Family   uint16
+	Port     uint16
+	Flowinfo uint32
+	Addr     [16]byte /* in6_addr */
+	Scope_id uint32
+}
+
+const (
+	sizeofIovec  = 0x10
+	sizeofMsghdr = 0x38
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x1c
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

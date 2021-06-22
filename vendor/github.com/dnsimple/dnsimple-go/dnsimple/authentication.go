@@ -1,6 +1,7 @@
 package dnsimple
 
 import (
+<<<<<<< HEAD
 	"context"
 	"net/http"
 
@@ -18,6 +19,11 @@ func StaticTokenHTTPClient(ctx context.Context, token string) *http.Client {
 	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	return oauth2.NewClient(ctx, ts)
 }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"net/http"
+)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // BasicAuthTransport is an http.RoundTripper that authenticates all requests
 // using HTTP Basic Authentication with the provided username and password.

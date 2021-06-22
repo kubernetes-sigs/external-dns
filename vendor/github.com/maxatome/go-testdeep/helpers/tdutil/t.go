@@ -27,6 +27,7 @@ type T struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type tFailedNow struct{}
 
 // NewT returns a new *T instance. "name" is the string returned by
@@ -228,4 +229,29 @@ func (t *T) CatchFailNow(fn func()) (failNowOccurred bool) {
 	fn()
 	return
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// NewT returns a new *T instance. "name" is the string returned by
+// method Name.
+func NewT(name string) *T {
+	return &T{name: name}
+}
+
+// Run is a simplified version of testing.T.Run() method, without edge
+// cases.
+func (t *T) Run(name string, f func(*testing.T)) bool {
+	f(&t.T)
+	return !t.Failed()
+}
+
+// Name returns the name of the running test (in fact the one set by NewT).
+func (t *T) Name() string {
+	return t.name
+}
+
+// LogBuf is an ugly hack allowing to access internal testing.T log
+// buffer. Keep cool, it is only used for internal unit tests.
+func (t *T) LogBuf() string {
+	return string(reflect.ValueOf(t.T).FieldByName("output").Bytes()) // nolint: govet
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

@@ -1,0 +1,13 @@
+language: go
+
+go:
+  - 1.7.x
+  - 1.8
+  - 1.9
+
+env:
+  - GO111MODULE=on
+
+install: true
+
+script: go test -v ./...

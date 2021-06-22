@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeGtmInstanceStatus invokes the alidns.DescribeGtmInstanceStatus API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstanceStatus(request *DescribeGtmInstanceStatusRequest) (response *DescribeGtmInstanceStatusResponse, err error) {
 	response = CreateDescribeGtmInstanceStatusResponse()
 	err = client.DoAction(request, response)
@@ -95,6 +96,87 @@ func CreateDescribeGtmInstanceStatusRequest() (request *DescribeGtmInstanceStatu
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceStatus", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describegtminstancestatus.html
+func (client *Client) DescribeGtmInstanceStatus(request *DescribeGtmInstanceStatusRequest) (response *DescribeGtmInstanceStatusResponse, err error) {
+	response = CreateDescribeGtmInstanceStatusResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeGtmInstanceStatusWithChan invokes the alidns.DescribeGtmInstanceStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtminstancestatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmInstanceStatusWithChan(request *DescribeGtmInstanceStatusRequest) (<-chan *DescribeGtmInstanceStatusResponse, <-chan error) {
+	responseChan := make(chan *DescribeGtmInstanceStatusResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeGtmInstanceStatus(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeGtmInstanceStatusWithCallback invokes the alidns.DescribeGtmInstanceStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtminstancestatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmInstanceStatusWithCallback(request *DescribeGtmInstanceStatusRequest, callback func(response *DescribeGtmInstanceStatusResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeGtmInstanceStatusResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeGtmInstanceStatus(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeGtmInstanceStatusRequest is the request struct for api DescribeGtmInstanceStatus
+type DescribeGtmInstanceStatusRequest struct {
+	*requests.RpcRequest
+	InstanceId   string `position:"Query" name:"InstanceId"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeGtmInstanceStatusResponse is the response struct for api DescribeGtmInstanceStatus
+type DescribeGtmInstanceStatusResponse struct {
+	*responses.BaseResponse
+	RequestId                   string `json:"RequestId" xml:"RequestId"`
+	AddrNotAvailableNum         int    `json:"AddrNotAvailableNum" xml:"AddrNotAvailableNum"`
+	AddrPoolNotAvailableNum     int    `json:"AddrPoolNotAvailableNum" xml:"AddrPoolNotAvailableNum"`
+	SwitchToFailoverStrategyNum int    `json:"SwitchToFailoverStrategyNum" xml:"SwitchToFailoverStrategyNum"`
+	StrategyNotAvailableNum     int    `json:"StrategyNotAvailableNum" xml:"StrategyNotAvailableNum"`
+	Status                      string `json:"Status" xml:"Status"`
+	StatusReason                string `json:"StatusReason" xml:"StatusReason"`
+}
+
+// CreateDescribeGtmInstanceStatusRequest creates a request to invoke DescribeGtmInstanceStatus API
+func CreateDescribeGtmInstanceStatusRequest() (request *DescribeGtmInstanceStatusRequest) {
+	request = &DescribeGtmInstanceStatusRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceStatus", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

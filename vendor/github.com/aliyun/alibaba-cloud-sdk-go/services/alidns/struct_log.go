@@ -17,6 +17,7 @@ package alidns
 
 // Log is a nested struct in alidns response
 type Log struct {
+<<<<<<< HEAD
 	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
 	Content       string `json:"content" xml:"content"`
 	OperTime      string `json:"OperTime" xml:"OperTime"`
@@ -34,4 +35,16 @@ type Log struct {
 	ThreatLevel   string `json:"ThreatLevel" xml:"ThreatLevel"`
 	ThreatType    string `json:"ThreatType" xml:"ThreatType"`
 	Type          string `json:"Type" xml:"Type"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	OperTime      string `json:"OperTime" xml:"OperTime"`
+	OperAction    string `json:"OperAction" xml:"OperAction"`
+	EntityType    string `json:"EntityType" xml:"EntityType"`
+	EntityId      string `json:"EntityId" xml:"EntityId"`
+	EntityName    string `json:"EntityName" xml:"EntityName"`
+	OperIp        string `json:"OperIp" xml:"OperIp"`
+	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
+	Id            int64  `json:"Id" xml:"Id"`
+	Content       string `json:"Content" xml:"Content"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

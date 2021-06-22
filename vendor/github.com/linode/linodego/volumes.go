@@ -135,6 +135,7 @@ func (c *Client) ListVolumes(ctx context.Context, opts *ListOptions) ([]Volume, 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -496,6 +497,125 @@ func (c *Client) CloneVolume(ctx context.Context, id int, label string) (*Volume
 
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+	return response.Data, nil
+}
+
+// GetVolume gets the template with the provided ID
+func (c *Client) GetVolume(ctx context.Context, id int) (*Volume, error) {
+	e, err := c.Volumes.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+	e = fmt.Sprintf("%s/%d", e, id)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Volume{}).Get(e))
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*Volume), nil
+}
+
+// AttachVolume attaches a volume to a Linode instance
+func (c *Client) AttachVolume(ctx context.Context, id int, options *VolumeAttachOptions) (*Volume, error) {
+	body := ""
+	if bodyData, err := json.Marshal(options); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	e, err := c.Volumes.Endpoint()
+	if err != nil {
+		return nil, NewError(err)
+	}
+
+	e = fmt.Sprintf("%s/%d/attach", e, id)
+	resp, err := coupleAPIErrors(c.R(ctx).
+		SetResult(&Volume{}).
+		SetBody(body).
+		Post(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result().(*Volume), nil
+}
+
+// CreateVolume creates a Linode Volume
+func (c *Client) CreateVolume(ctx context.Context, createOpts VolumeCreateOptions) (*Volume, error) {
+	body := ""
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	e, err := c.Volumes.Endpoint()
+	if err != nil {
+		return nil, NewError(err)
+	}
+
+	resp, err := coupleAPIErrors(c.R(ctx).
+		SetResult(&Volume{}).
+		SetBody(body).
+		Post(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result().(*Volume), nil
+}
+
+// UpdateVolume updates the Volume with the specified id
+func (c *Client) UpdateVolume(ctx context.Context, id int, volume VolumeUpdateOptions) (*Volume, error) {
+	var body string
+	e, err := c.Volumes.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+	e = fmt.Sprintf("%s/%d", e, id)
+
+	req := c.R(ctx).SetResult(&Volume{})
+
+	if bodyData, err := json.Marshal(volume); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*Volume), nil
+}
+
+// CloneVolume clones a Linode volume
+func (c *Client) CloneVolume(ctx context.Context, id int, label string) (*Volume, error) {
+	body := fmt.Sprintf("{\"label\":\"%s\"}", label)
+
+	e, err := c.Volumes.Endpoint()
+	if err != nil {
+		return nil, NewError(err)
+	}
+	e = fmt.Sprintf("%s/%d/clone", e, id)
+
+	resp, err := coupleAPIErrors(c.R(ctx).
+		SetResult(&Volume{}).
+		SetBody(body).
+		Post(e))
+
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

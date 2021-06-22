@@ -185,6 +185,7 @@ func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if len(validValues) > 0 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -264,6 +265,67 @@ func (list ErrorList) ToAggregate() utilerrors.Aggregate {
 	if len(list) == 0 {
 		return nil
 	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if validValues != nil && len(validValues) > 0 {
+		quotedValues := make([]string, len(validValues))
+		for i, v := range validValues {
+			quotedValues[i] = strconv.Quote(v)
+		}
+		detail = "supported values: " + strings.Join(quotedValues, ", ")
+	}
+	return &Error{ErrorTypeNotSupported, field.String(), value, detail}
+}
+
+// Forbidden returns a *Error indicating "forbidden".  This is used to
+// report valid (as per formatting rules) values which would be accepted under
+// some conditions, but which are not permitted by current conditions (e.g.
+// security policy).
+func Forbidden(field *Path, detail string) *Error {
+	return &Error{ErrorTypeForbidden, field.String(), "", detail}
+}
+
+// TooLong returns a *Error indicating "too long".  This is used to
+// report that the given value is too long.  This is similar to
+// Invalid, but the returned error will not include the too-long
+// value.
+func TooLong(field *Path, value interface{}, maxLength int) *Error {
+	return &Error{ErrorTypeTooLong, field.String(), value, fmt.Sprintf("must have at most %d bytes", maxLength)}
+}
+
+// TooMany returns a *Error indicating "too many". This is used to
+// report that a given list has too many items. This is similar to TooLong,
+// but the returned error indicates quantity instead of length.
+func TooMany(field *Path, actualQuantity, maxQuantity int) *Error {
+	return &Error{ErrorTypeTooMany, field.String(), actualQuantity, fmt.Sprintf("must have at most %d items", maxQuantity)}
+}
+
+// InternalError returns a *Error indicating "internal error".  This is used
+// to signal that an error was found that was not directly related to user
+// input.  The err argument must be non-nil.
+func InternalError(field *Path, err error) *Error {
+	return &Error{ErrorTypeInternal, field.String(), nil, err.Error()}
+}
+
+// ErrorList holds a set of Errors.  It is plausible that we might one day have
+// non-field errors in this same umbrella package, but for now we don't, so
+// we can keep it simple and leave ErrorList here.
+type ErrorList []*Error
+
+// NewErrorTypeMatcher returns an errors.Matcher that returns true
+// if the provided error is a Error and has the provided ErrorType.
+func NewErrorTypeMatcher(t ErrorType) utilerrors.Matcher {
+	return func(err error) bool {
+		if e, ok := err.(*Error); ok {
+			return e.Type == t
+		}
+		return false
+	}
+}
+
+// ToAggregate converts the ErrorList into an errors.Aggregate.
+func (list ErrorList) ToAggregate() utilerrors.Aggregate {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	errs := make([]error, 0, len(list))
 	errorMsgs := sets.NewString()
 	for _, err := range list {

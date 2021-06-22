@@ -21,6 +21,7 @@ package v1
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // CronJobListerExpansion allows custom methods to be added to
 // CronJobLister.
@@ -57,3 +58,6 @@ type CronJobListerExpansion interface{}
 // CronJobNamespaceLister.
 type CronJobNamespaceListerExpansion interface{}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

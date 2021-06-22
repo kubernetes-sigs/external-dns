@@ -85,6 +85,7 @@ func (c *counter) IncCheckReset(t time.Time, tick time.Duration) uint64 {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // SamplingDecision is a decision represented as a bit field made by sampler.
 // More decisions may be added in the future.
 type SamplingDecision uint32
@@ -472,5 +473,57 @@ func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
 		s.hook(ent, LogSampled)
 	}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type sampler struct {
+	Core
+
+	counts            *counters
+	tick              time.Duration
+	first, thereafter uint64
+}
+
+// NewSampler creates a Core that samples incoming entries, which caps the CPU
+// and I/O load of logging while attempting to preserve a representative subset
+// of your logs.
+//
+// Zap samples by logging the first N entries with a given level and message
+// each tick. If more Entries with the same level and message are seen during
+// the same interval, every Mth message is logged and the rest are dropped.
+//
+// Keep in mind that zap's sampling implementation is optimized for speed over
+// absolute precision; under load, each tick may be slightly over- or
+// under-sampled.
+func NewSampler(core Core, tick time.Duration, first, thereafter int) Core {
+	return &sampler{
+		Core:       core,
+		tick:       tick,
+		counts:     newCounters(),
+		first:      uint64(first),
+		thereafter: uint64(thereafter),
+	}
+}
+
+func (s *sampler) With(fields []Field) Core {
+	return &sampler{
+		Core:       s.Core.With(fields),
+		tick:       s.tick,
+		counts:     s.counts,
+		first:      s.first,
+		thereafter: s.thereafter,
+	}
+}
+
+func (s *sampler) Check(ent Entry, ce *CheckedEntry) *CheckedEntry {
+	if !s.Enabled(ent.Level) {
+		return ce
+	}
+
+	counter := s.counts.get(ent.Level, ent.Message)
+	n := counter.IncCheckReset(ent.Time, s.tick)
+	if n > s.first && (n-s.first)%s.thereafter != 0 {
+		return ce
+	}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return s.Core.Check(ent, ce)
 }

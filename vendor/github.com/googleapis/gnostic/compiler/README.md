@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 This directory contains compiler support code used by Gnostic and Gnostic
 extensions.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -26,3 +27,7 @@ This directory contains compiler support code used by Gnostic and Gnostic extens
 This directory contains compiler support code used by Gnostic and Gnostic
 extensions.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+This directory contains compiler support code used by Gnostic and Gnostic extensions.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

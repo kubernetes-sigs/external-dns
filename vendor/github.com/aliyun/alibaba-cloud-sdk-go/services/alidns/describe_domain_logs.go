@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeDomainLogs invokes the alidns.DescribeDomainLogs API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeDomainLogs(request *DescribeDomainLogsRequest) (response *DescribeDomainLogsResponse, err error) {
 	response = CreateDescribeDomainLogsResponse()
 	err = client.DoAction(request, response)
@@ -99,6 +100,91 @@ func CreateDescribeDomainLogsRequest() (request *DescribeDomainLogsRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainLogs", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describedomainlogs.html
+func (client *Client) DescribeDomainLogs(request *DescribeDomainLogsRequest) (response *DescribeDomainLogsResponse, err error) {
+	response = CreateDescribeDomainLogsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeDomainLogsWithChan invokes the alidns.DescribeDomainLogs API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainLogsWithChan(request *DescribeDomainLogsRequest) (<-chan *DescribeDomainLogsResponse, <-chan error) {
+	responseChan := make(chan *DescribeDomainLogsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeDomainLogs(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeDomainLogsWithCallback invokes the alidns.DescribeDomainLogs API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainLogsWithCallback(request *DescribeDomainLogsRequest, callback func(response *DescribeDomainLogsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeDomainLogsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeDomainLogs(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeDomainLogsRequest is the request struct for api DescribeDomainLogs
+type DescribeDomainLogsRequest struct {
+	*requests.RpcRequest
+	GroupId      string           `position:"Query" name:"GroupId"`
+	StartDate    string           `position:"Query" name:"StartDate"`
+	Type         string           `position:"Query" name:"Type"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	EndDate      string           `position:"Query" name:"endDate"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	KeyWord      string           `position:"Query" name:"KeyWord"`
+}
+
+// DescribeDomainLogsResponse is the response struct for api DescribeDomainLogs
+type DescribeDomainLogsResponse struct {
+	*responses.BaseResponse
+	RequestId  string     `json:"RequestId" xml:"RequestId"`
+	TotalCount int64      `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int64      `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int64      `json:"PageSize" xml:"PageSize"`
+	DomainLogs DomainLogs `json:"DomainLogs" xml:"DomainLogs"`
+}
+
+// CreateDescribeDomainLogsRequest creates a request to invoke DescribeDomainLogs API
+func CreateDescribeDomainLogsRequest() (request *DescribeDomainLogsRequest) {
+	request = &DescribeDomainLogsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainLogs", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

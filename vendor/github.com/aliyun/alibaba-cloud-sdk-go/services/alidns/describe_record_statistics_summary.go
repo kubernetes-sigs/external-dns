@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeRecordStatisticsSummary invokes the alidns.DescribeRecordStatisticsSummary API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeRecordStatisticsSummary(request *DescribeRecordStatisticsSummaryRequest) (response *DescribeRecordStatisticsSummaryResponse, err error) {
 	response = CreateDescribeRecordStatisticsSummaryResponse()
 	err = client.DoAction(request, response)
@@ -104,6 +105,95 @@ func CreateDescribeRecordStatisticsSummaryRequest() (request *DescribeRecordStat
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeRecordStatisticsSummary", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
+func (client *Client) DescribeRecordStatisticsSummary(request *DescribeRecordStatisticsSummaryRequest) (response *DescribeRecordStatisticsSummaryResponse, err error) {
+	response = CreateDescribeRecordStatisticsSummaryResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeRecordStatisticsSummaryWithChan invokes the alidns.DescribeRecordStatisticsSummary API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordStatisticsSummaryWithChan(request *DescribeRecordStatisticsSummaryRequest) (<-chan *DescribeRecordStatisticsSummaryResponse, <-chan error) {
+	responseChan := make(chan *DescribeRecordStatisticsSummaryResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeRecordStatisticsSummary(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeRecordStatisticsSummaryWithCallback invokes the alidns.DescribeRecordStatisticsSummary API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordstatisticssummary.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordStatisticsSummaryWithCallback(request *DescribeRecordStatisticsSummaryRequest, callback func(response *DescribeRecordStatisticsSummaryResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeRecordStatisticsSummaryResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeRecordStatisticsSummary(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeRecordStatisticsSummaryRequest is the request struct for api DescribeRecordStatisticsSummary
+type DescribeRecordStatisticsSummaryRequest struct {
+	*requests.RpcRequest
+	Threshold    requests.Integer `position:"Query" name:"Threshold"`
+	StartDate    string           `position:"Query" name:"StartDate"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Keyword      string           `position:"Query" name:"Keyword"`
+	Direction    string           `position:"Query" name:"Direction"`
+	DomainName   string           `position:"Query" name:"DomainName"`
+	OrderBy      string           `position:"Query" name:"OrderBy"`
+	EndDate      string           `position:"Query" name:"EndDate"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	SearchMode   string           `position:"Query" name:"SearchMode"`
+}
+
+// DescribeRecordStatisticsSummaryResponse is the response struct for api DescribeRecordStatisticsSummary
+type DescribeRecordStatisticsSummaryResponse struct {
+	*responses.BaseResponse
+	RequestId  string                                      `json:"RequestId" xml:"RequestId"`
+	TotalItems int                                         `json:"TotalItems" xml:"TotalItems"`
+	TotalPages int                                         `json:"TotalPages" xml:"TotalPages"`
+	PageSize   int                                         `json:"PageSize" xml:"PageSize"`
+	PageNumber int                                         `json:"PageNumber" xml:"PageNumber"`
+	Statistics StatisticsInDescribeRecordStatisticsSummary `json:"Statistics" xml:"Statistics"`
+}
+
+// CreateDescribeRecordStatisticsSummaryRequest creates a request to invoke DescribeRecordStatisticsSummary API
+func CreateDescribeRecordStatisticsSummaryRequest() (request *DescribeRecordStatisticsSummaryRequest) {
+	request = &DescribeRecordStatisticsSummaryRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeRecordStatisticsSummary", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

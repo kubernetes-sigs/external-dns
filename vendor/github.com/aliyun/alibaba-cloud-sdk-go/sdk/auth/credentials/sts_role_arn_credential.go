@@ -16,7 +16,11 @@ type RamRoleArnCredential struct {
 	RoleSessionName       string
 	RoleSessionExpiration int
 	Policy                string
+<<<<<<< HEAD
 	StsRegion             string
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Deprecated: Use RamRoleArnCredential in this package instead.

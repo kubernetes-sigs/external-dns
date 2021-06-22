@@ -17,6 +17,7 @@ package alidns
 
 // Statistic is a nested struct in alidns response
 type Statistic struct {
+<<<<<<< HEAD
 	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
 	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
@@ -30,4 +31,11 @@ type Statistic struct {
 	HttpsCount   int64  `json:"HttpsCount" xml:"HttpsCount"`
 	Count        int64  `json:"Count" xml:"Count"`
 	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
+	Count      int64  `json:"Count" xml:"Count"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

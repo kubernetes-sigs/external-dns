@@ -61,6 +61,7 @@ type nothingSelector struct{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (n nothingSelector) Matches(_ Fields) bool      { return false }
 func (n nothingSelector) Empty() bool                { return false }
 func (n nothingSelector) String() string             { return "" }
@@ -128,6 +129,16 @@ func (n nothingSelector) RequiresExactMatch(field string) (value string, found b
 }
 func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
+func (n nothingSelector) Empty() bool                                                { return false }
+func (n nothingSelector) String() string                                             { return "" }
+func (n nothingSelector) Requirements() Requirements                                 { return nil }
+func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // Nothing returns a selector that matches no fields
 func Nothing() Selector {

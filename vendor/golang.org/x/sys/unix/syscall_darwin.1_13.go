@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin && go1.13
 // +build darwin,go1.13
 
@@ -105,6 +106,34 @@ var libc_fdopendir_trampoline_addr uintptr
 //go:linkname libc_fdopendir libc_fdopendir
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build darwin,go1.13
+
+package unix
+
+import (
+	"unsafe"
+
+	"golang.org/x/sys/internal/unsafeheader"
+)
+
+//sys	closedir(dir uintptr) (err error)
+//sys	readdir_r(dir uintptr, entry *Dirent, result **Dirent) (res Errno)
+
+func fdopendir(fd int) (dir uintptr, err error) {
+	r0, _, e1 := syscall_syscallPtr(funcPC(libc_fdopendir_trampoline), uintptr(fd), 0, 0)
+	dir = uintptr(r0)
+	if e1 != 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func libc_fdopendir_trampoline()
+
+//go:linkname libc_fdopendir libc_fdopendir
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //go:cgo_import_dynamic libc_fdopendir fdopendir "/usr/lib/libSystem.B.dylib"
 
 func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {

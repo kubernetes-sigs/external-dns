@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
 // Package typesinternal provides access to internal go/types APIs that are not
 // yet exported.
 package typesinternal
@@ -50,3 +51,30 @@ func ReadGo116ErrorData(err types.Error) (code ErrorCode, start, end token.Pos, 
 }
 
 var SetGoVersion = func(conf *types.Config, version string) bool { return false }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+package typesinternal
+
+import (
+	"go/types"
+	"reflect"
+	"unsafe"
+)
+
+func SetUsesCgo(conf *types.Config) bool {
+	v := reflect.ValueOf(conf).Elem()
+
+	f := v.FieldByName("go115UsesCgo")
+	if !f.IsValid() {
+		f = v.FieldByName("UsesCgo")
+		if !f.IsValid() {
+			return false
+		}
+	}
+
+	addr := unsafe.Pointer(f.UnsafeAddr())
+	*(*bool)(addr) = true
+
+	return true
+}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

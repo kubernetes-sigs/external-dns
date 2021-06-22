@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
@@ -320,6 +321,82 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 		}
 		provider, err := exec.GetAuthenticator(c.ExecProvider, cluster)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/client-go/plugin/pkg/client/auth/exec"
+	"k8s.io/client-go/transport"
+)
+
+// TLSConfigFor returns a tls.Config that will provide the transport level security defined
+// by the provided Config. Will return nil if no transport level security is requested.
+func TLSConfigFor(config *Config) (*tls.Config, error) {
+	cfg, err := config.TransportConfig()
+	if err != nil {
+		return nil, err
+	}
+	return transport.TLSConfigFor(cfg)
+}
+
+// TransportFor returns an http.RoundTripper that will provide the authentication
+// or transport level security defined by the provided Config. Will return the
+// default http.DefaultTransport if no special case behavior is needed.
+func TransportFor(config *Config) (http.RoundTripper, error) {
+	cfg, err := config.TransportConfig()
+	if err != nil {
+		return nil, err
+	}
+	return transport.New(cfg)
+}
+
+// HTTPWrappersForConfig wraps a round tripper with any relevant layered behavior from the
+// config. Exposed to allow more clients that need HTTP-like behavior but then must hijack
+// the underlying connection (like WebSocket or HTTP2 clients). Pure HTTP clients should use
+// the higher level TransportFor or RESTClientFor methods.
+func HTTPWrappersForConfig(config *Config, rt http.RoundTripper) (http.RoundTripper, error) {
+	cfg, err := config.TransportConfig()
+	if err != nil {
+		return nil, err
+	}
+	return transport.HTTPWrappersForConfig(cfg, rt)
+}
+
+// TransportConfig converts a client config to an appropriate transport config.
+func (c *Config) TransportConfig() (*transport.Config, error) {
+	conf := &transport.Config{
+		UserAgent:          c.UserAgent,
+		Transport:          c.Transport,
+		WrapTransport:      c.WrapTransport,
+		DisableCompression: c.DisableCompression,
+		TLS: transport.TLSConfig{
+			Insecure:   c.Insecure,
+			ServerName: c.ServerName,
+			CAFile:     c.CAFile,
+			CAData:     c.CAData,
+			CertFile:   c.CertFile,
+			CertData:   c.CertData,
+			KeyFile:    c.KeyFile,
+			KeyData:    c.KeyData,
+			NextProtos: c.NextProtos,
+		},
+		Username:        c.Username,
+		Password:        c.Password,
+		BearerToken:     c.BearerToken,
+		BearerTokenFile: c.BearerTokenFile,
+		Impersonate: transport.ImpersonationConfig{
+			UserName: c.Impersonate.UserName,
+			Groups:   c.Impersonate.Groups,
+			Extra:    c.Impersonate.Extra,
+		},
+		Dial: c.Dial,
+	}
+
+	if c.ExecProvider != nil && c.AuthProvider != nil {
+		return nil, errors.New("execProvider and authProvider cannot be used in combination")
+	}
+
+	if c.ExecProvider != nil {
+		provider, err := exec.GetAuthenticator(c.ExecProvider)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		if err != nil {
 			return nil, err
 		}

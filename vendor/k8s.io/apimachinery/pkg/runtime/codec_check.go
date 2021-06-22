@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
@@ -109,6 +110,21 @@ func CheckCodec(c Codec, internalType Object, externalTypes ...schema.GroupVersi
 			return err
 		}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+// CheckCodec makes sure that the codec can encode objects like internalType,
+// decode all of the external types listed, and also decode them into the given
+// object. (Will modify internalObject.) (Assumes JSON serialization.)
+// TODO: verify that the correct external version is chosen on encode...
+func CheckCodec(c Codec, internalType Object, externalTypes ...schema.GroupVersionKind) error {
+	if _, err := Encode(c, internalType); err != nil {
+		return fmt.Errorf("Internal type not encodable: %v", err)
+	}
+	for _, et := range externalTypes {
+		exBytes := []byte(fmt.Sprintf(`{"kind":"%v","apiVersion":"%v"}`, et.Kind, et.GroupVersion().String()))
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		obj, err := Decode(c, exBytes)
 		if err != nil {
 			return fmt.Errorf("external type %s not interpretable: %v", et, err)

@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // NewLoggerFromConfigString reads the string and build a logger. It can be used
@@ -141,6 +142,38 @@ func NewLoggerFromConfigString(s string) Logger {
 =======
 			grpclogLogger.Warningf("failed to parse binary log config: %v", err)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	"google.golang.org/grpc/grpclog"
+)
+
+// NewLoggerFromConfigString reads the string and build a logger. It can be used
+// to build a new logger and assign it to binarylog.Logger.
+//
+// Example filter config strings:
+//  - "" Nothing will be logged
+//  - "*" All headers and messages will be fully logged.
+//  - "*{h}" Only headers will be logged.
+//  - "*{m:256}" Only the first 256 bytes of each message will be logged.
+//  - "Foo/*" Logs every method in service Foo
+//  - "Foo/*,-Foo/Bar" Logs every method in service Foo except method /Foo/Bar
+//  - "Foo/*,Foo/Bar{m:256}" Logs the first 256 bytes of each message in method
+//    /Foo/Bar, logs all headers and messages in every other method in service
+//    Foo.
+//
+// If two configs exist for one certain method or service, the one specified
+// later overrides the previous config.
+func NewLoggerFromConfigString(s string) Logger {
+	if s == "" {
+		return nil
+	}
+	l := newEmptyLogger()
+	methods := strings.Split(s, ",")
+	for _, method := range methods {
+		if err := l.fillMethodLoggerWithConfigString(method); err != nil {
+			grpclog.Warningf("failed to parse binary log config: %v", err)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return nil
 		}
 	}

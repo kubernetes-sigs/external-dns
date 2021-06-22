@@ -342,6 +342,7 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 		switch ss[0] {
 		case fieldOpts:
@@ -500,6 +501,42 @@ func parseMountStatsNFS(s *bufio.Scanner, statVersion string) (*MountStatsNFS, e
 				return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
 			}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		if len(ss) < 2 {
+			return nil, fmt.Errorf("not enough information for NFS stats: %v", ss)
+		}
+
+		switch ss[0] {
+		case fieldOpts:
+			if stats.Opts == nil {
+				stats.Opts = map[string]string{}
+			}
+			for _, opt := range strings.Split(ss[1], ",") {
+				split := strings.Split(opt, "=")
+				if len(split) == 2 {
+					stats.Opts[split[0]] = split[1]
+				} else {
+					stats.Opts[opt] = ""
+				}
+			}
+		case fieldAge:
+			// Age integer is in seconds
+			d, err := time.ParseDuration(ss[1] + "s")
+			if err != nil {
+				return nil, err
+			}
+
+			stats.Age = d
+		case fieldBytes:
+			bstats, err := parseNFSBytesStats(ss[1:])
+			if err != nil {
+				return nil, err
+			}
+
+			stats.Bytes = *bstats
+		case fieldEvents:
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			estats, err := parseNFSEventsStats(ss[1:])
 			if err != nil {
 				return nil, err

@@ -110,6 +110,7 @@ are the AuthOptions and EndpointOpts structs.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 An example retry backoff function, which respects the 429 HTTP response code and a "Retry-After" header:
 
@@ -239,5 +240,8 @@ An example retry backoff function, which respects the 429 HTTP response code and
 	}
 
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 */
 package gophercloud

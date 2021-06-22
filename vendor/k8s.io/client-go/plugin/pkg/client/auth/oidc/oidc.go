@@ -35,6 +35,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -762,6 +763,242 @@ func (p *oidcAuthProvider) idToken() (string, error) {
 =======
 		return "", fmt.Errorf("token response did not contain an id_token, either the scope \"openid\" wasn't requested upon login, or the provider doesn't support id_tokens as part of the refresh response")
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+)
+
+const (
+	cfgIssuerUrl                = "idp-issuer-url"
+	cfgClientID                 = "client-id"
+	cfgClientSecret             = "client-secret"
+	cfgCertificateAuthority     = "idp-certificate-authority"
+	cfgCertificateAuthorityData = "idp-certificate-authority-data"
+	cfgIDToken                  = "id-token"
+	cfgRefreshToken             = "refresh-token"
+
+	// Unused. Scopes aren't sent during refreshing.
+	cfgExtraScopes = "extra-scopes"
+)
+
+func init() {
+	if err := restclient.RegisterAuthProviderPlugin("oidc", newOIDCAuthProvider); err != nil {
+		klog.Fatalf("Failed to register oidc auth plugin: %v", err)
+	}
+}
+
+// expiryDelta determines how earlier a token should be considered
+// expired than its actual expiration time. It is used to avoid late
+// expirations due to client-server time mismatches.
+//
+// NOTE(ericchiang): this is take from golang.org/x/oauth2
+const expiryDelta = 10 * time.Second
+
+var cache = newClientCache()
+
+// Like TLS transports, keep a cache of OIDC clients indexed by issuer URL. This ensures
+// current requests from different clients don't concurrently attempt to refresh the same
+// set of credentials.
+type clientCache struct {
+	mu sync.RWMutex
+
+	cache map[cacheKey]*oidcAuthProvider
+}
+
+func newClientCache() *clientCache {
+	return &clientCache{cache: make(map[cacheKey]*oidcAuthProvider)}
+}
+
+type cacheKey struct {
+	clusterAddress string
+	// Canonical issuer URL string of the provider.
+	issuerURL string
+	clientID  string
+}
+
+func (c *clientCache) getClient(clusterAddress, issuer, clientID string) (*oidcAuthProvider, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	client, ok := c.cache[cacheKey{clusterAddress: clusterAddress, issuerURL: issuer, clientID: clientID}]
+	return client, ok
+}
+
+// setClient attempts to put the client in the cache but may return any clients
+// with the same keys set before. This is so there's only ever one client for a provider.
+func (c *clientCache) setClient(clusterAddress, issuer, clientID string, client *oidcAuthProvider) *oidcAuthProvider {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	key := cacheKey{clusterAddress: clusterAddress, issuerURL: issuer, clientID: clientID}
+
+	// If another client has already initialized a client for the given provider we want
+	// to use that client instead of the one we're trying to set. This is so all transports
+	// share a client and can coordinate around the same mutex when refreshing and writing
+	// to the kubeconfig.
+	if oldClient, ok := c.cache[key]; ok {
+		return oldClient
+	}
+
+	c.cache[key] = client
+	return client
+}
+
+func newOIDCAuthProvider(clusterAddress string, cfg map[string]string, persister restclient.AuthProviderConfigPersister) (restclient.AuthProvider, error) {
+	issuer := cfg[cfgIssuerUrl]
+	if issuer == "" {
+		return nil, fmt.Errorf("Must provide %s", cfgIssuerUrl)
+	}
+
+	clientID := cfg[cfgClientID]
+	if clientID == "" {
+		return nil, fmt.Errorf("Must provide %s", cfgClientID)
+	}
+
+	// Check cache for existing provider.
+	if provider, ok := cache.getClient(clusterAddress, issuer, clientID); ok {
+		return provider, nil
+	}
+
+	if len(cfg[cfgExtraScopes]) > 0 {
+		klog.V(2).Infof("%s auth provider field depricated, refresh request don't send scopes",
+			cfgExtraScopes)
+	}
+
+	var certAuthData []byte
+	var err error
+	if cfg[cfgCertificateAuthorityData] != "" {
+		certAuthData, err = base64.StdEncoding.DecodeString(cfg[cfgCertificateAuthorityData])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	clientConfig := restclient.Config{
+		TLSClientConfig: restclient.TLSClientConfig{
+			CAFile: cfg[cfgCertificateAuthority],
+			CAData: certAuthData,
+		},
+	}
+
+	trans, err := restclient.TransportFor(&clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	hc := &http.Client{Transport: trans}
+
+	provider := &oidcAuthProvider{
+		client:    hc,
+		now:       time.Now,
+		cfg:       cfg,
+		persister: persister,
+	}
+
+	return cache.setClient(clusterAddress, issuer, clientID, provider), nil
+}
+
+type oidcAuthProvider struct {
+	client *http.Client
+
+	// Method for determining the current time.
+	now func() time.Time
+
+	// Mutex guards persisting to the kubeconfig file and allows synchronized
+	// updates to the in-memory config. It also ensures concurrent calls to
+	// the RoundTripper only trigger a single refresh request.
+	mu        sync.Mutex
+	cfg       map[string]string
+	persister restclient.AuthProviderConfigPersister
+}
+
+func (p *oidcAuthProvider) WrapTransport(rt http.RoundTripper) http.RoundTripper {
+	return &roundTripper{
+		wrapped:  rt,
+		provider: p,
+	}
+}
+
+func (p *oidcAuthProvider) Login() error {
+	return errors.New("not yet implemented")
+}
+
+type roundTripper struct {
+	provider *oidcAuthProvider
+	wrapped  http.RoundTripper
+}
+
+var _ net.RoundTripperWrapper = &roundTripper{}
+
+func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if len(req.Header.Get("Authorization")) != 0 {
+		return r.wrapped.RoundTrip(req)
+	}
+	token, err := r.provider.idToken()
+	if err != nil {
+		return nil, err
+	}
+
+	// shallow copy of the struct
+	r2 := new(http.Request)
+	*r2 = *req
+	// deep copy of the Header so we don't modify the original
+	// request's Header (as per RoundTripper contract).
+	r2.Header = make(http.Header)
+	for k, s := range req.Header {
+		r2.Header[k] = s
+	}
+	r2.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	return r.wrapped.RoundTrip(r2)
+}
+
+func (t *roundTripper) WrappedRoundTripper() http.RoundTripper { return t.wrapped }
+
+func (p *oidcAuthProvider) idToken() (string, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if idToken, ok := p.cfg[cfgIDToken]; ok && len(idToken) > 0 {
+		valid, err := idTokenExpired(p.now, idToken)
+		if err != nil {
+			return "", err
+		}
+		if valid {
+			// If the cached id token is still valid use it.
+			return idToken, nil
+		}
+	}
+
+	// Try to request a new token using the refresh token.
+	rt, ok := p.cfg[cfgRefreshToken]
+	if !ok || len(rt) == 0 {
+		return "", errors.New("No valid id-token, and cannot refresh without refresh-token")
+	}
+
+	// Determine provider's OAuth2 token endpoint.
+	tokenURL, err := tokenEndpoint(p.client, p.cfg[cfgIssuerUrl])
+	if err != nil {
+		return "", err
+	}
+
+	config := oauth2.Config{
+		ClientID:     p.cfg[cfgClientID],
+		ClientSecret: p.cfg[cfgClientSecret],
+		Endpoint:     oauth2.Endpoint{TokenURL: tokenURL},
+	}
+
+	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, p.client)
+	token, err := config.TokenSource(ctx, &oauth2.Token{RefreshToken: rt}).Token()
+	if err != nil {
+		return "", fmt.Errorf("failed to refresh token: %v", err)
+	}
+
+	idToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		// id_token isn't a required part of a refresh token response, so some
+		// providers (Okta) don't return this value.
+		//
+		// See https://github.com/kubernetes/kubernetes/issues/36847
+		return "", fmt.Errorf("token response did not contain an id_token, either the scope \"openid\" wasn't requested upon login, or the provider doesn't support id_tokens as part of the refresh response.")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	// Create a new config to persist.

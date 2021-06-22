@@ -28,6 +28,7 @@ type tdIgnore struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //   td.Cmp(t, got, td.SStruct(
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -47,6 +48,10 @@ type tdIgnore struct {
 =======
 //   td.Cmp(t, got, td.SStruct(
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   td.Cmp(t, td.SStruct(
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //     Person{
 //       Name: "John Doe",
 //     },

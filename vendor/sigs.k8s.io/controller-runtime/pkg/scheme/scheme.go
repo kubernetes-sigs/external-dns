@@ -50,6 +50,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
 //  		Scheme: scheme,
 //  	})
@@ -141,6 +142,30 @@ type Builder struct {
 =======
 // Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
+//  		Scheme: scheme,
+//  	})
+//  	// ...
+//  }
+//
+package scheme
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
+type Builder struct {
+	GroupVersion schema.GroupVersion
+	runtime.SchemeBuilder
+}
+
+// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (bld *Builder) Register(object ...runtime.Object) *Builder {
 	bld.SchemeBuilder.Register(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(bld.GroupVersion, object...)

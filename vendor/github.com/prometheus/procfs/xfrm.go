@@ -116,6 +116,7 @@ func (fs FS) NewXfrmStat() (XfrmStat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -139,6 +140,11 @@ func (fs FS) NewXfrmStat() (XfrmStat, error) {
 =======
 			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			return XfrmStat{}, fmt.Errorf(
+				"couldn't parse %s line %s", file.Name(), s.Text())
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 
 		name := fields[0]

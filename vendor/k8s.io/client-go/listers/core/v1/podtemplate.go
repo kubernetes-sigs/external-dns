@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PodTemplateLister interface {
 	// List lists all PodTemplates in the indexer.
@@ -173,6 +174,45 @@ type PodTemplateNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type PodTemplateLister interface {
+	// List lists all PodTemplates in the indexer.
+	List(selector labels.Selector) (ret []*v1.PodTemplate, err error)
+	// PodTemplates returns an object that can list and get PodTemplates.
+	PodTemplates(namespace string) PodTemplateNamespaceLister
+	PodTemplateListerExpansion
+}
+
+// podTemplateLister implements the PodTemplateLister interface.
+type podTemplateLister struct {
+	indexer cache.Indexer
+}
+
+// NewPodTemplateLister returns a new PodTemplateLister.
+func NewPodTemplateLister(indexer cache.Indexer) PodTemplateLister {
+	return &podTemplateLister{indexer: indexer}
+}
+
+// List lists all PodTemplates in the indexer.
+func (s *podTemplateLister) List(selector labels.Selector) (ret []*v1.PodTemplate, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.PodTemplate))
+	})
+	return ret, err
+}
+
+// PodTemplates returns an object that can list and get PodTemplates.
+func (s *podTemplateLister) PodTemplates(namespace string) PodTemplateNamespaceLister {
+	return podTemplateNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// PodTemplateNamespaceLister helps list and get PodTemplates.
+type PodTemplateNamespaceLister interface {
+	// List lists all PodTemplates in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.PodTemplate, err error)
+	// Get retrieves the PodTemplate from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.PodTemplate, error)
 	PodTemplateNamespaceListerExpansion
 }

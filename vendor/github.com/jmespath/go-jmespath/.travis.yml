@@ -16,6 +16,7 @@ go:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   - 1.14.x
   - 1.15.x
   - tip
@@ -86,3 +87,9 @@ matrix:
       go: 1.15.x
       script: make test
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+install: go get -v -t ./...
+script: make test
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

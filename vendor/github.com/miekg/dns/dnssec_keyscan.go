@@ -4,12 +4,23 @@ import (
 	"bufio"
 	"crypto"
 	"crypto/ecdsa"
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"crypto/rsa"
+	"io"
+	"math/big"
+	"strconv"
+	"strings"
+
+	"golang.org/x/crypto/ed25519"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.

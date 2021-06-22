@@ -21,6 +21,7 @@ import (
 )
 
 // PreviewGtmRecoveryPlan invokes the alidns.PreviewGtmRecoveryPlan API synchronously
+<<<<<<< HEAD
 func (client *Client) PreviewGtmRecoveryPlan(request *PreviewGtmRecoveryPlanRequest) (response *PreviewGtmRecoveryPlanResponse, err error) {
 	response = CreatePreviewGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -96,6 +97,88 @@ func CreatePreviewGtmRecoveryPlanRequest() (request *PreviewGtmRecoveryPlanReque
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "PreviewGtmRecoveryPlan", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/previewgtmrecoveryplan.html
+func (client *Client) PreviewGtmRecoveryPlan(request *PreviewGtmRecoveryPlanRequest) (response *PreviewGtmRecoveryPlanResponse, err error) {
+	response = CreatePreviewGtmRecoveryPlanResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// PreviewGtmRecoveryPlanWithChan invokes the alidns.PreviewGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/previewgtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) PreviewGtmRecoveryPlanWithChan(request *PreviewGtmRecoveryPlanRequest) (<-chan *PreviewGtmRecoveryPlanResponse, <-chan error) {
+	responseChan := make(chan *PreviewGtmRecoveryPlanResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.PreviewGtmRecoveryPlan(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// PreviewGtmRecoveryPlanWithCallback invokes the alidns.PreviewGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/previewgtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) PreviewGtmRecoveryPlanWithCallback(request *PreviewGtmRecoveryPlanRequest, callback func(response *PreviewGtmRecoveryPlanResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *PreviewGtmRecoveryPlanResponse
+		var err error
+		defer close(result)
+		response, err = client.PreviewGtmRecoveryPlan(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// PreviewGtmRecoveryPlanRequest is the request struct for api PreviewGtmRecoveryPlan
+type PreviewGtmRecoveryPlanRequest struct {
+	*requests.RpcRequest
+	PageNumber     requests.Integer `position:"Query" name:"PageNumber"`
+	UserClientIp   string           `position:"Query" name:"UserClientIp"`
+	PageSize       requests.Integer `position:"Query" name:"PageSize"`
+	RecoveryPlanId requests.Integer `position:"Query" name:"RecoveryPlanId"`
+	Lang           string           `position:"Query" name:"Lang"`
+}
+
+// PreviewGtmRecoveryPlanResponse is the response struct for api PreviewGtmRecoveryPlan
+type PreviewGtmRecoveryPlanResponse struct {
+	*responses.BaseResponse
+	RequestId  string   `json:"RequestId" xml:"RequestId"`
+	TotalItems int      `json:"TotalItems" xml:"TotalItems"`
+	TotalPages int      `json:"TotalPages" xml:"TotalPages"`
+	PageSize   int      `json:"PageSize" xml:"PageSize"`
+	PageNumber int      `json:"PageNumber" xml:"PageNumber"`
+	Previews   Previews `json:"Previews" xml:"Previews"`
+}
+
+// CreatePreviewGtmRecoveryPlanRequest creates a request to invoke PreviewGtmRecoveryPlan API
+func CreatePreviewGtmRecoveryPlanRequest() (request *PreviewGtmRecoveryPlanRequest) {
+	request = &PreviewGtmRecoveryPlanRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "PreviewGtmRecoveryPlan", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

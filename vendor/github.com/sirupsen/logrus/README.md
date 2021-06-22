@@ -406,6 +406,7 @@ func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       return nil, fmt.Errorf("Failed to marshal fields to JSON, %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -425,6 +426,10 @@ func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
 =======
       return nil, fmt.Errorf("Failed to marshal fields to JSON, %w", err)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+      return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     }
   return append(serialized, '\n'), nil
 }

@@ -80,6 +80,7 @@ func (ss Snapshot) ListRequest() (ListCommand, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	}
 
 	return req, nil
@@ -310,4 +311,66 @@ func (RevertSnapshot) Response() interface{} {
 func (RevertSnapshot) AsyncResponse() interface{} {
 	return new(BooleanResponse)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		// TODO: tags
+	}
+
+	return req, nil
+}
+
+//go:generate go run generate/main.go -interface=Listable ListSnapshots
+
+// ListSnapshots lists the volume snapshots
+type ListSnapshots struct {
+	ID           *UUID         `json:"id,omitempty" doc:"lists snapshot by snapshot ID"`
+	IntervalType string        `json:"intervaltype,omitempty" doc:"valid values are HOURLY, DAILY, WEEKLY, and MONTHLY."`
+	Keyword      string        `json:"keyword,omitempty" doc:"List by keyword"`
+	Name         string        `json:"name,omitempty" doc:"lists snapshot by snapshot name"`
+	Page         int           `json:"page,omitempty"`
+	PageSize     int           `json:"pagesize,omitempty"`
+	SnapshotType string        `json:"snapshottype,omitempty" doc:"valid values are MANUAL or RECURRING."`
+	Tags         []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+	VolumeID     *UUID         `json:"volumeid,omitempty" doc:"the ID of the disk volume"`
+	ZoneID       *UUID         `json:"zoneid,omitempty" doc:"list snapshots by zone id"`
+	_            bool          `name:"listSnapshots" description:"Lists all available snapshots for the account."`
+}
+
+// ListSnapshotsResponse represents a list of volume snapshots
+type ListSnapshotsResponse struct {
+	Count    int        `json:"count"`
+	Snapshot []Snapshot `json:"snapshot"`
+}
+
+// DeleteSnapshot (Async) deletes a snapshot of a disk volume
+type DeleteSnapshot struct {
+	ID *UUID `json:"id" doc:"The ID of the snapshot"`
+	_  bool  `name:"deleteSnapshot" description:"Deletes a snapshot of a disk volume."`
+}
+
+// Response returns the struct to unmarshal
+func (DeleteSnapshot) Response() interface{} {
+	return new(AsyncJobResult)
+}
+
+// AsyncResponse returns the struct to unmarshal the async job
+func (DeleteSnapshot) AsyncResponse() interface{} {
+	return new(BooleanResponse)
+}
+
+// RevertSnapshot (Async) reverts a volume snapshot
+type RevertSnapshot struct {
+	ID *UUID `json:"id" doc:"The ID of the snapshot"`
+	_  bool  `name:"revertSnapshot" description:"revert a volume snapshot."`
+}
+
+// Response returns the struct to unmarshal
+func (RevertSnapshot) Response() interface{} {
+	return new(AsyncJobResult)
+}
+
+// AsyncResponse returns the struct to unmarshal the async job
+func (RevertSnapshot) AsyncResponse() interface{} {
+	return new(BooleanResponse)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

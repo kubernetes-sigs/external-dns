@@ -32,6 +32,7 @@ type lazyObject struct {
 	mapper RESTMapper
 }
 
+<<<<<<< HEAD
 // NewLazyRESTMapperLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
 // returning those initialization errors when the interface methods are invoked. This defers the
 // initialization and any server calls until a client actually needs to perform the action.
@@ -109,4 +110,76 @@ func (o *lazyObject) Reset() {
 	if o.loaded && o.err == nil {
 		MaybeResetRESTMapper(o.mapper)
 	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// NewLazyObjectLoader handles unrecoverable errors when creating a RESTMapper / ObjectTyper by
+// returning those initialization errors when the interface methods are invoked. This defers the
+// initialization and any server calls until a client actually needs to perform the action.
+func NewLazyRESTMapperLoader(fn func() (RESTMapper, error)) RESTMapper {
+	obj := &lazyObject{loader: fn}
+	return obj
+}
+
+// init lazily loads the mapper and typer, returning an error if initialization has failed.
+func (o *lazyObject) init() error {
+	o.lock.Lock()
+	defer o.lock.Unlock()
+	if o.loaded {
+		return o.err
+	}
+	o.mapper, o.err = o.loader()
+	o.loaded = true
+	return o.err
+}
+
+var _ RESTMapper = &lazyObject{}
+
+func (o *lazyObject) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+	if err := o.init(); err != nil {
+		return schema.GroupVersionKind{}, err
+	}
+	return o.mapper.KindFor(resource)
+}
+
+func (o *lazyObject) KindsFor(resource schema.GroupVersionResource) ([]schema.GroupVersionKind, error) {
+	if err := o.init(); err != nil {
+		return []schema.GroupVersionKind{}, err
+	}
+	return o.mapper.KindsFor(resource)
+}
+
+func (o *lazyObject) ResourceFor(input schema.GroupVersionResource) (schema.GroupVersionResource, error) {
+	if err := o.init(); err != nil {
+		return schema.GroupVersionResource{}, err
+	}
+	return o.mapper.ResourceFor(input)
+}
+
+func (o *lazyObject) ResourcesFor(input schema.GroupVersionResource) ([]schema.GroupVersionResource, error) {
+	if err := o.init(); err != nil {
+		return []schema.GroupVersionResource{}, err
+	}
+	return o.mapper.ResourcesFor(input)
+}
+
+func (o *lazyObject) RESTMapping(gk schema.GroupKind, versions ...string) (*RESTMapping, error) {
+	if err := o.init(); err != nil {
+		return nil, err
+	}
+	return o.mapper.RESTMapping(gk, versions...)
+}
+
+func (o *lazyObject) RESTMappings(gk schema.GroupKind, versions ...string) ([]*RESTMapping, error) {
+	if err := o.init(); err != nil {
+		return nil, err
+	}
+	return o.mapper.RESTMappings(gk, versions...)
+}
+
+func (o *lazyObject) ResourceSingularizer(resource string) (singular string, err error) {
+	if err := o.init(); err != nil {
+		return "", err
+	}
+	return o.mapper.ResourceSingularizer(resource)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

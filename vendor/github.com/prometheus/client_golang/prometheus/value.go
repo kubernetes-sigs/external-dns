@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -453,6 +454,136 @@ func makeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
 // example.
 func MakeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+
+	dto "github.com/prometheus/client_model/go"
+)
+
+// ValueType is an enumeration of metric types that represent a simple value.
+type ValueType int
+
+// Possible values for the ValueType enum. Use UntypedValue to mark a metric
+// with an unknown type.
+const (
+	_ ValueType = iota
+	CounterValue
+	GaugeValue
+	UntypedValue
+)
+
+// valueFunc is a generic metric for simple values retrieved on collect time
+// from a function. It implements Metric and Collector. Its effective type is
+// determined by ValueType. This is a low-level building block used by the
+// library to back the implementations of CounterFunc, GaugeFunc, and
+// UntypedFunc.
+type valueFunc struct {
+	selfCollector
+
+	desc       *Desc
+	valType    ValueType
+	function   func() float64
+	labelPairs []*dto.LabelPair
+}
+
+// newValueFunc returns a newly allocated valueFunc with the given Desc and
+// ValueType. The value reported is determined by calling the given function
+// from within the Write method. Take into account that metric collection may
+// happen concurrently. If that results in concurrent calls to Write, like in
+// the case where a valueFunc is directly registered with Prometheus, the
+// provided function must be concurrency-safe.
+func newValueFunc(desc *Desc, valueType ValueType, function func() float64) *valueFunc {
+	result := &valueFunc{
+		desc:       desc,
+		valType:    valueType,
+		function:   function,
+		labelPairs: makeLabelPairs(desc, nil),
+	}
+	result.init(result)
+	return result
+}
+
+func (v *valueFunc) Desc() *Desc {
+	return v.desc
+}
+
+func (v *valueFunc) Write(out *dto.Metric) error {
+	return populateMetric(v.valType, v.function(), v.labelPairs, nil, out)
+}
+
+// NewConstMetric returns a metric with one fixed value that cannot be
+// changed. Users of this package will not have much use for it in regular
+// operations. However, when implementing custom Collectors, it is useful as a
+// throw-away metric that is generated on the fly to send it to Prometheus in
+// the Collect method. NewConstMetric returns an error if the length of
+// labelValues is not consistent with the variable labels in Desc or if Desc is
+// invalid.
+func NewConstMetric(desc *Desc, valueType ValueType, value float64, labelValues ...string) (Metric, error) {
+	if desc.err != nil {
+		return nil, desc.err
+	}
+	if err := validateLabelValues(labelValues, len(desc.variableLabels)); err != nil {
+		return nil, err
+	}
+	return &constMetric{
+		desc:       desc,
+		valType:    valueType,
+		val:        value,
+		labelPairs: makeLabelPairs(desc, labelValues),
+	}, nil
+}
+
+// MustNewConstMetric is a version of NewConstMetric that panics where
+// NewConstMetric would have returned an error.
+func MustNewConstMetric(desc *Desc, valueType ValueType, value float64, labelValues ...string) Metric {
+	m, err := NewConstMetric(desc, valueType, value, labelValues...)
+	if err != nil {
+		panic(err)
+	}
+	return m
+}
+
+type constMetric struct {
+	desc       *Desc
+	valType    ValueType
+	val        float64
+	labelPairs []*dto.LabelPair
+}
+
+func (m *constMetric) Desc() *Desc {
+	return m.desc
+}
+
+func (m *constMetric) Write(out *dto.Metric) error {
+	return populateMetric(m.valType, m.val, m.labelPairs, nil, out)
+}
+
+func populateMetric(
+	t ValueType,
+	v float64,
+	labelPairs []*dto.LabelPair,
+	e *dto.Exemplar,
+	m *dto.Metric,
+) error {
+	m.Label = labelPairs
+	switch t {
+	case CounterValue:
+		m.Counter = &dto.Counter{Value: proto.Float64(v), Exemplar: e}
+	case GaugeValue:
+		m.Gauge = &dto.Gauge{Value: proto.Float64(v)}
+	case UntypedValue:
+		m.Untyped = &dto.Untyped{Value: proto.Float64(v)}
+	default:
+		return fmt.Errorf("encountered unknown type %v", t)
+	}
+	return nil
+}
+
+func makeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	totalLen := len(desc.variableLabels) + len(desc.constLabelPairs)
 	if totalLen == 0 {
 		// Super fast path.

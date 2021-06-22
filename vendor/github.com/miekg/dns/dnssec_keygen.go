@@ -3,11 +3,21 @@ package dns
 import (
 	"crypto"
 	"crypto/ecdsa"
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
+	"math/big"
+
+	"golang.org/x/crypto/ed25519"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // Generate generates a DNSKEY of the given bit size.

@@ -93,6 +93,7 @@ func Unmarshal(in []byte, out interface{}) (err error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // A Decoder reads and decodes YAML values from an input stream.
 type Decoder struct {
 	parser      *parser
@@ -1212,6 +1213,338 @@ func (n *Node) ShortTag() string {
 				return nullTag
 			}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// A Decorder reads and decodes YAML values from an input stream.
+type Decoder struct {
+	parser      *parser
+	knownFields bool
+}
+
+// NewDecoder returns a new decoder that reads from r.
+//
+// The decoder introduces its own buffering and may read
+// data from r beyond the YAML values requested.
+func NewDecoder(r io.Reader) *Decoder {
+	return &Decoder{
+		parser: newParserFromReader(r),
+	}
+}
+
+// KnownFields ensures that the keys in decoded mappings to
+// exist as fields in the struct being decoded into.
+func (dec *Decoder) KnownFields(enable bool) {
+	dec.knownFields = enable
+}
+
+// Decode reads the next YAML-encoded value from its input
+// and stores it in the value pointed to by v.
+//
+// See the documentation for Unmarshal for details about the
+// conversion of YAML into a Go value.
+func (dec *Decoder) Decode(v interface{}) (err error) {
+	d := newDecoder()
+	d.knownFields = dec.knownFields
+	defer handleErr(&err)
+	node := dec.parser.parse()
+	if node == nil {
+		return io.EOF
+	}
+	out := reflect.ValueOf(v)
+	if out.Kind() == reflect.Ptr && !out.IsNil() {
+		out = out.Elem()
+	}
+	d.unmarshal(node, out)
+	if len(d.terrors) > 0 {
+		return &TypeError{d.terrors}
+	}
+	return nil
+}
+
+// Decode decodes the node and stores its data into the value pointed to by v.
+//
+// See the documentation for Unmarshal for details about the
+// conversion of YAML into a Go value.
+func (n *Node) Decode(v interface{}) (err error) {
+	d := newDecoder()
+	defer handleErr(&err)
+	out := reflect.ValueOf(v)
+	if out.Kind() == reflect.Ptr && !out.IsNil() {
+		out = out.Elem()
+	}
+	d.unmarshal(n, out)
+	if len(d.terrors) > 0 {
+		return &TypeError{d.terrors}
+	}
+	return nil
+}
+
+func unmarshal(in []byte, out interface{}, strict bool) (err error) {
+	defer handleErr(&err)
+	d := newDecoder()
+	p := newParser(in)
+	defer p.destroy()
+	node := p.parse()
+	if node != nil {
+		v := reflect.ValueOf(out)
+		if v.Kind() == reflect.Ptr && !v.IsNil() {
+			v = v.Elem()
+		}
+		d.unmarshal(node, v)
+	}
+	if len(d.terrors) > 0 {
+		return &TypeError{d.terrors}
+	}
+	return nil
+}
+
+// Marshal serializes the value provided into a YAML document. The structure
+// of the generated document will reflect the structure of the value itself.
+// Maps and pointers (to struct, string, int, etc) are accepted as the in value.
+//
+// Struct fields are only marshalled if they are exported (have an upper case
+// first letter), and are marshalled using the field name lowercased as the
+// default key. Custom keys may be defined via the "yaml" name in the field
+// tag: the content preceding the first comma is used as the key, and the
+// following comma-separated options are used to tweak the marshalling process.
+// Conflicting names result in a runtime error.
+//
+// The field tag format accepted is:
+//
+//     `(...) yaml:"[<key>][,<flag1>[,<flag2>]]" (...)`
+//
+// The following flags are currently supported:
+//
+//     omitempty    Only include the field if it's not set to the zero
+//                  value for the type or to empty slices or maps.
+//                  Zero valued structs will be omitted if all their public
+//                  fields are zero, unless they implement an IsZero
+//                  method (see the IsZeroer interface type), in which
+//                  case the field will be included if that method returns true.
+//
+//     flow         Marshal using a flow style (useful for structs,
+//                  sequences and maps).
+//
+//     inline       Inline the field, which must be a struct or a map,
+//                  causing all of its fields or keys to be processed as if
+//                  they were part of the outer struct. For maps, keys must
+//                  not conflict with the yaml keys of other struct fields.
+//
+// In addition, if the key is "-", the field is ignored.
+//
+// For example:
+//
+//     type T struct {
+//         F int `yaml:"a,omitempty"`
+//         B int
+//     }
+//     yaml.Marshal(&T{B: 2}) // Returns "b: 2\n"
+//     yaml.Marshal(&T{F: 1}} // Returns "a: 1\nb: 0\n"
+//
+func Marshal(in interface{}) (out []byte, err error) {
+	defer handleErr(&err)
+	e := newEncoder()
+	defer e.destroy()
+	e.marshalDoc("", reflect.ValueOf(in))
+	e.finish()
+	out = e.out
+	return
+}
+
+// An Encoder writes YAML values to an output stream.
+type Encoder struct {
+	encoder *encoder
+}
+
+// NewEncoder returns a new encoder that writes to w.
+// The Encoder should be closed after use to flush all data
+// to w.
+func NewEncoder(w io.Writer) *Encoder {
+	return &Encoder{
+		encoder: newEncoderWithWriter(w),
+	}
+}
+
+// Encode writes the YAML encoding of v to the stream.
+// If multiple items are encoded to the stream, the
+// second and subsequent document will be preceded
+// with a "---" document separator, but the first will not.
+//
+// See the documentation for Marshal for details about the conversion of Go
+// values to YAML.
+func (e *Encoder) Encode(v interface{}) (err error) {
+	defer handleErr(&err)
+	e.encoder.marshalDoc("", reflect.ValueOf(v))
+	return nil
+}
+
+// SetIndent changes the used indentation used when encoding.
+func (e *Encoder) SetIndent(spaces int) {
+	if spaces < 0 {
+		panic("yaml: cannot indent to a negative number of spaces")
+	}
+	e.encoder.indent = spaces
+}
+
+// Close closes the encoder by writing any remaining data.
+// It does not write a stream terminating string "...".
+func (e *Encoder) Close() (err error) {
+	defer handleErr(&err)
+	e.encoder.finish()
+	return nil
+}
+
+func handleErr(err *error) {
+	if v := recover(); v != nil {
+		if e, ok := v.(yamlError); ok {
+			*err = e.err
+		} else {
+			panic(v)
+		}
+	}
+}
+
+type yamlError struct {
+	err error
+}
+
+func fail(err error) {
+	panic(yamlError{err})
+}
+
+func failf(format string, args ...interface{}) {
+	panic(yamlError{fmt.Errorf("yaml: "+format, args...)})
+}
+
+// A TypeError is returned by Unmarshal when one or more fields in
+// the YAML document cannot be properly decoded into the requested
+// types. When this error is returned, the value is still
+// unmarshaled partially.
+type TypeError struct {
+	Errors []string
+}
+
+func (e *TypeError) Error() string {
+	return fmt.Sprintf("yaml: unmarshal errors:\n  %s", strings.Join(e.Errors, "\n  "))
+}
+
+type Kind uint32
+
+const (
+	DocumentNode Kind = 1 << iota
+	SequenceNode
+	MappingNode
+	ScalarNode
+	AliasNode
+)
+
+type Style uint32
+
+const (
+	TaggedStyle Style = 1 << iota
+	DoubleQuotedStyle
+	SingleQuotedStyle
+	LiteralStyle
+	FoldedStyle
+	FlowStyle
+)
+
+// Node represents an element in the YAML document hierarchy. While documents
+// are typically encoded and decoded into higher level types, such as structs
+// and maps, Node is an intermediate representation that allows detailed
+// control over the content being decoded or encoded.
+//
+// Values that make use of the Node type interact with the yaml package in the
+// same way any other type would do, by encoding and decoding yaml data
+// directly or indirectly into them.
+//
+// For example:
+//
+//     var person struct {
+//             Name    string
+//             Address yaml.Node
+//     }
+//     err := yaml.Unmarshal(data, &person)
+// 
+// Or by itself:
+//
+//     var person Node
+//     err := yaml.Unmarshal(data, &person)
+//
+type Node struct {
+	// Kind defines whether the node is a document, a mapping, a sequence,
+	// a scalar value, or an alias to another node. The specific data type of
+	// scalar nodes may be obtained via the ShortTag and LongTag methods.
+	Kind  Kind
+
+	// Style allows customizing the apperance of the node in the tree.
+	Style Style
+
+	// Tag holds the YAML tag defining the data type for the value.
+	// When decoding, this field will always be set to the resolved tag,
+	// even when it wasn't explicitly provided in the YAML content.
+	// When encoding, if this field is unset the value type will be
+	// implied from the node properties, and if it is set, it will only
+	// be serialized into the representation if TaggedStyle is used or
+	// the implicit tag diverges from the provided one.
+	Tag string
+
+	// Value holds the unescaped and unquoted represenation of the value.
+	Value string
+
+	// Anchor holds the anchor name for this node, which allows aliases to point to it.
+	Anchor string
+
+	// Alias holds the node that this alias points to. Only valid when Kind is AliasNode.
+	Alias *Node
+
+	// Content holds contained nodes for documents, mappings, and sequences.
+	Content []*Node
+
+	// HeadComment holds any comments in the lines preceding the node and
+	// not separated by an empty line.
+	HeadComment string
+
+	// LineComment holds any comments at the end of the line where the node is in.
+	LineComment string
+
+	// FootComment holds any comments following the node and before empty lines.
+	FootComment string
+
+	// Line and Column hold the node position in the decoded YAML text.
+	// These fields are not respected when encoding the node.
+	Line   int
+	Column int
+}
+
+// LongTag returns the long form of the tag that indicates the data type for
+// the node. If the Tag field isn't explicitly defined, one will be computed
+// based on the node properties.
+func (n *Node) LongTag() string {
+	return longTag(n.ShortTag())
+}
+
+// ShortTag returns the short form of the YAML tag that indicates data type for
+// the node. If the Tag field isn't explicitly defined, one will be computed
+// based on the node properties.
+func (n *Node) ShortTag() string {
+	if n.indicatedString() {
+		return strTag
+	}
+	if n.Tag == "" || n.Tag == "!" {
+		switch n.Kind {
+		case MappingNode:
+			return mapTag
+		case SequenceNode:
+			return seqTag
+		case AliasNode:
+			if n.Alias != nil {
+				return n.Alias.ShortTag()
+			}
+		case ScalarNode:
+			tag, _ := resolve("", n.Value)
+			return tag
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 		return ""
 	}

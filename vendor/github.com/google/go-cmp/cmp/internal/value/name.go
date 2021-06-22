@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -48,6 +49,28 @@ func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte 
 	if t == anyType {
 		return append(b, "any"...)
 	}
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// license that can be found in the LICENSE.md file.
+
+package value
+
+import (
+	"reflect"
+	"strconv"
+)
+
+// TypeString is nearly identical to reflect.Type.String,
+// but has an additional option to specify that full type names be used.
+func TypeString(t reflect.Type, qualified bool) string {
+	return string(appendTypeName(nil, t, qualified, false))
+}
+
+func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte {
+	// BUG: Go reflection provides no way to disambiguate two named types
+	// of the same name and within the same package,
+	// but declared within the namespace of different functions.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	// Named type.
 	if t.Name() != "" {

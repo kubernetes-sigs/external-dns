@@ -14,11 +14,18 @@ const (
 )
 
 // ContextFlags flags for GSSAPI
+<<<<<<< HEAD
 // DEPRECATED - do not use
 type ContextFlags asn1.BitString
 
 // NewContextFlags creates a new ContextFlags instance
 // DEPRECATED - do not use
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ContextFlags asn1.BitString
+
+// NewContextFlags creates a new ContextFlags instance.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func NewContextFlags() ContextFlags {
 	var c ContextFlags
 	c.BitLength = 32

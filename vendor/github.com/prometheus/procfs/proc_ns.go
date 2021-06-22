@@ -44,6 +44,7 @@ func (p Proc) Namespaces() (Namespaces, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
 	}
 
@@ -129,6 +130,28 @@ func (p Proc) Namespaces() (Namespaces, error) {
 =======
 			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
+	}
+
+	ns := make(Namespaces, len(names))
+	for _, name := range names {
+		target, err := os.Readlink(p.path("ns", name))
+		if err != nil {
+			return nil, err
+		}
+
+		fields := strings.SplitN(target, ":", 2)
+		if len(fields) != 2 {
+			return nil, fmt.Errorf("failed to parse namespace type and inode from '%v'", target)
+		}
+
+		typ := fields[0]
+		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 
 		ns[name] = Namespace{typ, uint32(inode)}

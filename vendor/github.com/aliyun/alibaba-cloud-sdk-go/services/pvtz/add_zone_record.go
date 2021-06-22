@@ -21,6 +21,7 @@ import (
 )
 
 // AddZoneRecord invokes the pvtz.AddZoneRecord API synchronously
+<<<<<<< HEAD
 func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
 	response = CreateAddZoneRecordResponse()
 	err = client.DoAction(request, response)
@@ -97,6 +98,88 @@ func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
+func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
+	response = CreateAddZoneRecordResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// AddZoneRecordWithChan invokes the pvtz.AddZoneRecord API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddZoneRecordWithChan(request *AddZoneRecordRequest) (<-chan *AddZoneRecordResponse, <-chan error) {
+	responseChan := make(chan *AddZoneRecordResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.AddZoneRecord(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// AddZoneRecordWithCallback invokes the pvtz.AddZoneRecord API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, callback func(response *AddZoneRecordResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *AddZoneRecordResponse
+		var err error
+		defer close(result)
+		response, err = client.AddZoneRecord(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// AddZoneRecordRequest is the request struct for api AddZoneRecord
+type AddZoneRecordRequest struct {
+	*requests.RpcRequest
+	Rr           string           `position:"Query" name:"Rr"`
+	Type         string           `position:"Query" name:"Type"`
+	Priority     requests.Integer `position:"Query" name:"Priority"`
+	Ttl          requests.Integer `position:"Query" name:"Ttl"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	ZoneId       string           `position:"Query" name:"ZoneId"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Value        string           `position:"Query" name:"Value"`
+}
+
+// AddZoneRecordResponse is the response struct for api AddZoneRecord
+type AddZoneRecordResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	Success   bool   `json:"Success" xml:"Success"`
+	RecordId  int64  `json:"RecordId" xml:"RecordId"`
+}
+
+// CreateAddZoneRecordRequest creates a request to invoke AddZoneRecord API
+func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
+	request = &AddZoneRecordRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

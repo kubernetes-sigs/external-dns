@@ -10,7 +10,12 @@ package dns
 // escaped dots (\.) for instance.
 // s must be a syntactically valid domain name, see IsDomainName.
 func SplitDomainName(s string) (labels []string) {
+<<<<<<< HEAD
 	if s == "" {
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if len(s) == 0 {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return nil
 	}
 	fqdnEnd := 0 // offset of the final '.' or the length of the name

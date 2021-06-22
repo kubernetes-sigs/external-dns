@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"time"
@@ -229,6 +230,74 @@ func (client *Client) GetRunstatusIncident(ctx context.Context, incident Runstat
 =======
 	return nil, errors.New("incident not found")
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"fmt"
+	"time"
+)
+
+//RunstatusIncident is a runstatus incident
+type RunstatusIncident struct {
+	EndDate    *time.Time       `json:"end_date,omitempty"`
+	Events     []RunstatusEvent `json:"events,omitempty"`
+	EventsURL  string           `json:"events_url,omitempty"`
+	ID         int              `json:"id,omitempty"`
+	PageURL    string           `json:"page_url,omitempty"` // fake field
+	PostMortem string           `json:"post_mortem,omitempty"`
+	RealTime   bool             `json:"real_time,omitempty"`
+	Services   []string         `json:"services"`
+	StartDate  *time.Time       `json:"start_date,omitempty"`
+	State      string           `json:"state"`
+	Status     string           `json:"status"`
+	StatusText string           `json:"status_text"`
+	Title      string           `json:"title"`
+	URL        string           `json:"url,omitempty"`
+}
+
+// Match returns true if the other incident has got similarities with itself
+func (incident RunstatusIncident) Match(other RunstatusIncident) bool {
+	if other.Title != "" && incident.Title == other.Title {
+		return true
+	}
+
+	if other.ID > 0 && incident.ID == other.ID {
+		return true
+	}
+
+	return false
+}
+
+//RunstatusIncidentList is a list of incident
+type RunstatusIncidentList struct {
+	Next      string              `json:"next"`
+	Previous  string              `json:"previous"`
+	Incidents []RunstatusIncident `json:"results"`
+}
+
+// GetRunstatusIncident retrieves the details of a specific incident.
+func (client *Client) GetRunstatusIncident(ctx context.Context, incident RunstatusIncident) (*RunstatusIncident, error) {
+	if incident.URL != "" {
+		return client.getRunstatusIncident(ctx, incident.URL)
+	}
+
+	if incident.PageURL == "" {
+		return nil, fmt.Errorf("empty Page URL for %#v", incident)
+	}
+
+	page, err := client.getRunstatusPage(ctx, incident.PageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := range page.Incidents {
+		j := &page.Incidents[i]
+		if j.Match(incident) {
+			return j, nil
+		}
+	}
+
+	return nil, fmt.Errorf("%#v not found", incident)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (client *Client) getRunstatusIncident(ctx context.Context, incidentURL string) (*RunstatusIncident, error) {

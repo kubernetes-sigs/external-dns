@@ -21,6 +21,7 @@ import (
 )
 
 // DeleteSubDomainRecords invokes the alidns.DeleteSubDomainRecords API synchronously
+<<<<<<< HEAD
 func (client *Client) DeleteSubDomainRecords(request *DeleteSubDomainRecordsRequest) (response *DeleteSubDomainRecordsResponse, err error) {
 	response = CreateDeleteSubDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,85 @@ func CreateDeleteSubDomainRecordsRequest() (request *DeleteSubDomainRecordsReque
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteSubDomainRecords", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
+func (client *Client) DeleteSubDomainRecords(request *DeleteSubDomainRecordsRequest) (response *DeleteSubDomainRecordsResponse, err error) {
+	response = CreateDeleteSubDomainRecordsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DeleteSubDomainRecordsWithChan invokes the alidns.DeleteSubDomainRecords API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteSubDomainRecordsWithChan(request *DeleteSubDomainRecordsRequest) (<-chan *DeleteSubDomainRecordsResponse, <-chan error) {
+	responseChan := make(chan *DeleteSubDomainRecordsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DeleteSubDomainRecords(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DeleteSubDomainRecordsWithCallback invokes the alidns.DeleteSubDomainRecords API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletesubdomainrecords.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteSubDomainRecordsWithCallback(request *DeleteSubDomainRecordsRequest, callback func(response *DeleteSubDomainRecordsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DeleteSubDomainRecordsResponse
+		var err error
+		defer close(result)
+		response, err = client.DeleteSubDomainRecords(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DeleteSubDomainRecordsRequest is the request struct for api DeleteSubDomainRecords
+type DeleteSubDomainRecordsRequest struct {
+	*requests.RpcRequest
+	RR           string `position:"Query" name:"RR"`
+	DomainName   string `position:"Query" name:"DomainName"`
+	Type         string `position:"Query" name:"Type"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DeleteSubDomainRecordsResponse is the response struct for api DeleteSubDomainRecords
+type DeleteSubDomainRecordsResponse struct {
+	*responses.BaseResponse
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	RR         string `json:"RR" xml:"RR"`
+	TotalCount string `json:"TotalCount" xml:"TotalCount"`
+}
+
+// CreateDeleteSubDomainRecordsRequest creates a request to invoke DeleteSubDomainRecords API
+func CreateDeleteSubDomainRecordsRequest() (request *DeleteSubDomainRecordsRequest) {
+	request = &DeleteSubDomainRecordsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteSubDomainRecords", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

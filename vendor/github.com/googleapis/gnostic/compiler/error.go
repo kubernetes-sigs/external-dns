@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright 2017 Google LLC. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -156,6 +157,42 @@ func (err *Error) Error() string {
 =======
 	return err.locationDescription() + " " + err.Message
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Copyright 2017 Google Inc. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package compiler
+
+// Error represents compiler errors and their location in the document.
+type Error struct {
+	Context *Context
+	Message string
+}
+
+// NewError creates an Error.
+func NewError(context *Context, message string) *Error {
+	return &Error{Context: context, Message: message}
+}
+
+// Error returns the string value of an Error.
+func (err *Error) Error() string {
+	if err.Context == nil {
+		return "ERROR " + err.Message
+	}
+	return "ERROR " + err.Context.Description() + " " + err.Message
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // ErrorGroup is a container for groups of Error values.

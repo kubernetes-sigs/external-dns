@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"golang.org/x/sys/unix"
 )
@@ -59,6 +60,14 @@ func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
 =======
 	m.MarshalHeader(iana.ProtocolIP, unix.IP_PKTINFO, sizeofInetPktinfo)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+func marshalPacketInfo(b []byte, cm *ControlMessage) []byte {
+	m := socket.ControlMessage(b)
+	m.MarshalHeader(iana.ProtocolIP, sysIP_PKTINFO, sizeofInetPktinfo)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if cm != nil {
 		pi := (*inetPktinfo)(unsafe.Pointer(&m.Data(sizeofInetPktinfo)[0]))
 		if ip := cm.Src.To4(); ip != nil {

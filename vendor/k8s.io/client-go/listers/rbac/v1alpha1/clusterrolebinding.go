@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ClusterRoleBindingLister interface {
 	// List lists all ClusterRoleBindings in the indexer.
@@ -71,6 +72,13 @@ type ClusterRoleBindingLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ClusterRoleBindingLister interface {
+	// List lists all ClusterRoleBindings in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.ClusterRoleBinding, err error)
+	// Get retrieves the ClusterRoleBinding from the index for a given name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1alpha1.ClusterRoleBinding, error)
 	ClusterRoleBindingListerExpansion
 }

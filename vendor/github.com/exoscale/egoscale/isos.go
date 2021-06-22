@@ -53,6 +53,7 @@ type ListISOs struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Tags        []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs). Note: multiple tags are OR'ed, not AND'ed."`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -67,6 +68,10 @@ type ListISOs struct {
 =======
 	Tags        []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Tags        []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	ZoneID      *UUID         `json:"zoneid,omitempty" doc:"The ID of the zone"`
 }
 

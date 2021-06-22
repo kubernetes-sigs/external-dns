@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeZoneInfo invokes the pvtz.DescribeZoneInfo API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
 	response = CreateDescribeZoneInfoResponse()
 	err = client.DoAction(request, response)
@@ -104,6 +105,93 @@ func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
+func (client *Client) DescribeZoneInfo(request *DescribeZoneInfoRequest) (response *DescribeZoneInfoResponse, err error) {
+	response = CreateDescribeZoneInfoResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeZoneInfoWithChan invokes the pvtz.DescribeZoneInfo API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeZoneInfoWithChan(request *DescribeZoneInfoRequest) (<-chan *DescribeZoneInfoResponse, <-chan error) {
+	responseChan := make(chan *DescribeZoneInfoResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeZoneInfo(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeZoneInfoWithCallback invokes the pvtz.DescribeZoneInfo API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describezoneinfo.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeZoneInfoWithCallback(request *DescribeZoneInfoRequest, callback func(response *DescribeZoneInfoResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeZoneInfoResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeZoneInfo(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeZoneInfoRequest is the request struct for api DescribeZoneInfo
+type DescribeZoneInfoRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	ZoneId       string `position:"Query" name:"ZoneId"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeZoneInfoResponse is the response struct for api DescribeZoneInfo
+type DescribeZoneInfoResponse struct {
+	*responses.BaseResponse
+	RequestId       string   `json:"RequestId" xml:"RequestId"`
+	ZoneId          string   `json:"ZoneId" xml:"ZoneId"`
+	ZoneName        string   `json:"ZoneName" xml:"ZoneName"`
+	Remark          string   `json:"Remark" xml:"Remark"`
+	RecordCount     int      `json:"RecordCount" xml:"RecordCount"`
+	CreateTime      string   `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp int64    `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	UpdateTime      string   `json:"UpdateTime" xml:"UpdateTime"`
+	UpdateTimestamp int64    `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	IsPtr           bool     `json:"IsPtr" xml:"IsPtr"`
+	ProxyPattern    string   `json:"ProxyPattern" xml:"ProxyPattern"`
+	SlaveDns        bool     `json:"SlaveDns" xml:"SlaveDns"`
+	BindVpcs        BindVpcs `json:"BindVpcs" xml:"BindVpcs"`
+}
+
+// CreateDescribeZoneInfoRequest creates a request to invoke DescribeZoneInfo API
+func CreateDescribeZoneInfoRequest() (request *DescribeZoneInfoRequest) {
+	request = &DescribeZoneInfoRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneInfo", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

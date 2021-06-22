@@ -21,6 +21,7 @@ import (
 )
 
 // SetZoneRecordStatus invokes the pvtz.SetZoneRecordStatus API synchronously
+<<<<<<< HEAD
 func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
 	response = CreateSetZoneRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -92,6 +93,84 @@ func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
+func (client *Client) SetZoneRecordStatus(request *SetZoneRecordStatusRequest) (response *SetZoneRecordStatusResponse, err error) {
+	response = CreateSetZoneRecordStatusResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// SetZoneRecordStatusWithChan invokes the pvtz.SetZoneRecordStatus API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetZoneRecordStatusWithChan(request *SetZoneRecordStatusRequest) (<-chan *SetZoneRecordStatusResponse, <-chan error) {
+	responseChan := make(chan *SetZoneRecordStatusResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.SetZoneRecordStatus(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// SetZoneRecordStatusWithCallback invokes the pvtz.SetZoneRecordStatus API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/setzonerecordstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetZoneRecordStatusWithCallback(request *SetZoneRecordStatusRequest, callback func(response *SetZoneRecordStatusResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *SetZoneRecordStatusResponse
+		var err error
+		defer close(result)
+		response, err = client.SetZoneRecordStatus(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// SetZoneRecordStatusRequest is the request struct for api SetZoneRecordStatus
+type SetZoneRecordStatusRequest struct {
+	*requests.RpcRequest
+	RecordId     requests.Integer `position:"Query" name:"RecordId"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Status       string           `position:"Query" name:"Status"`
+}
+
+// SetZoneRecordStatusResponse is the response struct for api SetZoneRecordStatus
+type SetZoneRecordStatusResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	RecordId  int64  `json:"RecordId" xml:"RecordId"`
+	Status    string `json:"Status" xml:"Status"`
+}
+
+// CreateSetZoneRecordStatusRequest creates a request to invoke SetZoneRecordStatus API
+func CreateSetZoneRecordStatusRequest() (request *SetZoneRecordStatusRequest) {
+	request = &SetZoneRecordStatusRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "SetZoneRecordStatus", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

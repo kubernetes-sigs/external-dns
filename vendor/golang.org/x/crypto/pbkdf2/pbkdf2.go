@@ -32,7 +32,12 @@ import (
 // can get a derived key for e.g. AES-256 (which needs a 32-byte key) by
 // doing:
 //
+<<<<<<< HEAD
 //	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// 	dk := pbkdf2.Key([]byte("some password"), salt, 4096, 32, sha1.New)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Remember to get a good random salt. At least 8 bytes is recommended by the
 // RFC.

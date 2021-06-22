@@ -21,6 +21,7 @@ import (
 )
 
 // UpdateGtmMonitor invokes the alidns.UpdateGtmMonitor API synchronously
+<<<<<<< HEAD
 func (client *Client) UpdateGtmMonitor(request *UpdateGtmMonitorRequest) (response *UpdateGtmMonitorResponse, err error) {
 	response = CreateUpdateGtmMonitorResponse()
 	err = client.DoAction(request, response)
@@ -101,6 +102,93 @@ func CreateUpdateGtmMonitorRequest() (request *UpdateGtmMonitorRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmMonitor", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
+func (client *Client) UpdateGtmMonitor(request *UpdateGtmMonitorRequest) (response *UpdateGtmMonitorResponse, err error) {
+	response = CreateUpdateGtmMonitorResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateGtmMonitorWithChan invokes the alidns.UpdateGtmMonitor API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmMonitorWithChan(request *UpdateGtmMonitorRequest) (<-chan *UpdateGtmMonitorResponse, <-chan error) {
+	responseChan := make(chan *UpdateGtmMonitorResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateGtmMonitor(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateGtmMonitorWithCallback invokes the alidns.UpdateGtmMonitor API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmMonitorWithCallback(request *UpdateGtmMonitorRequest, callback func(response *UpdateGtmMonitorResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateGtmMonitorResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateGtmMonitor(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateGtmMonitorRequest is the request struct for api UpdateGtmMonitor
+type UpdateGtmMonitorRequest struct {
+	*requests.RpcRequest
+	MonitorExtendInfo string                         `position:"Query" name:"MonitorExtendInfo"`
+	MonitorConfigId   string                         `position:"Query" name:"MonitorConfigId"`
+	Timeout           requests.Integer               `position:"Query" name:"Timeout"`
+	UserClientIp      string                         `position:"Query" name:"UserClientIp"`
+	EvaluationCount   requests.Integer               `position:"Query" name:"EvaluationCount"`
+	ProtocolType      string                         `position:"Query" name:"ProtocolType"`
+	Interval          requests.Integer               `position:"Query" name:"Interval"`
+	Lang              string                         `position:"Query" name:"Lang"`
+	IspCityNode       *[]UpdateGtmMonitorIspCityNode `position:"Query" name:"IspCityNode"  type:"Repeated"`
+}
+
+// UpdateGtmMonitorIspCityNode is a repeated param struct in UpdateGtmMonitorRequest
+type UpdateGtmMonitorIspCityNode struct {
+	CityCode string `name:"CityCode"`
+	IspCode  string `name:"IspCode"`
+}
+
+// UpdateGtmMonitorResponse is the response struct for api UpdateGtmMonitor
+type UpdateGtmMonitorResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateUpdateGtmMonitorRequest creates a request to invoke UpdateGtmMonitor API
+func CreateUpdateGtmMonitorRequest() (request *UpdateGtmMonitorRequest) {
+	request = &UpdateGtmMonitorRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmMonitor", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

@@ -1,5 +1,6 @@
 # go-multierror
 
+<<<<<<< HEAD
 [![CircleCI](https://img.shields.io/circleci/build/github/hashicorp/go-multierror/master)](https://circleci.com/gh/hashicorp/go-multierror)
 [![Go Reference](https://pkg.go.dev/badge/github.com/hashicorp/go-multierror.svg)](https://pkg.go.dev/github.com/hashicorp/go-multierror)
 ![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/hashicorp/go-multierror)
@@ -44,6 +45,34 @@ you're on an older version of go:
 /go/src/github.com/hashicorp/go-multierror/multierror.go:112:9: undefined: errors.As
 /go/src/github.com/hashicorp/go-multierror/multierror.go:117:9: undefined: errors.Is
 ```
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+[![Build Status](http://img.shields.io/travis/hashicorp/go-multierror.svg?style=flat-square)][travis]
+[![Go Documentation](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)][godocs]
+
+[travis]: https://travis-ci.org/hashicorp/go-multierror
+[godocs]: https://godoc.org/github.com/hashicorp/go-multierror
+
+`go-multierror` is a package for Go that provides a mechanism for
+representing a list of `error` values as a single `error`.
+
+This allows a function in Go to return an `error` that might actually
+be a list of errors. If the caller knows this, they can unwrap the
+list and access the errors. If the caller doesn't know, the error
+formats to a nice human-readable format.
+
+`go-multierror` is fully compatible with the Go standard library
+[errors](https://golang.org/pkg/errors/) package, including the
+functions `As`, `Is`, and `Unwrap`. This provides a standardized approach
+for introspecting on error values.
+
+## Installation and Docs
+
+Install using `go get github.com/hashicorp/go-multierror`.
+
+Full documentation is available at
+http://godoc.org/github.com/hashicorp/go-multierror
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 ## Usage
 

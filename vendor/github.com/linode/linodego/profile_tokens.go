@@ -113,6 +113,7 @@ func (c *Client) ListTokens(ctx context.Context, opts *ListOptions) ([]Token, er
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -375,6 +376,90 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+	return response.Data, nil
+}
+
+// GetToken gets the token with the provided ID
+func (c *Client) GetToken(ctx context.Context, id int) (*Token, error) {
+	e, err := c.Tokens.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+	e = fmt.Sprintf("%s/%d", e, id)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Token{}).Get(e))
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*Token), nil
+}
+
+// CreateToken creates a Token
+func (c *Client) CreateToken(ctx context.Context, createOpts TokenCreateOptions) (*Token, error) {
+	var body string
+	e, err := c.Tokens.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&Token{})
+
+	// Format the Time as a string to meet the ISO8601 requirement
+	createOptsFixed := struct {
+		Label  string  `json:"label"`
+		Scopes string  `json:"scopes"`
+		Expiry *string `json:"expiry"`
+	}{}
+	createOptsFixed.Label = createOpts.Label
+	createOptsFixed.Scopes = createOpts.Scopes
+	if createOpts.Expiry != nil {
+		iso8601Expiry := createOpts.Expiry.UTC().Format("2006-01-02T15:04:05")
+		createOptsFixed.Expiry = &iso8601Expiry
+	}
+
+	if bodyData, err := json.Marshal(createOptsFixed); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+	if err != nil {
+		return nil, err
+	}
+	return r.Result().(*Token), nil
+}
+
+// UpdateToken updates the Token with the specified id
+func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdateOptions) (*Token, error) {
+	var body string
+	e, err := c.Tokens.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+	e = fmt.Sprintf("%s/%d", e, id)
+
+	req := c.R(ctx).SetResult(&Token{})
+
+	if bodyData, err := json.Marshal(updateOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

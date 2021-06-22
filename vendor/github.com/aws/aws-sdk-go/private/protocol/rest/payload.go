@@ -28,6 +28,7 @@ func PayloadMember(i interface{}) interface{} {
 	return nil
 }
 
+<<<<<<< HEAD
 const nopayloadPayloadType = "nopayload"
 
 // PayloadType returns the type of a payload field member of i if there is one,
@@ -50,5 +51,21 @@ func PayloadType(i interface{}) string {
 		}
 	}
 
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// PayloadType returns the type of a payload field member of i if there is one, or "".
+func PayloadType(i interface{}) string {
+	v := reflect.Indirect(reflect.ValueOf(i))
+	if !v.IsValid() {
+		return ""
+	}
+	if field, ok := v.Type().FieldByName("_"); ok {
+		if payloadName := field.Tag.Get("payload"); payloadName != "" {
+			if member, ok := v.Type().FieldByName(payloadName); ok {
+				return member.Tag.Get("type")
+			}
+		}
+	}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return ""
 }

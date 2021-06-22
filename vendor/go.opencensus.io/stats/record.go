@@ -35,6 +35,7 @@ func init() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Recorder provides an interface for exporting measurement information from
 // the static Record method by using the WithRecorder option.
 type Recorder interface {
@@ -301,6 +302,71 @@ func RecordWithOptions(ctx context.Context, ros ...Options) error {
 		recorder = o.recorder.Record
 	}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type recordOptions struct {
+	attachments  metricdata.Attachments
+	mutators     []tag.Mutator
+	measurements []Measurement
+}
+
+// WithAttachments applies provided exemplar attachments.
+func WithAttachments(attachments metricdata.Attachments) Options {
+	return func(ro *recordOptions) {
+		ro.attachments = attachments
+	}
+}
+
+// WithTags applies provided tag mutators.
+func WithTags(mutators ...tag.Mutator) Options {
+	return func(ro *recordOptions) {
+		ro.mutators = mutators
+	}
+}
+
+// WithMeasurements applies provided measurements.
+func WithMeasurements(measurements ...Measurement) Options {
+	return func(ro *recordOptions) {
+		ro.measurements = measurements
+	}
+}
+
+// Options apply changes to recordOptions.
+type Options func(*recordOptions)
+
+func createRecordOption(ros ...Options) *recordOptions {
+	o := &recordOptions{}
+	for _, ro := range ros {
+		ro(o)
+	}
+	return o
+}
+
+// Record records one or multiple measurements with the same context at once.
+// If there are any tags in the context, measurements will be tagged with them.
+func Record(ctx context.Context, ms ...Measurement) {
+	RecordWithOptions(ctx, WithMeasurements(ms...))
+}
+
+// RecordWithTags records one or multiple measurements at once.
+//
+// Measurements will be tagged with the tags in the context mutated by the mutators.
+// RecordWithTags is useful if you want to record with tag mutations but don't want
+// to propagate the mutations in the context.
+func RecordWithTags(ctx context.Context, mutators []tag.Mutator, ms ...Measurement) error {
+	return RecordWithOptions(ctx, WithTags(mutators...), WithMeasurements(ms...))
+}
+
+// RecordWithOptions records measurements from the given options (if any) against context
+// and tags and attachments in the options (if any).
+// If there are any tags in the context, measurements will be tagged with them.
+func RecordWithOptions(ctx context.Context, ros ...Options) error {
+	o := createRecordOption(ros...)
+	if len(o.measurements) == 0 {
+		return nil
+	}
+	recorder := internal.DefaultRecorder
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if recorder == nil {
 		return nil
 	}

@@ -34,6 +34,7 @@ func init() {
 }
 
 func signRoaRequest(request requests.AcsRequest, signer Signer, regionId string) (err error) {
+<<<<<<< HEAD
 	// 先获取 accesskey，确保刷新 credential
 	accessKeyId, err := signer.GetAccessKeyId()
 	if err != nil {
@@ -43,6 +44,16 @@ func signRoaRequest(request requests.AcsRequest, signer Signer, regionId string)
 	completeROASignParams(request, signer, regionId)
 	stringToSign := buildRoaStringToSign(request)
 	request.SetStringToSign(stringToSign)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	completeROASignParams(request, signer, regionId)
+	stringToSign := buildRoaStringToSign(request)
+	request.SetStringToSign(stringToSign)
+	accessKeyId, err := signer.GetAccessKeyId()
+	if err != nil {
+		return err
+	}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	signature := signer.Sign(stringToSign, "")
 	request.GetHeaders()["Authorization"] = "acs " + accessKeyId + ":" + signature

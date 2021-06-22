@@ -34,7 +34,11 @@ type DomainServiceHandler struct {
 type Domain struct {
 	Domain      string `json:"domain,omitempty"`
 	DateCreated string `json:"date_created,omitempty"`
+<<<<<<< HEAD
 	DNSSec      string `json:"dns_sec,omitempty"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // DomainReq is the struct to create a domain

@@ -1,7 +1,12 @@
 # Makefile for releasing.
 #
 # The release is controlled from version.go. The version found there is
+<<<<<<< HEAD
 # used to tag the git repo, we're not building any artifacts so there is nothing
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+# used to tag the git repo, we're not building any artifects so there is nothing
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 # to upload to github.
 #
 # * Up the version in version.go

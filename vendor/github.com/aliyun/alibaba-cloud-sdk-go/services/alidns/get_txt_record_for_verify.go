@@ -21,6 +21,7 @@ import (
 )
 
 // GetTxtRecordForVerify invokes the alidns.GetTxtRecordForVerify API synchronously
+<<<<<<< HEAD
 func (client *Client) GetTxtRecordForVerify(request *GetTxtRecordForVerifyRequest) (response *GetTxtRecordForVerifyResponse, err error) {
 	response = CreateGetTxtRecordForVerifyResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,85 @@ func CreateGetTxtRecordForVerifyRequest() (request *GetTxtRecordForVerifyRequest
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "GetTxtRecordForVerify", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/gettxtrecordforverify.html
+func (client *Client) GetTxtRecordForVerify(request *GetTxtRecordForVerifyRequest) (response *GetTxtRecordForVerifyResponse, err error) {
+	response = CreateGetTxtRecordForVerifyResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// GetTxtRecordForVerifyWithChan invokes the alidns.GetTxtRecordForVerify API asynchronously
+// api document: https://help.aliyun.com/api/alidns/gettxtrecordforverify.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) GetTxtRecordForVerifyWithChan(request *GetTxtRecordForVerifyRequest) (<-chan *GetTxtRecordForVerifyResponse, <-chan error) {
+	responseChan := make(chan *GetTxtRecordForVerifyResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.GetTxtRecordForVerify(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// GetTxtRecordForVerifyWithCallback invokes the alidns.GetTxtRecordForVerify API asynchronously
+// api document: https://help.aliyun.com/api/alidns/gettxtrecordforverify.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) GetTxtRecordForVerifyWithCallback(request *GetTxtRecordForVerifyRequest, callback func(response *GetTxtRecordForVerifyResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *GetTxtRecordForVerifyResponse
+		var err error
+		defer close(result)
+		response, err = client.GetTxtRecordForVerify(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// GetTxtRecordForVerifyRequest is the request struct for api GetTxtRecordForVerify
+type GetTxtRecordForVerifyRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	Type         string `position:"Query" name:"Type"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// GetTxtRecordForVerifyResponse is the response struct for api GetTxtRecordForVerify
+type GetTxtRecordForVerifyResponse struct {
+	*responses.BaseResponse
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+	RR         string `json:"RR" xml:"RR"`
+	Value      string `json:"Value" xml:"Value"`
+}
+
+// CreateGetTxtRecordForVerifyRequest creates a request to invoke GetTxtRecordForVerify API
+func CreateGetTxtRecordForVerifyRequest() (request *GetTxtRecordForVerifyRequest) {
+	request = &GetTxtRecordForVerifyRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "GetTxtRecordForVerify", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

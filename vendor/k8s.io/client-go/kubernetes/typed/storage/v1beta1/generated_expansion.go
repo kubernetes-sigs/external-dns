@@ -26,6 +26,7 @@ type CSINodeExpansion interface{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type CSIStorageCapacityExpansion interface{}
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -44,6 +45,9 @@ type CSIStorageCapacityExpansion interface{}
 type CSIStorageCapacityExpansion interface{}
 
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type StorageClassExpansion interface{}
 
 type VolumeAttachmentExpansion interface{}

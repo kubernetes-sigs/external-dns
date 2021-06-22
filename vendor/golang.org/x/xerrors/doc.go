@@ -5,8 +5,13 @@
 // Package xerrors implements functions to manipulate errors.
 //
 // This package is based on the Go 2 proposal for error values:
+<<<<<<< HEAD
 //
 //	https://golang.org/design/29934-error-values
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   https://golang.org/design/29934-error-values
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // These functions were incorporated into the standard library's errors package
 // in Go 1.13:

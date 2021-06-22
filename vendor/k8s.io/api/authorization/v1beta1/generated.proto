@@ -21,6 +21,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.authorization.v1beta1;
@@ -567,6 +568,174 @@ message SubjectAccessReview {
   // Standard list metadata.
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+syntax = 'proto2';
+
+package k8s.io.api.authorization.v1beta1;
+
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/runtime/generated.proto";
+import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
+
+// Package-wide variables from generator "generated".
+option go_package = "v1beta1";
+
+// ExtraValue masks the value so protobuf can generate
+// +protobuf.nullable=true
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+message ExtraValue {
+  // items, if empty, will result in an empty slice
+
+  repeated string items = 1;
+}
+
+// LocalSubjectAccessReview checks whether or not a user or group can perform an action in a given namespace.
+// Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions
+// checking.
+message LocalSubjectAccessReview {
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // Spec holds information about the request being evaluated.  spec.namespace must be equal to the namespace
+  // you made the request against.  If empty, it is defaulted.
+  optional SubjectAccessReviewSpec spec = 2;
+
+  // Status is filled in by the server and indicates whether the request is allowed or not
+  // +optional
+  optional SubjectAccessReviewStatus status = 3;
+}
+
+// NonResourceAttributes includes the authorization attributes available for non-resource requests to the Authorizer interface
+message NonResourceAttributes {
+  // Path is the URL path of the request
+  // +optional
+  optional string path = 1;
+
+  // Verb is the standard HTTP verb
+  // +optional
+  optional string verb = 2;
+}
+
+// NonResourceRule holds information that describes a rule for the non-resource
+message NonResourceRule {
+  // Verb is a list of kubernetes non-resource API verbs, like: get, post, put, delete, patch, head, options.  "*" means all.
+  repeated string verbs = 1;
+
+  // NonResourceURLs is a set of partial urls that a user should have access to.  *s are allowed, but only as the full,
+  // final step in the path.  "*" means all.
+  // +optional
+  repeated string nonResourceURLs = 2;
+}
+
+// ResourceAttributes includes the authorization attributes available for resource requests to the Authorizer interface
+message ResourceAttributes {
+  // Namespace is the namespace of the action being requested.  Currently, there is no distinction between no namespace and all namespaces
+  // "" (empty) is defaulted for LocalSubjectAccessReviews
+  // "" (empty) is empty for cluster-scoped resources
+  // "" (empty) means "all" for namespace scoped resources from a SubjectAccessReview or SelfSubjectAccessReview
+  // +optional
+  optional string namespace = 1;
+
+  // Verb is a kubernetes resource API verb, like: get, list, watch, create, update, delete, proxy.  "*" means all.
+  // +optional
+  optional string verb = 2;
+
+  // Group is the API Group of the Resource.  "*" means all.
+  // +optional
+  optional string group = 3;
+
+  // Version is the API Version of the Resource.  "*" means all.
+  // +optional
+  optional string version = 4;
+
+  // Resource is one of the existing resource types.  "*" means all.
+  // +optional
+  optional string resource = 5;
+
+  // Subresource is one of the existing resource types.  "" means none.
+  // +optional
+  optional string subresource = 6;
+
+  // Name is the name of the resource being requested for a "get" or deleted for a "delete". "" (empty) means all.
+  // +optional
+  optional string name = 7;
+}
+
+// ResourceRule is the list of actions the subject is allowed to perform on resources. The list ordering isn't significant,
+// may contain duplicates, and possibly be incomplete.
+message ResourceRule {
+  // Verb is a list of kubernetes resource API verbs, like: get, list, watch, create, update, delete, proxy.  "*" means all.
+  repeated string verbs = 1;
+
+  // APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
+  // the enumerated resources in any API group will be allowed.  "*" means all.
+  // +optional
+  repeated string apiGroups = 2;
+
+  // Resources is a list of resources this rule applies to.  "*" means all in the specified apiGroups.
+  //  "*/foo" represents the subresource 'foo' for all resources in the specified apiGroups.
+  // +optional
+  repeated string resources = 3;
+
+  // ResourceNames is an optional white list of names that the rule applies to.  An empty set means that everything is allowed.  "*" means all.
+  // +optional
+  repeated string resourceNames = 4;
+}
+
+// SelfSubjectAccessReview checks whether or the current user can perform an action.  Not filling in a
+// spec.namespace means "in all namespaces".  Self is a special case, because users should always be able
+// to check whether they can perform an action
+message SelfSubjectAccessReview {
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // Spec holds information about the request being evaluated.  user and groups must be empty
+  optional SelfSubjectAccessReviewSpec spec = 2;
+
+  // Status is filled in by the server and indicates whether the request is allowed or not
+  // +optional
+  optional SubjectAccessReviewStatus status = 3;
+}
+
+// SelfSubjectAccessReviewSpec is a description of the access request.  Exactly one of ResourceAuthorizationAttributes
+// and NonResourceAuthorizationAttributes must be set
+message SelfSubjectAccessReviewSpec {
+  // ResourceAuthorizationAttributes describes information for a resource access request
+  // +optional
+  optional ResourceAttributes resourceAttributes = 1;
+
+  // NonResourceAttributes describes information for a non-resource access request
+  // +optional
+  optional NonResourceAttributes nonResourceAttributes = 2;
+}
+
+// SelfSubjectRulesReview enumerates the set of actions the current user can perform within a namespace.
+// The returned list of actions may be incomplete depending on the server's authorization mode,
+// and any errors experienced during the evaluation. SelfSubjectRulesReview should be used by UIs to show/hide actions,
+// or to quickly let an end user reason about their permissions. It should NOT Be used by external systems to
+// drive authorization decisions as this raises confused deputy, cache lifetime/revocation, and correctness concerns.
+// SubjectAccessReview, and LocalAccessReview are the correct way to defer authorization decisions to the API server.
+message SelfSubjectRulesReview {
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
+
+  // Spec holds information about the request being evaluated.
+  optional SelfSubjectRulesReviewSpec spec = 2;
+
+  // Status is filled in by the server and indicates the set of actions a user can perform.
+  // +optional
+  optional SubjectRulesReviewStatus status = 3;
+}
+
+message SelfSubjectRulesReviewSpec {
+  // Namespace to evaluate rules for. Required.
+  optional string namespace = 1;
+}
+
+// SubjectAccessReview checks whether or not a user or group can perform an action.
+message SubjectAccessReview {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 

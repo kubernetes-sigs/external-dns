@@ -21,7 +21,11 @@
 // tag is deprecated and thus should not be used.
 // Go versions prior to 1.4 are disabled because they use a different layout
 // for interfaces which make the implementation of unsafeReflectValue more complex.
+<<<<<<< HEAD
 //go:build !js && !appengine && !safe && !disableunsafe && go1.4
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build !js,!appengine,!safe,!disableunsafe,go1.4
 
 package dark

@@ -29,6 +29,10 @@ type AddrPool struct {
 	UpdateTimestamp     int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	Status              string `json:"Status" xml:"Status"`
 	MonitorStatus       string `json:"MonitorStatus" xml:"MonitorStatus"`
+<<<<<<< HEAD
 	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Type                string `json:"Type" xml:"Type"`
 }

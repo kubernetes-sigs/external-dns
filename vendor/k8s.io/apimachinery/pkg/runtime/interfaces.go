@@ -61,6 +61,7 @@ type Encoder interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -150,6 +151,77 @@ type SerializerInfo struct {
 	// StrictSerializer, if set, deserializes this object strictly,
 	// erring on unknown fields.
 	StrictSerializer Serializer
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+	// correctly handle CacheableObject, Encode() method should look similar to below, where
+	// doEncode() is the encoding logic of implemented encoder:
+	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {
+	//     if co, ok := obj.(CacheableObject); ok {
+	//       return co.CacheEncode(e.Identifier(), e.doEncode, w)
+	//     }
+	//     return e.doEncode(obj, w)
+	//   }
+	Identifier() Identifier
+}
+
+// Decoder attempts to load an object from data.
+type Decoder interface {
+	// Decode attempts to deserialize the provided data using either the innate typing of the scheme or the
+	// default kind, group, and version provided. It returns a decoded object as well as the kind, group, and
+	// version from the serialized data, or an error. If into is non-nil, it will be used as the target type
+	// and implementations may choose to use it rather than reallocating an object. However, the object is not
+	// guaranteed to be populated. The returned object is not guaranteed to match into. If defaults are
+	// provided, they are applied to the data by default. If no defaults or partial defaults are provided, the
+	// type of the into may be used to guide conversion decisions.
+	Decode(data []byte, defaults *schema.GroupVersionKind, into Object) (Object, *schema.GroupVersionKind, error)
+}
+
+// Serializer is the core interface for transforming objects into a serialized format and back.
+// Implementations may choose to perform conversion of the object, but no assumptions should be made.
+type Serializer interface {
+	Encoder
+	Decoder
+}
+
+// Codec is a Serializer that deals with the details of versioning objects. It offers the same
+// interface as Serializer, so this is a marker to consumers that care about the version of the objects
+// they receive.
+type Codec Serializer
+
+// ParameterCodec defines methods for serializing and deserializing API objects to url.Values and
+// performing any necessary conversion. Unlike the normal Codec, query parameters are not self describing
+// and the desired version must be specified.
+type ParameterCodec interface {
+	// DecodeParameters takes the given url.Values in the specified group version and decodes them
+	// into the provided object, or returns an error.
+	DecodeParameters(parameters url.Values, from schema.GroupVersion, into Object) error
+	// EncodeParameters encodes the provided object as query parameters or returns an error.
+	EncodeParameters(obj Object, to schema.GroupVersion) (url.Values, error)
+}
+
+// Framer is a factory for creating readers and writers that obey a particular framing pattern.
+type Framer interface {
+	NewFrameReader(r io.ReadCloser) io.ReadCloser
+	NewFrameWriter(w io.Writer) io.Writer
+}
+
+// SerializerInfo contains information about a specific serialization format
+type SerializerInfo struct {
+	// MediaType is the value that represents this serializer over the wire.
+	MediaType string
+	// MediaTypeType is the first part of the MediaType ("application" in "application/json").
+	MediaTypeType string
+	// MediaTypeSubType is the second part of the MediaType ("json" in "application/json").
+	MediaTypeSubType string
+	// EncodesAsText indicates this serializer can be encoded to UTF-8 safely.
+	EncodesAsText bool
+	// Serializer is the individual object serializer for this media type.
+	Serializer Serializer
+	// PrettySerializer, if set, can serialize this object in a form biased towards
+	// readability.
+	PrettySerializer Serializer
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	// StreamSerializer, if set, describes the streaming serialization format
 	// for this media type.
 	StreamSerializer *StreamSerializerInfo

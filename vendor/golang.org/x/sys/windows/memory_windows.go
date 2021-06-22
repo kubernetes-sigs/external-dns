@@ -35,6 +35,7 @@ const (
 	QUOTA_LIMITS_HARDWS_MAX_DISABLE = 0x00000008
 	QUOTA_LIMITS_HARDWS_MAX_ENABLE  = 0x00000004
 )
+<<<<<<< HEAD
 
 type MemoryBasicInformation struct {
 	BaseAddress       uintptr
@@ -46,3 +47,6 @@ type MemoryBasicInformation struct {
 	Protect           uint32
 	Type              uint32
 }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

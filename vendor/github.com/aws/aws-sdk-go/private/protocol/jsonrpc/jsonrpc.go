@@ -49,8 +49,15 @@ func Build(req *request.Request) {
 		buf = emptyJSON
 	}
 
+<<<<<<< HEAD
 	// Always serialize the body, don't suppress it.
 	req.SetBufferBody(buf)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if req.ClientInfo.TargetPrefix != "" || string(buf) != "{}" {
+		req.SetBufferBody(buf)
+	}
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	if req.ClientInfo.TargetPrefix != "" {
 		target := req.ClientInfo.TargetPrefix + "." + req.Operation.Name

@@ -96,6 +96,7 @@ func Of64(k Key, v uint64) Label { return Label{key: k, packed: v} }
 // access should be done with the From method of the key.
 func (t Label) Unpack64() uint64 { return t.packed }
 
+<<<<<<< HEAD
 type stringptr unsafe.Pointer
 
 // OfString creates a new label from a key and a string.
@@ -120,6 +121,31 @@ func (t Label) UnpackString() string {
 	hdr.Data = uintptr(t.untyped.(stringptr))
 	hdr.Len = int(t.packed)
 	return v
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// OfString creates a new label from a key and a string.
+// This method is for implementing new key types, label creation should
+// normally be done with the Of method of the key.
+func OfString(k Key, v string) Label {
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
+	return Label{
+		key:     k,
+		packed:  uint64(hdr.Len),
+		untyped: unsafe.Pointer(hdr.Data),
+	}
+}
+
+// UnpackString assumes the label was built using LabelOfString and returns the
+// value that was passed to that constructor.
+// This method is for implementing new key types, for type safety normal
+// access should be done with the From method of the key.
+func (t Label) UnpackString() string {
+	var v string
+	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
+	hdr.Data = uintptr(t.untyped.(unsafe.Pointer))
+	hdr.Len = int(t.packed)
+	return *(*string)(unsafe.Pointer(hdr))
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Valid returns true if the Label is a valid one (it has a key).

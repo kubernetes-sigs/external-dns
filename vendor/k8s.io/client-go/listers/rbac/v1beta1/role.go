@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type RoleLister interface {
 	// List lists all Roles in the indexer.
@@ -173,6 +174,45 @@ type RoleNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type RoleLister interface {
+	// List lists all Roles in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
+	// Roles returns an object that can list and get Roles.
+	Roles(namespace string) RoleNamespaceLister
+	RoleListerExpansion
+}
+
+// roleLister implements the RoleLister interface.
+type roleLister struct {
+	indexer cache.Indexer
+}
+
+// NewRoleLister returns a new RoleLister.
+func NewRoleLister(indexer cache.Indexer) RoleLister {
+	return &roleLister{indexer: indexer}
+}
+
+// List lists all Roles in the indexer.
+func (s *roleLister) List(selector labels.Selector) (ret []*v1beta1.Role, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.Role))
+	})
+	return ret, err
+}
+
+// Roles returns an object that can list and get Roles.
+func (s *roleLister) Roles(namespace string) RoleNamespaceLister {
+	return roleNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// RoleNamespaceLister helps list and get Roles.
+type RoleNamespaceLister interface {
+	// List lists all Roles in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
+	// Get retrieves the Role from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.Role, error)
 	RoleNamespaceListerExpansion
 }

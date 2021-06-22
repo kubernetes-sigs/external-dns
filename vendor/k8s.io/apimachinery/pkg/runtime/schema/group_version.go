@@ -180,6 +180,7 @@ func (gv GroupVersion) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if len(gv.Group) > 0 {
 		return gv.Group + "/" + gv.Version
 	}
@@ -465,6 +466,89 @@ func (gvs GroupVersions) Identifier() string {
 	for i := range gvs {
 		groupVersions = append(groupVersions, gvs[i].String())
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// special case the internal apiVersion for the legacy kube types
+	if gv.Empty() {
+		return ""
+	}
+
+	// special case of "v1" for backward compatibility
+	if len(gv.Group) == 0 && gv.Version == "v1" {
+		return gv.Version
+	}
+	if len(gv.Group) > 0 {
+		return gv.Group + "/" + gv.Version
+	}
+	return gv.Version
+}
+
+// Identifier implements runtime.GroupVersioner interface.
+func (gv GroupVersion) Identifier() string {
+	return gv.String()
+}
+
+// KindForGroupVersionKinds identifies the preferred GroupVersionKind out of a list. It returns ok false
+// if none of the options match the group. It prefers a match to group and version over just group.
+// TODO: Move GroupVersion to a package under pkg/runtime, since it's used by scheme.
+// TODO: Introduce an adapter type between GroupVersion and runtime.GroupVersioner, and use LegacyCodec(GroupVersion)
+//   in fewer places.
+func (gv GroupVersion) KindForGroupVersionKinds(kinds []GroupVersionKind) (target GroupVersionKind, ok bool) {
+	for _, gvk := range kinds {
+		if gvk.Group == gv.Group && gvk.Version == gv.Version {
+			return gvk, true
+		}
+	}
+	for _, gvk := range kinds {
+		if gvk.Group == gv.Group {
+			return gv.WithKind(gvk.Kind), true
+		}
+	}
+	return GroupVersionKind{}, false
+}
+
+// ParseGroupVersion turns "group/version" string into a GroupVersion struct. It reports error
+// if it cannot parse the string.
+func ParseGroupVersion(gv string) (GroupVersion, error) {
+	// this can be the internal version for the legacy kube types
+	// TODO once we've cleared the last uses as strings, this special case should be removed.
+	if (len(gv) == 0) || (gv == "/") {
+		return GroupVersion{}, nil
+	}
+
+	switch strings.Count(gv, "/") {
+	case 0:
+		return GroupVersion{"", gv}, nil
+	case 1:
+		i := strings.Index(gv, "/")
+		return GroupVersion{gv[:i], gv[i+1:]}, nil
+	default:
+		return GroupVersion{}, fmt.Errorf("unexpected GroupVersion string: %v", gv)
+	}
+}
+
+// WithKind creates a GroupVersionKind based on the method receiver's GroupVersion and the passed Kind.
+func (gv GroupVersion) WithKind(kind string) GroupVersionKind {
+	return GroupVersionKind{Group: gv.Group, Version: gv.Version, Kind: kind}
+}
+
+// WithResource creates a GroupVersionResource based on the method receiver's GroupVersion and the passed Resource.
+func (gv GroupVersion) WithResource(resource string) GroupVersionResource {
+	return GroupVersionResource{Group: gv.Group, Version: gv.Version, Resource: resource}
+}
+
+// GroupVersions can be used to represent a set of desired group versions.
+// TODO: Move GroupVersions to a package under pkg/runtime, since it's used by scheme.
+// TODO: Introduce an adapter type between GroupVersions and runtime.GroupVersioner, and use LegacyCodec(GroupVersion)
+//   in fewer places.
+type GroupVersions []GroupVersion
+
+// Identifier implements runtime.GroupVersioner interface.
+func (gv GroupVersions) Identifier() string {
+	groupVersions := make([]string, 0, len(gv))
+	for i := range gv {
+		groupVersions = append(groupVersions, gv[i].String())
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return fmt.Sprintf("[%s]", strings.Join(groupVersions, ","))
 }

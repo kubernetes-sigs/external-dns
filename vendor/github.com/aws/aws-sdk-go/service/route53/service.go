@@ -48,6 +48,7 @@ const (
 //     svc := route53.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *Route53 {
 	c := p.ClientConfig(EndpointsID, cfgs...)
+<<<<<<< HEAD
 	if c.SigningNameDerived || len(c.SigningName) == 0 {
 		c.SigningName = EndpointsID
 		// No Fallback
@@ -69,6 +70,25 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				Endpoint:       endpoint,
 				APIVersion:     "2013-04-01",
 				ResolvedRegion: resolvedRegion,
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *Route53 {
+	svc := &Route53{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2013-04-01",
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			},
 			handlers,
 		),

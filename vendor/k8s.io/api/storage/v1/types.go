@@ -75,6 +75,7 @@ type StorageClass struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// +listType=atomic
 	AllowedTopologies []v1.TopologySelectorTerm `json:"allowedTopologies,omitempty" protobuf:"bytes,8,rep,name=allowedTopologies"`
 }
@@ -1211,6 +1212,259 @@ type TokenRequest struct {
 	// +optional
 	ExpirationSeconds *int64 `json:"expirationSeconds,omitempty" protobuf:"varint,2,opt,name=expirationSeconds"`
 }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	AllowedTopologies []v1.TopologySelectorTerm `json:"allowedTopologies,omitempty" protobuf:"bytes,8,rep,name=allowedTopologies"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// StorageClassList is a collection of storage classes.
+type StorageClassList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Items is the list of StorageClasses
+	Items []StorageClass `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// VolumeBindingMode indicates how PersistentVolumeClaims should be bound.
+type VolumeBindingMode string
+
+const (
+	// VolumeBindingImmediate indicates that PersistentVolumeClaims should be
+	// immediately provisioned and bound.  This is the default mode.
+	VolumeBindingImmediate VolumeBindingMode = "Immediate"
+
+	// VolumeBindingWaitForFirstConsumer indicates that PersistentVolumeClaims
+	// should not be provisioned and bound until the first Pod is created that
+	// references the PeristentVolumeClaim.  The volume provisioning and
+	// binding will occur during Pod scheduing.
+	VolumeBindingWaitForFirstConsumer VolumeBindingMode = "WaitForFirstConsumer"
+)
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VolumeAttachment captures the intent to attach or detach the specified volume
+// to/from the specified node.
+//
+// VolumeAttachment objects are non-namespaced.
+type VolumeAttachment struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard object metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Specification of the desired attach/detach volume behavior.
+	// Populated by the Kubernetes system.
+	Spec VolumeAttachmentSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+
+	// Status of the VolumeAttachment request.
+	// Populated by the entity completing the attach or detach
+	// operation, i.e. the external-attacher.
+	// +optional
+	Status VolumeAttachmentStatus `json:"status,omitempty" protobuf:"bytes,3,opt,name=status"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// VolumeAttachmentList is a collection of VolumeAttachment objects.
+type VolumeAttachmentList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard list metadata
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Items is the list of VolumeAttachments
+	Items []VolumeAttachment `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// VolumeAttachmentSpec is the specification of a VolumeAttachment request.
+type VolumeAttachmentSpec struct {
+	// Attacher indicates the name of the volume driver that MUST handle this
+	// request. This is the name returned by GetPluginName().
+	Attacher string `json:"attacher" protobuf:"bytes,1,opt,name=attacher"`
+
+	// Source represents the volume that should be attached.
+	Source VolumeAttachmentSource `json:"source" protobuf:"bytes,2,opt,name=source"`
+
+	// The node that the volume should be attached to.
+	NodeName string `json:"nodeName" protobuf:"bytes,3,opt,name=nodeName"`
+}
+
+// VolumeAttachmentSource represents a volume that should be attached.
+// Right now only PersistenVolumes can be attached via external attacher,
+// in future we may allow also inline volumes in pods.
+// Exactly one member can be set.
+type VolumeAttachmentSource struct {
+	// Name of the persistent volume to attach.
+	// +optional
+	PersistentVolumeName *string `json:"persistentVolumeName,omitempty" protobuf:"bytes,1,opt,name=persistentVolumeName"`
+
+	// inlineVolumeSpec contains all the information necessary to attach
+	// a persistent volume defined by a pod's inline VolumeSource. This field
+	// is populated only for the CSIMigration feature. It contains
+	// translated fields from a pod's inline VolumeSource to a
+	// PersistentVolumeSpec. This field is alpha-level and is only
+	// honored by servers that enabled the CSIMigration feature.
+	// +optional
+	InlineVolumeSpec *v1.PersistentVolumeSpec `json:"inlineVolumeSpec,omitempty" protobuf:"bytes,2,opt,name=inlineVolumeSpec"`
+}
+
+// VolumeAttachmentStatus is the status of a VolumeAttachment request.
+type VolumeAttachmentStatus struct {
+	// Indicates the volume is successfully attached.
+	// This field must only be set by the entity completing the attach
+	// operation, i.e. the external-attacher.
+	Attached bool `json:"attached" protobuf:"varint,1,opt,name=attached"`
+
+	// Upon successful attach, this field is populated with any
+	// information returned by the attach operation that must be passed
+	// into subsequent WaitForAttach or Mount calls.
+	// This field must only be set by the entity completing the attach
+	// operation, i.e. the external-attacher.
+	// +optional
+	AttachmentMetadata map[string]string `json:"attachmentMetadata,omitempty" protobuf:"bytes,2,rep,name=attachmentMetadata"`
+
+	// The last error encountered during attach operation, if any.
+	// This field must only be set by the entity completing the attach
+	// operation, i.e. the external-attacher.
+	// +optional
+	AttachError *VolumeError `json:"attachError,omitempty" protobuf:"bytes,3,opt,name=attachError,casttype=VolumeError"`
+
+	// The last error encountered during detach operation, if any.
+	// This field must only be set by the entity completing the detach
+	// operation, i.e. the external-attacher.
+	// +optional
+	DetachError *VolumeError `json:"detachError,omitempty" protobuf:"bytes,4,opt,name=detachError,casttype=VolumeError"`
+}
+
+// VolumeError captures an error encountered during a volume operation.
+type VolumeError struct {
+	// Time the error was encountered.
+	// +optional
+	Time metav1.Time `json:"time,omitempty" protobuf:"bytes,1,opt,name=time"`
+
+	// String detailing the error encountered during Attach or Detach operation.
+	// This string may be logged, so it should not contain sensitive
+	// information.
+	// +optional
+	Message string `json:"message,omitempty" protobuf:"bytes,2,opt,name=message"`
+}
+
+// +genclient
+// +genclient:nonNamespaced
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CSIDriver captures information about a Container Storage Interface (CSI)
+// volume driver deployed on the cluster.
+// Kubernetes attach detach controller uses this object to determine whether attach is required.
+// Kubelet uses this object to determine whether pod information needs to be passed on mount.
+// CSIDriver objects are non-namespaced.
+type CSIDriver struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard object metadata.
+	// metadata.Name indicates the name of the CSI driver that this object
+	// refers to; it MUST be the same name returned by the CSI GetPluginName()
+	// call for that driver.
+	// The driver name must be 63 characters or less, beginning and ending with
+	// an alphanumeric character ([a-z0-9A-Z]) with dashes (-), dots (.), and
+	// alphanumerics between.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// Specification of the CSI Driver.
+	Spec CSIDriverSpec `json:"spec" protobuf:"bytes,2,opt,name=spec"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CSIDriverList is a collection of CSIDriver objects.
+type CSIDriverList struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// Standard list metadata
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// items is the list of CSIDriver
+	Items []CSIDriver `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// CSIDriverSpec is the specification of a CSIDriver.
+type CSIDriverSpec struct {
+	// attachRequired indicates this CSI volume driver requires an attach
+	// operation (because it implements the CSI ControllerPublishVolume()
+	// method), and that the Kubernetes attach detach controller should call
+	// the attach volume interface which checks the volumeattachment status
+	// and waits until the volume is attached before proceeding to mounting.
+	// The CSI external-attacher coordinates with CSI volume driver and updates
+	// the volumeattachment status when the attach operation is complete.
+	// If the CSIDriverRegistry feature gate is enabled and the value is
+	// specified to false, the attach operation will be skipped.
+	// Otherwise the attach operation will be called.
+	// +optional
+	AttachRequired *bool `json:"attachRequired,omitempty" protobuf:"varint,1,opt,name=attachRequired"`
+
+	// If set to true, podInfoOnMount indicates this CSI volume driver
+	// requires additional pod information (like podName, podUID, etc.) during
+	// mount operations.
+	// If set to false, pod information will not be passed on mount.
+	// Default is false.
+	// The CSI driver specifies podInfoOnMount as part of driver deployment.
+	// If true, Kubelet will pass pod information as VolumeContext in the CSI
+	// NodePublishVolume() calls.
+	// The CSI driver is responsible for parsing and validating the information
+	// passed in as VolumeContext.
+	// The following VolumeConext will be passed if podInfoOnMount is set to true.
+	// This list might grow, but the prefix will be used.
+	// "csi.storage.k8s.io/pod.name": pod.Name
+	// "csi.storage.k8s.io/pod.namespace": pod.Namespace
+	// "csi.storage.k8s.io/pod.uid": string(pod.UID)
+	// "csi.storage.k8s.io/ephemeral": "true" iff the volume is an ephemeral inline volume
+	//                                 defined by a CSIVolumeSource, otherwise "false"
+	//
+	// "csi.storage.k8s.io/ephemeral" is a new feature in Kubernetes 1.16. It is only
+	// required for drivers which support both the "Persistent" and "Ephemeral" VolumeLifecycleMode.
+	// Other drivers can leave pod info disabled and/or ignore this field.
+	// As Kubernetes 1.15 doesn't support this field, drivers can only support one mode when
+	// deployed on such a cluster and the deployment determines which mode that is, for example
+	// via a command line parameter of the driver.
+	// +optional
+	PodInfoOnMount *bool `json:"podInfoOnMount,omitempty" protobuf:"bytes,2,opt,name=podInfoOnMount"`
+
+	// volumeLifecycleModes defines what kind of volumes this CSI volume driver supports.
+	// The default if the list is empty is "Persistent", which is the usage
+	// defined by the CSI specification and implemented in Kubernetes via the usual
+	// PV/PVC mechanism.
+	// The other mode is "Ephemeral". In this mode, volumes are defined inline
+	// inside the pod spec with CSIVolumeSource and their lifecycle is tied to
+	// the lifecycle of that pod. A driver has to be aware of this
+	// because it is only going to get a NodePublishVolume call for such a volume.
+	// For more information about implementing this mode, see
+	// https://kubernetes-csi.github.io/docs/ephemeral-local-volumes.html
+	// A driver can support one or more of these modes and
+	// more modes may be added in the future.
+	// This field is beta.
+	// +optional
+	// +listType=set
+	VolumeLifecycleModes []VolumeLifecycleMode `json:"volumeLifecycleModes,omitempty" protobuf:"bytes,3,opt,name=volumeLifecycleModes"`
+}
+
+// VolumeLifecycleMode is an enumeration of possible usage modes for a volume
+// provided by a CSI driver. More modes may be added in the future.
+type VolumeLifecycleMode string
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 const (
 	// VolumeLifecyclePersistent explicitly confirms that the driver implements

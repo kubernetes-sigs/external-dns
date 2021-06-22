@@ -21,6 +21,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.storage.v1alpha1;
@@ -343,6 +344,20 @@ message CSIStorageCapacityList {
   // +listMapKey=name
   repeated CSIStorageCapacity items = 2;
 }
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+syntax = 'proto2';
+
+package k8s.io.api.storage.v1alpha1;
+
+import "k8s.io/api/core/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/apis/meta/v1/generated.proto";
+import "k8s.io/apimachinery/pkg/runtime/generated.proto";
+import "k8s.io/apimachinery/pkg/runtime/schema/generated.proto";
+
+// Package-wide variables from generator "generated".
+option go_package = "v1alpha1";
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // VolumeAttachment captures the intent to attach or detach the specified volume
 // to/from the specified node.

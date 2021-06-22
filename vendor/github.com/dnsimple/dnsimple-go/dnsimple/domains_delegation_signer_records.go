@@ -10,10 +10,17 @@ type DelegationSignerRecord struct {
 	ID         int64  `json:"id,omitempty"`
 	DomainID   int64  `json:"domain_id,omitempty"`
 	Algorithm  string `json:"algorithm"`
+<<<<<<< HEAD
 	Digest     string `json:"digest,omitempty"`
 	DigestType string `json:"digest_type,omitempty"`
 	Keytag     string `json:"keytag,omitempty"`
 	PublicKey  string `json:"public_key,omitempty"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Digest     string `json:"digest"`
+	DigestType string `json:"digest_type"`
+	Keytag     string `json:"keytag"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	CreatedAt  string `json:"created_at,omitempty"`
 	UpdatedAt  string `json:"updated_at,omitempty"`
 }

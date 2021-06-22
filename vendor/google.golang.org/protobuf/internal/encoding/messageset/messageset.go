@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // The MessageSet wire format is equivalent to a message defined as follows,
@@ -268,6 +269,73 @@ func FindMessageSetExtension(r preg.ExtensionTypeResolver, s pref.FullName) (pre
 =======
 	return true
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	preg "google.golang.org/protobuf/reflect/protoregistry"
+)
+
+// The MessageSet wire format is equivalent to a message defiend as follows,
+// where each Item defines an extension field with a field number of 'type_id'
+// and content of 'message'. MessageSet extensions must be non-repeated message
+// fields.
+//
+//	message MessageSet {
+//		repeated group Item = 1 {
+//			required int32 type_id = 2;
+//			required string message = 3;
+//		}
+//	}
+const (
+	FieldItem    = protowire.Number(1)
+	FieldTypeID  = protowire.Number(2)
+	FieldMessage = protowire.Number(3)
+)
+
+// ExtensionName is the field name for extensions of MessageSet.
+//
+// A valid MessageSet extension must be of the form:
+//	message MyMessage {
+//		extend proto2.bridge.MessageSet {
+//			optional MyMessage message_set_extension = 1234;
+//		}
+//		...
+//	}
+const ExtensionName = "message_set_extension"
+
+// IsMessageSet returns whether the message uses the MessageSet wire format.
+func IsMessageSet(md pref.MessageDescriptor) bool {
+	xmd, ok := md.(interface{ IsMessageSet() bool })
+	return ok && xmd.IsMessageSet()
+}
+
+// IsMessageSetExtension reports this field extends a MessageSet.
+func IsMessageSetExtension(fd pref.FieldDescriptor) bool {
+	if fd.Name() != ExtensionName {
+		return false
+	}
+	if fd.FullName().Parent() != fd.Message().FullName() {
+		return false
+	}
+	return IsMessageSet(fd.ContainingMessage())
+}
+
+// FindMessageSetExtension locates a MessageSet extension field by name.
+// In text and JSON formats, the extension name used is the message itself.
+// The extension field name is derived by appending ExtensionName.
+func FindMessageSetExtension(r preg.ExtensionTypeResolver, s pref.FullName) (pref.ExtensionType, error) {
+	name := s.Append(ExtensionName)
+	xt, err := r.FindExtensionByName(name)
+	if err != nil {
+		if err == preg.NotFound {
+			return nil, err
+		}
+		return nil, errors.Wrap(err, "%q", name)
+	}
+	if !IsMessageSetExtension(xt.TypeDescriptor()) {
+		return nil, preg.NotFound
+	}
+	return xt, nil
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // SizeField returns the size of a MessageSet item field containing an extension

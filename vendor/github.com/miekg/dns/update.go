@@ -32,9 +32,14 @@ func (u *Msg) Used(rr []RR) {
 		u.Answer = make([]RR, 0, len(rr))
 	}
 	for _, r := range rr {
+<<<<<<< HEAD
 		hdr := r.Header()
 		hdr.Class = u.Question[0].Qclass
 		hdr.Ttl = 0
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		r.Header().Class = u.Question[0].Qclass
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		u.Answer = append(u.Answer, r)
 	}
 }

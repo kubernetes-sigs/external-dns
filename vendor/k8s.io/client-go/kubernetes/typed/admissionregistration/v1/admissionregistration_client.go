@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 import (
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/admissionregistration/v1"
@@ -68,6 +69,40 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*Admissionregistrati
 		return nil, err
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1 "k8s.io/api/admissionregistration/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type AdmissionregistrationV1Interface interface {
+	RESTClient() rest.Interface
+	MutatingWebhookConfigurationsGetter
+	ValidatingWebhookConfigurationsGetter
+}
+
+// AdmissionregistrationV1Client is used to interact with features provided by the admissionregistration.k8s.io group.
+type AdmissionregistrationV1Client struct {
+	restClient rest.Interface
+}
+
+func (c *AdmissionregistrationV1Client) MutatingWebhookConfigurations() MutatingWebhookConfigurationInterface {
+	return newMutatingWebhookConfigurations(c)
+}
+
+func (c *AdmissionregistrationV1Client) ValidatingWebhookConfigurations() ValidatingWebhookConfigurationInterface {
+	return newValidatingWebhookConfigurations(c)
+}
+
+// NewForConfig creates a new AdmissionregistrationV1Client for the given config.
+func NewForConfig(c *rest.Config) (*AdmissionregistrationV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

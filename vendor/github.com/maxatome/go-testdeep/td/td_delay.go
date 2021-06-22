@@ -33,6 +33,7 @@ func Delay(delayed func() TestDeep) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	d := tdDelay{
 		base:    newBase(3),
 		delayed: delayed,
@@ -165,6 +166,29 @@ func (d *tdDelay) TypeBehind() reflect.Type {
 		return nil
 	}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if delayed == nil {
+		panic("delayed param must be non-nil")
+	}
+	return &tdDelay{
+		base:    newBase(3),
+		delayed: delayed,
+	}
+}
+
+func (d *tdDelay) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	op := d.getOperator()
+	ctx.CurOperator = op // to have correct location
+	return op.Match(ctx, got)
+}
+
+func (d *tdDelay) String() string {
+	return d.getOperator().String()
+}
+
+func (d *tdDelay) TypeBehind() reflect.Type {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return d.getOperator().TypeBehind()
 }
 

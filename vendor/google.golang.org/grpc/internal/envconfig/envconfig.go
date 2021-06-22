@@ -29,6 +29,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	prefix          = "GRPC_GO_"
 	retryStr        = prefix + "RETRY"
 	txtErrIgnoreStr = prefix + "IGNORE_TXT_ERRORS"
@@ -88,4 +89,14 @@ var (
 	// TXTErrIgnore is set if TXT errors should be ignored ("GRPC_GO_IGNORE_TXT_ERRORS" is not "false").
 	TXTErrIgnore = !strings.EqualFold(os.Getenv(txtErrIgnoreStr), "false")
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	prefix   = "GRPC_GO_"
+	retryStr = prefix + "RETRY"
+)
+
+var (
+	// Retry is set if retry is explicitly enabled via "GRPC_GO_RETRY=on".
+	Retry = strings.EqualFold(os.Getenv(retryStr), "on")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EvictionLister interface {
 	// List lists all Evictions in the indexer.
@@ -173,6 +174,45 @@ type EvictionNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type EvictionLister interface {
+	// List lists all Evictions in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.Eviction, err error)
+	// Evictions returns an object that can list and get Evictions.
+	Evictions(namespace string) EvictionNamespaceLister
+	EvictionListerExpansion
+}
+
+// evictionLister implements the EvictionLister interface.
+type evictionLister struct {
+	indexer cache.Indexer
+}
+
+// NewEvictionLister returns a new EvictionLister.
+func NewEvictionLister(indexer cache.Indexer) EvictionLister {
+	return &evictionLister{indexer: indexer}
+}
+
+// List lists all Evictions in the indexer.
+func (s *evictionLister) List(selector labels.Selector) (ret []*v1beta1.Eviction, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.Eviction))
+	})
+	return ret, err
+}
+
+// Evictions returns an object that can list and get Evictions.
+func (s *evictionLister) Evictions(namespace string) EvictionNamespaceLister {
+	return evictionNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// EvictionNamespaceLister helps list and get Evictions.
+type EvictionNamespaceLister interface {
+	// List lists all Evictions in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.Eviction, err error)
+	// Get retrieves the Eviction from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.Eviction, error)
 	EvictionNamespaceListerExpansion
 }

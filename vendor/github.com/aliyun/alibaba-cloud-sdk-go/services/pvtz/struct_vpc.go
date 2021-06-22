@@ -19,7 +19,11 @@ package pvtz
 type Vpc struct {
 	RegionId   string `json:"RegionId" xml:"RegionId"`
 	VpcName    string `json:"VpcName" xml:"VpcName"`
+<<<<<<< HEAD
 	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	VpcId      string `json:"VpcId" xml:"VpcId"`
 	RegionName string `json:"RegionName" xml:"RegionName"`
 }

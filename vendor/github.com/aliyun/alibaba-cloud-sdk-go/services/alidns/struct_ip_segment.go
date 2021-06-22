@@ -17,6 +17,7 @@ package alidns
 
 // IpSegment is a nested struct in alidns response
 type IpSegment struct {
+<<<<<<< HEAD
 	Name       string `json:"Name" xml:"Name"`
 	EndIp      string `json:"EndIp" xml:"EndIp"`
 	CreateDate string `json:"CreateDate" xml:"CreateDate"`
@@ -25,4 +26,10 @@ type IpSegment struct {
 	UpdateDate string `json:"UpdateDate" xml:"UpdateDate"`
 	Mask       int64  `json:"Mask" xml:"Mask"`
 	StartIp    string `json:"StartIp" xml:"StartIp"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Name    string `json:"Name" xml:"Name"`
+	EndIp   string `json:"EndIp" xml:"EndIp"`
+	StartIp string `json:"StartIp" xml:"StartIp"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

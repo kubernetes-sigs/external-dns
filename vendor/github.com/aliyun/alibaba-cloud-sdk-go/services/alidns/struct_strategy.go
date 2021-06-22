@@ -17,6 +17,7 @@ package alidns
 
 // Strategy is a nested struct in alidns response
 type Strategy struct {
+<<<<<<< HEAD
 	StrategyName                  string                                `json:"StrategyName" xml:"StrategyName"`
 	FailoverAddrPoolMonitorStatus string                                `json:"FailoverAddrPoolMonitorStatus" xml:"FailoverAddrPoolMonitorStatus"`
 	FailoverAddrPoolId            string                                `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
@@ -38,4 +39,24 @@ type Strategy struct {
 	DefaultAddrPoolStatus         string                                `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
 	EffectiveAddrPools            EffectiveAddrPools                    `json:"EffectiveAddrPools" xml:"EffectiveAddrPools"`
 	Lines                         LinesInDescribeDnsGtmAccessStrategies `json:"Lines" xml:"Lines"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	StrategyId                    string                             `json:"StrategyId" xml:"StrategyId"`
+	StrategyName                  string                             `json:"StrategyName" xml:"StrategyName"`
+	CreateTime                    string                             `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp               int64                              `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	DefaultAddrPoolId             string                             `json:"DefaultAddrPoolId" xml:"DefaultAddrPoolId"`
+	DefaultAddrPoolName           string                             `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
+	FailoverAddrPoolId            string                             `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
+	FailoverAddrPoolName          string                             `json:"FailoverAddrPoolName" xml:"FailoverAddrPoolName"`
+	AccessMode                    string                             `json:"AccessMode" xml:"AccessMode"`
+	AccessStatus                  string                             `json:"AccessStatus" xml:"AccessStatus"`
+	StrategyMode                  string                             `json:"StrategyMode" xml:"StrategyMode"`
+	InstanceId                    string                             `json:"InstanceId" xml:"InstanceId"`
+	DefaultAddrPoolStatus         string                             `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
+	FailoverAddrPoolStatus        string                             `json:"FailoverAddrPoolStatus" xml:"FailoverAddrPoolStatus"`
+	DefaultAddrPoolMonitorStatus  string                             `json:"DefaultAddrPoolMonitorStatus" xml:"DefaultAddrPoolMonitorStatus"`
+	FailoverAddrPoolMonitorStatus string                             `json:"FailoverAddrPoolMonitorStatus" xml:"FailoverAddrPoolMonitorStatus"`
+	Lines                         LinesInDescribeGtmAccessStrategies `json:"Lines" xml:"Lines"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

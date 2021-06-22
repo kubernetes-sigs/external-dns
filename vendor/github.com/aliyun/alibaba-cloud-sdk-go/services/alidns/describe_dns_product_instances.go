@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeDnsProductInstances invokes the alidns.DescribeDnsProductInstances API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeDnsProductInstances(request *DescribeDnsProductInstancesRequest) (response *DescribeDnsProductInstancesResponse, err error) {
 	response = CreateDescribeDnsProductInstancesResponse()
 	err = client.DoAction(request, response)
@@ -97,6 +98,87 @@ func CreateDescribeDnsProductInstancesRequest() (request *DescribeDnsProductInst
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDnsProductInstances", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
+func (client *Client) DescribeDnsProductInstances(request *DescribeDnsProductInstancesRequest) (response *DescribeDnsProductInstancesResponse, err error) {
+	response = CreateDescribeDnsProductInstancesResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeDnsProductInstancesWithChan invokes the alidns.DescribeDnsProductInstances API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDnsProductInstancesWithChan(request *DescribeDnsProductInstancesRequest) (<-chan *DescribeDnsProductInstancesResponse, <-chan error) {
+	responseChan := make(chan *DescribeDnsProductInstancesResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeDnsProductInstances(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeDnsProductInstancesWithCallback invokes the alidns.DescribeDnsProductInstances API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describednsproductinstances.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDnsProductInstancesWithCallback(request *DescribeDnsProductInstancesRequest, callback func(response *DescribeDnsProductInstancesResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeDnsProductInstancesResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeDnsProductInstances(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeDnsProductInstancesRequest is the request struct for api DescribeDnsProductInstances
+type DescribeDnsProductInstancesRequest struct {
+	*requests.RpcRequest
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	VersionCode  string           `position:"Query" name:"VersionCode"`
+}
+
+// DescribeDnsProductInstancesResponse is the response struct for api DescribeDnsProductInstances
+type DescribeDnsProductInstancesResponse struct {
+	*responses.BaseResponse
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	TotalCount  int64       `json:"TotalCount" xml:"TotalCount"`
+	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
+	PageSize    int64       `json:"PageSize" xml:"PageSize"`
+	DnsProducts DnsProducts `json:"DnsProducts" xml:"DnsProducts"`
+}
+
+// CreateDescribeDnsProductInstancesRequest creates a request to invoke DescribeDnsProductInstances API
+func CreateDescribeDnsProductInstancesRequest() (request *DescribeDnsProductInstancesRequest) {
+	request = &DescribeDnsProductInstancesRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDnsProductInstances", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

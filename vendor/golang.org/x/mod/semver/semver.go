@@ -22,6 +22,7 @@
 // as shorthands for vMAJOR.0.0 and vMAJOR.MINOR.0.
 package semver
 
+<<<<<<< HEAD
 import "sort"
 
 // parsed returns the parsed form of a semantic version string.
@@ -217,6 +218,191 @@ func parse(v string) (p parsed, ok bool) {
 		}
 	}
 	if v != "" {
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// parsed returns the parsed form of a semantic version string.
+type parsed struct {
+	major      string
+	minor      string
+	patch      string
+	short      string
+	prerelease string
+	build      string
+	err        string
+}
+
+// IsValid reports whether v is a valid semantic version string.
+func IsValid(v string) bool {
+	_, ok := parse(v)
+	return ok
+}
+
+// Canonical returns the canonical formatting of the semantic version v.
+// It fills in any missing .MINOR or .PATCH and discards build metadata.
+// Two semantic versions compare equal only if their canonical formattings
+// are identical strings.
+// The canonical invalid semantic version is the empty string.
+func Canonical(v string) string {
+	p, ok := parse(v)
+	if !ok {
+		return ""
+	}
+	if p.build != "" {
+		return v[:len(v)-len(p.build)]
+	}
+	if p.short != "" {
+		return v + p.short
+	}
+	return v
+}
+
+// Major returns the major version prefix of the semantic version v.
+// For example, Major("v2.1.0") == "v2".
+// If v is an invalid semantic version string, Major returns the empty string.
+func Major(v string) string {
+	pv, ok := parse(v)
+	if !ok {
+		return ""
+	}
+	return v[:1+len(pv.major)]
+}
+
+// MajorMinor returns the major.minor version prefix of the semantic version v.
+// For example, MajorMinor("v2.1.0") == "v2.1".
+// If v is an invalid semantic version string, MajorMinor returns the empty string.
+func MajorMinor(v string) string {
+	pv, ok := parse(v)
+	if !ok {
+		return ""
+	}
+	i := 1 + len(pv.major)
+	if j := i + 1 + len(pv.minor); j <= len(v) && v[i] == '.' && v[i+1:j] == pv.minor {
+		return v[:j]
+	}
+	return v[:i] + "." + pv.minor
+}
+
+// Prerelease returns the prerelease suffix of the semantic version v.
+// For example, Prerelease("v2.1.0-pre+meta") == "-pre".
+// If v is an invalid semantic version string, Prerelease returns the empty string.
+func Prerelease(v string) string {
+	pv, ok := parse(v)
+	if !ok {
+		return ""
+	}
+	return pv.prerelease
+}
+
+// Build returns the build suffix of the semantic version v.
+// For example, Build("v2.1.0+meta") == "+meta".
+// If v is an invalid semantic version string, Build returns the empty string.
+func Build(v string) string {
+	pv, ok := parse(v)
+	if !ok {
+		return ""
+	}
+	return pv.build
+}
+
+// Compare returns an integer comparing two versions according to
+// semantic version precedence.
+// The result will be 0 if v == w, -1 if v < w, or +1 if v > w.
+//
+// An invalid semantic version string is considered less than a valid one.
+// All invalid semantic version strings compare equal to each other.
+func Compare(v, w string) int {
+	pv, ok1 := parse(v)
+	pw, ok2 := parse(w)
+	if !ok1 && !ok2 {
+		return 0
+	}
+	if !ok1 {
+		return -1
+	}
+	if !ok2 {
+		return +1
+	}
+	if c := compareInt(pv.major, pw.major); c != 0 {
+		return c
+	}
+	if c := compareInt(pv.minor, pw.minor); c != 0 {
+		return c
+	}
+	if c := compareInt(pv.patch, pw.patch); c != 0 {
+		return c
+	}
+	return comparePrerelease(pv.prerelease, pw.prerelease)
+}
+
+// Max canonicalizes its arguments and then returns the version string
+// that compares greater.
+func Max(v, w string) string {
+	v = Canonical(v)
+	w = Canonical(w)
+	if Compare(v, w) > 0 {
+		return v
+	}
+	return w
+}
+
+func parse(v string) (p parsed, ok bool) {
+	if v == "" || v[0] != 'v' {
+		p.err = "missing v prefix"
+		return
+	}
+	p.major, v, ok = parseInt(v[1:])
+	if !ok {
+		p.err = "bad major version"
+		return
+	}
+	if v == "" {
+		p.minor = "0"
+		p.patch = "0"
+		p.short = ".0.0"
+		return
+	}
+	if v[0] != '.' {
+		p.err = "bad minor prefix"
+		ok = false
+		return
+	}
+	p.minor, v, ok = parseInt(v[1:])
+	if !ok {
+		p.err = "bad minor version"
+		return
+	}
+	if v == "" {
+		p.patch = "0"
+		p.short = ".0"
+		return
+	}
+	if v[0] != '.' {
+		p.err = "bad patch prefix"
+		ok = false
+		return
+	}
+	p.patch, v, ok = parseInt(v[1:])
+	if !ok {
+		p.err = "bad patch version"
+		return
+	}
+	if len(v) > 0 && v[0] == '-' {
+		p.prerelease, v, ok = parsePrerelease(v)
+		if !ok {
+			p.err = "bad prerelease"
+			return
+		}
+	}
+	if len(v) > 0 && v[0] == '+' {
+		p.build, v, ok = parseBuild(v)
+		if !ok {
+			p.err = "bad build"
+			return
+		}
+	}
+	if v != "" {
+		p.err = "junk on end"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		ok = false
 		return
 	}

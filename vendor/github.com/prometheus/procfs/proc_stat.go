@@ -131,6 +131,7 @@ func (p Proc) Stat() (ProcStat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -162,6 +163,13 @@ func (p Proc) Stat() (ProcStat, error) {
 =======
 		return ProcStat{}, fmt.Errorf("unexpected format, couldn't extract comm %q", data)
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return ProcStat{}, fmt.Errorf(
+			"unexpected format, couldn't extract comm: %s",
+			data,
+		)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	s.Comm = string(data[l+1 : r])

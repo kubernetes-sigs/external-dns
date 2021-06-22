@@ -21,6 +21,7 @@ import (
 )
 
 // BindInstanceDomains invokes the alidns.BindInstanceDomains API synchronously
+<<<<<<< HEAD
 func (client *Client) BindInstanceDomains(request *BindInstanceDomainsRequest) (response *BindInstanceDomainsResponse, err error) {
 	response = CreateBindInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -92,6 +93,84 @@ func CreateBindInstanceDomainsRequest() (request *BindInstanceDomainsRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "BindInstanceDomains", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
+func (client *Client) BindInstanceDomains(request *BindInstanceDomainsRequest) (response *BindInstanceDomainsResponse, err error) {
+	response = CreateBindInstanceDomainsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// BindInstanceDomainsWithChan invokes the alidns.BindInstanceDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) BindInstanceDomainsWithChan(request *BindInstanceDomainsRequest) (<-chan *BindInstanceDomainsResponse, <-chan error) {
+	responseChan := make(chan *BindInstanceDomainsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.BindInstanceDomains(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// BindInstanceDomainsWithCallback invokes the alidns.BindInstanceDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) BindInstanceDomainsWithCallback(request *BindInstanceDomainsRequest, callback func(response *BindInstanceDomainsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *BindInstanceDomainsResponse
+		var err error
+		defer close(result)
+		response, err = client.BindInstanceDomains(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// BindInstanceDomainsRequest is the request struct for api BindInstanceDomains
+type BindInstanceDomainsRequest struct {
+	*requests.RpcRequest
+	DomainNames  string `position:"Query" name:"DomainNames"`
+	InstanceId   string `position:"Query" name:"InstanceId"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// BindInstanceDomainsResponse is the response struct for api BindInstanceDomains
+type BindInstanceDomainsResponse struct {
+	*responses.BaseResponse
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
+	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+}
+
+// CreateBindInstanceDomainsRequest creates a request to invoke BindInstanceDomains API
+func CreateBindInstanceDomainsRequest() (request *BindInstanceDomainsRequest) {
+	request = &BindInstanceDomainsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "BindInstanceDomains", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

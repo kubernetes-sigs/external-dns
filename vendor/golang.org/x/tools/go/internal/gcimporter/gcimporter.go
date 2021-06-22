@@ -29,6 +29,7 @@ import (
 	"text/scanner"
 )
 
+<<<<<<< HEAD
 const (
 	// Enable debug during development: it adds some additional checks, and
 	// prevents errors from being recovered.
@@ -498,6 +499,472 @@ func (p *parser) parseMapType(parent *types.Package) types.Type {
 // For unqualified and anonymous names, the returned package is the parent
 // package unless parent == nil, in which case the returned package is the
 // package being imported. (The parent package is not nil if the name
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// debugging/development support
+const debug = false
+
+var pkgExts = [...]string{".a", ".o"}
+
+// FindPkg returns the filename and unique package id for an import
+// path based on package information provided by build.Import (using
+// the build.Default build.Context). A relative srcDir is interpreted
+// relative to the current working directory.
+// If no file was found, an empty filename is returned.
+//
+func FindPkg(path, srcDir string) (filename, id string) {
+	if path == "" {
+		return
+	}
+
+	var noext string
+	switch {
+	default:
+		// "x" -> "$GOPATH/pkg/$GOOS_$GOARCH/x.ext", "x"
+		// Don't require the source files to be present.
+		if abs, err := filepath.Abs(srcDir); err == nil { // see issue 14282
+			srcDir = abs
+		}
+		bp, _ := build.Import(path, srcDir, build.FindOnly|build.AllowBinary)
+		if bp.PkgObj == "" {
+			id = path // make sure we have an id to print in error message
+			return
+		}
+		noext = strings.TrimSuffix(bp.PkgObj, ".a")
+		id = bp.ImportPath
+
+	case build.IsLocalImport(path):
+		// "./x" -> "/this/directory/x.ext", "/this/directory/x"
+		noext = filepath.Join(srcDir, path)
+		id = noext
+
+	case filepath.IsAbs(path):
+		// for completeness only - go/build.Import
+		// does not support absolute imports
+		// "/x" -> "/x.ext", "/x"
+		noext = path
+		id = path
+	}
+
+	if false { // for debugging
+		if path != id {
+			fmt.Printf("%s -> %s\n", path, id)
+		}
+	}
+
+	// try extensions
+	for _, ext := range pkgExts {
+		filename = noext + ext
+		if f, err := os.Stat(filename); err == nil && !f.IsDir() {
+			return
+		}
+	}
+
+	filename = "" // not found
+	return
+}
+
+// ImportData imports a package by reading the gc-generated export data,
+// adds the corresponding package object to the packages map indexed by id,
+// and returns the object.
+//
+// The packages map must contains all packages already imported. The data
+// reader position must be the beginning of the export data section. The
+// filename is only used in error messages.
+//
+// If packages[id] contains the completely imported package, that package
+// can be used directly, and there is no need to call this function (but
+// there is also no harm but for extra time used).
+//
+func ImportData(packages map[string]*types.Package, filename, id string, data io.Reader) (pkg *types.Package, err error) {
+	// support for parser error handling
+	defer func() {
+		switch r := recover().(type) {
+		case nil:
+			// nothing to do
+		case importError:
+			err = r
+		default:
+			panic(r) // internal error
+		}
+	}()
+
+	var p parser
+	p.init(filename, id, data, packages)
+	pkg = p.parseExport()
+
+	return
+}
+
+// Import imports a gc-generated package given its import path and srcDir, adds
+// the corresponding package object to the packages map, and returns the object.
+// The packages map must contain all packages already imported.
+//
+func Import(packages map[string]*types.Package, path, srcDir string, lookup func(path string) (io.ReadCloser, error)) (pkg *types.Package, err error) {
+	var rc io.ReadCloser
+	var filename, id string
+	if lookup != nil {
+		// With custom lookup specified, assume that caller has
+		// converted path to a canonical import path for use in the map.
+		if path == "unsafe" {
+			return types.Unsafe, nil
+		}
+		id = path
+
+		// No need to re-import if the package was imported completely before.
+		if pkg = packages[id]; pkg != nil && pkg.Complete() {
+			return
+		}
+		f, err := lookup(path)
+		if err != nil {
+			return nil, err
+		}
+		rc = f
+	} else {
+		filename, id = FindPkg(path, srcDir)
+		if filename == "" {
+			if path == "unsafe" {
+				return types.Unsafe, nil
+			}
+			return nil, fmt.Errorf("can't find import: %q", id)
+		}
+
+		// no need to re-import if the package was imported completely before
+		if pkg = packages[id]; pkg != nil && pkg.Complete() {
+			return
+		}
+
+		// open file
+		f, err := os.Open(filename)
+		if err != nil {
+			return nil, err
+		}
+		defer func() {
+			if err != nil {
+				// add file name to error
+				err = fmt.Errorf("%s: %v", filename, err)
+			}
+		}()
+		rc = f
+	}
+	defer rc.Close()
+
+	var hdr string
+	buf := bufio.NewReader(rc)
+	if hdr, err = FindExportData(buf); err != nil {
+		return
+	}
+
+	switch hdr {
+	case "$$\n":
+		// Work-around if we don't have a filename; happens only if lookup != nil.
+		// Either way, the filename is only needed for importer error messages, so
+		// this is fine.
+		if filename == "" {
+			filename = path
+		}
+		return ImportData(packages, filename, id, buf)
+
+	case "$$B\n":
+		var data []byte
+		data, err = ioutil.ReadAll(buf)
+		if err != nil {
+			break
+		}
+
+		// TODO(gri): allow clients of go/importer to provide a FileSet.
+		// Or, define a new standard go/types/gcexportdata package.
+		fset := token.NewFileSet()
+
+		// The indexed export format starts with an 'i'; the older
+		// binary export format starts with a 'c', 'd', or 'v'
+		// (from "version"). Select appropriate importer.
+		if len(data) > 0 && data[0] == 'i' {
+			_, pkg, err = IImportData(fset, packages, data[1:], id)
+		} else {
+			_, pkg, err = BImportData(fset, packages, data, id)
+		}
+
+	default:
+		err = fmt.Errorf("unknown export data header: %q", hdr)
+	}
+
+	return
+}
+
+// ----------------------------------------------------------------------------
+// Parser
+
+// TODO(gri) Imported objects don't have position information.
+//           Ideally use the debug table line info; alternatively
+//           create some fake position (or the position of the
+//           import). That way error messages referring to imported
+//           objects can print meaningful information.
+
+// parser parses the exports inside a gc compiler-produced
+// object/archive file and populates its scope with the results.
+type parser struct {
+	scanner    scanner.Scanner
+	tok        rune                      // current token
+	lit        string                    // literal string; only valid for Ident, Int, String tokens
+	id         string                    // package id of imported package
+	sharedPkgs map[string]*types.Package // package id -> package object (across importer)
+	localPkgs  map[string]*types.Package // package id -> package object (just this package)
+}
+
+func (p *parser) init(filename, id string, src io.Reader, packages map[string]*types.Package) {
+	p.scanner.Init(src)
+	p.scanner.Error = func(_ *scanner.Scanner, msg string) { p.error(msg) }
+	p.scanner.Mode = scanner.ScanIdents | scanner.ScanInts | scanner.ScanChars | scanner.ScanStrings | scanner.ScanComments | scanner.SkipComments
+	p.scanner.Whitespace = 1<<'\t' | 1<<' '
+	p.scanner.Filename = filename // for good error messages
+	p.next()
+	p.id = id
+	p.sharedPkgs = packages
+	if debug {
+		// check consistency of packages map
+		for _, pkg := range packages {
+			if pkg.Name() == "" {
+				fmt.Printf("no package name for %s\n", pkg.Path())
+			}
+		}
+	}
+}
+
+func (p *parser) next() {
+	p.tok = p.scanner.Scan()
+	switch p.tok {
+	case scanner.Ident, scanner.Int, scanner.Char, scanner.String, '·':
+		p.lit = p.scanner.TokenText()
+	default:
+		p.lit = ""
+	}
+	if debug {
+		fmt.Printf("%s: %q -> %q\n", scanner.TokenString(p.tok), p.scanner.TokenText(), p.lit)
+	}
+}
+
+func declTypeName(pkg *types.Package, name string) *types.TypeName {
+	scope := pkg.Scope()
+	if obj := scope.Lookup(name); obj != nil {
+		return obj.(*types.TypeName)
+	}
+	obj := types.NewTypeName(token.NoPos, pkg, name, nil)
+	// a named type may be referred to before the underlying type
+	// is known - set it up
+	types.NewNamed(obj, nil, nil)
+	scope.Insert(obj)
+	return obj
+}
+
+// ----------------------------------------------------------------------------
+// Error handling
+
+// Internal errors are boxed as importErrors.
+type importError struct {
+	pos scanner.Position
+	err error
+}
+
+func (e importError) Error() string {
+	return fmt.Sprintf("import error %s (byte offset = %d): %s", e.pos, e.pos.Offset, e.err)
+}
+
+func (p *parser) error(err interface{}) {
+	if s, ok := err.(string); ok {
+		err = errors.New(s)
+	}
+	// panic with a runtime.Error if err is not an error
+	panic(importError{p.scanner.Pos(), err.(error)})
+}
+
+func (p *parser) errorf(format string, args ...interface{}) {
+	p.error(fmt.Sprintf(format, args...))
+}
+
+func (p *parser) expect(tok rune) string {
+	lit := p.lit
+	if p.tok != tok {
+		p.errorf("expected %s, got %s (%s)", scanner.TokenString(tok), scanner.TokenString(p.tok), lit)
+	}
+	p.next()
+	return lit
+}
+
+func (p *parser) expectSpecial(tok string) {
+	sep := 'x' // not white space
+	i := 0
+	for i < len(tok) && p.tok == rune(tok[i]) && sep > ' ' {
+		sep = p.scanner.Peek() // if sep <= ' ', there is white space before the next token
+		p.next()
+		i++
+	}
+	if i < len(tok) {
+		p.errorf("expected %q, got %q", tok, tok[0:i])
+	}
+}
+
+func (p *parser) expectKeyword(keyword string) {
+	lit := p.expect(scanner.Ident)
+	if lit != keyword {
+		p.errorf("expected keyword %s, got %q", keyword, lit)
+	}
+}
+
+// ----------------------------------------------------------------------------
+// Qualified and unqualified names
+
+// PackageId = string_lit .
+//
+func (p *parser) parsePackageID() string {
+	id, err := strconv.Unquote(p.expect(scanner.String))
+	if err != nil {
+		p.error(err)
+	}
+	// id == "" stands for the imported package id
+	// (only known at time of package installation)
+	if id == "" {
+		id = p.id
+	}
+	return id
+}
+
+// PackageName = ident .
+//
+func (p *parser) parsePackageName() string {
+	return p.expect(scanner.Ident)
+}
+
+// dotIdentifier = ( ident | '·' ) { ident | int | '·' } .
+func (p *parser) parseDotIdent() string {
+	ident := ""
+	if p.tok != scanner.Int {
+		sep := 'x' // not white space
+		for (p.tok == scanner.Ident || p.tok == scanner.Int || p.tok == '·') && sep > ' ' {
+			ident += p.lit
+			sep = p.scanner.Peek() // if sep <= ' ', there is white space before the next token
+			p.next()
+		}
+	}
+	if ident == "" {
+		p.expect(scanner.Ident) // use expect() for error handling
+	}
+	return ident
+}
+
+// QualifiedName = "@" PackageId "." ( "?" | dotIdentifier ) .
+//
+func (p *parser) parseQualifiedName() (id, name string) {
+	p.expect('@')
+	id = p.parsePackageID()
+	p.expect('.')
+	// Per rev f280b8a485fd (10/2/2013), qualified names may be used for anonymous fields.
+	if p.tok == '?' {
+		p.next()
+	} else {
+		name = p.parseDotIdent()
+	}
+	return
+}
+
+// getPkg returns the package for a given id. If the package is
+// not found, create the package and add it to the p.localPkgs
+// and p.sharedPkgs maps. name is the (expected) name of the
+// package. If name == "", the package name is expected to be
+// set later via an import clause in the export data.
+//
+// id identifies a package, usually by a canonical package path like
+// "encoding/json" but possibly by a non-canonical import path like
+// "./json".
+//
+func (p *parser) getPkg(id, name string) *types.Package {
+	// package unsafe is not in the packages maps - handle explicitly
+	if id == "unsafe" {
+		return types.Unsafe
+	}
+
+	pkg := p.localPkgs[id]
+	if pkg == nil {
+		// first import of id from this package
+		pkg = p.sharedPkgs[id]
+		if pkg == nil {
+			// first import of id by this importer;
+			// add (possibly unnamed) pkg to shared packages
+			pkg = types.NewPackage(id, name)
+			p.sharedPkgs[id] = pkg
+		}
+		// add (possibly unnamed) pkg to local packages
+		if p.localPkgs == nil {
+			p.localPkgs = make(map[string]*types.Package)
+		}
+		p.localPkgs[id] = pkg
+	} else if name != "" {
+		// package exists already and we have an expected package name;
+		// make sure names match or set package name if necessary
+		if pname := pkg.Name(); pname == "" {
+			pkg.SetName(name)
+		} else if pname != name {
+			p.errorf("%s package name mismatch: %s (given) vs %s (expected)", id, pname, name)
+		}
+	}
+	return pkg
+}
+
+// parseExportedName is like parseQualifiedName, but
+// the package id is resolved to an imported *types.Package.
+//
+func (p *parser) parseExportedName() (pkg *types.Package, name string) {
+	id, name := p.parseQualifiedName()
+	pkg = p.getPkg(id, "")
+	return
+}
+
+// ----------------------------------------------------------------------------
+// Types
+
+// BasicType = identifier .
+//
+func (p *parser) parseBasicType() types.Type {
+	id := p.expect(scanner.Ident)
+	obj := types.Universe.Lookup(id)
+	if obj, ok := obj.(*types.TypeName); ok {
+		return obj.Type()
+	}
+	p.errorf("not a basic type: %s", id)
+	return nil
+}
+
+// ArrayType = "[" int_lit "]" Type .
+//
+func (p *parser) parseArrayType(parent *types.Package) types.Type {
+	// "[" already consumed and lookahead known not to be "]"
+	lit := p.expect(scanner.Int)
+	p.expect(']')
+	elem := p.parseType(parent)
+	n, err := strconv.ParseInt(lit, 10, 64)
+	if err != nil {
+		p.error(err)
+	}
+	return types.NewArray(elem, n)
+}
+
+// MapType = "map" "[" Type "]" Type .
+//
+func (p *parser) parseMapType(parent *types.Package) types.Type {
+	p.expectKeyword("map")
+	p.expect('[')
+	key := p.parseType(parent)
+	p.expect(']')
+	elem := p.parseType(parent)
+	return types.NewMap(key, elem)
+}
+
+// Name = identifier | "?" | QualifiedName .
+//
+// For unqualified and anonymous names, the returned package is the parent
+// package unless parent == nil, in which case the returned package is the
+// package being imported. (The parent package is not nil if the the name
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // is an unqualified struct field or interface method name belonging to a
 // type declared in another package.)
 //

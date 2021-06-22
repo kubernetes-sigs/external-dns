@@ -25,6 +25,7 @@ golint:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	@cd tools && go install golang.org/x/lint/golint
 	@$(GOBIN)/golint ./...
 
@@ -107,4 +108,25 @@ update-license:
 =======
 	@cd tools && go install go.uber.org/tools/update-license
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	@go install golang.org/x/lint/golint
+	@$(GOBIN)/golint ./...
+
+.PHONY: staticcheck
+staticcheck:
+	@go install honnef.co/go/tools/cmd/staticcheck
+	@$(GOBIN)/staticcheck ./...
+
+.PHONY: lint
+lint: gofmt golint staticcheck
+
+.PHONY: cover
+cover:
+	go test -coverprofile=cover.out -coverpkg=./... -v ./...
+	go tool cover -html=cover.out -o cover.html
+
+update-license:
+	@go install go.uber.org/tools/update-license
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	@$(GOBIN)/update-license $(GO_FILES)

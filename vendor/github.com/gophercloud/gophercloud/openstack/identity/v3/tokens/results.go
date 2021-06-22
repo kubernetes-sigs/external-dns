@@ -113,6 +113,7 @@ func (r CreateResult) ExtractTokenID() (string, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -248,6 +249,42 @@ func (r commonResult) ExtractProject() (*Project, error) {
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ExtractServiceCatalog returns the ServiceCatalog that was generated along
+// with the user's Token.
+func (r commonResult) ExtractServiceCatalog() (*ServiceCatalog, error) {
+	var s ServiceCatalog
+	err := r.ExtractInto(&s)
+	return &s, err
+}
+
+// ExtractUser returns the User that is the owner of the Token.
+func (r commonResult) ExtractUser() (*User, error) {
+	var s struct {
+		User *User `json:"user"`
+	}
+	err := r.ExtractInto(&s)
+	return s.User, err
+}
+
+// ExtractRoles returns Roles to which User is authorized.
+func (r commonResult) ExtractRoles() ([]Role, error) {
+	var s struct {
+		Roles []Role `json:"roles"`
+	}
+	err := r.ExtractInto(&s)
+	return s.Roles, err
+}
+
+// ExtractProject returns Project to which User is authorized.
+func (r commonResult) ExtractProject() (*Project, error) {
+	var s struct {
+		Project *Project `json:"project"`
+	}
+	err := r.ExtractInto(&s)
+	return s.Project, err
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // CreateResult is the response from a Create request. Use ExtractToken()

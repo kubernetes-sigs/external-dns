@@ -212,6 +212,7 @@ env values as well.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 Custom Shared Config and Credential Files
 
 Shared credentials file path can be set to instruct the SDK to use an alternative
@@ -541,5 +542,41 @@ To configure a DualStack endpoint programmatically
       UseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
   })
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+Shared credentials file path can be set to instruct the SDK to use an alternative
+file for the shared credentials. If not set the file will be loaded from
+$HOME/.aws/credentials on Linux/Unix based systems, and
+%USERPROFILE%\.aws\credentials on Windows.
+
+	AWS_SHARED_CREDENTIALS_FILE=$HOME/my_shared_credentials
+
+Shared config file path can be set to instruct the SDK to use an alternative
+file for the shared config. If not set the file will be loaded from
+$HOME/.aws/config on Linux/Unix based systems, and
+%USERPROFILE%\.aws\config on Windows.
+
+	AWS_CONFIG_FILE=$HOME/my_shared_config
+
+Path to a custom Credentials Authority (CA) bundle PEM file that the SDK
+will use instead of the default system's root CA bundle. Use this only
+if you want to replace the CA bundle the SDK uses for TLS requests.
+
+	AWS_CA_BUNDLE=$HOME/my_custom_ca_bundle
+
+Enabling this option will attempt to merge the Transport into the SDK's HTTP
+client. If the client's Transport is not a http.Transport an error will be
+returned. If the Transport's TLS config is set this option will cause the SDK
+to overwrite the Transport's TLS config's  RootCAs value. If the CA bundle file
+contains multiple certificates all of them will be loaded.
+
+The Session option CustomCABundle is also available when creating sessions
+to also enable this feature. CustomCABundle session option field has priority
+over the AWS_CA_BUNDLE environment variable, and will be used if both are set.
+
+Setting a custom HTTPClient in the aws.Config options will override this setting.
+To use this option and custom HTTP client, the HTTP client needs to be provided
+when creating the session. Not the service client.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 */
 package session

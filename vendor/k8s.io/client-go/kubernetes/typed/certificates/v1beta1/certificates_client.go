@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/certificates/v1beta1"
@@ -63,6 +64,35 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*CertificatesV1beta1
 		return nil, err
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/api/certificates/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type CertificatesV1beta1Interface interface {
+	RESTClient() rest.Interface
+	CertificateSigningRequestsGetter
+}
+
+// CertificatesV1beta1Client is used to interact with features provided by the certificates.k8s.io group.
+type CertificatesV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *CertificatesV1beta1Client) CertificateSigningRequests() CertificateSigningRequestInterface {
+	return newCertificateSigningRequests(c)
+}
+
+// NewForConfig creates a new CertificatesV1beta1Client for the given config.
+func NewForConfig(c *rest.Config) (*CertificatesV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

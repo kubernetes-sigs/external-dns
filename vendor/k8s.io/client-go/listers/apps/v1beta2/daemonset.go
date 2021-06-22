@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type DaemonSetLister interface {
 	// List lists all DaemonSets in the indexer.
@@ -173,6 +174,45 @@ type DaemonSetNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type DaemonSetLister interface {
+	// List lists all DaemonSets in the indexer.
+	List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error)
+	// DaemonSets returns an object that can list and get DaemonSets.
+	DaemonSets(namespace string) DaemonSetNamespaceLister
+	DaemonSetListerExpansion
+}
+
+// daemonSetLister implements the DaemonSetLister interface.
+type daemonSetLister struct {
+	indexer cache.Indexer
+}
+
+// NewDaemonSetLister returns a new DaemonSetLister.
+func NewDaemonSetLister(indexer cache.Indexer) DaemonSetLister {
+	return &daemonSetLister{indexer: indexer}
+}
+
+// List lists all DaemonSets in the indexer.
+func (s *daemonSetLister) List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta2.DaemonSet))
+	})
+	return ret, err
+}
+
+// DaemonSets returns an object that can list and get DaemonSets.
+func (s *daemonSetLister) DaemonSets(namespace string) DaemonSetNamespaceLister {
+	return daemonSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// DaemonSetNamespaceLister helps list and get DaemonSets.
+type DaemonSetNamespaceLister interface {
+	// List lists all DaemonSets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta2.DaemonSet, err error)
+	// Get retrieves the DaemonSet from the indexer for a given namespace and name.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta2.DaemonSet, error)
 	DaemonSetNamespaceListerExpansion
 }

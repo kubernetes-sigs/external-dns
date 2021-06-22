@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 	"gopkg.in/yaml.v2"
 )
@@ -803,6 +804,215 @@ func (d *Definitions) parseArbitrary(s *openapi_v2.Schema, path *Path) (Schema, 
 =======
 		BaseSchema: base,
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/googleapis/gnostic/OpenAPIv2"
+	"gopkg.in/yaml.v2"
+)
+
+func newSchemaError(path *Path, format string, a ...interface{}) error {
+	err := fmt.Sprintf(format, a...)
+	if path.Len() == 0 {
+		return fmt.Errorf("SchemaError: %v", err)
+	}
+	return fmt.Errorf("SchemaError(%v): %v", path, err)
+}
+
+// VendorExtensionToMap converts openapi VendorExtension to a map.
+func VendorExtensionToMap(e []*openapi_v2.NamedAny) map[string]interface{} {
+	values := map[string]interface{}{}
+
+	for _, na := range e {
+		if na.GetName() == "" || na.GetValue() == nil {
+			continue
+		}
+		if na.GetValue().GetYaml() == "" {
+			continue
+		}
+		var value interface{}
+		err := yaml.Unmarshal([]byte(na.GetValue().GetYaml()), &value)
+		if err != nil {
+			continue
+		}
+
+		values[na.GetName()] = value
+	}
+
+	return values
+}
+
+// Definitions is an implementation of `Models`. It looks for
+// models in an openapi Schema.
+type Definitions struct {
+	models map[string]Schema
+}
+
+var _ Models = &Definitions{}
+
+// NewOpenAPIData creates a new `Models` out of the openapi document.
+func NewOpenAPIData(doc *openapi_v2.Document) (Models, error) {
+	definitions := Definitions{
+		models: map[string]Schema{},
+	}
+
+	// Save the list of all models first. This will allow us to
+	// validate that we don't have any dangling reference.
+	for _, namedSchema := range doc.GetDefinitions().GetAdditionalProperties() {
+		definitions.models[namedSchema.GetName()] = nil
+	}
+
+	// Now, parse each model. We can validate that references exists.
+	for _, namedSchema := range doc.GetDefinitions().GetAdditionalProperties() {
+		path := NewPath(namedSchema.GetName())
+		schema, err := definitions.ParseSchema(namedSchema.GetValue(), &path)
+		if err != nil {
+			return nil, err
+		}
+		definitions.models[namedSchema.GetName()] = schema
+	}
+
+	return &definitions, nil
+}
+
+// We believe the schema is a reference, verify that and returns a new
+// Schema
+func (d *Definitions) parseReference(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	// TODO(wrong): a schema with a $ref can have properties. We can ignore them (would be incomplete), but we cannot return an error.
+	if len(s.GetProperties().GetAdditionalProperties()) > 0 {
+		return nil, newSchemaError(path, "unallowed embedded type definition")
+	}
+	// TODO(wrong): a schema with a $ref can have a type. We can ignore it (would be incomplete), but we cannot return an error.
+	if len(s.GetType().GetValue()) > 0 {
+		return nil, newSchemaError(path, "definition reference can't have a type")
+	}
+
+	// TODO(wrong): $refs outside of the definitions are completely valid. We can ignore them (would be incomplete), but we cannot return an error.
+	if !strings.HasPrefix(s.GetXRef(), "#/definitions/") {
+		return nil, newSchemaError(path, "unallowed reference to non-definition %q", s.GetXRef())
+	}
+	reference := strings.TrimPrefix(s.GetXRef(), "#/definitions/")
+	if _, ok := d.models[reference]; !ok {
+		return nil, newSchemaError(path, "unknown model in reference: %q", reference)
+	}
+	return &Ref{
+		BaseSchema:  d.parseBaseSchema(s, path),
+		reference:   reference,
+		definitions: d,
+	}, nil
+}
+
+func (d *Definitions) parseBaseSchema(s *openapi_v2.Schema, path *Path) BaseSchema {
+	return BaseSchema{
+		Description: s.GetDescription(),
+		Extensions:  VendorExtensionToMap(s.GetVendorExtension()),
+		Path:        *path,
+	}
+}
+
+// We believe the schema is a map, verify and return a new schema
+func (d *Definitions) parseMap(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	if len(s.GetType().GetValue()) != 0 && s.GetType().GetValue()[0] != object {
+		return nil, newSchemaError(path, "invalid object type")
+	}
+	var sub Schema
+	// TODO(incomplete): this misses the boolean case as AdditionalProperties is a bool+schema sum type.
+	if s.GetAdditionalProperties().GetSchema() == nil {
+		sub = &Arbitrary{
+			BaseSchema: d.parseBaseSchema(s, path),
+		}
+	} else {
+		var err error
+		sub, err = d.ParseSchema(s.GetAdditionalProperties().GetSchema(), path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &Map{
+		BaseSchema: d.parseBaseSchema(s, path),
+		SubType:    sub,
+	}, nil
+}
+
+func (d *Definitions) parsePrimitive(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	var t string
+	if len(s.GetType().GetValue()) > 1 {
+		return nil, newSchemaError(path, "primitive can't have more than 1 type")
+	}
+	if len(s.GetType().GetValue()) == 1 {
+		t = s.GetType().GetValue()[0]
+	}
+	switch t {
+	case String: // do nothing
+	case Number: // do nothing
+	case Integer: // do nothing
+	case Boolean: // do nothing
+	// TODO(wrong): this misses "null". Would skip the null case (would be incomplete), but we cannot return an error.
+	default:
+		return nil, newSchemaError(path, "Unknown primitive type: %q", t)
+	}
+	return &Primitive{
+		BaseSchema: d.parseBaseSchema(s, path),
+		Type:       t,
+		Format:     s.GetFormat(),
+	}, nil
+}
+
+func (d *Definitions) parseArray(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	if len(s.GetType().GetValue()) != 1 {
+		return nil, newSchemaError(path, "array should have exactly one type")
+	}
+	if s.GetType().GetValue()[0] != array {
+		return nil, newSchemaError(path, `array should have type "array"`)
+	}
+	if len(s.GetItems().GetSchema()) != 1 {
+		// TODO(wrong): Items can have multiple elements. We can ignore Items then (would be incomplete), but we cannot return an error.
+		// TODO(wrong): "type: array" witohut any items at all is completely valid.
+		return nil, newSchemaError(path, "array should have exactly one sub-item")
+	}
+	sub, err := d.ParseSchema(s.GetItems().GetSchema()[0], path)
+	if err != nil {
+		return nil, err
+	}
+	return &Array{
+		BaseSchema: d.parseBaseSchema(s, path),
+		SubType:    sub,
+	}, nil
+}
+
+func (d *Definitions) parseKind(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	if len(s.GetType().GetValue()) != 0 && s.GetType().GetValue()[0] != object {
+		return nil, newSchemaError(path, "invalid object type")
+	}
+	if s.GetProperties() == nil {
+		return nil, newSchemaError(path, "object doesn't have properties")
+	}
+
+	fields := map[string]Schema{}
+	fieldOrder := []string{}
+
+	for _, namedSchema := range s.GetProperties().GetAdditionalProperties() {
+		var err error
+		name := namedSchema.GetName()
+		path := path.FieldPath(name)
+		fields[name], err = d.ParseSchema(namedSchema.GetValue(), &path)
+		if err != nil {
+			return nil, err
+		}
+		fieldOrder = append(fieldOrder, name)
+	}
+
+	return &Kind{
+		BaseSchema:     d.parseBaseSchema(s, path),
+		RequiredFields: s.GetRequired(),
+		Fields:         fields,
+		FieldOrder:     fieldOrder,
+	}, nil
+}
+
+func (d *Definitions) parseArbitrary(s *openapi_v2.Schema, path *Path) (Schema, error) {
+	return &Arbitrary{
+		BaseSchema: d.parseBaseSchema(s, path),
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}, nil
 }
 

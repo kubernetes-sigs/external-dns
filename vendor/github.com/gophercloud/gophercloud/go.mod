@@ -3,6 +3,7 @@ module github.com/gophercloud/gophercloud
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 go 1.13
 
 require (
@@ -38,4 +39,11 @@ require (
 	golang.org/x/sys v0.0.0-20190209173611-3b5209105503 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require (
+	golang.org/x/crypto v0.0.0-20190211182817-74369b46fc67
+	golang.org/x/sys v0.0.0-20190209173611-3b5209105503 // indirect
+	gopkg.in/yaml.v2 v2.2.2
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

@@ -29,6 +29,7 @@ type NegState int
 // NegTokenInit implements Negotiation Token of type Init.
 type NegTokenInit struct {
 	MechTypes      []asn1.ObjectIdentifier
+<<<<<<< HEAD
 	ReqFlags       asn1.BitString
 	MechTokenBytes []byte
 	MechListMIC    []byte
@@ -39,6 +40,19 @@ type NegTokenInit struct {
 type marshalNegTokenInit struct {
 	MechTypes      []asn1.ObjectIdentifier `asn1:"explicit,tag:0"`
 	ReqFlags       asn1.BitString          `asn1:"explicit,optional,tag:1"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ReqFlags       gssapi.ContextFlags
+	MechTokenBytes []byte
+	MechListMIC    []byte
+	mechToken      gssapi.ContextToken
+	settings       *service.Settings
+}
+
+type marshalNegTokenInit struct {
+	MechTypes      []asn1.ObjectIdentifier `asn1:"explicit,tag:0"`
+	ReqFlags       gssapi.ContextFlags     `asn1:"explicit,optional,tag:1"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	MechTokenBytes []byte                  `asn1:"explicit,optional,omitempty,tag:2"`
 	MechListMIC    []byte                  `asn1:"explicit,optional,omitempty,tag:3"` // This field is not used when negotiating Kerberos tokens
 }

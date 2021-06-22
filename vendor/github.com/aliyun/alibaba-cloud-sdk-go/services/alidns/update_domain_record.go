@@ -21,6 +21,7 @@ import (
 )
 
 // UpdateDomainRecord invokes the alidns.UpdateDomainRecord API synchronously
+<<<<<<< HEAD
 func (client *Client) UpdateDomainRecord(request *UpdateDomainRecordRequest) (response *UpdateDomainRecordResponse, err error) {
 	response = CreateUpdateDomainRecordResponse()
 	err = client.DoAction(request, response)
@@ -96,6 +97,88 @@ func CreateUpdateDomainRecordRequest() (request *UpdateDomainRecordRequest) {
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainRecord", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
+func (client *Client) UpdateDomainRecord(request *UpdateDomainRecordRequest) (response *UpdateDomainRecordResponse, err error) {
+	response = CreateUpdateDomainRecordResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateDomainRecordWithChan invokes the alidns.UpdateDomainRecord API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDomainRecordWithChan(request *UpdateDomainRecordRequest) (<-chan *UpdateDomainRecordResponse, <-chan error) {
+	responseChan := make(chan *UpdateDomainRecordResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateDomainRecord(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateDomainRecordWithCallback invokes the alidns.UpdateDomainRecord API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDomainRecordWithCallback(request *UpdateDomainRecordRequest, callback func(response *UpdateDomainRecordResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateDomainRecordResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateDomainRecord(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateDomainRecordRequest is the request struct for api UpdateDomainRecord
+type UpdateDomainRecordRequest struct {
+	*requests.RpcRequest
+	RR           string           `position:"Query" name:"RR"`
+	Line         string           `position:"Query" name:"Line"`
+	Type         string           `position:"Query" name:"Type"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Value        string           `position:"Query" name:"Value"`
+	Priority     requests.Integer `position:"Query" name:"Priority"`
+	TTL          requests.Integer `position:"Query" name:"TTL"`
+	RecordId     string           `position:"Query" name:"RecordId"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+}
+
+// UpdateDomainRecordResponse is the response struct for api UpdateDomainRecord
+type UpdateDomainRecordResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	RecordId  string `json:"RecordId" xml:"RecordId"`
+}
+
+// CreateUpdateDomainRecordRequest creates a request to invoke UpdateDomainRecord API
+func CreateUpdateDomainRecordRequest() (request *UpdateDomainRecordRequest) {
+	request = &UpdateDomainRecordRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainRecord", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

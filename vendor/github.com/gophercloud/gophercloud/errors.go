@@ -6,6 +6,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 	"strings"
 )
@@ -414,6 +415,168 @@ func (e ErrDefault404) Error() string {
 		e.Method, e.URL, e.Body,
 	)
 	return e.choseErrString()
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+)
+
+// BaseError is an error type that all other error types embed.
+type BaseError struct {
+	DefaultErrString string
+	Info             string
+}
+
+func (e BaseError) Error() string {
+	e.DefaultErrString = "An error occurred while executing a Gophercloud request."
+	return e.choseErrString()
+}
+
+func (e BaseError) choseErrString() string {
+	if e.Info != "" {
+		return e.Info
+	}
+	return e.DefaultErrString
+}
+
+// ErrMissingInput is the error when input is required in a particular
+// situation but not provided by the user
+type ErrMissingInput struct {
+	BaseError
+	Argument string
+}
+
+func (e ErrMissingInput) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Missing input for argument [%s]", e.Argument)
+	return e.choseErrString()
+}
+
+// ErrInvalidInput is an error type used for most non-HTTP Gophercloud errors.
+type ErrInvalidInput struct {
+	ErrMissingInput
+	Value interface{}
+}
+
+func (e ErrInvalidInput) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Invalid input provided for argument [%s]: [%+v]", e.Argument, e.Value)
+	return e.choseErrString()
+}
+
+// ErrMissingEnvironmentVariable is the error when environment variable is required
+// in a particular situation but not provided by the user
+type ErrMissingEnvironmentVariable struct {
+	BaseError
+	EnvironmentVariable string
+}
+
+func (e ErrMissingEnvironmentVariable) Error() string {
+	e.DefaultErrString = fmt.Sprintf("Missing environment variable [%s]", e.EnvironmentVariable)
+	return e.choseErrString()
+}
+
+// ErrMissingAnyoneOfEnvironmentVariables is the error when anyone of the environment variables
+// is required in a particular situation but not provided by the user
+type ErrMissingAnyoneOfEnvironmentVariables struct {
+	BaseError
+	EnvironmentVariables []string
+}
+
+func (e ErrMissingAnyoneOfEnvironmentVariables) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Missing one of the following environment variables [%s]",
+		strings.Join(e.EnvironmentVariables, ", "),
+	)
+	return e.choseErrString()
+}
+
+// ErrUnexpectedResponseCode is returned by the Request method when a response code other than
+// those listed in OkCodes is encountered.
+type ErrUnexpectedResponseCode struct {
+	BaseError
+	URL      string
+	Method   string
+	Expected []int
+	Actual   int
+	Body     []byte
+}
+
+func (e ErrUnexpectedResponseCode) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Expected HTTP response code %v when accessing [%s %s], but got %d instead\n%s",
+		e.Expected, e.Method, e.URL, e.Actual, e.Body,
+	)
+	return e.choseErrString()
+}
+
+// ErrDefault400 is the default error type returned on a 400 HTTP response code.
+type ErrDefault400 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault401 is the default error type returned on a 401 HTTP response code.
+type ErrDefault401 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault403 is the default error type returned on a 403 HTTP response code.
+type ErrDefault403 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault404 is the default error type returned on a 404 HTTP response code.
+type ErrDefault404 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault405 is the default error type returned on a 405 HTTP response code.
+type ErrDefault405 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault408 is the default error type returned on a 408 HTTP response code.
+type ErrDefault408 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault409 is the default error type returned on a 409 HTTP response code.
+type ErrDefault409 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault429 is the default error type returned on a 429 HTTP response code.
+type ErrDefault429 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault500 is the default error type returned on a 500 HTTP response code.
+type ErrDefault500 struct {
+	ErrUnexpectedResponseCode
+}
+
+// ErrDefault503 is the default error type returned on a 503 HTTP response code.
+type ErrDefault503 struct {
+	ErrUnexpectedResponseCode
+}
+
+func (e ErrDefault400) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Bad request with: [%s %s], error message: %s",
+		e.Method, e.URL, e.Body,
+	)
+	return e.choseErrString()
+}
+func (e ErrDefault401) Error() string {
+	return "Authentication failed"
+}
+func (e ErrDefault403) Error() string {
+	e.DefaultErrString = fmt.Sprintf(
+		"Request forbidden: [%s %s], error message: %s",
+		e.Method, e.URL, e.Body,
+	)
+	return e.choseErrString()
+}
+func (e ErrDefault404) Error() string {
+	return "Resource not found"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 func (e ErrDefault405) Error() string {
 	return "Method not allowed"

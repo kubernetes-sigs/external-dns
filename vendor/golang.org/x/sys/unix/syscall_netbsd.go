@@ -114,6 +114,7 @@ func direntNamlen(buf []byte) (uint64, bool) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //sysnb	pipe() (fd1 int, fd2 int, err error)
 
 func Pipe(p []int) (err error) {
@@ -472,6 +473,203 @@ func Statvfs(path string, buf *Statvfs_t) (err error) {
 //sys	Pathconf(path string, name int) (val int, err error)
 //sys	pread(fd int, p []byte, offset int64) (n int, err error)
 //sys	pwrite(fd int, p []byte, offset int64) (n int, err error)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//sysnb pipe() (fd1 int, fd2 int, err error)
+func Pipe(p []int) (err error) {
+	if len(p) != 2 {
+		return EINVAL
+	}
+	p[0], p[1], err = pipe()
+	return
+}
+
+//sys Getdents(fd int, buf []byte) (n int, err error)
+func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
+	n, err = Getdents(fd, buf)
+	if err != nil || basep == nil {
+		return
+	}
+
+	var off int64
+	off, err = Seek(fd, 0, 1 /* SEEK_CUR */)
+	if err != nil {
+		*basep = ^uintptr(0)
+		return
+	}
+	*basep = uintptr(off)
+	if unsafe.Sizeof(*basep) == 8 {
+		return
+	}
+	if off>>32 != 0 {
+		// We can't stuff the offset back into a uintptr, so any
+		// future calls would be suspect. Generate an error.
+		// EIO is allowed by getdirentries.
+		err = EIO
+	}
+	return
+}
+
+//sys	Getcwd(buf []byte) (n int, err error) = SYS___GETCWD
+
+// TODO
+func sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+	return -1, ENOSYS
+}
+
+func setattrlistTimes(path string, times []Timespec, flags int) error {
+	// used on Darwin for UtimesNano
+	return ENOSYS
+}
+
+//sys	ioctl(fd int, req uint, arg uintptr) (err error)
+
+//sys   sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+
+func IoctlGetPtmget(fd int, req uint) (*Ptmget, error) {
+	var value Ptmget
+	err := ioctl(fd, req, uintptr(unsafe.Pointer(&value)))
+	runtime.KeepAlive(value)
+	return &value, err
+}
+
+func Uname(uname *Utsname) error {
+	mib := []_C_int{CTL_KERN, KERN_OSTYPE}
+	n := unsafe.Sizeof(uname.Sysname)
+	if err := sysctl(mib, &uname.Sysname[0], &n, nil, 0); err != nil {
+		return err
+	}
+
+	mib = []_C_int{CTL_KERN, KERN_HOSTNAME}
+	n = unsafe.Sizeof(uname.Nodename)
+	if err := sysctl(mib, &uname.Nodename[0], &n, nil, 0); err != nil {
+		return err
+	}
+
+	mib = []_C_int{CTL_KERN, KERN_OSRELEASE}
+	n = unsafe.Sizeof(uname.Release)
+	if err := sysctl(mib, &uname.Release[0], &n, nil, 0); err != nil {
+		return err
+	}
+
+	mib = []_C_int{CTL_KERN, KERN_VERSION}
+	n = unsafe.Sizeof(uname.Version)
+	if err := sysctl(mib, &uname.Version[0], &n, nil, 0); err != nil {
+		return err
+	}
+
+	// The version might have newlines or tabs in it, convert them to
+	// spaces.
+	for i, b := range uname.Version {
+		if b == '\n' || b == '\t' {
+			if i == len(uname.Version)-1 {
+				uname.Version[i] = 0
+			} else {
+				uname.Version[i] = ' '
+			}
+		}
+	}
+
+	mib = []_C_int{CTL_HW, HW_MACHINE}
+	n = unsafe.Sizeof(uname.Machine)
+	if err := sysctl(mib, &uname.Machine[0], &n, nil, 0); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
+	if raceenabled {
+		raceReleaseMerge(unsafe.Pointer(&ioSync))
+	}
+	return sendfile(outfd, infd, offset, count)
+}
+
+func Fstatvfs(fd int, buf *Statvfs_t) (err error) {
+	return Fstatvfs1(fd, buf, ST_WAIT)
+}
+
+func Statvfs(path string, buf *Statvfs_t) (err error) {
+	return Statvfs1(path, buf, ST_WAIT)
+}
+
+/*
+ * Exposed directly
+ */
+//sys	Access(path string, mode uint32) (err error)
+//sys	Adjtime(delta *Timeval, olddelta *Timeval) (err error)
+//sys	Chdir(path string) (err error)
+//sys	Chflags(path string, flags int) (err error)
+//sys	Chmod(path string, mode uint32) (err error)
+//sys	Chown(path string, uid int, gid int) (err error)
+//sys	Chroot(path string) (err error)
+//sys	Close(fd int) (err error)
+//sys	Dup(fd int) (nfd int, err error)
+//sys	Dup2(from int, to int) (err error)
+//sys	Dup3(from int, to int, flags int) (err error)
+//sys	Exit(code int)
+//sys	ExtattrGetFd(fd int, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrSetFd(fd int, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrDeleteFd(fd int, attrnamespace int, attrname string) (err error)
+//sys	ExtattrListFd(fd int, attrnamespace int, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrGetFile(file string, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrSetFile(file string, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrDeleteFile(file string, attrnamespace int, attrname string) (err error)
+//sys	ExtattrListFile(file string, attrnamespace int, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrGetLink(link string, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrSetLink(link string, attrnamespace int, attrname string, data uintptr, nbytes int) (ret int, err error)
+//sys	ExtattrDeleteLink(link string, attrnamespace int, attrname string) (err error)
+//sys	ExtattrListLink(link string, attrnamespace int, data uintptr, nbytes int) (ret int, err error)
+//sys	Faccessat(dirfd int, path string, mode uint32, flags int) (err error)
+//sys	Fadvise(fd int, offset int64, length int64, advice int) (err error) = SYS_POSIX_FADVISE
+//sys	Fchdir(fd int) (err error)
+//sys	Fchflags(fd int, flags int) (err error)
+//sys	Fchmod(fd int, mode uint32) (err error)
+//sys	Fchmodat(dirfd int, path string, mode uint32, flags int) (err error)
+//sys	Fchown(fd int, uid int, gid int) (err error)
+//sys	Fchownat(dirfd int, path string, uid int, gid int, flags int) (err error)
+//sys	Flock(fd int, how int) (err error)
+//sys	Fpathconf(fd int, name int) (val int, err error)
+//sys	Fstat(fd int, stat *Stat_t) (err error)
+//sys	Fstatat(fd int, path string, stat *Stat_t, flags int) (err error)
+//sys	Fstatvfs1(fd int, buf *Statvfs_t, flags int) (err error) = SYS_FSTATVFS1
+//sys	Fsync(fd int) (err error)
+//sys	Ftruncate(fd int, length int64) (err error)
+//sysnb	Getegid() (egid int)
+//sysnb	Geteuid() (uid int)
+//sysnb	Getgid() (gid int)
+//sysnb	Getpgid(pid int) (pgid int, err error)
+//sysnb	Getpgrp() (pgrp int)
+//sysnb	Getpid() (pid int)
+//sysnb	Getppid() (ppid int)
+//sys	Getpriority(which int, who int) (prio int, err error)
+//sysnb	Getrlimit(which int, lim *Rlimit) (err error)
+//sysnb	Getrusage(who int, rusage *Rusage) (err error)
+//sysnb	Getsid(pid int) (sid int, err error)
+//sysnb	Gettimeofday(tv *Timeval) (err error)
+//sysnb	Getuid() (uid int)
+//sys	Issetugid() (tainted bool)
+//sys	Kill(pid int, signum syscall.Signal) (err error)
+//sys	Kqueue() (fd int, err error)
+//sys	Lchown(path string, uid int, gid int) (err error)
+//sys	Link(path string, link string) (err error)
+//sys	Linkat(pathfd int, path string, linkfd int, link string, flags int) (err error)
+//sys	Listen(s int, backlog int) (err error)
+//sys	Lstat(path string, stat *Stat_t) (err error)
+//sys	Mkdir(path string, mode uint32) (err error)
+//sys	Mkdirat(dirfd int, path string, mode uint32) (err error)
+//sys	Mkfifo(path string, mode uint32) (err error)
+//sys	Mkfifoat(dirfd int, path string, mode uint32) (err error)
+//sys	Mknod(path string, mode uint32, dev int) (err error)
+//sys	Mknodat(dirfd int, path string, mode uint32, dev int) (err error)
+//sys	Nanosleep(time *Timespec, leftover *Timespec) (err error)
+//sys	Open(path string, mode int, perm uint32) (fd int, err error)
+//sys	Openat(dirfd int, path string, mode int, perm uint32) (fd int, err error)
+//sys	Pathconf(path string, name int) (val int, err error)
+//sys	Pread(fd int, p []byte, offset int64) (n int, err error)
+//sys	Pwrite(fd int, p []byte, offset int64) (n int, err error)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //sys	read(fd int, p []byte) (n int, err error)
 //sys	Readlink(path string, buf []byte) (n int, err error)
 //sys	Readlinkat(dirfd int, path string, buf []byte) (n int, err error)

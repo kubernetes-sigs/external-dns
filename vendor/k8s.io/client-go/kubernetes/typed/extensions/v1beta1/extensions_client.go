@@ -19,6 +19,7 @@ limitations under the License.
 package v1beta1
 
 import (
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/extensions/v1beta1"
@@ -88,6 +89,60 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*ExtensionsV1beta1Cl
 		return nil, err
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/api/extensions/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type ExtensionsV1beta1Interface interface {
+	RESTClient() rest.Interface
+	DaemonSetsGetter
+	DeploymentsGetter
+	IngressesGetter
+	NetworkPoliciesGetter
+	PodSecurityPoliciesGetter
+	ReplicaSetsGetter
+}
+
+// ExtensionsV1beta1Client is used to interact with features provided by the extensions group.
+type ExtensionsV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *ExtensionsV1beta1Client) DaemonSets(namespace string) DaemonSetInterface {
+	return newDaemonSets(c, namespace)
+}
+
+func (c *ExtensionsV1beta1Client) Deployments(namespace string) DeploymentInterface {
+	return newDeployments(c, namespace)
+}
+
+func (c *ExtensionsV1beta1Client) Ingresses(namespace string) IngressInterface {
+	return newIngresses(c, namespace)
+}
+
+func (c *ExtensionsV1beta1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {
+	return newNetworkPolicies(c, namespace)
+}
+
+func (c *ExtensionsV1beta1Client) PodSecurityPolicies() PodSecurityPolicyInterface {
+	return newPodSecurityPolicies(c)
+}
+
+func (c *ExtensionsV1beta1Client) ReplicaSets(namespace string) ReplicaSetInterface {
+	return newReplicaSets(c, namespace)
+}
+
+// NewForConfig creates a new ExtensionsV1beta1Client for the given config.
+func NewForConfig(c *rest.Config) (*ExtensionsV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

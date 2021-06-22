@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 run:
   timeout: 10m
 
@@ -85,6 +86,31 @@ linters:
     - nakedret
     - scopelint
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+linters-settings:
+  golint:
+    min-confidence: 0.3
+  gocyclo:
+    min-complexity: 28
+  goimports:
+    local-prefixes: github.com
+
+linters:
+  enable:
+    - deadcode
+    - dupl
+    - errcheck
+    - gocyclo
+    - goimports
+    - golint
+    - gosimple
+    - govet
+    - ineffassign
+    - megacheck
+    - nakedret
+    - scopelint
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     - staticcheck
     - structcheck
     - unused

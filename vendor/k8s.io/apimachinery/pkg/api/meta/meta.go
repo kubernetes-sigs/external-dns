@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -195,6 +196,58 @@ func ListAccessor(obj interface{}) (List, error) {
 		return t, nil
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+)
+
+// errNotList is returned when an object implements the Object style interfaces but not the List style
+// interfaces.
+var errNotList = fmt.Errorf("object does not implement the List interfaces")
+
+var errNotCommon = fmt.Errorf("object does not implement the common interface for accessing the SelfLink")
+
+// CommonAccessor returns a Common interface for the provided object or an error if the object does
+// not provide List.
+func CommonAccessor(obj interface{}) (metav1.Common, error) {
+	switch t := obj.(type) {
+	case List:
+		return t, nil
+	case metav1.ListInterface:
+		return t, nil
+	case ListMetaAccessor:
+		if m := t.GetListMeta(); m != nil {
+			return m, nil
+		}
+		return nil, errNotCommon
+	case metav1.ListMetaAccessor:
+		if m := t.GetListMeta(); m != nil {
+			return m, nil
+		}
+		return nil, errNotCommon
+	case metav1.Object:
+		return t, nil
+	case metav1.ObjectMetaAccessor:
+		if m := t.GetObjectMeta(); m != nil {
+			return m, nil
+		}
+		return nil, errNotCommon
+	default:
+		return nil, errNotCommon
+	}
+}
+
+// ListAccessor returns a List interface for the provided object or an error if the object does
+// not provide List.
+// IMPORTANT: Objects are NOT a superset of lists. Do not use this check to determine whether an
+// object *is* a List.
+func ListAccessor(obj interface{}) (List, error) {
+	switch t := obj.(type) {
+	case List:
+		return t, nil
+	case metav1.ListInterface:
+		return t, nil
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	case ListMetaAccessor:
 		if m := t.GetListMeta(); m != nil {
 			return m, nil

@@ -76,6 +76,10 @@ func (request *RpcRequest) InitWithApiInfo(product, version, action, serviceCode
 	request.actionName = action
 	request.locationServiceCode = serviceCode
 	request.locationEndpointType = endpointType
+<<<<<<< HEAD
 	request.Headers["x-acs-version"] = version
 	request.Headers["x-acs-action"] = action
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

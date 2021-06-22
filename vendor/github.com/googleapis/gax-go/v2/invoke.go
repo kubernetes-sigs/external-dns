@@ -37,6 +37,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"github.com/googleapis/gax-go/v2/apierror"
 )
@@ -208,6 +209,57 @@ func invoke(ctx context.Context, call APICall, settings CallSettings, sp sleeper
 			err = apierr
 		}
 		if settings.Retry == nil {
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+// APICall is a user defined call stub.
+type APICall func(context.Context, CallSettings) error
+
+// Invoke calls the given APICall,
+// performing retries as specified by opts, if any.
+func Invoke(ctx context.Context, call APICall, opts ...CallOption) error {
+	var settings CallSettings
+	for _, opt := range opts {
+		opt.Resolve(&settings)
+	}
+	return invoke(ctx, call, settings, Sleep)
+}
+
+// Sleep is similar to time.Sleep, but it can be interrupted by ctx.Done() closing.
+// If interrupted, Sleep returns ctx.Err().
+func Sleep(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	select {
+	case <-ctx.Done():
+		t.Stop()
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
+}
+
+type sleeper func(ctx context.Context, d time.Duration) error
+
+// invoke implements Invoke, taking an additional sleeper argument for testing.
+func invoke(ctx context.Context, call APICall, settings CallSettings, sp sleeper) error {
+	var retryer Retryer
+	for {
+		err := call(ctx, settings)
+		if err == nil {
+			return nil
+		}
+		if settings.Retry == nil {
+			return err
+		}
+		// Never retry permanent certificate errors. (e.x. if ca-certificates
+		// are not installed). We should only make very few, targeted
+		// exceptions: many (other) status=Unavailable should be retried, such
+		// as if there's a network hiccup, or the internet goes out for a
+		// minute. This is also why here we are doing string parsing instead of
+		// simply making Unavailable a non-retried code elsewhere.
+		if strings.Contains(err.Error(), "x509: certificate signed by unknown authority") {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return err
 		}
 		if retryer == nil {

@@ -21,6 +21,7 @@ import (
 )
 
 // ModifyHichinaDomainDNS invokes the alidns.ModifyHichinaDomainDNS API synchronously
+<<<<<<< HEAD
 func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequest) (response *ModifyHichinaDomainDNSResponse, err error) {
 	response = CreateModifyHichinaDomainDNSResponse()
 	err = client.DoAction(request, response)
@@ -91,6 +92,83 @@ func CreateModifyHichinaDomainDNSRequest() (request *ModifyHichinaDomainDNSReque
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ModifyHichinaDomainDNS", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
+func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequest) (response *ModifyHichinaDomainDNSResponse, err error) {
+	response = CreateModifyHichinaDomainDNSResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// ModifyHichinaDomainDNSWithChan invokes the alidns.ModifyHichinaDomainDNS API asynchronously
+// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ModifyHichinaDomainDNSWithChan(request *ModifyHichinaDomainDNSRequest) (<-chan *ModifyHichinaDomainDNSResponse, <-chan error) {
+	responseChan := make(chan *ModifyHichinaDomainDNSResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.ModifyHichinaDomainDNS(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// ModifyHichinaDomainDNSWithCallback invokes the alidns.ModifyHichinaDomainDNS API asynchronously
+// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ModifyHichinaDomainDNSWithCallback(request *ModifyHichinaDomainDNSRequest, callback func(response *ModifyHichinaDomainDNSResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *ModifyHichinaDomainDNSResponse
+		var err error
+		defer close(result)
+		response, err = client.ModifyHichinaDomainDNS(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// ModifyHichinaDomainDNSRequest is the request struct for api ModifyHichinaDomainDNS
+type ModifyHichinaDomainDNSRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// ModifyHichinaDomainDNSResponse is the response struct for api ModifyHichinaDomainDNS
+type ModifyHichinaDomainDNSResponse struct {
+	*responses.BaseResponse
+	RequestId          string             `json:"RequestId" xml:"RequestId"`
+	OriginalDnsServers OriginalDnsServers `json:"OriginalDnsServers" xml:"OriginalDnsServers"`
+	NewDnsServers      NewDnsServers      `json:"NewDnsServers" xml:"NewDnsServers"`
+}
+
+// CreateModifyHichinaDomainDNSRequest creates a request to invoke ModifyHichinaDomainDNS API
+func CreateModifyHichinaDomainDNSRequest() (request *ModifyHichinaDomainDNSRequest) {
+	request = &ModifyHichinaDomainDNSRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "ModifyHichinaDomainDNS", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

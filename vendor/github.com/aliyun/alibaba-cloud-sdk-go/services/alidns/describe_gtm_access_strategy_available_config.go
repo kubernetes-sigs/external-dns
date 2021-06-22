@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeGtmAccessStrategyAvailableConfig invokes the alidns.DescribeGtmAccessStrategyAvailableConfig API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeGtmAccessStrategyAvailableConfig(request *DescribeGtmAccessStrategyAvailableConfigRequest) (response *DescribeGtmAccessStrategyAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmAccessStrategyAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -91,6 +92,83 @@ func CreateDescribeGtmAccessStrategyAvailableConfigRequest() (request *DescribeG
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAccessStrategyAvailableConfig", "alidns", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
+func (client *Client) DescribeGtmAccessStrategyAvailableConfig(request *DescribeGtmAccessStrategyAvailableConfigRequest) (response *DescribeGtmAccessStrategyAvailableConfigResponse, err error) {
+	response = CreateDescribeGtmAccessStrategyAvailableConfigResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeGtmAccessStrategyAvailableConfigWithChan invokes the alidns.DescribeGtmAccessStrategyAvailableConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmAccessStrategyAvailableConfigWithChan(request *DescribeGtmAccessStrategyAvailableConfigRequest) (<-chan *DescribeGtmAccessStrategyAvailableConfigResponse, <-chan error) {
+	responseChan := make(chan *DescribeGtmAccessStrategyAvailableConfigResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeGtmAccessStrategyAvailableConfig(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeGtmAccessStrategyAvailableConfigWithCallback invokes the alidns.DescribeGtmAccessStrategyAvailableConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategyavailableconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmAccessStrategyAvailableConfigWithCallback(request *DescribeGtmAccessStrategyAvailableConfigRequest, callback func(response *DescribeGtmAccessStrategyAvailableConfigResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeGtmAccessStrategyAvailableConfigResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeGtmAccessStrategyAvailableConfig(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeGtmAccessStrategyAvailableConfigRequest is the request struct for api DescribeGtmAccessStrategyAvailableConfig
+type DescribeGtmAccessStrategyAvailableConfigRequest struct {
+	*requests.RpcRequest
+	InstanceId   string `position:"Query" name:"InstanceId"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeGtmAccessStrategyAvailableConfigResponse is the response struct for api DescribeGtmAccessStrategyAvailableConfig
+type DescribeGtmAccessStrategyAvailableConfigResponse struct {
+	*responses.BaseResponse
+	RequestId string                                              `json:"RequestId" xml:"RequestId"`
+	AddrPools AddrPoolsInDescribeGtmAccessStrategyAvailableConfig `json:"AddrPools" xml:"AddrPools"`
+	Lines     LinesInDescribeGtmAccessStrategyAvailableConfig     `json:"Lines" xml:"Lines"`
+}
+
+// CreateDescribeGtmAccessStrategyAvailableConfigRequest creates a request to invoke DescribeGtmAccessStrategyAvailableConfig API
+func CreateDescribeGtmAccessStrategyAvailableConfigRequest() (request *DescribeGtmAccessStrategyAvailableConfigRequest) {
+	request = &DescribeGtmAccessStrategyAvailableConfigRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAccessStrategyAvailableConfig", "alidns", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

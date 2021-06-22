@@ -110,6 +110,7 @@ func (c *Fake) AddWatchReactor(resource string, reaction WatchReactionFunc) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -149,6 +150,14 @@ func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) 
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	c.WatchReactionChain = append(c.WatchReactionChain, &SimpleWatchReactor{resource, reaction})
+}
+
+// PrependWatchReactor adds a reactor to the beginning of the chain.
+func (c *Fake) PrependWatchReactor(resource string, reaction WatchReactionFunc) {
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	c.WatchReactionChain = append([]WatchReactor{&SimpleWatchReactor{resource, reaction}}, c.WatchReactionChain...)
 }
 

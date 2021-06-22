@@ -17,6 +17,7 @@ package alidns
 
 // GtmInstance is a nested struct in alidns response
 type GtmInstance struct {
+<<<<<<< HEAD
 	AddressPoolNum    int       `json:"AddressPoolNum" xml:"AddressPoolNum"`
 	Cname             string    `json:"Cname" xml:"Cname"`
 	UserDomainName    string    `json:"UserDomainName" xml:"UserDomainName"`
@@ -38,4 +39,22 @@ type GtmInstance struct {
 	TaskQuota         int       `json:"TaskQuota" xml:"TaskQuota"`
 	Config            Config    `json:"Config" xml:"Config"`
 	UsedQuota         UsedQuota `json:"UsedQuota" xml:"UsedQuota"`
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	InstanceId        string `json:"InstanceId" xml:"InstanceId"`
+	InstanceName      string `json:"InstanceName" xml:"InstanceName"`
+	Cname             string `json:"Cname" xml:"Cname"`
+	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
+	VersionCode       string `json:"VersionCode" xml:"VersionCode"`
+	Ttl               int    `json:"Ttl" xml:"Ttl"`
+	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
+	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
+	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	AlertGroup        string `json:"AlertGroup" xml:"AlertGroup"`
+	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
+	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
+	AddressPoolNum    int    `json:"AddressPoolNum" xml:"AddressPoolNum"`
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

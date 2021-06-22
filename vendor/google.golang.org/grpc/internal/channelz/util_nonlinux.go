@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 //go:build !linux
 // +build !linux
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build !linux appengine
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 /*
  *

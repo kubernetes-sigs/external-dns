@@ -21,6 +21,7 @@ import (
 )
 
 // DescribeStatisticSummary invokes the pvtz.DescribeStatisticSummary API synchronously
+<<<<<<< HEAD
 func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummaryRequest) (response *DescribeStatisticSummaryResponse, err error) {
 	response = CreateDescribeStatisticSummaryResponse()
 	err = client.DoAction(request, response)
@@ -91,6 +92,83 @@ func CreateDescribeStatisticSummaryRequest() (request *DescribeStatisticSummaryR
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeStatisticSummary", "pvtz", "openAPI")
 	request.Method = requests.POST
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
+func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummaryRequest) (response *DescribeStatisticSummaryResponse, err error) {
+	response = CreateDescribeStatisticSummaryResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeStatisticSummaryWithChan invokes the pvtz.DescribeStatisticSummary API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeStatisticSummaryWithChan(request *DescribeStatisticSummaryRequest) (<-chan *DescribeStatisticSummaryResponse, <-chan error) {
+	responseChan := make(chan *DescribeStatisticSummaryResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeStatisticSummary(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeStatisticSummaryWithCallback invokes the pvtz.DescribeStatisticSummary API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeStatisticSummaryWithCallback(request *DescribeStatisticSummaryRequest, callback func(response *DescribeStatisticSummaryResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeStatisticSummaryResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeStatisticSummary(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeStatisticSummaryRequest is the request struct for api DescribeStatisticSummary
+type DescribeStatisticSummaryRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeStatisticSummaryResponse is the response struct for api DescribeStatisticSummary
+type DescribeStatisticSummaryResponse struct {
+	*responses.BaseResponse
+	RequestId       string          `json:"RequestId" xml:"RequestId"`
+	TotalCount      int64           `json:"TotalCount" xml:"TotalCount"`
+	ZoneRequestTops ZoneRequestTops `json:"ZoneRequestTops" xml:"ZoneRequestTops"`
+	VpcRequestTops  VpcRequestTops  `json:"VpcRequestTops" xml:"VpcRequestTops"`
+}
+
+// CreateDescribeStatisticSummaryRequest creates a request to invoke DescribeStatisticSummary API
+func CreateDescribeStatisticSummaryRequest() (request *DescribeStatisticSummaryRequest) {
+	request = &DescribeStatisticSummaryRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeStatisticSummary", "pvtz", "openAPI")
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

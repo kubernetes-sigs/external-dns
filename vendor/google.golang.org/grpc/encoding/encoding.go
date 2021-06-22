@@ -23,6 +23,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
@@ -164,6 +165,40 @@ type Compressor interface {
 	// Notice: This API is EXPERIMENTAL and may be changed or removed in a
 	// later release.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// This package is EXPERIMENTAL.
+package encoding
+
+import (
+	"io"
+	"strings"
+)
+
+// Identity specifies the optional encoding for uncompressed streams.
+// It is intended for grpc internal use only.
+const Identity = "identity"
+
+// Compressor is used for compressing and decompressing when sending or
+// receiving messages.
+type Compressor interface {
+	// Compress writes the data written to wc to w after compressing it.  If an
+	// error occurs while initializing the compressor, that error is returned
+	// instead.
+	Compress(w io.Writer) (io.WriteCloser, error)
+	// Decompress reads data from r, decompresses it, and provides the
+	// uncompressed data via the returned io.Reader.  If an error occurs while
+	// initializing the decompressor, that error is returned instead.
+	Decompress(r io.Reader) (io.Reader, error)
+	// Name is the name of the compression codec and is used to set the content
+	// coding header.  The result must be static; the result cannot change
+	// between calls.
+	Name() string
+	// EXPERIMENTAL: if a Compressor implements
+	// DecompressedSize(compressedBytes []byte) int, gRPC will call it
+	// to determine the size of the buffer allocated for the result of decompression.
+	// Return -1 to indicate unknown size.
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 var registeredCompressor = make(map[string]Compressor)

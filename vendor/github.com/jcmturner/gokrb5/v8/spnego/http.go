@@ -116,8 +116,12 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 			// Refresh the body reader so the body can be sent again
 			req.Body = ioutil.NopCloser(&body)
 		}
+<<<<<<< HEAD
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return c.Do(req)
 	}
 	return resp, err

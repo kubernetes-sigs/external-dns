@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -202,6 +203,157 @@ func (c *codec) Decode(data []byte, defaultGVK *schema.GroupVersionKind, into ru
 		return nil, gvk, err
 	}
 	return out, gvk, strictDecodingErr
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+)
+
+// NewDefaultingCodecForScheme is a convenience method for callers that are using a scheme.
+func NewDefaultingCodecForScheme(
+	// TODO: I should be a scheme interface?
+	scheme *runtime.Scheme,
+	encoder runtime.Encoder,
+	decoder runtime.Decoder,
+	encodeVersion runtime.GroupVersioner,
+	decodeVersion runtime.GroupVersioner,
+) runtime.Codec {
+	return NewCodec(encoder, decoder, runtime.UnsafeObjectConvertor(scheme), scheme, scheme, scheme, encodeVersion, decodeVersion, scheme.Name())
+}
+
+// NewCodec takes objects in their internal versions and converts them to external versions before
+// serializing them. It assumes the serializer provided to it only deals with external versions.
+// This class is also a serializer, but is generally used with a specific version.
+func NewCodec(
+	encoder runtime.Encoder,
+	decoder runtime.Decoder,
+	convertor runtime.ObjectConvertor,
+	creater runtime.ObjectCreater,
+	typer runtime.ObjectTyper,
+	defaulter runtime.ObjectDefaulter,
+	encodeVersion runtime.GroupVersioner,
+	decodeVersion runtime.GroupVersioner,
+	originalSchemeName string,
+) runtime.Codec {
+	internal := &codec{
+		encoder:   encoder,
+		decoder:   decoder,
+		convertor: convertor,
+		creater:   creater,
+		typer:     typer,
+		defaulter: defaulter,
+
+		encodeVersion: encodeVersion,
+		decodeVersion: decodeVersion,
+
+		identifier: identifier(encodeVersion, encoder),
+
+		originalSchemeName: originalSchemeName,
+	}
+	return internal
+}
+
+type codec struct {
+	encoder   runtime.Encoder
+	decoder   runtime.Decoder
+	convertor runtime.ObjectConvertor
+	creater   runtime.ObjectCreater
+	typer     runtime.ObjectTyper
+	defaulter runtime.ObjectDefaulter
+
+	encodeVersion runtime.GroupVersioner
+	decodeVersion runtime.GroupVersioner
+
+	identifier runtime.Identifier
+
+	// originalSchemeName is optional, but when filled in it holds the name of the scheme from which this codec originates
+	originalSchemeName string
+}
+
+var identifiersMap sync.Map
+
+type codecIdentifier struct {
+	EncodeGV string `json:"encodeGV,omitempty"`
+	Encoder  string `json:"encoder,omitempty"`
+	Name     string `json:"name,omitempty"`
+}
+
+// identifier computes Identifier of Encoder based on codec parameters.
+func identifier(encodeGV runtime.GroupVersioner, encoder runtime.Encoder) runtime.Identifier {
+	result := codecIdentifier{
+		Name: "versioning",
+	}
+
+	if encodeGV != nil {
+		result.EncodeGV = encodeGV.Identifier()
+	}
+	if encoder != nil {
+		result.Encoder = string(encoder.Identifier())
+	}
+	if id, ok := identifiersMap.Load(result); ok {
+		return id.(runtime.Identifier)
+	}
+	identifier, err := json.Marshal(result)
+	if err != nil {
+		klog.Fatalf("Failed marshaling identifier for codec: %v", err)
+	}
+	identifiersMap.Store(result, runtime.Identifier(identifier))
+	return runtime.Identifier(identifier)
+}
+
+// Decode attempts a decode of the object, then tries to convert it to the internal version. If into is provided and the decoding is
+// successful, the returned runtime.Object will be the value passed as into. Note that this may bypass conversion if you pass an
+// into that matches the serialized version.
+func (c *codec) Decode(data []byte, defaultGVK *schema.GroupVersionKind, into runtime.Object) (runtime.Object, *schema.GroupVersionKind, error) {
+	// If the into object is unstructured and expresses an opinion about its group/version,
+	// create a new instance of the type so we always exercise the conversion path (skips short-circuiting on `into == obj`)
+	decodeInto := into
+	if into != nil {
+		if _, ok := into.(runtime.Unstructured); ok && !into.GetObjectKind().GroupVersionKind().GroupVersion().Empty() {
+			decodeInto = reflect.New(reflect.TypeOf(into).Elem()).Interface().(runtime.Object)
+		}
+	}
+
+	obj, gvk, err := c.decoder.Decode(data, defaultGVK, decodeInto)
+	if err != nil {
+		return nil, gvk, err
+	}
+
+	if d, ok := obj.(runtime.NestedObjectDecoder); ok {
+		if err := d.DecodeNestedObjects(runtime.WithoutVersionDecoder{c.decoder}); err != nil {
+			return nil, gvk, err
+		}
+	}
+
+	// if we specify a target, use generic conversion.
+	if into != nil {
+		// perform defaulting if requested
+		if c.defaulter != nil {
+			c.defaulter.Default(obj)
+		}
+
+		// Short-circuit conversion if the into object is same object
+		if into == obj {
+			return into, gvk, nil
+		}
+
+		if err := c.convertor.Convert(obj, into, c.decodeVersion); err != nil {
+			return nil, gvk, err
+		}
+
+		return into, gvk, nil
+	}
+
+	// perform defaulting if requested
+	if c.defaulter != nil {
+		c.defaulter.Default(obj)
+	}
+
+	out, err := c.convertor.ConvertToVersion(obj, c.decodeVersion)
+	if err != nil {
+		return nil, gvk, err
+	}
+	return out, gvk, nil
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Encode ensures the provided object is output in the appropriate group and version, invoking

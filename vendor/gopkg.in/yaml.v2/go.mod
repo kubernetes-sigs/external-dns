@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 module gopkg.in/yaml.v2
 
 go 1.15
@@ -37,3 +38,11 @@ require (
 	"gopkg.in/check.v1" v0.0.0-20161208181325-20d25e280405
 )
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+module "gopkg.in/yaml.v2"
+
+require (
+	"gopkg.in/check.v1" v0.0.0-20161208181325-20d25e280405
+)
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"encoding/json"
+<<<<<<< HEAD
 	"io"
 	"log"
 	"os"
@@ -9,6 +10,15 @@ import (
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"time"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 var logChannel string

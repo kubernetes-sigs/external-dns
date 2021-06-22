@@ -54,6 +54,7 @@ How to get your contributions merged smoothly and quickly.
   recommend you **run tests locally** before creating your PR to catch breakages
   early on.
 <<<<<<< HEAD
+<<<<<<< HEAD
   - `make all` to test everything, OR
   - `make vet` to catch vet errors
   - `make test` to run the tests
@@ -84,5 +85,13 @@ How to get your contributions merged smoothly and quickly.
   - `go test -cpu 1,4 -timeout 7m ./...` to run the tests
   - `go test -race -cpu 1,4 -timeout 7m ./...` to run tests in race mode
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+  - `make all` to test everything, OR
+  - `make vet` to catch vet errors
+  - `make test` to run the tests
+  - `make testrace` to run tests in race mode
+  - optional `make testappengine` to run tests with appengine
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 - Exceptions to the rules can be made if there's a compelling reason for doing so.

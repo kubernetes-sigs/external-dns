@@ -20,7 +20,12 @@ import (
 	"sync"
 	"time"
 
+<<<<<<< HEAD
 	"k8s.io/utils/clock"
+||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/apimachinery/pkg/util/clock"
+>>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // This file provides abstractions for setting the provider (e.g., prometheus)
