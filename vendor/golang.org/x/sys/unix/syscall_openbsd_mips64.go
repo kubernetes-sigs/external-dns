@@ -26,10 +26,14 @@ func (msghdr *Msghdr) SetControllen(length int) {
 	msghdr.Controllen = uint32(length)
 }
 
+<<<<<<< HEAD
 func (msghdr *Msghdr) SetIovlen(length int) {
 	msghdr.Iovlen = uint32(length)
 }
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (cmsg *Cmsghdr) SetLen(length int) {
 	cmsg.Len = uint32(length)
 }

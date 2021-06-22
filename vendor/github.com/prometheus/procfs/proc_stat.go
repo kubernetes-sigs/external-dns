@@ -100,6 +100,7 @@ type ProcStat struct {
 	VSize uint
 	// Resident set size in pages.
 	RSS int
+<<<<<<< HEAD
 	// Soft limit in bytes on the rss of the process.
 	RSSLimit uint64
 	// Real-time scheduling priority, a number in the range 1 to 99 for processes
@@ -234,6 +235,67 @@ func (p Proc) Stat() (ProcStat, error) {
 		&s.RTPriority,
 		&s.Policy,
 		&s.DelayAcctBlkIOTicks,
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	proc fs.FS
+}
+
+// NewStat returns the current status information of the process.
+//
+// Deprecated: use p.Stat() instead
+func (p Proc) NewStat() (ProcStat, error) {
+	return p.Stat()
+}
+
+// Stat returns the current status information of the process.
+func (p Proc) Stat() (ProcStat, error) {
+	data, err := util.ReadFileNoStat(p.path("stat"))
+	if err != nil {
+		return ProcStat{}, err
+	}
+
+	var (
+		ignore int
+
+		s = ProcStat{PID: p.PID, proc: p.fs}
+		l = bytes.Index(data, []byte("("))
+		r = bytes.LastIndex(data, []byte(")"))
+	)
+
+	if l < 0 || r < 0 {
+		return ProcStat{}, fmt.Errorf(
+			"unexpected format, couldn't extract comm: %s",
+			data,
+		)
+	}
+
+	s.Comm = string(data[l+1 : r])
+	_, err = fmt.Fscan(
+		bytes.NewBuffer(data[r+2:]),
+		&s.State,
+		&s.PPID,
+		&s.PGRP,
+		&s.Session,
+		&s.TTY,
+		&s.TPGID,
+		&s.Flags,
+		&s.MinFlt,
+		&s.CMinFlt,
+		&s.MajFlt,
+		&s.CMajFlt,
+		&s.UTime,
+		&s.STime,
+		&s.CUTime,
+		&s.CSTime,
+		&s.Priority,
+		&s.Nice,
+		&s.NumThreads,
+		&ignore,
+		&s.Starttime,
+		&s.VSize,
+		&s.RSS,
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	)
 	if err != nil {
 		return ProcStat{}, err

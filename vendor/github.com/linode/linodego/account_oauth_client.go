@@ -113,6 +113,7 @@ func (c *Client) ListOAuthClients(ctx context.Context, opts *ListOptions) ([]OAu
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -443,6 +444,87 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+// GetOAuthClient gets the OAuthClient with the provided ID
+func (c *Client) GetOAuthClient(ctx context.Context, id string) (*OAuthClient, error) {
+	e, err := c.OAuthClients.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%s", e, id)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&OAuthClient{}).Get(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*OAuthClient), nil
+}
+
+// CreateOAuthClient creates an OAuthClient
+func (c *Client) CreateOAuthClient(ctx context.Context, createOpts OAuthClientCreateOptions) (*OAuthClient, error) {
+	var body string
+
+	e, err := c.OAuthClients.Endpoint()
+
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&OAuthClient{})
+
+	if bodyData, err := json.Marshal(createOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*OAuthClient), nil
+}
+
+// UpdateOAuthClient updates the OAuthClient with the specified id
+func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OAuthClientUpdateOptions) (*OAuthClient, error) {
+	var body string
+
+	e, err := c.OAuthClients.Endpoint()
+
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%s", e, id)
+
+	req := c.R(ctx).SetResult(&OAuthClient{})
+
+	if bodyData, err := json.Marshal(updateOpts); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

@@ -23,6 +23,7 @@ import (
 // DescribeZoneVpcTree invokes the pvtz.DescribeZoneVpcTree API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeZoneVpcTree(request *DescribeZoneVpcTreeRequest) (response *DescribeZoneVpcTreeResponse, err error) {
 	response = CreateDescribeZoneVpcTreeResponse()
 	err = client.DoAction(request, response)
@@ -171,6 +172,81 @@ func CreateDescribeZoneVpcTreeRequest() (request *DescribeZoneVpcTreeRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
+func (client *Client) DescribeZoneVpcTree(request *DescribeZoneVpcTreeRequest) (response *DescribeZoneVpcTreeResponse, err error) {
+	response = CreateDescribeZoneVpcTreeResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeZoneVpcTreeWithChan invokes the pvtz.DescribeZoneVpcTree API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeZoneVpcTreeWithChan(request *DescribeZoneVpcTreeRequest) (<-chan *DescribeZoneVpcTreeResponse, <-chan error) {
+	responseChan := make(chan *DescribeZoneVpcTreeResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeZoneVpcTree(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeZoneVpcTreeWithCallback invokes the pvtz.DescribeZoneVpcTree API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeZoneVpcTreeWithCallback(request *DescribeZoneVpcTreeRequest, callback func(response *DescribeZoneVpcTreeResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeZoneVpcTreeResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeZoneVpcTree(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeZoneVpcTreeRequest is the request struct for api DescribeZoneVpcTree
+type DescribeZoneVpcTreeRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeZoneVpcTreeResponse is the response struct for api DescribeZoneVpcTree
+type DescribeZoneVpcTreeResponse struct {
+	*responses.BaseResponse
+	RequestId string                     `json:"RequestId" xml:"RequestId"`
+	Zones     ZonesInDescribeZoneVpcTree `json:"Zones" xml:"Zones"`
+}
+
+// CreateDescribeZoneVpcTreeRequest creates a request to invoke DescribeZoneVpcTree API
+func CreateDescribeZoneVpcTreeRequest() (request *DescribeZoneVpcTreeRequest) {
+	request = &DescribeZoneVpcTreeRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneVpcTree", "pvtz", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

@@ -21,6 +21,7 @@ package v1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/batch/v1"
@@ -167,6 +168,35 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, erro
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1 "k8s.io/api/batch/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type BatchV1Interface interface {
+	RESTClient() rest.Interface
+	JobsGetter
+}
+
+// BatchV1Client is used to interact with features provided by the batch group.
+type BatchV1Client struct {
+	restClient rest.Interface
+}
+
+func (c *BatchV1Client) Jobs(namespace string) JobInterface {
+	return newJobs(c, namespace)
+}
+
+// NewForConfig creates a new BatchV1Client for the given config.
+func NewForConfig(c *rest.Config) (*BatchV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

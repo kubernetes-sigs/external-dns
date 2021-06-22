@@ -55,6 +55,7 @@ func jsonTag(field reflect.StructField) (string, bool) {
 }
 
 func isPointerKind(kind reflect.Kind) bool {
+<<<<<<< HEAD
 	return kind == reflect.Pointer
 }
 
@@ -140,6 +141,94 @@ func Convert(obj interface{}) (url.Values, error) {
 	var sv reflect.Value
 	switch reflect.TypeOf(obj).Kind() {
 	case reflect.Pointer, reflect.Interface:
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return kind == reflect.Ptr
+}
+
+func isStructKind(kind reflect.Kind) bool {
+	return kind == reflect.Struct
+}
+
+func isValueKind(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.String, reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8,
+		reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Float32,
+		reflect.Float64, reflect.Complex64, reflect.Complex128:
+		return true
+	default:
+		return false
+	}
+}
+
+func zeroValue(value reflect.Value) bool {
+	return reflect.DeepEqual(reflect.Zero(value.Type()).Interface(), value.Interface())
+}
+
+func customMarshalValue(value reflect.Value) (reflect.Value, bool) {
+	// Return unless we implement a custom query marshaler
+	if !value.CanInterface() {
+		return reflect.Value{}, false
+	}
+
+	marshaler, ok := value.Interface().(Marshaler)
+	if !ok {
+		if !isPointerKind(value.Kind()) && value.CanAddr() {
+			marshaler, ok = value.Addr().Interface().(Marshaler)
+			if !ok {
+				return reflect.Value{}, false
+			}
+		} else {
+			return reflect.Value{}, false
+		}
+	}
+
+	// Don't invoke functions on nil pointers
+	// If the type implements MarshalQueryParameter, AND the tag is not omitempty, AND the value is a nil pointer, "" seems like a reasonable response
+	if isPointerKind(value.Kind()) && zeroValue(value) {
+		return reflect.ValueOf(""), true
+	}
+
+	// Get the custom marshalled value
+	v, err := marshaler.MarshalQueryParameter()
+	if err != nil {
+		return reflect.Value{}, false
+	}
+	return reflect.ValueOf(v), true
+}
+
+func addParam(values url.Values, tag string, omitempty bool, value reflect.Value) {
+	if omitempty && zeroValue(value) {
+		return
+	}
+	val := ""
+	iValue := fmt.Sprintf("%v", value.Interface())
+
+	if iValue != "<nil>" {
+		val = iValue
+	}
+	values.Add(tag, val)
+}
+
+func addListOfParams(values url.Values, tag string, omitempty bool, list reflect.Value) {
+	for i := 0; i < list.Len(); i++ {
+		addParam(values, tag, omitempty, list.Index(i))
+	}
+}
+
+// Convert takes an object and converts it to a url.Values object using JSON tags as
+// parameter names. Only top-level simple values, arrays, and slices are serialized.
+// Embedded structs, maps, etc. will not be serialized.
+func Convert(obj interface{}) (url.Values, error) {
+	result := url.Values{}
+	if obj == nil {
+		return result, nil
+	}
+	var sv reflect.Value
+	switch reflect.TypeOf(obj).Kind() {
+	case reflect.Ptr, reflect.Interface:
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		sv = reflect.ValueOf(obj).Elem()
 	default:
 		return nil, fmt.Errorf("expecting a pointer or interface")

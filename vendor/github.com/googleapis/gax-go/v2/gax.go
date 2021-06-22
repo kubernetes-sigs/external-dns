@@ -35,6 +35,7 @@
 // to simplify code generation and to provide more convenient and idiomatic API surfaces.
 package gax
 
+<<<<<<< HEAD
 import "github.com/googleapis/gax-go/v2/internal"
 
 // Version specifies the gax-go version being used.
@@ -78,3 +79,8 @@ const Version = "2.2.0"
 =======
 const Version = internal.Version
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Version specifies the gax-go version being used.
+const Version = "2.0.4"
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

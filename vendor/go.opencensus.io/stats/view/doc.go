@@ -34,7 +34,12 @@
 // Libraries can define views but it is recommended that in most cases registering
 // views be left up to applications.
 //
+<<<<<<< HEAD
 // # Exporting
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Exporting
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Collected and aggregated data can be exported to a metric collection
 // backend by registering its exporter.

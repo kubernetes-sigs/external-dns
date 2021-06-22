@@ -53,7 +53,11 @@ type (
 			FindExtensionByName(field FullName) (ExtensionType, error)
 			FindExtensionByNumber(message FullName, field FieldNumber) (ExtensionType, error)
 		}
+<<<<<<< HEAD
 		Depth int
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	unmarshalOutput = struct {
 		pragma.NoUnkeyedLiterals

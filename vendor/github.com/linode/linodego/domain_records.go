@@ -95,6 +95,7 @@ func (DomainRecordsPagedResponse) endpointWithID(c *Client, id int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.DomainRecords.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -537,6 +538,115 @@ func (c *Client) DeleteDomainRecord(ctx context.Context, domainID int, id int) e
 =======
 	e, err := c.DomainRecords.endpointWithParams(domainID)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	endpoint, err := c.DomainRecords.endpointWithID(id)
+	if err != nil {
+		panic(err)
+	}
+
+	return endpoint
+}
+
+// appendData appends DomainRecords when processing paginated DomainRecord responses
+func (resp *DomainRecordsPagedResponse) appendData(r *DomainRecordsPagedResponse) {
+	resp.Data = append(resp.Data, r.Data...)
+}
+
+// ListDomainRecords lists DomainRecords
+func (c *Client) ListDomainRecords(ctx context.Context, domainID int, opts *ListOptions) ([]DomainRecord, error) {
+	response := DomainRecordsPagedResponse{}
+	err := c.listHelperWithID(ctx, &response, domainID, opts)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return response.Data, nil
+}
+
+// GetDomainRecord gets the domainrecord with the provided ID
+func (c *Client) GetDomainRecord(ctx context.Context, domainID int, id int) (*DomainRecord, error) {
+	e, err := c.DomainRecords.endpointWithID(domainID)
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%d", e, id)
+	r, err := coupleAPIErrors(c.R(ctx).SetResult(&DomainRecord{}).Get(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*DomainRecord), nil
+}
+
+// CreateDomainRecord creates a DomainRecord
+func (c *Client) CreateDomainRecord(ctx context.Context, domainID int, domainrecord DomainRecordCreateOptions) (*DomainRecord, error) {
+	var body string
+
+	e, err := c.DomainRecords.endpointWithID(domainID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&DomainRecord{})
+
+	bodyData, err := json.Marshal(domainrecord)
+	if err != nil {
+		return nil, NewError(err)
+	}
+
+	body = string(bodyData)
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Post(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*DomainRecord), nil
+}
+
+// UpdateDomainRecord updates the DomainRecord with the specified id
+func (c *Client) UpdateDomainRecord(ctx context.Context, domainID int, id int, domainrecord DomainRecordUpdateOptions) (*DomainRecord, error) {
+	var body string
+
+	e, err := c.DomainRecords.endpointWithID(domainID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%d", e, id)
+
+	req := c.R(ctx).SetResult(&DomainRecord{})
+
+	if bodyData, err := json.Marshal(domainrecord); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*DomainRecord), nil
+}
+
+// DeleteDomainRecord deletes the DomainRecord with the specified id
+func (c *Client) DeleteDomainRecord(ctx context.Context, domainID int, id int) error {
+	e, err := c.DomainRecords.endpointWithID(domainID)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return err
 	}

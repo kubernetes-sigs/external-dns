@@ -17,11 +17,21 @@ package alidns
 
 // CustomLine is a nested struct in alidns response
 type CustomLine struct {
+<<<<<<< HEAD
 	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
 	Code            string      `json:"Code" xml:"Code"`
 	Name            string      `json:"Name" xml:"Name"`
 	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
 	Id              int64       `json:"Id" xml:"Id"`
 	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Id              int64       `json:"Id" xml:"Id"`
+	Name            string      `json:"Name" xml:"Name"`
+	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
+	Code            string      `json:"Code" xml:"Code"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	IpSegmentList   []IpSegment `json:"IpSegmentList" xml:"IpSegmentList"`
 }

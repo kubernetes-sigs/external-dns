@@ -43,6 +43,7 @@ func init() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -71,6 +72,10 @@ func init() {
 =======
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	localSchemeBuilder.Register(addKnownTypes)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {

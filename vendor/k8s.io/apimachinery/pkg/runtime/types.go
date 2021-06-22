@@ -21,6 +21,7 @@ package runtime
 
 // TypeMeta is shared by all top level objects. The proper way to use it is to inline it in your type,
 // like this:
+<<<<<<< HEAD
 //
 //	type MyAwesomeAPIObject struct {
 //	     runtime.TypeMeta    `json:",inline"`
@@ -86,6 +87,67 @@ const (
 //			"aOption":"foo",
 //		},
 //	}
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// type MyAwesomeAPIObject struct {
+//      runtime.TypeMeta    `json:",inline"`
+//      ... // other fields
+// }
+// func (obj *MyAwesomeAPIObject) SetGroupVersionKind(gvk *metav1.GroupVersionKind) { metav1.UpdateTypeMeta(obj,gvk) }; GroupVersionKind() *GroupVersionKind
+//
+// TypeMeta is provided here for convenience. You may use it directly from this package or define
+// your own with the same fields.
+//
+// +k8s:deepcopy-gen=false
+// +protobuf=true
+// +k8s:openapi-gen=true
+type TypeMeta struct {
+	// +optional
+	APIVersion string `json:"apiVersion,omitempty" yaml:"apiVersion,omitempty" protobuf:"bytes,1,opt,name=apiVersion"`
+	// +optional
+	Kind string `json:"kind,omitempty" yaml:"kind,omitempty" protobuf:"bytes,2,opt,name=kind"`
+}
+
+const (
+	ContentTypeJSON     string = "application/json"
+	ContentTypeYAML     string = "application/yaml"
+	ContentTypeProtobuf string = "application/vnd.kubernetes.protobuf"
+)
+
+// RawExtension is used to hold extensions in external versions.
+//
+// To use this, make a field which has RawExtension as its type in your external, versioned
+// struct, and Object in your internal struct. You also need to register your
+// various plugin types.
+//
+// // Internal package:
+// type MyAPIObject struct {
+// 	runtime.TypeMeta `json:",inline"`
+//	MyPlugin runtime.Object `json:"myPlugin"`
+// }
+// type PluginA struct {
+//	AOption string `json:"aOption"`
+// }
+//
+// // External package:
+// type MyAPIObject struct {
+// 	runtime.TypeMeta `json:",inline"`
+//	MyPlugin runtime.RawExtension `json:"myPlugin"`
+// }
+// type PluginA struct {
+//	AOption string `json:"aOption"`
+// }
+//
+// // On the wire, the JSON will look something like this:
+// {
+//	"kind":"MyAPIObject",
+//	"apiVersion":"v1",
+//	"myPlugin": {
+//		"kind":"PluginA",
+//		"aOption":"foo",
+//	},
+// }
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // So what happens? Decode first uses json or yaml to unmarshal the serialized data into
 // your external MyAPIObject. That causes the raw JSON to be stored, but not unpacked.

@@ -7,6 +7,7 @@ We'd love to accept your patches and contributions to this project.  There are
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 just a few small guidelines you need to follow.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -35,6 +36,10 @@ a just a few small guidelines you need to follow.
 =======
 just a few small guidelines you need to follow.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+a just a few small guidelines you need to follow.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 
 ## Contributor License Agreement ##

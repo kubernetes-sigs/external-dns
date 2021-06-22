@@ -23,6 +23,7 @@ import (
 // UpdateDomainGroup invokes the alidns.UpdateDomainGroup API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateDomainGroup(request *UpdateDomainGroupRequest) (response *UpdateDomainGroupResponse, err error) {
 	response = CreateUpdateDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateUpdateDomainGroupRequest() (request *UpdateDomainGroupRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
+func (client *Client) UpdateDomainGroup(request *UpdateDomainGroupRequest) (response *UpdateDomainGroupResponse, err error) {
+	response = CreateUpdateDomainGroupResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateDomainGroupWithChan invokes the alidns.UpdateDomainGroup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDomainGroupWithChan(request *UpdateDomainGroupRequest) (<-chan *UpdateDomainGroupResponse, <-chan error) {
+	responseChan := make(chan *UpdateDomainGroupResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateDomainGroup(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateDomainGroupWithCallback invokes the alidns.UpdateDomainGroup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDomainGroupWithCallback(request *UpdateDomainGroupRequest, callback func(response *UpdateDomainGroupResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateDomainGroupResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateDomainGroup(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateDomainGroupRequest is the request struct for api UpdateDomainGroup
+type UpdateDomainGroupRequest struct {
+	*requests.RpcRequest
+	GroupId      string `position:"Query" name:"GroupId"`
+	GroupName    string `position:"Query" name:"GroupName"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// UpdateDomainGroupResponse is the response struct for api UpdateDomainGroup
+type UpdateDomainGroupResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	GroupId   string `json:"GroupId" xml:"GroupId"`
+	GroupName string `json:"GroupName" xml:"GroupName"`
+}
+
+// CreateUpdateDomainGroupRequest creates a request to invoke UpdateDomainGroup API
+func CreateUpdateDomainGroupRequest() (request *UpdateDomainGroupRequest) {
+	request = &UpdateDomainGroupRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainGroup", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

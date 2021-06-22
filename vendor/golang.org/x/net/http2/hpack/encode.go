@@ -116,6 +116,7 @@ func (e *Encoder) SetMaxDynamicTableSize(v uint32) {
 	e.dynTab.setMaxSize(v)
 }
 
+<<<<<<< HEAD
 // MaxDynamicTableSize returns the current dynamic header table size.
 func (e *Encoder) MaxDynamicTableSize() (v uint32) {
 	return e.dynTab.maxSize
@@ -197,6 +198,85 @@ func appendTableSize(dst []byte, v uint32) []byte {
 //
 // See
 // https://httpwg.org/specs/rfc7541.html#integer.representation
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// SetMaxDynamicTableSizeLimit changes the maximum value that can be
+// specified in SetMaxDynamicTableSize to v. By default, it is set to
+// 4096, which is the same size of the default dynamic header table
+// size described in HPACK specification. If the current maximum
+// dynamic header table size is strictly greater than v, "Header Table
+// Size Update" will be done in the next WriteField call and the
+// maximum dynamic header table size is truncated to v.
+func (e *Encoder) SetMaxDynamicTableSizeLimit(v uint32) {
+	e.maxSizeLimit = v
+	if e.dynTab.maxSize > v {
+		e.tableSizeUpdate = true
+		e.dynTab.setMaxSize(v)
+	}
+}
+
+// shouldIndex reports whether f should be indexed.
+func (e *Encoder) shouldIndex(f HeaderField) bool {
+	return !f.Sensitive && f.Size() <= e.dynTab.maxSize
+}
+
+// appendIndexed appends index i, as encoded in "Indexed Header Field"
+// representation, to dst and returns the extended buffer.
+func appendIndexed(dst []byte, i uint64) []byte {
+	first := len(dst)
+	dst = appendVarInt(dst, 7, i)
+	dst[first] |= 0x80
+	return dst
+}
+
+// appendNewName appends f, as encoded in one of "Literal Header field
+// - New Name" representation variants, to dst and returns the
+// extended buffer.
+//
+// If f.Sensitive is true, "Never Indexed" representation is used. If
+// f.Sensitive is false and indexing is true, "Incremental Indexing"
+// representation is used.
+func appendNewName(dst []byte, f HeaderField, indexing bool) []byte {
+	dst = append(dst, encodeTypeByte(indexing, f.Sensitive))
+	dst = appendHpackString(dst, f.Name)
+	return appendHpackString(dst, f.Value)
+}
+
+// appendIndexedName appends f and index i referring indexed name
+// entry, as encoded in one of "Literal Header field - Indexed Name"
+// representation variants, to dst and returns the extended buffer.
+//
+// If f.Sensitive is true, "Never Indexed" representation is used. If
+// f.Sensitive is false and indexing is true, "Incremental Indexing"
+// representation is used.
+func appendIndexedName(dst []byte, f HeaderField, i uint64, indexing bool) []byte {
+	first := len(dst)
+	var n byte
+	if indexing {
+		n = 6
+	} else {
+		n = 4
+	}
+	dst = appendVarInt(dst, n, i)
+	dst[first] |= encodeTypeByte(indexing, f.Sensitive)
+	return appendHpackString(dst, f.Value)
+}
+
+// appendTableSize appends v, as encoded in "Header Table Size Update"
+// representation, to dst and returns the extended buffer.
+func appendTableSize(dst []byte, v uint32) []byte {
+	first := len(dst)
+	dst = appendVarInt(dst, 5, uint64(v))
+	dst[first] |= 0x20
+	return dst
+}
+
+// appendVarInt appends i, as encoded in variable integer form using n
+// bit prefix, to dst and returns the extended buffer.
+//
+// See
+// http://http2.github.io/http2-spec/compression.html#integer.representation
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func appendVarInt(dst []byte, n byte, i uint64) []byte {
 	k := uint64((1 << n) - 1)
 	if i < k {

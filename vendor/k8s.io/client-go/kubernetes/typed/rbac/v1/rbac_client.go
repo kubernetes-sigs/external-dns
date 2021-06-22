@@ -21,6 +21,7 @@ package v1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/rbac/v1"
@@ -151,6 +152,50 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*RbacV1Client, error
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1 "k8s.io/api/rbac/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type RbacV1Interface interface {
+	RESTClient() rest.Interface
+	ClusterRolesGetter
+	ClusterRoleBindingsGetter
+	RolesGetter
+	RoleBindingsGetter
+}
+
+// RbacV1Client is used to interact with features provided by the rbac.authorization.k8s.io group.
+type RbacV1Client struct {
+	restClient rest.Interface
+}
+
+func (c *RbacV1Client) ClusterRoles() ClusterRoleInterface {
+	return newClusterRoles(c)
+}
+
+func (c *RbacV1Client) ClusterRoleBindings() ClusterRoleBindingInterface {
+	return newClusterRoleBindings(c)
+}
+
+func (c *RbacV1Client) Roles(namespace string) RoleInterface {
+	return newRoles(c, namespace)
+}
+
+func (c *RbacV1Client) RoleBindings(namespace string) RoleBindingInterface {
+	return newRoleBindings(c, namespace)
+}
+
+// NewForConfig creates a new RbacV1Client for the given config.
+func NewForConfig(c *rest.Config) (*RbacV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

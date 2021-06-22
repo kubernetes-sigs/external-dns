@@ -22,6 +22,7 @@
 package roundrobin
 
 import (
+<<<<<<< HEAD
 	"sync/atomic"
 
 	"google.golang.org/grpc/balancer"
@@ -172,5 +173,63 @@ func (p *rrPicker) Pick(balancer.PickInfo) (balancer.PickResult, error) {
 	nextIndex := atomic.AddUint32(&p.next, 1)
 
 	sc := p.subConns[nextIndex%subConnsLen]
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"sync"
+
+	"google.golang.org/grpc/balancer"
+	"google.golang.org/grpc/balancer/base"
+	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/internal/grpcrand"
+)
+
+// Name is the name of round_robin balancer.
+const Name = "round_robin"
+
+// newBuilder creates a new roundrobin balancer builder.
+func newBuilder() balancer.Builder {
+	return base.NewBalancerBuilderV2(Name, &rrPickerBuilder{}, base.Config{HealthCheck: true})
+}
+
+func init() {
+	balancer.Register(newBuilder())
+}
+
+type rrPickerBuilder struct{}
+
+func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.V2Picker {
+	grpclog.Infof("roundrobinPicker: newPicker called with info: %v", info)
+	if len(info.ReadySCs) == 0 {
+		return base.NewErrPickerV2(balancer.ErrNoSubConnAvailable)
+	}
+	var scs []balancer.SubConn
+	for sc := range info.ReadySCs {
+		scs = append(scs, sc)
+	}
+	return &rrPicker{
+		subConns: scs,
+		// Start at a random index, as the same RR balancer rebuilds a new
+		// picker when SubConn states change, and we don't want to apply excess
+		// load to the first server in the list.
+		next: grpcrand.Intn(len(scs)),
+	}
+}
+
+type rrPicker struct {
+	// subConns is the snapshot of the roundrobin balancer when this picker was
+	// created. The slice is immutable. Each Get() will do a round robin
+	// selection from it and return the selected SubConn.
+	subConns []balancer.SubConn
+
+	mu   sync.Mutex
+	next int
+}
+
+func (p *rrPicker) Pick(balancer.PickInfo) (balancer.PickResult, error) {
+	p.mu.Lock()
+	sc := p.subConns[p.next]
+	p.next = (p.next + 1) % len(p.subConns)
+	p.mu.Unlock()
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return balancer.PickResult{SubConn: sc}, nil
 }

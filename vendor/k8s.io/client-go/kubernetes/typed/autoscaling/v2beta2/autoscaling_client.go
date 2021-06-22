@@ -21,6 +21,7 @@ package v2beta2
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v2beta2 "k8s.io/api/autoscaling/v2beta2"
@@ -121,6 +122,35 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AutoscalingV2beta2C
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v2beta2 "k8s.io/api/autoscaling/v2beta2"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type AutoscalingV2beta2Interface interface {
+	RESTClient() rest.Interface
+	HorizontalPodAutoscalersGetter
+}
+
+// AutoscalingV2beta2Client is used to interact with features provided by the autoscaling group.
+type AutoscalingV2beta2Client struct {
+	restClient rest.Interface
+}
+
+func (c *AutoscalingV2beta2Client) HorizontalPodAutoscalers(namespace string) HorizontalPodAutoscalerInterface {
+	return newHorizontalPodAutoscalers(c, namespace)
+}
+
+// NewForConfig creates a new AutoscalingV2beta2Client for the given config.
+func NewForConfig(c *rest.Config) (*AutoscalingV2beta2Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ReplicaSetLister interface {
 	// List lists all ReplicaSets in the indexer.
@@ -226,6 +227,45 @@ type ReplicaSetNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ReplicaSetLister interface {
+	// List lists all ReplicaSets in the indexer.
+	List(selector labels.Selector) (ret []*v1.ReplicaSet, err error)
+	// ReplicaSets returns an object that can list and get ReplicaSets.
+	ReplicaSets(namespace string) ReplicaSetNamespaceLister
+	ReplicaSetListerExpansion
+}
+
+// replicaSetLister implements the ReplicaSetLister interface.
+type replicaSetLister struct {
+	indexer cache.Indexer
+}
+
+// NewReplicaSetLister returns a new ReplicaSetLister.
+func NewReplicaSetLister(indexer cache.Indexer) ReplicaSetLister {
+	return &replicaSetLister{indexer: indexer}
+}
+
+// List lists all ReplicaSets in the indexer.
+func (s *replicaSetLister) List(selector labels.Selector) (ret []*v1.ReplicaSet, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.ReplicaSet))
+	})
+	return ret, err
+}
+
+// ReplicaSets returns an object that can list and get ReplicaSets.
+func (s *replicaSetLister) ReplicaSets(namespace string) ReplicaSetNamespaceLister {
+	return replicaSetNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ReplicaSetNamespaceLister helps list and get ReplicaSets.
+type ReplicaSetNamespaceLister interface {
+	// List lists all ReplicaSets in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.ReplicaSet, err error)
+	// Get retrieves the ReplicaSet from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ReplicaSet, error)
 	ReplicaSetNamespaceListerExpansion
 }

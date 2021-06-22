@@ -37,6 +37,7 @@ const (
 )
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 type MemoryBasicInformation struct {
 	BaseAddress       uintptr
@@ -65,3 +66,6 @@ type MemoryBasicInformation struct {
 	Type              uint32
 }
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

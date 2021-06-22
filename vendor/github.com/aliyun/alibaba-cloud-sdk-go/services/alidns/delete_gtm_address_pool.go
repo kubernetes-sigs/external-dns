@@ -23,6 +23,7 @@ import (
 // DeleteGtmAddressPool invokes the alidns.DeleteGtmAddressPool API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteGtmAddressPool(request *DeleteGtmAddressPoolRequest) (response *DeleteGtmAddressPoolResponse, err error) {
 	response = CreateDeleteGtmAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -171,6 +172,81 @@ func CreateDeleteGtmAddressPoolRequest() (request *DeleteGtmAddressPoolRequest) 
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
+func (client *Client) DeleteGtmAddressPool(request *DeleteGtmAddressPoolRequest) (response *DeleteGtmAddressPoolResponse, err error) {
+	response = CreateDeleteGtmAddressPoolResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DeleteGtmAddressPoolWithChan invokes the alidns.DeleteGtmAddressPool API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteGtmAddressPoolWithChan(request *DeleteGtmAddressPoolRequest) (<-chan *DeleteGtmAddressPoolResponse, <-chan error) {
+	responseChan := make(chan *DeleteGtmAddressPoolResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DeleteGtmAddressPool(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DeleteGtmAddressPoolWithCallback invokes the alidns.DeleteGtmAddressPool API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteGtmAddressPoolWithCallback(request *DeleteGtmAddressPoolRequest, callback func(response *DeleteGtmAddressPoolResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DeleteGtmAddressPoolResponse
+		var err error
+		defer close(result)
+		response, err = client.DeleteGtmAddressPool(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DeleteGtmAddressPoolRequest is the request struct for api DeleteGtmAddressPool
+type DeleteGtmAddressPoolRequest struct {
+	*requests.RpcRequest
+	AddrPoolId   string `position:"Query" name:"AddrPoolId"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DeleteGtmAddressPoolResponse is the response struct for api DeleteGtmAddressPool
+type DeleteGtmAddressPoolResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateDeleteGtmAddressPoolRequest creates a request to invoke DeleteGtmAddressPool API
+func CreateDeleteGtmAddressPoolRequest() (request *DeleteGtmAddressPoolRequest) {
+	request = &DeleteGtmAddressPoolRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteGtmAddressPool", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

@@ -21,6 +21,7 @@ package networking
 import (
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 	v1 "k8s.io/client-go/informers/networking/v1"
+<<<<<<< HEAD
 	v1alpha1 "k8s.io/client-go/informers/networking/v1alpha1"
 	v1beta1 "k8s.io/client-go/informers/networking/v1beta1"
 )
@@ -54,6 +55,34 @@ func (g *group) V1() v1.Interface {
 // V1alpha1 returns a new v1alpha1.Interface.
 func (g *group) V1alpha1() v1alpha1.Interface {
 	return v1alpha1.New(g.factory, g.namespace, g.tweakListOptions)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/client-go/informers/networking/v1beta1"
+)
+
+// Interface provides access to each of this group's versions.
+type Interface interface {
+	// V1 provides access to shared informers for resources in V1.
+	V1() v1.Interface
+	// V1beta1 provides access to shared informers for resources in V1beta1.
+	V1beta1() v1beta1.Interface
+}
+
+type group struct {
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+}
+
+// New returns a new Interface.
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &group{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// V1 returns a new v1.Interface.
+func (g *group) V1() v1.Interface {
+	return v1.New(g.factory, g.namespace, g.tweakListOptions)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // V1beta1 returns a new v1beta1.Interface.

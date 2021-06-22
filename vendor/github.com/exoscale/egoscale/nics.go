@@ -107,6 +107,7 @@ func (RemoveIPFromNic) AsyncResponse() interface{} {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Exoscale specific API: https://community.exoscale.com/api/compute/#activateip6_GET
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -125,6 +126,10 @@ func (RemoveIPFromNic) AsyncResponse() interface{} {
 =======
 // Exoscale specific API: https://community.exoscale.ch/api/compute/#activateip6_GET
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Exoscale specific API: https://community.exoscale.ch/api/compute/#activateip6_GET
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type ActivateIP6 struct {
 	NicID *UUID `json:"nicid" doc:"the ID of the nic to which you want to assign the IPv6"`
 	_     bool  `name:"activateIp6" description:"Activate the IPv6 on the VM's nic"`

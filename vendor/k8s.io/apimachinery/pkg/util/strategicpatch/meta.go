@@ -33,6 +33,7 @@ type PatchMeta struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (pm *PatchMeta) GetPatchStrategies() []string {
 	if pm.patchStrategies == nil {
 		return []string{}
@@ -162,6 +163,108 @@ func getTagStructType(dataStruct interface{}) (reflect.Type, error) {
 	t := reflect.TypeOf(dataStruct)
 	// Get the underlying type for pointers
 	if t.Kind() == reflect.Pointer {
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (pm PatchMeta) GetPatchStrategies() []string {
+	if pm.patchStrategies == nil {
+		return []string{}
+	}
+	return pm.patchStrategies
+}
+
+func (pm PatchMeta) SetPatchStrategies(ps []string) {
+	pm.patchStrategies = ps
+}
+
+func (pm PatchMeta) GetPatchMergeKey() string {
+	return pm.patchMergeKey
+}
+
+func (pm PatchMeta) SetPatchMergeKey(pmk string) {
+	pm.patchMergeKey = pmk
+}
+
+type LookupPatchMeta interface {
+	// LookupPatchMetadataForStruct gets subschema and the patch metadata (e.g. patch strategy and merge key) for map.
+	LookupPatchMetadataForStruct(key string) (LookupPatchMeta, PatchMeta, error)
+	// LookupPatchMetadataForSlice get subschema and the patch metadata for slice.
+	LookupPatchMetadataForSlice(key string) (LookupPatchMeta, PatchMeta, error)
+	// Get the type name of the field
+	Name() string
+}
+
+type PatchMetaFromStruct struct {
+	T reflect.Type
+}
+
+func NewPatchMetaFromStruct(dataStruct interface{}) (PatchMetaFromStruct, error) {
+	t, err := getTagStructType(dataStruct)
+	return PatchMetaFromStruct{T: t}, err
+}
+
+var _ LookupPatchMeta = PatchMetaFromStruct{}
+
+func (s PatchMetaFromStruct) LookupPatchMetadataForStruct(key string) (LookupPatchMeta, PatchMeta, error) {
+	fieldType, fieldPatchStrategies, fieldPatchMergeKey, err := forkedjson.LookupPatchMetadataForStruct(s.T, key)
+	if err != nil {
+		return nil, PatchMeta{}, err
+	}
+
+	return PatchMetaFromStruct{T: fieldType},
+		PatchMeta{
+			patchStrategies: fieldPatchStrategies,
+			patchMergeKey:   fieldPatchMergeKey,
+		}, nil
+}
+
+func (s PatchMetaFromStruct) LookupPatchMetadataForSlice(key string) (LookupPatchMeta, PatchMeta, error) {
+	subschema, patchMeta, err := s.LookupPatchMetadataForStruct(key)
+	if err != nil {
+		return nil, PatchMeta{}, err
+	}
+	elemPatchMetaFromStruct := subschema.(PatchMetaFromStruct)
+	t := elemPatchMetaFromStruct.T
+
+	var elemType reflect.Type
+	switch t.Kind() {
+	// If t is an array or a slice, get the element type.
+	// If element is still an array or a slice, return an error.
+	// Otherwise, return element type.
+	case reflect.Array, reflect.Slice:
+		elemType = t.Elem()
+		if elemType.Kind() == reflect.Array || elemType.Kind() == reflect.Slice {
+			return nil, PatchMeta{}, errors.New("unexpected slice of slice")
+		}
+	// If t is an pointer, get the underlying element.
+	// If the underlying element is neither an array nor a slice, the pointer is pointing to a slice,
+	// e.g. https://github.com/kubernetes/kubernetes/blob/bc22e206c79282487ea0bf5696d5ccec7e839a76/staging/src/k8s.io/apimachinery/pkg/util/strategicpatch/patch_test.go#L2782-L2822
+	// If the underlying element is either an array or a slice, return its element type.
+	case reflect.Ptr:
+		t = t.Elem()
+		if t.Kind() == reflect.Array || t.Kind() == reflect.Slice {
+			t = t.Elem()
+		}
+		elemType = t
+	default:
+		return nil, PatchMeta{}, fmt.Errorf("expected slice or array type, but got: %s", s.T.Kind().String())
+	}
+
+	return PatchMetaFromStruct{T: elemType}, patchMeta, nil
+}
+
+func (s PatchMetaFromStruct) Name() string {
+	return s.T.Kind().String()
+}
+
+func getTagStructType(dataStruct interface{}) (reflect.Type, error) {
+	if dataStruct == nil {
+		return nil, mergepatch.ErrBadArgKind(struct{}{}, nil)
+	}
+
+	t := reflect.TypeOf(dataStruct)
+	// Get the underlying type for pointers
+	if t.Kind() == reflect.Ptr {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		t = t.Elem()
 	}
 

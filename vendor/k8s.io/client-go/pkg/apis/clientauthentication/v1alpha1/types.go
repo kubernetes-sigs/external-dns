@@ -43,6 +43,7 @@ type ExecCredential struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ExecCredentialSpec holds request and runtime specific information provided by
 // the transport.
 type ExecCredentialSpec struct {
@@ -201,6 +202,38 @@ type ExecCredentialStatus struct {
 =======
 	ClientKeyData string `json:"clientKeyData,omitempty" datapolicy:"security-key"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ExecCredenitalSpec holds request and runtime specific information provided by
+// the transport.
+type ExecCredentialSpec struct {
+	// Response is populated when the transport encounters HTTP status codes, such as 401,
+	// suggesting previous credentials were invalid.
+	// +optional
+	Response *Response `json:"response,omitempty"`
+
+	// Interactive is true when the transport detects the command is being called from an
+	// interactive prompt.
+	// +optional
+	Interactive bool `json:"interactive,omitempty"`
+}
+
+// ExecCredentialStatus holds credentials for the transport to use.
+//
+// Token and ClientKeyData are sensitive fields. This data should only be
+// transmitted in-memory between client and exec plugin process. Exec plugin
+// itself should at least be protected via file permissions.
+type ExecCredentialStatus struct {
+	// ExpirationTimestamp indicates a time when the provided credentials expire.
+	// +optional
+	ExpirationTimestamp *metav1.Time `json:"expirationTimestamp,omitempty"`
+	// Token is a bearer token used by the client for request authentication.
+	Token string `json:"token,omitempty"`
+	// PEM-encoded client TLS certificates (including intermediates, if any).
+	ClientCertificateData string `json:"clientCertificateData,omitempty"`
+	// PEM-encoded private key for the above certificate.
+	ClientKeyData string `json:"clientKeyData,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Response defines metadata about a failed request, including HTTP status code and

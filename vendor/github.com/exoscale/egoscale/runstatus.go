@@ -45,6 +45,7 @@ func (req RunstatusValidationErrorResponse) Error() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return "Runstatus error"
 }
 
@@ -231,6 +232,51 @@ func (client *Client) runstatusRequest(ctx context.Context, uri string, structPa
 	hdr.Add("Exoscale-Date", time)
 	hdr.Add("User-Agent", UserAgent)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return fmt.Sprintf("Runstatus error")
+}
+
+func (client *Client) runstatusRequest(ctx context.Context, uri string, structParam interface{}, method string) (json.RawMessage, error) {
+	reqURL, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+	if reqURL.Scheme == "" {
+		return nil, fmt.Errorf("only absolute URI are considered valid, got %q", uri)
+	}
+
+	var params string
+	if structParam != nil {
+		m, err := json.Marshal(structParam)
+		if err != nil {
+			return nil, err
+		}
+		params = string(m)
+	}
+
+	req, err := http.NewRequest(method, reqURL.String(), strings.NewReader(params))
+	if err != nil {
+		return nil, err
+	}
+
+	time := time.Now().Local().Format("2006-01-02T15:04:05-0700")
+
+	payload := fmt.Sprintf("%s%s%s", req.URL.String(), time, params)
+
+	mac := hmac.New(sha256.New, []byte(client.apiSecret))
+	_, err = mac.Write([]byte(payload))
+	if err != nil {
+		return nil, err
+	}
+	signature := hex.EncodeToString(mac.Sum(nil))
+
+	var hdr = make(http.Header)
+
+	hdr.Add("Authorization", fmt.Sprintf("Exoscale-HMAC-SHA256 %s:%s", client.APIKey, signature))
+	hdr.Add("Exoscale-Date", time)
+	hdr.Add("User-Agent", UserAgent)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	hdr.Add("Accept", "application/json")
 	if params != "" {
 		hdr.Add("Content-Type", "application/json")

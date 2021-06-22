@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 A Go `http.RoundTripper` that exports request statistics via [Prometheus](https://prometheus.io/).
 
@@ -137,3 +138,7 @@ Browse the [examples](examples) directory to see how `instrumented_http` works w
 * [Sling](https://github.com/dghubble/sling): [examples/sling](examples/sling)
 * [Gentleman](https://github.com/h2non/gentleman): [examples/gentleman](examples/gentleman)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+A Go http.RoundTripper that exports request statistics via Prometheus.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

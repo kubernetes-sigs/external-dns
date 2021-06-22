@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type NetworkPolicyLister interface {
 	// List lists all NetworkPolicies in the indexer.
@@ -226,6 +227,45 @@ type NetworkPolicyNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type NetworkPolicyLister interface {
+	// List lists all NetworkPolicies in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.NetworkPolicy, err error)
+	// NetworkPolicies returns an object that can list and get NetworkPolicies.
+	NetworkPolicies(namespace string) NetworkPolicyNamespaceLister
+	NetworkPolicyListerExpansion
+}
+
+// networkPolicyLister implements the NetworkPolicyLister interface.
+type networkPolicyLister struct {
+	indexer cache.Indexer
+}
+
+// NewNetworkPolicyLister returns a new NetworkPolicyLister.
+func NewNetworkPolicyLister(indexer cache.Indexer) NetworkPolicyLister {
+	return &networkPolicyLister{indexer: indexer}
+}
+
+// List lists all NetworkPolicies in the indexer.
+func (s *networkPolicyLister) List(selector labels.Selector) (ret []*v1beta1.NetworkPolicy, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.NetworkPolicy))
+	})
+	return ret, err
+}
+
+// NetworkPolicies returns an object that can list and get NetworkPolicies.
+func (s *networkPolicyLister) NetworkPolicies(namespace string) NetworkPolicyNamespaceLister {
+	return networkPolicyNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// NetworkPolicyNamespaceLister helps list and get NetworkPolicies.
+type NetworkPolicyNamespaceLister interface {
+	// List lists all NetworkPolicies in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.NetworkPolicy, err error)
+	// Get retrieves the NetworkPolicy from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.NetworkPolicy, error)
 	NetworkPolicyNamespaceListerExpansion
 }

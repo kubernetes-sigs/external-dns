@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EndpointsLister interface {
 	// List lists all Endpoints in the indexer.
@@ -226,6 +227,45 @@ type EndpointsNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type EndpointsLister interface {
+	// List lists all Endpoints in the indexer.
+	List(selector labels.Selector) (ret []*v1.Endpoints, err error)
+	// Endpoints returns an object that can list and get Endpoints.
+	Endpoints(namespace string) EndpointsNamespaceLister
+	EndpointsListerExpansion
+}
+
+// endpointsLister implements the EndpointsLister interface.
+type endpointsLister struct {
+	indexer cache.Indexer
+}
+
+// NewEndpointsLister returns a new EndpointsLister.
+func NewEndpointsLister(indexer cache.Indexer) EndpointsLister {
+	return &endpointsLister{indexer: indexer}
+}
+
+// List lists all Endpoints in the indexer.
+func (s *endpointsLister) List(selector labels.Selector) (ret []*v1.Endpoints, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.Endpoints))
+	})
+	return ret, err
+}
+
+// Endpoints returns an object that can list and get Endpoints.
+func (s *endpointsLister) Endpoints(namespace string) EndpointsNamespaceLister {
+	return endpointsNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// EndpointsNamespaceLister helps list and get Endpoints.
+type EndpointsNamespaceLister interface {
+	// List lists all Endpoints in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.Endpoints, err error)
+	// Get retrieves the Endpoints from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Endpoints, error)
 	EndpointsNamespaceListerExpansion
 }

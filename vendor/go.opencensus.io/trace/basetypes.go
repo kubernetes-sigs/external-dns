@@ -55,6 +55,7 @@ type Attribute struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Key returns the attribute's key
 func (a *Attribute) Key() string {
 	return a.key
@@ -113,6 +114,9 @@ func (a *Attribute) Value() interface{} {
 }
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // BoolAttribute returns a bool-valued attribute.
 func BoolAttribute(key string, value bool) Attribute {
 	return Attribute{key: key, value: value}

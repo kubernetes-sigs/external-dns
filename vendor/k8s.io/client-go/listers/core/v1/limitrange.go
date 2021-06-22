@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type LimitRangeLister interface {
 	// List lists all LimitRanges in the indexer.
@@ -226,6 +227,45 @@ type LimitRangeNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type LimitRangeLister interface {
+	// List lists all LimitRanges in the indexer.
+	List(selector labels.Selector) (ret []*v1.LimitRange, err error)
+	// LimitRanges returns an object that can list and get LimitRanges.
+	LimitRanges(namespace string) LimitRangeNamespaceLister
+	LimitRangeListerExpansion
+}
+
+// limitRangeLister implements the LimitRangeLister interface.
+type limitRangeLister struct {
+	indexer cache.Indexer
+}
+
+// NewLimitRangeLister returns a new LimitRangeLister.
+func NewLimitRangeLister(indexer cache.Indexer) LimitRangeLister {
+	return &limitRangeLister{indexer: indexer}
+}
+
+// List lists all LimitRanges in the indexer.
+func (s *limitRangeLister) List(selector labels.Selector) (ret []*v1.LimitRange, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.LimitRange))
+	})
+	return ret, err
+}
+
+// LimitRanges returns an object that can list and get LimitRanges.
+func (s *limitRangeLister) LimitRanges(namespace string) LimitRangeNamespaceLister {
+	return limitRangeNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// LimitRangeNamespaceLister helps list and get LimitRanges.
+type LimitRangeNamespaceLister interface {
+	// List lists all LimitRanges in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.LimitRange, err error)
+	// Get retrieves the LimitRange from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.LimitRange, error)
 	LimitRangeNamespaceListerExpansion
 }

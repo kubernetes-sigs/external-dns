@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // NewLoggerFromConfigString reads the string and build a logger. It can be used
@@ -244,6 +245,96 @@ func (l *logger) fillMethodLoggerWithConfigString(config string) error {
 		}
 	} else {
 		if err := l.setMethodMethodLogger(s+"/"+m, &MethodLoggerConfig{Header: hdr, Message: msg}); err != nil {
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	"google.golang.org/grpc/grpclog"
+)
+
+// NewLoggerFromConfigString reads the string and build a logger. It can be used
+// to build a new logger and assign it to binarylog.Logger.
+//
+// Example filter config strings:
+//  - "" Nothing will be logged
+//  - "*" All headers and messages will be fully logged.
+//  - "*{h}" Only headers will be logged.
+//  - "*{m:256}" Only the first 256 bytes of each message will be logged.
+//  - "Foo/*" Logs every method in service Foo
+//  - "Foo/*,-Foo/Bar" Logs every method in service Foo except method /Foo/Bar
+//  - "Foo/*,Foo/Bar{m:256}" Logs the first 256 bytes of each message in method
+//    /Foo/Bar, logs all headers and messages in every other method in service
+//    Foo.
+//
+// If two configs exist for one certain method or service, the one specified
+// later overrides the previous config.
+func NewLoggerFromConfigString(s string) Logger {
+	if s == "" {
+		return nil
+	}
+	l := newEmptyLogger()
+	methods := strings.Split(s, ",")
+	for _, method := range methods {
+		if err := l.fillMethodLoggerWithConfigString(method); err != nil {
+			grpclog.Warningf("failed to parse binary log config: %v", err)
+			return nil
+		}
+	}
+	return l
+}
+
+// fillMethodLoggerWithConfigString parses config, creates methodLogger and adds
+// it to the right map in the logger.
+func (l *logger) fillMethodLoggerWithConfigString(config string) error {
+	// "" is invalid.
+	if config == "" {
+		return errors.New("empty string is not a valid method binary logging config")
+	}
+
+	// "-service/method", blacklist, no * or {} allowed.
+	if config[0] == '-' {
+		s, m, suffix, err := parseMethodConfigAndSuffix(config[1:])
+		if err != nil {
+			return fmt.Errorf("invalid config: %q, %v", config, err)
+		}
+		if m == "*" {
+			return fmt.Errorf("invalid config: %q, %v", config, "* not allowed in blacklist config")
+		}
+		if suffix != "" {
+			return fmt.Errorf("invalid config: %q, %v", config, "header/message limit not allowed in blacklist config")
+		}
+		if err := l.setBlacklist(s + "/" + m); err != nil {
+			return fmt.Errorf("invalid config: %v", err)
+		}
+		return nil
+	}
+
+	// "*{h:256;m:256}"
+	if config[0] == '*' {
+		hdr, msg, err := parseHeaderMessageLengthConfig(config[1:])
+		if err != nil {
+			return fmt.Errorf("invalid config: %q, %v", config, err)
+		}
+		if err := l.setDefaultMethodLogger(&methodLoggerConfig{hdr: hdr, msg: msg}); err != nil {
+			return fmt.Errorf("invalid config: %v", err)
+		}
+		return nil
+	}
+
+	s, m, suffix, err := parseMethodConfigAndSuffix(config)
+	if err != nil {
+		return fmt.Errorf("invalid config: %q, %v", config, err)
+	}
+	hdr, msg, err := parseHeaderMessageLengthConfig(suffix)
+	if err != nil {
+		return fmt.Errorf("invalid header/message length config: %q, %v", suffix, err)
+	}
+	if m == "*" {
+		if err := l.setServiceMethodLogger(s, &methodLoggerConfig{hdr: hdr, msg: msg}); err != nil {
+			return fmt.Errorf("invalid config: %v", err)
+		}
+	} else {
+		if err := l.setMethodMethodLogger(s+"/"+m, &methodLoggerConfig{hdr: hdr, msg: msg}); err != nil {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			return fmt.Errorf("invalid config: %v", err)
 		}
 	}

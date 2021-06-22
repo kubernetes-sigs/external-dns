@@ -23,6 +23,7 @@
 //
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	func DoSomething(ctx context.Context, arg Arg) error {
 //		// ... use ctx ...
 //	}
@@ -41,6 +42,12 @@
 //		// ... use ctx ...
 //	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// 	func DoSomething(ctx context.Context, arg Arg) error {
+// 		// ... use ctx ...
+// 	}
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Do not pass a nil Context, even if a function permits it. Pass context.TODO
 // if you are unsure about which Context to use.

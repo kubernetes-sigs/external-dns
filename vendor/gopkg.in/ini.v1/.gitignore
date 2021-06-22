@@ -4,4 +4,8 @@ ini.sublime-workspace
 testdata/conf_reflect.ini
 .idea
 /.vscode
+<<<<<<< HEAD
 .DS_Store
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

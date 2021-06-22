@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	"k8s.io/klog/v2"
@@ -172,6 +173,42 @@ func (s *podDisruptionBudgetLister) GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*
 		selector, err = metav1.LabelSelectorAsSelector(pdb.Spec.Selector)
 		if err != nil {
 			// This object has an invalid selector, it does not match the pod
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/klog"
+)
+
+// PodDisruptionBudgetListerExpansion allows custom methods to be added to
+// PodDisruptionBudgetLister.
+type PodDisruptionBudgetListerExpansion interface {
+	GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*policy.PodDisruptionBudget, error)
+}
+
+// PodDisruptionBudgetNamespaceListerExpansion allows custom methods to be added to
+// PodDisruptionBudgetNamespaceLister.
+type PodDisruptionBudgetNamespaceListerExpansion interface{}
+
+// GetPodPodDisruptionBudgets returns a list of PodDisruptionBudgets matching a pod.  Returns an error only if no matching PodDisruptionBudgets are found.
+func (s *podDisruptionBudgetLister) GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*policy.PodDisruptionBudget, error) {
+	var selector labels.Selector
+
+	if len(pod.Labels) == 0 {
+		return nil, fmt.Errorf("no PodDisruptionBudgets found for pod %v because it has no labels", pod.Name)
+	}
+
+	list, err := s.PodDisruptionBudgets(pod.Namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	var pdbList []*policy.PodDisruptionBudget
+	for i := range list {
+		pdb := list[i]
+		selector, err = metav1.LabelSelectorAsSelector(pdb.Spec.Selector)
+		if err != nil {
+			klog.Warningf("invalid selector: %v", err)
+			// TODO(mml): add an event to the PDB
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			continue
 		}
 

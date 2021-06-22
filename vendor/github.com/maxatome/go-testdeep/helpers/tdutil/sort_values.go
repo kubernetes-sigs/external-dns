@@ -13,6 +13,7 @@ import (
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
 
+<<<<<<< HEAD
 // SortableValues is used to allow the sorting of a [][reflect.Value]
 // slice. It is used with the standard sort package:
 //
@@ -22,6 +23,17 @@ import (
 //
 // Replace [sort.Sort] by [sort.Stable] for a stable sort. See [sort]
 // documentation.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// SortableValues is used to allow the sorting of a []reflect.Value
+// slice. It is used with the standard sort package:
+//
+//   vals := []reflect.Value{a, b, c, d}
+//   sort.Sort(SortableValues(vals))
+//   // vals contents now sorted
+//
+// Replace sort.Sort by sort.Stable for a stable sort. See sort documentation.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // Sorting rules are as follows:
 //   - nil is always lower

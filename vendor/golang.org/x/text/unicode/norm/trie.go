@@ -29,7 +29,12 @@ var (
 	nfkcData = newNfkcTrie(0)
 )
 
+<<<<<<< HEAD
 // lookup determines the type of block n and looks up the value for b.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// lookupValue determines the type of block n and looks up the value for b.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // For n < t.cutoff, the block is a simple lookup table. Otherwise, the block
 // is a list of ranges with an accompanying value. Given a matching range r,
 // the value for b is by r.value + (b - r.lo) * stride.

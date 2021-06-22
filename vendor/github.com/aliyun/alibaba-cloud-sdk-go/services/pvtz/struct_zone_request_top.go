@@ -20,6 +20,7 @@ type ZoneRequestTop struct {
 	Time         string `json:"Time" xml:"Time"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	BizType      string `json:"BizType" xml:"BizType"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -28,6 +29,9 @@ type ZoneRequestTop struct {
 =======
 	BizType      string `json:"BizType" xml:"BizType"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	RequestCount int64  `json:"RequestCount" xml:"RequestCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
 	ZoneName     string `json:"ZoneName" xml:"ZoneName"`

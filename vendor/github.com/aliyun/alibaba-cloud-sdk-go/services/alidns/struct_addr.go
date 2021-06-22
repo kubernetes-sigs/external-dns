@@ -19,6 +19,7 @@ package alidns
 type Addr struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
 	Remark          string `json:"Remark" xml:"Remark"`
@@ -57,4 +58,17 @@ type Addr struct {
 	Addr            string `json:"Addr" xml:"Addr"`
 	AddrId          int64  `json:"AddrId" xml:"AddrId"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Value           string `json:"Value" xml:"Value"`
+	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
+	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
+	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+	AddrId          int64  `json:"AddrId" xml:"AddrId"`
+	Id              int64  `json:"Id" xml:"Id"`
+	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	LbaWeight       int    `json:"LbaWeight" xml:"LbaWeight"`
+	Mode            string `json:"Mode" xml:"Mode"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

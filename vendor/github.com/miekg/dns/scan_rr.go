@@ -611,6 +611,7 @@ func (rr *LOC) parse(c *zlexer, o string) *ParseError {
 	l, _ = c.Next()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if i, err := strconv.ParseFloat(l.token, 64); err != nil || l.err || i < 0 || i >= 60 {
 		return &ParseError{"", "bad LOC Latitude seconds", l}
 	} else {
@@ -2273,6 +2274,797 @@ func (rr *RFC3597) parse(c *zlexer, o string) *ParseError {
 =======
 	if int(rdlength)*2 != len(s) {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if i, err := strconv.ParseFloat(l.token, 32); err != nil || l.err || i < 0 || i >= 60 {
+		return &ParseError{"", "bad LOC Latitude seconds", l}
+	} else {
+		rr.Latitude += uint32(1000 * i)
+	}
+	c.Next() // zBlank
+	// Either number, 'N' or 'S'
+	l, _ = c.Next()
+	if rr.Latitude, ok = locCheckNorth(l.token, rr.Latitude); ok {
+		goto East
+	}
+	// If still alive, flag an error
+	return &ParseError{"", "bad LOC Latitude North/South", l}
+
+East:
+	// East
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := strconv.ParseUint(l.token, 10, 32); err != nil || l.err || i > 180 {
+		return &ParseError{"", "bad LOC Longitude", l}
+	} else {
+		rr.Longitude = 1000 * 60 * 60 * uint32(i)
+	}
+	c.Next() // zBlank
+	// Either number, 'E' or 'W'
+	l, _ = c.Next()
+	if rr.Longitude, ok = locCheckEast(l.token, rr.Longitude); ok {
+		goto Altitude
+	}
+	if i, err := strconv.ParseUint(l.token, 10, 32); err != nil || l.err || i > 59 {
+		return &ParseError{"", "bad LOC Longitude minutes", l}
+	} else {
+		rr.Longitude += 1000 * 60 * uint32(i)
+	}
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := strconv.ParseFloat(l.token, 32); err != nil || l.err || i < 0 || i >= 60 {
+		return &ParseError{"", "bad LOC Longitude seconds", l}
+	} else {
+		rr.Longitude += uint32(1000 * i)
+	}
+	c.Next() // zBlank
+	// Either number, 'E' or 'W'
+	l, _ = c.Next()
+	if rr.Longitude, ok = locCheckEast(l.token, rr.Longitude); ok {
+		goto Altitude
+	}
+	// If still alive, flag an error
+	return &ParseError{"", "bad LOC Longitude East/West", l}
+
+Altitude:
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if len(l.token) == 0 || l.err {
+		return &ParseError{"", "bad LOC Altitude", l}
+	}
+	if l.token[len(l.token)-1] == 'M' || l.token[len(l.token)-1] == 'm' {
+		l.token = l.token[0 : len(l.token)-1]
+	}
+	if i, err := strconv.ParseFloat(l.token, 64); err != nil {
+		return &ParseError{"", "bad LOC Altitude", l}
+	} else {
+		rr.Altitude = uint32(i*100.0 + 10000000.0 + 0.5)
+	}
+
+	// And now optionally the other values
+	l, _ = c.Next()
+	count := 0
+	for l.value != zNewline && l.value != zEOF {
+		switch l.value {
+		case zString:
+			switch count {
+			case 0: // Size
+				exp, m, ok := stringToCm(l.token)
+				if !ok {
+					return &ParseError{"", "bad LOC Size", l}
+				}
+				rr.Size = exp&0x0f | m<<4&0xf0
+			case 1: // HorizPre
+				exp, m, ok := stringToCm(l.token)
+				if !ok {
+					return &ParseError{"", "bad LOC HorizPre", l}
+				}
+				rr.HorizPre = exp&0x0f | m<<4&0xf0
+			case 2: // VertPre
+				exp, m, ok := stringToCm(l.token)
+				if !ok {
+					return &ParseError{"", "bad LOC VertPre", l}
+				}
+				rr.VertPre = exp&0x0f | m<<4&0xf0
+			}
+			count++
+		case zBlank:
+			// Ok
+		default:
+			return &ParseError{"", "bad LOC Size, HorizPre or VertPre", l}
+		}
+		l, _ = c.Next()
+	}
+	return nil
+}
+
+func (rr *HIP) parse(c *zlexer, o string) *ParseError {
+	// HitLength is not represented
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad HIP PublicKeyAlgorithm", l}
+	}
+	rr.PublicKeyAlgorithm = uint8(i)
+
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	if len(l.token) == 0 || l.err {
+		return &ParseError{"", "bad HIP Hit", l}
+	}
+	rr.Hit = l.token // This can not contain spaces, see RFC 5205 Section 6.
+	rr.HitLength = uint8(len(rr.Hit)) / 2
+
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	if len(l.token) == 0 || l.err {
+		return &ParseError{"", "bad HIP PublicKey", l}
+	}
+	rr.PublicKey = l.token // This cannot contain spaces
+	rr.PublicKeyLength = uint16(base64.StdEncoding.DecodedLen(len(rr.PublicKey)))
+
+	// RendezvousServers (if any)
+	l, _ = c.Next()
+	var xs []string
+	for l.value != zNewline && l.value != zEOF {
+		switch l.value {
+		case zString:
+			name, nameOk := toAbsoluteName(l.token, o)
+			if l.err || !nameOk {
+				return &ParseError{"", "bad HIP RendezvousServers", l}
+			}
+			xs = append(xs, name)
+		case zBlank:
+			// Ok
+		default:
+			return &ParseError{"", "bad HIP RendezvousServers", l}
+		}
+		l, _ = c.Next()
+	}
+
+	rr.RendezvousServers = xs
+	return nil
+}
+
+func (rr *CERT) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	if v, ok := StringToCertType[l.token]; ok {
+		rr.Type = v
+	} else if i, err := strconv.ParseUint(l.token, 10, 16); err != nil {
+		return &ParseError{"", "bad CERT Type", l}
+	} else {
+		rr.Type = uint16(i)
+	}
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	i, e := strconv.ParseUint(l.token, 10, 16)
+	if e != nil || l.err {
+		return &ParseError{"", "bad CERT KeyTag", l}
+	}
+	rr.KeyTag = uint16(i)
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	if v, ok := StringToAlgorithm[l.token]; ok {
+		rr.Algorithm = v
+	} else if i, err := strconv.ParseUint(l.token, 10, 8); err != nil {
+		return &ParseError{"", "bad CERT Algorithm", l}
+	} else {
+		rr.Algorithm = uint8(i)
+	}
+	s, e1 := endingToString(c, "bad CERT Certificate")
+	if e1 != nil {
+		return e1
+	}
+	rr.Certificate = s
+	return nil
+}
+
+func (rr *OPENPGPKEY) parse(c *zlexer, o string) *ParseError {
+	s, e := endingToString(c, "bad OPENPGPKEY PublicKey")
+	if e != nil {
+		return e
+	}
+	rr.PublicKey = s
+	return nil
+}
+
+func (rr *CSYNC) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	j, e := strconv.ParseUint(l.token, 10, 32)
+	if e != nil {
+		// Serial must be a number
+		return &ParseError{"", "bad CSYNC serial", l}
+	}
+	rr.Serial = uint32(j)
+
+	c.Next() // zBlank
+
+	l, _ = c.Next()
+	j, e1 := strconv.ParseUint(l.token, 10, 16)
+	if e1 != nil {
+		// Serial must be a number
+		return &ParseError{"", "bad CSYNC flags", l}
+	}
+	rr.Flags = uint16(j)
+
+	rr.TypeBitMap = make([]uint16, 0)
+	var (
+		k  uint16
+		ok bool
+	)
+	l, _ = c.Next()
+	for l.value != zNewline && l.value != zEOF {
+		switch l.value {
+		case zBlank:
+			// Ok
+		case zString:
+			tokenUpper := strings.ToUpper(l.token)
+			if k, ok = StringToType[tokenUpper]; !ok {
+				if k, ok = typeToInt(l.token); !ok {
+					return &ParseError{"", "bad CSYNC TypeBitMap", l}
+				}
+			}
+			rr.TypeBitMap = append(rr.TypeBitMap, k)
+		default:
+			return &ParseError{"", "bad CSYNC TypeBitMap", l}
+		}
+		l, _ = c.Next()
+	}
+	return nil
+}
+
+func (rr *SIG) parse(c *zlexer, o string) *ParseError { return rr.RRSIG.parse(c, o) }
+
+func (rr *RRSIG) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	tokenUpper := strings.ToUpper(l.token)
+	if t, ok := StringToType[tokenUpper]; !ok {
+		if strings.HasPrefix(tokenUpper, "TYPE") {
+			t, ok = typeToInt(l.token)
+			if !ok {
+				return &ParseError{"", "bad RRSIG Typecovered", l}
+			}
+			rr.TypeCovered = t
+		} else {
+			return &ParseError{"", "bad RRSIG Typecovered", l}
+		}
+	} else {
+		rr.TypeCovered = t
+	}
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad RRSIG Algorithm", l}
+	}
+	rr.Algorithm = uint8(i)
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad RRSIG Labels", l}
+	}
+	rr.Labels = uint8(i)
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e2 := strconv.ParseUint(l.token, 10, 32)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad RRSIG OrigTtl", l}
+	}
+	rr.OrigTtl = uint32(i)
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := StringToTime(l.token); err != nil {
+		// Try to see if all numeric and use it as epoch
+		if i, err := strconv.ParseUint(l.token, 10, 32); err == nil {
+			rr.Expiration = uint32(i)
+		} else {
+			return &ParseError{"", "bad RRSIG Expiration", l}
+		}
+	} else {
+		rr.Expiration = i
+	}
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := StringToTime(l.token); err != nil {
+		if i, err := strconv.ParseUint(l.token, 10, 32); err == nil {
+			rr.Inception = uint32(i)
+		} else {
+			return &ParseError{"", "bad RRSIG Inception", l}
+		}
+	} else {
+		rr.Inception = i
+	}
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e3 := strconv.ParseUint(l.token, 10, 16)
+	if e3 != nil || l.err {
+		return &ParseError{"", "bad RRSIG KeyTag", l}
+	}
+	rr.KeyTag = uint16(i)
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	rr.SignerName = l.token
+	name, nameOk := toAbsoluteName(l.token, o)
+	if l.err || !nameOk {
+		return &ParseError{"", "bad RRSIG SignerName", l}
+	}
+	rr.SignerName = name
+
+	s, e4 := endingToString(c, "bad RRSIG Signature")
+	if e4 != nil {
+		return e4
+	}
+	rr.Signature = s
+
+	return nil
+}
+
+func (rr *NSEC) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	name, nameOk := toAbsoluteName(l.token, o)
+	if l.err || !nameOk {
+		return &ParseError{"", "bad NSEC NextDomain", l}
+	}
+	rr.NextDomain = name
+
+	rr.TypeBitMap = make([]uint16, 0)
+	var (
+		k  uint16
+		ok bool
+	)
+	l, _ = c.Next()
+	for l.value != zNewline && l.value != zEOF {
+		switch l.value {
+		case zBlank:
+			// Ok
+		case zString:
+			tokenUpper := strings.ToUpper(l.token)
+			if k, ok = StringToType[tokenUpper]; !ok {
+				if k, ok = typeToInt(l.token); !ok {
+					return &ParseError{"", "bad NSEC TypeBitMap", l}
+				}
+			}
+			rr.TypeBitMap = append(rr.TypeBitMap, k)
+		default:
+			return &ParseError{"", "bad NSEC TypeBitMap", l}
+		}
+		l, _ = c.Next()
+	}
+	return nil
+}
+
+func (rr *NSEC3) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad NSEC3 Hash", l}
+	}
+	rr.Hash = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad NSEC3 Flags", l}
+	}
+	rr.Flags = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e2 := strconv.ParseUint(l.token, 10, 16)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad NSEC3 Iterations", l}
+	}
+	rr.Iterations = uint16(i)
+	c.Next()
+	l, _ = c.Next()
+	if len(l.token) == 0 || l.err {
+		return &ParseError{"", "bad NSEC3 Salt", l}
+	}
+	if l.token != "-" {
+		rr.SaltLength = uint8(len(l.token)) / 2
+		rr.Salt = l.token
+	}
+
+	c.Next()
+	l, _ = c.Next()
+	if len(l.token) == 0 || l.err {
+		return &ParseError{"", "bad NSEC3 NextDomain", l}
+	}
+	rr.HashLength = 20 // Fix for NSEC3 (sha1 160 bits)
+	rr.NextDomain = l.token
+
+	rr.TypeBitMap = make([]uint16, 0)
+	var (
+		k  uint16
+		ok bool
+	)
+	l, _ = c.Next()
+	for l.value != zNewline && l.value != zEOF {
+		switch l.value {
+		case zBlank:
+			// Ok
+		case zString:
+			tokenUpper := strings.ToUpper(l.token)
+			if k, ok = StringToType[tokenUpper]; !ok {
+				if k, ok = typeToInt(l.token); !ok {
+					return &ParseError{"", "bad NSEC3 TypeBitMap", l}
+				}
+			}
+			rr.TypeBitMap = append(rr.TypeBitMap, k)
+		default:
+			return &ParseError{"", "bad NSEC3 TypeBitMap", l}
+		}
+		l, _ = c.Next()
+	}
+	return nil
+}
+
+func (rr *NSEC3PARAM) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad NSEC3PARAM Hash", l}
+	}
+	rr.Hash = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad NSEC3PARAM Flags", l}
+	}
+	rr.Flags = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e2 := strconv.ParseUint(l.token, 10, 16)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad NSEC3PARAM Iterations", l}
+	}
+	rr.Iterations = uint16(i)
+	c.Next()
+	l, _ = c.Next()
+	if l.token != "-" {
+		rr.SaltLength = uint8(len(l.token) / 2)
+		rr.Salt = l.token
+	}
+	return slurpRemainder(c)
+}
+
+func (rr *EUI48) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	if len(l.token) != 17 || l.err {
+		return &ParseError{"", "bad EUI48 Address", l}
+	}
+	addr := make([]byte, 12)
+	dash := 0
+	for i := 0; i < 10; i += 2 {
+		addr[i] = l.token[i+dash]
+		addr[i+1] = l.token[i+1+dash]
+		dash++
+		if l.token[i+1+dash] != '-' {
+			return &ParseError{"", "bad EUI48 Address", l}
+		}
+	}
+	addr[10] = l.token[15]
+	addr[11] = l.token[16]
+
+	i, e := strconv.ParseUint(string(addr), 16, 48)
+	if e != nil {
+		return &ParseError{"", "bad EUI48 Address", l}
+	}
+	rr.Address = i
+	return slurpRemainder(c)
+}
+
+func (rr *EUI64) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	if len(l.token) != 23 || l.err {
+		return &ParseError{"", "bad EUI64 Address", l}
+	}
+	addr := make([]byte, 16)
+	dash := 0
+	for i := 0; i < 14; i += 2 {
+		addr[i] = l.token[i+dash]
+		addr[i+1] = l.token[i+1+dash]
+		dash++
+		if l.token[i+1+dash] != '-' {
+			return &ParseError{"", "bad EUI64 Address", l}
+		}
+	}
+	addr[14] = l.token[21]
+	addr[15] = l.token[22]
+
+	i, e := strconv.ParseUint(string(addr), 16, 64)
+	if e != nil {
+		return &ParseError{"", "bad EUI68 Address", l}
+	}
+	rr.Address = i
+	return slurpRemainder(c)
+}
+
+func (rr *SSHFP) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad SSHFP Algorithm", l}
+	}
+	rr.Algorithm = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad SSHFP Type", l}
+	}
+	rr.Type = uint8(i)
+	c.Next() // zBlank
+	s, e2 := endingToString(c, "bad SSHFP Fingerprint")
+	if e2 != nil {
+		return e2
+	}
+	rr.FingerPrint = s
+	return nil
+}
+
+func (rr *DNSKEY) parseDNSKEY(c *zlexer, o, typ string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 16)
+	if e != nil || l.err {
+		return &ParseError{"", "bad " + typ + " Flags", l}
+	}
+	rr.Flags = uint16(i)
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad " + typ + " Protocol", l}
+	}
+	rr.Protocol = uint8(i)
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	i, e2 := strconv.ParseUint(l.token, 10, 8)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad " + typ + " Algorithm", l}
+	}
+	rr.Algorithm = uint8(i)
+	s, e3 := endingToString(c, "bad "+typ+" PublicKey")
+	if e3 != nil {
+		return e3
+	}
+	rr.PublicKey = s
+	return nil
+}
+
+func (rr *DNSKEY) parse(c *zlexer, o string) *ParseError  { return rr.parseDNSKEY(c, o, "DNSKEY") }
+func (rr *KEY) parse(c *zlexer, o string) *ParseError     { return rr.parseDNSKEY(c, o, "KEY") }
+func (rr *CDNSKEY) parse(c *zlexer, o string) *ParseError { return rr.parseDNSKEY(c, o, "CDNSKEY") }
+func (rr *DS) parse(c *zlexer, o string) *ParseError      { return rr.parseDS(c, o, "DS") }
+func (rr *DLV) parse(c *zlexer, o string) *ParseError     { return rr.parseDS(c, o, "DLV") }
+func (rr *CDS) parse(c *zlexer, o string) *ParseError     { return rr.parseDS(c, o, "CDS") }
+
+func (rr *RKEY) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 16)
+	if e != nil || l.err {
+		return &ParseError{"", "bad RKEY Flags", l}
+	}
+	rr.Flags = uint16(i)
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad RKEY Protocol", l}
+	}
+	rr.Protocol = uint8(i)
+	c.Next()        // zBlank
+	l, _ = c.Next() // zString
+	i, e2 := strconv.ParseUint(l.token, 10, 8)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad RKEY Algorithm", l}
+	}
+	rr.Algorithm = uint8(i)
+	s, e3 := endingToString(c, "bad RKEY PublicKey")
+	if e3 != nil {
+		return e3
+	}
+	rr.PublicKey = s
+	return nil
+}
+
+func (rr *EID) parse(c *zlexer, o string) *ParseError {
+	s, e := endingToString(c, "bad EID Endpoint")
+	if e != nil {
+		return e
+	}
+	rr.Endpoint = s
+	return nil
+}
+
+func (rr *NIMLOC) parse(c *zlexer, o string) *ParseError {
+	s, e := endingToString(c, "bad NIMLOC Locator")
+	if e != nil {
+		return e
+	}
+	rr.Locator = s
+	return nil
+}
+
+func (rr *GPOS) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	_, e := strconv.ParseFloat(l.token, 64)
+	if e != nil || l.err {
+		return &ParseError{"", "bad GPOS Longitude", l}
+	}
+	rr.Longitude = l.token
+	c.Next() // zBlank
+	l, _ = c.Next()
+	_, e1 := strconv.ParseFloat(l.token, 64)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad GPOS Latitude", l}
+	}
+	rr.Latitude = l.token
+	c.Next() // zBlank
+	l, _ = c.Next()
+	_, e2 := strconv.ParseFloat(l.token, 64)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad GPOS Altitude", l}
+	}
+	rr.Altitude = l.token
+	return slurpRemainder(c)
+}
+
+func (rr *DS) parseDS(c *zlexer, o, typ string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 16)
+	if e != nil || l.err {
+		return &ParseError{"", "bad " + typ + " KeyTag", l}
+	}
+	rr.KeyTag = uint16(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := strconv.ParseUint(l.token, 10, 8); err != nil {
+		tokenUpper := strings.ToUpper(l.token)
+		i, ok := StringToAlgorithm[tokenUpper]
+		if !ok || l.err {
+			return &ParseError{"", "bad " + typ + " Algorithm", l}
+		}
+		rr.Algorithm = i
+	} else {
+		rr.Algorithm = uint8(i)
+	}
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad " + typ + " DigestType", l}
+	}
+	rr.DigestType = uint8(i)
+	s, e2 := endingToString(c, "bad "+typ+" Digest")
+	if e2 != nil {
+		return e2
+	}
+	rr.Digest = s
+	return nil
+}
+
+func (rr *TA) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 16)
+	if e != nil || l.err {
+		return &ParseError{"", "bad TA KeyTag", l}
+	}
+	rr.KeyTag = uint16(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	if i, err := strconv.ParseUint(l.token, 10, 8); err != nil {
+		tokenUpper := strings.ToUpper(l.token)
+		i, ok := StringToAlgorithm[tokenUpper]
+		if !ok || l.err {
+			return &ParseError{"", "bad TA Algorithm", l}
+		}
+		rr.Algorithm = i
+	} else {
+		rr.Algorithm = uint8(i)
+	}
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad TA DigestType", l}
+	}
+	rr.DigestType = uint8(i)
+	s, e2 := endingToString(c, "bad TA Digest")
+	if e2 != nil {
+		return e2
+	}
+	rr.Digest = s
+	return nil
+}
+
+func (rr *TLSA) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad TLSA Usage", l}
+	}
+	rr.Usage = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad TLSA Selector", l}
+	}
+	rr.Selector = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e2 := strconv.ParseUint(l.token, 10, 8)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad TLSA MatchingType", l}
+	}
+	rr.MatchingType = uint8(i)
+	// So this needs be e2 (i.e. different than e), because...??t
+	s, e3 := endingToString(c, "bad TLSA Certificate")
+	if e3 != nil {
+		return e3
+	}
+	rr.Certificate = s
+	return nil
+}
+
+func (rr *SMIMEA) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	i, e := strconv.ParseUint(l.token, 10, 8)
+	if e != nil || l.err {
+		return &ParseError{"", "bad SMIMEA Usage", l}
+	}
+	rr.Usage = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e1 := strconv.ParseUint(l.token, 10, 8)
+	if e1 != nil || l.err {
+		return &ParseError{"", "bad SMIMEA Selector", l}
+	}
+	rr.Selector = uint8(i)
+	c.Next() // zBlank
+	l, _ = c.Next()
+	i, e2 := strconv.ParseUint(l.token, 10, 8)
+	if e2 != nil || l.err {
+		return &ParseError{"", "bad SMIMEA MatchingType", l}
+	}
+	rr.MatchingType = uint8(i)
+	// So this needs be e2 (i.e. different than e), because...??t
+	s, e3 := endingToString(c, "bad SMIMEA Certificate")
+	if e3 != nil {
+		return e3
+	}
+	rr.Certificate = s
+	return nil
+}
+
+func (rr *RFC3597) parse(c *zlexer, o string) *ParseError {
+	l, _ := c.Next()
+	if l.token != "\\#" {
+		return &ParseError{"", "bad RFC3597 Rdata", l}
+	}
+
+	c.Next() // zBlank
+	l, _ = c.Next()
+	rdlength, e := strconv.Atoi(l.token)
+	if e != nil || l.err {
+		return &ParseError{"", "bad RFC3597 Rdata ", l}
+	}
+
+	s, e1 := endingToString(c, "bad RFC3597 Rdata")
+	if e1 != nil {
+		return e1
+	}
+	if rdlength*2 != len(s) {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return &ParseError{"", "bad RFC3597 Rdata", l}
 	}
 	rr.Rdata = s

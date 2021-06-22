@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## unreleased
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 ## unreleased
@@ -246,6 +247,9 @@
 * Improved package documentation for godoc
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ## 1.1.2
 
 * Fix error when decode hook decodes interface implementation into interface

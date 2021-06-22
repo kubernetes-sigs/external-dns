@@ -17,9 +17,18 @@ package alidns
 
 // RecordLog is a nested struct in alidns response
 type RecordLog struct {
+<<<<<<< HEAD
 	Action          string `json:"Action" xml:"Action"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
 	Message         string `json:"Message" xml:"Message"`
 	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
+	Action          string `json:"Action" xml:"Action"`
+	Message         string `json:"Message" xml:"Message"`
+	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

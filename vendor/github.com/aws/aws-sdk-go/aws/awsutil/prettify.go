@@ -56,6 +56,7 @@ func prettify(v reflect.Value, indent int, buf *bytes.Buffer) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			ft, ok := v.Type().FieldByName(n)
 			if !ok {
 				panic(fmt.Sprintf("expected to find field %v on type %v, but was not found", n, v.Type()))
@@ -144,6 +145,12 @@ func prettify(v reflect.Value, indent int, buf *bytes.Buffer) {
 				prettify(val, indent+2, buf)
 			}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			buf.WriteString(strings.Repeat(" ", indent+2))
+			buf.WriteString(n + ": ")
+			prettify(val, indent+2, buf)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 			if i < len(names)-1 {
 				buf.WriteString(",\n")

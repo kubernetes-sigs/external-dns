@@ -395,7 +395,12 @@ func New(family, title string) Trace {
 }
 
 func (tr *trace) Finish() {
+<<<<<<< HEAD
 	elapsed := time.Since(tr.Start)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	elapsed := time.Now().Sub(tr.Start)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	tr.mu.Lock()
 	tr.Elapsed = elapsed
 	tr.mu.Unlock()

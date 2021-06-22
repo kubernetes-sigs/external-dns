@@ -26,8 +26,14 @@ var (
 // NewMD5 and NewSHA1.
 func NewHash(h hash.Hash, space UUID, data []byte, version int) UUID {
 	h.Reset()
+<<<<<<< HEAD
 	h.Write(space[:]) //nolint:errcheck
 	h.Write(data)     //nolint:errcheck
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	h.Write(space[:])
+	h.Write(data)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	s := h.Sum(nil)
 	var uuid UUID
 	copy(uuid[:], s)

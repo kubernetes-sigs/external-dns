@@ -112,11 +112,15 @@ type RecordSet struct {
 	// useful for passing along to other APIs that might want a recordset
 	// reference.
 	Links []gophercloud.Link `json:"-"`
+<<<<<<< HEAD
 
 	// Metadata contains the total_count of resources matching the filter
 	Metadata struct {
 		TotalCount int `json:"total_count"`
 	} `json:"metadata"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (r *RecordSet) UnmarshalJSON(b []byte) error {

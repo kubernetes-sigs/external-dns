@@ -8,6 +8,7 @@ require (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/atomic v1.7.0
 	go.uber.org/multierr v1.6.0
@@ -46,4 +47,11 @@ require (
 	go.uber.org/multierr v1.3.0
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	github.com/stretchr/testify v1.4.0
+	go.uber.org/atomic v1.5.0
+	go.uber.org/multierr v1.3.0
+	golang.org/x/lint v0.0.0-20190930215403-16217165b5de
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

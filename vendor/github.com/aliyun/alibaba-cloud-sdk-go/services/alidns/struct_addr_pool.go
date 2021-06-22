@@ -17,6 +17,7 @@ package alidns
 
 // AddrPool is a nested struct in alidns response
 type AddrPool struct {
+<<<<<<< HEAD
 	Name                string `json:"Name" xml:"Name"`
 	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
 	MinAvailableAddrNum int    `json:"MinAvailableAddrNum" xml:"MinAvailableAddrNum"`
@@ -39,5 +40,20 @@ type AddrPool struct {
 =======
 	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	AddrCount           int    `json:"AddrCount" xml:"AddrCount"`
+	Name                string `json:"Name" xml:"Name"`
+	MinAvailableAddrNum int    `json:"MinAvailableAddrNum" xml:"MinAvailableAddrNum"`
+	UpdateTime          string `json:"UpdateTime" xml:"UpdateTime"`
+	MonitorConfigId     string `json:"MonitorConfigId" xml:"MonitorConfigId"`
+	CreateTimestamp     int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	CreateTime          string `json:"CreateTime" xml:"CreateTime"`
+	AddrPoolName        string `json:"AddrPoolName" xml:"AddrPoolName"`
+	AddrPoolId          string `json:"AddrPoolId" xml:"AddrPoolId"`
+	UpdateTimestamp     int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	Status              string `json:"Status" xml:"Status"`
+	MonitorStatus       string `json:"MonitorStatus" xml:"MonitorStatus"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Type                string `json:"Type" xml:"Type"`
 }

@@ -8,6 +8,7 @@ import "strconv"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
@@ -60,6 +61,9 @@ func _() {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 const _Record_name = "AAAAAALIASCNAMEHINFOMXNAPTRNSPOOLSPFSRVSSHFPTXTURL"
 
 var _Record_index = [...]uint8{0, 1, 5, 10, 15, 20, 22, 27, 29, 33, 36, 39, 44, 47, 50}

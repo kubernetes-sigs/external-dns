@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"math/big"
@@ -27,6 +28,14 @@ import (
 	"golang.org/x/crypto/ed25519"
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"crypto/rsa"
+	"math/big"
+	"strconv"
+
+	"golang.org/x/crypto/ed25519"
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 const format = "Private-key-format: v1.3\n"

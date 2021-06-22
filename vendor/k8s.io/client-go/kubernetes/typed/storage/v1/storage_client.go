@@ -21,6 +21,7 @@ package v1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/storage/v1"
@@ -156,6 +157,50 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*StorageV1Client, er
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1 "k8s.io/api/storage/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type StorageV1Interface interface {
+	RESTClient() rest.Interface
+	CSIDriversGetter
+	CSINodesGetter
+	StorageClassesGetter
+	VolumeAttachmentsGetter
+}
+
+// StorageV1Client is used to interact with features provided by the storage.k8s.io group.
+type StorageV1Client struct {
+	restClient rest.Interface
+}
+
+func (c *StorageV1Client) CSIDrivers() CSIDriverInterface {
+	return newCSIDrivers(c)
+}
+
+func (c *StorageV1Client) CSINodes() CSINodeInterface {
+	return newCSINodes(c)
+}
+
+func (c *StorageV1Client) StorageClasses() StorageClassInterface {
+	return newStorageClasses(c)
+}
+
+func (c *StorageV1Client) VolumeAttachments() VolumeAttachmentInterface {
+	return newVolumeAttachments(c)
+}
+
+// NewForConfig creates a new StorageV1Client for the given config.
+func NewForConfig(c *rest.Config) (*StorageV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

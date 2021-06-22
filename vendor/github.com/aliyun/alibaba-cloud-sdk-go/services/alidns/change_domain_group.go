@@ -23,6 +23,7 @@ import (
 // ChangeDomainGroup invokes the alidns.ChangeDomainGroup API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) ChangeDomainGroup(request *ChangeDomainGroupRequest) (response *ChangeDomainGroupResponse, err error) {
 	response = CreateChangeDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateChangeDomainGroupRequest() (request *ChangeDomainGroupRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/changedomaingroup.html
+func (client *Client) ChangeDomainGroup(request *ChangeDomainGroupRequest) (response *ChangeDomainGroupResponse, err error) {
+	response = CreateChangeDomainGroupResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// ChangeDomainGroupWithChan invokes the alidns.ChangeDomainGroup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/changedomaingroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ChangeDomainGroupWithChan(request *ChangeDomainGroupRequest) (<-chan *ChangeDomainGroupResponse, <-chan error) {
+	responseChan := make(chan *ChangeDomainGroupResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.ChangeDomainGroup(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// ChangeDomainGroupWithCallback invokes the alidns.ChangeDomainGroup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/changedomaingroup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ChangeDomainGroupWithCallback(request *ChangeDomainGroupRequest, callback func(response *ChangeDomainGroupResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *ChangeDomainGroupResponse
+		var err error
+		defer close(result)
+		response, err = client.ChangeDomainGroup(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// ChangeDomainGroupRequest is the request struct for api ChangeDomainGroup
+type ChangeDomainGroupRequest struct {
+	*requests.RpcRequest
+	GroupId      string `position:"Query" name:"GroupId"`
+	DomainName   string `position:"Query" name:"DomainName"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// ChangeDomainGroupResponse is the response struct for api ChangeDomainGroup
+type ChangeDomainGroupResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	GroupId   string `json:"GroupId" xml:"GroupId"`
+	GroupName string `json:"GroupName" xml:"GroupName"`
+}
+
+// CreateChangeDomainGroupRequest creates a request to invoke ChangeDomainGroup API
+func CreateChangeDomainGroupRequest() (request *ChangeDomainGroupRequest) {
+	request = &ChangeDomainGroupRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "ChangeDomainGroup", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

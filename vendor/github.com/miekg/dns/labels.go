@@ -12,6 +12,7 @@ package dns
 func SplitDomainName(s string) (labels []string) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if s == "" {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -22,6 +23,10 @@ func SplitDomainName(s string) (labels []string) {
 =======
 	if s == "" {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if len(s) == 0 {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return nil
 	}
 	fqdnEnd := 0 // offset of the final '.' or the length of the name

@@ -16,6 +16,7 @@ import (
 // BuildTestName builds a string from given args.
 //
 // If optional first args is a string containing at least one %, args
+<<<<<<< HEAD
 // are passed as is to [fmt.Sprintf], else they are passed to [fmt.Sprint].
 func BuildTestName(args ...any) string {
 	if len(args) == 0 {
@@ -86,5 +87,35 @@ func FbuildTestName(w io.Writer, args ...any) {
 =======
 		fmt.Fprint(w, args[:]...) //nolint: errcheck,gocritic
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// are passed as is to fmt.Sprintf, else they are passed to fmt.Sprint.
+func BuildTestName(args ...interface{}) string {
+	if len(args) == 0 {
+		return ""
+	}
+
+	var b bytes.Buffer
+	FbuildTestName(&b, args...)
+	return b.String()
+}
+
+// FbuildTestName builds a string from given args.
+//
+// If optional first args is a string containing at least one %, args
+// are passed as is to fmt.Fprintf, else they are passed to fmt.Fprint.
+func FbuildTestName(w io.Writer, args ...interface{}) {
+	if len(args) == 0 {
+		return
+	}
+
+	str, ok := args[0].(string)
+	if ok && len(args) > 1 && strings.ContainsRune(str, '%') {
+		fmt.Fprintf(w, str, args[1:]...) // nolint: errcheck
+	} else {
+		// create a new slice to fool govet and avoid "call has possible
+		// formatting directive" errors
+		fmt.Fprint(w, args[:]...) // nolint: errcheck
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 }

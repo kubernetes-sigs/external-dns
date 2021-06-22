@@ -27,6 +27,7 @@ func (m *MicroTime) ProtoMicroTime() *Timestamp {
 	if m == nil {
 		return &Timestamp{}
 	}
+<<<<<<< HEAD
 
 	// truncate precision to microseconds to match JSON marshaling/unmarshaling
 	truncatedNanoseconds := time.Duration(m.Time.Nanosecond()).Truncate(time.Microsecond)
@@ -58,6 +59,34 @@ func (m *MicroTime) Unmarshal(data []byte) error {
 	// truncate precision to microseconds to match JSON marshaling/unmarshaling
 	truncatedNanoseconds := time.Duration(p.Nanos).Truncate(time.Microsecond)
 	m.Time = time.Unix(p.Seconds, int64(truncatedNanoseconds)).Local()
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return &Timestamp{
+		Seconds: m.Time.Unix(),
+		Nanos:   int32(m.Time.Nanosecond()),
+	}
+}
+
+// Size implements the protobuf marshalling interface.
+func (m *MicroTime) Size() (n int) {
+	if m == nil || m.Time.IsZero() {
+		return 0
+	}
+	return m.ProtoMicroTime().Size()
+}
+
+// Reset implements the protobuf marshalling interface.
+func (m *MicroTime) Unmarshal(data []byte) error {
+	if len(data) == 0 {
+		m.Time = time.Time{}
+		return nil
+	}
+	p := Timestamp{}
+	if err := p.Unmarshal(data); err != nil {
+		return err
+	}
+	m.Time = time.Unix(p.Seconds, int64(p.Nanos)).Local()
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return nil
 }
 

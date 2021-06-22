@@ -64,7 +64,12 @@ func DoRetryWithRegistration(client autorest.Client) autorest.SendDecorator {
 				if re.ServiceError != nil && re.ServiceError.Code == "MissingSubscriptionRegistration" {
 					regErr := register(client, r, re)
 					if regErr != nil {
+<<<<<<< HEAD
 						return resp, fmt.Errorf("failed auto registering Resource Provider: %s. Original error: %w", regErr, err)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+						return resp, fmt.Errorf("failed auto registering Resource Provider: %s. Original error: %s", regErr, err)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 					}
 				}
 			}

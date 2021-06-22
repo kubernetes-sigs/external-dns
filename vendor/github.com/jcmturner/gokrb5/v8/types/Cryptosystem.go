@@ -59,6 +59,7 @@ func (a *Checksum) Unmarshal(b []byte) error {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // GenerateEncryptionKey creates a new EncryptionKey with a random key value.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -67,6 +68,9 @@ func (a *Checksum) Unmarshal(b []byte) error {
 =======
 // GenerateEncryptionKey creates a new EncryptionKey with a random key value.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func GenerateEncryptionKey(etype etype.EType) (EncryptionKey, error) {
 	k := EncryptionKey{
 		KeyType: etype.GetETypeID(),

@@ -23,6 +23,7 @@ import (
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/utils/clock"
 )
@@ -213,6 +214,45 @@ func newDelayingQueue(clock clock.WithTicker, q Interface, name string) *delayin
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/apimachinery/pkg/util/clock"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+)
+
+// DelayingInterface is an Interface that can Add an item at a later time. This makes it easier to
+// requeue items after failures without ending up in a hot-loop.
+type DelayingInterface interface {
+	Interface
+	// AddAfter adds an item to the workqueue after the indicated duration has passed
+	AddAfter(item interface{}, duration time.Duration)
+}
+
+// NewDelayingQueue constructs a new workqueue with delayed queuing ability
+func NewDelayingQueue() DelayingInterface {
+	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
+}
+
+// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
+func NewNamedDelayingQueue(name string) DelayingInterface {
+	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
+}
+
+// NewDelayingQueueWithCustomClock constructs a new named workqueue
+// with ability to inject real or fake clock for testing purposes
+func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
+	ret := &delayingType{
+		Interface:       NewNamed(name),
+		clock:           clock,
+		heartbeat:       clock.NewTicker(maxWait),
+		stopCh:          make(chan struct{}),
+		waitingForAddCh: make(chan *waitFor, 1000),
+		metrics:         newRetryMetrics(name),
+	}
+
+	go ret.waitingLoop()
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return ret
 }
 

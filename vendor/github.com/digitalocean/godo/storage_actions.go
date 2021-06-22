@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -78,6 +79,25 @@ type StorageActionsServiceOp struct {
 =======
 // StorageAttachment represents the attachment of a block storage
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#storage-actions
+type StorageActionsService interface {
+	Attach(ctx context.Context, volumeID string, dropletID int) (*Action, *Response, error)
+	DetachByDropletID(ctx context.Context, volumeID string, dropletID int) (*Action, *Response, error)
+	Get(ctx context.Context, volumeID string, actionID int) (*Action, *Response, error)
+	List(ctx context.Context, volumeID string, opt *ListOptions) ([]Action, *Response, error)
+	Resize(ctx context.Context, volumeID string, sizeGigabytes int, regionSlug string) (*Action, *Response, error)
+}
+
+// StorageActionsServiceOp handles communication with the storage volumes
+// action related methods of the DigitalOcean API.
+type StorageActionsServiceOp struct {
+	client *Client
+}
+
+// StorageAttachment represents the attachement of a block storage
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // volume to a specific Droplet under the device name.
 type StorageAttachment struct {
 	DropletID int `json:"droplet_id"`

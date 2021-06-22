@@ -1,8 +1,18 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
+<<<<<<< HEAD
   - smarterclayton
   - wojtek-t
   - deads2k
   - liggitt
   - caesarxuchao
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- smarterclayton
+- wojtek-t
+- deads2k
+- liggitt
+- krousey
+- caesarxuchao
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

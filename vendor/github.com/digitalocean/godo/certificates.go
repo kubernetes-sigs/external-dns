@@ -15,6 +15,7 @@ const certificatesBasePath = "/v2/certificates"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Certificates
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -43,6 +44,10 @@ const certificatesBasePath = "/v2/certificates"
 =======
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Certificates
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#certificates
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type CertificatesService interface {
 	Get(context.Context, string) (*Certificate, *Response, error)
 	List(context.Context, *ListOptions) ([]Certificate, *Response, error)

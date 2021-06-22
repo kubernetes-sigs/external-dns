@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
@@ -262,3 +263,93 @@ var protoBufferPool = &sync.Pool{
 }
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"math"
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/encoding"
+)
+
+// Name is the name registered for the proto compressor.
+const Name = "proto"
+
+func init() {
+	encoding.RegisterCodec(codec{})
+}
+
+// codec is a Codec implementation with protobuf. It is the default codec for gRPC.
+type codec struct{}
+
+type cachedProtoBuffer struct {
+	lastMarshaledSize uint32
+	proto.Buffer
+}
+
+func capToMaxInt32(val int) uint32 {
+	if val > math.MaxInt32 {
+		return uint32(math.MaxInt32)
+	}
+	return uint32(val)
+}
+
+func marshal(v interface{}, cb *cachedProtoBuffer) ([]byte, error) {
+	protoMsg := v.(proto.Message)
+	newSlice := make([]byte, 0, cb.lastMarshaledSize)
+
+	cb.SetBuf(newSlice)
+	cb.Reset()
+	if err := cb.Marshal(protoMsg); err != nil {
+		return nil, err
+	}
+	out := cb.Bytes()
+	cb.lastMarshaledSize = capToMaxInt32(len(out))
+	return out, nil
+}
+
+func (codec) Marshal(v interface{}) ([]byte, error) {
+	if pm, ok := v.(proto.Marshaler); ok {
+		// object can marshal itself, no need for buffer
+		return pm.Marshal()
+	}
+
+	cb := protoBufferPool.Get().(*cachedProtoBuffer)
+	out, err := marshal(v, cb)
+
+	// put back buffer and lose the ref to the slice
+	cb.SetBuf(nil)
+	protoBufferPool.Put(cb)
+	return out, err
+}
+
+func (codec) Unmarshal(data []byte, v interface{}) error {
+	protoMsg := v.(proto.Message)
+	protoMsg.Reset()
+
+	if pu, ok := protoMsg.(proto.Unmarshaler); ok {
+		// object can unmarshal itself, no need for buffer
+		return pu.Unmarshal(data)
+	}
+
+	cb := protoBufferPool.Get().(*cachedProtoBuffer)
+	cb.SetBuf(data)
+	err := cb.Unmarshal(protoMsg)
+	cb.SetBuf(nil)
+	protoBufferPool.Put(cb)
+	return err
+}
+
+func (codec) Name() string {
+	return Name
+}
+
+var protoBufferPool = &sync.Pool{
+	New: func() interface{} {
+		return &cachedProtoBuffer{
+			Buffer:            proto.Buffer{},
+			lastMarshaledSize: 16,
+		}
+	},
+}
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

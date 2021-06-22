@@ -80,6 +80,7 @@ func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
 	}
 	zoneinfo, err := parseZoneinfo(data)
@@ -162,6 +163,35 @@ func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
 				continue
 			}
 			if strings.HasPrefix(strings.TrimSpace(line), "per-node stats") {
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+	}
+	zoneinfo, err := parseZoneinfo(data)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+	}
+	return zoneinfo, nil
+}
+
+func parseZoneinfo(zoneinfoData []byte) ([]Zoneinfo, error) {
+
+	zoneinfo := []Zoneinfo{}
+
+	zoneinfoBlocks := bytes.Split(zoneinfoData, []byte("\nNode"))
+	for _, block := range zoneinfoBlocks {
+		var zoneinfoElement Zoneinfo
+		lines := strings.Split(string(block), "\n")
+		for _, line := range lines {
+
+			if nodeZone := nodeZoneRE.FindStringSubmatch(line); nodeZone != nil {
+				zoneinfoElement.Node = nodeZone[1]
+				zoneinfoElement.Zone = nodeZone[2]
+				continue
+			}
+			if strings.HasPrefix(strings.TrimSpace(line), "per-node stats") {
+				zoneinfoElement.Zone = ""
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				continue
 			}
 			parts := strings.Fields(strings.TrimSpace(line))

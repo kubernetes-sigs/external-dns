@@ -181,6 +181,7 @@ func unmarshal(in []byte, out interface{}, strict bool) (err error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 //                  case the field will be included if that method returns true.
 =======
@@ -1378,4 +1379,295 @@ func isZero(v reflect.Value) bool {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//                  case the field will be included if that method returns true.
+//
+//     flow         Marshal using a flow style (useful for structs,
+//                  sequences and maps).
+//
+//     inline       Inline the field, which must be a struct or a map,
+//                  causing all of its fields or keys to be processed as if
+//                  they were part of the outer struct. For maps, keys must
+//                  not conflict with the yaml keys of other struct fields.
+//
+// In addition, if the key is "-", the field is ignored.
+//
+// For example:
+//
+//     type T struct {
+//         F int `yaml:"a,omitempty"`
+//         B int
+//     }
+//     yaml.Marshal(&T{B: 2}) // Returns "b: 2\n"
+//     yaml.Marshal(&T{F: 1}} // Returns "a: 1\nb: 0\n"
+//
+func Marshal(in interface{}) (out []byte, err error) {
+	defer handleErr(&err)
+	e := newEncoder()
+	defer e.destroy()
+	e.marshalDoc("", reflect.ValueOf(in))
+	e.finish()
+	out = e.out
+	return
+}
+
+// An Encoder writes YAML values to an output stream.
+type Encoder struct {
+	encoder *encoder
+}
+
+// NewEncoder returns a new encoder that writes to w.
+// The Encoder should be closed after use to flush all data
+// to w.
+func NewEncoder(w io.Writer) *Encoder {
+	return &Encoder{
+		encoder: newEncoderWithWriter(w),
+	}
+}
+
+// Encode writes the YAML encoding of v to the stream.
+// If multiple items are encoded to the stream, the
+// second and subsequent document will be preceded
+// with a "---" document separator, but the first will not.
+//
+// See the documentation for Marshal for details about the conversion of Go
+// values to YAML.
+func (e *Encoder) Encode(v interface{}) (err error) {
+	defer handleErr(&err)
+	e.encoder.marshalDoc("", reflect.ValueOf(v))
+	return nil
+}
+
+// Close closes the encoder by writing any remaining data.
+// It does not write a stream terminating string "...".
+func (e *Encoder) Close() (err error) {
+	defer handleErr(&err)
+	e.encoder.finish()
+	return nil
+}
+
+func handleErr(err *error) {
+	if v := recover(); v != nil {
+		if e, ok := v.(yamlError); ok {
+			*err = e.err
+		} else {
+			panic(v)
+		}
+	}
+}
+
+type yamlError struct {
+	err error
+}
+
+func fail(err error) {
+	panic(yamlError{err})
+}
+
+func failf(format string, args ...interface{}) {
+	panic(yamlError{fmt.Errorf("yaml: "+format, args...)})
+}
+
+// A TypeError is returned by Unmarshal when one or more fields in
+// the YAML document cannot be properly decoded into the requested
+// types. When this error is returned, the value is still
+// unmarshaled partially.
+type TypeError struct {
+	Errors []string
+}
+
+func (e *TypeError) Error() string {
+	return fmt.Sprintf("yaml: unmarshal errors:\n  %s", strings.Join(e.Errors, "\n  "))
+}
+
+// --------------------------------------------------------------------------
+// Maintain a mapping of keys to structure field indexes
+
+// The code in this section was copied from mgo/bson.
+
+// structInfo holds details for the serialization of fields of
+// a given struct.
+type structInfo struct {
+	FieldsMap  map[string]fieldInfo
+	FieldsList []fieldInfo
+
+	// InlineMap is the number of the field in the struct that
+	// contains an ,inline map, or -1 if there's none.
+	InlineMap int
+}
+
+type fieldInfo struct {
+	Key       string
+	Num       int
+	OmitEmpty bool
+	Flow      bool
+	// Id holds the unique field identifier, so we can cheaply
+	// check for field duplicates without maintaining an extra map.
+	Id int
+
+	// Inline holds the field index if the field is part of an inlined struct.
+	Inline []int
+}
+
+var structMap = make(map[reflect.Type]*structInfo)
+var fieldMapMutex sync.RWMutex
+
+func getStructInfo(st reflect.Type) (*structInfo, error) {
+	fieldMapMutex.RLock()
+	sinfo, found := structMap[st]
+	fieldMapMutex.RUnlock()
+	if found {
+		return sinfo, nil
+	}
+
+	n := st.NumField()
+	fieldsMap := make(map[string]fieldInfo)
+	fieldsList := make([]fieldInfo, 0, n)
+	inlineMap := -1
+	for i := 0; i != n; i++ {
+		field := st.Field(i)
+		if field.PkgPath != "" && !field.Anonymous {
+			continue // Private field
+		}
+
+		info := fieldInfo{Num: i}
+
+		tag := field.Tag.Get("yaml")
+		if tag == "" && strings.Index(string(field.Tag), ":") < 0 {
+			tag = string(field.Tag)
+		}
+		if tag == "-" {
+			continue
+		}
+
+		inline := false
+		fields := strings.Split(tag, ",")
+		if len(fields) > 1 {
+			for _, flag := range fields[1:] {
+				switch flag {
+				case "omitempty":
+					info.OmitEmpty = true
+				case "flow":
+					info.Flow = true
+				case "inline":
+					inline = true
+				default:
+					return nil, errors.New(fmt.Sprintf("Unsupported flag %q in tag %q of type %s", flag, tag, st))
+				}
+			}
+			tag = fields[0]
+		}
+
+		if inline {
+			switch field.Type.Kind() {
+			case reflect.Map:
+				if inlineMap >= 0 {
+					return nil, errors.New("Multiple ,inline maps in struct " + st.String())
+				}
+				if field.Type.Key() != reflect.TypeOf("") {
+					return nil, errors.New("Option ,inline needs a map with string keys in struct " + st.String())
+				}
+				inlineMap = info.Num
+			case reflect.Struct:
+				sinfo, err := getStructInfo(field.Type)
+				if err != nil {
+					return nil, err
+				}
+				for _, finfo := range sinfo.FieldsList {
+					if _, found := fieldsMap[finfo.Key]; found {
+						msg := "Duplicated key '" + finfo.Key + "' in struct " + st.String()
+						return nil, errors.New(msg)
+					}
+					if finfo.Inline == nil {
+						finfo.Inline = []int{i, finfo.Num}
+					} else {
+						finfo.Inline = append([]int{i}, finfo.Inline...)
+					}
+					finfo.Id = len(fieldsList)
+					fieldsMap[finfo.Key] = finfo
+					fieldsList = append(fieldsList, finfo)
+				}
+			default:
+				//return nil, errors.New("Option ,inline needs a struct value or map field")
+				return nil, errors.New("Option ,inline needs a struct value field")
+			}
+			continue
+		}
+
+		if tag != "" {
+			info.Key = tag
+		} else {
+			info.Key = strings.ToLower(field.Name)
+		}
+
+		if _, found = fieldsMap[info.Key]; found {
+			msg := "Duplicated key '" + info.Key + "' in struct " + st.String()
+			return nil, errors.New(msg)
+		}
+
+		info.Id = len(fieldsList)
+		fieldsList = append(fieldsList, info)
+		fieldsMap[info.Key] = info
+	}
+
+	sinfo = &structInfo{
+		FieldsMap:  fieldsMap,
+		FieldsList: fieldsList,
+		InlineMap:  inlineMap,
+	}
+
+	fieldMapMutex.Lock()
+	structMap[st] = sinfo
+	fieldMapMutex.Unlock()
+	return sinfo, nil
+}
+
+// IsZeroer is used to check whether an object is zero to
+// determine whether it should be omitted when marshaling
+// with the omitempty flag. One notable implementation
+// is time.Time.
+type IsZeroer interface {
+	IsZero() bool
+}
+
+func isZero(v reflect.Value) bool {
+	kind := v.Kind()
+	if z, ok := v.Interface().(IsZeroer); ok {
+		if (kind == reflect.Ptr || kind == reflect.Interface) && v.IsNil() {
+			return true
+		}
+		return z.IsZero()
+	}
+	switch kind {
+	case reflect.String:
+		return len(v.String()) == 0
+	case reflect.Interface, reflect.Ptr:
+		return v.IsNil()
+	case reflect.Slice:
+		return v.Len() == 0
+	case reflect.Map:
+		return v.Len() == 0
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v.Int() == 0
+	case reflect.Float32, reflect.Float64:
+		return v.Float() == 0
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v.Uint() == 0
+	case reflect.Bool:
+		return !v.Bool()
+	case reflect.Struct:
+		vt := v.Type()
+		for i := v.NumField() - 1; i >= 0; i-- {
+			if vt.Field(i).PkgPath != "" {
+				continue // Private field
+			}
+			if !isZero(v.Field(i)) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

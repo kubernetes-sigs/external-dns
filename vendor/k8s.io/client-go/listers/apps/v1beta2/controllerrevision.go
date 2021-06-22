@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ControllerRevisionLister interface {
 	// List lists all ControllerRevisions in the indexer.
@@ -226,6 +227,45 @@ type ControllerRevisionNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ControllerRevisionLister interface {
+	// List lists all ControllerRevisions in the indexer.
+	List(selector labels.Selector) (ret []*v1beta2.ControllerRevision, err error)
+	// ControllerRevisions returns an object that can list and get ControllerRevisions.
+	ControllerRevisions(namespace string) ControllerRevisionNamespaceLister
+	ControllerRevisionListerExpansion
+}
+
+// controllerRevisionLister implements the ControllerRevisionLister interface.
+type controllerRevisionLister struct {
+	indexer cache.Indexer
+}
+
+// NewControllerRevisionLister returns a new ControllerRevisionLister.
+func NewControllerRevisionLister(indexer cache.Indexer) ControllerRevisionLister {
+	return &controllerRevisionLister{indexer: indexer}
+}
+
+// List lists all ControllerRevisions in the indexer.
+func (s *controllerRevisionLister) List(selector labels.Selector) (ret []*v1beta2.ControllerRevision, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta2.ControllerRevision))
+	})
+	return ret, err
+}
+
+// ControllerRevisions returns an object that can list and get ControllerRevisions.
+func (s *controllerRevisionLister) ControllerRevisions(namespace string) ControllerRevisionNamespaceLister {
+	return controllerRevisionNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ControllerRevisionNamespaceLister helps list and get ControllerRevisions.
+type ControllerRevisionNamespaceLister interface {
+	// List lists all ControllerRevisions in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta2.ControllerRevision, err error)
+	// Get retrieves the ControllerRevision from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta2.ControllerRevision, error)
 	ControllerRevisionNamespaceListerExpansion
 }

@@ -654,6 +654,7 @@ func yaml_parser_parse_node(parser *yaml_parser_t, event *yaml_event_t, block, i
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if parser.stem_comment != nil {
 			event.head_comment = parser.stem_comment
 			parser.stem_comment = nil
@@ -1405,6 +1406,263 @@ func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_ev
 		if token == nil {
 			return false
 		}
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return true
+	}
+	if len(anchor) > 0 || len(tag) > 0 {
+		parser.state = parser.states[len(parser.states)-1]
+		parser.states = parser.states[:len(parser.states)-1]
+
+		*event = yaml_event_t{
+			typ:             yaml_SCALAR_EVENT,
+			start_mark:      start_mark,
+			end_mark:        end_mark,
+			anchor:          anchor,
+			tag:             tag,
+			implicit:        implicit,
+			quoted_implicit: false,
+			style:           yaml_style_t(yaml_PLAIN_SCALAR_STYLE),
+		}
+		return true
+	}
+
+	context := "while parsing a flow node"
+	if block {
+		context = "while parsing a block node"
+	}
+	yaml_parser_set_parser_error_context(parser, context, start_mark,
+		"did not find expected node content", token.start_mark)
+	return false
+}
+
+// Parse the productions:
+// block_sequence ::= BLOCK-SEQUENCE-START (BLOCK-ENTRY block_node?)* BLOCK-END
+//                    ********************  *********** *             *********
+//
+func yaml_parser_parse_block_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
+	if first {
+		token := peek_token(parser)
+		parser.marks = append(parser.marks, token.start_mark)
+		skip_token(parser)
+	}
+
+	token := peek_token(parser)
+	if token == nil {
+		return false
+	}
+
+	if token.typ == yaml_BLOCK_ENTRY_TOKEN {
+		mark := token.end_mark
+		prior_head := len(parser.head_comment)
+		skip_token(parser)
+		token = peek_token(parser)
+		if token == nil {
+			return false
+		}
+		if prior_head > 0 && token.typ == yaml_BLOCK_SEQUENCE_START_TOKEN {
+			// [Go] It's a sequence under a sequence entry, so the former head comment
+			//      is for the list itself, not the first list item under it.
+			parser.stem_comment = parser.head_comment[:prior_head]
+			if len(parser.head_comment) == prior_head {
+				parser.head_comment = nil
+			} else {
+				// Copy suffix to prevent very strange bugs if someone ever appends
+				// further bytes to the prefix in the stem_comment slice above.
+				parser.head_comment = append([]byte(nil), parser.head_comment[prior_head+1:]...)
+			}
+
+		}
+		if token.typ != yaml_BLOCK_ENTRY_TOKEN && token.typ != yaml_BLOCK_END_TOKEN {
+			parser.states = append(parser.states, yaml_PARSE_BLOCK_SEQUENCE_ENTRY_STATE)
+			return yaml_parser_parse_node(parser, event, true, false)
+		} else {
+			parser.state = yaml_PARSE_BLOCK_SEQUENCE_ENTRY_STATE
+			return yaml_parser_process_empty_scalar(parser, event, mark)
+		}
+	}
+	if token.typ == yaml_BLOCK_END_TOKEN {
+		parser.state = parser.states[len(parser.states)-1]
+		parser.states = parser.states[:len(parser.states)-1]
+		parser.marks = parser.marks[:len(parser.marks)-1]
+
+		*event = yaml_event_t{
+			typ:        yaml_SEQUENCE_END_EVENT,
+			start_mark: token.start_mark,
+			end_mark:   token.end_mark,
+		}
+
+		skip_token(parser)
+		return true
+	}
+
+	context_mark := parser.marks[len(parser.marks)-1]
+	parser.marks = parser.marks[:len(parser.marks)-1]
+	return yaml_parser_set_parser_error_context(parser,
+		"while parsing a block collection", context_mark,
+		"did not find expected '-' indicator", token.start_mark)
+}
+
+// Parse the productions:
+// indentless_sequence  ::= (BLOCK-ENTRY block_node?)+
+//                           *********** *
+func yaml_parser_parse_indentless_sequence_entry(parser *yaml_parser_t, event *yaml_event_t) bool {
+	token := peek_token(parser)
+	if token == nil {
+		return false
+	}
+
+	if token.typ == yaml_BLOCK_ENTRY_TOKEN {
+		mark := token.end_mark
+		skip_token(parser)
+		token = peek_token(parser)
+		if token == nil {
+			return false
+		}
+		if token.typ != yaml_BLOCK_ENTRY_TOKEN &&
+			token.typ != yaml_KEY_TOKEN &&
+			token.typ != yaml_VALUE_TOKEN &&
+			token.typ != yaml_BLOCK_END_TOKEN {
+			parser.states = append(parser.states, yaml_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE)
+			return yaml_parser_parse_node(parser, event, true, false)
+		}
+		parser.state = yaml_PARSE_INDENTLESS_SEQUENCE_ENTRY_STATE
+		return yaml_parser_process_empty_scalar(parser, event, mark)
+	}
+	parser.state = parser.states[len(parser.states)-1]
+	parser.states = parser.states[:len(parser.states)-1]
+
+	*event = yaml_event_t{
+		typ:        yaml_SEQUENCE_END_EVENT,
+		start_mark: token.start_mark,
+		end_mark:   token.start_mark, // [Go] Shouldn't this be token.end_mark?
+	}
+	return true
+}
+
+// Parse the productions:
+// block_mapping        ::= BLOCK-MAPPING_START
+//                          *******************
+//                          ((KEY block_node_or_indentless_sequence?)?
+//                            *** *
+//                          (VALUE block_node_or_indentless_sequence?)?)*
+//
+//                          BLOCK-END
+//                          *********
+//
+func yaml_parser_parse_block_mapping_key(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
+	if first {
+		token := peek_token(parser)
+		parser.marks = append(parser.marks, token.start_mark)
+		skip_token(parser)
+	}
+
+	token := peek_token(parser)
+	if token == nil {
+		return false
+	}
+
+	// [Go] A tail comment was left from the prior mapping value processed. Emit an event
+	//      as it needs to be processed with that value and not the following key.
+	if len(parser.tail_comment) > 0 {
+		*event = yaml_event_t{
+			typ:          yaml_TAIL_COMMENT_EVENT,
+			start_mark:   token.start_mark,
+			end_mark:     token.end_mark,
+			foot_comment: parser.tail_comment,
+		}
+		parser.tail_comment = nil
+		return true
+	}
+
+	if token.typ == yaml_KEY_TOKEN {
+		mark := token.end_mark
+		skip_token(parser)
+		token = peek_token(parser)
+		if token == nil {
+			return false
+		}
+		if token.typ != yaml_KEY_TOKEN &&
+			token.typ != yaml_VALUE_TOKEN &&
+			token.typ != yaml_BLOCK_END_TOKEN {
+			parser.states = append(parser.states, yaml_PARSE_BLOCK_MAPPING_VALUE_STATE)
+			return yaml_parser_parse_node(parser, event, true, true)
+		} else {
+			parser.state = yaml_PARSE_BLOCK_MAPPING_VALUE_STATE
+			return yaml_parser_process_empty_scalar(parser, event, mark)
+		}
+	} else if token.typ == yaml_BLOCK_END_TOKEN {
+		parser.state = parser.states[len(parser.states)-1]
+		parser.states = parser.states[:len(parser.states)-1]
+		parser.marks = parser.marks[:len(parser.marks)-1]
+		*event = yaml_event_t{
+			typ:        yaml_MAPPING_END_EVENT,
+			start_mark: token.start_mark,
+			end_mark:   token.end_mark,
+		}
+		yaml_parser_set_event_comments(parser, event)
+		skip_token(parser)
+		return true
+	}
+
+	context_mark := parser.marks[len(parser.marks)-1]
+	parser.marks = parser.marks[:len(parser.marks)-1]
+	return yaml_parser_set_parser_error_context(parser,
+		"while parsing a block mapping", context_mark,
+		"did not find expected key", token.start_mark)
+}
+
+// Parse the productions:
+// block_mapping        ::= BLOCK-MAPPING_START
+//
+//                          ((KEY block_node_or_indentless_sequence?)?
+//
+//                          (VALUE block_node_or_indentless_sequence?)?)*
+//                           ***** *
+//                          BLOCK-END
+//
+//
+func yaml_parser_parse_block_mapping_value(parser *yaml_parser_t, event *yaml_event_t) bool {
+	token := peek_token(parser)
+	if token == nil {
+		return false
+	}
+	if token.typ == yaml_VALUE_TOKEN {
+		mark := token.end_mark
+		skip_token(parser)
+		token = peek_token(parser)
+		if token == nil {
+			return false
+		}
+		if token.typ != yaml_KEY_TOKEN &&
+			token.typ != yaml_VALUE_TOKEN &&
+			token.typ != yaml_BLOCK_END_TOKEN {
+			parser.states = append(parser.states, yaml_PARSE_BLOCK_MAPPING_KEY_STATE)
+			return yaml_parser_parse_node(parser, event, true, true)
+		}
+		parser.state = yaml_PARSE_BLOCK_MAPPING_KEY_STATE
+		return yaml_parser_process_empty_scalar(parser, event, mark)
+	}
+	parser.state = yaml_PARSE_BLOCK_MAPPING_KEY_STATE
+	return yaml_parser_process_empty_scalar(parser, event, token.start_mark)
+}
+
+// Parse the productions:
+// flow_sequence        ::= FLOW-SEQUENCE-START
+//                          *******************
+//                          (flow_sequence_entry FLOW-ENTRY)*
+//                           *                   **********
+//                          flow_sequence_entry?
+//                          *
+//                          FLOW-SEQUENCE-END
+//                          *****************
+// flow_sequence_entry  ::= flow_node | KEY flow_node? (VALUE flow_node?)?
+//                          *
+//
+func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
+	if first {
+		token := peek_token(parser)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}

@@ -314,6 +314,7 @@ func (b *xmlBuilder) buildScalar(value reflect.Value, current *XMLNode, tag refl
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	} else if len(xname.Local) == 0 {
 		current.Text = str
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -340,6 +341,9 @@ func (b *xmlBuilder) buildScalar(value reflect.Value, current *XMLNode, tag refl
 	} else if len(xname.Local) == 0 {
 		current.Text = str
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	} else { // regular text node
 		current.AddChild(&XMLNode{Name: xname, Text: str})
 	}

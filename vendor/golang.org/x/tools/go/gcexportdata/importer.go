@@ -23,8 +23,12 @@ import (
 // or to control the FileSet or access the imports map populated during
 // package loading.
 //
+<<<<<<< HEAD
 // Deprecated: Use the higher-level API in golang.org/x/tools/go/packages,
 // which is more efficient.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func NewImporter(fset *token.FileSet, imports map[string]*types.Package) types.ImporterFrom {
 	return importer{fset, imports}
 }

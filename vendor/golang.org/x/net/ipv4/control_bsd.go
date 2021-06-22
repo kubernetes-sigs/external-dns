@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || netbsd || openbsd
 // +build aix darwin dragonfly freebsd netbsd openbsd
 
@@ -172,6 +173,38 @@ func marshalInterface(b []byte, cm *ControlMessage) []byte {
 =======
 	m.MarshalHeader(iana.ProtocolIP, sockoptReceiveInterface, syscall.SizeofSockaddrDatalink)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix darwin dragonfly freebsd netbsd openbsd
+
+package ipv4
+
+import (
+	"net"
+	"syscall"
+	"unsafe"
+
+	"golang.org/x/net/internal/iana"
+	"golang.org/x/net/internal/socket"
+)
+
+func marshalDst(b []byte, cm *ControlMessage) []byte {
+	m := socket.ControlMessage(b)
+	m.MarshalHeader(iana.ProtocolIP, sysIP_RECVDSTADDR, net.IPv4len)
+	return m.Next(net.IPv4len)
+}
+
+func parseDst(cm *ControlMessage, b []byte) {
+	if len(cm.Dst) < net.IPv4len {
+		cm.Dst = make(net.IP, net.IPv4len)
+	}
+	copy(cm.Dst, b[:net.IPv4len])
+}
+
+func marshalInterface(b []byte, cm *ControlMessage) []byte {
+	m := socket.ControlMessage(b)
+	m.MarshalHeader(iana.ProtocolIP, sysIP_RECVIF, syscall.SizeofSockaddrDatalink)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return m.Next(syscall.SizeofSockaddrDatalink)
 }
 

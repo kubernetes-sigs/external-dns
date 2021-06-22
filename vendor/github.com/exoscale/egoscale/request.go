@@ -349,6 +349,7 @@ func (client *Client) request(ctx context.Context, command Command) (json.RawMes
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	request.Header.Add("User-Agent", UserAgent)
@@ -365,6 +366,10 @@ func (client *Client) request(ctx context.Context, command Command) (json.RawMes
 =======
 	request.Header.Add("User-Agent", UserAgent)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	request.Header.Add("User-Agent", UserAgent)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	if method == "POST" {
 		request.Header.Add("Content-Type", "application/x-www-form-urlencoded")

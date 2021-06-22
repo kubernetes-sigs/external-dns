@@ -23,6 +23,7 @@ import (
 // DescribeBatchResultCount invokes the alidns.DescribeBatchResultCount API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeBatchResultCount(request *DescribeBatchResultCountRequest) (response *DescribeBatchResultCountResponse, err error) {
 	response = CreateDescribeBatchResultCountResponse()
 	err = client.DoAction(request, response)
@@ -187,6 +188,89 @@ func CreateDescribeBatchResultCountRequest() (request *DescribeBatchResultCountR
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
+func (client *Client) DescribeBatchResultCount(request *DescribeBatchResultCountRequest) (response *DescribeBatchResultCountResponse, err error) {
+	response = CreateDescribeBatchResultCountResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeBatchResultCountWithChan invokes the alidns.DescribeBatchResultCount API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeBatchResultCountWithChan(request *DescribeBatchResultCountRequest) (<-chan *DescribeBatchResultCountResponse, <-chan error) {
+	responseChan := make(chan *DescribeBatchResultCountResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeBatchResultCount(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeBatchResultCountWithCallback invokes the alidns.DescribeBatchResultCount API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeBatchResultCountWithCallback(request *DescribeBatchResultCountRequest, callback func(response *DescribeBatchResultCountResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeBatchResultCountResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeBatchResultCount(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeBatchResultCountRequest is the request struct for api DescribeBatchResultCount
+type DescribeBatchResultCountRequest struct {
+	*requests.RpcRequest
+	BatchType    string           `position:"Query" name:"BatchType"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Lang         string           `position:"Query" name:"Lang"`
+	TaskId       requests.Integer `position:"Query" name:"TaskId"`
+}
+
+// DescribeBatchResultCountResponse is the response struct for api DescribeBatchResultCount
+type DescribeBatchResultCountResponse struct {
+	*responses.BaseResponse
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	Status       int    `json:"Status" xml:"Status"`
+	TotalCount   int    `json:"TotalCount" xml:"TotalCount"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
+	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+	Reason       string `json:"Reason" xml:"Reason"`
+	BatchType    string `json:"BatchType" xml:"BatchType"`
+	TaskId       int64  `json:"TaskId" xml:"TaskId"`
+}
+
+// CreateDescribeBatchResultCountRequest creates a request to invoke DescribeBatchResultCount API
+func CreateDescribeBatchResultCountRequest() (request *DescribeBatchResultCountRequest) {
+	request = &DescribeBatchResultCountRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeBatchResultCount", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

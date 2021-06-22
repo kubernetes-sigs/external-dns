@@ -91,6 +91,7 @@ func (k KeyError) Error() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Unwrap implements errors.Unwrap
 func (k KeyError) Unwrap() error {
 	return k.Err
@@ -254,6 +255,129 @@ func (c *cache) ListIndexFuncValues(indexName string) []string {
 // for the named index includes the given indexed value.
 func (c *cache) ByIndex(indexName, indexedValue string) ([]interface{}, error) {
 	return c.cacheStorage.ByIndex(indexName, indexedValue)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ExplicitKey can be passed to MetaNamespaceKeyFunc if you have the key for
+// the object but not the object itself.
+type ExplicitKey string
+
+// MetaNamespaceKeyFunc is a convenient default KeyFunc which knows how to make
+// keys for API objects which implement meta.Interface.
+// The key uses the format <namespace>/<name> unless <namespace> is empty, then
+// it's just <name>.
+//
+// TODO: replace key-as-string with a key-as-struct so that this
+// packing/unpacking won't be necessary.
+func MetaNamespaceKeyFunc(obj interface{}) (string, error) {
+	if key, ok := obj.(ExplicitKey); ok {
+		return string(key), nil
+	}
+	meta, err := meta.Accessor(obj)
+	if err != nil {
+		return "", fmt.Errorf("object has no meta: %v", err)
+	}
+	if len(meta.GetNamespace()) > 0 {
+		return meta.GetNamespace() + "/" + meta.GetName(), nil
+	}
+	return meta.GetName(), nil
+}
+
+// SplitMetaNamespaceKey returns the namespace and name that
+// MetaNamespaceKeyFunc encoded into key.
+//
+// TODO: replace key-as-string with a key-as-struct so that this
+// packing/unpacking won't be necessary.
+func SplitMetaNamespaceKey(key string) (namespace, name string, err error) {
+	parts := strings.Split(key, "/")
+	switch len(parts) {
+	case 1:
+		// name only, no namespace
+		return "", parts[0], nil
+	case 2:
+		// namespace and name
+		return parts[0], parts[1], nil
+	}
+
+	return "", "", fmt.Errorf("unexpected key format: %q", key)
+}
+
+// `*cache` implements Indexer in terms of a ThreadSafeStore and an
+// associated KeyFunc.
+type cache struct {
+	// cacheStorage bears the burden of thread safety for the cache
+	cacheStorage ThreadSafeStore
+	// keyFunc is used to make the key for objects stored in and retrieved from items, and
+	// should be deterministic.
+	keyFunc KeyFunc
+}
+
+var _ Store = &cache{}
+
+// Add inserts an item into the cache.
+func (c *cache) Add(obj interface{}) error {
+	key, err := c.keyFunc(obj)
+	if err != nil {
+		return KeyError{obj, err}
+	}
+	c.cacheStorage.Add(key, obj)
+	return nil
+}
+
+// Update sets an item in the cache to its updated state.
+func (c *cache) Update(obj interface{}) error {
+	key, err := c.keyFunc(obj)
+	if err != nil {
+		return KeyError{obj, err}
+	}
+	c.cacheStorage.Update(key, obj)
+	return nil
+}
+
+// Delete removes an item from the cache.
+func (c *cache) Delete(obj interface{}) error {
+	key, err := c.keyFunc(obj)
+	if err != nil {
+		return KeyError{obj, err}
+	}
+	c.cacheStorage.Delete(key)
+	return nil
+}
+
+// List returns a list of all the items.
+// List is completely threadsafe as long as you treat all items as immutable.
+func (c *cache) List() []interface{} {
+	return c.cacheStorage.List()
+}
+
+// ListKeys returns a list of all the keys of the objects currently
+// in the cache.
+func (c *cache) ListKeys() []string {
+	return c.cacheStorage.ListKeys()
+}
+
+// GetIndexers returns the indexers of cache
+func (c *cache) GetIndexers() Indexers {
+	return c.cacheStorage.GetIndexers()
+}
+
+// Index returns a list of items that match on the index function
+// Index is thread-safe so long as you treat all items as immutable
+func (c *cache) Index(indexName string, obj interface{}) ([]interface{}, error) {
+	return c.cacheStorage.Index(indexName, obj)
+}
+
+func (c *cache) IndexKeys(indexName, indexKey string) ([]string, error) {
+	return c.cacheStorage.IndexKeys(indexName, indexKey)
+}
+
+// ListIndexFuncValues returns the list of generated values of an Index func
+func (c *cache) ListIndexFuncValues(indexName string) []string {
+	return c.cacheStorage.ListIndexFuncValues(indexName)
+}
+
+func (c *cache) ByIndex(indexName, indexKey string) ([]interface{}, error) {
+	return c.cacheStorage.ByIndex(indexName, indexKey)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (c *cache) AddIndexers(newIndexers Indexers) error {

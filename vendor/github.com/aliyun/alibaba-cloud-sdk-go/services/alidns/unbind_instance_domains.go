@@ -23,6 +23,7 @@ import (
 // UnbindInstanceDomains invokes the alidns.UnbindInstanceDomains API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UnbindInstanceDomains(request *UnbindInstanceDomainsRequest) (response *UnbindInstanceDomainsResponse, err error) {
 	response = CreateUnbindInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateUnbindInstanceDomainsRequest() (request *UnbindInstanceDomainsRequest
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
+func (client *Client) UnbindInstanceDomains(request *UnbindInstanceDomainsRequest) (response *UnbindInstanceDomainsResponse, err error) {
+	response = CreateUnbindInstanceDomainsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UnbindInstanceDomainsWithChan invokes the alidns.UnbindInstanceDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UnbindInstanceDomainsWithChan(request *UnbindInstanceDomainsRequest) (<-chan *UnbindInstanceDomainsResponse, <-chan error) {
+	responseChan := make(chan *UnbindInstanceDomainsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UnbindInstanceDomains(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UnbindInstanceDomainsWithCallback invokes the alidns.UnbindInstanceDomains API asynchronously
+// api document: https://help.aliyun.com/api/alidns/unbindinstancedomains.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UnbindInstanceDomainsWithCallback(request *UnbindInstanceDomainsRequest, callback func(response *UnbindInstanceDomainsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UnbindInstanceDomainsResponse
+		var err error
+		defer close(result)
+		response, err = client.UnbindInstanceDomains(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UnbindInstanceDomainsRequest is the request struct for api UnbindInstanceDomains
+type UnbindInstanceDomainsRequest struct {
+	*requests.RpcRequest
+	DomainNames  string `position:"Query" name:"DomainNames"`
+	InstanceId   string `position:"Query" name:"InstanceId"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// UnbindInstanceDomainsResponse is the response struct for api UnbindInstanceDomains
+type UnbindInstanceDomainsResponse struct {
+	*responses.BaseResponse
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
+	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+}
+
+// CreateUnbindInstanceDomainsRequest creates a request to invoke UnbindInstanceDomains API
+func CreateUnbindInstanceDomainsRequest() (request *UnbindInstanceDomainsRequest) {
+	request = &UnbindInstanceDomainsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UnbindInstanceDomains", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

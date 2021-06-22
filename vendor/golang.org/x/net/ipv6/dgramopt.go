@@ -245,7 +245,12 @@ func (c *dgramOpt) Checksum() (on bool, offset int, err error) {
 	return true, offset, nil
 }
 
+<<<<<<< HEAD
 // SetChecksum enables the kernel checksum processing. If on is true,
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// SetChecksum enables the kernel checksum processing. If on is ture,
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // the offset should be an offset in bytes into the data of where the
 // checksum field is located.
 func (c *dgramOpt) SetChecksum(on bool, offset int) error {

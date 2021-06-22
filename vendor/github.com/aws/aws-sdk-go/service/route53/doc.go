@@ -11,7 +11,12 @@
 // See route53 package documentation for more information.
 // https://docs.aws.amazon.com/sdk-for-go/api/service/route53/
 //
+<<<<<<< HEAD
 // # Using the Client
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Using the Client
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // To contact Amazon Route 53 with the SDK use the New function to create
 // a new service client. With that client you can make API requests to the service.

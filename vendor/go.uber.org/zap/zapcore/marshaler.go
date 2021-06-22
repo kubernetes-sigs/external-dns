@@ -29,6 +29,7 @@ package zapcore
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -131,6 +132,25 @@ func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ObjectMarshaler interface {
+	MarshalLogObject(ObjectEncoder) error
+}
+
+// ObjectMarshalerFunc is a type adapter that turns a function into an
+// ObjectMarshaler.
+type ObjectMarshalerFunc func(ObjectEncoder) error
+
+// MarshalLogObject calls the underlying function.
+func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
+	return f(enc)
+}
+
+// ArrayMarshaler allows user-defined types to efficiently add themselves to the
+// logging context, and to selectively omit information which shouldn't be
+// included in logs (e.g., passwords).
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type ArrayMarshaler interface {
 	MarshalLogArray(ArrayEncoder) error
 }

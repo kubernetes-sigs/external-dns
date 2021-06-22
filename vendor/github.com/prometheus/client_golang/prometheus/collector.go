@@ -118,6 +118,7 @@ func (c *selfCollector) Describe(ch chan<- *Desc) {
 func (c *selfCollector) Collect(ch chan<- Metric) {
 	ch <- c.self
 }
+<<<<<<< HEAD
 
 // collectorMetric is a metric that is also a collector.
 // Because of selfCollector, most (if not all) Metrics in
@@ -126,3 +127,6 @@ type collectorMetric interface {
 	Metric
 	Collector
 }
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

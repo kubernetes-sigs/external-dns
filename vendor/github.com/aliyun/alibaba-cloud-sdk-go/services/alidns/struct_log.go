@@ -19,6 +19,7 @@ package alidns
 type Log struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
 	Content       string `json:"content" xml:"content"`
 	OperTime      string `json:"OperTime" xml:"OperTime"`
@@ -77,4 +78,16 @@ type Log struct {
 	ThreatType    string `json:"ThreatType" xml:"ThreatType"`
 	Type          string `json:"Type" xml:"Type"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	OperTime      string `json:"OperTime" xml:"OperTime"`
+	OperAction    string `json:"OperAction" xml:"OperAction"`
+	EntityType    string `json:"EntityType" xml:"EntityType"`
+	EntityId      string `json:"EntityId" xml:"EntityId"`
+	EntityName    string `json:"EntityName" xml:"EntityName"`
+	OperIp        string `json:"OperIp" xml:"OperIp"`
+	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
+	Id            int64  `json:"Id" xml:"Id"`
+	Content       string `json:"Content" xml:"Content"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

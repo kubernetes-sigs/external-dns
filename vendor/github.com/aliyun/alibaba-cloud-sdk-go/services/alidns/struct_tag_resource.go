@@ -17,8 +17,16 @@ package alidns
 
 // TagResource is a nested struct in alidns response
 type TagResource struct {
+<<<<<<< HEAD
 	ResourceType string `json:"ResourceType" xml:"ResourceType"`
 	TagValue     string `json:"TagValue" xml:"TagValue"`
 	ResourceId   string `json:"ResourceId" xml:"ResourceId"`
 	TagKey       string `json:"TagKey" xml:"TagKey"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	TagKey       string `json:"TagKey" xml:"TagKey"`
+	TagValue     string `json:"TagValue" xml:"TagValue"`
+	ResourceId   string `json:"ResourceId" xml:"ResourceId"`
+	ResourceType string `json:"ResourceType" xml:"ResourceType"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

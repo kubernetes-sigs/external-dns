@@ -16,6 +16,7 @@ const floatingBasePath = "v2/floating_ips"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IPs
 type FloatingIPsService interface {
 	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
@@ -250,6 +251,56 @@ type FloatingIPCreateRequest struct {
 =======
 	Region    string `json:"region,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2#floating-ips
+type FloatingIPsService interface {
+	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
+	Get(context.Context, string) (*FloatingIP, *Response, error)
+	Create(context.Context, *FloatingIPCreateRequest) (*FloatingIP, *Response, error)
+	Delete(context.Context, string) (*Response, error)
+}
+
+// FloatingIPsServiceOp handles communication with the floating IPs related methods of the
+// DigitalOcean API.
+type FloatingIPsServiceOp struct {
+	client *Client
+}
+
+var _ FloatingIPsService = &FloatingIPsServiceOp{}
+
+// FloatingIP represents a Digital Ocean floating IP.
+type FloatingIP struct {
+	Region  *Region  `json:"region"`
+	Droplet *Droplet `json:"droplet"`
+	IP      string   `json:"ip"`
+}
+
+func (f FloatingIP) String() string {
+	return Stringify(f)
+}
+
+func (f FloatingIP) URN() string {
+	return ToURN("FloatingIP", f.IP)
+}
+
+type floatingIPsRoot struct {
+	FloatingIPs []FloatingIP `json:"floating_ips"`
+	Links       *Links       `json:"links"`
+	Meta        *Meta        `json:"meta"`
+}
+
+type floatingIPRoot struct {
+	FloatingIP *FloatingIP `json:"floating_ip"`
+	Links      *Links      `json:"links,omitempty"`
+}
+
+// FloatingIPCreateRequest represents a request to create a floating IP.
+// If DropletID is not empty, the floating IP will be assigned to the
+// droplet.
+type FloatingIPCreateRequest struct {
+	Region    string `json:"region"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	DropletID int    `json:"droplet_id,omitempty"`
 }
 

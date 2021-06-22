@@ -61,6 +61,7 @@ type LoadBalancerReq struct {
 	ProxyProtocol      *bool            `json:"proxy_protocol,omitempty"`
 	BalancingAlgorithm string           `json:"balancing_algorithm,omitempty"`
 	FirewallRules      []LBFirewallRule `json:"firewall_rules"`
+<<<<<<< HEAD
 	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
 	PrivateNetwork *string `json:"private_network,omitempty"`
 	VPC            *string `json:"vpc,omitempty"`
@@ -138,6 +139,68 @@ type SSL struct {
 	PrivateKey  string `json:"private_key,omitempty"`
 	Certificate string `json:"certificate,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	PrivateNetwork     *string          `json:"private_network,omitempty"`
+}
+
+// InstanceList represents instances that are attached to your load balancer
+type InstanceList struct {
+	InstanceList []string
+}
+
+// HealthCheck represents your health check configuration for your load balancer.
+type HealthCheck struct {
+	Protocol           string `json:"protocol,omitempty"`
+	Port               int    `json:"port,omitempty"`
+	Path               string `json:"path,omitempty"`
+	CheckInterval      int    `json:"check_interval,omitempty"`
+	ResponseTimeout    int    `json:"response_timeout,omitempty"`
+	UnhealthyThreshold int    `json:"unhealthy_threshold,omitempty"`
+	HealthyThreshold   int    `json:"healthy_threshold,omitempty"`
+}
+
+// GenericInfo represents generic configuration of your load balancer
+type GenericInfo struct {
+	BalancingAlgorithm string          `json:"balancing_algorithm,omitempty"`
+	SSLRedirect        *bool           `json:"ssl_redirect,omitempty"`
+	StickySessions     *StickySessions `json:"sticky_sessions,omitempty"`
+	ProxyProtocol      *bool           `json:"proxy_protocol,omitempty"`
+	PrivateNetwork     string          `json:"private_network,omitempty"`
+}
+
+// StickySessions represents cookie for your load balancer
+type StickySessions struct {
+	CookieName string `json:"cookie_name,omitempty"`
+}
+
+// ForwardingRules represent a list of forwarding rules
+type ForwardingRules struct {
+	ForwardRuleList []ForwardingRule `json:"forwarding_rules,omitempty"`
+}
+
+// ForwardingRule represent a single forwarding rule
+type ForwardingRule struct {
+	RuleID           string `json:"id,omitempty"`
+	FrontendProtocol string `json:"frontend_protocol,omitempty"`
+	FrontendPort     int    `json:"frontend_port,omitempty"`
+	BackendProtocol  string `json:"backend_protocol,omitempty"`
+	BackendPort      int    `json:"backend_port,omitempty"`
+}
+
+// LBFirewallRule represent a single firewall rule
+type LBFirewallRule struct {
+	RuleID string `json:"id,omitempty"`
+	Port   int    `json:"port,omitempty"`
+	IPType string `json:"ip_type,omitempty"`
+	Source string `json:"source,omitempty"`
+}
+
+// SSL represents valid SSL config
+type SSL struct {
+	PrivateKey  string `json:"ssl_private_key,omitempty"`
+	Certificate string `json:"ssl_certificate,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Chain       string `json:"chain,omitempty"`
 }
 

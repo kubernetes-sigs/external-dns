@@ -220,6 +220,7 @@ func (p *Parser) parseIdentifier(cur *ListNode) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // parseRecursive scans the recursive descent operator ..
 func (p *Parser) parseRecursive(cur *ListNode) error {
 	if lastIndex := len(cur.Nodes) - 1; lastIndex >= 0 && cur.Nodes[lastIndex].Type() == NodeRecursive {
@@ -536,6 +537,271 @@ func isBool(s string) bool {
 }
 
 // UnquoteExtend is almost same as strconv.Unquote(), but it support parse single quotes as a string
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// parseRecursive scans the recursive desent operator ..
+func (p *Parser) parseRecursive(cur *ListNode) error {
+	p.pos += len("..")
+	p.consumeText()
+	cur.append(newRecursive())
+	if r := p.peek(); isAlphaNumeric(r) {
+		return p.parseField(cur)
+	}
+	return p.parseInsideAction(cur)
+}
+
+// parseNumber scans number
+func (p *Parser) parseNumber(cur *ListNode) error {
+	r := p.peek()
+	if r == '+' || r == '-' {
+		p.next()
+	}
+	for {
+		r = p.next()
+		if r != '.' && !unicode.IsDigit(r) {
+			p.backup()
+			break
+		}
+	}
+	value := p.consumeText()
+	i, err := strconv.Atoi(value)
+	if err == nil {
+		cur.append(newInt(i))
+		return p.parseInsideAction(cur)
+	}
+	d, err := strconv.ParseFloat(value, 64)
+	if err == nil {
+		cur.append(newFloat(d))
+		return p.parseInsideAction(cur)
+	}
+	return fmt.Errorf("cannot parse number %s", value)
+}
+
+// parseArray scans array index selection
+func (p *Parser) parseArray(cur *ListNode) error {
+Loop:
+	for {
+		switch p.next() {
+		case eof, '\n':
+			return fmt.Errorf("unterminated array")
+		case ']':
+			break Loop
+		}
+	}
+	text := p.consumeText()
+	text = text[1 : len(text)-1]
+	if text == "*" {
+		text = ":"
+	}
+
+	//union operator
+	strs := strings.Split(text, ",")
+	if len(strs) > 1 {
+		union := []*ListNode{}
+		for _, str := range strs {
+			parser, err := parseAction("union", fmt.Sprintf("[%s]", strings.Trim(str, " ")))
+			if err != nil {
+				return err
+			}
+			union = append(union, parser.Root)
+		}
+		cur.append(newUnion(union))
+		return p.parseInsideAction(cur)
+	}
+
+	// dict key
+	value := dictKeyRex.FindStringSubmatch(text)
+	if value != nil {
+		parser, err := parseAction("arraydict", fmt.Sprintf(".%s", value[1]))
+		if err != nil {
+			return err
+		}
+		for _, node := range parser.Root.Nodes {
+			cur.append(node)
+		}
+		return p.parseInsideAction(cur)
+	}
+
+	//slice operator
+	value = sliceOperatorRex.FindStringSubmatch(text)
+	if value == nil {
+		return fmt.Errorf("invalid array index %s", text)
+	}
+	value = value[1:]
+	params := [3]ParamsEntry{}
+	for i := 0; i < 3; i++ {
+		if value[i] != "" {
+			if i > 0 {
+				value[i] = value[i][1:]
+			}
+			if i > 0 && value[i] == "" {
+				params[i].Known = false
+			} else {
+				var err error
+				params[i].Known = true
+				params[i].Value, err = strconv.Atoi(value[i])
+				if err != nil {
+					return fmt.Errorf("array index %s is not a number", value[i])
+				}
+			}
+		} else {
+			if i == 1 {
+				params[i].Known = true
+				params[i].Value = params[0].Value + 1
+				params[i].Derived = true
+			} else {
+				params[i].Known = false
+				params[i].Value = 0
+			}
+		}
+	}
+	cur.append(newArray(params))
+	return p.parseInsideAction(cur)
+}
+
+// parseFilter scans filter inside array selection
+func (p *Parser) parseFilter(cur *ListNode) error {
+	p.pos += len("[?(")
+	p.consumeText()
+	begin := false
+	end := false
+	var pair rune
+
+Loop:
+	for {
+		r := p.next()
+		switch r {
+		case eof, '\n':
+			return fmt.Errorf("unterminated filter")
+		case '"', '\'':
+			if begin == false {
+				//save the paired rune
+				begin = true
+				pair = r
+				continue
+			}
+			//only add when met paired rune
+			if p.input[p.pos-2] != '\\' && r == pair {
+				end = true
+			}
+		case ')':
+			//in rightParser below quotes only appear zero or once
+			//and must be paired at the beginning and end
+			if begin == end {
+				break Loop
+			}
+		}
+	}
+	if p.next() != ']' {
+		return fmt.Errorf("unclosed array expect ]")
+	}
+	reg := regexp.MustCompile(`^([^!<>=]+)([!<>=]+)(.+?)$`)
+	text := p.consumeText()
+	text = text[:len(text)-2]
+	value := reg.FindStringSubmatch(text)
+	if value == nil {
+		parser, err := parseAction("text", text)
+		if err != nil {
+			return err
+		}
+		cur.append(newFilter(parser.Root, newList(), "exists"))
+	} else {
+		leftParser, err := parseAction("left", value[1])
+		if err != nil {
+			return err
+		}
+		rightParser, err := parseAction("right", value[3])
+		if err != nil {
+			return err
+		}
+		cur.append(newFilter(leftParser.Root, rightParser.Root, value[2]))
+	}
+	return p.parseInsideAction(cur)
+}
+
+// parseQuote unquotes string inside double or single quote
+func (p *Parser) parseQuote(cur *ListNode, end rune) error {
+Loop:
+	for {
+		switch p.next() {
+		case eof, '\n':
+			return fmt.Errorf("unterminated quoted string")
+		case end:
+			//if it's not escape break the Loop
+			if p.input[p.pos-2] != '\\' {
+				break Loop
+			}
+		}
+	}
+	value := p.consumeText()
+	s, err := UnquoteExtend(value)
+	if err != nil {
+		return fmt.Errorf("unquote string %s error %v", value, err)
+	}
+	cur.append(newText(s))
+	return p.parseInsideAction(cur)
+}
+
+// parseField scans a field until a terminator
+func (p *Parser) parseField(cur *ListNode) error {
+	p.consumeText()
+	for p.advance() {
+	}
+	value := p.consumeText()
+	if value == "*" {
+		cur.append(newWildcard())
+	} else {
+		cur.append(newField(strings.Replace(value, "\\", "", -1)))
+	}
+	return p.parseInsideAction(cur)
+}
+
+// advance scans until next non-escaped terminator
+func (p *Parser) advance() bool {
+	r := p.next()
+	if r == '\\' {
+		p.next()
+	} else if isTerminator(r) {
+		p.backup()
+		return false
+	}
+	return true
+}
+
+// isTerminator reports whether the input is at valid termination character to appear after an identifier.
+func isTerminator(r rune) bool {
+	if isSpace(r) || isEndOfLine(r) {
+		return true
+	}
+	switch r {
+	case eof, '.', ',', '[', ']', '$', '@', '{', '}':
+		return true
+	}
+	return false
+}
+
+// isSpace reports whether r is a space character.
+func isSpace(r rune) bool {
+	return r == ' ' || r == '\t'
+}
+
+// isEndOfLine reports whether r is an end-of-line character.
+func isEndOfLine(r rune) bool {
+	return r == '\r' || r == '\n'
+}
+
+// isAlphaNumeric reports whether r is an alphabetic, digit, or underscore.
+func isAlphaNumeric(r rune) bool {
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+// isBool reports whether s is a boolean value.
+func isBool(s string) bool {
+	return s == "true" || s == "false"
+}
+
+//UnquoteExtend is almost same as strconv.Unquote(), but it support parse single quotes as a string
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func UnquoteExtend(s string) (string, error) {
 	n := len(s)
 	if n < 2 {

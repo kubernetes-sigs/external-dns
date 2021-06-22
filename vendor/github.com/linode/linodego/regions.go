@@ -7,6 +7,7 @@ import (
 
 // Region represents a linode region object
 type Region struct {
+<<<<<<< HEAD
 	ID           string          `json:"id"`
 	Country      string          `json:"country"`
 	Capabilities []string        `json:"capabilities"`
@@ -74,6 +75,38 @@ func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, 
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ID      string `json:"id"`
+	Country string `json:"country"`
+}
+
+// RegionsPagedResponse represents a linode API response for listing
+type RegionsPagedResponse struct {
+	*PageOptions
+	Data []Region `json:"data"`
+}
+
+// endpoint gets the endpoint URL for Region
+func (RegionsPagedResponse) endpoint(c *Client) string {
+	endpoint, err := c.Regions.Endpoint()
+	if err != nil {
+		panic(err)
+	}
+	return endpoint
+}
+
+// appendData appends Regions when processing paginated Region responses
+func (resp *RegionsPagedResponse) appendData(r *RegionsPagedResponse) {
+	resp.Data = append(resp.Data, r.Data...)
+}
+
+// ListRegions lists Regions
+func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, error) {
+	response := RegionsPagedResponse{}
+	err := c.listHelper(ctx, &response, opts)
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

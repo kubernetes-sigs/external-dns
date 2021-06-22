@@ -27,6 +27,7 @@ const (
 	// It is also used in the user-agent identify the client.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Version = "0.71.1"
 
 	// defaultBaseURL to the DNSimple production API.
@@ -57,6 +58,16 @@ const (
 	// defaultUserAgent represents the base user agent
 	// and is appended to every request.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Version = "0.60.0"
+
+	// defaultBaseURL to the DNSimple production API.
+	defaultBaseURL = "https://api.dnsimple.com"
+
+	// userAgent represents the default user agent used
+	// when no other user agent is set.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	defaultUserAgent = "dnsimple-go/" + Version
 
 	apiVersion = "v2"

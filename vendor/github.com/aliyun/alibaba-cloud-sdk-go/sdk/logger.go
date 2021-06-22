@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"io"
 	"log"
 	"os"
@@ -30,6 +31,15 @@ import (
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/utils"
+	"io"
+	"log"
+	"os"
+	"strings"
+	"time"
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 var logChannel string

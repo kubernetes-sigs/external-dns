@@ -7,7 +7,12 @@
 //
 // This package is DEPRECATED. Users should instead use,
 //
+<<<<<<< HEAD
 //	service, err := NewService(..., option.WithAPIKey(...))
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//     service, err := NewService(..., option.WithAPIKey(...))
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package transport
 
 import (

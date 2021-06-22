@@ -66,6 +66,7 @@ Log a message and 10 fields:
 
 | Package | Time | Time % to zap | Objects Allocated |
 | :------ | :--: | :-----------: | :---------------: |
+<<<<<<< HEAD
 | :zap: zap | 2900 ns/op | +0% | 5 allocs/op
 | :zap: zap (sugared) | 3475 ns/op | +20% | 10 allocs/op
 | zerolog | 10639 ns/op | +267% | 32 allocs/op
@@ -187,6 +188,70 @@ pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
 [ci-img]: https://github.com/uber-go/zap/actions/workflows/go.yml/badge.svg
 [ci]: https://github.com/uber-go/zap/actions/workflows/go.yml
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+| :zap: zap | 862 ns/op | +0% | 5 allocs/op
+| :zap: zap (sugared) | 1250 ns/op | +45% | 11 allocs/op
+| zerolog | 4021 ns/op | +366% | 76 allocs/op
+| go-kit | 4542 ns/op | +427% | 105 allocs/op
+| apex/log | 26785 ns/op | +3007% | 115 allocs/op
+| logrus | 29501 ns/op | +3322% | 125 allocs/op
+| log15 | 29906 ns/op | +3369% | 122 allocs/op
+
+Log a message with a logger that already has 10 fields of context:
+
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 126 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 187 ns/op | +48% | 2 allocs/op
+| zerolog | 88 ns/op | -30% | 0 allocs/op
+| go-kit | 5087 ns/op | +3937% | 103 allocs/op
+| log15 | 18548 ns/op | +14621% | 73 allocs/op
+| apex/log | 26012 ns/op | +20544% | 104 allocs/op
+| logrus | 27236 ns/op | +21516% | 113 allocs/op
+
+Log a static string, without any context or `printf`-style templating:
+
+| Package | Time | Time % to zap | Objects Allocated |
+| :------ | :--: | :-----------: | :---------------: |
+| :zap: zap | 118 ns/op | +0% | 0 allocs/op
+| :zap: zap (sugared) | 191 ns/op | +62% | 2 allocs/op
+| zerolog | 93 ns/op | -21% | 0 allocs/op
+| go-kit | 280 ns/op | +137% | 11 allocs/op
+| standard library | 499 ns/op | +323% | 2 allocs/op
+| apex/log | 1990 ns/op | +1586% | 10 allocs/op
+| logrus | 3129 ns/op | +2552% | 24 allocs/op
+| log15 | 3887 ns/op | +3194% | 23 allocs/op
+
+## Development Status: Stable
+
+All APIs are finalized, and no breaking changes will be made in the 1.x series
+of releases. Users of semver-aware dependency management systems should pin
+zap to `^1`.
+
+## Contributing
+
+We encourage and support an active, healthy community of contributors &mdash;
+including you! Details are in the [contribution guide](CONTRIBUTING.md) and
+the [code of conduct](CODE_OF_CONDUCT.md). The zap maintainers keep an eye on
+issues and pull requests, but you can also report any negative conduct to
+oss-conduct@uber.com. That email list is a private, safe space; even the zap
+maintainers don't have access, so don't hesitate to hold us to a high
+standard.
+
+<hr>
+
+Released under the [MIT License](LICENSE.txt).
+
+<sup id="footnote-versions">1</sup> In particular, keep in mind that we may be
+benchmarking against slightly older versions of other packages. Versions are
+pinned in the [benchmarks/go.mod][] file. [↩](#anchor-versions)
+
+[doc-img]: https://godoc.org/go.uber.org/zap?status.svg
+[doc]: https://godoc.org/go.uber.org/zap
+[ci-img]: https://travis-ci.com/uber-go/zap.svg?branch=master
+[ci]: https://travis-ci.com/uber-go/zap
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 [cov-img]: https://codecov.io/gh/uber-go/zap/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/zap
 [benchmarking suite]: https://github.com/uber-go/zap/tree/master/benchmarks

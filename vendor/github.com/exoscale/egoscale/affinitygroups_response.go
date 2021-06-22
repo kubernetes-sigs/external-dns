@@ -8,6 +8,7 @@ import "fmt"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Response returns the struct to unmarshal.
 func (ListAffinityGroups) Response() interface{} {
 	return new(ListAffinityGroupsResponse)
@@ -124,6 +125,33 @@ func (ls *ListAffinityGroups) SetPageSize(pageSize int) {
 
 // Each triggers the callback for each, valid answer or any non 404 issue
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Response returns the struct to unmarshal
+func (ListAffinityGroups) Response() interface{} {
+	return new(ListAffinityGroupsResponse)
+}
+
+// ListRequest returns itself
+func (ls *ListAffinityGroups) ListRequest() (ListCommand, error) {
+	if ls == nil {
+		return nil, fmt.Errorf("%T cannot be nil", ls)
+	}
+	return ls, nil
+}
+
+// SetPage sets the current apge
+func (ls *ListAffinityGroups) SetPage(page int) {
+	ls.Page = page
+}
+
+// SetPageSize sets the page size
+func (ls *ListAffinityGroups) SetPageSize(pageSize int) {
+	ls.PageSize = pageSize
+}
+
+// Each triggers the callback for each, valid answer or any non 404 issue
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (ListAffinityGroups) Each(resp interface{}, callback IterateItemFunc) {
 	items, ok := resp.(*ListAffinityGroupsResponse)
 	if !ok {

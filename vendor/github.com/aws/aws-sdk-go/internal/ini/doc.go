@@ -19,6 +19,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //  Grammar:
 //  stmt -> section | stmt'
 //  stmt' -> epsilon | expr
@@ -189,4 +190,20 @@
 //  comment -> # comment' | ; comment'
 //  comment' -> epsilon | value
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//	Grammar:
+//	stmt -> value stmt'
+//	stmt' -> epsilon | op stmt
+//	value -> number | string | boolean | quoted_string
+//
+//	section -> [ section'
+//	section' -> value section_close
+//	section_close -> ]
+//
+//	SkipState will skip (NL WS)+
+//
+//	comment -> # comment' | ; comment'
+//	comment' -> epsilon | value
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package ini

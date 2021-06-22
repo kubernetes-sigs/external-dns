@@ -21,6 +21,7 @@ package v1beta1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/networking/v1beta1"
@@ -131,6 +132,40 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*NetworkingV1beta1Cl
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/api/networking/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type NetworkingV1beta1Interface interface {
+	RESTClient() rest.Interface
+	IngressesGetter
+	IngressClassesGetter
+}
+
+// NetworkingV1beta1Client is used to interact with features provided by the networking.k8s.io group.
+type NetworkingV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *NetworkingV1beta1Client) Ingresses(namespace string) IngressInterface {
+	return newIngresses(c, namespace)
+}
+
+func (c *NetworkingV1beta1Client) IngressClasses() IngressClassInterface {
+	return newIngressClasses(c)
+}
+
+// NewForConfig creates a new NetworkingV1beta1Client for the given config.
+func NewForConfig(c *rest.Config) (*NetworkingV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

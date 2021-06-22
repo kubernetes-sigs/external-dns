@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type FlowSchemaLister interface {
 	// List lists all FlowSchemas in the indexer.
@@ -90,6 +91,13 @@ type FlowSchemaLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type FlowSchemaLister interface {
+	// List lists all FlowSchemas in the indexer.
+	List(selector labels.Selector) (ret []*v1alpha1.FlowSchema, err error)
+	// Get retrieves the FlowSchema from the index for a given name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1alpha1.FlowSchema, error)
 	FlowSchemaListerExpansion
 }

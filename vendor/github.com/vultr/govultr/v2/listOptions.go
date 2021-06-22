@@ -2,6 +2,7 @@ package govultr
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ListOptions are the available query params
 type ListOptions struct {
 	// These query params are used for all list calls that support pagination
@@ -48,4 +49,11 @@ type ListOptions struct {
 	// https://www.vultr.com/api/#operation/list-snapshots
 	Description string `url:"description,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// ListOptions are the available fields that can be used with pagination
+type ListOptions struct {
+	PerPage int    `url:"per_page,omitempty"`
+	Cursor  string `url:"cursor,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

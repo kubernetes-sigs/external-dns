@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix && ppc64
 // +build aix,ppc64
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -50,6 +51,16 @@
 package unix
 
 //sysnb	Getrlimit(resource int, rlim *Rlimit) (err error)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix
+// +build ppc64
+
+package unix
+
+//sysnb	Getrlimit(resource int, rlim *Rlimit) (err error)
+//sysnb	Setrlimit(resource int, rlim *Rlimit) (err error)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //sys	Seek(fd int, offset int64, whence int) (off int64, err error) = lseek
 
 //sys	mmap(addr uintptr, length uintptr, prot int, flags int, fd int, offset int64) (xaddr uintptr, err error) = mmap64

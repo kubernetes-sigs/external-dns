@@ -35,6 +35,7 @@ var map_CertificateSigningRequest = map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"spec":   "spec contains the certificate request, and is immutable after creation. Only the request, signerName, expirationSeconds, and usages fields can be set on creation. Other fields are derived by Kubernetes and cannot be modified by users.",
 	"status": "Derived information about the request.",
 }
@@ -243,6 +244,37 @@ var map_CertificateSigningRequestSpec = map[string]string{
 	"groups":            "Group information about the requesting user. See user.Info interface for details.",
 	"extra":             "Extra information about the requesting user. See user.Info interface for details.",
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"spec":   "The certificate request itself and any additional information.",
+	"status": "Derived information about the request.",
+}
+
+func (CertificateSigningRequest) SwaggerDoc() map[string]string {
+	return map_CertificateSigningRequest
+}
+
+var map_CertificateSigningRequestCondition = map[string]string{
+	"type":           "request approval state, currently Approved or Denied.",
+	"reason":         "brief reason for the request state",
+	"message":        "human readable message with details about the request state",
+	"lastUpdateTime": "timestamp for the last update to this condition",
+}
+
+func (CertificateSigningRequestCondition) SwaggerDoc() map[string]string {
+	return map_CertificateSigningRequestCondition
+}
+
+var map_CertificateSigningRequestSpec = map[string]string{
+	"":           "This information is immutable after the request is created. Only the Request and Usages fields can be set on creation, other fields are derived by Kubernetes and cannot be modified by users.",
+	"request":    "Base64-encoded PKCS#10 CSR data",
+	"signerName": "Requested signer for the request. It is a qualified name in the form: `scope-hostname.io/name`. If empty, it will be defaulted:\n 1. If it's a kubelet client certificate, it is assigned\n    \"kubernetes.io/kube-apiserver-client-kubelet\".\n 2. If it's a kubelet serving certificate, it is assigned\n    \"kubernetes.io/kubelet-serving\".\n 3. Otherwise, it is assigned \"kubernetes.io/legacy-unknown\".\nDistribution of trust for signers happens out of band. You can select on this field using `spec.signerName`.",
+	"usages":     "allowedUsages specifies a set of usage contexts the key will be valid for. See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3\n     https://tools.ietf.org/html/rfc5280#section-4.2.1.12",
+	"username":   "Information about the requesting user. See user.Info interface for details.",
+	"uid":        "UID information about the requesting user. See user.Info interface for details.",
+	"groups":     "Group information about the requesting user. See user.Info interface for details.",
+	"extra":      "Extra information about the requesting user. See user.Info interface for details.",
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (CertificateSigningRequestSpec) SwaggerDoc() map[string]string {

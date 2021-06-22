@@ -61,6 +61,7 @@ var optionsTypes = []runtime.Object{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	&ExportOptions{},
@@ -85,6 +86,10 @@ var optionsTypes = []runtime.Object{
 	&ExportOptions{},
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	&ExportOptions{},
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	&GetOptions{},
 	&DeleteOptions{},
 	&CreateOptions{},

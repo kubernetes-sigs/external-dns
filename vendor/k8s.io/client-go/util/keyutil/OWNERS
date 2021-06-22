@@ -1,6 +1,16 @@
 approvers:
+<<<<<<< HEAD
   - sig-auth-certificates-approvers
 reviewers:
   - sig-auth-certificates-reviewers
 labels:
   - sig/auth
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- sig-auth-certificates-approvers
+reviewers:
+- sig-auth-certificates-reviewers
+labels:
+- sig/auth
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

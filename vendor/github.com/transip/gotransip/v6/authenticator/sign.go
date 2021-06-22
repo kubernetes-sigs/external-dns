@@ -28,10 +28,15 @@ func signWithKey(body []byte, key []byte) (string, error) {
 		return "", fmt.Errorf("could not parse private key: %w", err)
 	}
 
+<<<<<<< HEAD
 	pkey, ok := parsed.(*rsa.PrivateKey)
 	if !ok {
 		return "", fmt.Errorf("private key was no RSA key: %T", parsed)
 	}
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	pkey := parsed.(*rsa.PrivateKey)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	digest := sha512.Sum512(body)
 
 	enc, err := rsa.SignPKCS1v15(rand.Reader, pkey, crypto.SHA512, digest[:])

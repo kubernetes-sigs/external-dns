@@ -24,6 +24,12 @@
 // the Go implementation should as well.
 //
 // The text format is almost a superset of JSON except:
+<<<<<<< HEAD
 //   - message keys are not quoted strings, but identifiers
 //   - the top-level value must be a message without the delimiters
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//	* message keys are not quoted strings, but identifiers
+//	* the top-level value must be a message without the delimiters
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package text

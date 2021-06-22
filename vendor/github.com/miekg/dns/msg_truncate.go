@@ -10,6 +10,7 @@ package dns
 //
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // If the message fits within the requested size without compression,
 // Truncate will set the message's Compress attribute to false. It is
 // the caller's responsibility to set it back to true if they wish to
@@ -26,6 +27,9 @@ package dns
 // compress the payload regardless of size.
 //
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // The TC bit will be set if any records were excluded from the message.
 // If the TC bit is already set on the message it will be retained.
 // TC indicates that the client should retry over TCP.

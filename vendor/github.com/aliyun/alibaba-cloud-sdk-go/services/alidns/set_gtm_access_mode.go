@@ -23,6 +23,7 @@ import (
 // SetGtmAccessMode invokes the alidns.SetGtmAccessMode API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetGtmAccessMode(request *SetGtmAccessModeRequest) (response *SetGtmAccessModeResponse, err error) {
 	response = CreateSetGtmAccessModeResponse()
 	err = client.DoAction(request, response)
@@ -173,6 +174,82 @@ func CreateSetGtmAccessModeRequest() (request *SetGtmAccessModeRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
+func (client *Client) SetGtmAccessMode(request *SetGtmAccessModeRequest) (response *SetGtmAccessModeResponse, err error) {
+	response = CreateSetGtmAccessModeResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// SetGtmAccessModeWithChan invokes the alidns.SetGtmAccessMode API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetGtmAccessModeWithChan(request *SetGtmAccessModeRequest) (<-chan *SetGtmAccessModeResponse, <-chan error) {
+	responseChan := make(chan *SetGtmAccessModeResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.SetGtmAccessMode(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// SetGtmAccessModeWithCallback invokes the alidns.SetGtmAccessMode API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetGtmAccessModeWithCallback(request *SetGtmAccessModeRequest, callback func(response *SetGtmAccessModeResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *SetGtmAccessModeResponse
+		var err error
+		defer close(result)
+		response, err = client.SetGtmAccessMode(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// SetGtmAccessModeRequest is the request struct for api SetGtmAccessMode
+type SetGtmAccessModeRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	StrategyId   string `position:"Query" name:"StrategyId"`
+	Lang         string `position:"Query" name:"Lang"`
+	AccessMode   string `position:"Query" name:"AccessMode"`
+}
+
+// SetGtmAccessModeResponse is the response struct for api SetGtmAccessMode
+type SetGtmAccessModeResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateSetGtmAccessModeRequest creates a request to invoke SetGtmAccessMode API
+func CreateSetGtmAccessModeRequest() (request *SetGtmAccessModeRequest) {
+	request = &SetGtmAccessModeRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "SetGtmAccessMode", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

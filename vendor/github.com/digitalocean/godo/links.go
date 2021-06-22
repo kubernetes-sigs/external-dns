@@ -34,6 +34,7 @@ func (l *Links) CurrentPage() (int, error) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NextPageToken is the page token to request the next page of the list
 func (l *Links) NextPageToken() (string, error) {
 	return l.Pages.nextPageToken()
@@ -206,6 +207,52 @@ func pageTokenFromURL(urlText string) (string, error) {
 		return "", err
 	}
 	return u.Query().Get("page_token"), nil
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (p *Pages) current() (int, error) {
+	switch {
+	case p == nil:
+		return 1, nil
+	case p.Prev == "" && p.Next != "":
+		return 1, nil
+	case p.Prev != "":
+		prevPage, err := pageForURL(p.Prev)
+		if err != nil {
+			return 0, err
+		}
+
+		return prevPage + 1, nil
+	}
+
+	return 0, nil
+}
+
+// IsLastPage returns true if the current page is the last
+func (l *Links) IsLastPage() bool {
+	if l.Pages == nil {
+		return true
+	}
+	return l.Pages.isLast()
+}
+
+func (p *Pages) isLast() bool {
+	return p.Next == ""
+}
+
+func pageForURL(urlText string) (int, error) {
+	u, err := url.ParseRequestURI(urlText)
+	if err != nil {
+		return 0, err
+	}
+
+	pageStr := u.Query().Get("page")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		return 0, err
+	}
+
+	return page, nil
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Get a link action by id.

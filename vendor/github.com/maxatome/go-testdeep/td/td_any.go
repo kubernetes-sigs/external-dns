@@ -25,6 +25,7 @@ var _ TestDeep = &tdAny{}
 // a match, at least one of them has to match to succeed. Consider it
 // as a "OR" logical operator.
 //
+<<<<<<< HEAD
 //	td.Cmp(t, "foo", td.Any("bar", "foo", "zip")) // succeeds
 //	td.Cmp(t, "foo", td.Any(
 //	  td.Len(4),
@@ -230,4 +231,42 @@ func (a *tdAny) TypeBehind() reflect.Type {
 =======
 	return uniqTypeBehindSlice(a.items)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   td.Cmp(t, "foo", td.Any("bar", "foo", "zip")) // succeeds
+//   td.Cmp(t, "foo", td.Any(
+//     td.Len(4),
+//     td.HasPrefix("f"),
+//     td.HasSuffix("z"),
+//   )) // succeeds coz "f" prefix
+//
+// TypeBehind method can return a non-nil reflect.Type if all items
+// known non-interface types are equal, or if only interface types
+// are found (mostly issued from Isa()) and they are equal.
+func Any(expectedValues ...interface{}) TestDeep {
+	return &tdAny{
+		tdList: newList(expectedValues...),
+	}
+}
+
+func (a *tdAny) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	for _, item := range a.items {
+		if deepValueEqualOK(got, item) {
+			return nil
+		}
+	}
+
+	if ctx.BooleanError {
+		return ctxerr.BooleanError
+	}
+	return ctx.CollectError(&ctxerr.Error{
+		Message:  "comparing with Any",
+		Got:      got,
+		Expected: a,
+	})
+}
+
+func (a *tdAny) TypeBehind() reflect.Type {
+	return a.uniqTypeBehind()
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

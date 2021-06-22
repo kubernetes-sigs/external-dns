@@ -88,8 +88,13 @@ func toYAML(v interface{}) (string, error) {
 // supports JSON merge patch semantics.
 //
 // NOTE: Numbers with different types (e.g. int(0) vs int64(0)) will be detected as conflicts.
+<<<<<<< HEAD
 //
 //	Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//       Make sure the unmarshaling of left and right are consistent (e.g. use the same library).
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func HasConflicts(left, right interface{}) (bool, error) {
 	switch typedLeft := left.(type) {
 	case map[string]interface{}:

@@ -8,6 +8,7 @@ package multierror
 // one level into err.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Any nil errors within errs will be ignored. If err is nil, a new
 // *Error will be returned.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -18,6 +19,9 @@ package multierror
 // Any nil errors within errs will be ignored. If err is nil, a new
 // *Error will be returned.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func Append(err error, errs ...error) *Error {
 	switch err := err.(type) {
 	case *Error:

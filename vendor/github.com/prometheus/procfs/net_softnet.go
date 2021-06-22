@@ -57,6 +57,7 @@ func (fs FS) NetSoftnetStat() ([]SoftnetStat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -85,6 +86,10 @@ func (fs FS) NetSoftnetStat() ([]SoftnetStat, error) {
 =======
 		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %w", err)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return nil, fmt.Errorf("failed to parse /proc/net/softnet_stat: %v", err)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 
 	return entries, nil

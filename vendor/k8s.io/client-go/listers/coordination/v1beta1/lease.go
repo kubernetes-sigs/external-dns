@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type LeaseLister interface {
 	// List lists all Leases in the indexer.
@@ -226,6 +227,45 @@ type LeaseNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type LeaseLister interface {
+	// List lists all Leases in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.Lease, err error)
+	// Leases returns an object that can list and get Leases.
+	Leases(namespace string) LeaseNamespaceLister
+	LeaseListerExpansion
+}
+
+// leaseLister implements the LeaseLister interface.
+type leaseLister struct {
+	indexer cache.Indexer
+}
+
+// NewLeaseLister returns a new LeaseLister.
+func NewLeaseLister(indexer cache.Indexer) LeaseLister {
+	return &leaseLister{indexer: indexer}
+}
+
+// List lists all Leases in the indexer.
+func (s *leaseLister) List(selector labels.Selector) (ret []*v1beta1.Lease, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.Lease))
+	})
+	return ret, err
+}
+
+// Leases returns an object that can list and get Leases.
+func (s *leaseLister) Leases(namespace string) LeaseNamespaceLister {
+	return leaseNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// LeaseNamespaceLister helps list and get Leases.
+type LeaseNamespaceLister interface {
+	// List lists all Leases in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.Lease, err error)
+	// Get retrieves the Lease from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.Lease, error)
 	LeaseNamespaceListerExpansion
 }

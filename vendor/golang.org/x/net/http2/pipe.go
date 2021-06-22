@@ -32,6 +32,7 @@ type pipeBuffer interface {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // setBuffer initializes the pipe buffer.
 // It has no effect if the pipe is already closed.
 func (p *pipe) setBuffer(b pipeBuffer) {
@@ -109,6 +110,62 @@ func (p *pipe) Write(d []byte) (n int, err error) {
 	defer p.c.Signal()
 	if p.err != nil || p.breakErr != nil {
 		return 0, errClosedPipeWrite
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (p *pipe) Len() int {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.b == nil {
+		return p.unread
+	}
+	return p.b.Len()
+}
+
+// Read waits until data is available and copies bytes
+// from the buffer into p.
+func (p *pipe) Read(d []byte) (n int, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.c.L == nil {
+		p.c.L = &p.mu
+	}
+	for {
+		if p.breakErr != nil {
+			return 0, p.breakErr
+		}
+		if p.b != nil && p.b.Len() > 0 {
+			return p.b.Read(d)
+		}
+		if p.err != nil {
+			if p.readFn != nil {
+				p.readFn()     // e.g. copy trailers
+				p.readFn = nil // not sticky like p.err
+			}
+			p.b = nil
+			return 0, p.err
+		}
+		p.c.Wait()
+	}
+}
+
+var errClosedPipeWrite = errors.New("write on closed buffer")
+
+// Write copies bytes from p into the buffer and wakes a reader.
+// It is an error to write more data than the buffer can hold.
+func (p *pipe) Write(d []byte) (n int, err error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.c.L == nil {
+		p.c.L = &p.mu
+	}
+	defer p.c.Signal()
+	if p.err != nil {
+		return 0, errClosedPipeWrite
+	}
+	if p.breakErr != nil {
+		p.unread += len(d)
+		return len(d), nil // discard when there is no reader
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return p.b.Write(d)
 }

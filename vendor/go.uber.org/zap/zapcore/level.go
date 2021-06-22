@@ -55,6 +55,7 @@ const (
 	_maxLevel = FatalLevel
 )
 
+<<<<<<< HEAD
 // ParseLevel parses a level based on the lower-case or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
 // invalid an error is returned.
@@ -67,6 +68,9 @@ func ParseLevel(text string) (Level, error) {
 	return level, err
 }
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // String returns a lower-case ASCII representation of the log level.
 func (l Level) String() string {
 	switch l {

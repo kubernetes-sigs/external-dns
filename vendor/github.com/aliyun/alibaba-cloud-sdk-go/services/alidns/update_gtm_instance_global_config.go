@@ -23,6 +23,7 @@ import (
 // UpdateGtmInstanceGlobalConfig invokes the alidns.UpdateGtmInstanceGlobalConfig API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGlobalConfigRequest) (response *UpdateGtmInstanceGlobalConfigResponse, err error) {
 	response = CreateUpdateGtmInstanceGlobalConfigResponse()
 	err = client.DoAction(request, response)
@@ -185,6 +186,88 @@ func CreateUpdateGtmInstanceGlobalConfigRequest() (request *UpdateGtmInstanceGlo
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
+func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGlobalConfigRequest) (response *UpdateGtmInstanceGlobalConfigResponse, err error) {
+	response = CreateUpdateGtmInstanceGlobalConfigResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateGtmInstanceGlobalConfigWithChan invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmInstanceGlobalConfigWithChan(request *UpdateGtmInstanceGlobalConfigRequest) (<-chan *UpdateGtmInstanceGlobalConfigResponse, <-chan error) {
+	responseChan := make(chan *UpdateGtmInstanceGlobalConfigResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateGtmInstanceGlobalConfig(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateGtmInstanceGlobalConfigWithCallback invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateGtmInstanceGlobalConfigWithCallback(request *UpdateGtmInstanceGlobalConfigRequest, callback func(response *UpdateGtmInstanceGlobalConfigResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateGtmInstanceGlobalConfigResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateGtmInstanceGlobalConfig(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateGtmInstanceGlobalConfigRequest is the request struct for api UpdateGtmInstanceGlobalConfig
+type UpdateGtmInstanceGlobalConfigRequest struct {
+	*requests.RpcRequest
+	AlertGroup            string           `position:"Query" name:"AlertGroup"`
+	CnameMode             string           `position:"Query" name:"CnameMode"`
+	LbaStrategy           string           `position:"Query" name:"LbaStrategy"`
+	Ttl                   requests.Integer `position:"Query" name:"Ttl"`
+	CnameCustomDomainName string           `position:"Query" name:"CnameCustomDomainName"`
+	InstanceId            string           `position:"Query" name:"InstanceId"`
+	InstanceName          string           `position:"Query" name:"InstanceName"`
+	UserDomainName        string           `position:"Query" name:"UserDomainName"`
+	UserClientIp          string           `position:"Query" name:"UserClientIp"`
+	Lang                  string           `position:"Query" name:"Lang"`
+}
+
+// UpdateGtmInstanceGlobalConfigResponse is the response struct for api UpdateGtmInstanceGlobalConfig
+type UpdateGtmInstanceGlobalConfigResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateUpdateGtmInstanceGlobalConfigRequest creates a request to invoke UpdateGtmInstanceGlobalConfig API
+func CreateUpdateGtmInstanceGlobalConfigRequest() (request *UpdateGtmInstanceGlobalConfigRequest) {
+	request = &UpdateGtmInstanceGlobalConfigRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmInstanceGlobalConfig", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

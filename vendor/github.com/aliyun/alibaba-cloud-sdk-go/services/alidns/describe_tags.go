@@ -23,6 +23,7 @@ import (
 // DescribeTags invokes the alidns.DescribeTags API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *DescribeTagsResponse, err error) {
 	response = CreateDescribeTagsResponse()
 	err = client.DoAction(request, response)
@@ -183,6 +184,87 @@ func CreateDescribeTagsRequest() (request *DescribeTagsRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describetags.html
+func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *DescribeTagsResponse, err error) {
+	response = CreateDescribeTagsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeTagsWithChan invokes the alidns.DescribeTags API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describetags.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeTagsWithChan(request *DescribeTagsRequest) (<-chan *DescribeTagsResponse, <-chan error) {
+	responseChan := make(chan *DescribeTagsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeTags(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeTagsWithCallback invokes the alidns.DescribeTags API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describetags.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeTagsWithCallback(request *DescribeTagsRequest, callback func(response *DescribeTagsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeTagsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeTags(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeTagsRequest is the request struct for api DescribeTags
+type DescribeTagsRequest struct {
+	*requests.RpcRequest
+	ResourceType string           `position:"Query" name:"ResourceType"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+}
+
+// DescribeTagsResponse is the response struct for api DescribeTags
+type DescribeTagsResponse struct {
+	*responses.BaseResponse
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	TotalCount int64  `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int64  `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int64  `json:"PageSize" xml:"PageSize"`
+	Tags       []Tag  `json:"Tags" xml:"Tags"`
+}
+
+// CreateDescribeTagsRequest creates a request to invoke DescribeTags API
+func CreateDescribeTagsRequest() (request *DescribeTagsRequest) {
+	request = &DescribeTagsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeTags", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

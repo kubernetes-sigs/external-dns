@@ -23,6 +23,7 @@ import (
 // SetDNSSLBStatus invokes the alidns.SetDNSSLBStatus API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetDNSSLBStatus(request *SetDNSSLBStatusRequest) (response *SetDNSSLBStatusResponse, err error) {
 	response = CreateSetDNSSLBStatusResponse()
 	err = client.DoAction(request, response)
@@ -183,6 +184,86 @@ func CreateSetDNSSLBStatusRequest() (request *SetDNSSLBStatusRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
+func (client *Client) SetDNSSLBStatus(request *SetDNSSLBStatusRequest) (response *SetDNSSLBStatusResponse, err error) {
+	response = CreateSetDNSSLBStatusResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// SetDNSSLBStatusWithChan invokes the alidns.SetDNSSLBStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetDNSSLBStatusWithChan(request *SetDNSSLBStatusRequest) (<-chan *SetDNSSLBStatusResponse, <-chan error) {
+	responseChan := make(chan *SetDNSSLBStatusResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.SetDNSSLBStatus(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// SetDNSSLBStatusWithCallback invokes the alidns.SetDNSSLBStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetDNSSLBStatusWithCallback(request *SetDNSSLBStatusRequest, callback func(response *SetDNSSLBStatusResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *SetDNSSLBStatusResponse
+		var err error
+		defer close(result)
+		response, err = client.SetDNSSLBStatus(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// SetDNSSLBStatusRequest is the request struct for api SetDNSSLBStatus
+type SetDNSSLBStatusRequest struct {
+	*requests.RpcRequest
+	DomainName   string           `position:"Query" name:"DomainName"`
+	Type         string           `position:"Query" name:"Type"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	SubDomain    string           `position:"Query" name:"SubDomain"`
+	Lang         string           `position:"Query" name:"Lang"`
+	Open         requests.Boolean `position:"Query" name:"Open"`
+}
+
+// SetDNSSLBStatusResponse is the response struct for api SetDNSSLBStatus
+type SetDNSSLBStatusResponse struct {
+	*responses.BaseResponse
+	RequestId   string `json:"RequestId" xml:"RequestId"`
+	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
+	Open        bool   `json:"Open" xml:"Open"`
+}
+
+// CreateSetDNSSLBStatusRequest creates a request to invoke SetDNSSLBStatus API
+func CreateSetDNSSLBStatusRequest() (request *SetDNSSLBStatusRequest) {
+	request = &SetDNSSLBStatusRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "SetDNSSLBStatus", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

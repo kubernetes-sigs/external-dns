@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build arm64 && openbsd
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -34,6 +35,13 @@
 package unix
 
 // Deprecated: Use libc wrappers instead of direct syscalls.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build arm64,openbsd
+
+package unix
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 const (
 	SYS_EXIT           = 1   // { void sys_exit(int rval); }
 	SYS_FORK           = 2   // { int sys_fork(void); }

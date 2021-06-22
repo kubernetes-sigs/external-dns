@@ -102,6 +102,7 @@ func (e DetailedError) Error() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // Unwrap returns the original error.
 func (e DetailedError) Unwrap() error {
@@ -140,3 +141,6 @@ func (e DetailedError) Unwrap() error {
 	return e.Original
 }
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -37,6 +37,7 @@ func (u URLParams) SetMulti(key string, values []string) {
 	u[key] = values
 }
 
+<<<<<<< HEAD
 // Encode encodes the values into “URL encoded” form
 // ("bar=baz&foo=quux") sorted by key.
 func (u URLParams) Encode() string {
@@ -121,6 +122,18 @@ func SetOptions(u URLParams, opts ...googleapi.CallOption) {
 			continue
 		}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// Encode encodes the values into ``URL encoded'' form
+// ("bar=baz&foo=quux") sorted by key.
+func (u URLParams) Encode() string {
+	return url.Values(u).Encode()
+}
+
+// SetOptions sets the URL params and any additional call options.
+func SetOptions(u URLParams, opts ...googleapi.CallOption) {
+	for _, o := range opts {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		u.Set(o.Get())
 	}
 }

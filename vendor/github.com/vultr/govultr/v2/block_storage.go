@@ -37,6 +37,7 @@ type BlockStorage struct {
 	AttachedToInstance string  `json:"attached_to_instance"`
 	Label              string  `json:"label"`
 	MountID            string  `json:"mount_id"`
+<<<<<<< HEAD
 	BlockType          string  `json:"block_type"`
 }
 
@@ -46,6 +47,16 @@ type BlockStorageCreate struct {
 	SizeGB    int    `json:"size_gb"`
 	Label     string `json:"label,omitempty"`
 	BlockType string `json:"block_type,omitempty"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+}
+
+// BlockStorageCreate struct is used for creating Block Storage.
+type BlockStorageCreate struct {
+	Region string `json:"region"`
+	SizeGB int    `json:"size_gb"`
+	Label  string `json:"label,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // BlockStorageUpdate struct is used to update Block Storage.

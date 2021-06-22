@@ -17,7 +17,13 @@ package alidns
 
 // Instance is a nested struct in alidns response
 type Instance struct {
+<<<<<<< HEAD
 	InstanceName string                                            `json:"InstanceName" xml:"InstanceName"`
 	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
+	InstanceName string                                            `json:"InstanceName" xml:"InstanceName"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	AddrPools    AddrPoolsInDescribeGtmRecoveryPlanAvailableConfig `json:"AddrPools" xml:"AddrPools"`
 }

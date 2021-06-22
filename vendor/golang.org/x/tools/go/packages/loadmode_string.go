@@ -15,6 +15,7 @@ var allModes = []LoadMode{
 	NeedCompiledGoFiles,
 	NeedImports,
 	NeedDeps,
+<<<<<<< HEAD
 	NeedExportFile,
 	NeedTypes,
 	NeedSyntax,
@@ -29,6 +30,23 @@ var modeStrings = []string{
 	"NeedImports",
 	"NeedDeps",
 	"NeedExportFile",
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	NeedExportsFile,
+	NeedTypes,
+	NeedSyntax,
+	NeedTypesInfo,
+	NeedTypesSizes,
+}
+
+var modeStrings = []string{
+	"NeedName",
+	"NeedFiles",
+	"NeedCompiledGoFiles",
+	"NeedImports",
+	"NeedDeps",
+	"NeedExportsFile",
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	"NeedTypes",
 	"NeedSyntax",
 	"NeedTypesInfo",

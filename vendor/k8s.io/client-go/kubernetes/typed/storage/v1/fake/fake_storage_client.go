@@ -36,10 +36,14 @@ func (c *FakeStorageV1) CSINodes() v1.CSINodeInterface {
 	return &FakeCSINodes{c}
 }
 
+<<<<<<< HEAD
 func (c *FakeStorageV1) CSIStorageCapacities(namespace string) v1.CSIStorageCapacityInterface {
 	return &FakeCSIStorageCapacities{c, namespace}
 }
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (c *FakeStorageV1) StorageClasses() v1.StorageClassInterface {
 	return &FakeStorageClasses{c}
 }

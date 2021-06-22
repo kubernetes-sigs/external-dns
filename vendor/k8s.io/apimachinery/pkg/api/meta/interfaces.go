@@ -134,6 +134,7 @@ type RESTMapper interface {
 }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // ResettableRESTMapper is a RESTMapper which is capable of resetting itself
 // from discovery.
@@ -158,3 +159,6 @@ type ResettableRESTMapper interface {
 	Reset()
 }
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

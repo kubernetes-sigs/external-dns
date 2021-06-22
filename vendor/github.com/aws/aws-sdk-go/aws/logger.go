@@ -79,6 +79,7 @@ const (
 	LogDebugWithEventStreamBody
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// LogDebugWithDeprecated states the SDK should log details about deprecated functionality.
 	LogDebugWithDeprecated
@@ -91,6 +92,9 @@ const (
 	// LogDebugWithDeprecated states the SDK should log details about deprecated functionality.
 	LogDebugWithDeprecated
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )
 
 // A Logger is a minimalistic interface for the SDK to log messages to. Should

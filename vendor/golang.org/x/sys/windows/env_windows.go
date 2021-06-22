@@ -37,6 +37,7 @@ func (token Token) Environ(inheritExisting bool) (env []string, err error) {
 		return nil, err
 	}
 	defer DestroyEnvironmentBlock(block)
+<<<<<<< HEAD
 	blockp := unsafe.Pointer(block)
 	for {
 		entry := UTF16PtrToString((*uint16)(blockp))
@@ -45,6 +46,17 @@ func (token Token) Environ(inheritExisting bool) (env []string, err error) {
 		}
 		env = append(env, entry)
 		blockp = unsafe.Add(blockp, 2*(len(entry)+1))
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	blockp := uintptr(unsafe.Pointer(block))
+	for {
+		entry := UTF16PtrToString((*uint16)(unsafe.Pointer(blockp)))
+		if len(entry) == 0 {
+			break
+		}
+		env = append(env, entry)
+		blockp += 2 * (uintptr(len(entry)) + 1)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return env, nil
 }

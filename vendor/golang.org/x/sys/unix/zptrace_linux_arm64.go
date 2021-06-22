@@ -7,6 +7,7 @@ import "unsafe"
 // PtraceGetRegSetArm64 fetches the registers used by arm64 binaries.
 func PtraceGetRegSetArm64(pid, addr int, regsout *PtraceRegsArm64) error {
 	iovec := Iovec{(*byte)(unsafe.Pointer(regsout)), uint64(unsafe.Sizeof(*regsout))}
+<<<<<<< HEAD
 	return ptracePtr(PTRACE_GETREGSET, pid, uintptr(addr), unsafe.Pointer(&iovec))
 }
 
@@ -14,4 +15,14 @@ func PtraceGetRegSetArm64(pid, addr int, regsout *PtraceRegsArm64) error {
 func PtraceSetRegSetArm64(pid, addr int, regs *PtraceRegsArm64) error {
 	iovec := Iovec{(*byte)(unsafe.Pointer(regs)), uint64(unsafe.Sizeof(*regs))}
 	return ptracePtr(PTRACE_SETREGSET, pid, uintptr(addr), unsafe.Pointer(&iovec))
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	return ptrace(PTRACE_GETREGSET, pid, uintptr(addr), uintptr(unsafe.Pointer(&iovec)))
+}
+
+// PtraceSetRegSetArm64 sets the registers used by arm64 binaries.
+func PtraceSetRegSetArm64(pid, addr int, regs *PtraceRegsArm64) error {
+	iovec := Iovec{(*byte)(unsafe.Pointer(regs)), uint64(unsafe.Sizeof(*regs))}
+	return ptrace(PTRACE_SETREGSET, pid, uintptr(addr), uintptr(unsafe.Pointer(&iovec)))
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

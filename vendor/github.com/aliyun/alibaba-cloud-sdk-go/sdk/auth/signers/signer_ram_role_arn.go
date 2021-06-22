@@ -116,6 +116,7 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 	request = requests.NewCommonRequest()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if signer.credential.StsRegion != "" {
 		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
 	} else {
@@ -132,6 +133,9 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 		request.Domain = "sts.aliyuncs.com"
 	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	request.Product = "Sts"
 	request.Version = "2015-04-01"
 	request.ApiName = "AssumeRole"

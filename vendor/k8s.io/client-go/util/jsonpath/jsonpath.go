@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1120,6 +1121,214 @@ func (j *JSONPath) evalIdentifier(input []reflect.Value, node *IdentifierNode) (
 			j.cur, j.stack = j.stack[len(j.stack)-1], j.stack[:len(j.stack)-1]
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"fmt"
+	"io"
+	"reflect"
+	"strings"
+
+	"k8s.io/client-go/third_party/forked/golang/template"
+)
+
+type JSONPath struct {
+	name       string
+	parser     *Parser
+	stack      [][]reflect.Value // push and pop values in different scopes
+	cur        []reflect.Value   // current scope values
+	beginRange int
+	inRange    int
+	endRange   int
+
+	allowMissingKeys bool
+}
+
+// New creates a new JSONPath with the given name.
+func New(name string) *JSONPath {
+	return &JSONPath{
+		name:       name,
+		beginRange: 0,
+		inRange:    0,
+		endRange:   0,
+	}
+}
+
+// AllowMissingKeys allows a caller to specify whether they want an error if a field or map key
+// cannot be located, or simply an empty result. The receiver is returned for chaining.
+func (j *JSONPath) AllowMissingKeys(allow bool) *JSONPath {
+	j.allowMissingKeys = allow
+	return j
+}
+
+// Parse parses the given template and returns an error.
+func (j *JSONPath) Parse(text string) error {
+	var err error
+	j.parser, err = Parse(j.name, text)
+	return err
+}
+
+// Execute bounds data into template and writes the result.
+func (j *JSONPath) Execute(wr io.Writer, data interface{}) error {
+	fullResults, err := j.FindResults(data)
+	if err != nil {
+		return err
+	}
+	for ix := range fullResults {
+		if err := j.PrintResults(wr, fullResults[ix]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (j *JSONPath) FindResults(data interface{}) ([][]reflect.Value, error) {
+	if j.parser == nil {
+		return nil, fmt.Errorf("%s is an incomplete jsonpath template", j.name)
+	}
+
+	j.cur = []reflect.Value{reflect.ValueOf(data)}
+	nodes := j.parser.Root.Nodes
+	fullResult := [][]reflect.Value{}
+	for i := 0; i < len(nodes); i++ {
+		node := nodes[i]
+		results, err := j.walk(j.cur, node)
+		if err != nil {
+			return nil, err
+		}
+
+		// encounter an end node, break the current block
+		if j.endRange > 0 && j.endRange <= j.inRange {
+			j.endRange--
+			break
+		}
+		// encounter a range node, start a range loop
+		if j.beginRange > 0 {
+			j.beginRange--
+			j.inRange++
+			for k, value := range results {
+				j.parser.Root.Nodes = nodes[i+1:]
+				if k == len(results)-1 {
+					j.inRange--
+				}
+				nextResults, err := j.FindResults(value.Interface())
+				if err != nil {
+					return nil, err
+				}
+				fullResult = append(fullResult, nextResults...)
+			}
+			break
+		}
+		fullResult = append(fullResult, results)
+	}
+	return fullResult, nil
+}
+
+// PrintResults writes the results into writer
+func (j *JSONPath) PrintResults(wr io.Writer, results []reflect.Value) error {
+	for i, r := range results {
+		text, err := j.evalToText(r)
+		if err != nil {
+			return err
+		}
+		if i != len(results)-1 {
+			text = append(text, ' ')
+		}
+		if _, err = wr.Write(text); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// walk visits tree rooted at the given node in DFS order
+func (j *JSONPath) walk(value []reflect.Value, node Node) ([]reflect.Value, error) {
+	switch node := node.(type) {
+	case *ListNode:
+		return j.evalList(value, node)
+	case *TextNode:
+		return []reflect.Value{reflect.ValueOf(node.Text)}, nil
+	case *FieldNode:
+		return j.evalField(value, node)
+	case *ArrayNode:
+		return j.evalArray(value, node)
+	case *FilterNode:
+		return j.evalFilter(value, node)
+	case *IntNode:
+		return j.evalInt(value, node)
+	case *BoolNode:
+		return j.evalBool(value, node)
+	case *FloatNode:
+		return j.evalFloat(value, node)
+	case *WildcardNode:
+		return j.evalWildcard(value, node)
+	case *RecursiveNode:
+		return j.evalRecursive(value, node)
+	case *UnionNode:
+		return j.evalUnion(value, node)
+	case *IdentifierNode:
+		return j.evalIdentifier(value, node)
+	default:
+		return value, fmt.Errorf("unexpected Node %v", node)
+	}
+}
+
+// evalInt evaluates IntNode
+func (j *JSONPath) evalInt(input []reflect.Value, node *IntNode) ([]reflect.Value, error) {
+	result := make([]reflect.Value, len(input))
+	for i := range input {
+		result[i] = reflect.ValueOf(node.Value)
+	}
+	return result, nil
+}
+
+// evalFloat evaluates FloatNode
+func (j *JSONPath) evalFloat(input []reflect.Value, node *FloatNode) ([]reflect.Value, error) {
+	result := make([]reflect.Value, len(input))
+	for i := range input {
+		result[i] = reflect.ValueOf(node.Value)
+	}
+	return result, nil
+}
+
+// evalBool evaluates BoolNode
+func (j *JSONPath) evalBool(input []reflect.Value, node *BoolNode) ([]reflect.Value, error) {
+	result := make([]reflect.Value, len(input))
+	for i := range input {
+		result[i] = reflect.ValueOf(node.Value)
+	}
+	return result, nil
+}
+
+// evalList evaluates ListNode
+func (j *JSONPath) evalList(value []reflect.Value, node *ListNode) ([]reflect.Value, error) {
+	var err error
+	curValue := value
+	for _, node := range node.Nodes {
+		curValue, err = j.walk(curValue, node)
+		if err != nil {
+			return curValue, err
+		}
+	}
+	return curValue, nil
+}
+
+// evalIdentifier evaluates IdentifierNode
+func (j *JSONPath) evalIdentifier(input []reflect.Value, node *IdentifierNode) ([]reflect.Value, error) {
+	results := []reflect.Value{}
+	switch node.Name {
+	case "range":
+		j.stack = append(j.stack, j.cur)
+		j.beginRange++
+		results = input
+	case "end":
+		if j.endRange < j.inRange { // inside a loop, break the current block
+			j.endRange++
+			break
+		}
+		// the loop is about to end, pop value and continue the following execution
+		if len(j.stack) > 0 {
+			j.cur, j.stack = j.stack[len(j.stack)-1], j.stack[:len(j.stack)-1]
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		} else {
 			return results, fmt.Errorf("not in range, nothing to end")
 		}

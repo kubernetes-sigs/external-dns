@@ -18,7 +18,13 @@ package alidns
 // FaultAddrPool is a nested struct in alidns response
 type FaultAddrPool struct {
 	AddrPoolId   string                         `json:"AddrPoolId" xml:"AddrPoolId"`
+<<<<<<< HEAD
 	InstanceId   string                         `json:"InstanceId" xml:"InstanceId"`
 	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
+	InstanceId   string                         `json:"InstanceId" xml:"InstanceId"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Addrs        AddrsInDescribeGtmRecoveryPlan `json:"Addrs" xml:"Addrs"`
 }

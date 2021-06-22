@@ -7,6 +7,7 @@ Releases
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 v1.6.0 (2020-09-14)
 ===================
 
@@ -101,6 +102,9 @@ v1.4.0 (2019-11-04)
 
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 v1.3.0 (2019-10-29)
 ===================
 

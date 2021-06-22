@@ -18,6 +18,7 @@ import (
 const (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// HdrLen is the length of the Wrap Token's header
 	HdrLen = 16
 	// FillerByte is a filler in the WrapToken structure
@@ -32,6 +33,10 @@ const (
 	HdrLen = 16
 	// FillerByte is a filler in the WrapToken structure
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	HdrLen          = 16 // Length of the Wrap Token's header
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	FillerByte byte = 0xFF
 )
 

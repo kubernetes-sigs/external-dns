@@ -34,6 +34,7 @@ func EqualitiesOrDie(funcs ...interface{}) Equalities {
 	}
 	return e
 }
+<<<<<<< HEAD
 
 // Performs a shallow copy of the equalities map
 func (e Equalities) Copy() Equalities {
@@ -45,3 +46,6 @@ func (e Equalities) Copy() Equalities {
 
 	return result
 }
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

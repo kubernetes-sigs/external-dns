@@ -18,6 +18,7 @@ import (
 // A Form denotes a canonical representation of Unicode code points.
 // The Unicode-defined normalization and equivalence forms are:
 //
+<<<<<<< HEAD
 //	NFC   Unicode Normalization Form C
 //	NFD   Unicode Normalization Form D
 //	NFKC  Unicode Normalization Form KC
@@ -29,6 +30,19 @@ import (
 // proceed independently on both sides:
 //
 //	f(x) == append(f(x[0:n]), f(x[n:])...)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   NFC   Unicode Normalization Form C
+//   NFD   Unicode Normalization Form D
+//   NFKC  Unicode Normalization Form KC
+//   NFKD  Unicode Normalization Form KD
+//
+// For a Form f, this documentation uses the notation f(x) to mean
+// the bytes or string x converted to the given form.
+// A position n in x is called a boundary if conversion to the form can
+// proceed independently on both sides:
+//   f(x) == append(f(x[0:n]), f(x[n:])...)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // References: https://unicode.org/reports/tr15/ and
 // https://unicode.org/notes/tn5/.

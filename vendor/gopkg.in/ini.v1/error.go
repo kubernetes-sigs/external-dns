@@ -32,6 +32,7 @@ func IsErrDelimiterNotFound(err error) bool {
 func (err ErrDelimiterNotFound) Error() string {
 	return fmt.Sprintf("key-value delimiter not found: %s", err.Line)
 }
+<<<<<<< HEAD
 
 // ErrEmptyKeyName indicates the error type of no key name is found which there should be one.
 type ErrEmptyKeyName struct {
@@ -47,3 +48,6 @@ func IsErrEmptyKeyName(err error) bool {
 func (err ErrEmptyKeyName) Error() string {
 	return fmt.Sprintf("empty key name: %s", err.Line)
 }
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

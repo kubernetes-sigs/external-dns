@@ -1,4 +1,8 @@
 **/*.swp
 .idea
 .vscode
+<<<<<<< HEAD
 testing_*.coverprofile
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

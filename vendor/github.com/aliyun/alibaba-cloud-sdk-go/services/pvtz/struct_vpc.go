@@ -21,6 +21,7 @@ type Vpc struct {
 	VpcName    string `json:"VpcName" xml:"VpcName"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -29,6 +30,9 @@ type Vpc struct {
 =======
 	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	VpcId      string `json:"VpcId" xml:"VpcId"`
 	RegionName string `json:"RegionName" xml:"RegionName"`
 }

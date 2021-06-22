@@ -23,6 +23,7 @@ import (
 // DescribeGtmInstance invokes the alidns.DescribeGtmInstance API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstance(request *DescribeGtmInstanceRequest) (response *DescribeGtmInstanceResponse, err error) {
 	response = CreateDescribeGtmInstanceResponse()
 	err = client.DoAction(request, response)
@@ -205,6 +206,97 @@ func CreateDescribeGtmInstanceRequest() (request *DescribeGtmInstanceRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
+func (client *Client) DescribeGtmInstance(request *DescribeGtmInstanceRequest) (response *DescribeGtmInstanceResponse, err error) {
+	response = CreateDescribeGtmInstanceResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeGtmInstanceWithChan invokes the alidns.DescribeGtmInstance API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmInstanceWithChan(request *DescribeGtmInstanceRequest) (<-chan *DescribeGtmInstanceResponse, <-chan error) {
+	responseChan := make(chan *DescribeGtmInstanceResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeGtmInstance(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeGtmInstanceWithCallback invokes the alidns.DescribeGtmInstance API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmInstanceWithCallback(request *DescribeGtmInstanceRequest, callback func(response *DescribeGtmInstanceResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeGtmInstanceResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeGtmInstance(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeGtmInstanceRequest is the request struct for api DescribeGtmInstance
+type DescribeGtmInstanceRequest struct {
+	*requests.RpcRequest
+	InstanceId           string           `position:"Query" name:"InstanceId"`
+	UserClientIp         string           `position:"Query" name:"UserClientIp"`
+	Lang                 string           `position:"Query" name:"Lang"`
+	NeedDetailAttributes requests.Boolean `position:"Query" name:"NeedDetailAttributes"`
+}
+
+// DescribeGtmInstanceResponse is the response struct for api DescribeGtmInstance
+type DescribeGtmInstanceResponse struct {
+	*responses.BaseResponse
+	RequestId         string `json:"RequestId" xml:"RequestId"`
+	InstanceId        string `json:"InstanceId" xml:"InstanceId"`
+	InstanceName      string `json:"InstanceName" xml:"InstanceName"`
+	VersionCode       string `json:"VersionCode" xml:"VersionCode"`
+	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
+	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	Cname             string `json:"Cname" xml:"Cname"`
+	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
+	Ttl               int    `json:"Ttl" xml:"Ttl"`
+	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
+	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	AlertGroup        string `json:"AlertGroup" xml:"AlertGroup"`
+	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
+	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
+	AddressPoolNum    int    `json:"AddressPoolNum" xml:"AddressPoolNum"`
+}
+
+// CreateDescribeGtmInstanceRequest creates a request to invoke DescribeGtmInstance API
+func CreateDescribeGtmInstanceRequest() (request *DescribeGtmInstanceRequest) {
+	request = &DescribeGtmInstanceRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstance", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

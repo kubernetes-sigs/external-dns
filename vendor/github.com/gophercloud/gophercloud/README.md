@@ -11,6 +11,7 @@ Gophercloud is an OpenStack Go SDK.
 
 ## How to install
 
+<<<<<<< HEAD
 Reference a Gophercloud package in your code:
 
 ```Go
@@ -100,6 +101,58 @@ prompted for your password.
 > the below and presents it in an easier and more flexible way.
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+Before installing, you need to ensure that your [GOPATH environment variable](https://golang.org/doc/code.html#GOPATH)
+is pointing to an appropriate directory where you want to install Gophercloud:
+
+```bash
+mkdir $HOME/go
+export GOPATH=$HOME/go
+```
+
+To protect yourself against changes in your dependencies, we highly recommend choosing a
+[dependency management solution](https://github.com/golang/go/wiki/PackageManagementTools) for
+your projects, such as [godep](https://github.com/tools/godep). Once this is set up, you can install
+Gophercloud as a dependency like so:
+
+```bash
+go get github.com/gophercloud/gophercloud
+
+# Edit your code to import relevant packages from "github.com/gophercloud/gophercloud"
+
+godep save ./...
+```
+
+This will install all the source files you need into a `Godeps/_workspace` directory, which is
+referenceable from your own source files when you use the `godep go` command.
+
+## Getting started
+
+### Credentials
+
+Because you'll be hitting an API, you will need to retrieve your OpenStack
+credentials and either store them as environment variables or in your local Go
+files. The first method is recommended because it decouples credential
+information from source code, allowing you to push the latter to your version
+control system without any security risk.
+
+You will need to retrieve the following:
+
+* username
+* password
+* a valid Keystone identity URL
+
+For users that have the OpenStack dashboard installed, there's a shortcut. If
+you visit the `project/access_and_security` path in Horizon and click on the
+"Download OpenStack RC File" button at the top right hand corner, you will
+download a bash file that exports all of your access details to environment
+variables. To execute the file, run `source admin-openrc.sh` and you will be
+prompted for your password.
+
+### Authentication
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 Once you have access to your credentials, you can begin plugging them into
 Gophercloud. The next step is authentication, and this is handled by a base
 "Provider" struct. To get one, you can either pass in your credentials

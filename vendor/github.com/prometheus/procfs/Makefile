@@ -18,8 +18,12 @@ include Makefile.common
 	./ttar -C $(dir $*) -x -f $*.ttar
 	touch $@
 
+<<<<<<< HEAD
 fixtures: fixtures/.unpacked
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 update_fixtures:
 	rm -vf fixtures/.unpacked
 	./ttar -c -f fixtures.ttar fixtures/

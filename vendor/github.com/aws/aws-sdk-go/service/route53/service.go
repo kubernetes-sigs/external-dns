@@ -39,6 +39,7 @@ const (
 // aws.Config parameter to add your extra config.
 //
 // Example:
+<<<<<<< HEAD
 //
 //	mySession := session.Must(session.NewSession())
 //
@@ -119,6 +120,34 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				APIVersion:     "2013-04-01",
 				ResolvedRegion: resolvedRegion,
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//     mySession := session.Must(session.NewSession())
+//
+//     // Create a Route53 client from just a session.
+//     svc := route53.New(mySession)
+//
+//     // Create a Route53 client with additional configuration
+//     svc := route53.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+func New(p client.ConfigProvider, cfgs ...*aws.Config) *Route53 {
+	c := p.ClientConfig(EndpointsID, cfgs...)
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *Route53 {
+	svc := &Route53{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2013-04-01",
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			},
 			handlers,
 		),

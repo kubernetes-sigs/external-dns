@@ -24,6 +24,7 @@ import (
 type Config struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AutoRetry         bool              `default:"false"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -34,6 +35,10 @@ type Config struct {
 =======
 	AutoRetry         bool              `default:"false"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	AutoRetry         bool              `default:"true"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	MaxRetryTime      int               `default:"3"`
 	UserAgent         string            `default:""`
 	Debug             bool              `default:"false"`

@@ -67,6 +67,11 @@ Most tools should pass their command-line arguments (after any flags)
 uninterpreted to the loader, so that the loader can interpret them
 according to the conventions of the underlying build system.
 See the Example function for typical usage.
+<<<<<<< HEAD
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 */
 package packages // import "golang.org/x/tools/go/packages"
 

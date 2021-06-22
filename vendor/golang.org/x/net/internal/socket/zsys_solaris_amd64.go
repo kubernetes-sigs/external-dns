@@ -32,6 +32,7 @@ type cmsghdr struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const (
 	sizeofIovec  = 0x10
 	sizeofMsghdr = 0x30
@@ -188,4 +189,29 @@ const (
 	sizeofSockaddrInet6 = 0x20
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type sockaddrInet struct {
+	Family uint16
+	Port   uint16
+	Addr   [4]byte /* in_addr */
+	Zero   [8]int8
+}
+
+type sockaddrInet6 struct {
+	Family         uint16
+	Port           uint16
+	Flowinfo       uint32
+	Addr           [16]byte /* in6_addr */
+	Scope_id       uint32
+	X__sin6_src_id uint32
+}
+
+const (
+	sizeofIovec  = 0x10
+	sizeofMsghdr = 0x30
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x20
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

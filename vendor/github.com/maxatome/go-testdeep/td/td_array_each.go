@@ -27,6 +27,7 @@ var _ TestDeep = &tdArrayEach{}
 
 // ArrayEach operator has to be applied on arrays or slices or on
 // pointers on array/slice. It compares each item of data array/slice
+<<<<<<< HEAD
 // against expectedValue. During a match, all items have to match to
 // succeed.
 //
@@ -46,6 +47,28 @@ var _ TestDeep = &tdArrayEach{}
 //	  })),
 //	) // succeeds, each Person has Age field between 20 and 45
 func ArrayEach(expectedValue any) TestDeep {
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// against "expectedValue". During a match, all items have to match to
+// succeed.
+//
+//   got := [3]string{"foo", "bar", "biz"}
+//   td.Cmp(t, got, td.ArrayEach(td.Len(3)))         // succeeds
+//   td.Cmp(t, got, td.ArrayEach(td.HasPrefix("b"))) // fails coz "foo"
+//
+// Works on slices as well:
+//
+//   got := []Person{
+//     {Name: "Bob", Age: 42},
+//     {Name: "Alice", Age: 24},
+//   }
+//   td.Cmp(t, got, td.ArrayEach(
+//     td.Struct(Person{}, td.StructFields{
+//       Age: td.Between(20, 45),
+//     })),
+//   ) // succeeds, each Person has Age field between 20 and 45
+func ArrayEach(expectedValue interface{}) TestDeep {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return &tdArrayEach{
 		baseOKNil: newBaseOKNil(3),
 		expected:  reflect.ValueOf(expectedValue),

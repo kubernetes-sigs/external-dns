@@ -67,6 +67,7 @@ As this library is mostly an HTTP client, you can reuse all the existing tools a
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	cs := egoscale.NewClient("https://api.exoscale.com/v1", "EXO...", "...")
 	// sets a logger on stderr
 	cs.Logger = log.New(os.Stderr, "prefix", log.LstdFlags)
@@ -143,6 +144,23 @@ All the available APIs on the server and provided by the API Discovery plugin.
 
 	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
+	// sets a logger on stderr
+	cs.Logger = log.New(os.Stderr, "prefix", log.LstdFlags)
+	// activates the HTTP traces
+	cs.TraceOn()
+
+Nota bene: when running the tests or the egoscale library via another tool, e.g. the exo cli, the environment variable EXOSCALE_TRACE=prefix does the above configuration for you. As a developer using egoscale as a library, you'll find it more convenient to plug your favorite io.Writer as it's a Logger.
+
+
+APIs
+
+All the available APIs on the server and provided by the API Discovery plugin.
+
+	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	resp, err := cs.Request(&egoscale.ListAPIs{})
 	if err != nil {

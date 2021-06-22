@@ -2,6 +2,7 @@
 
 reviewers:
 <<<<<<< HEAD
+<<<<<<< HEAD
 - thockin
 - lavalamp
 - smarterclayton
@@ -134,3 +135,28 @@ reviewers:
   - dims
   - cjcullen
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- deads2k
+- brendandburns
+- derekwaynecarr
+- caesarxuchao
+- mikedanese
+- liggitt
+- nikhiljindal
+- gmarek
+- erictune
+- saad-ali
+- janetkuo
+- tallclair
+- eparis
+- dims
+- hongchaodeng
+- krousey
+- cjcullen
+- david-mcmahon
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

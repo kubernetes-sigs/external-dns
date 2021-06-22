@@ -24,11 +24,18 @@ type FireWallRuleServiceHandler struct {
 
 // FirewallRule represents a Vultr firewall rule
 type FirewallRule struct {
+<<<<<<< HEAD
 	ID     int    `json:"id"`
 	Action string `json:"action"`
 	// Deprecated:  Type should no longer be used. Instead, use IPType.
 	Type       string `json:"type"`
 	IPType     string `json:"ip_type"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ID         int    `json:"id"`
+	Action     string `json:"action"`
+	Type       string `json:"type"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Protocol   string `json:"protocol"`
 	Port       string `json:"port"`
 	Subnet     string `json:"subnet"`

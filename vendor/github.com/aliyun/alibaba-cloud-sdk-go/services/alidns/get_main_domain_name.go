@@ -23,6 +23,7 @@ import (
 // GetMainDomainName invokes the alidns.GetMainDomainName API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (response *GetMainDomainNameResponse, err error) {
 	response = CreateGetMainDomainNameResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateGetMainDomainNameRequest() (request *GetMainDomainNameRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
+func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (response *GetMainDomainNameResponse, err error) {
+	response = CreateGetMainDomainNameResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// GetMainDomainNameWithChan invokes the alidns.GetMainDomainName API asynchronously
+// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) GetMainDomainNameWithChan(request *GetMainDomainNameRequest) (<-chan *GetMainDomainNameResponse, <-chan error) {
+	responseChan := make(chan *GetMainDomainNameResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.GetMainDomainName(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// GetMainDomainNameWithCallback invokes the alidns.GetMainDomainName API asynchronously
+// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) GetMainDomainNameWithCallback(request *GetMainDomainNameRequest, callback func(response *GetMainDomainNameResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *GetMainDomainNameResponse
+		var err error
+		defer close(result)
+		response, err = client.GetMainDomainName(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// GetMainDomainNameRequest is the request struct for api GetMainDomainName
+type GetMainDomainNameRequest struct {
+	*requests.RpcRequest
+	InputString  string `position:"Query" name:"InputString"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// GetMainDomainNameResponse is the response struct for api GetMainDomainName
+type GetMainDomainNameResponse struct {
+	*responses.BaseResponse
+	RequestId   string `json:"RequestId" xml:"RequestId"`
+	DomainName  string `json:"DomainName" xml:"DomainName"`
+	RR          string `json:"RR" xml:"RR"`
+	DomainLevel int64  `json:"DomainLevel" xml:"DomainLevel"`
+}
+
+// CreateGetMainDomainNameRequest creates a request to invoke GetMainDomainName API
+func CreateGetMainDomainNameRequest() (request *GetMainDomainNameRequest) {
+	request = &GetMainDomainNameRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "GetMainDomainName", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

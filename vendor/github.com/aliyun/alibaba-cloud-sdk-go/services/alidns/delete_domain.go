@@ -23,6 +23,7 @@ import (
 // DeleteDomain invokes the alidns.DeleteDomain API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteDomain(request *DeleteDomainRequest) (response *DeleteDomainResponse, err error) {
 	response = CreateDeleteDomainResponse()
 	err = client.DoAction(request, response)
@@ -173,6 +174,82 @@ func CreateDeleteDomainRequest() (request *DeleteDomainRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/deletedomain.html
+func (client *Client) DeleteDomain(request *DeleteDomainRequest) (response *DeleteDomainResponse, err error) {
+	response = CreateDeleteDomainResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DeleteDomainWithChan invokes the alidns.DeleteDomain API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletedomain.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteDomainWithChan(request *DeleteDomainRequest) (<-chan *DeleteDomainResponse, <-chan error) {
+	responseChan := make(chan *DeleteDomainResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DeleteDomain(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DeleteDomainWithCallback invokes the alidns.DeleteDomain API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletedomain.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteDomainWithCallback(request *DeleteDomainRequest, callback func(response *DeleteDomainResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DeleteDomainResponse
+		var err error
+		defer close(result)
+		response, err = client.DeleteDomain(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DeleteDomainRequest is the request struct for api DeleteDomain
+type DeleteDomainRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DeleteDomainResponse is the response struct for api DeleteDomain
+type DeleteDomainResponse struct {
+	*responses.BaseResponse
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+}
+
+// CreateDeleteDomainRequest creates a request to invoke DeleteDomain API
+func CreateDeleteDomainRequest() (request *DeleteDomainRequest) {
+	request = &DeleteDomainRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteDomain", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

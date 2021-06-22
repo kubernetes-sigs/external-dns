@@ -467,6 +467,7 @@ func (p fileConfigurationProvider) Region() (value string, err error) {
 	if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		val, error := getRegionFromEnvVar()
 		if error != nil {
 			err = fmt.Errorf("region configuration is missing from file, nor for OCI_REGION env var")
@@ -695,4 +696,101 @@ func getRegionFromEnvVar() (string, error) {
 		return region, nil
 	}
 	return "", fmt.Errorf("did not find OCI_REGION env var")
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		return
+	}
+
+	return canStringBeRegion(value)
+}
+
+func getSecurityToken(filePath string) (string, error) {
+	expandedPath := expandPath(filePath)
+	tokenFileContent, err := ioutil.ReadFile(expandedPath)
+	if err != nil {
+		err = fmt.Errorf("can not read PrivateKey  from configuration file due to: %s", err.Error())
+		return "", err
+	}
+	return fmt.Sprintf("ST$%s", tokenFileContent), nil
+}
+
+// A configuration provider that look for information in  multiple configuration providers
+type composingConfigurationProvider struct {
+	Providers []ConfigurationProvider
+}
+
+// ComposingConfigurationProvider creates a composing configuration provider with the given slice of configuration providers
+// A composing provider will return the configuration of the first provider that has the required property
+// if no provider has the property it will return an error.
+func ComposingConfigurationProvider(providers []ConfigurationProvider) (ConfigurationProvider, error) {
+	if len(providers) == 0 {
+		return nil, fmt.Errorf("providers can not be an empty slice")
+	}
+
+	for i, p := range providers {
+		if p == nil {
+			return nil, fmt.Errorf("provider in position: %d is nil. ComposingConfiurationProvider does not support nil values", i)
+		}
+	}
+	return composingConfigurationProvider{Providers: providers}, nil
+}
+
+func (c composingConfigurationProvider) TenancyOCID() (string, error) {
+	for _, p := range c.Providers {
+		val, err := p.TenancyOCID()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("did not find a proper configuration for tenancy")
+}
+
+func (c composingConfigurationProvider) UserOCID() (string, error) {
+	for _, p := range c.Providers {
+		val, err := p.UserOCID()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("did not find a proper configuration for user")
+}
+
+func (c composingConfigurationProvider) KeyFingerprint() (string, error) {
+	for _, p := range c.Providers {
+		val, err := p.KeyFingerprint()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("did not find a proper configuration for keyFingerprint")
+}
+func (c composingConfigurationProvider) Region() (string, error) {
+	for _, p := range c.Providers {
+		val, err := p.Region()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("did not find a proper configuration for region")
+}
+
+func (c composingConfigurationProvider) KeyID() (string, error) {
+	for _, p := range c.Providers {
+		val, err := p.KeyID()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("did not find a proper configuration for key id")
+}
+
+func (c composingConfigurationProvider) PrivateRSAKey() (*rsa.PrivateKey, error) {
+	for _, p := range c.Providers {
+		val, err := p.PrivateRSAKey()
+		if err == nil {
+			return val, nil
+		}
+	}
+	return nil, fmt.Errorf("did not find a proper configuration for private key")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

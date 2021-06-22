@@ -46,6 +46,7 @@ func (c *Client) GetAccountSettings(ctx context.Context) (*AccountSettings, erro
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +197,39 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*AccountSettings), nil
+}
+
+// UpdateAccountSettings updates the settings associated with the account
+func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSettingsUpdateOptions) (*AccountSettings, error) {
+	var body string
+
+	e, err := c.AccountSettings.Endpoint()
+
+	if err != nil {
+		return nil, err
+	}
+
+	req := c.R(ctx).SetResult(&AccountSettings{})
+
+	if bodyData, err := json.Marshal(settings); err == nil {
+		body = string(bodyData)
+	} else {
+		return nil, NewError(err)
+	}
+
+	r, err := coupleAPIErrors(req.
+		SetBody(body).
+		Put(e))
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

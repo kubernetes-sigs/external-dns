@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 module github.com/Raffo/knolog
 
 go 1.16
@@ -42,3 +43,11 @@ go 1.13
 
 require github.com/go-logr/logr v0.1.0
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+module k8s.io/klog/v2
+
+go 1.13
+
+require github.com/go-logr/logr v0.1.0
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

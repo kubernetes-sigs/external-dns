@@ -2,7 +2,16 @@
 
 # approval on api packages bubbles to api-approvers
 reviewers:
+<<<<<<< HEAD
   - sig-auth-authenticators-approvers
   - sig-auth-authenticators-reviewers
 labels:
   - sig/auth
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- sig-auth-authenticators-approvers
+- sig-auth-authenticators-reviewers
+labels:
+- sig/auth
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

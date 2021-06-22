@@ -21,6 +21,7 @@
 // tag is deprecated and thus should not be used.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build js || appengine || safe || disableunsafe || !go1.4
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -29,6 +30,9 @@
 =======
 //go:build js || appengine || safe || disableunsafe || !go1.4
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build js appengine safe disableunsafe !go1.4
 
 package dark

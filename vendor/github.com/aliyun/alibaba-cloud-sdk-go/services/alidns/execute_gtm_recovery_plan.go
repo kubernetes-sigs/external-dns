@@ -23,6 +23,7 @@ import (
 // ExecuteGtmRecoveryPlan invokes the alidns.ExecuteGtmRecoveryPlan API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) ExecuteGtmRecoveryPlan(request *ExecuteGtmRecoveryPlanRequest) (response *ExecuteGtmRecoveryPlanResponse, err error) {
 	response = CreateExecuteGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -171,6 +172,81 @@ func CreateExecuteGtmRecoveryPlanRequest() (request *ExecuteGtmRecoveryPlanReque
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/executegtmrecoveryplan.html
+func (client *Client) ExecuteGtmRecoveryPlan(request *ExecuteGtmRecoveryPlanRequest) (response *ExecuteGtmRecoveryPlanResponse, err error) {
+	response = CreateExecuteGtmRecoveryPlanResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// ExecuteGtmRecoveryPlanWithChan invokes the alidns.ExecuteGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/executegtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ExecuteGtmRecoveryPlanWithChan(request *ExecuteGtmRecoveryPlanRequest) (<-chan *ExecuteGtmRecoveryPlanResponse, <-chan error) {
+	responseChan := make(chan *ExecuteGtmRecoveryPlanResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.ExecuteGtmRecoveryPlan(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// ExecuteGtmRecoveryPlanWithCallback invokes the alidns.ExecuteGtmRecoveryPlan API asynchronously
+// api document: https://help.aliyun.com/api/alidns/executegtmrecoveryplan.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) ExecuteGtmRecoveryPlanWithCallback(request *ExecuteGtmRecoveryPlanRequest, callback func(response *ExecuteGtmRecoveryPlanResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *ExecuteGtmRecoveryPlanResponse
+		var err error
+		defer close(result)
+		response, err = client.ExecuteGtmRecoveryPlan(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// ExecuteGtmRecoveryPlanRequest is the request struct for api ExecuteGtmRecoveryPlan
+type ExecuteGtmRecoveryPlanRequest struct {
+	*requests.RpcRequest
+	UserClientIp   string           `position:"Query" name:"UserClientIp"`
+	RecoveryPlanId requests.Integer `position:"Query" name:"RecoveryPlanId"`
+	Lang           string           `position:"Query" name:"Lang"`
+}
+
+// ExecuteGtmRecoveryPlanResponse is the response struct for api ExecuteGtmRecoveryPlan
+type ExecuteGtmRecoveryPlanResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateExecuteGtmRecoveryPlanRequest creates a request to invoke ExecuteGtmRecoveryPlan API
+func CreateExecuteGtmRecoveryPlanRequest() (request *ExecuteGtmRecoveryPlanRequest) {
+	request = &ExecuteGtmRecoveryPlanRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "ExecuteGtmRecoveryPlan", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

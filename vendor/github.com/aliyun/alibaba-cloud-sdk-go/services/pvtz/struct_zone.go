@@ -19,6 +19,7 @@ package pvtz
 type Zone struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
 	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
 	Remark          string       `json:"Remark" xml:"Remark"`
@@ -77,4 +78,18 @@ type Zone struct {
 	ResourceTags    ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
 	Vpcs            Vpcs         `json:"Vpcs" xml:"Vpcs"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
+	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
+	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
+	Remark          string `json:"Remark" xml:"Remark"`
+	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
+	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
+	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
+	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

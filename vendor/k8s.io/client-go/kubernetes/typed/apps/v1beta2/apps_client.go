@@ -21,6 +21,7 @@ package v1beta2
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta2 "k8s.io/api/apps/v1beta2"
@@ -161,6 +162,55 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AppsV1beta2Client, 
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta2 "k8s.io/api/apps/v1beta2"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type AppsV1beta2Interface interface {
+	RESTClient() rest.Interface
+	ControllerRevisionsGetter
+	DaemonSetsGetter
+	DeploymentsGetter
+	ReplicaSetsGetter
+	StatefulSetsGetter
+}
+
+// AppsV1beta2Client is used to interact with features provided by the apps group.
+type AppsV1beta2Client struct {
+	restClient rest.Interface
+}
+
+func (c *AppsV1beta2Client) ControllerRevisions(namespace string) ControllerRevisionInterface {
+	return newControllerRevisions(c, namespace)
+}
+
+func (c *AppsV1beta2Client) DaemonSets(namespace string) DaemonSetInterface {
+	return newDaemonSets(c, namespace)
+}
+
+func (c *AppsV1beta2Client) Deployments(namespace string) DeploymentInterface {
+	return newDeployments(c, namespace)
+}
+
+func (c *AppsV1beta2Client) ReplicaSets(namespace string) ReplicaSetInterface {
+	return newReplicaSets(c, namespace)
+}
+
+func (c *AppsV1beta2Client) StatefulSets(namespace string) StatefulSetInterface {
+	return newStatefulSets(c, namespace)
+}
+
+// NewForConfig creates a new AppsV1beta2Client for the given config.
+func NewForConfig(c *rest.Config) (*AppsV1beta2Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

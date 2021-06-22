@@ -16,6 +16,7 @@ const billingHistoryBasePath = "v2/customers/my/billing_history"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#operation/list_billing_history
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -44,6 +45,10 @@ const billingHistoryBasePath = "v2/customers/my/billing_history"
 =======
 // See: https://docs.digitalocean.com/reference/api/api-reference/#operation/list_billing_history
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#billing_history
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type BillingHistoryService interface {
 	List(context.Context, *ListOptions) (*BillingHistory, *Response, error)
 }

@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CronJobLister interface {
 	// List lists all CronJobs in the indexer.
@@ -226,6 +227,45 @@ type CronJobNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type CronJobLister interface {
+	// List lists all CronJobs in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.CronJob, err error)
+	// CronJobs returns an object that can list and get CronJobs.
+	CronJobs(namespace string) CronJobNamespaceLister
+	CronJobListerExpansion
+}
+
+// cronJobLister implements the CronJobLister interface.
+type cronJobLister struct {
+	indexer cache.Indexer
+}
+
+// NewCronJobLister returns a new CronJobLister.
+func NewCronJobLister(indexer cache.Indexer) CronJobLister {
+	return &cronJobLister{indexer: indexer}
+}
+
+// List lists all CronJobs in the indexer.
+func (s *cronJobLister) List(selector labels.Selector) (ret []*v1beta1.CronJob, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.CronJob))
+	})
+	return ret, err
+}
+
+// CronJobs returns an object that can list and get CronJobs.
+func (s *cronJobLister) CronJobs(namespace string) CronJobNamespaceLister {
+	return cronJobNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// CronJobNamespaceLister helps list and get CronJobs.
+type CronJobNamespaceLister interface {
+	// List lists all CronJobs in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.CronJob, err error)
+	// Get retrieves the CronJob from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.CronJob, error)
 	CronJobNamespaceListerExpansion
 }

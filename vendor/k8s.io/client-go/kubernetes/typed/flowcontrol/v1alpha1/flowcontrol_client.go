@@ -21,6 +21,7 @@ package v1alpha1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
@@ -131,6 +132,40 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*FlowcontrolV1alpha1
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type FlowcontrolV1alpha1Interface interface {
+	RESTClient() rest.Interface
+	FlowSchemasGetter
+	PriorityLevelConfigurationsGetter
+}
+
+// FlowcontrolV1alpha1Client is used to interact with features provided by the flowcontrol.apiserver.k8s.io group.
+type FlowcontrolV1alpha1Client struct {
+	restClient rest.Interface
+}
+
+func (c *FlowcontrolV1alpha1Client) FlowSchemas() FlowSchemaInterface {
+	return newFlowSchemas(c)
+}
+
+func (c *FlowcontrolV1alpha1Client) PriorityLevelConfigurations() PriorityLevelConfigurationInterface {
+	return newPriorityLevelConfigurations(c)
+}
+
+// NewForConfig creates a new FlowcontrolV1alpha1Client for the given config.
+func NewForConfig(c *rest.Config) (*FlowcontrolV1alpha1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

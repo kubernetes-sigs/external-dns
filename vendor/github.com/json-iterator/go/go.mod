@@ -10,6 +10,7 @@ require (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	github.com/modern-go/reflect2 v1.0.2
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -28,5 +29,9 @@ require (
 =======
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	github.com/stretchr/testify v1.3.0
 )

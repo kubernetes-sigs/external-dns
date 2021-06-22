@@ -193,6 +193,7 @@ type tokenResponse struct {
 // each time it is called
 func (a *Authenticator) getNonce() (string, error) {
 	randomBytes := make([]byte, 8)
+<<<<<<< HEAD
 
 	if _, err := rand.Read(randomBytes); err != nil {
 		return "", fmt.Errorf("error when getting random data for new nonce: %w", err)
@@ -238,6 +239,22 @@ func (a *Authenticator) getAuthRequest() (rest.Request, error) {
 =======
 	labelPostFix := time.Now().UnixNano()
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	_, err := rand.Read(randomBytes)
+
+	if err != nil {
+		return "", fmt.Errorf("error when getting random data for new nonce: %w", err)
+	}
+
+	// convert to hex
+	return fmt.Sprintf("%02x", randomBytes), nil
+}
+
+// getAuthRequest returns a rest.Request filled with a new AuthRequest
+func (a *Authenticator) getAuthRequest() (rest.Request, error) {
+	labelPostFix := time.Now().Unix()
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	nonce, err := a.getNonce()
 	if err != nil {

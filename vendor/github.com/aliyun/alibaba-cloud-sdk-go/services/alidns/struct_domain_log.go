@@ -17,6 +17,7 @@ package alidns
 
 // DomainLog is a nested struct in alidns response
 type DomainLog struct {
+<<<<<<< HEAD
 	Action          string `json:"Action" xml:"Action"`
 	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
@@ -24,4 +25,14 @@ type DomainLog struct {
 	Message         string `json:"Message" xml:"Message"`
 	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
 	DomainName      string `json:"DomainName" xml:"DomainName"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
+	DomainName      string `json:"DomainName" xml:"DomainName"`
+	Action          string `json:"Action" xml:"Action"`
+	Message         string `json:"Message" xml:"Message"`
+	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

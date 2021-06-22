@@ -23,6 +23,7 @@ import (
 // DescribeRecordLogs invokes the alidns.DescribeRecordLogs API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeRecordLogs(request *DescribeRecordLogsRequest) (response *DescribeRecordLogsResponse, err error) {
 	response = CreateDescribeRecordLogsResponse()
 	err = client.DoAction(request, response)
@@ -189,6 +190,90 @@ func CreateDescribeRecordLogsRequest() (request *DescribeRecordLogsRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describerecordlogs.html
+func (client *Client) DescribeRecordLogs(request *DescribeRecordLogsRequest) (response *DescribeRecordLogsResponse, err error) {
+	response = CreateDescribeRecordLogsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeRecordLogsWithChan invokes the alidns.DescribeRecordLogs API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordLogsWithChan(request *DescribeRecordLogsRequest) (<-chan *DescribeRecordLogsResponse, <-chan error) {
+	responseChan := make(chan *DescribeRecordLogsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeRecordLogs(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeRecordLogsWithCallback invokes the alidns.DescribeRecordLogs API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordlogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordLogsWithCallback(request *DescribeRecordLogsRequest, callback func(response *DescribeRecordLogsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeRecordLogsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeRecordLogs(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeRecordLogsRequest is the request struct for api DescribeRecordLogs
+type DescribeRecordLogsRequest struct {
+	*requests.RpcRequest
+	DomainName   string           `position:"Query" name:"DomainName"`
+	StartDate    string           `position:"Query" name:"StartDate"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	EndDate      string           `position:"Query" name:"endDate"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	KeyWord      string           `position:"Query" name:"KeyWord"`
+}
+
+// DescribeRecordLogsResponse is the response struct for api DescribeRecordLogs
+type DescribeRecordLogsResponse struct {
+	*responses.BaseResponse
+	RequestId  string     `json:"RequestId" xml:"RequestId"`
+	TotalCount int64      `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int64      `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int64      `json:"PageSize" xml:"PageSize"`
+	RecordLogs RecordLogs `json:"RecordLogs" xml:"RecordLogs"`
+}
+
+// CreateDescribeRecordLogsRequest creates a request to invoke DescribeRecordLogs API
+func CreateDescribeRecordLogsRequest() (request *DescribeRecordLogsRequest) {
+	request = &DescribeRecordLogsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeRecordLogs", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

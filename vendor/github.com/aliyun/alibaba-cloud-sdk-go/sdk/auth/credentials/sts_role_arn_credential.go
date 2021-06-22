@@ -18,6 +18,7 @@ type RamRoleArnCredential struct {
 	Policy                string
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	StsRegion             string
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -26,6 +27,9 @@ type RamRoleArnCredential struct {
 =======
 	StsRegion             string
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // Deprecated: Use RamRoleArnCredential in this package instead.

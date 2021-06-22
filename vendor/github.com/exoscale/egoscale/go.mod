@@ -4,6 +4,7 @@ module github.com/exoscale/egoscale
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/deepmap/oapi-codegen v1.6.1
@@ -48,3 +49,7 @@ require github.com/gofrs/uuid v3.2.0+incompatible
 =======
 require github.com/gofrs/uuid v3.2.0+incompatible
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+require github.com/gofrs/uuid v3.2.0+incompatible
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

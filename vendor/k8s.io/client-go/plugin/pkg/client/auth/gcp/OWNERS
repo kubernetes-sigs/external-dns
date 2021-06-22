@@ -1,8 +1,17 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
+<<<<<<< HEAD
   - cjcullen
 reviewers:
   - cjcullen
 emeritus_approvers:
   - jlowdermilk
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- cjcullen
+- jlowdermilk
+reviewers:
+- cjcullen
+- jlowdermilk
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

@@ -14,7 +14,12 @@ import (
 	"github.com/maxatome/go-testdeep/helpers/tdutil"
 )
 
+<<<<<<< HEAD
 // CopyValue does its best to copy val in a new [reflect.Value] instance.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// CopyValue does its best to copy val in a new reflect.Value instance.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func CopyValue(val reflect.Value) (reflect.Value, bool) {
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {

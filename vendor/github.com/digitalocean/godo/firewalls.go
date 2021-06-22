@@ -16,6 +16,7 @@ const firewallsBasePath = "/v2/firewalls"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Firewalls
 type FirewallsService interface {
 	Get(context.Context, string) (*Firewall, *Response, error)
@@ -436,6 +437,102 @@ type Destinations struct {
 =======
 	KubernetesIDs    []string `json:"kubernetes_ids,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#firewalls
+type FirewallsService interface {
+	Get(context.Context, string) (*Firewall, *Response, error)
+	Create(context.Context, *FirewallRequest) (*Firewall, *Response, error)
+	Update(context.Context, string, *FirewallRequest) (*Firewall, *Response, error)
+	Delete(context.Context, string) (*Response, error)
+	List(context.Context, *ListOptions) ([]Firewall, *Response, error)
+	ListByDroplet(context.Context, int, *ListOptions) ([]Firewall, *Response, error)
+	AddDroplets(context.Context, string, ...int) (*Response, error)
+	RemoveDroplets(context.Context, string, ...int) (*Response, error)
+	AddTags(context.Context, string, ...string) (*Response, error)
+	RemoveTags(context.Context, string, ...string) (*Response, error)
+	AddRules(context.Context, string, *FirewallRulesRequest) (*Response, error)
+	RemoveRules(context.Context, string, *FirewallRulesRequest) (*Response, error)
+}
+
+// FirewallsServiceOp handles communication with Firewalls methods of the DigitalOcean API.
+type FirewallsServiceOp struct {
+	client *Client
+}
+
+// Firewall represents a DigitalOcean Firewall configuration.
+type Firewall struct {
+	ID             string          `json:"id"`
+	Name           string          `json:"name"`
+	Status         string          `json:"status"`
+	InboundRules   []InboundRule   `json:"inbound_rules"`
+	OutboundRules  []OutboundRule  `json:"outbound_rules"`
+	DropletIDs     []int           `json:"droplet_ids"`
+	Tags           []string        `json:"tags"`
+	Created        string          `json:"created_at"`
+	PendingChanges []PendingChange `json:"pending_changes"`
+}
+
+// String creates a human-readable description of a Firewall.
+func (fw Firewall) String() string {
+	return Stringify(fw)
+}
+
+func (fw Firewall) URN() string {
+	return ToURN("Firewall", fw.ID)
+}
+
+// FirewallRequest represents the configuration to be applied to an existing or a new Firewall.
+type FirewallRequest struct {
+	Name          string         `json:"name"`
+	InboundRules  []InboundRule  `json:"inbound_rules"`
+	OutboundRules []OutboundRule `json:"outbound_rules"`
+	DropletIDs    []int          `json:"droplet_ids"`
+	Tags          []string       `json:"tags"`
+}
+
+// FirewallRulesRequest represents rules configuration to be applied to an existing Firewall.
+type FirewallRulesRequest struct {
+	InboundRules  []InboundRule  `json:"inbound_rules"`
+	OutboundRules []OutboundRule `json:"outbound_rules"`
+}
+
+// InboundRule represents a DigitalOcean Firewall inbound rule.
+type InboundRule struct {
+	Protocol  string   `json:"protocol,omitempty"`
+	PortRange string   `json:"ports,omitempty"`
+	Sources   *Sources `json:"sources"`
+}
+
+// OutboundRule represents a DigitalOcean Firewall outbound rule.
+type OutboundRule struct {
+	Protocol     string        `json:"protocol,omitempty"`
+	PortRange    string        `json:"ports,omitempty"`
+	Destinations *Destinations `json:"destinations"`
+}
+
+// Sources represents a DigitalOcean Firewall InboundRule sources.
+type Sources struct {
+	Addresses        []string `json:"addresses,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	DropletIDs       []int    `json:"droplet_ids,omitempty"`
+	LoadBalancerUIDs []string `json:"load_balancer_uids,omitempty"`
+}
+
+// PendingChange represents a DigitalOcean Firewall status details.
+type PendingChange struct {
+	DropletID int    `json:"droplet_id,omitempty"`
+	Removing  bool   `json:"removing,omitempty"`
+	Status    string `json:"status,omitempty"`
+}
+
+// Destinations represents a DigitalOcean Firewall OutboundRule destinations.
+type Destinations struct {
+	Addresses        []string `json:"addresses,omitempty"`
+	Tags             []string `json:"tags,omitempty"`
+	DropletIDs       []int    `json:"droplet_ids,omitempty"`
+	LoadBalancerUIDs []string `json:"load_balancer_uids,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 var _ FirewallsService = &FirewallsServiceOp{}

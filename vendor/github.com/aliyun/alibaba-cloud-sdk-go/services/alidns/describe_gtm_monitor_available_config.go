@@ -23,6 +23,7 @@ import (
 // DescribeGtmMonitorAvailableConfig invokes the alidns.DescribeGtmMonitorAvailableConfig API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMonitorAvailableConfigRequest) (response *DescribeGtmMonitorAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -171,6 +172,81 @@ func CreateDescribeGtmMonitorAvailableConfigRequest() (request *DescribeGtmMonit
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
+func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMonitorAvailableConfigRequest) (response *DescribeGtmMonitorAvailableConfigResponse, err error) {
+	response = CreateDescribeGtmMonitorAvailableConfigResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeGtmMonitorAvailableConfigWithChan invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmMonitorAvailableConfigWithChan(request *DescribeGtmMonitorAvailableConfigRequest) (<-chan *DescribeGtmMonitorAvailableConfigResponse, <-chan error) {
+	responseChan := make(chan *DescribeGtmMonitorAvailableConfigResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeGtmMonitorAvailableConfig(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeGtmMonitorAvailableConfigWithCallback invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeGtmMonitorAvailableConfigWithCallback(request *DescribeGtmMonitorAvailableConfigRequest, callback func(response *DescribeGtmMonitorAvailableConfigResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeGtmMonitorAvailableConfigResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeGtmMonitorAvailableConfig(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeGtmMonitorAvailableConfigRequest is the request struct for api DescribeGtmMonitorAvailableConfig
+type DescribeGtmMonitorAvailableConfigRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeGtmMonitorAvailableConfigResponse is the response struct for api DescribeGtmMonitorAvailableConfig
+type DescribeGtmMonitorAvailableConfigResponse struct {
+	*responses.BaseResponse
+	RequestId    string                                          `json:"RequestId" xml:"RequestId"`
+	IspCityNodes IspCityNodesInDescribeGtmMonitorAvailableConfig `json:"IspCityNodes" xml:"IspCityNodes"`
+}
+
+// CreateDescribeGtmMonitorAvailableConfigRequest creates a request to invoke DescribeGtmMonitorAvailableConfig API
+func CreateDescribeGtmMonitorAvailableConfigRequest() (request *DescribeGtmMonitorAvailableConfigRequest) {
+	request = &DescribeGtmMonitorAvailableConfigRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorAvailableConfig", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

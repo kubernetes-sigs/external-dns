@@ -21,6 +21,7 @@ package envconfig
 
 import (
 	"os"
+<<<<<<< HEAD
 	"strconv"
 	"strings"
 )
@@ -167,3 +168,18 @@ func uint64FromEnv(envVar string, def, min, max uint64) uint64 {
 	}
 	return v
 }
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strings"
+)
+
+const (
+	prefix   = "GRPC_GO_"
+	retryStr = prefix + "RETRY"
+)
+
+var (
+	// Retry is set if retry is explicitly enabled via "GRPC_GO_RETRY=on".
+	Retry = strings.EqualFold(os.Getenv(retryStr), "on")
+)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

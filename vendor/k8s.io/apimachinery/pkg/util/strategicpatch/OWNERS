@@ -1,8 +1,17 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
+<<<<<<< HEAD
   - pwittrock
 reviewers:
   - apelisse
 emeritus_approvers:
   - mengqiy
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- pwittrock
+- mengqiy
+reviewers:
+- mengqiy
+- apelisse
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

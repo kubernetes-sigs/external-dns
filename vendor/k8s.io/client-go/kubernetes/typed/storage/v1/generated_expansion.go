@@ -22,8 +22,12 @@ type CSIDriverExpansion interface{}
 
 type CSINodeExpansion interface{}
 
+<<<<<<< HEAD
 type CSIStorageCapacityExpansion interface{}
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type StorageClassExpansion interface{}
 
 type VolumeAttachmentExpansion interface{}

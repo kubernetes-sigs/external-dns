@@ -23,6 +23,7 @@ import (
 // DescribeRecordStatistics invokes the alidns.DescribeRecordStatistics API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeRecordStatistics(request *DescribeRecordStatisticsRequest) (response *DescribeRecordStatisticsResponse, err error) {
 	response = CreateDescribeRecordStatisticsResponse()
 	err = client.DoAction(request, response)
@@ -181,6 +182,85 @@ func CreateDescribeRecordStatisticsRequest() (request *DescribeRecordStatisticsR
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describerecordstatistics.html
+func (client *Client) DescribeRecordStatistics(request *DescribeRecordStatisticsRequest) (response *DescribeRecordStatisticsResponse, err error) {
+	response = CreateDescribeRecordStatisticsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeRecordStatisticsWithChan invokes the alidns.DescribeRecordStatistics API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordstatistics.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordStatisticsWithChan(request *DescribeRecordStatisticsRequest) (<-chan *DescribeRecordStatisticsResponse, <-chan error) {
+	responseChan := make(chan *DescribeRecordStatisticsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeRecordStatistics(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeRecordStatisticsWithCallback invokes the alidns.DescribeRecordStatistics API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describerecordstatistics.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeRecordStatisticsWithCallback(request *DescribeRecordStatisticsRequest, callback func(response *DescribeRecordStatisticsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeRecordStatisticsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeRecordStatistics(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeRecordStatisticsRequest is the request struct for api DescribeRecordStatistics
+type DescribeRecordStatisticsRequest struct {
+	*requests.RpcRequest
+	Rr           string `position:"Query" name:"Rr"`
+	DomainName   string `position:"Query" name:"DomainName"`
+	StartDate    string `position:"Query" name:"StartDate"`
+	EndDate      string `position:"Query" name:"EndDate"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeRecordStatisticsResponse is the response struct for api DescribeRecordStatistics
+type DescribeRecordStatisticsResponse struct {
+	*responses.BaseResponse
+	RequestId  string                               `json:"RequestId" xml:"RequestId"`
+	Statistics StatisticsInDescribeRecordStatistics `json:"Statistics" xml:"Statistics"`
+}
+
+// CreateDescribeRecordStatisticsRequest creates a request to invoke DescribeRecordStatistics API
+func CreateDescribeRecordStatisticsRequest() (request *DescribeRecordStatisticsRequest) {
+	request = &DescribeRecordStatisticsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeRecordStatistics", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

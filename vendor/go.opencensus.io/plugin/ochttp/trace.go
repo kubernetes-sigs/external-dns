@@ -210,6 +210,7 @@ func TraceStatus(httpStatusCode int, statusLine string) trace.Status {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -247,6 +248,10 @@ func TraceStatus(httpStatusCode int, statusLine string) trace.Status {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	}
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return trace.Status{Code: code, Message: codeToStr[code]}
 }
 

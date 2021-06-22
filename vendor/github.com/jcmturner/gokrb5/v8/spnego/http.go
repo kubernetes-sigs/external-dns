@@ -118,6 +118,7 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 		}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -128,6 +129,9 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return c.Do(req)
 	}
 	return resp, err

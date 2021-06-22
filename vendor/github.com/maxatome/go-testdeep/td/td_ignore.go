@@ -20,6 +20,7 @@ type tdIgnore struct {
 // input(Ignore): all
 
 // Ignore operator is always true, whatever data is. It is useful when
+<<<<<<< HEAD
 // comparing a slice with [Slice] and wanting to ignore some indexes,
 // for example (if you don't want to use [SuperSliceOf]). Or comparing
 // a struct with [SStruct] and wanting to ignore some fields:
@@ -88,6 +89,22 @@ type tdIgnore struct {
 //	  }),
 //	)
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// comparing a slice with Slice and wanting to ignore some indexes,
+// for example. Or comparing a struct with SStruct and wanting to
+// ignore some fields:
+//
+//   td.Cmp(t, td.SStruct(
+//     Person{
+//       Name: "John Doe",
+//     },
+//     td.StructFields{
+//       Age:      td.Between(40, 45),
+//       Children: td.Ignore(),
+//     }),
+//   )
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func Ignore() TestDeep {
 	return &tdIgnore{
 		baseOKNil: newBaseOKNil(3),

@@ -36,6 +36,7 @@ func ParseUnixCredentials(m *SocketControlMessage) (*Ucred, error) {
 }
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // PktInfo4 encodes Inet4Pktinfo into a socket control message of type IP_PKTINFO.
 func PktInfo4(info *Inet4Pktinfo) []byte {
@@ -140,3 +141,6 @@ func ParseOrigDstAddr(m *SocketControlMessage) (Sockaddr, error) {
 	}
 }
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

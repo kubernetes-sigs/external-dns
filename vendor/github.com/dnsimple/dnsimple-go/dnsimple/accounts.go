@@ -29,6 +29,7 @@ type AccountsResponse struct {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // AccountInvitation represents an invitation to a DNSimple account.
 type AccountInvitation struct {
 	ID                   int64  `json:"id,omitempty"`
@@ -59,6 +60,9 @@ type AccountInvitation struct {
 }
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // ListAccounts list the accounts for an user.
 //
 // See https://developer.dnsimple.com/v2/accounts/#list

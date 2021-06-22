@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -125,4 +126,21 @@ func ParseTimeout(duration string) (time.Duration, error) {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"strconv"
+	"time"
+)
+
+// ParseTimeout returns a parsed duration from a string
+// A duration string value must be a positive integer, optionally followed by a corresponding time unit (s|m|h).
+func ParseTimeout(duration string) (time.Duration, error) {
+	if i, err := strconv.ParseInt(duration, 10, 64); err == nil && i >= 0 {
+		return (time.Duration(i) * time.Second), nil
+	}
+	if requestTimeout, err := time.ParseDuration(duration); err == nil {
+		return requestTimeout, nil
+	}
+	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

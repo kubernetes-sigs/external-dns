@@ -184,6 +184,7 @@ var ValidateResponseHandler = request.NamedHandler{Name: "core.ValidateResponseH
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		r.Error = awserr.New("UnknownError", "unknown error", r.Error)
 	}
 }}
@@ -416,6 +417,56 @@ var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointH
 		// Was any endpoint provided by the user, or one was derived by the
 		// SDK's endpoint resolver?
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		r.Error = awserr.New("UnknownError", "unknown error", nil)
+	}
+}}
+
+// AfterRetryHandler performs final checks to determine if the request should
+// be retried and how long to delay.
+var AfterRetryHandler = request.NamedHandler{
+	Name: "core.AfterRetryHandler",
+	Fn: func(r *request.Request) {
+		// If one of the other handlers already set the retry state
+		// we don't want to override it based on the service's state
+		if r.Retryable == nil || aws.BoolValue(r.Config.EnforceShouldRetryCheck) {
+			r.Retryable = aws.Bool(r.ShouldRetry(r))
+		}
+
+		if r.WillRetry() {
+			r.RetryDelay = r.RetryRules(r)
+
+			if sleepFn := r.Config.SleepDelay; sleepFn != nil {
+				// Support SleepDelay for backwards compatibility and testing
+				sleepFn(r.RetryDelay)
+			} else if err := aws.SleepWithContext(r.Context(), r.RetryDelay); err != nil {
+				r.Error = awserr.New(request.CanceledErrorCode,
+					"request context canceled", err)
+				r.Retryable = aws.Bool(false)
+				return
+			}
+
+			// when the expired token exception occurs the credentials
+			// need to be expired locally so that the next request to
+			// get credentials will trigger a credentials refresh.
+			if r.IsErrorExpired() {
+				r.Config.Credentials.Expire()
+			}
+
+			r.RetryCount++
+			r.Error = nil
+		}
+	}}
+
+// ValidateEndpointHandler is a request handler to validate a request had the
+// appropriate Region and Endpoint set. Will set r.Error if the endpoint or
+// region is not valid.
+var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointHandler", Fn: func(r *request.Request) {
+	if r.ClientInfo.SigningRegion == "" && aws.StringValue(r.Config.Region) == "" {
+		r.Error = aws.ErrMissingRegion
+	} else if r.ClientInfo.Endpoint == "" {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		r.Error = aws.ErrMissingEndpoint
 	}
 }}

@@ -23,6 +23,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -56,6 +57,15 @@ package k8s.io.apimachinery.pkg.util.intstr;
 
 // Package-wide variables from generator "generated".
 option go_package = "k8s.io/apimachinery/pkg/util/intstr";
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+syntax = 'proto2';
+
+package k8s.io.apimachinery.pkg.util.intstr;
+
+// Package-wide variables from generator "generated".
+option go_package = "intstr";
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 // IntOrString is a type that can hold an int32 or a string.  When used in
 // JSON or YAML marshalling and unmarshalling, it produces or consumes the

@@ -45,6 +45,7 @@ client.Client from an authcfg.Info.
 
 Example:
 
+<<<<<<< HEAD
 	import (
 	    "pkg/client"
 	    "pkg/client/auth"
@@ -143,6 +144,44 @@ type Info struct {
 =======
 	BearerToken string `datapolicy:"token"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+    import (
+        "pkg/client"
+        "pkg/client/auth"
+    )
+
+    info, err := auth.LoadFromFile(filename)
+    if err != nil {
+      // handle error
+    }
+    clientConfig = client.Config{}
+    clientConfig.Host = "example.com:4901"
+    clientConfig = info.MergeWithConfig()
+    client := client.New(clientConfig)
+    client.Pods(ns).List()
+*/
+package auth
+
+// TODO: need a way to rotate Tokens.  Therefore, need a way for client object to be reset when the authcfg is updated.
+import (
+	"encoding/json"
+	"io/ioutil"
+	"os"
+
+	restclient "k8s.io/client-go/rest"
+)
+
+// Info holds Kubernetes API authorization config.  It is intended
+// to be read/written from a file as a JSON object.
+type Info struct {
+	User        string
+	Password    string
+	CAFile      string
+	CertFile    string
+	KeyFile     string
+	BearerToken string
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Insecure    *bool
 }
 

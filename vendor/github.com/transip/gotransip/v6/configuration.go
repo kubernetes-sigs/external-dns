@@ -1,6 +1,7 @@
 package gotransip
 
 import (
+<<<<<<< HEAD
 	"io"
 	"net/http"
 	"time"
@@ -49,6 +50,17 @@ const (
 =======
 	libraryVersion  = "6.17.0"
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"github.com/transip/gotransip/v6/authenticator"
+	"io"
+	"net/http"
+	"time"
+)
+
+const (
+	libraryVersion  = "6.6.0"
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	defaultBasePath = "https://api.transip.nl/v6"
 	userAgent       = "go-client-gotransip/" + libraryVersion
 )

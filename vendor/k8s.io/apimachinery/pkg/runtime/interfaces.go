@@ -63,6 +63,7 @@ type Encoder interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -420,6 +421,241 @@ type Namer interface {
 	// Name returns the name of a given object.
 	Name(obj Object) (string, error)
 	// Namespace returns the name of a given object.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+	// correctly handle CacheableObject, Encode() method should look similar to below, where
+	// doEncode() is the encoding logic of implemented encoder:
+	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {
+	//     if co, ok := obj.(CacheableObject); ok {
+	//       return co.CacheEncode(e.Identifier(), e.doEncode, w)
+	//     }
+	//     return e.doEncode(obj, w)
+	//   }
+	Identifier() Identifier
+}
+
+// Decoder attempts to load an object from data.
+type Decoder interface {
+	// Decode attempts to deserialize the provided data using either the innate typing of the scheme or the
+	// default kind, group, and version provided. It returns a decoded object as well as the kind, group, and
+	// version from the serialized data, or an error. If into is non-nil, it will be used as the target type
+	// and implementations may choose to use it rather than reallocating an object. However, the object is not
+	// guaranteed to be populated. The returned object is not guaranteed to match into. If defaults are
+	// provided, they are applied to the data by default. If no defaults or partial defaults are provided, the
+	// type of the into may be used to guide conversion decisions.
+	Decode(data []byte, defaults *schema.GroupVersionKind, into Object) (Object, *schema.GroupVersionKind, error)
+}
+
+// Serializer is the core interface for transforming objects into a serialized format and back.
+// Implementations may choose to perform conversion of the object, but no assumptions should be made.
+type Serializer interface {
+	Encoder
+	Decoder
+}
+
+// Codec is a Serializer that deals with the details of versioning objects. It offers the same
+// interface as Serializer, so this is a marker to consumers that care about the version of the objects
+// they receive.
+type Codec Serializer
+
+// ParameterCodec defines methods for serializing and deserializing API objects to url.Values and
+// performing any necessary conversion. Unlike the normal Codec, query parameters are not self describing
+// and the desired version must be specified.
+type ParameterCodec interface {
+	// DecodeParameters takes the given url.Values in the specified group version and decodes them
+	// into the provided object, or returns an error.
+	DecodeParameters(parameters url.Values, from schema.GroupVersion, into Object) error
+	// EncodeParameters encodes the provided object as query parameters or returns an error.
+	EncodeParameters(obj Object, to schema.GroupVersion) (url.Values, error)
+}
+
+// Framer is a factory for creating readers and writers that obey a particular framing pattern.
+type Framer interface {
+	NewFrameReader(r io.ReadCloser) io.ReadCloser
+	NewFrameWriter(w io.Writer) io.Writer
+}
+
+// SerializerInfo contains information about a specific serialization format
+type SerializerInfo struct {
+	// MediaType is the value that represents this serializer over the wire.
+	MediaType string
+	// MediaTypeType is the first part of the MediaType ("application" in "application/json").
+	MediaTypeType string
+	// MediaTypeSubType is the second part of the MediaType ("json" in "application/json").
+	MediaTypeSubType string
+	// EncodesAsText indicates this serializer can be encoded to UTF-8 safely.
+	EncodesAsText bool
+	// Serializer is the individual object serializer for this media type.
+	Serializer Serializer
+	// PrettySerializer, if set, can serialize this object in a form biased towards
+	// readability.
+	PrettySerializer Serializer
+	// StreamSerializer, if set, describes the streaming serialization format
+	// for this media type.
+	StreamSerializer *StreamSerializerInfo
+}
+
+// StreamSerializerInfo contains information about a specific stream serialization format
+type StreamSerializerInfo struct {
+	// EncodesAsText indicates this serializer can be encoded to UTF-8 safely.
+	EncodesAsText bool
+	// Serializer is the top level object serializer for this type when streaming
+	Serializer
+	// Framer is the factory for retrieving streams that separate objects on the wire
+	Framer
+}
+
+// NegotiatedSerializer is an interface used for obtaining encoders, decoders, and serializers
+// for multiple supported media types. This would commonly be accepted by a server component
+// that performs HTTP content negotiation to accept multiple formats.
+type NegotiatedSerializer interface {
+	// SupportedMediaTypes is the media types supported for reading and writing single objects.
+	SupportedMediaTypes() []SerializerInfo
+
+	// EncoderForVersion returns an encoder that ensures objects being written to the provided
+	// serializer are in the provided group version.
+	EncoderForVersion(serializer Encoder, gv GroupVersioner) Encoder
+	// DecoderForVersion returns a decoder that ensures objects being read by the provided
+	// serializer are in the provided group version by default.
+	DecoderToVersion(serializer Decoder, gv GroupVersioner) Decoder
+}
+
+// ClientNegotiator handles turning an HTTP content type into the appropriate encoder.
+// Use NewClientNegotiator or NewVersionedClientNegotiator to create this interface from
+// a NegotiatedSerializer.
+type ClientNegotiator interface {
+	// Encoder returns the appropriate encoder for the provided contentType (e.g. application/json)
+	// and any optional mediaType parameters (e.g. pretty=1), or an error. If no serializer is found
+	// a NegotiateError will be returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	Encoder(contentType string, params map[string]string) (Encoder, error)
+	// Decoder returns the appropriate decoder for the provided contentType (e.g. application/json)
+	// and any optional mediaType parameters (e.g. pretty=1), or an error. If no serializer is found
+	// a NegotiateError will be returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	Decoder(contentType string, params map[string]string) (Decoder, error)
+	// StreamDecoder returns the appropriate stream decoder for the provided contentType (e.g.
+	// application/json) and any optional mediaType parameters (e.g. pretty=1), or an error. If no
+	// serializer is found a NegotiateError will be returned. The Serializer and Framer will always
+	// be returned if a Decoder is returned. The current client implementations consider params to be
+	// optional modifiers to the contentType and will ignore unrecognized parameters.
+	StreamDecoder(contentType string, params map[string]string) (Decoder, Serializer, Framer, error)
+}
+
+// StorageSerializer is an interface used for obtaining encoders, decoders, and serializers
+// that can read and write data at rest. This would commonly be used by client tools that must
+// read files, or server side storage interfaces that persist restful objects.
+type StorageSerializer interface {
+	// SupportedMediaTypes are the media types supported for reading and writing objects.
+	SupportedMediaTypes() []SerializerInfo
+
+	// UniversalDeserializer returns a Serializer that can read objects in multiple supported formats
+	// by introspecting the data at rest.
+	UniversalDeserializer() Decoder
+
+	// EncoderForVersion returns an encoder that ensures objects being written to the provided
+	// serializer are in the provided group version.
+	EncoderForVersion(serializer Encoder, gv GroupVersioner) Encoder
+	// DecoderForVersion returns a decoder that ensures objects being read by the provided
+	// serializer are in the provided group version by default.
+	DecoderToVersion(serializer Decoder, gv GroupVersioner) Decoder
+}
+
+// NestedObjectEncoder is an optional interface that objects may implement to be given
+// an opportunity to encode any nested Objects / RawExtensions during serialization.
+type NestedObjectEncoder interface {
+	EncodeNestedObjects(e Encoder) error
+}
+
+// NestedObjectDecoder is an optional interface that objects may implement to be given
+// an opportunity to decode any nested Objects / RawExtensions during serialization.
+type NestedObjectDecoder interface {
+	DecodeNestedObjects(d Decoder) error
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Non-codec interfaces
+
+type ObjectDefaulter interface {
+	// Default takes an object (must be a pointer) and applies any default values.
+	// Defaulters may not error.
+	Default(in Object)
+}
+
+type ObjectVersioner interface {
+	ConvertToVersion(in Object, gv GroupVersioner) (out Object, err error)
+}
+
+// ObjectConvertor converts an object to a different version.
+type ObjectConvertor interface {
+	// Convert attempts to convert one object into another, or returns an error. This
+	// method does not mutate the in object, but the in and out object might share data structures,
+	// i.e. the out object cannot be mutated without mutating the in object as well.
+	// The context argument will be passed to all nested conversions.
+	Convert(in, out, context interface{}) error
+	// ConvertToVersion takes the provided object and converts it the provided version. This
+	// method does not mutate the in object, but the in and out object might share data structures,
+	// i.e. the out object cannot be mutated without mutating the in object as well.
+	// This method is similar to Convert() but handles specific details of choosing the correct
+	// output version.
+	ConvertToVersion(in Object, gv GroupVersioner) (out Object, err error)
+	ConvertFieldLabel(gvk schema.GroupVersionKind, label, value string) (string, string, error)
+}
+
+// ObjectTyper contains methods for extracting the APIVersion and Kind
+// of objects.
+type ObjectTyper interface {
+	// ObjectKinds returns the all possible group,version,kind of the provided object, true if
+	// the object is unversioned, or an error if the object is not recognized
+	// (IsNotRegisteredError will return true).
+	ObjectKinds(Object) ([]schema.GroupVersionKind, bool, error)
+	// Recognizes returns true if the scheme is able to handle the provided version and kind,
+	// or more precisely that the provided version is a possible conversion or decoding
+	// target.
+	Recognizes(gvk schema.GroupVersionKind) bool
+}
+
+// ObjectCreater contains methods for instantiating an object by kind and version.
+type ObjectCreater interface {
+	New(kind schema.GroupVersionKind) (out Object, err error)
+}
+
+// EquivalentResourceMapper provides information about resources that address the same underlying data as a specified resource
+type EquivalentResourceMapper interface {
+	// EquivalentResourcesFor returns a list of resources that address the same underlying data as resource.
+	// If subresource is specified, only equivalent resources which also have the same subresource are included.
+	// The specified resource can be included in the returned list.
+	EquivalentResourcesFor(resource schema.GroupVersionResource, subresource string) []schema.GroupVersionResource
+	// KindFor returns the kind expected by the specified resource[/subresource].
+	// A zero value is returned if the kind is unknown.
+	KindFor(resource schema.GroupVersionResource, subresource string) schema.GroupVersionKind
+}
+
+// EquivalentResourceRegistry provides an EquivalentResourceMapper interface,
+// and allows registering known resource[/subresource] -> kind
+type EquivalentResourceRegistry interface {
+	EquivalentResourceMapper
+	// RegisterKindFor registers the existence of the specified resource[/subresource] along with its expected kind.
+	RegisterKindFor(resource schema.GroupVersionResource, subresource string, kind schema.GroupVersionKind)
+}
+
+// ResourceVersioner provides methods for setting and retrieving
+// the resource version from an API object.
+type ResourceVersioner interface {
+	SetResourceVersion(obj Object, version string) error
+	ResourceVersion(obj Object) (string, error)
+}
+
+// SelfLinker provides methods for setting and retrieving the SelfLink field of an API object.
+type SelfLinker interface {
+	SetSelfLink(obj Object, selfLink string) error
+	SelfLink(obj Object) (string, error)
+
+	// Knowing Name is sometimes necessary to use a SelfLinker.
+	Name(obj Object) (string, error)
+	// Knowing Namespace is sometimes necessary to use a SelfLinker
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Namespace(obj Object) (string, error)
 }
 

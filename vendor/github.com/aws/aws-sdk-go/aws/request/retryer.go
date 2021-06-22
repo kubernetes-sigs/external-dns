@@ -15,8 +15,14 @@ import (
 // and determine if a request API error should be retried.
 //
 // client.DefaultRetryer is the SDK's default implementation of the Retryer. It
+<<<<<<< HEAD
 // uses the Request.IsErrorRetryable and Request.IsErrorThrottle methods to
 // determine if the request is retried.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// uses the which uses the Request.IsErrorRetryable and Request.IsErrorThrottle
+// methods to determine if the request is retried.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 type Retryer interface {
 	// RetryRules return the retry delay that should be used by the SDK before
 	// making another request attempt for the failed request.

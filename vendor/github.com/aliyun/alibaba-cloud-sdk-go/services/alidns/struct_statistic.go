@@ -19,6 +19,7 @@ package alidns
 type Statistic struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
 	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
@@ -59,4 +60,11 @@ type Statistic struct {
 	Count        int64  `json:"Count" xml:"Count"`
 	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
+	Count      int64  `json:"Count" xml:"Count"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

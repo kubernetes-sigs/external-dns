@@ -447,6 +447,7 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 				if !isZero(v) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
@@ -494,6 +495,14 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 					case reflect.Int64:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+					switch v.Kind() {
+					case reflect.String:
+						optsMap[tags[0]] = v.String()
+					case reflect.Int:
+						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 					case reflect.Bool:
 						optsMap[tags[0]] = strconv.FormatBool(v.Bool())
 					}

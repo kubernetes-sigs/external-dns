@@ -25,6 +25,11 @@ tasks:
       - go test -race  ./...
 
   test-coverage:
+<<<<<<< HEAD
     desc: Runs go tests and calculates test coverage
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+    desc: Runs go tests and calucates test coverage
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
     cmds:
       - go test -race -coverprofile=c.out ./...

@@ -17,6 +17,7 @@ package alidns
 
 // BatchResultDetail is a nested struct in alidns response
 type BatchResultDetail struct {
+<<<<<<< HEAD
 	Status         bool   `json:"Status" xml:"Status"`
 	Type           string `json:"Type" xml:"Type"`
 	Domain         string `json:"Domain" xml:"Domain"`
@@ -33,4 +34,23 @@ type BatchResultDetail struct {
 	Line           string `json:"Line" xml:"Line"`
 	NewRr          string `json:"NewRr" xml:"NewRr"`
 	Reason         string `json:"Reason" xml:"Reason"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Domain         string `json:"Domain" xml:"Domain"`
+	Type           string `json:"Type" xml:"Type"`
+	Rr             string `json:"Rr" xml:"Rr"`
+	Value          string `json:"Value" xml:"Value"`
+	Status         bool   `json:"Status" xml:"Status"`
+	Reason         string `json:"Reason" xml:"Reason"`
+	NewRr          string `json:"NewRr" xml:"NewRr"`
+	NewValue       string `json:"NewValue" xml:"NewValue"`
+	BatchType      string `json:"BatchType" xml:"BatchType"`
+	OperateDateStr string `json:"OperateDateStr" xml:"OperateDateStr"`
+	Line           string `json:"Line" xml:"Line"`
+	Priority       string `json:"Priority" xml:"Priority"`
+	Ttl            string `json:"Ttl" xml:"Ttl"`
+	RecordId       string `json:"RecordId" xml:"RecordId"`
+	Remark         string `json:"Remark" xml:"Remark"`
+	RrStatus       string `json:"RrStatus" xml:"RrStatus"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

@@ -23,6 +23,7 @@ import (
 // DescribeChangeLogs invokes the pvtz.DescribeChangeLogs API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeChangeLogs(request *DescribeChangeLogsRequest) (response *DescribeChangeLogsResponse, err error) {
 	response = CreateDescribeChangeLogsResponse()
 	err = client.DoAction(request, response)
@@ -193,6 +194,92 @@ func CreateDescribeChangeLogsRequest() (request *DescribeChangeLogsRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
+func (client *Client) DescribeChangeLogs(request *DescribeChangeLogsRequest) (response *DescribeChangeLogsResponse, err error) {
+	response = CreateDescribeChangeLogsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeChangeLogsWithChan invokes the pvtz.DescribeChangeLogs API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeChangeLogsWithChan(request *DescribeChangeLogsRequest) (<-chan *DescribeChangeLogsResponse, <-chan error) {
+	responseChan := make(chan *DescribeChangeLogsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeChangeLogs(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeChangeLogsWithCallback invokes the pvtz.DescribeChangeLogs API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeChangeLogsWithCallback(request *DescribeChangeLogsRequest, callback func(response *DescribeChangeLogsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeChangeLogsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeChangeLogs(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeChangeLogsRequest is the request struct for api DescribeChangeLogs
+type DescribeChangeLogsRequest struct {
+	*requests.RpcRequest
+	StartTimestamp requests.Integer `position:"Query" name:"StartTimestamp"`
+	PageNumber     requests.Integer `position:"Query" name:"PageNumber"`
+	EndTimestamp   requests.Integer `position:"Query" name:"EndTimestamp"`
+	EntityType     string           `position:"Query" name:"EntityType"`
+	PageSize       requests.Integer `position:"Query" name:"PageSize"`
+	UserClientIp   string           `position:"Query" name:"UserClientIp"`
+	ZoneId         string           `position:"Query" name:"ZoneId"`
+	Keyword        string           `position:"Query" name:"Keyword"`
+	Lang           string           `position:"Query" name:"Lang"`
+}
+
+// DescribeChangeLogsResponse is the response struct for api DescribeChangeLogs
+type DescribeChangeLogsResponse struct {
+	*responses.BaseResponse
+	RequestId  string     `json:"RequestId" xml:"RequestId"`
+	TotalItems int        `json:"TotalItems" xml:"TotalItems"`
+	TotalPages int        `json:"TotalPages" xml:"TotalPages"`
+	PageSize   int        `json:"PageSize" xml:"PageSize"`
+	PageNumber int        `json:"PageNumber" xml:"PageNumber"`
+	ChangeLogs ChangeLogs `json:"ChangeLogs" xml:"ChangeLogs"`
+}
+
+// CreateDescribeChangeLogsRequest creates a request to invoke DescribeChangeLogs API
+func CreateDescribeChangeLogsRequest() (request *DescribeChangeLogsRequest) {
+	request = &DescribeChangeLogsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeChangeLogs", "pvtz", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

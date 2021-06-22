@@ -40,6 +40,7 @@ const (
 // aws.Config parameter to add your extra config.
 //
 // Example:
+<<<<<<< HEAD
 //
 //	mySession := session.Must(session.NewSession())
 //
@@ -128,6 +129,36 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				JSONVersion:    "1.1",
 				TargetPrefix:   "Route53AutoNaming_v20170314",
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//     mySession := session.Must(session.NewSession())
+//
+//     // Create a ServiceDiscovery client from just a session.
+//     svc := servicediscovery.New(mySession)
+//
+//     // Create a ServiceDiscovery client with additional configuration
+//     svc := servicediscovery.New(mySession, aws.NewConfig().WithRegion("us-west-2"))
+func New(p client.ConfigProvider, cfgs ...*aws.Config) *ServiceDiscovery {
+	c := p.ClientConfig(EndpointsID, cfgs...)
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *ServiceDiscovery {
+	svc := &ServiceDiscovery{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2017-03-14",
+				JSONVersion:   "1.1",
+				TargetPrefix:  "Route53AutoNaming_v20170314",
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			},
 			handlers,
 		),

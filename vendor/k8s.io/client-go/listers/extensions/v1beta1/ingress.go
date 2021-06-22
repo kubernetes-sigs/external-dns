@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type IngressLister interface {
 	// List lists all Ingresses in the indexer.
@@ -226,6 +227,45 @@ type IngressNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type IngressLister interface {
+	// List lists all Ingresses in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.Ingress, err error)
+	// Ingresses returns an object that can list and get Ingresses.
+	Ingresses(namespace string) IngressNamespaceLister
+	IngressListerExpansion
+}
+
+// ingressLister implements the IngressLister interface.
+type ingressLister struct {
+	indexer cache.Indexer
+}
+
+// NewIngressLister returns a new IngressLister.
+func NewIngressLister(indexer cache.Indexer) IngressLister {
+	return &ingressLister{indexer: indexer}
+}
+
+// List lists all Ingresses in the indexer.
+func (s *ingressLister) List(selector labels.Selector) (ret []*v1beta1.Ingress, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1beta1.Ingress))
+	})
+	return ret, err
+}
+
+// Ingresses returns an object that can list and get Ingresses.
+func (s *ingressLister) Ingresses(namespace string) IngressNamespaceLister {
+	return ingressNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// IngressNamespaceLister helps list and get Ingresses.
+type IngressNamespaceLister interface {
+	// List lists all Ingresses in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1beta1.Ingress, err error)
+	// Get retrieves the Ingress from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.Ingress, error)
 	IngressNamespaceListerExpansion
 }

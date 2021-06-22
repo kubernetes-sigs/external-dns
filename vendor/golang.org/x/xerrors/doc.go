@@ -7,6 +7,7 @@
 // This package is based on the Go 2 proposal for error values:
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 //	https://golang.org/design/29934-error-values
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -19,6 +20,10 @@
 //
 //	https://golang.org/design/29934-error-values
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//   https://golang.org/design/29934-error-values
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //
 // These functions were incorporated into the standard library's errors package
 // in Go 1.13:

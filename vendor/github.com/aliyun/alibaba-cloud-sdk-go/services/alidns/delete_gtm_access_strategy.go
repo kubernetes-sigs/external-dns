@@ -23,6 +23,7 @@ import (
 // DeleteGtmAccessStrategy invokes the alidns.DeleteGtmAccessStrategy API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteGtmAccessStrategy(request *DeleteGtmAccessStrategyRequest) (response *DeleteGtmAccessStrategyResponse, err error) {
 	response = CreateDeleteGtmAccessStrategyResponse()
 	err = client.DoAction(request, response)
@@ -171,6 +172,81 @@ func CreateDeleteGtmAccessStrategyRequest() (request *DeleteGtmAccessStrategyReq
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/deletegtmaccessstrategy.html
+func (client *Client) DeleteGtmAccessStrategy(request *DeleteGtmAccessStrategyRequest) (response *DeleteGtmAccessStrategyResponse, err error) {
+	response = CreateDeleteGtmAccessStrategyResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DeleteGtmAccessStrategyWithChan invokes the alidns.DeleteGtmAccessStrategy API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletegtmaccessstrategy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteGtmAccessStrategyWithChan(request *DeleteGtmAccessStrategyRequest) (<-chan *DeleteGtmAccessStrategyResponse, <-chan error) {
+	responseChan := make(chan *DeleteGtmAccessStrategyResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DeleteGtmAccessStrategy(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DeleteGtmAccessStrategyWithCallback invokes the alidns.DeleteGtmAccessStrategy API asynchronously
+// api document: https://help.aliyun.com/api/alidns/deletegtmaccessstrategy.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DeleteGtmAccessStrategyWithCallback(request *DeleteGtmAccessStrategyRequest, callback func(response *DeleteGtmAccessStrategyResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DeleteGtmAccessStrategyResponse
+		var err error
+		defer close(result)
+		response, err = client.DeleteGtmAccessStrategy(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DeleteGtmAccessStrategyRequest is the request struct for api DeleteGtmAccessStrategy
+type DeleteGtmAccessStrategyRequest struct {
+	*requests.RpcRequest
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	StrategyId   string `position:"Query" name:"StrategyId"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DeleteGtmAccessStrategyResponse is the response struct for api DeleteGtmAccessStrategy
+type DeleteGtmAccessStrategyResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateDeleteGtmAccessStrategyRequest creates a request to invoke DeleteGtmAccessStrategy API
+func CreateDeleteGtmAccessStrategyRequest() (request *DeleteGtmAccessStrategyRequest) {
+	request = &DeleteGtmAccessStrategyRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteGtmAccessStrategy", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

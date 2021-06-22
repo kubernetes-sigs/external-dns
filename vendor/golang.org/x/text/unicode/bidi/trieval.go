@@ -37,6 +37,22 @@ const (
 	unknownClass = ^Class(0)
 )
 
+<<<<<<< HEAD
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+var controlToClass = map[rune]Class{
+	0x202D: LRO, // LeftToRightOverride,
+	0x202E: RLO, // RightToLeftOverride,
+	0x202A: LRE, // LeftToRightEmbedding,
+	0x202B: RLE, // RightToLeftEmbedding,
+	0x202C: PDF, // PopDirectionalFormat,
+	0x2066: LRI, // LeftToRightIsolate,
+	0x2067: RLI, // RightToLeftIsolate,
+	0x2068: FSI, // FirstStrongIsolate,
+	0x2069: PDI, // PopDirectionalIsolate,
+}
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // A trie entry has the following bits:
 // 7..5  XOR mask for brackets
 // 4     1: Bracket open, 0: Bracket close

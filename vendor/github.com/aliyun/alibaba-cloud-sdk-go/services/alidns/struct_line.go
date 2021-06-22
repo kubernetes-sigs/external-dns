@@ -19,8 +19,14 @@ package alidns
 type Line struct {
 	GroupCode  string `json:"GroupCode" xml:"GroupCode"`
 	LineCode   string `json:"LineCode" xml:"LineCode"`
+<<<<<<< HEAD
 	GroupName  string `json:"GroupName" xml:"GroupName"`
 	LineName   string `json:"LineName" xml:"LineName"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	LineName   string `json:"LineName" xml:"LineName"`
+	GroupName  string `json:"GroupName" xml:"GroupName"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Status     string `json:"Status" xml:"Status"`
 	FatherCode string `json:"FatherCode" xml:"FatherCode"`
 }

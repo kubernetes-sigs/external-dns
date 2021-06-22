@@ -84,6 +84,7 @@ func buildStruct(value reflect.Value, buf *bytes.Buffer, tag reflect.StructTag) 
 		value = elemOf(value.FieldByName(payload))
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if !value.IsValid() && tag.Get("type") != "structure" {
 			return nil
 		}
@@ -233,6 +234,73 @@ func buildStruct(value reflect.Value, buf *bytes.Buffer, tag reflect.StructTag) 
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+
+		if !value.IsValid() {
+			return nil
+		}
+	}
+
+	buf.WriteByte('{')
+
+	t := value.Type()
+	first := true
+	for i := 0; i < t.NumField(); i++ {
+		member := value.Field(i)
+
+		// This allocates the most memory.
+		// Additionally, we cannot skip nil fields due to
+		// idempotency auto filling.
+		field := t.Field(i)
+
+		if field.PkgPath != "" {
+			continue // ignore unexported fields
+		}
+		if field.Tag.Get("json") == "-" {
+			continue
+		}
+		if field.Tag.Get("location") != "" {
+			continue // ignore non-body elements
+		}
+		if field.Tag.Get("ignore") != "" {
+			continue
+		}
+
+		if protocol.CanSetIdempotencyToken(member, field) {
+			token := protocol.GetIdempotencyToken()
+			member = reflect.ValueOf(&token)
+		}
+
+		if (member.Kind() == reflect.Ptr || member.Kind() == reflect.Slice || member.Kind() == reflect.Map) && member.IsNil() {
+			continue // ignore unset fields
+		}
+
+		if first {
+			first = false
+		} else {
+			buf.WriteByte(',')
+		}
+
+		// figure out what this field is called
+		name := field.Name
+		if locName := field.Tag.Get("locationName"); locName != "" {
+			name = locName
+		}
+
+		writeString(name, buf)
+		buf.WriteString(`:`)
+
+		err := buildAny(member, buf, field.Tag)
+		if err != nil {
+			return err
+		}
+
+	}
+
+	buf.WriteString("}")
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return nil
 }
 

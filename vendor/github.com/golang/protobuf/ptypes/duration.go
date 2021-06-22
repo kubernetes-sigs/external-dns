@@ -27,6 +27,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -133,6 +134,27 @@ func Duration(dur *durationpb.Duration) (time.Duration, error) {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func Duration(dur *durationpb.Duration) (time.Duration, error) {
+	if err := validateDuration(dur); err != nil {
+		return 0, err
+	}
+	d := time.Duration(dur.Seconds) * time.Second
+	if int64(d/time.Second) != dur.Seconds {
+		return 0, fmt.Errorf("duration: %v is out of range for time.Duration", dur)
+	}
+	if dur.Nanos != 0 {
+		d += time.Duration(dur.Nanos) * time.Nanosecond
+		if (d < 0) != (dur.Nanos < 0) {
+			return 0, fmt.Errorf("duration: %v is out of range for time.Duration", dur)
+		}
+	}
+	return d, nil
+}
+
+// DurationProto converts a time.Duration to a durationpb.Duration.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func DurationProto(d time.Duration) *durationpb.Duration {
 	nanos := d.Nanoseconds()
 	secs := nanos / 1e9

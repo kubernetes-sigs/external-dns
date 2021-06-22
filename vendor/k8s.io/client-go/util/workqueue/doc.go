@@ -16,6 +16,7 @@ limitations under the License.
 
 // Package workqueue provides a simple queue that supports the following
 // features:
+<<<<<<< HEAD
 //   - Fair: items processed in the order in which they are added.
 //   - Stingy: a single item will not be processed multiple times concurrently,
 //     and if an item is added multiple times before it can be processed, it
@@ -23,4 +24,14 @@ limitations under the License.
 //   - Multiple consumers and producers. In particular, it is allowed for an
 //     item to be reenqueued while it is being processed.
 //   - Shutdown notifications.
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//  * Fair: items processed in the order in which they are added.
+//  * Stingy: a single item will not be processed multiple times concurrently,
+//      and if an item is added multiple times before it can be processed, it
+//      will only be processed once.
+//  * Multiple consumers and producers. In particular, it is allowed for an
+//      item to be reenqueued while it is being processed.
+//  * Shutdown notifications.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 package workqueue // import "k8s.io/client-go/util/workqueue"

@@ -59,6 +59,7 @@ func getBoolValue(b []rune) (int, error) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if isCaselessLitValue(lv, b) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -69,6 +70,10 @@ func getBoolValue(b []rune) (int, error) {
 =======
 		if isCaselessLitValue(lv, b) {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		if isLitValue(lv, b) {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			n = len(lv)
 		}
 	}

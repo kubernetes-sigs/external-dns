@@ -7,6 +7,7 @@ TMP=$(mktemp -d /tmp/sdk.XXX) \
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 && export PATH="$PATH:$TMP/go_appengine"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -25,3 +26,7 @@ TMP=$(mktemp -d /tmp/sdk.XXX) \
 =======
 && export PATH="$PATH:$TMP/go_appengine"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+&& export PATH="$PATH:$TMP/go_appengine"
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

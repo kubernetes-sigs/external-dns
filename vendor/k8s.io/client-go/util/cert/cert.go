@@ -26,6 +26,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+<<<<<<< HEAD
 	"math"
 	"math/big"
 	"net"
@@ -506,6 +507,140 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 =======
 	if ip := netutils.ParseIPSloppy(host); ip != nil {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"math/big"
+	"net"
+	"path"
+	"strings"
+	"time"
+
+	"k8s.io/client-go/util/keyutil"
+)
+
+const duration365d = time.Hour * 24 * 365
+
+// Config contains the basic fields required for creating a certificate
+type Config struct {
+	CommonName   string
+	Organization []string
+	AltNames     AltNames
+	Usages       []x509.ExtKeyUsage
+}
+
+// AltNames contains the domain names and IP addresses that will be added
+// to the API Server's x509 certificate SubAltNames field. The values will
+// be passed directly to the x509.Certificate object.
+type AltNames struct {
+	DNSNames []string
+	IPs      []net.IP
+}
+
+// NewSelfSignedCACert creates a CA certificate
+func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, error) {
+	now := time.Now()
+	tmpl := x509.Certificate{
+		SerialNumber: new(big.Int).SetInt64(0),
+		Subject: pkix.Name{
+			CommonName:   cfg.CommonName,
+			Organization: cfg.Organization,
+		},
+		NotBefore:             now.UTC(),
+		NotAfter:              now.Add(duration365d * 10).UTC(),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	certDERBytes, err := x509.CreateCertificate(cryptorand.Reader, &tmpl, &tmpl, key.Public(), key)
+	if err != nil {
+		return nil, err
+	}
+	return x509.ParseCertificate(certDERBytes)
+}
+
+// GenerateSelfSignedCertKey creates a self-signed certificate and key for the given host.
+// Host may be an IP or a DNS name
+// You may also specify additional subject alt names (either ip or dns names) for the certificate.
+func GenerateSelfSignedCertKey(host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error) {
+	return GenerateSelfSignedCertKeyWithFixtures(host, alternateIPs, alternateDNS, "")
+}
+
+// GenerateSelfSignedCertKeyWithFixtures creates a self-signed certificate and key for the given host.
+// Host may be an IP or a DNS name. You may also specify additional subject alt names (either ip or dns names)
+// for the certificate.
+//
+// If fixtureDirectory is non-empty, it is a directory path which can contain pre-generated certs. The format is:
+// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.crt
+// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.key
+// Certs/keys not existing in that directory are created.
+func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, alternateDNS []string, fixtureDirectory string) ([]byte, []byte, error) {
+	validFrom := time.Now().Add(-time.Hour) // valid an hour earlier to avoid flakes due to clock skew
+	maxAge := time.Hour * 24 * 365          // one year self-signed certs
+
+	baseName := fmt.Sprintf("%s_%s_%s", host, strings.Join(ipsToStrings(alternateIPs), "-"), strings.Join(alternateDNS, "-"))
+	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
+	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
+	if len(fixtureDirectory) > 0 {
+		cert, err := ioutil.ReadFile(certFixturePath)
+		if err == nil {
+			key, err := ioutil.ReadFile(keyFixturePath)
+			if err == nil {
+				return cert, key, nil
+			}
+			return nil, nil, fmt.Errorf("cert %s can be read, but key %s cannot: %v", certFixturePath, keyFixturePath, err)
+		}
+		maxAge = 100 * time.Hour * 24 * 365 // 100 years fixtures
+	}
+
+	caKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	caTemplate := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName: fmt.Sprintf("%s-ca@%d", host, time.Now().Unix()),
+		},
+		NotBefore: validFrom,
+		NotAfter:  validFrom.Add(maxAge),
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+	}
+
+	caDERBytes, err := x509.CreateCertificate(cryptorand.Reader, &caTemplate, &caTemplate, &caKey.PublicKey, caKey)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	caCertificate, err := x509.ParseCertificate(caDERBytes)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	priv, err := rsa.GenerateKey(cryptorand.Reader, 2048)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject: pkix.Name{
+			CommonName: fmt.Sprintf("%s@%d", host, time.Now().Unix()),
+		},
+		NotBefore: validFrom,
+		NotAfter:  validFrom.Add(maxAge),
+
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+	}
+
+	if ip := net.ParseIP(host); ip != nil {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		template.IPAddresses = append(template.IPAddresses, ip)
 	} else {
 		template.DNSNames = append(template.DNSNames, host)

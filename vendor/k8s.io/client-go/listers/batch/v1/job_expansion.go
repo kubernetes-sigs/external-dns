@@ -51,11 +51,16 @@ func (l *jobLister) GetPodJobs(pod *v1.Pod) (jobs []batch.Job, err error) {
 		return
 	}
 	for _, job := range list {
+<<<<<<< HEAD
 		selector, err := metav1.LabelSelectorAsSelector(job.Spec.Selector)
 		if err != nil {
 			// This object has an invalid selector, it does not match the pod
 			continue
 		}
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		selector, _ := metav1.LabelSelectorAsSelector(job.Spec.Selector)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		if !selector.Matches(labels.Set(pod.Labels)) {
 			continue
 		}

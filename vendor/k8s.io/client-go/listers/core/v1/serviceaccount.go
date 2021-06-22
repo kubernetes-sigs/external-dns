@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ServiceAccountLister interface {
 	// List lists all ServiceAccounts in the indexer.
@@ -226,6 +227,45 @@ type ServiceAccountNamespaceLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type ServiceAccountLister interface {
+	// List lists all ServiceAccounts in the indexer.
+	List(selector labels.Selector) (ret []*v1.ServiceAccount, err error)
+	// ServiceAccounts returns an object that can list and get ServiceAccounts.
+	ServiceAccounts(namespace string) ServiceAccountNamespaceLister
+	ServiceAccountListerExpansion
+}
+
+// serviceAccountLister implements the ServiceAccountLister interface.
+type serviceAccountLister struct {
+	indexer cache.Indexer
+}
+
+// NewServiceAccountLister returns a new ServiceAccountLister.
+func NewServiceAccountLister(indexer cache.Indexer) ServiceAccountLister {
+	return &serviceAccountLister{indexer: indexer}
+}
+
+// List lists all ServiceAccounts in the indexer.
+func (s *serviceAccountLister) List(selector labels.Selector) (ret []*v1.ServiceAccount, err error) {
+	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
+		ret = append(ret, m.(*v1.ServiceAccount))
+	})
+	return ret, err
+}
+
+// ServiceAccounts returns an object that can list and get ServiceAccounts.
+func (s *serviceAccountLister) ServiceAccounts(namespace string) ServiceAccountNamespaceLister {
+	return serviceAccountNamespaceLister{indexer: s.indexer, namespace: namespace}
+}
+
+// ServiceAccountNamespaceLister helps list and get ServiceAccounts.
+type ServiceAccountNamespaceLister interface {
+	// List lists all ServiceAccounts in the indexer for a given namespace.
+	List(selector labels.Selector) (ret []*v1.ServiceAccount, err error)
+	// Get retrieves the ServiceAccount from the indexer for a given namespace and name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.ServiceAccount, error)
 	ServiceAccountNamespaceListerExpansion
 }

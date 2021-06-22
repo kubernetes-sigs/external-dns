@@ -20,6 +20,7 @@
 // name without scheme back to gRPC as resolved address.
 package passthrough
 
+<<<<<<< HEAD
 import (
 	"errors"
 
@@ -53,6 +54,35 @@ type passthroughResolver struct {
 
 func (r *passthroughResolver) start() {
 	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint()}}})
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+import "google.golang.org/grpc/resolver"
+
+const scheme = "passthrough"
+
+type passthroughBuilder struct{}
+
+func (*passthroughBuilder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOptions) (resolver.Resolver, error) {
+	r := &passthroughResolver{
+		target: target,
+		cc:     cc,
+	}
+	r.start()
+	return r, nil
+}
+
+func (*passthroughBuilder) Scheme() string {
+	return scheme
+}
+
+type passthroughResolver struct {
+	target resolver.Target
+	cc     resolver.ClientConn
+}
+
+func (r *passthroughResolver) start() {
+	r.cc.UpdateState(resolver.State{Addresses: []resolver.Address{{Addr: r.target.Endpoint}}})
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (*passthroughResolver) ResolveNow(o resolver.ResolveNowOptions) {}

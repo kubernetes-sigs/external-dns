@@ -138,6 +138,7 @@ type inFlow struct {
 // It assumes that n is always greater than the old limit.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (f *inFlow) newLimit(n uint32) {
 	f.mu.Lock()
 	f.limit = n
@@ -160,6 +161,15 @@ func (f *inFlow) newLimit(n uint32) {
 	return d
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (f *inFlow) newLimit(n uint32) uint32 {
+	f.mu.Lock()
+	d := n - f.limit
+	f.limit = n
+	f.mu.Unlock()
+	return d
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func (f *inFlow) maybeAdjust(n uint32) uint32 {

@@ -6,6 +6,31 @@
 
 package idna
 
+<<<<<<< HEAD
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// appendMapping appends the mapping for the respective rune. isMapped must be
+// true. A mapping is a categorization of a rune as defined in UTS #46.
+func (c info) appendMapping(b []byte, s string) []byte {
+	index := int(c >> indexShift)
+	if c&xorBit == 0 {
+		s := mappings[index:]
+		return append(b, s[1:s[0]+1]...)
+	}
+	b = append(b, s...)
+	if c&inlineXOR == inlineXOR {
+		// TODO: support and handle two-byte inline masks
+		b[len(b)-1] ^= byte(index)
+	} else {
+		for p := len(b) - int(xorData[index]); p < len(b); p++ {
+			index++
+			b[p] ^= xorData[index]
+		}
+	}
+	return b
+}
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // Sparse block handling code.
 
 type valueRange struct {

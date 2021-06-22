@@ -61,6 +61,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// LogAuth is a special case of LogDebug, it tells a logger to also log the body of an authentication request and response.
 	// NOTE: this can disclose sensitive information, use with care.
@@ -331,6 +332,60 @@ func (lt LevelType) String() string {
 	case LogAuth:
 		return logAuth
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+)
+
+const (
+	logNone    = "NONE"
+	logFatal   = "FATAL"
+	logPanic   = "PANIC"
+	logError   = "ERROR"
+	logWarning = "WARNING"
+	logInfo    = "INFO"
+	logDebug   = "DEBUG"
+	logUnknown = "UNKNOWN"
+)
+
+// ParseLevel converts the specified string into the corresponding LevelType.
+func ParseLevel(s string) (lt LevelType, err error) {
+	switch strings.ToUpper(s) {
+	case logFatal:
+		lt = LogFatal
+	case logPanic:
+		lt = LogPanic
+	case logError:
+		lt = LogError
+	case logWarning:
+		lt = LogWarning
+	case logInfo:
+		lt = LogInfo
+	case logDebug:
+		lt = LogDebug
+	default:
+		err = fmt.Errorf("bad log level '%s'", s)
+	}
+	return
+}
+
+// String implements the stringer interface for LevelType.
+func (lt LevelType) String() string {
+	switch lt {
+	case LogNone:
+		return logNone
+	case LogFatal:
+		return logFatal
+	case LogPanic:
+		return logPanic
+	case LogError:
+		return logError
+	case LogWarning:
+		return logWarning
+	case LogInfo:
+		return logInfo
+	case LogDebug:
+		return logDebug
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	default:
 		return logUnknown
 	}

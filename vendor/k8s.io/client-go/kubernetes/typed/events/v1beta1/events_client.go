@@ -21,6 +21,7 @@ package v1beta1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/events/v1beta1"
@@ -121,6 +122,35 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*EventsV1beta1Client
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/api/events/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type EventsV1beta1Interface interface {
+	RESTClient() rest.Interface
+	EventsGetter
+}
+
+// EventsV1beta1Client is used to interact with features provided by the events.k8s.io group.
+type EventsV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *EventsV1beta1Client) Events(namespace string) EventInterface {
+	return newEvents(c, namespace)
+}
+
+// NewForConfig creates a new EventsV1beta1Client for the given config.
+func NewForConfig(c *rest.Config) (*EventsV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

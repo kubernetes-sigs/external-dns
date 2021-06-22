@@ -1,8 +1,18 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
+<<<<<<< HEAD
   - sig-auth-authenticators-approvers
 reviewers:
   - sig-auth-authenticators-reviewers
 labels:
   - sig/auth
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+- sig-auth-authenticators-approvers
+reviewers:
+- sig-auth-authenticators-reviewers
+labels:
+- sig/auth
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

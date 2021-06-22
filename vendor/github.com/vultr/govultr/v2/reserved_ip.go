@@ -14,6 +14,7 @@ const ripPath = "/v2/reserved-ips"
 // Link : https://www.vultr.com/api/#tag/reserved-ip
 type ReservedIPService interface {
 	Create(ctx context.Context, ripCreate *ReservedIPReq) (*ReservedIP, error)
+<<<<<<< HEAD
 	Update(ctx context.Context, id string, ripUpdate *ReservedIPUpdateReq) (*ReservedIP, error)
 	Get(ctx context.Context, id string) (*ReservedIP, error)
 	Delete(ctx context.Context, id string) error
@@ -88,6 +89,61 @@ func (r *ReservedIPServiceHandler) Create(ctx context.Context, ripCreate *Reserv
 func (r *ReservedIPServiceHandler) Update(ctx context.Context, id string, ripUpdate *ReservedIPUpdateReq) (*ReservedIP, error) {
 	uri := fmt.Sprintf("%s/%s", ripPath, id)
 	req, err := r.client.NewRequest(ctx, http.MethodPatch, uri, ripUpdate)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Get(ctx context.Context, id string) (*ReservedIP, error)
+	Delete(ctx context.Context, id string) error
+	List(ctx context.Context, options *ListOptions) ([]ReservedIP, *Meta, error)
+
+	Convert(ctx context.Context, ripConvert *ReservedIPConvertReq) (*ReservedIP, error)
+	Attach(ctx context.Context, id, instance string) error
+	Detach(ctx context.Context, id string) error
+}
+
+// ReservedIPServiceHandler handles interaction with the reserved IP methods for the Vultr API
+type ReservedIPServiceHandler struct {
+	client *Client
+}
+
+// ReservedIP represents an reserved IP on Vultr
+type ReservedIP struct {
+	ID         string `json:"id"`
+	Region     string `json:"region"`
+	IPType     string `json:"ip_type"`
+	Subnet     string `json:"subnet"`
+	SubnetSize int    `json:"subnet_size"`
+	Label      string `json:"label"`
+	InstanceID string `json:"instance_id"`
+}
+
+// ReservedIPReq represents the parameters for creating a new Reserved IP on Vultr
+type ReservedIPReq struct {
+	Region     string `json:"region,omitempty"`
+	IPType     string `json:"ip_type,omitempty"`
+	IPAddress  string `json:"ip_address,omitempty"`
+	Label      string `json:"label,omitempty"`
+	InstanceID string `json:"instance_id,omitempty"`
+}
+
+type reservedIPsBase struct {
+	ReservedIPs []ReservedIP `json:"reserved_ips"`
+	Meta        *Meta        `json:"meta"`
+}
+
+type reservedIPBase struct {
+	ReservedIP *ReservedIP `json:"reserved_ip"`
+}
+
+// ReservedIPConvertReq is the struct used for create and update calls.
+type ReservedIPConvertReq struct {
+	IPAddress string `json:"ip_address,omitempty"`
+	Label     string `json:"label,omitempty"`
+}
+
+// Create adds the specified reserved IP to your Vultr account
+func (r *ReservedIPServiceHandler) Create(ctx context.Context, ripCreate *ReservedIPReq) (*ReservedIP, error) {
+	req, err := r.client.NewRequest(ctx, http.MethodPost, ripPath, ripCreate)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

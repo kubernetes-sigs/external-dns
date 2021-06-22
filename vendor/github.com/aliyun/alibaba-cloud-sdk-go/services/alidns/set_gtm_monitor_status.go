@@ -23,6 +23,7 @@ import (
 // SetGtmMonitorStatus invokes the alidns.SetGtmMonitorStatus API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetGtmMonitorStatus(request *SetGtmMonitorStatusRequest) (response *SetGtmMonitorStatusResponse, err error) {
 	response = CreateSetGtmMonitorStatusResponse()
 	err = client.DoAction(request, response)
@@ -173,6 +174,82 @@ func CreateSetGtmMonitorStatusRequest() (request *SetGtmMonitorStatusRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/setgtmmonitorstatus.html
+func (client *Client) SetGtmMonitorStatus(request *SetGtmMonitorStatusRequest) (response *SetGtmMonitorStatusResponse, err error) {
+	response = CreateSetGtmMonitorStatusResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// SetGtmMonitorStatusWithChan invokes the alidns.SetGtmMonitorStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setgtmmonitorstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetGtmMonitorStatusWithChan(request *SetGtmMonitorStatusRequest) (<-chan *SetGtmMonitorStatusResponse, <-chan error) {
+	responseChan := make(chan *SetGtmMonitorStatusResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.SetGtmMonitorStatus(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// SetGtmMonitorStatusWithCallback invokes the alidns.SetGtmMonitorStatus API asynchronously
+// api document: https://help.aliyun.com/api/alidns/setgtmmonitorstatus.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) SetGtmMonitorStatusWithCallback(request *SetGtmMonitorStatusRequest, callback func(response *SetGtmMonitorStatusResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *SetGtmMonitorStatusResponse
+		var err error
+		defer close(result)
+		response, err = client.SetGtmMonitorStatus(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// SetGtmMonitorStatusRequest is the request struct for api SetGtmMonitorStatus
+type SetGtmMonitorStatusRequest struct {
+	*requests.RpcRequest
+	MonitorConfigId string `position:"Query" name:"MonitorConfigId"`
+	UserClientIp    string `position:"Query" name:"UserClientIp"`
+	Lang            string `position:"Query" name:"Lang"`
+	Status          string `position:"Query" name:"Status"`
+}
+
+// SetGtmMonitorStatusResponse is the response struct for api SetGtmMonitorStatus
+type SetGtmMonitorStatusResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateSetGtmMonitorStatusRequest creates a request to invoke SetGtmMonitorStatus API
+func CreateSetGtmMonitorStatusRequest() (request *SetGtmMonitorStatusRequest) {
+	request = &SetGtmMonitorStatusRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "SetGtmMonitorStatus", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

@@ -19,6 +19,7 @@ package alidns
 type GtmInstance struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AddressPoolNum    int       `json:"AddressPoolNum" xml:"AddressPoolNum"`
 	Cname             string    `json:"Cname" xml:"Cname"`
 	UserDomainName    string    `json:"UserDomainName" xml:"UserDomainName"`
@@ -97,4 +98,22 @@ type GtmInstance struct {
 	Config            Config    `json:"Config" xml:"Config"`
 	UsedQuota         UsedQuota `json:"UsedQuota" xml:"UsedQuota"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	InstanceId        string `json:"InstanceId" xml:"InstanceId"`
+	InstanceName      string `json:"InstanceName" xml:"InstanceName"`
+	Cname             string `json:"Cname" xml:"Cname"`
+	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
+	VersionCode       string `json:"VersionCode" xml:"VersionCode"`
+	Ttl               int    `json:"Ttl" xml:"Ttl"`
+	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
+	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
+	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	AlertGroup        string `json:"AlertGroup" xml:"AlertGroup"`
+	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
+	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
+	AddressPoolNum    int    `json:"AddressPoolNum" xml:"AddressPoolNum"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/internal/order"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -311,6 +312,69 @@ func unmarshalMessageSetField(m protoreflect.Message, num protowire.Number, v []
 =======
 func (o UnmarshalOptions) unmarshalMessageSetField(m protoreflect.Message, num protowire.Number, v []byte) error {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+)
+
+func sizeMessageSet(m protoreflect.Message) (size int) {
+	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		size += messageset.SizeField(fd.Number())
+		size += protowire.SizeTag(messageset.FieldMessage)
+		size += protowire.SizeBytes(sizeMessage(v.Message()))
+		return true
+	})
+	size += messageset.SizeUnknown(m.GetUnknown())
+	return size
+}
+
+func marshalMessageSet(b []byte, m protoreflect.Message, o MarshalOptions) ([]byte, error) {
+	if !flags.ProtoLegacy {
+		return b, errors.New("no support for message_set_wire_format")
+	}
+	var err error
+	o.rangeFields(m, func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		b, err = marshalMessageSetField(b, fd, v, o)
+		return err == nil
+	})
+	if err != nil {
+		return b, err
+	}
+	return messageset.AppendUnknown(b, m.GetUnknown())
+}
+
+func marshalMessageSetField(b []byte, fd protoreflect.FieldDescriptor, value protoreflect.Value, o MarshalOptions) ([]byte, error) {
+	b = messageset.AppendFieldStart(b, fd.Number())
+	b = protowire.AppendTag(b, messageset.FieldMessage, protowire.BytesType)
+	b = protowire.AppendVarint(b, uint64(o.Size(value.Message().Interface())))
+	b, err := o.marshalMessage(b, value.Message())
+	if err != nil {
+		return b, err
+	}
+	b = messageset.AppendFieldEnd(b)
+	return b, nil
+}
+
+func unmarshalMessageSet(b []byte, m protoreflect.Message, o UnmarshalOptions) error {
+	if !flags.ProtoLegacy {
+		return errors.New("no support for message_set_wire_format")
+	}
+	return messageset.Unmarshal(b, false, func(num protowire.Number, v []byte) error {
+		err := unmarshalMessageSetField(m, num, v, o)
+		if err == errUnknown {
+			unknown := m.GetUnknown()
+			unknown = protowire.AppendTag(unknown, num, protowire.BytesType)
+			unknown = protowire.AppendBytes(unknown, v)
+			m.SetUnknown(unknown)
+			return nil
+		}
+		return err
+	})
+}
+
+func unmarshalMessageSetField(m protoreflect.Message, num protowire.Number, v []byte, o UnmarshalOptions) error {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	md := m.Descriptor()
 	if !md.ExtensionRanges().Has(num) {
 		return errUnknown

@@ -31,7 +31,12 @@
 //    		log.Fatalf("could not get process: %s", err)
 //    	}
 //
+<<<<<<< HEAD
 //    	stat, err := p.Stat()
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//    	stat, err := p.NewStat()
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 //    	if err != nil {
 //    		log.Fatalf("could not get process stat: %s", err)
 //    	}

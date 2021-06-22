@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/clock"
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -71,6 +72,21 @@ import (
 //     *any* item in the cache.
 //  3. Time-stamps are stripped off unexpired entries before return
 //
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"k8s.io/apimachinery/pkg/util/clock"
+	"k8s.io/klog"
+)
+
+// ExpirationCache implements the store interface
+//	1. All entries are automatically time stamped on insert
+//		a. The key is computed based off the original item/keyFunc
+//		b. The value inserted under that key is the timestamped item
+//	2. Expiration happens lazily on read based on the expiration policy
+//      a. No item can be inserted into the store while we're expiring
+//		   *any* item in the cache.
+//	3. Time-stamps are stripped off unexpired entries before return
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // Note that the ExpirationCache is inherently slower than a normal
 // threadSafeStore because it takes a write lock every time it checks if
 // an item has expired.

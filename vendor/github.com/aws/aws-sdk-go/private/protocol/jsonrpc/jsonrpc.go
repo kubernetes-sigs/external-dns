@@ -51,6 +51,7 @@ func Build(req *request.Request) {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Always serialize the body, don't suppress it.
 	req.SetBufferBody(buf)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -67,6 +68,12 @@ func Build(req *request.Request) {
 	// Always serialize the body, don't suppress it.
 	req.SetBufferBody(buf)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if req.ClientInfo.TargetPrefix != "" || string(buf) != "{}" {
+		req.SetBufferBody(buf)
+	}
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
 	if req.ClientInfo.TargetPrefix != "" {
 		target := req.ClientInfo.TargetPrefix + "." + req.Operation.Name

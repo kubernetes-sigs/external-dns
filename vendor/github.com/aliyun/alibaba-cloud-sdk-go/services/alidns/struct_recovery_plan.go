@@ -17,6 +17,7 @@ package alidns
 
 // RecoveryPlan is a nested struct in alidns response
 type RecoveryPlan struct {
+<<<<<<< HEAD
 	Status                string `json:"Status" xml:"Status"`
 	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
 	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
@@ -30,4 +31,20 @@ type RecoveryPlan struct {
 	Name                  string `json:"Name" xml:"Name"`
 	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
 	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	RecoveryPlanId        int64  `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
+	Name                  string `json:"Name" xml:"Name"`
+	Remark                string `json:"Remark" xml:"Remark"`
+	FaultAddrPoolNum      int    `json:"FaultAddrPoolNum" xml:"FaultAddrPoolNum"`
+	LastExecuteTime       string `json:"LastExecuteTime" xml:"LastExecuteTime"`
+	LastExecuteTimestamp  int64  `json:"LastExecuteTimestamp" xml:"LastExecuteTimestamp"`
+	LastRollbackTime      string `json:"LastRollbackTime" xml:"LastRollbackTime"`
+	LastRollbackTimestamp int64  `json:"LastRollbackTimestamp" xml:"LastRollbackTimestamp"`
+	CreateTime            string `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp       int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	UpdateTime            string `json:"UpdateTime" xml:"UpdateTime"`
+	UpdateTimestamp       int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	Status                string `json:"Status" xml:"Status"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

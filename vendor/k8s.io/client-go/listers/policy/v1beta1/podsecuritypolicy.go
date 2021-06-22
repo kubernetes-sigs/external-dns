@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type PodSecurityPolicyLister interface {
 	// List lists all PodSecurityPolicies in the indexer.
@@ -90,6 +91,13 @@ type PodSecurityPolicyLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type PodSecurityPolicyLister interface {
+	// List lists all PodSecurityPolicies in the indexer.
+	List(selector labels.Selector) (ret []*v1beta1.PodSecurityPolicy, err error)
+	// Get retrieves the PodSecurityPolicy from the index for a given name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1beta1.PodSecurityPolicy, error)
 	PodSecurityPolicyListerExpansion
 }

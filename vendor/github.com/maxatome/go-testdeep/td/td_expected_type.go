@@ -25,6 +25,7 @@ type tdExpectedType struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (t *tdExpectedType) errorTypeMismatch(gotType reflect.Type) *ctxerr.Error {
 	expectedType := t.expectedType
 	if t.isPtr {
@@ -309,6 +310,63 @@ func (t *tdExpectedType) TypeBehind() reflect.Type {
 		return nil
 	}
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func (t *tdExpectedType) errorTypeMismatch(gotType types.RawString) *ctxerr.Error {
+	return &ctxerr.Error{
+		Message:  "type mismatch",
+		Got:      gotType,
+		Expected: types.RawString(t.expectedTypeStr()),
+	}
+}
+
+func (t *tdExpectedType) checkPtr(ctx ctxerr.Context, pGot *reflect.Value, nilAllowed bool) *ctxerr.Error {
+	if t.isPtr {
+		got := *pGot
+		if got.Kind() != reflect.Ptr {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return t.errorTypeMismatch(types.RawString(got.Type().String()))
+		}
+
+		if !nilAllowed && got.IsNil() {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return &ctxerr.Error{
+				Message:  "values differ",
+				Got:      got,
+				Expected: types.RawString("non-nil"),
+			}
+		}
+
+		*pGot = got.Elem()
+	}
+	return nil
+}
+
+func (t *tdExpectedType) checkType(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if got.Type() != t.expectedType {
+		if ctx.BeLax && t.expectedType.ConvertibleTo(got.Type()) {
+			return nil
+		}
+
+		if ctx.BooleanError {
+			return ctxerr.BooleanError
+		}
+		var gotType types.RawString
+		if t.isPtr {
+			gotType = "*"
+		}
+		gotType += types.RawString(got.Type().String())
+		return t.errorTypeMismatch(gotType)
+	}
+	return nil
+}
+
+func (t *tdExpectedType) TypeBehind() reflect.Type {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if t.isPtr {
 		return reflect.New(t.expectedType).Type()
 	}

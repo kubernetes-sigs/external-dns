@@ -74,6 +74,7 @@ func ParseTraceID(tid string) (trace.TraceID, bool) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil || len(b) > 16 {
 		return trace.TraceID{}, false
 	}
@@ -208,6 +209,32 @@ func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
 =======
 	if err != nil || len(b) > 8 {
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	if err != nil {
+		return trace.TraceID{}, false
+	}
+	var traceID trace.TraceID
+	if len(b) <= 8 {
+		// The lower 64-bits.
+		start := 8 + (8 - len(b))
+		copy(traceID[start:], b)
+	} else {
+		start := 16 - len(b)
+		copy(traceID[start:], b)
+	}
+
+	return traceID, true
+}
+
+// ParseSpanID parses the value of the X-B3-SpanId or X-B3-ParentSpanId headers.
+func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
+	if sid == "" {
+		return trace.SpanID{}, false
+	}
+	b, err := hex.DecodeString(sid)
+	if err != nil {
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return trace.SpanID{}, false
 	}
 	start := 8 - len(b)

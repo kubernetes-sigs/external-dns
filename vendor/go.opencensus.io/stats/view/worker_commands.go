@@ -101,6 +101,7 @@ func (cmd *unregisterFromViewReq) handleCommand(w *worker) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		w.reportView(vi)
 
 		vi.unsubscribe()
@@ -419,6 +420,78 @@ func (cmd *recordReq) handleCommand(w *worker) {
 =======
 			v.addSample(cmd.tm, m.Value(), cmd.attachments, cmd.t)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		w.reportView(vi, time.Now())
+
+		vi.unsubscribe()
+		if !vi.isSubscribed() {
+			// this was the last subscription and view is not collecting anymore.
+			// The collected data can be cleared.
+			vi.clearRows()
+		}
+		w.unregisterView(name)
+	}
+	cmd.done <- struct{}{}
+}
+
+// retrieveDataReq is the command to retrieve data for a view.
+type retrieveDataReq struct {
+	now time.Time
+	v   string
+	c   chan *retrieveDataResp
+}
+
+type retrieveDataResp struct {
+	rows []*Row
+	err  error
+}
+
+func (cmd *retrieveDataReq) handleCommand(w *worker) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	vi, ok := w.views[cmd.v]
+	if !ok {
+		cmd.c <- &retrieveDataResp{
+			nil,
+			fmt.Errorf("cannot retrieve data; view %q is not registered", cmd.v),
+		}
+		return
+	}
+
+	if !vi.isSubscribed() {
+		cmd.c <- &retrieveDataResp{
+			nil,
+			fmt.Errorf("cannot retrieve data; view %q has no subscriptions or collection is not forcibly started", cmd.v),
+		}
+		return
+	}
+	cmd.c <- &retrieveDataResp{
+		vi.collectedRows(),
+		nil,
+	}
+}
+
+// recordReq is the command to record data related to multiple measures
+// at once.
+type recordReq struct {
+	tm          *tag.Map
+	ms          []stats.Measurement
+	attachments map[string]interface{}
+	t           time.Time
+}
+
+func (cmd *recordReq) handleCommand(w *worker) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	for _, m := range cmd.ms {
+		if (m == stats.Measurement{}) { // not registered
+			continue
+		}
+		ref := w.getMeasureRef(m.Measure().Name())
+		for v := range ref.views {
+			v.addSample(cmd.tm, m.Value(), cmd.attachments, time.Now())
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -363,4 +364,30 @@ func (s *tdSmugglerBase) jsonValueEqual(ctx ctxerr.Context, got interface{}) *ct
 	}
 
 	return deepValueEqual(ctx, finalGot.Elem(), s.expectedValue)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"reflect"
+)
+
+// tdSmugglerBase is the base class of all smuggler TestDeep operators.
+type tdSmugglerBase struct {
+	base
+	expectedValue reflect.Value
+	isTestDeeper  bool
+}
+
+func newSmugglerBase(val interface{}, depth ...int) (ret tdSmugglerBase) {
+	callDepth := 4
+	if len(depth) > 0 {
+		callDepth = depth[0]
+	}
+	ret.base = newBase(callDepth)
+
+	// Initializes only if TestDeep operator. Other cases are specific.
+	if _, ok := val.(TestDeep); ok {
+		ret.expectedValue = reflect.ValueOf(val)
+		ret.isTestDeeper = true
+	}
+	return
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

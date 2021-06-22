@@ -34,6 +34,7 @@ type RateLimitingInterface interface {
 
 // NewRateLimitingQueue constructs a new workqueue with rateLimited queuing ability
 // Remember to call Forget!  If you don't, you may end up tracking failures forever.
+<<<<<<< HEAD
 // NewRateLimitingQueue does not emit metrics. For use with a MetricsProvider, please use
 // NewNamedRateLimitingQueue instead.
 func NewRateLimitingQueue(rateLimiter RateLimiter) RateLimitingInterface {
@@ -53,6 +54,19 @@ func NewNamedRateLimitingQueue(rateLimiter RateLimiter, name string) RateLimitin
 func NewRateLimitingQueueWithDelayingInterface(di DelayingInterface, rateLimiter RateLimiter) RateLimitingInterface {
 	return &rateLimitingType{
 		DelayingInterface: di,
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+func NewRateLimitingQueue(rateLimiter RateLimiter) RateLimitingInterface {
+	return &rateLimitingType{
+		DelayingInterface: NewDelayingQueue(),
+		rateLimiter:       rateLimiter,
+	}
+}
+
+func NewNamedRateLimitingQueue(rateLimiter RateLimiter, name string) RateLimitingInterface {
+	return &rateLimitingType{
+		DelayingInterface: NewNamedDelayingQueue(name),
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		rateLimiter:       rateLimiter,
 	}
 }

@@ -20,6 +20,7 @@ type IpSegment struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Name       string `json:"Name" xml:"Name"`
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	Name       string `json:"Name" xml:"Name"`
@@ -53,4 +54,10 @@ type IpSegment struct {
 	Mask       int64  `json:"Mask" xml:"Mask"`
 	StartIp    string `json:"StartIp" xml:"StartIp"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Name    string `json:"Name" xml:"Name"`
+	EndIp   string `json:"EndIp" xml:"EndIp"`
+	StartIp string `json:"StartIp" xml:"StartIp"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

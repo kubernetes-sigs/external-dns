@@ -60,6 +60,7 @@ func (s *daemonSetLister) GetPodDaemonSets(pod *v1.Pod) ([]*apps.DaemonSet, erro
 		}
 		selector, err = metav1.LabelSelectorAsSelector(daemonSet.Spec.Selector)
 		if err != nil {
+<<<<<<< HEAD
 			// This object has an invalid selector, it does not match the pod
 			continue
 		}
@@ -98,6 +99,46 @@ func (s *daemonSetLister) GetHistoryDaemonSets(history *apps.ControllerRevision)
 		if err != nil {
 			// This object has an invalid selector, it does not match the history
 			continue
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			// this should not happen if the DaemonSet passed validation
+			return nil, err
+		}
+
+		// If a daemonSet with a nil or empty selector creeps in, it should match nothing, not everything.
+		if selector.Empty() || !selector.Matches(labels.Set(pod.Labels)) {
+			continue
+		}
+		daemonSets = append(daemonSets, daemonSet)
+	}
+
+	if len(daemonSets) == 0 {
+		return nil, fmt.Errorf("could not find daemon set for pod %s in namespace %s with labels: %v", pod.Name, pod.Namespace, pod.Labels)
+	}
+
+	return daemonSets, nil
+}
+
+// GetHistoryDaemonSets returns a list of DaemonSets that potentially
+// match a ControllerRevision. Only the one specified in the ControllerRevision's ControllerRef
+// will actually manage it.
+// Returns an error only if no matching DaemonSets are found.
+func (s *daemonSetLister) GetHistoryDaemonSets(history *apps.ControllerRevision) ([]*apps.DaemonSet, error) {
+	if len(history.Labels) == 0 {
+		return nil, fmt.Errorf("no DaemonSet found for ControllerRevision %s because it has no labels", history.Name)
+	}
+
+	list, err := s.DaemonSets(history.Namespace).List(labels.Everything())
+	if err != nil {
+		return nil, err
+	}
+
+	var daemonSets []*apps.DaemonSet
+	for _, ds := range list {
+		selector, err := metav1.LabelSelectorAsSelector(ds.Spec.Selector)
+		if err != nil {
+			return nil, fmt.Errorf("invalid label selector: %v", err)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
 		// If a DaemonSet with a nil or empty selector creeps in, it should match nothing, not everything.
 		if selector.Empty() || !selector.Matches(labels.Set(history.Labels)) {

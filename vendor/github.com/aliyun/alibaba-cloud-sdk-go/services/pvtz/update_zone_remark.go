@@ -23,6 +23,7 @@ import (
 // UpdateZoneRemark invokes the pvtz.UpdateZoneRemark API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateZoneRemark(request *UpdateZoneRemarkRequest) (response *UpdateZoneRemarkResponse, err error) {
 	response = CreateUpdateZoneRemarkResponse()
 	err = client.DoAction(request, response)
@@ -175,6 +176,83 @@ func CreateUpdateZoneRemarkRequest() (request *UpdateZoneRemarkRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
+func (client *Client) UpdateZoneRemark(request *UpdateZoneRemarkRequest) (response *UpdateZoneRemarkResponse, err error) {
+	response = CreateUpdateZoneRemarkResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateZoneRemarkWithChan invokes the pvtz.UpdateZoneRemark API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateZoneRemarkWithChan(request *UpdateZoneRemarkRequest) (<-chan *UpdateZoneRemarkResponse, <-chan error) {
+	responseChan := make(chan *UpdateZoneRemarkResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateZoneRemark(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateZoneRemarkWithCallback invokes the pvtz.UpdateZoneRemark API asynchronously
+// api document: https://help.aliyun.com/api/pvtz/updatezoneremark.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateZoneRemarkWithCallback(request *UpdateZoneRemarkRequest, callback func(response *UpdateZoneRemarkResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateZoneRemarkResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateZoneRemark(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateZoneRemarkRequest is the request struct for api UpdateZoneRemark
+type UpdateZoneRemarkRequest struct {
+	*requests.RpcRequest
+	Remark       string `position:"Query" name:"Remark"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	ZoneId       string `position:"Query" name:"ZoneId"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// UpdateZoneRemarkResponse is the response struct for api UpdateZoneRemark
+type UpdateZoneRemarkResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	ZoneId    string `json:"ZoneId" xml:"ZoneId"`
+}
+
+// CreateUpdateZoneRemarkRequest creates a request to invoke UpdateZoneRemark API
+func CreateUpdateZoneRemarkRequest() (request *UpdateZoneRemarkRequest) {
+	request = &UpdateZoneRemarkRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateZoneRemark", "pvtz", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

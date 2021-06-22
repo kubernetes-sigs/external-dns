@@ -142,6 +142,7 @@ func buildRootHuffmanNode() {
 	lazyRootHuffmanNode = newInternalNode()
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// allocate a leaf node for each of the 256 symbols
 	leaves := new([256]node)
 
@@ -278,4 +279,93 @@ func HuffmanEncodeLength(s string) uint64 {
 		n += uint64(huffmanCodeLen[s[i]])
 	}
 	return (n + 7) / 8
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	for i, code := range huffmanCodes {
+		addDecoderNode(byte(i), code, huffmanCodeLen[i])
+	}
+}
+
+func addDecoderNode(sym byte, code uint32, codeLen uint8) {
+	cur := lazyRootHuffmanNode
+	for codeLen > 8 {
+		codeLen -= 8
+		i := uint8(code >> codeLen)
+		if cur.children[i] == nil {
+			cur.children[i] = newInternalNode()
+		}
+		cur = cur.children[i]
+	}
+	shift := 8 - codeLen
+	start, end := int(uint8(code<<shift)), int(1<<shift)
+	for i := start; i < start+end; i++ {
+		cur.children[i] = &node{sym: sym, codeLen: codeLen}
+	}
+}
+
+// AppendHuffmanString appends s, as encoded in Huffman codes, to dst
+// and returns the extended buffer.
+func AppendHuffmanString(dst []byte, s string) []byte {
+	rembits := uint8(8)
+
+	for i := 0; i < len(s); i++ {
+		if rembits == 8 {
+			dst = append(dst, 0)
+		}
+		dst, rembits = appendByteToHuffmanCode(dst, rembits, s[i])
+	}
+
+	if rembits < 8 {
+		// special EOS symbol
+		code := uint32(0x3fffffff)
+		nbits := uint8(30)
+
+		t := uint8(code >> (nbits - rembits))
+		dst[len(dst)-1] |= t
+	}
+
+	return dst
+}
+
+// HuffmanEncodeLength returns the number of bytes required to encode
+// s in Huffman codes. The result is round up to byte boundary.
+func HuffmanEncodeLength(s string) uint64 {
+	n := uint64(0)
+	for i := 0; i < len(s); i++ {
+		n += uint64(huffmanCodeLen[s[i]])
+	}
+	return (n + 7) / 8
+}
+
+// appendByteToHuffmanCode appends Huffman code for c to dst and
+// returns the extended buffer and the remaining bits in the last
+// element. The appending is not byte aligned and the remaining bits
+// in the last element of dst is given in rembits.
+func appendByteToHuffmanCode(dst []byte, rembits uint8, c byte) ([]byte, uint8) {
+	code := huffmanCodes[c]
+	nbits := huffmanCodeLen[c]
+
+	for {
+		if rembits > nbits {
+			t := uint8(code << (rembits - nbits))
+			dst[len(dst)-1] |= t
+			rembits -= nbits
+			break
+		}
+
+		t := uint8(code >> (nbits - rembits))
+		dst[len(dst)-1] |= t
+
+		nbits -= rembits
+		rembits = 8
+
+		if nbits == 0 {
+			break
+		}
+
+		dst = append(dst, 0)
+	}
+
+	return dst, rembits
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

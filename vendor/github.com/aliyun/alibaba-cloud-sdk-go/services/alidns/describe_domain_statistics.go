@@ -23,6 +23,7 @@ import (
 // DescribeDomainStatistics invokes the alidns.DescribeDomainStatistics API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainStatistics(request *DescribeDomainStatisticsRequest) (response *DescribeDomainStatisticsResponse, err error) {
 	response = CreateDescribeDomainStatisticsResponse()
 	err = client.DoAction(request, response)
@@ -179,6 +180,84 @@ func CreateDescribeDomainStatisticsRequest() (request *DescribeDomainStatisticsR
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
+func (client *Client) DescribeDomainStatistics(request *DescribeDomainStatisticsRequest) (response *DescribeDomainStatisticsResponse, err error) {
+	response = CreateDescribeDomainStatisticsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeDomainStatisticsWithChan invokes the alidns.DescribeDomainStatistics API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainStatisticsWithChan(request *DescribeDomainStatisticsRequest) (<-chan *DescribeDomainStatisticsResponse, <-chan error) {
+	responseChan := make(chan *DescribeDomainStatisticsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeDomainStatistics(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeDomainStatisticsWithCallback invokes the alidns.DescribeDomainStatistics API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainStatisticsWithCallback(request *DescribeDomainStatisticsRequest, callback func(response *DescribeDomainStatisticsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeDomainStatisticsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeDomainStatistics(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeDomainStatisticsRequest is the request struct for api DescribeDomainStatistics
+type DescribeDomainStatisticsRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	StartDate    string `position:"Query" name:"StartDate"`
+	EndDate      string `position:"Query" name:"EndDate"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// DescribeDomainStatisticsResponse is the response struct for api DescribeDomainStatistics
+type DescribeDomainStatisticsResponse struct {
+	*responses.BaseResponse
+	RequestId  string                               `json:"RequestId" xml:"RequestId"`
+	Statistics StatisticsInDescribeDomainStatistics `json:"Statistics" xml:"Statistics"`
+}
+
+// CreateDescribeDomainStatisticsRequest creates a request to invoke DescribeDomainStatistics API
+func CreateDescribeDomainStatisticsRequest() (request *DescribeDomainStatisticsRequest) {
+	request = &DescribeDomainStatisticsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainStatistics", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

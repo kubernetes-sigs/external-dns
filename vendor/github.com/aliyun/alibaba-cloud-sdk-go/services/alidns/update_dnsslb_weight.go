@@ -23,6 +23,7 @@ import (
 // UpdateDNSSLBWeight invokes the alidns.UpdateDNSSLBWeight API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateDNSSLBWeight(request *UpdateDNSSLBWeightRequest) (response *UpdateDNSSLBWeightResponse, err error) {
 	response = CreateUpdateDNSSLBWeightResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateUpdateDNSSLBWeightRequest() (request *UpdateDNSSLBWeightRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/updatednsslbweight.html
+func (client *Client) UpdateDNSSLBWeight(request *UpdateDNSSLBWeightRequest) (response *UpdateDNSSLBWeightResponse, err error) {
+	response = CreateUpdateDNSSLBWeightResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UpdateDNSSLBWeightWithChan invokes the alidns.UpdateDNSSLBWeight API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatednsslbweight.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDNSSLBWeightWithChan(request *UpdateDNSSLBWeightRequest) (<-chan *UpdateDNSSLBWeightResponse, <-chan error) {
+	responseChan := make(chan *UpdateDNSSLBWeightResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UpdateDNSSLBWeight(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UpdateDNSSLBWeightWithCallback invokes the alidns.UpdateDNSSLBWeight API asynchronously
+// api document: https://help.aliyun.com/api/alidns/updatednsslbweight.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UpdateDNSSLBWeightWithCallback(request *UpdateDNSSLBWeightRequest, callback func(response *UpdateDNSSLBWeightResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UpdateDNSSLBWeightResponse
+		var err error
+		defer close(result)
+		response, err = client.UpdateDNSSLBWeight(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UpdateDNSSLBWeightRequest is the request struct for api UpdateDNSSLBWeight
+type UpdateDNSSLBWeightRequest struct {
+	*requests.RpcRequest
+	Weight       requests.Integer `position:"Query" name:"Weight"`
+	RecordId     string           `position:"Query" name:"RecordId"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Lang         string           `position:"Query" name:"Lang"`
+}
+
+// UpdateDNSSLBWeightResponse is the response struct for api UpdateDNSSLBWeight
+type UpdateDNSSLBWeightResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+	RecordId  string `json:"RecordId" xml:"RecordId"`
+	Weight    int    `json:"Weight" xml:"Weight"`
+}
+
+// CreateUpdateDNSSLBWeightRequest creates a request to invoke UpdateDNSSLBWeight API
+func CreateUpdateDNSSLBWeightRequest() (request *UpdateDNSSLBWeightRequest) {
+	request = &UpdateDNSSLBWeightRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDNSSLBWeight", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

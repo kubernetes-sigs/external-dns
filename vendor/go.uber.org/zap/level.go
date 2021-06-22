@@ -86,6 +86,7 @@ func NewAtomicLevelAt(l zapcore.Level) AtomicLevel {
 	return a
 }
 
+<<<<<<< HEAD
 // ParseAtomicLevel parses an AtomicLevel based on a lowercase or all-caps ASCII
 // representation of the log level. If the provided ASCII representation is
 // invalid an error is returned.
@@ -103,6 +104,9 @@ func ParseAtomicLevel(text string) (AtomicLevel, error) {
 	return a, nil
 }
 
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // Enabled implements the zapcore.LevelEnabler interface, which allows the
 // AtomicLevel to be used in place of traditional static levels.
 func (lvl AtomicLevel) Enabled(l zapcore.Level) bool {

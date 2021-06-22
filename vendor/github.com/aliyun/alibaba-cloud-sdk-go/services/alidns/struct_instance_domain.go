@@ -17,7 +17,13 @@ package alidns
 
 // InstanceDomain is a nested struct in alidns response
 type InstanceDomain struct {
+<<<<<<< HEAD
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
 	DomainName      string `json:"DomainName" xml:"DomainName"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	DomainName      string `json:"DomainName" xml:"DomainName"`
+	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 }

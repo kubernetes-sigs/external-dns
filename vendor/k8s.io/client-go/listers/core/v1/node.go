@@ -32,6 +32,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type NodeLister interface {
 	// List lists all Nodes in the indexer.
@@ -90,6 +91,13 @@ type NodeLister interface {
 =======
 	// Objects returned here must be treated as read-only.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+type NodeLister interface {
+	// List lists all Nodes in the indexer.
+	List(selector labels.Selector) (ret []*v1.Node, err error)
+	// Get retrieves the Node from the index for a given name.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	Get(name string) (*v1.Node, error)
 	NodeListerExpansion
 }

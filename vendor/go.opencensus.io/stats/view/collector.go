@@ -41,6 +41,7 @@ func (c *collector) addSample(s string, v float64, attachments map[string]interf
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		aggregator = c.a.newData(t)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -101,6 +102,35 @@ func encodeWithKeys(m *tag.Map, keys []tag.Key) []byte {
 	}
 	vb := &tagencoding.Values{
 		Buffer: make([]byte, reqLen),
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+		aggregator = c.a.newData()
+		c.signatures[s] = aggregator
+	}
+	aggregator.addSample(v, attachments, t)
+}
+
+// collectRows returns a snapshot of the collected Row values.
+func (c *collector) collectedRows(keys []tag.Key) []*Row {
+	rows := make([]*Row, 0, len(c.signatures))
+	for sig, aggregator := range c.signatures {
+		tags := decodeTags([]byte(sig), keys)
+		row := &Row{Tags: tags, Data: aggregator.clone()}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+func (c *collector) clearRows() {
+	c.signatures = make(map[string]AggregationData)
+}
+
+// encodeWithKeys encodes the map by using values
+// only associated with the keys provided.
+func encodeWithKeys(m *tag.Map, keys []tag.Key) []byte {
+	vb := &tagencoding.Values{
+		Buffer: make([]byte, len(keys)),
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	for _, k := range keys {
 		v, _ := m.Value(k)

@@ -21,6 +21,7 @@ package v1beta1
 import (
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/apps/v1beta1"
@@ -141,6 +142,45 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*AppsV1beta1Client, 
 	}
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	v1beta1 "k8s.io/api/apps/v1beta1"
+	"k8s.io/client-go/kubernetes/scheme"
+	rest "k8s.io/client-go/rest"
+)
+
+type AppsV1beta1Interface interface {
+	RESTClient() rest.Interface
+	ControllerRevisionsGetter
+	DeploymentsGetter
+	StatefulSetsGetter
+}
+
+// AppsV1beta1Client is used to interact with features provided by the apps group.
+type AppsV1beta1Client struct {
+	restClient rest.Interface
+}
+
+func (c *AppsV1beta1Client) ControllerRevisions(namespace string) ControllerRevisionInterface {
+	return newControllerRevisions(c, namespace)
+}
+
+func (c *AppsV1beta1Client) Deployments(namespace string) DeploymentInterface {
+	return newDeployments(c, namespace)
+}
+
+func (c *AppsV1beta1Client) StatefulSets(namespace string) StatefulSetInterface {
+	return newStatefulSets(c, namespace)
+}
+
+// NewForConfig creates a new AppsV1beta1Client for the given config.
+func NewForConfig(c *rest.Config) (*AppsV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientFor(&config)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	if err != nil {
 		return nil, err
 	}

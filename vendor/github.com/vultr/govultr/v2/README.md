@@ -2,6 +2,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![Automatic Releaser](https://github.com/vultr/govultr/actions/workflows/releaser.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/releaser.yml)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vultr/govultr/v2)](https://pkg.go.dev/github.com/vultr/govultr/v2)
 [![Unit/Coverage Tests](https://github.com/vultr/govultr/actions/workflows/coverage.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/coverage.yml)
@@ -22,6 +23,12 @@
 =======
 [![Unit/Coverage Tests](https://github.com/vultr/govultr/actions/workflows/coverage.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/coverage.yml)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+[![Build Status](https://travis-ci.org/vultr/govultr.svg?branch=master)](https://travis-ci.org/vultr/govultr)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/vultr/govultr/v2)](https://pkg.go.dev/github.com/vultr/govultr/v2)
+[![codecov](https://codecov.io/gh/vultr/govultr/branch/master/graph/badge.svg?token=PDJXBc7Rci)](https://codecov.io/gh/vultr/govultr)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vultr/govultr)](https://goreportcard.com/report/github.com/vultr/govultr)
 
 The official Vultr Go client - GoVultr allows you to interact with the Vultr V2 API.

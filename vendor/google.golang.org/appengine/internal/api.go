@@ -64,6 +64,7 @@ var (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			Proxy:               http.ProxyFromEnvironment,
 			Dial:                limitDial,
 			MaxIdleConns:        1000,
@@ -114,6 +115,11 @@ var (
 			MaxIdleConnsPerHost: 10000,
 			IdleConnTimeout:     90 * time.Second,
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			Proxy: http.ProxyFromEnvironment,
+			Dial:  limitDial,
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		},
 	}
 

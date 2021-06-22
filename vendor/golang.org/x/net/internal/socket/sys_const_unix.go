@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 
@@ -108,4 +109,19 @@ const (
 	sizeofSockaddrInet4 = unix.SizeofSockaddrInet4
 	sizeofSockaddrInet6 = unix.SizeofSockaddrInet6
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+
+package socket
+
+import "golang.org/x/sys/unix"
+
+const (
+	sysAF_UNSPEC = unix.AF_UNSPEC
+	sysAF_INET   = unix.AF_INET
+	sysAF_INET6  = unix.AF_INET6
+
+	sysSOCK_RAW = unix.SOCK_RAW
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 )

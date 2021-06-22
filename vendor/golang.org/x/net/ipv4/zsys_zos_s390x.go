@@ -14,6 +14,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	sysIP_ADD_MEMBERSHIP         = 5
@@ -176,6 +177,33 @@ const (
 
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	sysIP_ADD_MEMBERSHIP         = 5
+	sysIP_ADD_SOURCE_MEMBERSHIP  = 12
+	sysIP_BLOCK_SOURCE           = 10
+	sysIP_DEFAULT_MULTICAST_LOOP = 1
+	sysIP_DEFAULT_MULTICAST_TTL  = 1
+	sysIP_DROP_MEMBERSHIP        = 6
+	sysIP_DROP_SOURCE_MEMBERSHIP = 13
+	sysIP_MAX_MEMBERSHIPS        = 20
+	sysIP_MULTICAST_IF           = 7
+	sysIP_MULTICAST_LOOP         = 4
+	sysIP_MULTICAST_TTL          = 3
+	sysIP_OPTIONS                = 1
+	sysIP_PKTINFO                = 101
+	sysIP_RECVPKTINFO            = 102
+	sysIP_TOS                    = 2
+	sysIP_UNBLOCK_SOURCE         = 11
+
+	sysMCAST_JOIN_GROUP         = 40
+	sysMCAST_LEAVE_GROUP        = 41
+	sysMCAST_JOIN_SOURCE_GROUP  = 42
+	sysMCAST_LEAVE_SOURCE_GROUP = 43
+	sysMCAST_BLOCK_SOURCE       = 44
+	sysMCAST_UNBLOCK_SOURCE     = 45
+
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	sizeofIPMreq          = 8
 	sizeofSockaddrInet4   = 16
 	sizeofSockaddrStorage = 128

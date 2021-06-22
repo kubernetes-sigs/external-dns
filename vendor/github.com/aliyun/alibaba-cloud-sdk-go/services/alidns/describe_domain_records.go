@@ -23,6 +23,7 @@ import (
 // DescribeDomainRecords invokes the alidns.DescribeDomainRecords API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainRecords(request *DescribeDomainRecordsRequest) (response *DescribeDomainRecordsResponse, err error) {
 	response = CreateDescribeDomainRecordsResponse()
 	err = client.DoAction(request, response)
@@ -205,6 +206,98 @@ func CreateDescribeDomainRecordsRequest() (request *DescribeDomainRecordsRequest
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
+func (client *Client) DescribeDomainRecords(request *DescribeDomainRecordsRequest) (response *DescribeDomainRecordsResponse, err error) {
+	response = CreateDescribeDomainRecordsResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// DescribeDomainRecordsWithChan invokes the alidns.DescribeDomainRecords API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainRecordsWithChan(request *DescribeDomainRecordsRequest) (<-chan *DescribeDomainRecordsResponse, <-chan error) {
+	responseChan := make(chan *DescribeDomainRecordsResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.DescribeDomainRecords(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// DescribeDomainRecordsWithCallback invokes the alidns.DescribeDomainRecords API asynchronously
+// api document: https://help.aliyun.com/api/alidns/describedomainrecords.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) DescribeDomainRecordsWithCallback(request *DescribeDomainRecordsRequest, callback func(response *DescribeDomainRecordsResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *DescribeDomainRecordsResponse
+		var err error
+		defer close(result)
+		response, err = client.DescribeDomainRecords(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// DescribeDomainRecordsRequest is the request struct for api DescribeDomainRecords
+type DescribeDomainRecordsRequest struct {
+	*requests.RpcRequest
+	ValueKeyWord string           `position:"Query" name:"ValueKeyWord"`
+	Line         string           `position:"Query" name:"Line"`
+	Type         string           `position:"Query" name:"Type"`
+	PageNumber   requests.Integer `position:"Query" name:"PageNumber"`
+	PageSize     requests.Integer `position:"Query" name:"PageSize"`
+	Lang         string           `position:"Query" name:"Lang"`
+	KeyWord      string           `position:"Query" name:"KeyWord"`
+	RRKeyWord    string           `position:"Query" name:"RRKeyWord"`
+	Direction    string           `position:"Query" name:"Direction"`
+	GroupId      requests.Integer `position:"Query" name:"GroupId"`
+	DomainName   string           `position:"Query" name:"DomainName"`
+	OrderBy      string           `position:"Query" name:"OrderBy"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	SearchMode   string           `position:"Query" name:"SearchMode"`
+	TypeKeyWord  string           `position:"Query" name:"TypeKeyWord"`
+	Status       string           `position:"Query" name:"Status"`
+}
+
+// DescribeDomainRecordsResponse is the response struct for api DescribeDomainRecords
+type DescribeDomainRecordsResponse struct {
+	*responses.BaseResponse
+	RequestId     string                               `json:"RequestId" xml:"RequestId"`
+	TotalCount    int64                                `json:"TotalCount" xml:"TotalCount"`
+	PageNumber    int64                                `json:"PageNumber" xml:"PageNumber"`
+	PageSize      int64                                `json:"PageSize" xml:"PageSize"`
+	DomainRecords DomainRecordsInDescribeDomainRecords `json:"DomainRecords" xml:"DomainRecords"`
+}
+
+// CreateDescribeDomainRecordsRequest creates a request to invoke DescribeDomainRecords API
+func CreateDescribeDomainRecordsRequest() (request *DescribeDomainRecordsRequest) {
+	request = &DescribeDomainRecordsRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainRecords", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

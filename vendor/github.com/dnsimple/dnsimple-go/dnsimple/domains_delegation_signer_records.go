@@ -12,6 +12,7 @@ type DelegationSignerRecord struct {
 	Algorithm  string `json:"algorithm"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Digest     string `json:"digest,omitempty"`
 	DigestType string `json:"digest_type,omitempty"`
 	Keytag     string `json:"keytag,omitempty"`
@@ -32,6 +33,12 @@ type DelegationSignerRecord struct {
 	Keytag     string `json:"keytag,omitempty"`
 	PublicKey  string `json:"public_key,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	Digest     string `json:"digest"`
+	DigestType string `json:"digest_type"`
+	Keytag     string `json:"keytag"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	CreatedAt  string `json:"created_at,omitempty"`
 	UpdatedAt  string `json:"updated_at,omitempty"`
 }

@@ -32,6 +32,7 @@ type AccessToken struct {
 	Type      string `json:"token_type"`
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AccountID int64  `json:"account_id"`
 }
 
@@ -156,6 +157,61 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 		json.NewDecoder(resp.Body).Decode(errorResponse)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	AccountID int    `json:"account_id"`
+}
+
+// ExchangeAuthorizationRequest represents a request to exchange
+// an authorization code for an access token.
+// RedirectURI is optional, all the other fields are mandatory.
+type ExchangeAuthorizationRequest struct {
+	Code         string    `json:"code"`
+	ClientID     string    `json:"client_id"`
+	ClientSecret string    `json:"client_secret"`
+	RedirectURI  string    `json:"redirect_uri,omitempty"`
+	State        string    `json:"state,omitempty"`
+	GrantType    GrantType `json:"grant_type,omitempty"`
+}
+
+// ExchangeAuthorizationError represents a failed request to exchange
+// an authorization code for an access token.
+type ExchangeAuthorizationError struct {
+	// HTTP response
+	HTTPResponse *http.Response
+
+	ErrorCode        string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+}
+
+// Error implements the error interface.
+func (r *ExchangeAuthorizationError) Error() string {
+	return fmt.Sprintf("%v %v: %v %v",
+		r.HTTPResponse.Request.Method, r.HTTPResponse.Request.URL,
+		r.ErrorCode, r.ErrorDescription)
+}
+
+// ExchangeAuthorizationForToken exchanges the short-lived authorization code for an access token
+// you can use to authenticate your API calls.
+func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuthorizationRequest) (*AccessToken, error) {
+	path := versioned("/oauth/access_token")
+
+	req, err := s.client.newRequest("POST", path, authorization)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := s.client.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		errorResponse := &ExchangeAuthorizationError{}
+		errorResponse.HTTPResponse = resp
+		json.NewDecoder(resp.Body).Decode(errorResponse)
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return nil, errorResponse
 	}
 

@@ -125,6 +125,7 @@ func (request *RoaRequest) InitWithApiInfo(product, version, action, uriPattern,
 	request.Headers["x-acs-version"] = version
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
@@ -167,6 +168,23 @@ func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	request.pathPattern = uriPattern
+	request.locationServiceCode = serviceCode
+	request.locationEndpointType = endpointType
+	request.product = product
+	//request.version = version
+	request.actionName = action
+}
+
+func (request *RoaRequest) initWithCommonRequest(commonRequest *CommonRequest) {
+	request.baseRequest = commonRequest.baseRequest
+	request.PathParams = commonRequest.PathParams
+	request.product = commonRequest.Product
+	//request.version = commonRequest.Version
+	request.Headers["x-acs-version"] = commonRequest.Version
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	request.actionName = commonRequest.ApiName
 	request.pathPattern = commonRequest.PathPattern
 	request.locationServiceCode = commonRequest.ServiceCode

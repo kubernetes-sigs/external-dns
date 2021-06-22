@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"go.opencensus.io/resource"
 
 	"go.opencensus.io/metric/metricdata"
@@ -550,6 +551,135 @@ func viewToMetric(v *viewInternal, r *resource.Resource, now time.Time) *metricd
 =======
 		Resource:   r,
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	"go.opencensus.io/metric/metricdata"
+	"go.opencensus.io/stats"
+)
+
+func getUnit(unit string) metricdata.Unit {
+	switch unit {
+	case "1":
+		return metricdata.UnitDimensionless
+	case "ms":
+		return metricdata.UnitMilliseconds
+	case "By":
+		return metricdata.UnitBytes
+	}
+	return metricdata.UnitDimensionless
+}
+
+func getType(v *View) metricdata.Type {
+	m := v.Measure
+	agg := v.Aggregation
+
+	switch agg.Type {
+	case AggTypeSum:
+		switch m.(type) {
+		case *stats.Int64Measure:
+			return metricdata.TypeCumulativeInt64
+		case *stats.Float64Measure:
+			return metricdata.TypeCumulativeFloat64
+		default:
+			panic("unexpected measure type")
+		}
+	case AggTypeDistribution:
+		return metricdata.TypeCumulativeDistribution
+	case AggTypeLastValue:
+		switch m.(type) {
+		case *stats.Int64Measure:
+			return metricdata.TypeGaugeInt64
+		case *stats.Float64Measure:
+			return metricdata.TypeGaugeFloat64
+		default:
+			panic("unexpected measure type")
+		}
+	case AggTypeCount:
+		switch m.(type) {
+		case *stats.Int64Measure:
+			return metricdata.TypeCumulativeInt64
+		case *stats.Float64Measure:
+			return metricdata.TypeCumulativeInt64
+		default:
+			panic("unexpected measure type")
+		}
+	default:
+		panic("unexpected aggregation type")
+	}
+}
+
+func getLabelKeys(v *View) []metricdata.LabelKey {
+	labelKeys := []metricdata.LabelKey{}
+	for _, k := range v.TagKeys {
+		labelKeys = append(labelKeys, metricdata.LabelKey{Key: k.Name()})
+	}
+	return labelKeys
+}
+
+func viewToMetricDescriptor(v *View) *metricdata.Descriptor {
+	return &metricdata.Descriptor{
+		Name:        v.Name,
+		Description: v.Description,
+		Unit:        convertUnit(v),
+		Type:        getType(v),
+		LabelKeys:   getLabelKeys(v),
+	}
+}
+
+func convertUnit(v *View) metricdata.Unit {
+	switch v.Aggregation.Type {
+	case AggTypeCount:
+		return metricdata.UnitDimensionless
+	default:
+		return getUnit(v.Measure.Unit())
+	}
+}
+
+func toLabelValues(row *Row, expectedKeys []metricdata.LabelKey) []metricdata.LabelValue {
+	labelValues := []metricdata.LabelValue{}
+	tagMap := make(map[string]string)
+	for _, tag := range row.Tags {
+		tagMap[tag.Key.Name()] = tag.Value
+	}
+
+	for _, key := range expectedKeys {
+		if val, ok := tagMap[key.Key]; ok {
+			labelValues = append(labelValues, metricdata.NewLabelValue(val))
+		} else {
+			labelValues = append(labelValues, metricdata.LabelValue{})
+		}
+	}
+	return labelValues
+}
+
+func rowToTimeseries(v *viewInternal, row *Row, now time.Time, startTime time.Time) *metricdata.TimeSeries {
+	return &metricdata.TimeSeries{
+		Points:      []metricdata.Point{row.Data.toPoint(v.metricDescriptor.Type, now)},
+		LabelValues: toLabelValues(row, v.metricDescriptor.LabelKeys),
+		StartTime:   startTime,
+	}
+}
+
+func viewToMetric(v *viewInternal, now time.Time, startTime time.Time) *metricdata.Metric {
+	if v.metricDescriptor.Type == metricdata.TypeGaugeInt64 ||
+		v.metricDescriptor.Type == metricdata.TypeGaugeFloat64 {
+		startTime = time.Time{}
+	}
+
+	rows := v.collectedRows()
+	if len(rows) == 0 {
+		return nil
+	}
+
+	ts := []*metricdata.TimeSeries{}
+	for _, row := range rows {
+		ts = append(ts, rowToTimeseries(v, row, now, startTime))
+	}
+
+	m := &metricdata.Metric{
+		Descriptor: *v.metricDescriptor,
+		TimeSeries: ts,
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
 	return m
 }

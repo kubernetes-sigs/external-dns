@@ -142,6 +142,7 @@ func unmarshalLocationElements(resp *http.Response, v reflect.Value, lowerCaseHe
 				if err != nil {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 					return awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -222,6 +223,73 @@ func unmarshalHeader(v reflect.Value, header string, tag reflect.StructTag) erro
 			}
 			header = string(b)
 		}
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+					awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func unmarshalStatusCode(v reflect.Value, statusCode int) {
+	if !v.IsValid() {
+		return
+	}
+
+	switch v.Interface().(type) {
+	case *int64:
+		s := int64(statusCode)
+		v.Set(reflect.ValueOf(&s))
+	}
+}
+
+func unmarshalHeaderMap(r reflect.Value, headers http.Header, prefix string, normalize bool) error {
+	if len(headers) == 0 {
+		return nil
+	}
+	switch r.Interface().(type) {
+	case map[string]*string: // we only support string map value types
+		out := map[string]*string{}
+		for k, v := range headers {
+			if awsStrings.HasPrefixFold(k, prefix) {
+				if normalize == true {
+					k = strings.ToLower(k)
+				} else {
+					k = http.CanonicalHeaderKey(k)
+				}
+				out[k[len(prefix):]] = &v[0]
+			}
+		}
+		if len(out) != 0 {
+			r.Set(reflect.ValueOf(out))
+		}
+
+	}
+	return nil
+}
+
+func unmarshalHeader(v reflect.Value, header string, tag reflect.StructTag) error {
+	switch tag.Get("type") {
+	case "jsonvalue":
+		if len(header) == 0 {
+			return nil
+		}
+	case "blob":
+		if len(header) == 0 {
+			return nil
+		}
+	default:
+		if !v.IsValid() || (header == "" && v.Elem().Kind() != reflect.String) {
+			return nil
+		}
+	}
+
+	switch v.Interface().(type) {
+	case *string:
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		v.Set(reflect.ValueOf(&header))
 	case []byte:
 		b, err := base64.StdEncoding.DecodeString(header)

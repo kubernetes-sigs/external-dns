@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Account
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -71,6 +72,32 @@ type Account struct {
 type TeamInfo struct {
 	Name string `json:"name,omitempty"`
 	UUID string `json:"uuid,omitempty"`
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// See: https://developers.digitalocean.com/documentation/v2/#account
+type AccountService interface {
+	Get(context.Context) (*Account, *Response, error)
+}
+
+// AccountServiceOp handles communication with the Account related methods of
+// the DigitalOcean API.
+type AccountServiceOp struct {
+	client *Client
+}
+
+var _ AccountService = &AccountServiceOp{}
+
+// Account represents a DigitalOcean Account
+type Account struct {
+	DropletLimit    int    `json:"droplet_limit,omitempty"`
+	FloatingIPLimit int    `json:"floating_ip_limit,omitempty"`
+	VolumeLimit     int    `json:"volume_limit,omitempty"`
+	Email           string `json:"email,omitempty"`
+	UUID            string `json:"uuid,omitempty"`
+	EmailVerified   bool   `json:"email_verified,omitempty"`
+	Status          string `json:"status,omitempty"`
+	StatusMessage   string `json:"status_message,omitempty"`
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 type accountRoot struct {

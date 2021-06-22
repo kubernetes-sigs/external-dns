@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -100,6 +101,56 @@ func ParseOneSocketControlMessage(b []byte) (hdr Cmsghdr, data []byte, remainder
 		remainder = b[i:]
 	}
 	return *h, dbuf, remainder, nil
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+
+// Socket control messages
+
+package unix
+
+import (
+	"unsafe"
+)
+
+// CmsgLen returns the value to store in the Len field of the Cmsghdr
+// structure, taking into account any necessary alignment.
+func CmsgLen(datalen int) int {
+	return cmsgAlignOf(SizeofCmsghdr) + datalen
+}
+
+// CmsgSpace returns the number of bytes an ancillary element with
+// payload of the passed data length occupies.
+func CmsgSpace(datalen int) int {
+	return cmsgAlignOf(SizeofCmsghdr) + cmsgAlignOf(datalen)
+}
+
+func (h *Cmsghdr) data(offset uintptr) unsafe.Pointer {
+	return unsafe.Pointer(uintptr(unsafe.Pointer(h)) + uintptr(cmsgAlignOf(SizeofCmsghdr)) + offset)
+}
+
+// SocketControlMessage represents a socket control message.
+type SocketControlMessage struct {
+	Header Cmsghdr
+	Data   []byte
+}
+
+// ParseSocketControlMessage parses b as an array of socket control
+// messages.
+func ParseSocketControlMessage(b []byte) ([]SocketControlMessage, error) {
+	var msgs []SocketControlMessage
+	i := 0
+	for i+CmsgLen(0) <= len(b) {
+		h, dbuf, err := socketControlMessageHeaderAndData(b[i:])
+		if err != nil {
+			return nil, err
+		}
+		m := SocketControlMessage{Header: *h, Data: dbuf}
+		msgs = append(msgs, m)
+		i += cmsgAlignOf(int(h.Len))
+	}
+	return msgs, nil
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 func socketControlMessageHeaderAndData(b []byte) (*Cmsghdr, []byte, error) {

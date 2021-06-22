@@ -137,6 +137,7 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 				// jtopjian: This was put into place to resolve the issue
 				// described at
@@ -203,6 +204,9 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 				// use a review.
 				return nil
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 			}
 		}
 	case reflect.Struct:

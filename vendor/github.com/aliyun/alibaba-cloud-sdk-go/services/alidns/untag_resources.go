@@ -23,6 +23,7 @@ import (
 // UntagResources invokes the alidns.UntagResources API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
 	response = CreateUntagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateUntagResourcesRequest() (request *UntagResourcesRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/untagresources.html
+func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
+	response = CreateUntagResourcesResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// UntagResourcesWithChan invokes the alidns.UntagResources API asynchronously
+// api document: https://help.aliyun.com/api/alidns/untagresources.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-chan *UntagResourcesResponse, <-chan error) {
+	responseChan := make(chan *UntagResourcesResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.UntagResources(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// UntagResourcesWithCallback invokes the alidns.UntagResources API asynchronously
+// api document: https://help.aliyun.com/api/alidns/untagresources.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest, callback func(response *UntagResourcesResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *UntagResourcesResponse
+		var err error
+		defer close(result)
+		response, err = client.UntagResources(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// UntagResourcesRequest is the request struct for api UntagResources
+type UntagResourcesRequest struct {
+	*requests.RpcRequest
+	All          requests.Boolean `position:"Query" name:"All"`
+	ResourceId   *[]string        `position:"Query" name:"ResourceId"  type:"Repeated"`
+	ResourceType string           `position:"Query" name:"ResourceType"`
+	UserClientIp string           `position:"Query" name:"UserClientIp"`
+	Lang         string           `position:"Query" name:"Lang"`
+	TagKey       *[]string        `position:"Query" name:"TagKey"  type:"Repeated"`
+}
+
+// UntagResourcesResponse is the response struct for api UntagResources
+type UntagResourcesResponse struct {
+	*responses.BaseResponse
+	RequestId string `json:"RequestId" xml:"RequestId"`
+}
+
+// CreateUntagResourcesRequest creates a request to invoke UntagResources API
+func CreateUntagResourcesRequest() (request *UntagResourcesRequest) {
+	request = &UntagResourcesRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "UntagResources", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

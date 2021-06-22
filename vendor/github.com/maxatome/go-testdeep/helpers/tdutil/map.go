@@ -11,8 +11,14 @@ import (
 	"sort"
 )
 
+<<<<<<< HEAD
 // MapSortedKeys returns a slice of all sorted keys of map m. It
 // panics if m's [reflect.Kind] is not [reflect.Map].
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// MapSortedKeys returns a slice of all sorted keys of map "m". It
+// panics if "m"'s reflect.Kind is not reflect.Map.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func MapSortedKeys(m reflect.Value) []reflect.Value {
 	ks := m.MapKeys()
 	sort.Sort(SortableValues(ks))

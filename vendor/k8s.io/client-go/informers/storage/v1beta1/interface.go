@@ -34,6 +34,7 @@ type Interface interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -171,6 +172,34 @@ func (v *version) CSINodes() CSINodeInformer {
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// StorageClasses returns a StorageClassInformer.
+	StorageClasses() StorageClassInformer
+	// VolumeAttachments returns a VolumeAttachmentInformer.
+	VolumeAttachments() VolumeAttachmentInformer
+}
+
+type version struct {
+	factory          internalinterfaces.SharedInformerFactory
+	namespace        string
+	tweakListOptions internalinterfaces.TweakListOptionsFunc
+}
+
+// New returns a new Interface.
+func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
+	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
+}
+
+// CSIDrivers returns a CSIDriverInformer.
+func (v *version) CSIDrivers() CSIDriverInformer {
+	return &cSIDriverInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// CSINodes returns a CSINodeInformer.
+func (v *version) CSINodes() CSINodeInformer {
+	return &cSINodeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
 // StorageClasses returns a StorageClassInformer.

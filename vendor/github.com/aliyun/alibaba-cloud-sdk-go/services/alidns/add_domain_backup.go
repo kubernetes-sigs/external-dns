@@ -23,6 +23,7 @@ import (
 // AddDomainBackup invokes the alidns.AddDomainBackup API synchronously
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddDomainBackup(request *AddDomainBackupRequest) (response *AddDomainBackupResponse, err error) {
 	response = CreateAddDomainBackupResponse()
 	err = client.DoAction(request, response)
@@ -177,6 +178,84 @@ func CreateAddDomainBackupRequest() (request *AddDomainBackupRequest) {
 =======
 	request.Method = requests.POST
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
+func (client *Client) AddDomainBackup(request *AddDomainBackupRequest) (response *AddDomainBackupResponse, err error) {
+	response = CreateAddDomainBackupResponse()
+	err = client.DoAction(request, response)
+	return
+}
+
+// AddDomainBackupWithChan invokes the alidns.AddDomainBackup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddDomainBackupWithChan(request *AddDomainBackupRequest) (<-chan *AddDomainBackupResponse, <-chan error) {
+	responseChan := make(chan *AddDomainBackupResponse, 1)
+	errChan := make(chan error, 1)
+	err := client.AddAsyncTask(func() {
+		defer close(responseChan)
+		defer close(errChan)
+		response, err := client.AddDomainBackup(request)
+		if err != nil {
+			errChan <- err
+		} else {
+			responseChan <- response
+		}
+	})
+	if err != nil {
+		errChan <- err
+		close(responseChan)
+		close(errChan)
+	}
+	return responseChan, errChan
+}
+
+// AddDomainBackupWithCallback invokes the alidns.AddDomainBackup API asynchronously
+// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
+// asynchronous document: https://help.aliyun.com/document_detail/66220.html
+func (client *Client) AddDomainBackupWithCallback(request *AddDomainBackupRequest, callback func(response *AddDomainBackupResponse, err error)) <-chan int {
+	result := make(chan int, 1)
+	err := client.AddAsyncTask(func() {
+		var response *AddDomainBackupResponse
+		var err error
+		defer close(result)
+		response, err = client.AddDomainBackup(request)
+		callback(response, err)
+		result <- 1
+	})
+	if err != nil {
+		defer close(result)
+		callback(nil, err)
+		result <- 0
+	}
+	return result
+}
+
+// AddDomainBackupRequest is the request struct for api AddDomainBackup
+type AddDomainBackupRequest struct {
+	*requests.RpcRequest
+	DomainName   string `position:"Query" name:"DomainName"`
+	PeriodType   string `position:"Query" name:"PeriodType"`
+	UserClientIp string `position:"Query" name:"UserClientIp"`
+	Lang         string `position:"Query" name:"Lang"`
+}
+
+// AddDomainBackupResponse is the response struct for api AddDomainBackup
+type AddDomainBackupResponse struct {
+	*responses.BaseResponse
+	RequestId  string `json:"RequestId" xml:"RequestId"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
+	PeriodType string `json:"PeriodType" xml:"PeriodType"`
+}
+
+// CreateAddDomainBackupRequest creates a request to invoke AddDomainBackup API
+func CreateAddDomainBackupRequest() (request *AddDomainBackupRequest) {
+	request = &AddDomainBackupRequest{
+		RpcRequest: &requests.RpcRequest{},
+	}
+	request.InitWithApiInfo("Alidns", "2015-01-09", "AddDomainBackup", "alidns", "openAPI")
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	return
 }
 

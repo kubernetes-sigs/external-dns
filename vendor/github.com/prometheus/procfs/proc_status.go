@@ -78,6 +78,7 @@ type ProcStatus struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
 	UIDs [4]string
 	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
@@ -318,6 +319,56 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 	case "Gid":
 		copy(s.GIDs[:], strings.Split(vString, "\t"))
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
+	UIDs [4]string
+}
+
+// NewStatus returns the current status information of the process.
+func (p Proc) NewStatus() (ProcStatus, error) {
+	data, err := util.ReadFileNoStat(p.path("status"))
+	if err != nil {
+		return ProcStatus{}, err
+	}
+
+	s := ProcStatus{PID: p.PID}
+
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		if !bytes.Contains([]byte(line), []byte(":")) {
+			continue
+		}
+
+		kv := strings.SplitN(line, ":", 2)
+
+		// removes spaces
+		k := string(strings.TrimSpace(kv[0]))
+		v := string(strings.TrimSpace(kv[1]))
+		// removes "kB"
+		v = string(bytes.Trim([]byte(v), " kB"))
+
+		// value to int when possible
+		// we can skip error check here, 'cause vKBytes is not used when value is a string
+		vKBytes, _ := strconv.ParseUint(v, 10, 64)
+		// convert kB to B
+		vBytes := vKBytes * 1024
+
+		s.fillStatus(k, v, vKBytes, vBytes)
+	}
+
+	return s, nil
+}
+
+func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintBytes uint64) {
+	switch k {
+	case "Tgid":
+		s.TGID = int(vUint)
+	case "Name":
+		s.Name = vString
+	case "Uid":
+		copy(s.UIDs[:], strings.Split(vString, "\t"))
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	case "VmPeak":
 		s.VmPeak = vUintBytes
 	case "VmSize":

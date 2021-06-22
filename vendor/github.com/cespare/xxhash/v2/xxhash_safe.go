@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 //go:build appengine
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build appengine
 
 // This file contains the safe implementations of otherwise unsafe-using code.

@@ -21,6 +21,7 @@ limitations under the License.
 // Each API group should define a utility function
 // called AddToScheme for adding its types to a Scheme:
 //
+<<<<<<< HEAD
 //	 // in package myapigroupv1...
 //	var (
 //		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
@@ -203,6 +204,55 @@ type Builder struct {
 =======
 // Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+//  // in package myapigroupv1...
+//  var (
+//  	SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
+//  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+//  	AddToScheme = SchemeBuilder.AddToScheme
+//  )
+//
+//  func init() {
+//  	SchemeBuilder.Register(&MyType{}, &MyTypeList)
+//  }
+//  var (
+//  	scheme *runtime.Scheme = runtime.NewScheme()
+//  )
+//
+// This also true of the built-in Kubernetes types.  Then, in the entrypoint for
+// your manager, assemble the scheme containing exactly the types you need,
+// panicing if scheme registration failed. For instance, if our controller needs
+// types from the core/v1 API group (e.g. Pod), plus types from my.api.group/v1:
+//
+//  func init() {
+//  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
+//  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
+//  }
+//
+//  func main() {
+//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
+//  		Scheme: scheme,
+//  	})
+//  	// ...
+//  }
+//
+package scheme
+
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// Builder builds a new Scheme for mapping go types to Kubernetes GroupVersionKinds.
+type Builder struct {
+	GroupVersion schema.GroupVersion
+	runtime.SchemeBuilder
+}
+
+// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 func (bld *Builder) Register(object ...runtime.Object) *Builder {
 	bld.SchemeBuilder.Register(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(bld.GroupVersion, object...)

@@ -135,7 +135,12 @@ func IgnoreUnset() cmp.Option {
 				if v2.Len() == 0 {
 					return true
 				}
+<<<<<<< HEAD
 			case reflect.Interface, reflect.Pointer:
+||||||| parent of b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+=======
+			case reflect.Interface, reflect.Ptr:
+>>>>>>> b60b08dfc (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 				if v2.IsNil() {
 					return true
 				}
