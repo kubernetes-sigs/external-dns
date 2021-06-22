@@ -1,0 +1,11 @@
+[prune]
+  go-tests = true
+  unused-packages = true
+
+[[constraint]]
+  name = "github.com/mitchellh/mapstructure"
+  version = "1.1.2"
+
+[[constraint]]
+  name = "gopkg.in/resty.v1"
+  version = "1.10.3"

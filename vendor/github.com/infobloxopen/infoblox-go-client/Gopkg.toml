@@ -1,0 +1,19 @@
+[[constraint]]
+  name = "github.com/onsi/ginkgo"
+  version = "1.7.0"
+
+[[constraint]]
+  name = "github.com/onsi/gomega"
+  version = "1.4.3"
+
+[[constraint]]
+  name = "github.com/sirupsen/logrus"
+  version = "1.3.0"
+
+[[constraint]]
+  branch = "master"
+  name = "golang.org/x/net"
+
+[prune]
+  go-tests = true
+  unused-packages = true

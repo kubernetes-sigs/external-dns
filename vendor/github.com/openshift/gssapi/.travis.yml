@@ -1,0 +1,33 @@
+language: go
+
+go:
+  - 1.5.4
+  - 1.6.3
+  - 1.7.1
+  - tip
+
+sudo: required
+
+services:
+  - docker
+
+env:
+  global:
+    secure: o2LFpvYCeeVurf/rttGoELGWBqWhUUtk/CKZC8pCY8JzMZHC35xVJwaBAWZarJCnno75ZGp0VzTLKkV6vA+Rr0uM8Q3SCScDc+/LvC4k5DveL+9oce2PxpFpiGGWvX/Xjk0zFjvOoGWitvU6ozQhUhejMSzq4ZdZqzTPDLlOK18bRN9y9eOnRFXxLkgLgRKoEEQActvbLeH6LK4edleZOyADoYS/6VlqFspLH2qEeyO3fhB5o/EFTfcQ/3L0v+ifP/bjfBQFVGTUfqx9rM+jbPvzcumR2e3Gw2Hub+xaO67//jJ9UGLpD4javJ1Ff6Tg5YYjl/OYuaM0iqqGNI1M/QOuhpxt7gvd7uCmV6C2JNxVH23jBJu6wiKjP30J8J0AuuTj4xT9JrpSmkyvjHmnm2NX55ZW1pv4OQZD/n4WM3m53ADfcKQByCB1GQlArHj11SD1NrvFqED4id0puCOBa8EUUw0R7++i6a75L/B/03/WTmSk8SKECQhObM6O4juHy8V58r7W3pzZ6K+Arjj6uSA6nT7vLx1dD8xdllbn3obwPaWPuwMHPXtWl/OpQHUhpvlAsxDeJFY1Y16Mxu6Ht6qeqP7Guz3aAGFFVyymnU1UeVHm4ABC7yQnn0nMMsl5bq7KiOvRD5m01AEZLd846MwYP+c0yte/0+Cre4x8OVQ=
+
+before_install:
+  - sudo apt-get update -q
+  - sudo apt-get install -y gcc libkrb5-dev
+  - go get github.com/mattn/goveralls
+
+install: true
+
+script:
+  - go vet ./...
+  - go fmt ./...
+  - go test -v -covermode=count -coverprofile=coverage.out
+  - $HOME/gopath/bin/goveralls -coverprofile=coverage.out -service=travis-ci
+  - go test -i -race ./...
+  - go test -v -race ./...
+  - cd test/
+  - ./run-heimdal.sh

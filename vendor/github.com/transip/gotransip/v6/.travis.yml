@@ -1,0 +1,20 @@
+language: go
+
+go:
+  - "1.13"
+  - "1.x"
+
+env:
+  global:
+    - GO111MODULE=on
+
+before_install:
+  - GO111MODULE=off go get -u golang.org/x/lint/golint
+  - echo $PATH
+  - find $GOPATH/bin
+
+script:
+  - ci/tidy.sh
+  - ci/lint.sh
+  - ci/vet.sh
+  - ci/test.sh

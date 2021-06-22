@@ -1,0 +1,58 @@
+run:
+  # timeout for analysis, e.g. 30s, 5m, default is 1m
+  deadline: 30s
+
+  # exit code when at least one issue was found, default is 1
+  issues-exit-code: 1
+
+  # include test files or not, default is true
+  tests: true
+
+# all available settings of specific linters
+linters-settings:
+  gocyclo:
+    min-complexity: 20
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 2
+  depguard:
+  lll:
+    line-length: 160
+  nakedret:
+    max-func-lines: 10
+
+linters:
+  enable:
+    - megacheck
+    - govet
+    - golint
+    - gosec
+    - unconvert
+    - goconst
+    - gocyclo
+    - gofmt
+    - lll
+    - unparam
+    - nakedret
+    - misspell
+  enable-all: false
+  disable-all: false
+  presets:
+    - bugs
+    - unused
+  fast: false
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - lll
+        - goconst
+    - path: jwt/token_test.go
+      linters:
+        - gosec

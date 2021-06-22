@@ -1,0 +1,73 @@
+variables:
+  DOCKER_IMAGE: '$IMAGE_URL'
+image: '$DOCKER_IMAGE'
+stages:
+  - analyze
+  - lint
+  - test
+  - validate
+  - deploy
+  - release
+
+analyze:lint:
+  stage: analyze
+  image: golangci/golangci-lint:v1.19
+  script:
+    - golangci-lint run
+  tags:
+    - k8s-tbk
+
+lint:golint:
+  stage: lint
+  script:
+    - ci/lint.sh
+  tags:
+    - k8s-tbk
+
+lint:vet:
+  stage: lint
+  script:
+    - ci/vet.sh
+  tags:
+    - k8s-tbk
+
+lint:modtidy:
+  stage: lint
+  script:
+    - ci/tidy.sh
+  tags:
+    - k8s-tbk
+
+test:go:
+  stage: test
+  script:
+    - ci/test.sh
+  tags:
+    - k8s-tbk
+
+validate:tag-message:
+  stage: validate
+  only:
+    - tags
+  script:
+    - ci/validate_tag_message.sh $CI_COMMIT_TAG
+  tags:
+    - k8s-tbk
+
+deploy:deploy-to-github:
+  stage: deploy
+  only:
+    - tags
+  script:
+    - ci/deploy_to_github.sh
+  tags:
+    - k8s-tbk
+
+release:release-to-github:
+  stage: release
+  only:
+    - tags
+  script:
+    - ci/release_to_github.sh $CI_COMMIT_TAG
+  tags:
+    - k8s-tbk

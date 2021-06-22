@@ -1,0 +1,138 @@
+---
+title: Istio Status
+description: Common status field for all istio collections.
+location: https://istio.io/docs/reference/config/meta/v1beta1/istio-status.html
+layout: protoc-gen-docs
+generator: protoc-gen-docs
+number_of_entries: 2
+---
+<h2 id="IstioStatus">IstioStatus</h2>
+<section>
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="IstioStatus-conditions">
+<td><code>conditions</code></td>
+<td><code><a href="#IstioCondition">IstioCondition[]</a></code></td>
+<td>
+<p>Current service state of pod.
+More info: https://istio.io/docs/reference/config/config-status/
++optional
++patchMergeKey=type
++patchStrategy=merge</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioStatus-validation_messages">
+<td><code>validationMessages</code></td>
+<td><code><a href="https://istio.io/docs/reference/config/istio.analysis.v1alpha1.html#AnalysisMessageBase">AnalysisMessageBase[]</a></code></td>
+<td>
+<p>Includes any errors or warnings detected by Istio&rsquo;s analyzers.
++optional
++patchMergeKey=type
++patchStrategy=merge</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<h2 id="IstioCondition">IstioCondition</h2>
+<section>
+<table class="message-fields">
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+<th>Required</th>
+</tr>
+</thead>
+<tbody>
+<tr id="IstioCondition-type">
+<td><code>type</code></td>
+<td><code>string</code></td>
+<td>
+<p>Type is the type of the condition.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioCondition-status">
+<td><code>status</code></td>
+<td><code>string</code></td>
+<td>
+<p>Status is the status of the condition.
+Can be True, False, Unknown.</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioCondition-last_probe_time">
+<td><code>lastProbeTime</code></td>
+<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#timestamp">Timestamp</a></code></td>
+<td>
+<p>Last time we probed the condition.
++optional</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioCondition-last_transition_time">
+<td><code>lastTransitionTime</code></td>
+<td><code><a href="https://developers.google.com/protocol-buffers/docs/reference/google.protobuf#timestamp">Timestamp</a></code></td>
+<td>
+<p>Last time the condition transitioned from one status to another.
++optional</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioCondition-reason">
+<td><code>reason</code></td>
+<td><code>string</code></td>
+<td>
+<p>Unique, one-word, CamelCase reason for the condition&rsquo;s last transition.
++optional</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+<tr id="IstioCondition-message">
+<td><code>message</code></td>
+<td><code>string</code></td>
+<td>
+<p>Human-readable message indicating details about last transition.
++optional</p>
+
+</td>
+<td>
+No
+</td>
+</tr>
+</tbody>
+</table>
+</section>
