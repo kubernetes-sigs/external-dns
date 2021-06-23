@@ -21,6 +21,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
+	log "github.com/sirupsen/logrus"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -40,7 +43,7 @@ type Plan struct {
 	// Populated after calling Calculate()
 	Changes *Changes
 	// DomainFilter matches DNS names
-	DomainFilter endpoint.DomainFilter
+	DomainFilter endpoint.DomainFilterInterface
 	// Property comparator compares custom properties of providers
 	PropertyComparator PropertyComparator
 	// DNS record types that will be considered for management
@@ -115,11 +118,22 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 	t.rows[dnsName][e.SetIdentifier].candidates = append(t.rows[dnsName][e.SetIdentifier].candidates, e)
 }
 
+func (c *Changes) HasChanges() bool {
+	if len(c.Create) > 0 || len(c.Delete) > 0 {
+		return true
+	}
+	return !cmp.Equal(c.UpdateNew, c.UpdateOld)
+}
+
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
 func (p *Plan) Calculate() *Plan {
 	t := newPlanTable()
+
+	if p.DomainFilter == nil {
+		p.DomainFilter = endpoint.MatchAllDomainFilters(nil)
+	}
 
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter, p.ManagedRecords) {
 		t.addCurrent(current)
@@ -227,12 +241,13 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilter, managedRecords []string) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, managedRecords []string) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
 		// Ignore records that do not match the domain filter provided
 		if !domainFilter.Match(record.DNSName) {
+			log.Debugf("ignoring record %s that does not match domain filter", record.DNSName)
 			continue
 		}
 		if isManagedRecord(record.RecordType, managedRecords) {
