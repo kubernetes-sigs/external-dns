@@ -22,7 +22,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: k8s.gcr.io/external-dns/external-dns:v0.9.0
         args:
         - --source=kong-tcpingress
         - --provider=aws
@@ -39,7 +39,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -54,7 +54,7 @@ rules:
   resources: ["tcpingresses"]
   verbs: ["get","watch","list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -86,11 +86,10 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: k8s.gcr.io/external-dns/external-dns:v0.9.0
         args:
         - --source=kong-tcpingress
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
-
