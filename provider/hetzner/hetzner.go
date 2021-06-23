@@ -152,14 +152,6 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 				"zone_id": change.ZoneID,
 			}).Info("Changing record")
 
-			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, "."+change.ZoneName)
-			if change.ResourceRecordSet.Name == change.ZoneName {
-				change.ResourceRecordSet.Name = "@"
-			}
-			if change.ResourceRecordSet.RecordType == endpoint.RecordTypeCNAME {
-				change.ResourceRecordSet.Value += "."
-			}
-
 			switch change.Action {
 			case hetznerCreate:
 				record := hclouddns.HCloudRecord{
