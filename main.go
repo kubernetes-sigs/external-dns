@@ -125,6 +125,7 @@ func main() {
 		GlooNamespace:                  cfg.GlooNamespace,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
+		DefaultTargets:                 cfg.DefaultTargets,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -144,7 +145,7 @@ func main() {
 	}
 
 	// Combine multiple sources into a single, deduplicated source.
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
+	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
 
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
