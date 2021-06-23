@@ -28,10 +28,10 @@ import (
 const (
 	mateAnnotationKey     = "zalando.org/dnsname"
 	moleculeAnnotationKey = "domainName"
-	// dnsControllerHostnameAnnotationKey is the annotation used for defining the desired hostname when DNS controller compatibility mode
-	dnsControllerHostnameAnnotationKey = "dns.alpha.kubernetes.io/external"
-	// dnsControllerInternalHostnameAnnotationKey is the annotation used for defining the desired hostname when DNS controller compatibility mode
-	dnsControllerInternalHostnameAnnotationKey = "dns.alpha.kubernetes.io/internal"
+	// kopsDNSControllerHostnameAnnotationKey is the annotation used for defining the desired hostname when kOps DNS controller compatibility mode
+	kopsDNSControllerHostnameAnnotationKey = "dns.alpha.kubernetes.io/external"
+	// kopsDNSControllerInternalHostnameAnnotationKey is the annotation used for defining the desired hostname when kOps DNS controller compatibility mode
+	kopsDNSControllerInternalHostnameAnnotationKey = "dns.alpha.kubernetes.io/internal"
 )
 
 // legacyEndpointsFromService tries to retrieve Endpoints from Services
@@ -42,7 +42,7 @@ func legacyEndpointsFromService(svc *v1.Service, sc *serviceSource) ([]*endpoint
 		return legacyEndpointsFromMateService(svc), nil
 	case "molecule":
 		return legacyEndpointsFromMoleculeService(svc), nil
-	case "dns-controller":
+	case "kops-dns-controller":
 		return legacyEndpointsFromDNSControllerService(svc, sc)
 	}
 
@@ -126,8 +126,8 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotations.
-	hostnameAnnotation, isExternal := svc.Annotations[dnsControllerHostnameAnnotationKey]
-	internalHostnameAnnotation, isInternal := svc.Annotations[dnsControllerInternalHostnameAnnotationKey]
+	hostnameAnnotation, isExternal := svc.Annotations[kopsDNSControllerHostnameAnnotationKey]
+	internalHostnameAnnotation, isInternal := svc.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]
 
 	if !isExternal && !isInternal {
 		return nil, nil
@@ -175,8 +175,8 @@ func legacyEndpointsFromDNSControllerLoadBalancerService(svc *v1.Service) []*end
 	var endpoints []*endpoint.Endpoint
 
 	// Get the desired hostname of the service from the annotations.
-	hostnameAnnotation, hasExternal := svc.Annotations[dnsControllerHostnameAnnotationKey]
-	internalHostnameAnnotation, hasInternal := svc.Annotations[dnsControllerInternalHostnameAnnotationKey]
+	hostnameAnnotation, hasExternal := svc.Annotations[kopsDNSControllerHostnameAnnotationKey]
+	internalHostnameAnnotation, hasInternal := svc.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]
 
 	if !hasExternal && !hasInternal {
 		return nil

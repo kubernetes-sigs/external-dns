@@ -117,15 +117,15 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 		}
 
-		if ps.compatibility == "dns-controller" {
-			if domain, ok := pod.Annotations[dnsControllerInternalHostnameAnnotationKey]; ok {
+		if ps.compatibility == "kops-dns-controller" {
+			if domain, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 				if _, ok := domains[domain]; !ok {
 					domains[domain] = []string{}
 				}
 				domains[domain] = append(domains[domain], pod.Status.PodIP)
 			}
 
-			if domain, ok := pod.Annotations[dnsControllerHostnameAnnotationKey]; ok {
+			if domain, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
 				if _, ok := domains[domain]; !ok {
 					domains[domain] = []string{}
 				}
