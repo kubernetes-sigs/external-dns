@@ -313,6 +313,29 @@ func TestAWSZones(t *testing.T) {
 	}
 }
 
+func TestAWSRecordsFilter(t *testing.T) {
+	provider, _ := newAWSProvider(t, endpoint.DomainFilter{}, provider.ZoneIDFilter{}, provider.ZoneTypeFilter{}, false, false, nil)
+	domainFilter := provider.GetDomainFilter()
+	assert.NotNil(t, domainFilter)
+	require.IsType(t, endpoint.DomainFilter{}, domainFilter)
+	count := 0
+	filters := domainFilter.(endpoint.DomainFilter).Filters
+	for _, tld := range []string{
+		"zone-4.ext-dns-test-3.teapot.zalan.do",
+		".zone-4.ext-dns-test-3.teapot.zalan.do",
+		"zone-2.ext-dns-test-2.teapot.zalan.do",
+		".zone-2.ext-dns-test-2.teapot.zalan.do",
+		"zone-3.ext-dns-test-2.teapot.zalan.do",
+		".zone-3.ext-dns-test-2.teapot.zalan.do",
+		"zone-4.ext-dns-test-3.teapot.zalan.do",
+		".zone-4.ext-dns-test-3.teapot.zalan.do",
+	} {
+		assert.Contains(t, filters, tld)
+		count++
+	}
+	assert.Len(t, filters, count)
+}
+
 func TestAWSRecords(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), false, false, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
