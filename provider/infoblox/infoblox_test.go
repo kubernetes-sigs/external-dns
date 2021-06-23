@@ -533,7 +533,7 @@ func TestInfobloxZones(t *testing.T) {
 	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
 }
 
-func TestMaxResultsRequestBuilder(t *testing.T) {
+func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
 		Host:     "localhost",
 		Port:     "8080",
@@ -542,7 +542,29 @@ func TestMaxResultsRequestBuilder(t *testing.T) {
 		Version:  "2.3.1",
 	}
 
-	requestBuilder := NewMaxResultsRequestBuilder(54321)
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
+	requestBuilder.Init(hostConfig)
+
+	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("fqdn~") == "^staging.*test.com$")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("fqdn~") == "")
+}
+func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
+	hostConfig := ibclient.HostConfig{
+		Host:     "localhost",
+		Port:     "8080",
+		Username: "user",
+		Password: "abcd",
+		Version:  "2.3.1",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(54321, "")
 	requestBuilder.Init(hostConfig)
 
 	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
