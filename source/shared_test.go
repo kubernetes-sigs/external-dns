@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"reflect"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -59,5 +60,10 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	// if non-empty record type is expected, check that it matches.
 	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
 		t.Errorf("expected %s, got %s", expected.RecordType, endpoint.RecordType)
+	}
+
+	// if non-empty labels are expected, check that they matches.
+	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels,expected.Labels) {
+		t.Errorf("expected %s, got %s", expected.Labels, endpoint.Labels)
 	}
 }

@@ -307,6 +307,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"node with nil Lables returns valid endpoint",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			nil,
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, Labels: map[string]string{}},
+			},
+			false,
+		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
 			// Create a Kubernetes testing client
