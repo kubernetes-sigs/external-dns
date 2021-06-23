@@ -96,9 +96,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic, nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 6, "should generate all six sources")
+	suite.Len(sources, 7, "should generate all six sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
@@ -134,6 +134,9 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
 	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
+	suite.Error(err, "should return an error if kubernetes client cannot be created")
+
+	_, err = ByNames(mockClientGenerator, []string{"kong-tcpingress"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
