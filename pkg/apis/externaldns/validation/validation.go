@@ -98,7 +98,7 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 
 		if cfg.RFC2136BatchChangeSize < 1 {
-			return errors.New("Batch Size specified for rfc2136 cannot be less than 1")
+			return errors.New("batch size specified for rfc2136 cannot be less than 1")
 		}
 	}
 
