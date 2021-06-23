@@ -277,12 +277,12 @@ Here's a rough outline on what is to come (subject to change):
 
 ### v0.6
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller) (This could also directly become `v1.0`)
+- [ ] Ability to replace kOps' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller) (This could also directly become `v1.0`)
 - [x] Support for OVH
 
 ### v1.0
 
-- [ ] Ability to replace Kops' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
+- [ ] Ability to replace kOps' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
 	- [x] Add support for pod source
 	- [x] Add support for DNS Controller annotations for pod and service sources
 	- [ ] Add support for kOps gossip provider

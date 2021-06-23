@@ -489,7 +489,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"our controller type is dns-controller",
+			"our controller type is kops dns controller",
 			"",
 			"",
 			"testing",
@@ -875,13 +875,13 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerInternalHostnameAnnotationKey: "internal.foo.example.org",
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org",
 			},
 			"",
 			[]string{},
@@ -899,14 +899,14 @@ func testServiceSourceEndpoints(t *testing.T) {
 			"testing",
 			"foo",
 			v1.ServiceTypeLoadBalancer,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
-				dnsControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
 			},
 			"",
 			[]string{},
@@ -2049,12 +2049,12 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			"foo",
 			v1.ServiceTypeNodePort,
 			v1.ServiceExternalTrafficPolicyTypeCluster,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
 			},
 			nil,
 			[]*endpoint.Endpoint{
@@ -2101,12 +2101,12 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			"foo",
 			v1.ServiceTypeNodePort,
 			v1.ServiceExternalTrafficPolicyTypeCluster,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
 			},
 			nil,
 			[]*endpoint.Endpoint{
@@ -2153,12 +2153,12 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			"foo",
 			v1.ServiceTypeNodePort,
 			v1.ServiceExternalTrafficPolicyTypeCluster,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerHostnameAnnotationKey: "foo.example.org., bar.example.org",
+				kopsDNSControllerHostnameAnnotationKey: "foo.example.org., bar.example.org",
 			},
 			nil,
 			[]*endpoint.Endpoint{
@@ -2198,20 +2198,20 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			[]v1.PodPhase{},
 		},
 		{
-			"node port services annotated with both dns-controller annotations return an empty set of addons",
+			"node port services annotated with both kops dns controller annotations return an empty set of addons",
 			"",
 			"",
 			"testing",
 			"foo",
 			v1.ServiceTypeNodePort,
 			v1.ServiceExternalTrafficPolicyTypeCluster,
-			"dns-controller",
+			"kops-dns-controller",
 			"",
 			false,
 			map[string]string{},
 			map[string]string{
-				dnsControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
-				dnsControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
 			},
 			nil,
 			[]*endpoint.Endpoint{},
@@ -2958,7 +2958,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				require.NoError(t, err)
 
 				address := v1.EndpointAddress{
-					IP: "4.3.2.1",
+					IP:        "4.3.2.1",
 					TargetRef: tc.targetRefs[i],
 				}
 				if tc.podsReady[i] {

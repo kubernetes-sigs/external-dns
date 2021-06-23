@@ -111,7 +111,7 @@ func TestPodSource(t *testing.T) {
 		{
 			"create records based on pod's external and internal IPs using DNS Controller annotations",
 			"",
-			"dns-controller",
+			"kops-dns-controller",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
@@ -147,8 +147,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							dnsControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
-							dnsControllerHostnameAnnotationKey:         "a.foo.example.org",
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -164,8 +164,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							dnsControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
-							dnsControllerHostnameAnnotationKey:         "a.foo.example.org",
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
