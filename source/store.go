@@ -194,7 +194,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewPodSource(client, cfg.Namespace)
+		return NewPodSource(client, cfg.Namespace, cfg.Compatibility)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
