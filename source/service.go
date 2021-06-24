@@ -187,7 +187,10 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
-			svcEndpoints = legacyEndpointsFromService(svc, sc.compatibility)
+			svcEndpoints, err = legacyEndpointsFromService(svc, sc)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// apply template if none of the above is found
