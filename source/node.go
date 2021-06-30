@@ -151,6 +151,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		ep.Targets = endpoint.Targets(addrs)
+		ep.Labels = endpoint.NewLabels()
 
 		log.Debugf("adding endpoint %s", ep)
 		if _, ok := endpoints[ep.DNSName]; ok {
