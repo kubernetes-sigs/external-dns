@@ -37,7 +37,26 @@ func NewZoneTypeFilter(zoneType string) ZoneTypeFilter {
 }
 
 // Match checks whether a zone matches the zone type that's filtered for.
-func (f ZoneTypeFilter) Match(zone *route53.HostedZone) bool {
+func (f ZoneTypeFilter) Match(visibility string) bool {
+	// An empty zone filter includes all hosted zones.
+	if f.zoneType == "" {
+		return true
+	}
+
+	// Given a zone type we return true if the given zone matches this type.
+	switch f.zoneType {
+	case zoneTypePublic:
+		return visibility == zoneTypePublic
+	case zoneTypePrivate:
+		return visibility == zoneTypePrivate
+	}
+
+	// We return false on any other path, e.g. unknown zone type filter value.
+	return false
+}
+
+// Match checks whether a zone matches the zone type that's filtered for.
+func (f ZoneTypeFilter) MatchAWS(zone *route53.HostedZone) bool {
 	// An empty zone filter includes all hosted zones.
 	if f.zoneType == "" {
 		return true

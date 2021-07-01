@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestZoneTypeFilterMatch(t *testing.T) {
+func TestZoneTypeFilterMatchAWS(t *testing.T) {
 	publicZone := &route53.HostedZone{Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)}}
 	privateZone := &route53.HostedZone{Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}}
 
@@ -63,6 +63,42 @@ func TestZoneTypeFilterMatch(t *testing.T) {
 		},
 		{
 			"private", &route53.HostedZone{}, false,
+		},
+	} {
+		zoneTypeFilter := NewZoneTypeFilter(tc.zoneTypeFilter)
+		assert.Equal(t, tc.matches, zoneTypeFilter.MatchAWS(tc.zone))
+	}
+}
+
+func TestZoneTypeFilterMatch(t *testing.T) {
+	publicZone := "public"
+	privateZone := "private"
+
+	for _, tc := range []struct {
+		zoneTypeFilter string
+		zone           string
+		matches        bool
+	}{
+		{
+			"", publicZone, true,
+		},
+		{
+			"", privateZone, true,
+		},
+		{
+			"public", publicZone, true,
+		},
+		{
+			"public", privateZone, false,
+		},
+		{
+			"private", publicZone, false,
+		},
+		{
+			"private", privateZone, true,
+		},
+		{
+			"unknown", publicZone, false,
 		},
 	} {
 		zoneTypeFilter := NewZoneTypeFilter(tc.zoneTypeFilter)
