@@ -1,4 +1,4 @@
-# Setting up ExternalDNS on Google Container Engine
+# Setting up ExternalDNS on Google Kubernetes Engine
 
 This tutorial describes how to setup ExternalDNS for usage within a GKE cluster. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
