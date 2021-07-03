@@ -175,20 +175,20 @@ from source.
 Next, run an application and expose it via a Kubernetes Service:
 
 ```console
-$ kubectl run nginx --image=nginx --port=80
-$ kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
+kubectl run nginx --image=nginx --port=80
+kubectl expose pod nginx --port=80 --target-port=80 --type=LoadBalancer
 ```
 
 Annotate the Service with your desired external DNS name. Make sure to change `example.org` to your domain.
 
 ```console
-$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
+kubectl annotate service nginx "external-dns.alpha.kubernetes.io/hostname=nginx.example.org."
 ```
 
 Optionally, you can customize the TTL value of the resulting DNS record by using the `external-dns.alpha.kubernetes.io/ttl` annotation:
 
 ```console
-$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
+kubectl annotate service nginx "external-dns.alpha.kubernetes.io/ttl=10"
 ```
 
 For more details on configuring TTL, see [here](docs/ttl.md).
@@ -196,7 +196,7 @@ For more details on configuring TTL, see [here](docs/ttl.md).
 Use the internal-hostname annotation to create DNS records with ClusterIP as the target.
 
 ```console
-$ kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
+kubectl annotate service nginx "external-dns.alpha.kubernetes.io/internal-hostname=nginx.internal.example.org."
 ```
 
 If the service is not of type Loadbalancer you need the --publish-internal-services flag.
@@ -204,7 +204,7 @@ If the service is not of type Loadbalancer you need the --publish-internal-servi
 Locally run a single sync loop of ExternalDNS.
 
 ```console
-$ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
+external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
 This should output the DNS records it will modify to match the managed zone with the DNS records you desire. It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
@@ -214,13 +214,13 @@ Note: TXT records will have `my-cluster-id` value embedded. Those are used to en
 Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
 ```console
-$ external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
+external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
 ```
 
 Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
 
 ```console
-$ dig +short nginx.example.org.
+dig +short nginx.example.org.
 104.155.60.49
 ```
 
