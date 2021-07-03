@@ -96,6 +96,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 				return errors.New("--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option")
 			}
 		}
+
+		if cfg.RFC2136BatchChangeSize < 1 {
+			return errors.New("batch size specified for rfc2136 cannot be less than 1")
+		}
 	}
 
 	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
