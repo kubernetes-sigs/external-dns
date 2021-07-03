@@ -158,6 +158,7 @@ type Config struct {
 	RFC2136TSIGSecretAlg              string
 	RFC2136TAXFR                      bool
 	RFC2136MinTTL                     time.Duration
+	RFC2136BatchChangeSize            int
 	NS1Endpoint                       string
 	NS1IgnoreSSL                      bool
 	NS1MinTTLSeconds                  int
@@ -279,6 +280,7 @@ var defaultConfig = &Config{
 	RFC2136TSIGSecretAlg:        "",
 	RFC2136TAXFR:                true,
 	RFC2136MinTTL:               0,
+	RFC2136BatchChangeSize:      50,
 	NS1Endpoint:                 "",
 	NS1IgnoreSSL:                false,
 	TransIPAccountName:          "",
@@ -461,6 +463,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-kerberos-username", "When using the RFC2136 provider with GSS-TSIG, specify the username of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosUsername).StringVar(&cfg.RFC2136KerberosUsername)
 	app.Flag("rfc2136-kerberos-password", "When using the RFC2136 provider with GSS-TSIG, specify the password of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosPassword).StringVar(&cfg.RFC2136KerberosPassword)
 	app.Flag("rfc2136-kerberos-realm", "When using the RFC2136 provider with GSS-TSIG, specify the realm of the user with permissions to update DNS records (required when --rfc2136-gss-tsig=true)").Default(defaultConfig.RFC2136KerberosRealm).StringVar(&cfg.RFC2136KerberosRealm)
+	app.Flag("rfc2136-batch-change-size", "When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.RFC2136BatchChangeSize)).IntVar(&cfg.RFC2136BatchChangeSize)
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
