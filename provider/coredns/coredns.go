@@ -317,8 +317,7 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 			ep.Labels[randomPrefixLabel] = prefix
 			ep.Labels[service.Host] = prefix
 			result = append(result, ep)
-		}
-		if service.Text != "" {
+		}else if service.Text != "" {
 			ep := endpoint.NewEndpoint(
 				dnsName,
 				endpoint.RecordTypeTXT,
