@@ -1,12 +1,9 @@
 /*
 Copyright 2020 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -84,11 +81,11 @@ func (g mockGatewayClient) createHostRecord(zone string, req *bluecatCreateHostR
 func (g mockGatewayClient) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
 	return nil, nil
 }
-func (g mockGatewayClient) deleteHostRecord(name string) (err error) {
+func (g mockGatewayClient) deleteHostRecord(name string, zone string) (err error) {
 	*g.mockBluecatHosts = nil
 	return nil
 }
-func (g mockGatewayClient) deleteCNAMERecord(name string) (err error) {
+func (g mockGatewayClient) deleteCNAMERecord(name string, zone string) (err error) {
 	*g.mockBluecatCNAMEs = nil
 	return nil
 }
@@ -108,7 +105,7 @@ func (g mockGatewayClient) getTXTRecord(name string, record *BluecatTXTRecord) e
 func (g mockGatewayClient) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (res interface{}, err error) {
 	return nil, nil
 }
-func (g mockGatewayClient) deleteTXTRecord(name string) error {
+func (g mockGatewayClient) deleteTXTRecord(name string, zone string) error {
 	*g.mockBluecatTXTs = nil
 	return nil
 }
@@ -148,8 +145,8 @@ func createMockBluecatCNAME(alias, target string, ttl int) BluecatCNAMERecord {
 
 func createMockBluecatTXT(fqdn, txt string) BluecatTXTRecord {
 	return BluecatTXTRecord{
-		Name: fqdn,
-		Text: txt,
+		Name:       fqdn,
+		Properties: txt,
 	}
 }
 
@@ -196,9 +193,10 @@ var tests = bluecatTestData{
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
-				DNSName:    "abc.example.com",
+				DNSName:    "kdb.example.com",
 				RecordType: endpoint.RecordTypeTXT,
-				Targets:    endpoint.Targets{"hello"},
+				Targets:    endpoint.Targets{"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"},
+				Labels:     endpoint.Labels{"owner": "default"},
 			},
 		},
 	},
@@ -209,6 +207,9 @@ func TestBluecatRecords(t *testing.T) {
 		mockBluecatZones: &[]BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
+		mockBluecatTXTs: &[]BluecatTXTRecord{
+			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
+		},
 		mockBluecatHosts: &[]BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
 			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
@@ -216,9 +217,6 @@ func TestBluecatRecords(t *testing.T) {
 		},
 		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
-		},
-		mockBluecatTXTs: &[]BluecatTXTRecord{
-			createMockBluecatTXT("abc.example.com", "hello"),
 		},
 	}
 
@@ -276,7 +274,7 @@ func TestBluecatApplyChangesDelete(t *testing.T) {
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
-			createMockBluecatTXT("abc.example.com", "hello"),
+			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
 		},
 	}
 
@@ -296,6 +294,51 @@ func TestBluecatApplyChangesDelete(t *testing.T) {
 		}
 		validateEndpoints(t, actual, []*endpoint.Endpoint{})
 	}
+}
+
+func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
+	client := mockGatewayClient{
+		mockBluecatZones: &[]BluecatZone{
+			createMockBluecatZone("example.com"),
+		},
+		mockBluecatHosts: &[]BluecatHostRecord{
+			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
+			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
+			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
+		},
+		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
+		},
+		mockBluecatTXTs: &[]BluecatTXTRecord{
+			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
+		},
+	}
+
+	provider := newBluecatProvider(
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}), false, client)
+
+	for _, ti := range tests {
+		for _, ep := range ti.Endpoints {
+			if strings.Contains(ep.Targets.String(), "external-dns") {
+				owner, err := extractOwnerfromTXTRecord(ep.Targets.String())
+				if err != nil {
+					continue
+				}
+				t.Logf("Owner %s %s", owner, err)
+			}
+		}
+		err := provider.ApplyChanges(context.Background(), &plan.Changes{Delete: ti.Endpoints})
+		if err != nil {
+			t.Fatal(err)
+		}
+		actual, err := provider.Records(context.Background())
+		if err != nil {
+			t.Fatal(err)
+		}
+		validateEndpoints(t, actual, []*endpoint.Endpoint{})
+	}
+
 }
 
 // TODO: ensure mapChanges method is tested
