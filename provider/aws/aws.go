@@ -241,7 +241,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 				continue
 			}
 
-			if !p.zoneTypeFilter.MatchAWS(zone) {
+			if !p.zoneTypeFilter.Match(zone) {
 				continue
 			}
 
