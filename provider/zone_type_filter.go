@@ -37,43 +37,34 @@ func NewZoneTypeFilter(zoneType string) ZoneTypeFilter {
 }
 
 // Match checks whether a zone matches the zone type that's filtered for.
-func (f ZoneTypeFilter) Match(visibility string) bool {
+func (f ZoneTypeFilter) Match(rawZoneType interface{}) bool {
 	// An empty zone filter includes all hosted zones.
 	if f.zoneType == "" {
 		return true
 	}
 
+	switch zoneType := rawZoneType.(type) {
 	// Given a zone type we return true if the given zone matches this type.
-	switch f.zoneType {
-	case zoneTypePublic:
-		return visibility == zoneTypePublic
-	case zoneTypePrivate:
-		return visibility == zoneTypePrivate
-	}
+	case string:
+		switch f.zoneType {
+		case zoneTypePublic:
+			return zoneType == zoneTypePublic
+		case zoneTypePrivate:
+			return zoneType == zoneTypePrivate
+		}
+	case *route53.HostedZone:
+		// If the zone has no config we assume it's a public zone since the config's field
+		// `PrivateZone` is false by default in go.
+		if zoneType.Config == nil {
+			return f.zoneType == zoneTypePublic
+		}
 
-	// We return false on any other path, e.g. unknown zone type filter value.
-	return false
-}
-
-// Match checks whether a zone matches the zone type that's filtered for.
-func (f ZoneTypeFilter) MatchAWS(zone *route53.HostedZone) bool {
-	// An empty zone filter includes all hosted zones.
-	if f.zoneType == "" {
-		return true
-	}
-
-	// If the zone has no config we assume it's a public zone since the config's field
-	// `PrivateZone` is false by default in go.
-	if zone.Config == nil {
-		return f.zoneType == zoneTypePublic
-	}
-
-	// Given a zone type we return true if the given zone matches this type.
-	switch f.zoneType {
-	case zoneTypePublic:
-		return !aws.BoolValue(zone.Config.PrivateZone)
-	case zoneTypePrivate:
-		return aws.BoolValue(zone.Config.PrivateZone)
+		switch f.zoneType {
+		case zoneTypePublic:
+			return !aws.BoolValue(zoneType.Config.PrivateZone)
+		case zoneTypePrivate:
+			return aws.BoolValue(zoneType.Config.PrivateZone)
+		}
 	}
 
 	// We return false on any other path, e.g. unknown zone type filter value.

@@ -66,7 +66,7 @@ func TestZoneTypeFilterMatchAWS(t *testing.T) {
 		},
 	} {
 		zoneTypeFilter := NewZoneTypeFilter(tc.zoneTypeFilter)
-		assert.Equal(t, tc.matches, zoneTypeFilter.MatchAWS(tc.zone))
+		assert.Equal(t, tc.matches, zoneTypeFilter.Match(tc.zone))
 	}
 }
 
