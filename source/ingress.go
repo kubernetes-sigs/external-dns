@@ -72,6 +72,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
+			"trimSuffix": strings.TrimSuffix,
 		}).Parse(fqdnTemplate)
 		if err != nil {
 			return nil, err
