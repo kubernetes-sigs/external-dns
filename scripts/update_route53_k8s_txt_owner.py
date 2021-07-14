@@ -14,10 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is a script that we wrote to try to help the migration over to using external-dns.  
-# This script looks at kubernetes ingresses and services (which are the two things we have 
-# external-dns looking at) and compares them to existing TXT and A records in route53 to 
-# find out where there are gaps.  It then assigns the heritage and owner TXT records where 
+# This is a script that we wrote to try to help the migration over to using external-dns.
+# This script looks at kubernetes ingresses and services (which are the two things we have
+# external-dns looking at) and compares them to existing TXT and A records in route53 to
+# find out where there are gaps.  It then assigns the heritage and owner TXT records where
 # needed so external-dns can take over managing those resources. You can modify the script
 # to only look at one or the other if needed.
 #
@@ -40,8 +40,8 @@ external_dns_manages_ingresses = True
 
 config.load_kube_config()
 
-# grab all the domains that k8s thinks it is going to 
-# manage (services with domainName specified and 
+# grab all the domains that k8s thinks it is going to
+# manage (services with domainName specified and
 # ingress hosts)
 k8s_domains = []
 
@@ -64,7 +64,7 @@ if external_dns_manages_ingresses:
 
 r53client = boto3.client('route53')
 
-# grab the existing route53 domains and identify gaps where a domain may be 
+# grab the existing route53 domains and identify gaps where a domain may be
 # missing a txt record pair
 existing_r53_txt_domains=[]
 existing_r53_domains=[]
@@ -73,8 +73,8 @@ next_record_name, next_record_type='',''
 
 while has_next:
     if next_record_name is not '' and next_record_type is not '':
-        resource_records = r53client.list_resource_record_sets(HostedZoneId=hosted_zone_id, 
-                                                               StartRecordName=next_record_name, 
+        resource_records = r53client.list_resource_record_sets(HostedZoneId=hosted_zone_id,
+                                                               StartRecordName=next_record_name,
                                                                StartRecordType=next_record_type)
     else:
         resource_records = r53client.list_resource_record_sets(HostedZoneId=hosted_zone_id)
@@ -113,7 +113,7 @@ for r in missing_k8s_txt:
 
 print('This will create the following resources')
 print(change_batch)
-response = input("Good to go? ")  
+response = input("Good to go? ")
 
 if response.lower() in ['y', 'yes', 'yup', 'ok', 'sure', 'why not', 'why not?']:
     print('Updating route53')
