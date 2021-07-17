@@ -190,15 +190,6 @@ func (cli *routeGroupClient) do(req *http.Request) (*http.Response, error) {
 	return cli.client.Do(req)
 }
 
-func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-	}
-	return tmpl, err
-}
-
 // NewRouteGroupSource creates a new routeGroupSource with the given config.
 func NewRouteGroupSource(timeout time.Duration, token, tokenPath, apiServerURL, namespace, annotationFilter, fqdnTemplate, routegroupVersion string, combineFqdnAnnotation, ignoreHostnameAnnotation bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
