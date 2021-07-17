@@ -23,6 +23,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -104,6 +105,16 @@ func parseTTL(s string) (ttlSeconds int64, err error) {
 	}
 
 	return int64(ttlDuration.Seconds()), nil
+}
+
+func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
+	if fqdnTemplate == "" {
+		return nil, nil
+	}
+	funcs := template.FuncMap{
+		"trimPrefix": strings.TrimPrefix,
+	}
+	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
