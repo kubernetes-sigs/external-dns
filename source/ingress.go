@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -59,13 +60,14 @@ type ingressSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
+	ingressHostnameRegex     string
 	ingressInformer          extinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ingressHostnameRegex string) (Source, error) {
 	var (
 		tmpl *template.Template
 		err  error
@@ -73,6 +75,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	if fqdnTemplate != "" {
 		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
 			"trimPrefix": strings.TrimPrefix,
+			"trimSuffix": strings.TrimSuffix,
 		}).Parse(fqdnTemplate)
 		if err != nil {
 			return nil, err
@@ -105,6 +108,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 
 	sc := &ingressSource{
 		client:                   kubeClient,
+		ingressHostnameRegex:     ingressHostnameRegex,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		fqdnTemplate:             tmpl,
@@ -140,7 +144,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec,sc.ingressHostnameRegex)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -248,7 +252,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints [
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool ,IngressHostnameRegex string) []*endpoint.Endpoint {
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
 		log.Warn(err)
@@ -270,7 +274,17 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+                    log.Warnf("ingressHostnameRegex %s", IngressHostnameRegex)
+                    r, err := regexp.Compile(IngressHostnameRegex)
+                    if err != nil {
+                            log.Warnf("IngressHostnameRegex doesn't compile %s %s" , IngressHostnameRegex , rule.Host)
+                    }
+                    hostMatch := r.MatchString(rule.Host)
+                    log.Warnf("hostMatch: %s %s",hostMatch,rule.Host)
+                    if hostMatch {
+                            log.Warnf("hostMatch inside: %s %s",hostMatch , rule.Host)
+                            definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+                    }
 		}
 	}
 
@@ -281,7 +295,14 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 				if host == "" {
 					continue
 				}
-				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+				log.Warnf("ingressHostnameRegex %s", IngressHostnameRegex)
+				r, err := regexp.Compile(IngressHostnameRegex)
+				if err != nil {
+					log.Warn("IngressHostnameRegex doesn't compile")
+				}
+				if r.MatchString(host) {
+					definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+				}
 			}
 		}
 	}

@@ -101,6 +101,7 @@ func main() {
 
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
+                IngressHostnameRegex:           cfg.IngressHostnameRegex,
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    cfg.LabelFilter,
