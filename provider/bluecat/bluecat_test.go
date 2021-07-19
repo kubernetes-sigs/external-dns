@@ -241,9 +241,7 @@ func TestBluecatRecords(t *testing.T) {
 	for _, ti := range tests {
 		actual, err := provider.Records(context.Background())
 		if err != nil {
-			if !strings.Contains(err.Error(), "External-DNS Owner not found") {
-				t.Fatal(err)
-			}
+			t.Fatal(err)
 		}
 		validateEndpoints(t, actual, ti.Endpoints)
 	}
