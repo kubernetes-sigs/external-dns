@@ -274,18 +274,17 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
-		}
-		log.Warnf("ingressHostnameRegex %s", IngressHostnameRegex)
-		r, err := regexp.Compile(IngressHostnameRegex)
-		if err != nil {
-			log.Warnf("IngressHostnameRegex doesn't compile %s %s" , IngressHostnameRegex , rule.Host)
-		}
-                hostMatch := r.MatchString(rule.Host)
-                log.Warnf("hostMatch: %s %s",hostMatch,rule.Host)
-		if hostMatch {
-                        log.Warnf("hostMatch inside: %s %s",hostMatch , rule.Host)
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+                    log.Warnf("ingressHostnameRegex %s", IngressHostnameRegex)
+                    r, err := regexp.Compile(IngressHostnameRegex)
+                    if err != nil {
+                            log.Warnf("IngressHostnameRegex doesn't compile %s %s" , IngressHostnameRegex , rule.Host)
+                    }
+                    hostMatch := r.MatchString(rule.Host)
+                    log.Warnf("hostMatch: %s %s",hostMatch,rule.Host)
+                    if hostMatch {
+                            log.Warnf("hostMatch inside: %s %s",hostMatch , rule.Host)
+                            definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+                    }
 		}
 	}
 
