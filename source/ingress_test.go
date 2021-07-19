@@ -53,6 +53,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		false,
+		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -137,6 +138,7 @@ func TestNewIngressSource(t *testing.T) {
 				ti.combineFQDNAndAnnotation,
 				false,
 				false,
+				false,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -149,9 +151,12 @@ func TestNewIngressSource(t *testing.T) {
 
 func testEndpointsFromIngress(t *testing.T) {
 	for _, ti := range []struct {
-		title    string
-		ingress  fakeIngress
-		expected []*endpoint.Endpoint
+		title                    string
+		ingress                  fakeIngress
+		ignoreHostnameAnnotation bool
+		ignoreIngressTLSSpec     bool
+		ignoreIngressRulesSpec   bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -221,10 +226,19 @@ func testEndpointsFromIngress(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title: "ignore rules with one rule.host one lb.hostname",
+			ingress: fakeIngress{
+				dnsnames:  []string{"test"},   // Kubernetes requires removal of trailing dot
+				hostnames: []string{"lb.com"}, // Kubernetes omits the trailing dot
+			},
+			expected:               []*endpoint.Endpoint{},
+			ignoreIngressRulesSpec: true,
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
 		})
 	}
 }
@@ -316,7 +330,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
 		})
 	}
 }
@@ -334,6 +348,7 @@ func testIngressEndpoints(t *testing.T) {
 		combineFQDNAndAnnotation bool
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
+		ignoreIngressRulesSpec   bool
 	}{
 		{
 			title:           "no ingress",
@@ -366,6 +381,26 @@ func testIngressEndpoints(t *testing.T) {
 					Targets: endpoint.Targets{"lb.com"},
 				},
 			},
+		},
+		{
+			title:                  "ignore rules",
+			targetNamespace:        "",
+			ignoreIngressRulesSpec: true,
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					dnsnames:  []string{"new.org"},
+					hostnames: []string{"lb.com"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title:           "two simple ingresses on different namespaces",
@@ -1138,6 +1173,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
+				ti.ignoreIngressRulesSpec,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
