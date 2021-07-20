@@ -193,6 +193,18 @@ var tests = bluecatTestData{
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
+				DNSName:    "wack.example.com",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{"hello"},
+				Labels:     endpoint.Labels{"owner": ""},
+			},
+			{
+				DNSName:    "sack.example.com",
+				RecordType: endpoint.RecordTypeTXT,
+				Targets:    endpoint.Targets{""},
+				Labels:     endpoint.Labels{"owner": ""},
+			},
+			{
 				DNSName:    "kdb.example.com",
 				RecordType: endpoint.RecordTypeTXT,
 				Targets:    endpoint.Targets{"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"},
@@ -209,6 +221,8 @@ func TestBluecatRecords(t *testing.T) {
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
+			createMockBluecatTXT("wack.example.com", "hello"),
+			createMockBluecatTXT("sack.example.com", ""),
 		},
 		mockBluecatHosts: &[]BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
@@ -275,6 +289,8 @@ func TestBluecatApplyChangesDelete(t *testing.T) {
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
+			createMockBluecatTXT("wack.example.com", "hello"),
+			createMockBluecatTXT("sack.example.com", ""),
 		},
 	}
 
@@ -311,6 +327,8 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 		},
 		mockBluecatTXTs: &[]BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
+			createMockBluecatTXT("wack.example.com", "hello"),
+			createMockBluecatTXT("sack.example.com", ""),
 		},
 	}
 
@@ -341,7 +359,32 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 
 }
 
-// TODO: ensure mapChanges method is tested
+func TestExpandZones(t *testing.T) {
+	mockZones := []string{"example.com", "nginx.example.com", "hack.example.com"}
+	expected := []string{"zones/com/zones/example/zones/", "zones/com/zones/example/zones/nginx/zones/", "zones/com/zones/example/zones/hack/zones/"}
+	for i := range mockZones {
+		if expandZone(mockZones[i]) != expected[i] {
+			t.Fatalf("%s", expected[i])
+		}
+	}
+}
+
+func TestBluecatNewGatewayClient(t *testing.T) {
+	testCookie := http.Cookie{Name: "testCookie", Value: "exampleCookie"}
+	testToken := "exampleToken"
+	testgateWayHost := "exampleHost"
+	testDNSConfiguration := "exampleDNSConfiguration"
+	testView := "testView"
+	testZone := "example.com"
+	testVerify := true
+
+	client := NewGatewayClient(testCookie, testToken, testgateWayHost, testDNSConfiguration, testView, testZone, testVerify)
+
+	if client.Cookie.Value != testCookie.Value || client.Cookie.Name != testCookie.Name || client.Token != testToken || client.Host != testgateWayHost || client.DNSConfiguration != testDNSConfiguration || client.View != testView || client.RootZone != testZone || client.SkipTLSVerify != testVerify {
+		t.Fatal("Client values dont match")
+	}
+}
+
 // TODO: ensure findZone method is tested
 // TODO: ensure zones method is tested
 // TODO: ensure createRecords method is tested

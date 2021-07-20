@@ -215,7 +215,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 			tempEndpoint := endpoint.NewEndpoint(rec.Name, endpoint.RecordTypeTXT, rec.Properties)
 			tempEndpoint.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(rec.Properties)
 			if err != nil {
-				return nil, errors.Wrapf(err, "Error fetching owner from record")
+				log.Debugf("External DNS Owner %s", err)
 			}
 			endpoints = append(endpoints, tempEndpoint)
 		}
@@ -243,7 +243,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 					if strings.Compare(rec.Name, txtRec.Name) == 0 {
 						ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 						if err != nil {
-							return nil, errors.Wrapf(err, "owner not parsed correctly")
+							log.Debugf("External DNS Owner %s", err)
 						}
 					}
 				}
@@ -272,7 +272,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 				if strings.Compare(rec.Name, txtRec.Name) == 0 {
 					ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 					if err != nil {
-						return nil, errors.Wrapf(err, "owner not parsed correctly")
+						log.Debugf("External DNS Owner %s", err)
 					}
 				}
 			}
