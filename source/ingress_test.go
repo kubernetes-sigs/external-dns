@@ -54,6 +54,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		false,
+		".*",
 	)
 	suite.NoError(err, "should initialize ingress source")
 
@@ -139,6 +140,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				false,
+				".*",
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -156,6 +158,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ingressHostnameRegex     string
 		expected                 []*endpoint.Endpoint
 	}{
 		{
@@ -238,7 +241,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec, ti.ingressHostnameRegex), ti.expected)
 		})
 	}
 }
@@ -330,7 +333,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false, realIngress.Name), ti.expected)
 		})
 	}
 }
@@ -349,6 +352,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ingressHostnameRegex     string
 	}{
 		{
 			title:           "no ingress",
@@ -1174,6 +1178,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
+				ti.ingressHostnameRegex,
 			)
 			for _, ingress := range ingresses {
 				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
