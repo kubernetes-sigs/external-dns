@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -250,18 +249,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var res []*endpoint.Endpoint
-
-			// wait up to a few seconds for new resources to appear in informer cache.
-			err = poll(time.Second, 3*time.Second, func() (bool, error) {
-				res, err = source.Endpoints(context.Background())
-				if err != nil {
-					// stop waiting if we get an error
-					return true, err
-				}
-				return len(res) >= len(tc.expected), nil
-			})
-
+			res, err := source.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
