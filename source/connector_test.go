@@ -36,8 +36,8 @@ func (suite *ConnectorSuite) SetupTest() {
 
 }
 
-func startServerToServeTargets(t *testing.T, server string, endpoints []*endpoint.Endpoint) {
-	ln, err := net.Listen("tcp", server)
+func startServerToServeTargets(t *testing.T, endpoints []*endpoint.Endpoint) net.Listener {
+	ln, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,8 @@ func startServerToServeTargets(t *testing.T, server string, endpoints []*endpoin
 		enc.Encode(endpoints)
 		ln.Close()
 	}()
-	t.Logf("Server listening on %s", server)
+	t.Logf("Server listening on %s", ln.Addr().String())
+	return ln
 }
 
 func TestConnectorSource(t *testing.T) {
@@ -69,28 +70,24 @@ func testConnectorSourceImplementsSource(t *testing.T) {
 // testConnectorSourceEndpoints tests that NewConnectorSource doesn't return an error.
 func testConnectorSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
-		title               string
-		serverListenAddress string
-		serverAddress       string
-		expected            []*endpoint.Endpoint
-		expectError         bool
+		title       string
+		server      bool
+		expected    []*endpoint.Endpoint
+		expectError bool
 	}{
 		{
-			title:               "invalid remote server",
-			serverListenAddress: "",
-			serverAddress:       "localhost:8091",
-			expectError:         true,
+			title:       "invalid remote server",
+			server:      false,
+			expectError: true,
 		},
 		{
-			title:               "valid remote server with no endpoints",
-			serverListenAddress: "127.0.0.1:8080",
-			serverAddress:       "127.0.0.1:8080",
-			expectError:         false,
+			title:       "valid remote server with no endpoints",
+			server:      true,
+			expectError: false,
 		},
 		{
-			title:               "valid remote server",
-			serverListenAddress: "127.0.0.1:8081",
-			serverAddress:       "127.0.0.1:8081",
+			title:  "valid remote server",
+			server: true,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
@@ -101,9 +98,8 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			expectError: false,
 		},
 		{
-			title:               "valid remote server with multiple endpoints",
-			serverListenAddress: "127.0.0.1:8082",
-			serverAddress:       "127.0.0.1:8082",
+			title:  "valid remote server with multiple endpoints",
+			server: true,
 			expected: []*endpoint.Endpoint{
 				{DNSName: "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
@@ -120,10 +116,13 @@ func testConnectorSourceEndpoints(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-			if ti.serverListenAddress != "" {
-				startServerToServeTargets(t, ti.serverListenAddress, ti.expected)
+			addr := "localhost:9999"
+			if ti.server {
+				ln := startServerToServeTargets(t, ti.expected)
+				defer ln.Close()
+				addr = ln.Addr().String()
 			}
-			cs, _ := NewConnectorSource(ti.serverAddress)
+			cs, _ := NewConnectorSource(addr)
 
 			endpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {
