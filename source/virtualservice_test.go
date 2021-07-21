@@ -70,17 +70,6 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		suite.NoError(err, "should succeed")
 	}
 
-	suite.source, err = NewIstioVirtualServiceSource(
-		fakeKubernetesClient,
-		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-	)
-	suite.NoError(err, "should initialize virtualservice source")
-
 	suite.gwconfig = (fakeGatewayConfig{
 		name:      "foo-gateway-with-targets",
 		namespace: "istio-system",
@@ -97,6 +86,17 @@ func (suite *VirtualServiceSuite) SetupTest() {
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), &suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
+
+	suite.source, err = NewIstioVirtualServiceSource(
+		fakeKubernetesClient,
+		fakeIstioClient,
+		"",
+		"",
+		"{{.Name}}",
+		false,
+		false,
+	)
+	suite.NoError(err, "should initialize virtualservice source")
 }
 
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {

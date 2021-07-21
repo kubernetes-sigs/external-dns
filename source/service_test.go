@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,21 +41,7 @@ type ServiceSuite struct {
 
 func (suite *ServiceSuite) SetupTest() {
 	fakeClient := fake.NewSimpleClientset()
-	var err error
 
-	suite.sc, err = NewServiceSource(
-		fakeClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		"",
-		false,
-		false,
-		false,
-		[]string{},
-		false,
-	)
 	suite.fooWithTargets = &v1.Service{
 		Spec: v1.ServiceSpec{
 			Type: v1.ServiceTypeLoadBalancer,
@@ -75,12 +60,23 @@ func (suite *ServiceSuite) SetupTest() {
 			},
 		},
 	}
-
-	suite.NoError(err, "should initialize service source")
-
-	_, err = fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
+	_, err := fakeClient.CoreV1().Services(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
 	suite.NoError(err, "should successfully create service")
 
+	suite.sc, err = NewServiceSource(
+		fakeClient,
+		"",
+		"",
+		"{{.Name}}",
+		false,
+		"",
+		false,
+		false,
+		false,
+		[]string{},
+		false,
+	)
+	suite.NoError(err, "should initialize service source")
 }
 
 func (suite *ServiceSuite) TestResourceLabelIsSet() {
@@ -1271,7 +1267,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			// Create our object under test and get the endpoints.
-			client, _ := NewServiceSource(
+			client, err := NewServiceSource(
 				kubernetes,
 				tc.targetNamespace,
 				tc.annotationFilter,
@@ -1286,18 +1282,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var res []*endpoint.Endpoint
-
-			// wait up to a few seconds for new resources to appear in informer cache.
-			err = poll(time.Second, 3*time.Second, func() (bool, error) {
-				res, err = client.Endpoints(context.Background())
-				if err != nil {
-					// stop waiting if we get an error
-					return true, err
-				}
-				return len(res) >= len(tc.expected), nil
-			})
-
+			res, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
@@ -1458,18 +1443,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			)
 			require.NoError(t, err)
 
-			var res []*endpoint.Endpoint
-
-			// wait up to a few seconds for new resources to appear in informer cache.
-			err = poll(time.Second, 3*time.Second, func() (bool, error) {
-				res, err = client.Endpoints(context.Background())
-				if err != nil {
-					// stop waiting if we get an error
-					return true, err
-				}
-				return len(res) >= len(tc.expected), nil
-			})
-
+			res, err := client.Endpoints(context.Background())
 			if tc.expectError {
 				require.Error(t, err)
 			} else {
