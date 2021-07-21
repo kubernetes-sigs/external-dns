@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
@@ -93,7 +94,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
-	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
+	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
 	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic, nil)
 
 	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)

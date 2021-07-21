@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	networkingv1alpha3api "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +45,7 @@ type GatewaySuite struct {
 
 func (suite *GatewaySuite) SetupTest() {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
 	suite.lbServices = []*v1.Service{
@@ -137,7 +136,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
-				NewFakeConfigStore(),
+				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1142,7 +1141,7 @@ func testGatewayEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			fakeIstioClient := NewFakeConfigStore()
+			fakeIstioClient := istiofake.NewSimpleClientset()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
 				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(context.Background(), &gatewayCfg, metav1.CreateOptions{})
@@ -1175,7 +1174,7 @@ func testGatewayEndpoints(t *testing.T) {
 // gateway specific helper functions
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewaySource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
@@ -1275,8 +1274,4 @@ func (c fakeGatewayConfig) Config() networkingv1alpha3.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
-}
-
-func NewFakeConfigStore() istioclient.Interface {
-	return istiofake.NewSimpleClientset()
 }

@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	istionetworking "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -47,7 +48,7 @@ type VirtualServiceSuite struct {
 
 func (suite *VirtualServiceSuite) SetupTest() {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
 	suite.lbServices = []*v1.Service{
@@ -158,7 +159,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			_, err := NewIstioVirtualServiceSource(
 				fake.NewSimpleClientset(),
-				NewFakeConfigStore(),
+				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -1451,7 +1452,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			fakeIstioClient := NewFakeConfigStore()
+			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
 				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
@@ -1520,7 +1521,7 @@ func testGatewaySelectorMatchesService(t *testing.T) {
 
 func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, gwList []fakeGatewayConfig) (*virtualServiceSource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
