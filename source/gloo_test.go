@@ -211,6 +211,8 @@ var externalProxySource = metav1.PartialObjectMetadata{
 }
 
 func TestGlooSource(t *testing.T) {
+	t.Parallel()
+
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(runtime.NewScheme())
 

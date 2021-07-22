@@ -57,6 +57,8 @@ func startServerToServeTargets(t *testing.T, endpoints []*endpoint.Endpoint) net
 }
 
 func TestConnectorSource(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(ConnectorSuite))
 	t.Run("Interface", testConnectorSourceImplementsSource)
 	t.Run("Endpoints", testConnectorSourceEndpoints)
@@ -115,7 +117,10 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			expectError: false,
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			addr := "localhost:9999"
 			if ti.server {
 				ln := startServerToServeTargets(t, ti.expected)
