@@ -82,6 +82,8 @@ func (suite *IngressSuite) TestDualstackLabelIsSet() {
 }
 
 func TestIngress(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(IngressSuite))
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("endpointsFromIngressHostnameSourceAnnotation", testEndpointsFromIngressHostnameSourceAnnotation)
@@ -89,6 +91,8 @@ func TestIngress(t *testing.T) {
 }
 
 func TestNewIngressSource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -127,7 +131,10 @@ func TestNewIngressSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewIngressSource(
 				fake.NewSimpleClientset(),
 				"",
@@ -148,6 +155,8 @@ func TestNewIngressSource(t *testing.T) {
 }
 
 func testEndpointsFromIngress(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		ingress                  fakeIngress
@@ -334,6 +343,8 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 }
 
 func testIngressEndpoints(t *testing.T) {
+	t.Parallel()
+
 	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
@@ -1159,7 +1170,10 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			fakeClient := fake.NewSimpleClientset()
 			for _, item := range ti.ingressItems {
 				ingress := item.Ingress()

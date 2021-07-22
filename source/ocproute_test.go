@@ -82,6 +82,8 @@ func (suite *OCPRouteSuite) TestResourceLabelIsSet() {
 }
 
 func TestOcpRouteSource(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(OCPRouteSuite))
 	t.Run("Interface", testOcpRouteSourceImplementsSource)
 	t.Run("NewOcpRouteSource", testOcpRouteSourceNewOcpRouteSource)
@@ -95,6 +97,8 @@ func testOcpRouteSourceImplementsSource(t *testing.T) {
 
 // testOcpRouteSourceNewOcpRouteSource tests that NewOcpRouteSource doesn't return an error.
 func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title            string
 		annotationFilter string
@@ -121,7 +125,10 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewOcpRouteSource(
 				fake.NewSimpleClientset(),
 				"",
@@ -142,6 +149,8 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 
 // testOcpRouteSourceEndpoints tests that various OCP routes generate the correct endpoints.
 func testOcpRouteSourceEndpoints(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -232,7 +241,10 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			expectError: false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			fakeClient := fake.NewSimpleClientset()
 

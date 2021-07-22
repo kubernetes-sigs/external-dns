@@ -19,6 +19,8 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +29,6 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
-	"testing"
 )
 
 // This is a compile-time validation that glooSource is a Source.
@@ -36,6 +37,8 @@ var _ Source = &kongTCPIngressSource{}
 const defaultKongNamespace = "kong"
 
 func TestKongTCPIngressEndpoints(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title    string
 		tcpProxy TCPIngress
@@ -218,7 +221,10 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			fakeKubernetesClient := fakeKube.NewSimpleClientset()
 			scheme := runtime.NewScheme()
 			scheme.AddKnownTypes(kongGroupdVersionResource.GroupVersion(), &TCPIngress{}, &TCPIngressList{})

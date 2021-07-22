@@ -87,6 +87,8 @@ func (suite *ServiceSuite) TestResourceLabelIsSet() {
 }
 
 func TestServiceSource(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(ServiceSuite))
 	t.Run("Interface", testServiceSourceImplementsSource)
 	t.Run("NewServiceSource", testServiceSourceNewServiceSource)
@@ -101,6 +103,8 @@ func testServiceSourceImplementsSource(t *testing.T) {
 
 // testServiceSourceNewServiceSource tests that NewServiceSource doesn't return an error.
 func testServiceSourceNewServiceSource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title              string
 		annotationFilter   string
@@ -133,7 +137,10 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 			serviceTypesFilter: []string{string(v1.ServiceTypeClusterIP)},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewServiceSource(
 				fake.NewSimpleClientset(),
 				"",
@@ -159,6 +166,8 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func testServiceSourceEndpoints(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -1230,7 +1239,10 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
@@ -1297,6 +1309,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 
 // testMultipleServicesEndpoints tests that multiple services generate correct merged endpoints
 func testMultipleServicesEndpoints(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -1392,7 +1406,9 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
 
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
@@ -1471,6 +1487,8 @@ func testMultipleServicesEndpoints(t *testing.T) {
 
 // testServiceSourceEndpoints tests that various services generate the correct endpoints.
 func TestClusterIpServices(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -1565,7 +1583,10 @@ func TestClusterIpServices(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
@@ -1631,6 +1652,8 @@ func TestClusterIpServices(t *testing.T) {
 
 // testNodePortServices tests that various services generate the correct endpoints.
 func TestServiceSourceNodePortServices(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -2222,7 +2245,10 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			[]v1.PodPhase{},
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
@@ -2309,6 +2335,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServices(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -2534,7 +2562,10 @@ func TestHeadlessServices(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
@@ -2638,6 +2669,8 @@ func TestHeadlessServices(t *testing.T) {
 
 // TestHeadlessServices tests that headless services generate the correct endpoints.
 func TestHeadlessServicesHostIP(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -2887,7 +2920,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
@@ -2988,6 +3024,8 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 // TestExternalServices tests that external services generate the correct endpoints.
 func TestExternalServices(t *testing.T) {
+	t.Parallel()
+
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -3042,7 +3080,10 @@ func TestExternalServices(t *testing.T) {
 			false,
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
 
