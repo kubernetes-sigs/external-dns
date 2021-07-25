@@ -231,6 +231,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		return NewGatewayHTTPRouteSource(p, cfg)
 	case "gateway-tlsroute":
 		return NewGatewayTLSRouteSource(p, cfg)
+	case "gateway-tcproute":
+		return NewGatewayTCPRouteSource(p, cfg)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
