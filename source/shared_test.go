@@ -48,6 +48,8 @@ func sortEndpoints(endpoints []*endpoint.Endpoint) {
 }
 
 func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
+	t.Helper()
+
 	if len(endpoints) != len(expected) {
 		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
 	}
@@ -62,12 +64,14 @@ func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 }
 
 func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
+	t.Helper()
+
 	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("DNSName expected %s, got %s", expected.DNSName, endpoint.DNSName)
+		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
 	}
 
 	if !endpoint.Targets.Same(expected.Targets) {
-		t.Errorf("Targets expected %s, got %s", expected.Targets, endpoint.Targets)
+		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
 	}
 
 	if endpoint.RecordTTL != expected.RecordTTL {
@@ -76,11 +80,20 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 
 	// if non-empty record type is expected, check that it matches.
 	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
-		t.Errorf("RecordType expected %s, got %s", expected.RecordType, endpoint.RecordType)
+		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
 	}
 
 	// if non-empty labels are expected, check that they matches.
 	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
 		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
+	}
+
+	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
+		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
+		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
+	}
+
+	if endpoint.SetIdentifier != expected.SetIdentifier {
+		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, endpoint.SetIdentifier)
 	}
 }
