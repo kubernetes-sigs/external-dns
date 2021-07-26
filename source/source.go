@@ -46,6 +46,9 @@ const (
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
+	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	// available hostname sources are used if not specified.
+	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname

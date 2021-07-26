@@ -125,17 +125,13 @@ var (
 		endpoint.NewEndpointWithTTL("does.not.exist.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
 	endpointsMultipleRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "4.4.4.4"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
 	}
 
 	endpointsMixedRecords = []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "4.4.4.4"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -482,10 +478,23 @@ var (
 		},
 	}
 
+	DomainFilterChildListSingle = endpoint.DomainFilter{
+		Filters: []string{
+			"a.example.com",
+		},
+	}
+
 	DomainFilterListMultiple = endpoint.DomainFilter{
 		Filters: []string{
 			"example.com",
 			"mock.com",
+		},
+	}
+
+	DomainFilterChildListMultiple = endpoint.DomainFilter{
+		Filters: []string{
+			"a.example.com",
+			"c.example.com",
 		},
 	}
 
@@ -507,11 +516,25 @@ var (
 		domainFilter: DomainFilterListSingle,
 	}
 
+	DomainFilterChildSingleClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: DomainFilterChildListSingle,
+	}
+
 	DomainFilterMultipleClient = &PDNSAPIClient{
 		dryRun:       false,
 		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
 		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
 		domainFilter: DomainFilterListMultiple,
+	}
+
+	DomainFilterChildMultipleClient = &PDNSAPIClient{
+		dryRun:       false,
+		authCtx:      context.WithValue(context.Background(), pgo.ContextAPIKey, pgo.APIKey{Key: "TEST-API-KEY"}),
+		client:       pgo.NewAPIClient(pgo.NewConfiguration()),
+		domainFilter: DomainFilterChildListMultiple,
 	}
 )
 
@@ -1017,6 +1040,16 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 
 	// Check filtered, residual zones when a multiple domain filter specified
 	filteredZones, residualZones = DomainFilterMultipleClient.PartitionZones(zoneList)
+	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
+	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
+
+	// Check filtered, residual zones when a single child domain filter specified
+	filteredZones, residualZones = DomainFilterChildSingleClient.PartitionZones(zoneList)
+	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
+	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
+
+	// Check filter, residual zones when multiple child domain filters specified
+	filteredZones, residualZones = DomainFilterChildMultipleClient.PartitionZones(zoneList)
 	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
 	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
 }

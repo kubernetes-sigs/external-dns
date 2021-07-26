@@ -36,6 +36,10 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 	}, nil
 }
 
+func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+	return im.provider.GetDomainFilter()
+}
+
 // Records returns the current records from the dns provider
 func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return im.provider.Records(ctx)

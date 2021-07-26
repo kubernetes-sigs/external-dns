@@ -489,7 +489,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"our controller type is dns-controller",
+			"our controller type is kops dns controller",
 			"",
 			"",
 			"testing",
@@ -868,6 +868,59 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"load balancer services annotated with DNS Controller annotations return an endpoint with A and CNAME targets in compatibility mode",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"kops-dns-controller",
+			"",
+			false,
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org",
+			},
+			"",
+			[]string{},
+			[]string{"1.2.3.4", "lb.example.com"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"lb.example.com"}},
+			},
+			false,
+		}, {
+			"load balancer services annotated with DNS Controller annotations return an endpoint with both annotations in compatibility mode",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"kops-dns-controller",
+			"",
+			false,
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
+			},
+			"",
+			[]string{},
+			[]string{"1.2.3.4"},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "internal.bar.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+
 		{
 			"not annotated services with set fqdnTemplate return an endpoint with target IP",
 			"",
@@ -1603,7 +1656,7 @@ func TestClusterIpServices(t *testing.T) {
 }
 
 // testNodePortServices tests that various services generate the correct endpoints.
-func TestNodePortServices(t *testing.T) {
+func TestServiceSourceNodePortServices(t *testing.T) {
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -1976,6 +2029,212 @@ func TestNodePortServices(t *testing.T) {
 			}, {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
+		},
+		{
+			"node port services annotated DNS Controller annotations return an endpoint where all targets has the node role",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
+			"kops-dns-controller",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}},
+				{DNSName: "internal.bar.example.org", Targets: endpoint.Targets{"10.0.1.1"}},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/control-plane": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
+		},
+		{
+			"node port services annotated with internal DNS Controller annotations return an endpoint in compatibility mode",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
+			"kops-dns-controller",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
+				{DNSName: "internal.bar.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
+		},
+		{
+			"node port services annotated with external DNS Controller annotations return an endpoint in compatibility mode",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
+			"kops-dns-controller",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerHostnameAnnotationKey: "foo.example.org., bar.example.org",
+			},
+			nil,
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+				{DNSName: "bar.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+			},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			[]string{},
+			[]int{},
+			[]v1.PodPhase{},
+		},
+		{
+			"node port services annotated with both kops dns controller annotations return an empty set of addons",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeNodePort,
+			v1.ServiceExternalTrafficPolicyTypeCluster,
+			"kops-dns-controller",
+			"",
+			false,
+			map[string]string{},
+			map[string]string{
+				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
+				kopsDNSControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
+			},
+			nil,
+			[]*endpoint.Endpoint{},
+			false,
+			[]*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+					Labels: map[string]string{
+						"node-role.kubernetes.io/node": "",
+					},
 				},
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
@@ -2423,6 +2682,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 		podnames                 []string
 		hostnames                []string
 		podsReady                []bool
+		targetRefs               []*v1.ObjectReference
 		publishNotReadyAddresses bool
 		expected                 []*endpoint.Endpoint
 		expectError              bool
@@ -2449,6 +2709,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2479,6 +2743,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{},
 			false,
@@ -2506,6 +2774,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}, RecordTTL: endpoint.TTL(1)},
@@ -2536,6 +2808,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, false},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2565,6 +2841,10 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"foo-0", "foo-1"},
 			[]bool{true, false},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			true,
 			[]*endpoint.Endpoint{
 				{DNSName: "foo-0.service.example.org", Targets: endpoint.Targets{"1.1.1.1"}},
@@ -2595,10 +2875,41 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 			[]string{"foo-0", "foo-1"},
 			[]string{"", ""},
 			[]bool{true, true},
+			[]*v1.ObjectReference{
+				{APIVersion: "", Kind: "Pod", Name: "foo-0"},
+				{APIVersion: "", Kind: "Pod", Name: "foo-1"},
+			},
 			false,
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"1.1.1.1", "1.1.1.2"}},
 			},
+			false,
+		},
+		{
+			"annotated Headless services without a targetRef has no endpoints",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeClusterIP,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			v1.ClusterIPNone,
+			[]string{"1.1.1.1"},
+			map[string]string{
+				"component": "foo",
+			},
+			[]string{},
+			[]string{"foo-0"},
+			[]string{"foo-0"},
+			[]bool{true, true},
+			[]*v1.ObjectReference{nil},
+			false,
+			[]*endpoint.Endpoint{},
 			false,
 		},
 	} {
@@ -2647,12 +2958,8 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				require.NoError(t, err)
 
 				address := v1.EndpointAddress{
-					IP: "4.3.2.1",
-					TargetRef: &v1.ObjectReference{
-						APIVersion: "",
-						Kind:       "Pod",
-						Name:       podname,
-					},
+					IP:        "4.3.2.1",
+					TargetRef: tc.targetRefs[i],
 				}
 				if tc.podsReady[i] {
 					addresses = append(addresses, address)

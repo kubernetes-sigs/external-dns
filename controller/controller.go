@@ -72,6 +72,14 @@ var (
 			Help:      "Timestamp of last successful sync with the DNS provider",
 		},
 	)
+	controllerNoChangesTotal = prometheus.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "no_op_runs_total",
+			Help:      "Number of reconcile loops ending up with no changes on the DNS provider side.",
+		},
+	)
 	deprecatedRegistryErrors = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Subsystem: "registry",
@@ -96,6 +104,7 @@ func init() {
 	prometheus.MustRegister(lastSyncTimestamp)
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
+	prometheus.MustRegister(controllerNoChangesTotal)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -112,13 +121,15 @@ type Controller struct {
 	// The interval between individual synchronizations
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
-	DomainFilter endpoint.DomainFilter
+	DomainFilter endpoint.DomainFilterInterface
 	// The nextRunAt used for throttling and batching reconciliation
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
 	nextRunAtMux sync.Mutex
 	// DNS record types that will be considered for management
 	ManagedRecordTypes []string
+	// MinEventSyncInterval is used as window for batching events
+	MinEventSyncInterval time.Duration
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -147,32 +158,34 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Policies:           []plan.Policy{c.Policy},
 		Current:            records,
 		Desired:            endpoints,
-		DomainFilter:       c.DomainFilter,
+		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
 		ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	plan = plan.Calculate()
 
-	err = c.Registry.ApplyChanges(ctx, plan.Changes)
-	if err != nil {
-		registryErrorsTotal.Inc()
-		deprecatedRegistryErrors.Inc()
-		return err
+	if plan.Changes.HasChanges() {
+		err = c.Registry.ApplyChanges(ctx, plan.Changes)
+		if err != nil {
+			registryErrorsTotal.Inc()
+			deprecatedRegistryErrors.Inc()
+			return err
+		}
+	} else {
+		controllerNoChangesTotal.Inc()
+		log.Info("All records are already up to date")
 	}
 
 	lastSyncTimestamp.SetToCurrentTime()
 	return nil
 }
 
-// MinInterval is used as window for batching events
-const MinInterval = 5 * time.Second
-
 // ScheduleRunOnce makes sure execution happens at most once per interval.
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
-	c.nextRunAt = now.Add(MinInterval)
+	c.nextRunAt = now.Add(c.MinEventSyncInterval)
 }
 
 func (c *Controller) ShouldRunOnce(now time.Time) bool {

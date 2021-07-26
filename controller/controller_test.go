@@ -40,6 +40,30 @@ type mockProvider struct {
 	ExpectChanges *plan.Changes
 }
 
+type filteredMockProvider struct {
+	provider.BaseProvider
+	domainFilter      endpoint.DomainFilterInterface
+	RecordsStore      []*endpoint.Endpoint
+	RecordsCallCount  int
+	ApplyChangesCalls []*plan.Changes
+}
+
+func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return p.domainFilter
+}
+
+// Records returns the desired mock endpoints.
+func (p *filteredMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	p.RecordsCallCount++
+	return p.RecordsStore, nil
+}
+
+// ApplyChanges stores all calls for later check
+func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	p.ApplyChangesCalls = append(p.ApplyChangesCalls, changes)
+	return nil
+}
+
 // Records returns the desired mock endpoints.
 func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
@@ -155,7 +179,7 @@ func TestRunOnce(t *testing.T) {
 }
 
 func TestShouldRunOnce(t *testing.T) {
-	ctrl := &Controller{Interval: 10 * time.Minute}
+	ctrl := &Controller{Interval: 10 * time.Minute, MinEventSyncInterval: 5 * time.Second}
 
 	now := time.Now()
 
@@ -175,7 +199,7 @@ func TestShouldRunOnce(t *testing.T) {
 	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
 
 	// But after MinInterval we should run reconciliation
-	now = now.Add(MinInterval)
+	now = now.Add(5 * time.Second)
 	assert.True(t, ctrl.ShouldRunOnce(now))
 
 	// But just one time
@@ -191,4 +215,156 @@ func TestShouldRunOnce(t *testing.T) {
 
 	// But not two times
 	assert.False(t, ctrl.ShouldRunOnce(now))
+}
+
+func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
+	t.Helper()
+	source := new(testutils.MockSource)
+	source.On("Endpoints").Return(configuredEndpoints, nil)
+
+	// Fake some existing records in our DNS provider and validate some desired changes.
+	provider := &filteredMockProvider{
+		RecordsStore: providerEndpoints,
+	}
+	r, err := registry.NewNoopRegistry(provider)
+
+	require.NoError(t, err)
+
+	ctrl := &Controller{
+		Source:       source,
+		Registry:     r,
+		Policy:       &plan.SyncPolicy{},
+		DomainFilter: domainFilter,
+	}
+
+	assert.NoError(t, ctrl.RunOnce(context.Background()))
+	assert.Equal(t, 1, provider.RecordsCallCount)
+	require.Len(t, provider.ApplyChangesCalls, len(expectedChanges))
+	for i, change := range expectedChanges {
+		assert.Equal(t, *change, *provider.ApplyChangesCalls[i])
+	}
+}
+
+func TestControllerSkipsEmptyChanges(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "create-record.other.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		[]*plan.Changes{},
+	)
+}
+
+func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "create-record.other.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		nil,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		[]*plan.Changes{
+			{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "create-record.other.tld",
+						RecordType: endpoint.RecordTypeA,
+						Targets:    endpoint.Targets{"1.2.3.4"},
+					},
+				},
+			},
+		},
+	)
+}
+
+func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "create-record.other.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.1.1.1"},
+			},
+			{
+				DNSName:    "create-record.unused.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld", "other.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		[]*plan.Changes{
+			{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "create-record.other.tld",
+						RecordType: endpoint.RecordTypeA,
+						Targets:    endpoint.Targets{"1.2.3.4"},
+					},
+				},
+				UpdateOld: []*endpoint.Endpoint{
+					{
+						DNSName:    "some-record.used.tld",
+						RecordType: endpoint.RecordTypeA,
+						Targets:    endpoint.Targets{"8.8.8.8"},
+						Labels:     endpoint.Labels{},
+					},
+				},
+				UpdateNew: []*endpoint.Endpoint{
+					{
+						DNSName:    "some-record.used.tld",
+						RecordType: endpoint.RecordTypeA,
+						Targets:    endpoint.Targets{"1.1.1.1"},
+						Labels: endpoint.Labels{
+							"owner": "",
+						},
+					},
+				},
+			},
+		},
+	)
 }

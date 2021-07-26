@@ -16,6 +16,7 @@ package hetzner
 import (
 	"context"
 	"fmt"
+	"github.com/maxatome/go-testdeep/td"
 	"os"
 	"reflect"
 	"testing"
@@ -45,12 +46,18 @@ type mockHCloudClientAdapter interface {
 	UpdateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerUpdateRecords, error)
 }
 
+type MockAction struct {
+	Name       string
+	RecordData hclouddns.HCloudRecord
+}
+
 type mockHCloudClient struct {
 	Token string `yaml:"token"`
+	Actions []MockAction
 }
 
 // New instance
-func mockHCloudNew(t string) mockHCloudClientAdapter {
+func mockHCloudNew(t string) *mockHCloudClient {
 	return &mockHCloudClient{
 		Token: t,
 	}
@@ -116,12 +123,26 @@ func (m *mockHCloudClient) GetRecords(params hclouddns.HCloudGetRecordsParams) (
 	}, nil
 }
 func (m *mockHCloudClient) UpdateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error) {
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "UpdateRecord",
+		RecordData: record,
+	})
 	return hclouddns.HCloudAnswerGetRecord{}, nil
 }
 func (m *mockHCloudClient) DeleteRecord(ID string) (hclouddns.HCloudAnswerDeleteRecord, error) {
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "DeleteRecord",
+		RecordData: hclouddns.HCloudRecord{
+			ID: ID,
+		},
+	})
 	return hclouddns.HCloudAnswerDeleteRecord{}, nil
 }
 func (m *mockHCloudClient) CreateRecord(record hclouddns.HCloudRecord) (hclouddns.HCloudAnswerGetRecord, error) {
+	m.Actions = append(m.Actions, MockAction{
+		Name:       "CreateRecord",
+		RecordData: record,
+	})
 	return hclouddns.HCloudAnswerGetRecord{}, nil
 }
 func (m *mockHCloudClient) CreateRecordBulk(record []hclouddns.HCloudRecord) (hclouddns.HCloudAnswerCreateRecords, error) {
@@ -220,14 +241,65 @@ func TestHetznerProvider_ApplyChanges(t *testing.T) {
 	}
 
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "test.org", Targets: endpoint.Targets{"target"}},
-		{DNSName: "test.test.org", Targets: endpoint.Targets{"target"}, RecordTTL: 666},
+		{DNSName: "blindage.org", Targets: endpoint.Targets{"target"}},
+		{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target"}, RecordTTL: 666},
 	}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.test.org", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.test.org", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
 
 	err := mockedProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
+	if len(mockedClient.Actions) != 4 {
+		t.Errorf("should be 4 changes not %d", len(mockedClient.Actions))
+	}
+}
+
+func TestHetznerProvider_ApplyChangesCreateUpdateCname(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := mockHCloudNew("myHetznerToken")
+	mockedProvider := &HetznerProvider{
+		Client: mockedClient,
+	}
+
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "test-cname.blindage.org", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "CNAME"},
+	}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test-cname2.blindage.org", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 777}}
+
+	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	td.Cmp(t, mockedClient.Actions, []MockAction{
+		{
+			Name: "CreateRecord",
+			RecordData: hclouddns.HCloudRecord{
+				RecordType: "CNAME",
+				ID:         "",
+				Created:    "",
+				Modified:   "",
+				ZoneID:     "HetznerZoneID",
+				Name:       "test-cname",
+				Value:      "target.",
+				TTL:        666,
+			},
+		},
+		{
+			Name: "UpdateRecord",
+			RecordData: hclouddns.HCloudRecord{
+				RecordType: "CNAME",
+				ID:         "",
+				Created:    "",
+				Modified:   "",
+				ZoneID:     "HetznerZoneID",
+				Name:       "test-cname2",
+				Value:      "target-new.",
+				TTL:        777,
+			},
+		},
+	})
 }
