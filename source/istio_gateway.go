@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -160,7 +159,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// apply template if host is missing on gateway
 		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := sc.hostNamesFromTemplate(gateway)
+			iHostnames, err := execTemplate(sc.fqdnTemplate, &gateway)
 			if err != nil {
 				return nil, err
 			}
@@ -333,18 +332,6 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway
 		hostnames = append(hostnames, getHostnamesFromAnnotations(gateway.Annotations)...)
 	}
 
-	return hostnames, nil
-}
-
-func (sc *gatewaySource) hostNamesFromTemplate(gateway networkingv1alpha3.Gateway) ([]string, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, gateway)
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on istio gateway %v: %v", gateway, err)
-	}
-
-	hostnames := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	return hostnames, nil
 }
 

@@ -17,11 +17,9 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
 	"time"
 
@@ -189,14 +187,10 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, httpProxy)
+	hostnames, err := execTemplate(sc.fqdnTemplate, httpProxy)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to apply template on HTTPProxy %s/%s", httpProxy.Namespace, httpProxy.Name)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
 	if err != nil {
@@ -204,7 +198,6 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	}
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
-
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -219,10 +212,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
