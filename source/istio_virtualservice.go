@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 
@@ -103,18 +102,11 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
-
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return virtualServiceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+		return nil, err
 	}
 
 	return &virtualServiceSource{

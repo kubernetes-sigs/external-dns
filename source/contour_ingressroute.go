@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
 	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
@@ -93,11 +92,8 @@ func NewContourIngressRouteSource(
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressRouteInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := NewUnstructuredConverter()

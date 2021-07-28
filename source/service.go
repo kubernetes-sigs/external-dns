@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -111,14 +110,8 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() &&
-			endpointsInformer.Informer().HasSynced() &&
-			podInformer.Informer().HasSynced() &&
-			nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	// Transform the slice into a map so it will

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -67,11 +66,8 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &nodeSource{
