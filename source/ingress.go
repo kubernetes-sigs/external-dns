@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
@@ -87,11 +86,8 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	sc := &ingressSource{

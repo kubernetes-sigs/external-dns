@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
 	"text/template"
@@ -31,10 +32,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/config"
 )
 
 const (
@@ -292,23 +292,42 @@ func (fn eventHandlerFunc) OnAdd(obj interface{})               { fn() }
 func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{}) { fn() }
 func (fn eventHandlerFunc) OnDelete(obj interface{})            { fn() }
 
-func poll(interval time.Duration, timeout time.Duration, condition wait.ConditionFunc) error {
-	if config.FastPoll {
-		time.Sleep(5 * time.Millisecond)
+type informerFactory interface {
+	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
+}
 
-		ok, err := condition()
-
-		if err != nil {
-			return err
+func waitForCacheSync(ctx context.Context, factory informerFactory) error {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
+		if !done {
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+			default:
+				return fmt.Errorf("failed to sync %v", typ)
+			}
 		}
-
-		if ok {
-			return nil
-		}
-
-		interval = 50 * time.Millisecond
-		timeout = 10 * time.Second
 	}
+	return nil
+}
 
-	return wait.Poll(interval, timeout, condition)
+type dynamicInformerFactory interface {
+	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
+}
+
+func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
+		if !done {
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+			default:
+				return fmt.Errorf("failed to sync %v", typ)
+			}
+		}
+	}
+	return nil
 }

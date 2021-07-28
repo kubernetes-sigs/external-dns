@@ -22,7 +22,6 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
@@ -99,19 +98,11 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
-
-	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return gatewayInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+		return nil, err
 	}
 
 	return &gatewaySource{
