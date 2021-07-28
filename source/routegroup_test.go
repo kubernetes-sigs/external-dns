@@ -44,6 +44,8 @@ func createTestRouteGroup(ns, name string, annotations map[string]string, hosts 
 }
 
 func TestEndpointsFromRouteGroups(t *testing.T) {
+	t.Parallel()
+
 	for _, tt := range []struct {
 		name   string
 		source *routeGroupSource

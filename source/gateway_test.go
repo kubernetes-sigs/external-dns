@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	networkingv1alpha3api "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,7 +45,7 @@ type GatewaySuite struct {
 
 func (suite *GatewaySuite) SetupTest() {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
 	suite.lbServices = []*v1.Service{
@@ -90,12 +89,16 @@ func (suite *GatewaySuite) TestResourceLabelIsSet() {
 }
 
 func TestGateway(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(GatewaySuite))
 	t.Run("endpointsFromGatewayConfig", testEndpointsFromGatewayConfig)
 	t.Run("Endpoints", testGatewayEndpoints)
 }
 
 func TestNewIstioGatewaySource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -134,10 +137,13 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewIstioGatewaySource(
 				fake.NewSimpleClientset(),
-				NewFakeConfigStore(),
+				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -154,6 +160,8 @@ func TestNewIstioGatewaySource(t *testing.T) {
 }
 
 func testEndpointsFromGatewayConfig(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title      string
 		lbServices []fakeIngressGatewayService
@@ -306,7 +314,10 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			gatewayCfg := ti.config.Config()
 			if source, err := newTestGatewaySource(ti.lbServices); err != nil {
 				require.NoError(t, err)
@@ -322,6 +333,8 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 }
 
 func testGatewayEndpoints(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		targetNamespace          string
@@ -1132,7 +1145,9 @@ func testGatewayEndpoints(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
 
 			fakeKubernetesClient := fake.NewSimpleClientset()
 
@@ -1142,7 +1157,7 @@ func testGatewayEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			fakeIstioClient := NewFakeConfigStore()
+			fakeIstioClient := istiofake.NewSimpleClientset()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
 				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(context.Background(), &gatewayCfg, metav1.CreateOptions{})
@@ -1175,7 +1190,7 @@ func testGatewayEndpoints(t *testing.T) {
 // gateway specific helper functions
 func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewaySource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()
@@ -1275,8 +1290,4 @@ func (c fakeGatewayConfig) Config() networkingv1alpha3.Gateway {
 	gw.Spec.Servers = servers
 
 	return gw
-}
-
-func NewFakeConfigStore() istioclient.Interface {
-	return istiofake.NewSimpleClientset()
 }

@@ -19,7 +19,6 @@ package source
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,7 +42,17 @@ type IngressSuite struct {
 
 func (suite *IngressSuite) SetupTest() {
 	fakeClient := fake.NewSimpleClientset()
-	var err error
+
+	suite.fooWithTargets = (fakeIngress{
+		name:        "foo-with-targets",
+		namespace:   "default",
+		dnsnames:    []string{"foo"},
+		ips:         []string{"8.8.8.8"},
+		hostnames:   []string{"v1"},
+		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
+	}).Ingress()
+	_, err := fakeClient.ExtensionsV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
+	suite.NoError(err, "should succeed")
 
 	suite.sc, err = NewIngressSource(
 		fakeClient,
@@ -56,17 +65,6 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
-
-	suite.fooWithTargets = (fakeIngress{
-		name:        "foo-with-targets",
-		namespace:   "default",
-		dnsnames:    []string{"foo"},
-		ips:         []string{"8.8.8.8"},
-		hostnames:   []string{"v1"},
-		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
-	}).Ingress()
-	_, err = fakeClient.ExtensionsV1beta1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
-	suite.NoError(err, "should succeed")
 }
 
 func (suite *IngressSuite) TestResourceLabelIsSet() {
@@ -84,6 +82,8 @@ func (suite *IngressSuite) TestDualstackLabelIsSet() {
 }
 
 func TestIngress(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(IngressSuite))
 	t.Run("endpointsFromIngress", testEndpointsFromIngress)
 	t.Run("endpointsFromIngressHostnameSourceAnnotation", testEndpointsFromIngressHostnameSourceAnnotation)
@@ -91,6 +91,8 @@ func TestIngress(t *testing.T) {
 }
 
 func TestNewIngressSource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -129,7 +131,10 @@ func TestNewIngressSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewIngressSource(
 				fake.NewSimpleClientset(),
 				"",
@@ -150,6 +155,8 @@ func TestNewIngressSource(t *testing.T) {
 }
 
 func testEndpointsFromIngress(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		ingress                  fakeIngress
@@ -336,6 +343,8 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 }
 
 func testIngressEndpoints(t *testing.T) {
+	t.Parallel()
+
 	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
@@ -995,6 +1004,9 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName:    "example.org",
 					Targets:    endpoint.Targets{"ingress-target.com"},
 					RecordType: endpoint.RecordTypeCNAME,
+					ProviderSpecific: endpoint.ProviderSpecific{{
+						Name: "alias", Value: "true",
+					}},
 				},
 			},
 		},
@@ -1158,13 +1170,16 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
-			ingresses := make([]*v1beta1.Ingress, 0)
-			for _, item := range ti.ingressItems {
-				ingresses = append(ingresses, item.Ingress())
-			}
+			t.Parallel()
 
 			fakeClient := fake.NewSimpleClientset()
+			for _, item := range ti.ingressItems {
+				ingress := item.Ingress()
+				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
+				require.NoError(t, err)
+			}
 			source, _ := NewIngressSource(
 				fakeClient,
 				ti.targetNamespace,
@@ -1175,34 +1190,6 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
 			)
-			for _, ingress := range ingresses {
-				_, err := fakeClient.ExtensionsV1beta1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
-				require.NoError(t, err)
-			}
-
-			// Wait for the Ingress resources to be visible to the source. We check the
-			// source's informer cache to detect when this occurs. (This violates encapsulation
-			// but is okay as this is a test and we want to ensure the informer's cache updates.)
-			concreteIngressSource := source.(*ingressSource)
-			ingressLister := concreteIngressSource.ingressInformer.Lister()
-			err := poll(250*time.Millisecond, 6*time.Second, func() (bool, error) {
-				allIngressesPresent := true
-				for _, ingress := range ingresses {
-					// Skip ingresses that the source would also skip.
-					if ti.targetNamespace != "" && ti.targetNamespace != ingress.Namespace {
-						continue
-					}
-
-					// Check for the presence of this ingress.
-					_, err := ingressLister.Ingresses(ingress.Namespace).Get(ingress.Name)
-					if err != nil {
-						allIngressesPresent = false
-						break
-					}
-				}
-				return allIngressesPresent, nil
-			})
-			require.NoError(t, err)
 
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
