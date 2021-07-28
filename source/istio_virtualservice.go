@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -240,28 +239,20 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, virtualService)
+	hostnames, err := execTemplate(sc.fqdnTemplate, &virtualService)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on istio config %v: %v", virtualService, err)
+		return nil, err
 	}
-
-	hostnamesTemplate := buf.String()
 
 	ttl, err := getTTLFromAnnotations(virtualService.Annotations)
 	if err != nil {
 		log.Warn(err)
 	}
 
-	var endpoints []*endpoint.Endpoint
-
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
 
-	// splits the FQDN template and removes the trailing periods
-	hostnames := strings.Split(strings.Replace(hostnamesTemplate, " ", "", -1), ",")
+	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		hostname = strings.TrimSuffix(hostname, ".")
 		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
 		if err != nil {
 			return endpoints, err

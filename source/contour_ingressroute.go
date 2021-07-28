@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -200,14 +199,10 @@ func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingressRoute *contour.IngressRoute) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, ingressRoute)
+	hostnames, err := execTemplate(sc.fqdnTemplate, ingressRoute)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on ingressroute %s/%s: %v", ingressRoute.Namespace, ingressRoute.Name, err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ingressRoute.Annotations)
 	if err != nil {
@@ -215,7 +210,6 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingress
 	}
 
 	targets := getTargetsFromTargetAnnotation(ingressRoute.Annotations)
-
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromContourLoadBalancer(ctx)
 		if err != nil {
@@ -226,10 +220,7 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingress
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil

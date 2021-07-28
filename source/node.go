@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"text/template"
@@ -121,14 +120,15 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		if ns.fqdnTemplate != nil {
-			// Process the whole template string
-			var buf bytes.Buffer
-			err := ns.fqdnTemplate.Execute(&buf, node)
+			hostnames, err := execTemplate(ns.fqdnTemplate, node)
 			if err != nil {
-				return nil, fmt.Errorf("failed to apply template on node %s: %v", node.Name, err)
+				return nil, err
 			}
-
-			ep.DNSName = buf.String()
+			hostname := ""
+			if len(hostnames) > 0 {
+				hostname = hostnames[0]
+			}
+			ep.DNSName = hostname
 			log.Debugf("applied template for %s, converting to %s", node.Name, ep.DNSName)
 		} else {
 			ep.DNSName = node.Name

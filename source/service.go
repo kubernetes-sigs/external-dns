@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
@@ -345,18 +344,15 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, svc)
+	hostnames, err := execTemplate(sc.fqdnTemplate, svc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
+		return nil, err
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
-	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
-	for _, hostname := range hostnameList {
+
+	var endpoints []*endpoint.Endpoint
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 	}
 
