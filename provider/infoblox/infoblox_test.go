@@ -24,13 +24,13 @@ import (
 	"strings"
 	"testing"
 
-	ibclient "github.com/infobloxopen/infoblox-go-client"
 	"github.com/stretchr/testify/assert"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+
+	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 )
 
 type mockIBConnector struct {
@@ -97,7 +97,13 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 	return ref, nil
 }
 
-func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, res interface{}) (err error) {
+func (client *mockIBConnector) GetObject(
+	obj ibclient.IBObject,
+	ref string,
+	qp *ibclient.QueryParams,
+	res interface{}) (err error) {
+
+	// TODO: make use of 'qp' argument.
 	switch obj.ObjectType() {
 	case "record:a":
 		var result []ibclient.RecordA
@@ -176,12 +182,11 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	switch result[1] {
 	case "record:a":
 		var records []ibclient.RecordA
-		obj := ibclient.NewRecordA(
-			ibclient.RecordA{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyRecordA()
+		qp := ibclient.NewQueryParams(false, map[string]string{
+			"name": result[2],
+		})
+		client.GetObject(obj, ref, qp, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -194,12 +199,11 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:cname":
 		var records []ibclient.RecordCNAME
-		obj := ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyRecordCNAME()
+		qp := ibclient.NewQueryParams(false, map[string]string{
+			"name": result[2],
+		})
+		client.GetObject(obj, ref, qp, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -212,12 +216,11 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:host":
 		var records []ibclient.HostRecord
-		obj := ibclient.NewHostRecord(
-			ibclient.HostRecord{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyHostRecord()
+		qp := ibclient.NewQueryParams(false, map[string]string{
+			"name": result[2],
+		})
+		client.GetObject(obj, ref, qp, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -230,12 +233,11 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:txt":
 		var records []ibclient.RecordTXT
-		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewRecordTXT(ibclient.RecordTXT{})
+		qp := ibclient.NewQueryParams(false, map[string]string{
+			"name": result[2],
+		})
+		client.GetObject(obj, ref, qp, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -304,21 +306,9 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	ref := fmt.Sprintf("record:%s/%s:%s/default", strings.ToLower(recordType), base64.StdEncoding.EncodeToString([]byte(name)), name)
 	switch recordType {
 	case endpoint.RecordTypeA:
-		return ibclient.NewRecordA(
-			ibclient.RecordA{
-				Ref:      ref,
-				Name:     name,
-				Ipv4Addr: value,
-			},
-		)
+		return ibclient.NewRecordA("", "", name, value, 0, false, "", nil, ref)
 	case endpoint.RecordTypeCNAME:
-		return ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Ref:       ref,
-				Name:      name,
-				Canonical: value,
-			},
-		)
+		return ibclient.NewRecordCNAME("", value, name, false, 0, "", nil, ref)
 	case endpoint.RecordTypeTXT:
 		return ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
@@ -329,22 +319,20 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 		)
 	case "HOST":
 		return ibclient.NewHostRecord(
-			ibclient.HostRecord{
-				Ref:  ref,
-				Name: name,
-				Ipv4Addrs: []ibclient.HostRecordIpv4Addr{
-					{
-						Ipv4Addr: value,
-					},
-				},
-			},
-		)
+			"", name, value, "",
+			nil, nil, nil,
+			true, "", "", ref, false, 0, "", nil)
 	}
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, client ibclient.IBConnector) *InfobloxProvider {
-	return &InfobloxProvider{
+func newProvider(
+	domainFilter endpoint.DomainFilter,
+	zoneIDFilter provider.ZoneIDFilter,
+	dryRun bool,
+	client ibclient.IBConnector) *ProviderConfig {
+
+	return &ProviderConfig{
 		client:       client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -376,8 +364,8 @@ func TestInfobloxRecords(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
-	actual, err := provider.Records(context.Background())
+	testProvider := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
+	actual, err := testProvider.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -457,7 +445,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 		createMockInfobloxObject("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 	}
 
-	provider := newInfobloxProvider(
+	testProvider := newProvider(
 		endpoint.NewDomainFilter([]string{""}),
 		provider.NewZoneIDFilter([]string{""}),
 		dryRun,
@@ -505,7 +493,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun bool, client ibclient
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := testProvider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -520,17 +508,17 @@ func TestInfobloxZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
-	zones, _ := provider.zones()
+	testProvider := newProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, &client)
+	zones, _ := testProvider.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
-	assert.Equal(t, provider.findZone(zones, "example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "nomatch-example.com"), emptyZoneAuth)
-	assert.Equal(t, provider.findZone(zones, "nginx.example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl1-2.example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-1.lvl1-1.example.com").Fqdn, "lvl2-1.lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
+	assert.Equal(t, testProvider.findZone(zones, "example.com").Fqdn, "example.com")
+	assert.Equal(t, testProvider.findZone(zones, "nomatch-example.com"), emptyZoneAuth)
+	assert.Equal(t, testProvider.findZone(zones, "nginx.example.com").Fqdn, "example.com")
+	assert.Equal(t, testProvider.findZone(zones, "lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
+	assert.Equal(t, testProvider.findZone(zones, "lvl1-2.example.com").Fqdn, "example.com")
+	assert.Equal(t, testProvider.findZone(zones, "lvl2-1.lvl1-1.example.com").Fqdn, "lvl2-1.lvl1-1.example.com")
+	assert.Equal(t, testProvider.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
+	assert.Equal(t, testProvider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
 }
 
 func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
@@ -547,11 +535,11 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
 
-	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.NewQueryParams(false, nil))
 
 	assert.True(t, req.URL.Query().Get("fqdn~") == "^staging.*test.com$")
 
-	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.NewQueryParams(false, nil))
 
 	assert.True(t, req.URL.Query().Get("fqdn~") == "")
 }
@@ -567,13 +555,13 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	requestBuilder := NewExtendedRequestBuilder(54321, "")
 	requestBuilder.Init(hostConfig)
 
-	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
+	obj := ibclient.NewEmptyRecordCNAME()
 
-	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.NewQueryParams(false, nil))
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "54321")
 
-	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.NewQueryParams(false, nil))
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
 }
