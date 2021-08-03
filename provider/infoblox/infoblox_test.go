@@ -103,7 +103,7 @@ func (client *mockIBConnector) GetObject(
 	qp *ibclient.QueryParams,
 	res interface{}) (err error) {
 
-	// TODO: make use of 'qp' argument.
+	// TODO: 'qp' argument cannot be used, it consists of unexported fields only.
 	switch obj.ObjectType() {
 	case "record:a":
 		var result []ibclient.RecordA
@@ -318,9 +318,11 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 			},
 		)
 	case "HOST":
+		ipAddr := ibclient.NewEmptyHostRecordIpv4Addr()
+		ipAddr.Ipv4Addr = value
 		return ibclient.NewHostRecord(
-			"", name, value, "",
-			nil, nil, nil,
+			"", name, "", "",
+			[]ibclient.HostRecordIpv4Addr{*ipAddr}, nil, nil,
 			true, "", "", ref, false, 0, "", nil)
 	}
 	return nil

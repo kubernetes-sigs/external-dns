@@ -334,14 +334,13 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []ibclient.RecordA
-		obj := ibclient.NewEmptyRecordA()
-		qp := ibclient.NewQueryParams(false, map[string]string{
-			"name":     ep.DNSName,
-			"ipv4addr": ep.Targets[targetIndex],
-			"view":     p.view,
-		})
+		obj := ibclient.NewRecordA(
+			p.view, "", ep.DNSName, ep.Targets[targetIndex],
+			0, false, "", nil, "")
 
 		if getObject {
+			// 'queryParams' cannot be used in this mock.
+			qp := ibclient.NewQueryParams(false, map[string]string{})
 			err = p.client.GetObject(obj, "", qp, &res)
 			if err != nil {
 				return
@@ -353,13 +352,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		}
 	case endpoint.RecordTypeCNAME:
 		var res []ibclient.RecordCNAME
-		qp := ibclient.NewQueryParams(false, map[string]string{
-			"name":      ep.DNSName,
-			"canonical": ep.Targets[0],
-			"view":      p.view,
-		})
-		obj := ibclient.NewEmptyRecordCNAME()
+		obj := ibclient.NewRecordCNAME(
+			p.view, ep.Targets[0], ep.DNSName,
+			false, 0, "", nil, "")
 		if getObject {
+			// 'queryParams' cannot be used in this mock.
+			qp := ibclient.NewQueryParams(false, map[string]string{})
 			err = p.client.GetObject(obj, "", qp, &res)
 			if err != nil {
 				return
@@ -376,13 +374,16 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		if target, err2 := strconv.Unquote(ep.Targets[0]); err2 == nil && !strings.Contains(ep.Targets[0], " ") {
 			ep.Targets = endpoint.Targets{target}
 		}
-		qp := ibclient.NewQueryParams(false, map[string]string{
-			"name":      ep.DNSName,
-			"canonical": ep.Targets[0],
-			"view":      p.view,
-		})
-		obj := ibclient.NewRecordTXT(ibclient.RecordTXT{})
+		obj := ibclient.NewRecordTXT(
+			ibclient.RecordTXT{
+				Name: ep.DNSName,
+				Text: ep.Targets[0],
+				View: p.view,
+			},
+		)
 		if getObject {
+			// 'queryParams' cannot be used in this mock.
+			qp := ibclient.NewQueryParams(false, map[string]string{})
 			err = p.client.GetObject(obj, "", qp, &res)
 			if err != nil {
 				return
@@ -453,44 +454,45 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 		for _, ep := range endpoints {
 			if p.dryRun {
 				logrus.Infof("Would delete %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
-			} else {
-				logrus.Infof("Deleting %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
-				for targetIndex := range ep.Targets {
-					recordSet, err := p.recordSet(ep, true, targetIndex)
-					if err != nil {
-						logrus.Errorf(
-							"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
-							ep.RecordType,
-							ep.DNSName,
-							ep.Targets[targetIndex],
-							zone,
-							err,
-						)
-						continue
+				continue
+			}
+
+			logrus.Infof("Deleting %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
+			for targetIndex := range ep.Targets {
+				recordSet, err := p.recordSet(ep, true, targetIndex)
+				if err != nil {
+					logrus.Errorf(
+						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						ep.Targets[targetIndex],
+						zone,
+						err,
+					)
+					continue
+				}
+				switch ep.RecordType {
+				case endpoint.RecordTypeA:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordA) {
+						_, err = p.client.DeleteObject(record.Ref)
 					}
-					switch ep.RecordType {
-					case endpoint.RecordTypeA:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordA) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
-					case endpoint.RecordTypeCNAME:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordCNAME) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
-					case endpoint.RecordTypeTXT:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordTXT) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
+				case endpoint.RecordTypeCNAME:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordCNAME) {
+						_, err = p.client.DeleteObject(record.Ref)
 					}
-					if err != nil {
-						logrus.Errorf(
-							"Failed to delete %s record named '%s' for Infoblox DNS zone '%s': %v",
-							ep.RecordType,
-							ep.DNSName,
-							zone,
-							err,
-						)
+				case endpoint.RecordTypeTXT:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordTXT) {
+						_, err = p.client.DeleteObject(record.Ref)
 					}
+				}
+				if err != nil {
+					logrus.Errorf(
+						"Failed to delete %s record named '%s' for Infoblox DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						zone,
+						err,
+					)
 				}
 			}
 		}
