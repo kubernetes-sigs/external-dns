@@ -223,6 +223,9 @@ func TestShouldRunOnce(t *testing.T) {
 
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}
+
 	source := new(testutils.MockSource)
 	source.On("Endpoints").Return(configuredEndpoints, nil)
 
@@ -235,10 +238,11 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	require.NoError(t, err)
 
 	ctrl := &Controller{
-		Source:       source,
-		Registry:     r,
-		Policy:       &plan.SyncPolicy{},
-		DomainFilter: domainFilter,
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		DomainFilter:       domainFilter,
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
