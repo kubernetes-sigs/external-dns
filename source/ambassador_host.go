@@ -38,7 +38,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	api "k8s.io/kubernetes/pkg/apis/core"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -240,7 +239,7 @@ func parseAmbLoadBalancerService(service string) (namespace, name string, err er
 		// If here, we have no separator, so the whole string is the service, and
 		// we can assume the default namespace.
 		name := service
-		namespace := api.NamespaceDefault
+		namespace := "default"
 
 		return namespace, name, nil
 	} else if len(parts) == 2 {
