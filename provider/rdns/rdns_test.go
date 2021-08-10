@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/mvcc/mvccpb"
 
 	"sigs.k8s.io/external-dns/endpoint"
