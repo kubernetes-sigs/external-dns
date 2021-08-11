@@ -17,13 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
 	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
@@ -68,17 +66,9 @@ func NewContourIngressRouteSource(
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	if _, _, err = parseContourLoadBalancerService(contourLoadBalancerService); err != nil {
@@ -102,11 +92,8 @@ func NewContourIngressRouteSource(
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressRouteInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := NewUnstructuredConverter()
@@ -208,14 +195,10 @@ func (sc *ingressRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingressRoute *contour.IngressRoute) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, ingressRoute)
+	hostnames, err := execTemplate(sc.fqdnTemplate, ingressRoute)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on ingressroute %s/%s: %v", ingressRoute.Namespace, ingressRoute.Name, err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ingressRoute.Annotations)
 	if err != nil {
@@ -223,7 +206,6 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingress
 	}
 
 	targets := getTargetsFromTargetAnnotation(ingressRoute.Annotations)
-
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromContourLoadBalancer(ctx)
 		if err != nil {
@@ -234,10 +216,7 @@ func (sc *ingressRouteSource) endpointsFromTemplate(ctx context.Context, ingress
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil

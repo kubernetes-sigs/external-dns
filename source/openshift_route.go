@@ -17,13 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
-	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
@@ -62,17 +59,9 @@ func NewOcpRouteSource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
@@ -92,11 +81,8 @@ func NewOcpRouteSource(
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return routeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &ocpRouteSource{
@@ -173,14 +159,10 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := ors.fqdnTemplate.Execute(&buf, ocpRoute)
+	hostnames, err := execTemplate(ors.fqdnTemplate, ocpRoute)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on OpenShift Route %s: %s", ocpRoute.Name, err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
 	if err != nil {
@@ -188,7 +170,6 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 	}
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
-
 	if len(targets) == 0 {
 		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
@@ -196,10 +177,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
