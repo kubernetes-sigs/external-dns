@@ -17,13 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
@@ -66,18 +64,9 @@ func NewIstioGatewaySource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
@@ -109,19 +98,11 @@ func NewIstioGatewaySource(
 	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
-
-	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return gatewayInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+		return nil, err
 	}
 
 	return &gatewaySource{
@@ -169,7 +150,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// apply template if host is missing on gateway
 		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := sc.hostNamesFromTemplate(gateway)
+			iHostnames, err := execTemplate(sc.fqdnTemplate, &gateway)
 			if err != nil {
 				return nil, err
 			}
@@ -207,19 +188,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio Gateway")
 
-	sc.gatewayInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.gatewayInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
@@ -342,18 +311,6 @@ func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway
 		hostnames = append(hostnames, getHostnamesFromAnnotations(gateway.Annotations)...)
 	}
 
-	return hostnames, nil
-}
-
-func (sc *gatewaySource) hostNamesFromTemplate(gateway networkingv1alpha3.Gateway) ([]string, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, gateway)
-	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on istio gateway %v: %v", gateway, err)
-	}
-
-	hostnames := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
 	return hostnames, nil
 }
 

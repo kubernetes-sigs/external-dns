@@ -17,13 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/extensions/v1beta1"
@@ -66,17 +64,9 @@ type ingressSource struct {
 
 // NewIngressSource creates a new ingressSource with the given config.
 func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
@@ -96,11 +86,8 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	sc := &ingressSource{
@@ -175,14 +162,10 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 }
 
 func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, ing)
+	hostnames, err := execTemplate(sc.fqdnTemplate, ing)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
@@ -190,7 +173,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
-
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
@@ -198,10 +180,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
@@ -331,17 +310,5 @@ func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.ingressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"sort"
-	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -78,11 +77,8 @@ func NewKongTCPIngressSource(dynamicKubeClient dynamic.Interface, kubeClient kub
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return kongTCPIngressInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to sync cache")
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := newKongUnstructuredConverter()
@@ -243,19 +239,7 @@ func (sc *kongTCPIngressSource) AddEventHandler(ctx context.Context, handler fun
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.kongTCPIngressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.kongTCPIngressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // newUnstructuredConverter returns a new unstructuredConverter initialized
