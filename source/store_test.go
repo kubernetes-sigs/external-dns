@@ -26,7 +26,10 @@ import (
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 )
@@ -90,12 +93,32 @@ type ByNamesTestSuite struct {
 }
 
 func (suite *ByNamesTestSuite) TestAllInitialized() {
-	fakeDynamic, _ := newDynamicKubernetesClient()
-
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
 	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
-	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic, nil)
+	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{
+			{
+				Group:    "contour.heptio.com",
+				Version:  "v1beta1",
+				Resource: "ingressroutes",
+			}: "IngressRouteList",
+			{
+				Group:    "projectcontour.io",
+				Version:  "v1",
+				Resource: "httpproxies",
+			}: "HTTPPRoxiesList",
+			{
+				Group:    "contour.heptio.com",
+				Version:  "v1beta1",
+				Resource: "tcpingresses",
+			}: "TCPIngressesList",
+			{
+				Group:    "configuration.konghq.com",
+				Version:  "v1beta1",
+				Resource: "tcpingresses",
+			}: "TCPIngressesList",
+		}), nil)
 
 	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")

@@ -36,7 +36,7 @@ require (
 	github.com/jessevdk/go-flags v1.4.0 // indirect
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
-	github.com/maxatome/go-testdeep v1.4.0
+	github.com/maxatome/go-testdeep v1.9.2
 	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
@@ -57,6 +57,7 @@ require (
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.5.1
 	go.etcd.io/etcd v0.5.0-alpha.5.0.20200401174654-e694b7bb0875
+	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.uber.org/ratelimit v0.1.0
 	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
