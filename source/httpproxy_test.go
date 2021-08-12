@@ -23,7 +23,6 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 
 	"github.com/pkg/errors"
-	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +45,6 @@ type HTTPProxySuite struct {
 
 func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
 	s := runtime.NewScheme()
-	_ = contour.AddToScheme(s)
 	_ = projectcontour.AddToScheme(s)
 	return fakeDynamic.NewSimpleDynamicClient(s), s
 }
