@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/pkg/errors"
@@ -86,12 +85,8 @@ func NewAmbassadorHostSource(
 	// TODO informer is not explicitly stopped since controller is not passing in its channel.
 	informerFactory.Start(wait.NeverStop)
 
-	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ambassadorHostInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to sync cache")
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := newUnstructuredConverter()

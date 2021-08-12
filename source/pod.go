@@ -18,8 +18,6 @@ package source
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 
@@ -63,12 +61,8 @@ func NewPodSource(kubeClient kubernetes.Interface, namespace string, compatibili
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err := poll(time.Second, 60*time.Second, func() (bool, error) {
-		return podInformer.Informer().HasSynced() &&
-			nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &podSource{
