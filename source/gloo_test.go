@@ -215,7 +215,6 @@ func TestGlooSource(t *testing.T) {
 	t.Parallel()
 
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
-	// fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(runtime.NewScheme())
 	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
 		map[schema.GroupVersionResource]string{
 			proxyGVR: "ProxyList",
