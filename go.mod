@@ -45,7 +45,7 @@ require (
 	github.com/oracle/oci-go-sdk v21.4.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
-	github.com/projectcontour/contour v1.5.0
+	github.com/projectcontour/contour v1.7.0
 	github.com/prometheus/client_golang v1.11.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
@@ -71,9 +71,4 @@ require (
 	k8s.io/api v0.22.0
 	k8s.io/apimachinery v0.22.0
 	k8s.io/client-go v0.22.0
-)
-
-replace (
-	github.com/golang/glog => github.com/kubermatic/glog-logrus v0.0.0-20180829085450-3fa5b9870d1d
-	k8s.io/klog => github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b
 )

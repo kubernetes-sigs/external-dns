@@ -1130,7 +1130,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 			Annotations: ir.annotations,
 		},
 		Spec: spec,
-		Status: projectcontour.Status{
+		Status: projectcontour.HTTPProxyStatus{
 			CurrentStatus: status,
 			LoadBalancer:  lb,
 		},
