@@ -111,7 +111,6 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 
 		if cfg.UserAssignedIdentityID != "" {
 			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
-			//token, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, environment.ServiceManagementEndpoint, cfg.UserAssignedIdentityID)
 			token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, &adal.ManagedIdentityOptions{
 				ClientID: cfg.UserAssignedIdentityID,
 			})
