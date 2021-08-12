@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go v0.54.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.18
-	github.com/Azure/go-autorest/autorest/adal v0.9.13
+	github.com/Azure/go-autorest/autorest v0.11.19
+	github.com/Azure/go-autorest/autorest/adal v0.9.14
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
@@ -26,6 +26,7 @@ require (
 	github.com/exoscale/egoscale v0.18.1
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
+	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.5.5
@@ -60,6 +61,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.uber.org/ratelimit v0.1.0
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
