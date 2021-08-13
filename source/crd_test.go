@@ -387,7 +387,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			labelSelector, err := labels.Parse(ti.labelFilter)
 			require.NoError(t, err)
 
-			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme)
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, false)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(context.Background())
