@@ -51,6 +51,8 @@ type Config struct {
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
+	GatewayNamespace               string
+	GatewayLabelFilter             string
 	Compatibility                  string
 	PublishInternal                bool
 	PublishHostIP                  bool
@@ -225,6 +227,8 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
+	case "gateway-httproute":
+		return NewGatewayHTTPRouteSource(p, cfg)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
