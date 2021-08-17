@@ -17,7 +17,7 @@
 
 # builder image
 ARG ARCH
-FROM container-registry.oracle.com/os/oraclelinux:7.9@sha256:5aa7df08f9ab8cd6237223b0b6c5fd605f140164235b462a01e8b9d56fb03daf as builder
+FROM container-registry.oracle.com/os/oraclelinux:7.9@sha256:516acec86602f59fc60d21eb425a6fe08c3dc2aeb68eb0d3d79c611f47baf94d as builder
 ARG ARCH
 
 # Install golang via Oracle's yum servers
@@ -46,7 +46,7 @@ COPY . .
 RUN make test build.$ARCH
 
 # final image
-FROM container-registry.oracle.com/os/oraclelinux:7-slim@sha256:fcc6f54bb01fc83319990bf5fa1b79f1dec93cbb87db3c5a8884a5a44148e7bb
+FROM container-registry.oracle.com/os/oraclelinux:7-slim@sha256:9941f4f558d0e6892901263cd2670f6c95978c2699c1947aaa32c2361004fa45
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
