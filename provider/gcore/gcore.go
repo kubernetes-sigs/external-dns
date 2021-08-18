@@ -25,12 +25,12 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	gdns "github.com/G-Core/g-dns-sdk-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/provider/gcore/internal"
 )
 
 const (
@@ -41,9 +41,9 @@ const (
 )
 
 type dnsManager interface {
-	AddZoneRRSet(ctx context.Context, zone, recordName, recordType string, values []string, ttl int) error
-	ZonesWithRecords(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error)
-	Zones(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error)
+	AddZoneRRSet(ctx context.Context, zone, recordName, recordType string, values []gdns.ResourceRecords, ttl int) error
+	ZonesWithRecords(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error)
+	Zones(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error)
 	DeleteRRSetRecord(ctx context.Context, zone, name, recordType string, contents ...string) error
 }
 
@@ -63,7 +63,7 @@ func NewProvider(domainFilter endpoint.DomainFilter, dryRun bool) (provider.Prov
 	}
 	p := &dnsProvider{
 		domainFilter: domainFilter,
-		client:       internal.NewClient(apiToken),
+		client:       gdns.NewClient(gdns.PermanentAPIKeyAuth(apiToken)),
 		dryRun:       dryRun,
 	}
 
@@ -72,9 +72,9 @@ func NewProvider(domainFilter endpoint.DomainFilter, dryRun bool) (provider.Prov
 
 func (p *dnsProvider) Records(rootCtx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Infof("%s: starting get records", ProviderName)
-	filters := make([]func(*internal.ZonesFilter), 0, 1)
+	filters := make([]func(*gdns.ZonesFilter), 0, 1)
 	if len(p.domainFilter.Filters) > 0 {
-		filters = append(filters, func(filter *internal.ZonesFilter) {
+		filters = append(filters, func(filter *gdns.ZonesFilter) {
 			filter.Names = p.domainFilter.Filters
 		})
 	}
@@ -177,7 +177,7 @@ func (p *dnsProvider) ApplyChanges(rootCtx context.Context, changes *plan.Change
 		if zone == "" {
 			continue
 		}
-		recordValues := make([]string, 0)
+		recordValues := make([]gdns.ResourceRecords, 0)
 		errMsg := make([]string, 0)
 		for _, content := range c.Targets {
 			appliedChanges.created++
@@ -187,7 +187,8 @@ func (p *dnsProvider) ApplyChanges(rootCtx context.Context, changes *plan.Change
 				continue
 			}
 			log.Debug(msg)
-			recordValues = append(recordValues, content)
+			recordValues = append(recordValues,
+				*(&gdns.ResourceRecords{}).SetContent(c.RecordType, content))
 			errMsg = append(errMsg, msg)
 		}
 		gr1.Go(func() error {
@@ -207,7 +208,7 @@ func (p *dnsProvider) ApplyChanges(rootCtx context.Context, changes *plan.Change
 		if zone == "" {
 			continue
 		}
-		recordValues := make([]string, 0)
+		recordValues := make([]gdns.ResourceRecords, 0)
 		errMsg := make([]string, 0)
 		// find content diff to add
 		for _, content := range unexistingTargets(c, changes.UpdateOld, true) {
@@ -218,7 +219,8 @@ func (p *dnsProvider) ApplyChanges(rootCtx context.Context, changes *plan.Change
 				continue
 			}
 			log.Debug(msg)
-			recordValues = append(recordValues, content)
+			recordValues = append(recordValues,
+				*(&gdns.ResourceRecords{}).SetContent(c.RecordType, content))
 			errMsg = append(errMsg, msg)
 		}
 		if len(recordValues) == 0 {

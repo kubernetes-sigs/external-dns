@@ -9,6 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.10
 	github.com/Azure/go-autorest/autorest/adal v0.9.5
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/G-Core/g-dns-sdk-go v0.0.0-20210817143738-34f4db9f1823
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
@@ -49,7 +50,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/gunit v1.3.4 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip/v6 v6.6.0
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
@@ -59,7 +60,7 @@ require (
 	go.uber.org/ratelimit v0.1.0
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/tools v0.0.0-20200708003708-134513de8882 // indirect
 	google.golang.org/api v0.15.0
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1

@@ -22,27 +22,26 @@ import (
 	"reflect"
 	"testing"
 
-	"sigs.k8s.io/external-dns/plan"
-
-	"sigs.k8s.io/external-dns/provider/gcore/internal"
+	gdns "github.com/G-Core/g-dns-sdk-go"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 )
 
 type dnsManagerMock struct {
-	addZoneRRSet      func(ctx context.Context, zone, recordName, recordType string, values []string, ttl int) error
-	zonesWithRecords  func(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error)
-	zones             func(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error)
+	addZoneRRSet      func(ctx context.Context, zone, recordName, recordType string, values []gdns.ResourceRecords, ttl int) error
+	zonesWithRecords  func(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error)
+	zones             func(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error)
 	deleteRRSetRecord func(ctx context.Context, zone, name, recordType string, contents ...string) error
 }
 
-func (d dnsManagerMock) AddZoneRRSet(ctx context.Context, zone, recordName, recordType string, values []string, ttl int) error {
+func (d dnsManagerMock) AddZoneRRSet(ctx context.Context, zone, recordName, recordType string, values []gdns.ResourceRecords, ttl int) error {
 	return d.addZoneRRSet(ctx, zone, recordName, recordType, values, ttl)
 }
-func (d dnsManagerMock) ZonesWithRecords(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
+func (d dnsManagerMock) ZonesWithRecords(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
 	return d.zonesWithRecords(ctx, filters...)
 }
-func (d dnsManagerMock) Zones(ctx context.Context, filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
+func (d dnsManagerMock) Zones(ctx context.Context, filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
 	return d.zones(ctx, filters...)
 }
 func (d dnsManagerMock) DeleteRRSetRecord(ctx context.Context, zone, name, recordType string, contents ...string) error {
@@ -71,11 +70,11 @@ func Test_dnsProvider_Records(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zonesWithRecords: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{
 							{
 								Name: "example.com",
-								Records: []internal.ZoneRecord{
+								Records: []gdns.ZoneRecord{
 									{
 										Name:         "test.example.com",
 										Type:         "A",
@@ -104,15 +103,15 @@ func Test_dnsProvider_Records(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{Filters: []string{"example.com"}},
 				client: dnsManagerMock{
 					zonesWithRecords: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						zoneFilter := &internal.ZonesFilter{}
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						zoneFilter := &gdns.ZonesFilter{}
 						for _, op := range filters {
 							op(zoneFilter)
 						}
-						val := []internal.Zone{
+						val := []gdns.Zone{
 							{
 								Name: "example.com",
-								Records: []internal.ZoneRecord{
+								Records: []gdns.ZoneRecord{
 									{
 										Name:         "test.example.com",
 										Type:         "A",
@@ -122,7 +121,7 @@ func Test_dnsProvider_Records(t *testing.T) {
 								},
 							},
 						}
-						res := make([]internal.Zone, 0)
+						res := make([]gdns.Zone, 0)
 						for _, v := range val {
 							for _, name := range zoneFilter.Names {
 								if name == v.Name {
@@ -150,7 +149,7 @@ func Test_dnsProvider_Records(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{Filters: []string{"example.com"}},
 				client: dnsManagerMock{
 					zonesWithRecords: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
 						return nil, fmt.Errorf("test")
 					},
 				},
@@ -206,8 +205,8 @@ func Test_dnsProvider_GetDomainFilter(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "example.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "example.com"}}, nil
 					},
 				},
 				dryRun: false,
@@ -220,8 +219,8 @@ func Test_dnsProvider_GetDomainFilter(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{}, nil
 					},
 				},
 				dryRun: false,
@@ -265,8 +264,8 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
 					deleteRRSetRecord: func(ctx context.Context, zone, name, recordType string, contents ...string) error {
 						if zone == "test.com" && name == "my.test.com" && recordType == "A" && contents[0] == "1.1.1.1" {
@@ -293,8 +292,8 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
 					deleteRRSetRecord: func(ctx context.Context, zone, name, recordType string, contents ...string) error {
 						if zone == "test.com" && name == ".my.test.com" && recordType == "A" && contents[0] == "1.1.1.1" {
@@ -321,8 +320,8 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
 				},
 				dryRun: false,
@@ -343,8 +342,8 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
 					deleteRRSetRecord: func(ctx context.Context, zone, name, recordType string, contents ...string) error {
 						if zone == "test.com" && name == "my.test.com" && recordType == "A" && contents[0] == "1.1.1.1" {
@@ -371,15 +370,15 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
-					addZoneRRSet: func(ctx context.Context, zone, recordName, recordType string, values []string, ttl int) error {
+					addZoneRRSet: func(ctx context.Context, zone, recordName, recordType string, values []gdns.ResourceRecords, ttl int) error {
 						if zone == "test.com" &&
 							ttl == 10 &&
 							recordName == "my.test.com" &&
 							recordType == "A" &&
-							values[0] == "1.1.1.1" {
+							values[0].Content[0] == "1.1.1.1" {
 							return nil
 						}
 						return fmt.Errorf("addZoneRRSet wrong params")
@@ -403,8 +402,8 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 				domainFilter: endpoint.DomainFilter{},
 				client: dnsManagerMock{
 					zones: func(ctx context.Context,
-						filters ...func(zone *internal.ZonesFilter)) ([]internal.Zone, error) {
-						return []internal.Zone{{Name: "test.com"}}, nil
+						filters ...func(zone *gdns.ZonesFilter)) ([]gdns.Zone, error) {
+						return []gdns.Zone{{Name: "test.com"}}, nil
 					},
 					deleteRRSetRecord: func(ctx context.Context, zone, name, recordType string, contents ...string) error {
 						if zone == "test.com" && name == "my.test.com" && recordType == "A" && contents[0] == "1.1.1.1" {
@@ -413,12 +412,12 @@ func Test_dnsProvider_ApplyChanges(t *testing.T) {
 						return fmt.Errorf("deleteRRSetRecord wrong params: %s %s %s %+v",
 							zone, name, recordType, contents)
 					},
-					addZoneRRSet: func(ctx context.Context, zone, recordName, recordType string, values []string, ttl int) error {
+					addZoneRRSet: func(ctx context.Context, zone, recordName, recordType string, values []gdns.ResourceRecords, ttl int) error {
 						if zone == "test.com" &&
 							ttl == 10 &&
 							recordName == "my.test.com" &&
 							recordType == "A" &&
-							values[0] == "1.2.3.4" {
+							values[0].Content[0] == "1.2.3.4" {
 							return nil
 						}
 						return fmt.Errorf("addZoneRRSet wrong params")
