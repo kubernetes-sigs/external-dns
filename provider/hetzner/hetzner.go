@@ -28,17 +28,76 @@ import (
 )
 
 const (
-	hetznerCreate = "CREATE"
-	hetznerDelete = "DELETE"
-	hetznerUpdate = "UPDATE"
-	hetznerTTL    = 600
+       hetznerTTL    = 600
 )
 
-type HetznerChanges struct {
-	Action            string
-	ZoneID            string
-	ZoneName          string
-	ResourceRecordSet hclouddns.HCloudRecord
+type RecordKey struct {
+	DNSName    string
+	RecordType string
+}
+
+type RecordMap map[RecordKey][]*hclouddns.HCloudRecord
+
+func (rmap RecordMap) Add(record hclouddns.HCloudRecord, zone hclouddns.HCloudZone) {
+	name := record.Name + "." + zone.Name
+	if record.Name == "@" {
+		name = zone.Name
+	}
+	key := RecordKey{name, string(record.RecordType)}
+	rmap[key] = append(rmap[key], &record)
+}
+
+func (rmap RecordMap) Lookup(endpoint *endpoint.Endpoint) []*hclouddns.HCloudRecord {
+	return rmap[RecordKey{endpoint.DNSName, endpoint.RecordType}]
+}
+
+
+type HetznerZoneMapper struct {
+	provider.ZoneIDName
+}
+
+func (p *HetznerProvider) NewHetznerZoneMapper() (*HetznerZoneMapper, error) {
+	zones, err := p.Client.GetZones(hclouddns.HCloudGetZonesParams{})
+	if err != nil {
+		return nil, err
+	}
+
+	hzm := &HetznerZoneMapper{provider.ZoneIDName{}}
+	for _, z := range zones.Zones {
+		hzm.Add(z.ID, z.Name)
+	}
+	return hzm, nil
+}
+
+func (hzm *HetznerZoneMapper) endpointToHCloudRecords(endpoint *endpoint.Endpoint) ([]*hclouddns.HCloudRecord, error) {
+	zoneID, zoneName := hzm.FindZone(endpoint.DNSName)
+	if zoneName == "" {
+		log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", endpoint.DNSName)
+		return nil, nil
+	}
+	name := strings.TrimSuffix(endpoint.DNSName, "." + zoneName)
+	if name == zoneName {
+		name = "@"
+	}
+	common := hclouddns.HCloudRecord{
+		Name:       name,
+		RecordType: hclouddns.RecordType(endpoint.RecordType),
+		ZoneID:     zoneID,
+		TTL:        int(endpoint.RecordTTL),
+	}
+	if common.TTL == 0 {
+		common.TTL = hetznerTTL
+	}
+	result := make([]*hclouddns.HCloudRecord, 0, len(endpoint.Targets))
+	for _, target := range endpoint.Targets {
+		record := common
+		record.Value = target
+		if endpoint.RecordType == "CNAME" && !strings.HasSuffix(record.Value, ".") {
+			record.Value += "."
+		}
+		result = append(result, &record)
+	}
+	return result, nil
 }
 
 type HetznerProvider struct {
@@ -65,11 +124,174 @@ func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 }
 
 func (p *HetznerProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	records, err := p.fetchRecords()
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints := []*endpoint.Endpoint{}
+	for key, rrset := range records {
+		ttl := 0
+		targets := make(endpoint.Targets, 0, len(rrset))
+		for _, rr := range rrset {
+			targets = append(targets, rr.Value)
+			if ttl == 0 || rr.TTL < ttl {
+				ttl = rr.TTL
+			}
+		}
+		endpoints = append(endpoints, endpoint.NewEndpointWithTTL(key.DNSName, key.RecordType, endpoint.TTL(ttl), targets...))
+	}
+
+	return endpoints, nil
+}
+
+// ApplyChanges as to adapt the Plan with 1:N endpoint, target relation to Hetzner's 1:1 record, value relation
+// There is some overlap with what Plan should have done. If other providers work in a similar way, consider
+// Refactoring this to Plan
+func (p *HetznerProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	allRecords, err := p.fetchRecords()
+	if err != nil {
+		return err
+	}
+
+	mapper, err := p.NewHetznerZoneMapper()
+	if err != nil {
+		return err
+	}
+
+	createRecords := []*hclouddns.HCloudRecord{}
+	deleteRecords := []*hclouddns.HCloudRecord{}
+	updateRecords := []*hclouddns.HCloudRecord{}
+
+	// Create one record per target of each endpoint in Create changes
+	for _, endpoint := range changes.Create {
+		records, _ := mapper.endpointToHCloudRecords(endpoint)
+		if records != nil {
+			createRecords = append(createRecords, records...)
+		}
+	}
+
+	// Delete all records with matching name, type for Delete changes
+	for _, endpoint := range changes.Delete {
+		records := allRecords.Lookup(endpoint)
+		if records != nil {
+			deleteRecords = append(deleteRecords, records...)
+		}
+	}
+
+	// For Update changes, check existing records with matching name, type:
+	//   if targets match, update the TTL
+	//   change any existing records to match desired but missing target, TTL
+	//   delete any other existing records
+	//   create new records for still missing targets
+	for _, endpoint := range changes.UpdateNew {
+		oldRecords := allRecords.Lookup(endpoint)
+		newRecords, _ := mapper.endpointToHCloudRecords(endpoint)
+		if newRecords != nil {
+			reserve := []*hclouddns.HCloudRecord{}
+			for _, oldRecord := range oldRecords {
+				found := false
+				for _, newRecord := range newRecords {
+					if oldRecord.Value == newRecord.Value {
+						newRecord.ID = oldRecord.ID
+						found = true
+						if oldRecord.TTL != newRecord.TTL {
+							updateRecords = append(updateRecords, newRecord)
+						}
+						break
+					}
+				}
+				if !found {
+					reserve = append(reserve, oldRecord)
+				}
+			}
+			update := 0
+			for _, newRecord := range newRecords {
+				if newRecord.ID == "" {
+					if len(reserve) > update {
+						reserve[update].Value = newRecord.Value
+						reserve[update].TTL = newRecord.TTL
+						update++
+					} else {
+						createRecords = append(createRecords, newRecord)
+					}
+				}
+			}
+			if update > 0 {
+				updateRecords = append(updateRecords, reserve[0:update]...)
+			}
+			if len(reserve) > update {
+				deleteRecords = append(deleteRecords, reserve[update:]...)
+			}
+		}
+	}
+
+	if len(createRecords) == 0 && len(deleteRecords) == 0 && len(updateRecords) == 0 {
+		log.Infof("All records are already up to date")
+		return nil
+	}
+
+	// Apply the changes collected above
+	for _, record := range createRecords {
+		p.logRecord(record, "CREATE")
+		if p.DryRun {
+			continue
+		}
+		answer, err := p.Client.CreateRecord(*record)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Code":         answer.Error.Code,
+				"Message":      answer.Error.Message,
+				"Record name":  answer.Record.Name,
+				"Record type":  answer.Record.RecordType,
+				"Record value": answer.Record.Value,
+			}).Warning("Create problem")
+			return err
+		}
+	}
+
+	for _, record := range deleteRecords {
+		p.logRecord(record, "DELETE")
+		if p.DryRun {
+			continue
+		}
+		answer, err := p.Client.DeleteRecord(record.ID)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Code":         answer.Error.Code,
+				"Message":      answer.Error.Message,
+			}).Warning("Delete problem")
+			return err
+		}
+	}
+
+	for _, record := range updateRecords {
+		p.logRecord(record, "UPDATE")
+		if p.DryRun {
+			continue
+		}
+		answer, err := p.Client.UpdateRecord(*record)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"Code":         answer.Error.Code,
+				"Message":      answer.Error.Message,
+				"Record name":  answer.Record.Name,
+				"Record type":  answer.Record.RecordType,
+				"Record value": answer.Record.Value,
+			}).Warning("Update problem")
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *HetznerProvider) fetchRecords() (RecordMap, error) {
 	zones, err := p.Client.GetZones(hclouddns.HCloudGetZonesParams{})
 	if err != nil {
 		return nil, err
 	}
-	endpoints := []*endpoint.Endpoint{}
+	result := RecordMap{}
 	for _, zone := range zones.Zones {
 		records, err := p.Client.GetRecords(hclouddns.HCloudGetRecordsParams{ZoneID: zone.ID})
 		if err != nil {
@@ -78,175 +300,23 @@ func (p *HetznerProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 
 		for _, r := range records.Records {
 			if provider.SupportedRecordType(string(r.RecordType)) {
-				name := r.Name + "." + zone.Name
-
-				if r.Name == "@" {
-					name = zone.Name
-				}
-
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, string(r.RecordType), r.Value))
+				result.Add(r, zone)
 			}
 		}
 	}
 
-	return endpoints, nil
+	return result, nil
 }
 
-func (p *HetznerProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	combinedChanges := make([]*HetznerChanges, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))
-
-	combinedChanges = append(combinedChanges, p.newHetznerChanges(hetznerCreate, changes.Create)...)
-	combinedChanges = append(combinedChanges, p.newHetznerChanges(hetznerUpdate, changes.UpdateNew)...)
-	combinedChanges = append(combinedChanges, p.newHetznerChanges(hetznerDelete, changes.Delete)...)
-
-	return p.submitChanges(ctx, combinedChanges)
-}
-
-func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerChanges) error {
-	if len(changes) == 0 {
-		log.Infof("All records are already up to date")
-		return nil
+func (p *HetznerProvider) logRecord(record *hclouddns.HCloudRecord, message string) {
+	if p.DryRun {
+		message += " (dry run)"
 	}
-
-	zones, err := p.Client.GetZones(hclouddns.HCloudGetZonesParams{})
-	if err != nil {
-		return err
-	}
-
-	zoneChanges := p.seperateChangesByZone(zones.Zones, changes)
-
-	for _, changes := range zoneChanges {
-		for _, change := range changes {
-			// Prepare record name
-			recordName := strings.TrimSuffix(change.ResourceRecordSet.Name, "."+change.ZoneName)
-			if recordName == change.ZoneName {
-				recordName = "@"
-			}
-			if change.ResourceRecordSet.RecordType == hclouddns.CNAME && !strings.HasSuffix(change.ResourceRecordSet.Value, ".") {
-				change.ResourceRecordSet.Value += "."
-			}
-			change.ResourceRecordSet.Name = recordName
-
-			// Get ID of record if not create operation
-			if change.Action != hetznerCreate {
-				allRecords, err := p.Client.GetRecords(hclouddns.HCloudGetRecordsParams{ZoneID: change.ZoneID})
-				if err != nil {
-					return err
-				}
-				for _, record := range allRecords.Records {
-					if record.Name == change.ResourceRecordSet.Name && record.RecordType == change.ResourceRecordSet.RecordType {
-						change.ResourceRecordSet.ID = record.ID
-						break
-					}
-				}
-			}
-
-			log.WithFields(log.Fields{
-				"id":      change.ResourceRecordSet.ID,
-				"record":  change.ResourceRecordSet.Name,
-				"type":    change.ResourceRecordSet.RecordType,
-				"value":   change.ResourceRecordSet.Value,
-				"ttl":     change.ResourceRecordSet.TTL,
-				"action":  change.Action,
-				"zone":    change.ZoneName,
-				"zone_id": change.ZoneID,
-			}).Info("Changing record")
-
-			switch change.Action {
-			case hetznerCreate:
-				record := hclouddns.HCloudRecord{
-					RecordType: change.ResourceRecordSet.RecordType,
-					ZoneID:     change.ZoneID,
-					Name:       change.ResourceRecordSet.Name,
-					Value:      change.ResourceRecordSet.Value,
-					TTL:        change.ResourceRecordSet.TTL,
-				}
-				answer, err := p.Client.CreateRecord(record)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Code":         answer.Error.Code,
-						"Message":      answer.Error.Message,
-						"Record name":  answer.Record.Name,
-						"Record type":  answer.Record.RecordType,
-						"Record value": answer.Record.Value,
-					}).Warning("Create problem")
-					return err
-				}
-			case hetznerDelete:
-				answer, err := p.Client.DeleteRecord(change.ResourceRecordSet.ID)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Code":    answer.Error.Code,
-						"Message": answer.Error.Message,
-					}).Warning("Delete problem")
-					return err
-				}
-			case hetznerUpdate:
-				record := hclouddns.HCloudRecord{
-					RecordType: change.ResourceRecordSet.RecordType,
-					ZoneID:     change.ZoneID,
-					Name:       change.ResourceRecordSet.Name,
-					Value:      change.ResourceRecordSet.Value,
-					TTL:        change.ResourceRecordSet.TTL,
-					ID:         change.ResourceRecordSet.ID,
-				}
-				answer, err := p.Client.UpdateRecord(record)
-				if err != nil {
-					log.WithFields(log.Fields{
-						"Code":         answer.Error.Code,
-						"Message":      answer.Error.Message,
-						"Record name":  answer.Record.Name,
-						"Record type":  answer.Record.RecordType,
-						"Record value": answer.Record.Value,
-					}).Warning("Update problem")
-					return err
-				}
-			}
-		}
-	}
-
-	return nil
-}
-
-func (p *HetznerProvider) newHetznerChanges(action string, endpoints []*endpoint.Endpoint) []*HetznerChanges {
-	changes := make([]*HetznerChanges, 0, len(endpoints))
-	ttl := hetznerTTL
-	for _, e := range endpoints {
-		if e.RecordTTL.IsConfigured() {
-			ttl = int(e.RecordTTL)
-		}
-		change := &HetznerChanges{
-			Action: action,
-			ResourceRecordSet: hclouddns.HCloudRecord{
-				RecordType: hclouddns.RecordType(e.RecordType),
-				Name:       e.DNSName,
-				Value:      e.Targets[0],
-				TTL:        ttl,
-			},
-		}
-		changes = append(changes, change)
-	}
-	return changes
-}
-
-func (p *HetznerProvider) seperateChangesByZone(zones []hclouddns.HCloudZone, changes []*HetznerChanges) map[string][]*HetznerChanges {
-	change := make(map[string][]*HetznerChanges)
-	zoneNameID := provider.ZoneIDName{}
-
-	for _, z := range zones {
-		zoneNameID.Add(z.ID, z.Name)
-		change[z.ID] = []*HetznerChanges{}
-	}
-
-	for _, c := range changes {
-		zoneID, zoneName := zoneNameID.FindZone(c.ResourceRecordSet.Name)
-		if zoneName == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", c.ResourceRecordSet.Name)
-			continue
-		}
-		c.ZoneName = zoneName
-		c.ZoneID = zoneID
-		change[zoneID] = append(change[zoneID], c)
-	}
-	return change
+	log.WithFields(log.Fields{
+		"id":      record.ID,
+		"record":  record.Name,
+		"type":    record.RecordType,
+		"value":   record.Value,
+		"ttl":     record.TTL,
+	}).Info(message)
 }

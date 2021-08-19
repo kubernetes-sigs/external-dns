@@ -244,7 +244,7 @@ func TestHetznerProvider_ApplyChanges(t *testing.T) {
 		{DNSName: "blindage.org", Targets: endpoint.Targets{"target"}},
 		{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target"}, RecordTTL: 666},
 	}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target", "target-new"}, RecordType: "A", RecordTTL: 777}}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.blindage.org", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
 
 	err := mockedProvider.ApplyChanges(context.Background(), changes)
@@ -289,7 +289,7 @@ func TestHetznerProvider_ApplyChangesCreateUpdateCname(t *testing.T) {
 			},
 		},
 		{
-			Name: "UpdateRecord",
+			Name: "CreateRecord",
 			RecordData: hclouddns.HCloudRecord{
 				RecordType: "CNAME",
 				ID:         "",
