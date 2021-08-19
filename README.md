@@ -47,6 +47,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
+* [EfficientIP](https://www.efficientip.com/)
 * [Dyn](https://dyn.com/dns/)
 * [OpenStack Designate](https://docs.openstack.org/designate/latest/)
 * [PowerDNS](https://www.powerdns.com/)
@@ -109,6 +110,7 @@ The following table clarifies the current status of the providers according to t
 | DigitalOcean | Alpha | |
 | DNSimple | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
+| EfficientIP | Alpha | |
 | Dyn | Alpha | |
 | OpenStack Designate | Alpha | |
 | PowerDNS | Alpha | |
@@ -178,6 +180,7 @@ The following tutorials are provided:
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [Headless Services](docs/tutorials/hostport.md)
 * [Infoblox](docs/tutorials/infoblox.md)
+* [EfficientIP](docs/tutorials/efficientip.md)
 * [Istio Gateway Source](docs/tutorials/istio.md)
 * [Kubernetes Security Context](docs/tutorials/security-context.md)
 * [Linode](docs/tutorials/linode.md)

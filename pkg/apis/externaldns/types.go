@@ -127,6 +127,11 @@ type Config struct {
 	DynCustomerName                   string
 	DynUsername                       string
 	DynPassword                       string `secure:"yes"`
+	EfficientIPHost                   string
+	EfficientIPPort                   int
+	EfficientIPUsername               string
+	EfficientIPPassword               string `secure:"yes"`
+	EfficientIPSSLVerify              bool
 	DynMinTTLSeconds                  int
 	OCIConfigFile                     string
 	InMemoryZones                     []string
@@ -272,6 +277,11 @@ var defaultConfig = &Config{
 	InfobloxFQDNRegEx:           "",
 	InfobloxCreatePTR:           false,
 	InfobloxCacheDuration:       0,
+	EfficientIPHost:             "",
+	EfficientIPPort:             443,
+	EfficientIPUsername:         "ipmadmin",
+	EfficientIPPassword:         "",
+	EfficientIPSSLVerify:        true,
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 	InMemoryZones:               []string{},
 	OVHEndpoint:                 "ovh-eu",
@@ -428,7 +438,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, efficientip, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "efficientip", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
@@ -493,6 +503,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
 	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
+	app.Flag("efficientip-host", "When using the EfficientIP provider, specify the SOLIDserver host (required when --provider=efficientip)").Default(defaultConfig.EfficientIPHost).StringVar(&cfg.EfficientIPHost)
+	app.Flag("efficientip-port", "When using the EfficientIP provider, specify the API port (default: 443)").Default(strconv.Itoa(defaultConfig.EfficientIPPort)).IntVar(&cfg.EfficientIPPort)
+	app.Flag("efficientip-username", "When using the EfficientIP provider, specify the API username (default: ipmadmin)").Default(defaultConfig.EfficientIPUsername).StringVar(&cfg.EfficientIPUsername)
+	app.Flag("efficientip-password", "When using the EfficientIP provider, specify the API password (required when --provider=efficientip)").Default(defaultConfig.EfficientIPPassword).StringVar(&cfg.EfficientIPPassword)
+	app.Flag("efficientip-ssl-verify", "When using the EfficientIP provider, specify whether to verify the SSL certificate (default: true, disable with --no-efficientip-ssl-verify)").Default(strconv.FormatBool(defaultConfig.EfficientIPSSLVerify)).BoolVar(&cfg.EfficientIPSSLVerify)
 	app.Flag("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci").Default(defaultConfig.OCIConfigFile).StringVar(&cfg.OCIConfigFile)
 	app.Flag("rcodezero-txt-encrypt", "When using the Rcodezero provider with txt registry option, set if TXT rrs are encrypted (default: false)").Default(strconv.FormatBool(defaultConfig.RcodezeroTXTEncrypt)).BoolVar(&cfg.RcodezeroTXTEncrypt)
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)

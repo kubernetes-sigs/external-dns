@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
+	"sigs.k8s.io/external-dns/provider/efficientip"
 	"sigs.k8s.io/external-dns/provider/exoscale"
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
@@ -276,6 +277,19 @@ func main() {
 				Password:      cfg.DynPassword,
 				MinTTLSeconds: cfg.DynMinTTLSeconds,
 				AppVersion:    externaldns.Version,
+			},
+		)
+	case "efficientip":
+		p, err = efficientip.NewEfficientIPProvider(
+			efficientip.EfficientIPConfig{
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
+				Host:         cfg.EfficientIPHost,
+				Port:         cfg.EfficientIPPort,
+				Username:     cfg.EfficientIPUsername,
+				Password:     cfg.EfficientIPPassword,
+				SSlVerify:    cfg.EfficientIPSSLVerify,
 			},
 		)
 	case "coredns", "skydns":

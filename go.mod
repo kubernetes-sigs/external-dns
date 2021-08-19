@@ -26,6 +26,7 @@ require (
 	github.com/digitalocean/godo v1.81.0
 	github.com/dnsimple/dnsimple-go v0.71.1
 	github.com/exoscale/egoscale v1.19.0
+	github.com/efficientip-labs/solidserver-go-client/sdsclient v0.0.0-20210713135031-31b5356ed26d
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.5.0
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f

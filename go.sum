@@ -392,6 +392,8 @@ github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
 github.com/ecodia/golang-awaitility v0.0.0-20180710094957-fb55e59708c7/go.mod h1:etn7NbLy5UviLk20XMZbSn/0AigF3Zfx7wwaEZ3fyIk=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
+github.com/efficientip-labs/solidserver-go-client/sdsclient v0.0.0-20210713135031-31b5356ed26d h1:U3mrrD+qMd8mA7paGk1b+EGqlPyl19TxxPQta8cjF0o=
+github.com/efficientip-labs/solidserver-go-client/sdsclient v0.0.0-20210713135031-31b5356ed26d/go.mod h1:RdOgW7EK0Zp8PjyPCnJ1lowqf+vJUyghU0X5GaaHqcg=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/emicklei/go-restful v2.9.5+incompatible/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
