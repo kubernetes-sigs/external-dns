@@ -289,6 +289,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewKongTCPIngressSource(dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	case "computeaddress":
+		client, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		crdClient, scheme, err := NewCRDClientForComputeAddress(client, cfg.KubeConfig, cfg.APIServerURL)
+		if err != nil {
+			return nil, err
+		}
+		return NewComputeAddressSource(crdClient, cfg.Namespace, cfg.AnnotationFilter, cfg.LabelFilter, scheme)
 	}
 	return nil, ErrSourceNotFound
 }
