@@ -47,7 +47,7 @@ metadata:
 
 ## Secret
 
-Generate a token at https://manager.infomaniak.com/v3/<id>/api/dashboard and create a secret
+Generate a token at https://manager.infomaniak.com/v3/infomaniak-api and create a secret
 
 ```shell
 kubectl -n kube-system create secret generic external-dns-token \
