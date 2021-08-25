@@ -54,7 +54,7 @@ kubectl -n kube-system create secret generic external-dns-token \
 --from-literal=INFOMANIAK_API_TOKEN=xxx
 ```
 
-Deployment
+Deployment (replacing XXX by the latest external-dns tag version)
 
 ```yaml
 ---
@@ -77,7 +77,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:XXX
         args:
         - --source=ingress
         - --source=service
