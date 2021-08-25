@@ -105,7 +105,7 @@ func (ik *InfomaniakAPI) request(method, path string, body io.Reader) (*Infomani
 	}
 
 	rawJSON, _ := json.Marshal(resp)
-	log.Infof("Response status: `%s` json response: `%v`", rawResp.Status, string(rawJSON))
+	log.Debugf("Response status: `%s` json response: `%v`", rawResp.Status, string(rawJSON))
 
 	if resp.Result != "success" {
 		return nil, fmt.Errorf("%s %s failed: %v", method, path, resp.ErrResponse)
@@ -275,6 +275,7 @@ func (ik *InfomaniakAPI) getRecordID(domain *InfomaniakDNSDomain, source, target
 }
 
 func (ik *InfomaniakAPI) GetRecords(domain *InfomaniakDNSDomain) (*[]InfomaniakDNSRecord, error) {
+	log.Infof("Getting all records for domain `%s`", domain.CustomerName)
 	resp, err := ik.get(fmt.Sprintf("/1/domain/%d/dns/record", domain.ID), nil)
 	if err != nil {
 		return nil, err
@@ -283,7 +284,7 @@ func (ik *InfomaniakAPI) GetRecords(domain *InfomaniakDNSDomain) (*[]InfomaniakD
 	var records []InfomaniakDNSRecord
 
 	if err = json.Unmarshal(*resp.Data, &records); err != nil {
-		return nil, fmt.Errorf("expected array of Record, got: %v", string(*resp.Data))
+		return nil, fmt.Errorf("expected array of Record, got: %v\n%s", string(*resp.Data), err)
 	}
 
 	// if len(records) < 1 {
