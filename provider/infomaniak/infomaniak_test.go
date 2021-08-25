@@ -15,6 +15,7 @@ package infomaniak
 
 import (
 	"context"
+	// "fmt"
 	"os"
 	"testing"
 

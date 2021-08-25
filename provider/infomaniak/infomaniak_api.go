@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	infomaniakBaseURL = "https://api.infomaniak.com"
+	InfomaniakBaseURL = "https://api.infomaniak.com"
 )
 
 // InfomaniakAPI is a basic implementation of an API client to api.infomaniak.com
@@ -42,6 +42,7 @@ type InfomaniakAPIAdapter interface {
 
 type InfomaniakAPI struct {
 	apiToken string
+	apiUrl string
 }
 
 // ErrorResponse defines the error response format, as described here https://api.infomaniak.com/doc#home
@@ -59,9 +60,21 @@ type InfomaniakAPIResponse struct {
 	ErrResponse ErrorResponse    `json:"error,omitempty"`
 }
 
+// HTTPClient interface
+type HTTPClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var Client HTTPClient
+
+func init() {
+	Client = &http.Client{}
+}
+
 // NewInfomaniakAPI creates a new infomaniak API client
 func NewInfomaniakAPI(apiToken string) *InfomaniakAPI {
 	return &InfomaniakAPI{
+		apiUrl: InfomaniakBaseURL,
 		apiToken: apiToken,
 	}
 }
@@ -71,9 +84,7 @@ func (ik *InfomaniakAPI) request(method, path string, body io.Reader) (*Infomani
 	if path[0] != '/' {
 		path = "/" + path
 	}
-	url := infomaniakBaseURL + path
-
-	client := &http.Client{}
+	url := ik.apiUrl + path
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -83,7 +94,7 @@ func (ik *InfomaniakAPI) request(method, path string, body io.Reader) (*Infomani
 	req.Header.Set("Content-Type", "application/json")
 
 	log.Infof("%s %s", method, url)
-	rawResp, err := client.Do(req)
+	rawResp, err := Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
