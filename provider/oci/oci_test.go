@@ -21,8 +21,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v46/common"
+	"github.com/oracle/oci-go-sdk/v46/dns"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 

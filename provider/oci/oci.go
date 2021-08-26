@@ -21,8 +21,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v46/common"
+	"github.com/oracle/oci-go-sdk/v46/dns"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -114,6 +114,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
 	var page *string
 	for {
+		// List GLOBAL zones
 		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
 			CompartmentId: &p.cfg.CompartmentID,
 			ZoneType:      dns.ListZonesZoneTypePrimary,
@@ -124,6 +125,26 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 		}
 
 		for _, zone := range resp.Items {
+			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
+				zones[*zone.Name] = zone
+				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
+			} else {
+				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+			}
+		}
+
+		// List PRIVATE zones
+		privZonesResp, privZoneErr := p.client.ListZones(ctx, dns.ListZonesRequest{
+			CompartmentId: &p.cfg.CompartmentID,
+			ZoneType:      dns.ListZonesZoneTypePrimary,
+			Page:          page,
+			Scope:         dns.ListZonesScopePrivate,
+		})
+		if privZoneErr != nil {
+			return nil, errors.Wrapf(privZoneErr, "listing private zones in %q", p.cfg.CompartmentID)
+		}
+
+		for _, zone := range privZonesResp.Items {
 			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
 				zones[*zone.Name] = zone
 				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
@@ -169,11 +190,23 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	for _, zone := range zones {
 		var page *string
 		for {
-			resp, err := p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
-				ZoneNameOrId:  zone.Id,
-				Page:          page,
-				CompartmentId: &p.cfg.CompartmentID,
-			})
+			// Get record based on zone scope
+			var resp dns.GetZoneRecordsResponse
+			var err error
+			if zone.Scope == "PRIVATE" {
+				resp, err = p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
+					ZoneNameOrId:  zone.Id,
+					Page:          page,
+					CompartmentId: &p.cfg.CompartmentID,
+					Scope:         "PRIVATE",
+				})
+			} else {
+				resp, err = p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
+					ZoneNameOrId:  zone.Id,
+					Page:          page,
+					CompartmentId: &p.cfg.CompartmentID,
+				})
+			}
 			if err != nil {
 				return nil, errors.Wrapf(err, "getting records for zone %q", *zone.Id)
 			}
@@ -242,7 +275,15 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 			ZoneNameOrId:            &zoneID,
 			PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
 		}); err != nil {
-			return err
+			// Try to insert private zone records
+			if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
+				CompartmentId:           &p.cfg.CompartmentID,
+				ZoneNameOrId:            &zoneID,
+				PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
+				Scope:                   "PRIVATE",
+			}); err != nil {
+				return err
+			}
 		}
 	}
 
