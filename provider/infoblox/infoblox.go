@@ -34,10 +34,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	infobloxRecordTTL = 300
-)
-
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
 	DomainFilter endpoint.DomainFilter
@@ -52,6 +48,7 @@ type InfobloxConfig struct {
 	View         string
 	MaxResults   int
 	FQDNRexEx    string
+	CreatePTR    bool
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -63,6 +60,7 @@ type InfobloxProvider struct {
 	view         string
 	dryRun       bool
 	fqdnRegEx    string
+	createPTR    bool
 }
 
 type infobloxRecordSet struct {
@@ -148,6 +146,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		dryRun:       infobloxConfig.DryRun,
 		view:         infobloxConfig.View,
 		fqdnRegEx:    infobloxConfig.FQDNRexEx,
+		createPTR:    infobloxConfig.CreatePTR,
 	}
 
 	return provider, nil
@@ -327,7 +326,7 @@ func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.C
 		if p.createPTR && change.RecordType == endpoint.RecordTypeA {
 			reverseZone := p.findReverseZone(zones, change.Targets[0])
 			if reverseZone == nil {
-				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.Targets[0])
+				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found.", change.Targets[0])
 				return
 			}
 			changecopy := *change
@@ -376,14 +375,14 @@ func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name strin
 	networks := map[int]*ibclient.ZoneAuth{}
 	maxMask := 0
 
-	for _, zone := range zones {
+	for i, zone := range zones {
 		_, net, err := net.ParseCIDR(zone.Fqdn)
 		if err != nil {
 			logrus.WithError(err).Debugf("fqdn %s is no cidr", zone.Fqdn)
 		} else {
 			if net.Contains(ip) {
 				_, mask := net.Mask.Size()
-				networks[mask] = &zone
+				networks[mask] = &zones[i]
 				if mask > maxMask {
 					maxMask = mask
 				}
@@ -394,11 +393,6 @@ func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name strin
 }
 
 func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targetIndex int) (recordSet infobloxRecordSet, err error) {
-	var ttl uint = infobloxRecordTTL
-	if ep.RecordTTL.IsConfigured() {
-		ttl = uint(ep.RecordTTL)
-	}
-
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []ibclient.RecordA
@@ -415,7 +409,6 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 				return
 			}
 		}
-		obj.Ttl = ttl
 		recordSet = infobloxRecordSet{
 			obj: obj,
 			res: &res,
@@ -435,7 +428,6 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 				return
 			}
 		}
-		obj.Ttl = ttl
 		recordSet = infobloxRecordSet{
 			obj: obj,
 			res: &res,
@@ -479,7 +471,6 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 				return
 			}
 		}
-		obj.TTL = int(ttl)
 		recordSet = infobloxRecordSet{
 			obj: obj,
 			res: &res,
