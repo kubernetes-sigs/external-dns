@@ -27,6 +27,7 @@ All sources live in package `source`.
 * `ConnectorSource`: returns a list of Endpoint objects which are served by a tcp server configured through `connector-source-server` flag.
 * `CRDSource`: returns a list of Endpoint objects sourced from the spec of CRD objects. For more details refer to [CRD source](crd-source.md) documentation.
 * `EmptySource`: returns an empty list of Endpoint objects for the purpose of testing and cleaning out entries.
+* `ComputeAddressSource`: collects all GCP [Config Connector](https://cloud.google.com/config-connector/docs/overview) ComputeAddress objects and returns them as Endpoints. The desired DNS name corresponds to an annotation set on the ComputeAddress object.
 
 ### Providers
 
