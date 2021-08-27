@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go v0.54.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.19
+	github.com/Azure/go-autorest/autorest v0.11.20
 	github.com/Azure/go-autorest/autorest/adal v0.9.14
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0
