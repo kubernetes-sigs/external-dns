@@ -658,6 +658,25 @@ func TestInfobloxZones(t *testing.T) {
 	assert.Equal(t, provider.findZone(zones, "1.2.3.0/24").Fqdn, "1.2.3.0/24")
 }
 
+func TestInfobloxReverseZones(t *testing.T) {
+	client := mockIBConnector{
+		mockInfobloxZones: &[]ibclient.ZoneAuth{
+			createMockInfobloxZone("example.com"),
+			createMockInfobloxZone("1.2.3.0/24"),
+			createMockInfobloxZone("10.0.0.0/8"),
+		},
+		mockInfobloxObjects: &[]ibclient.IBObject{},
+	}
+
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24", "10.0.0.0/8"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	zones, _ := provider.zones()
+	var emptyZoneAuth *ibclient.ZoneAuth
+	assert.Equal(t, provider.findReverseZone(zones, "nomatch-example.com"), emptyZoneAuth)
+	assert.Equal(t, provider.findReverseZone(zones, "192.168.0.1"), emptyZoneAuth)
+	assert.Equal(t, provider.findReverseZone(zones, "1.2.3.4").Fqdn, "1.2.3.0/24")
+	assert.Equal(t, provider.findReverseZone(zones, "10.28.29.30").Fqdn, "10.0.0.0/8")
+}
+
 func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
 		Host:     "localhost",
