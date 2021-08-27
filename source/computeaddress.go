@@ -19,12 +19,14 @@ package source
 import (
 	"context"
 	"fmt"
+
 	"github.com/GoogleCloudPlatform/k8s-config-connector/pkg/apis/compute/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -52,7 +54,7 @@ func NewComputeAddressSource(crdClient rest.Interface, namespace, annotationFilt
 }
 
 // NewCRDClientForComputeAddress return rest client for ComputeAddress CRDs
-func NewCRDClientForComputeAddress(client kubernetes.Interface, kubeConfig string , apiServerURL string) (*rest.RESTClient, *runtime.Scheme, error) {
+func NewCRDClientForComputeAddress(client kubernetes.Interface, kubeConfig string, apiServerURL string) (*rest.RESTClient, *runtime.Scheme, error) {
 	group := v1beta1.ComputeAddressGVK.Group
 	version := v1beta1.ComputeAddressGVK.Version
 	apiVersion := group + "/" + version
@@ -60,7 +62,6 @@ func NewCRDClientForComputeAddress(client kubernetes.Interface, kubeConfig strin
 
 	return NewCRDClientForAPIVersionKind(client, kubeConfig, apiServerURL, apiVersion, kind)
 }
-
 
 func (cas *computeAddressSource) AddEventHandler(ctx context.Context, handler func()) {
 }
@@ -90,11 +91,10 @@ func (cas *computeAddressSource) Endpoints(ctx context.Context) ([]*endpoint.End
 	}
 
 	for _, computeAddress := range computeAddressList.Items {
-		ep := &endpoint.Endpoint{}
 		ttl, _ := getTTLFromAnnotations(computeAddress.ObjectMeta.Annotations)
 
 		for _, hostname := range getHostnamesFromAnnotations(computeAddress.ObjectMeta.Annotations) {
-			ep = endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, *computeAddress.Spec.Address)
+			ep := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, *computeAddress.Spec.Address)
 
 			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
