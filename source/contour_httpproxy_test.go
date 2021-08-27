@@ -20,6 +20,8 @@ import (
 	"context"
 	"testing"
 
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
+
 	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"github.com/stretchr/testify/assert"
@@ -39,6 +41,46 @@ type HTTPProxySuite struct {
 	suite.Suite
 	source    Source
 	httpProxy *projectcontour.HTTPProxy
+}
+
+func newDynamicKubernetesClient() (*fakeDynamic.FakeDynamicClient, *runtime.Scheme) {
+	s := runtime.NewScheme()
+	_ = projectcontour.AddToScheme(s)
+	return fakeDynamic.NewSimpleDynamicClient(s), s
+}
+
+type fakeLoadBalancerService struct {
+	ips       []string
+	hostnames []string
+	namespace string
+	name      string
+}
+
+func (ig fakeLoadBalancerService) Service() *v1.Service {
+	svc := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ig.namespace,
+			Name:      ig.name,
+		},
+		Status: v1.ServiceStatus{
+			LoadBalancer: v1.LoadBalancerStatus{
+				Ingress: []v1.LoadBalancerIngress{},
+			},
+		},
+	}
+
+	for _, ip := range ig.ips {
+		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+			IP: ip,
+		})
+	}
+	for _, hostname := range ig.hostnames {
+		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+			Hostname: hostname,
+		})
+	}
+
+	return svc
 }
 
 func (suite *HTTPProxySuite) SetupTest() {
@@ -1088,7 +1130,7 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 			Annotations: ir.annotations,
 		},
 		Spec: spec,
-		Status: projectcontour.Status{
+		Status: projectcontour.HTTPProxyStatus{
 			CurrentStatus: status,
 			LoadBalancer:  lb,
 		},
