@@ -91,7 +91,6 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 		obj.(*ibclient.RecordTXT).Ref = ref
 		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.RecordTXT).Name)), obj.(*ibclient.RecordTXT).Name)
 	case "record:ptr":
-		fmt.Printf("create ptr record\n")
 		client.createdEndpoints = append(
 			client.createdEndpoints,
 			endpoint.NewEndpoint(
@@ -459,7 +458,38 @@ func TestInfobloxRecords(t *testing.T) {
 	validateEndpoints(t, actual, expected)
 }
 
+func TestInfobloxAdjustEndpoints(t *testing.T) {
+	client := mockIBConnector{
+		mockInfobloxZones: &[]ibclient.ZoneAuth{
+			createMockInfobloxZone("example.com"),
+			createMockInfobloxZone("other.com"),
+		},
+		mockInfobloxObjects: &[]ibclient.IBObject{
+			createMockInfobloxObject("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+			createMockInfobloxObject("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createMockInfobloxObject("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+			createMockInfobloxObject("host.example.com", "HOST", "125.1.1.1"),
+		},
+	}
+
+	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
+	actual, err := provider.Records(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider.AdjustEndpoints(actual)
+
+	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122").WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
+		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+		endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1").WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true"),
+	}
+	validateEndpoints(t, actual, expected)
+}
+
 func TestInfobloxRecordsReverse(t *testing.T) {
+
 	client := mockIBConnector{
 		mockInfobloxZones: &[]ibclient.ZoneAuth{
 			createMockInfobloxZone("10.0.0.0/24"),
