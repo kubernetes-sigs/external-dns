@@ -26,12 +26,18 @@ import (
 	"strconv"
 	"strings"
 
+	transform "github.com/StackExchange/dnscontrol/pkg/transform"
 	ibclient "github.com/infobloxopen/infoblox-go-client"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+)
+
+const (
+	// provider specific key to track if PTR record was already created or not for A records
+	providerSpecificInfobloxPtrRecord = "infoblox-ptr-record-exists"
 )
 
 // InfobloxConfig clarifies the method signature
@@ -174,6 +180,9 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resA {
 			newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr)
+			if p.createPTR {
+				newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "false")
+			}
 			// Check if endpoint already exists and add to existing endpoint if it does
 			foundExisting := false
 			for _, ep := range endpoints {
@@ -207,7 +216,13 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
-				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr))
+				// host record is an abstraction in infoblox that combines A and PTR records
+				// for any host record we already should have a PTR record in infoblox, so mark it as created
+				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr)
+				if p.createPTR {
+					newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+				}
+				endpoints = append(endpoints, newEndpoint)
 			}
 		}
 
@@ -227,19 +242,25 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 
 		if p.createPTR {
-			var resP []ibclient.RecordPTR
-			objP := ibclient.NewRecordPTR(
-				ibclient.RecordPTR{
-					Zone: zone.Fqdn,
-					View: p.view,
-				},
-			)
-			err = p.client.GetObject(objP, "", &resP)
-			if err != nil {
-				return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
-			}
-			for _, res := range resP {
-				endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
+			// infoblox doesn't accept reverse zone's fqdn, and instead expects .in-addr.arpa zone
+			// so convert our zone fqdn (if it is a correct cidr block) into in-addr.arpa address and pass that into infoblox
+			// example: 10.196.38.0/24 becomes 38.196.10.in-addr.arpa
+			arpaZone, err := transform.ReverseDomainName(zone.Fqdn)
+			if err == nil {
+				var resP []ibclient.RecordPTR
+				objP := ibclient.NewRecordPTR(
+					ibclient.RecordPTR{
+						Zone: arpaZone,
+						View: p.view,
+					},
+				)
+				err = p.client.GetObject(objP, "", &resP)
+				if err != nil {
+					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
+				}
+				for _, res := range resP {
+					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
+				}
 			}
 		}
 
@@ -263,8 +284,64 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
+
+	// update A records that have PTR record created for them already
+	if p.createPTR {
+		// save all ptr records into map for a quick look up
+		ptrRecordsMap := make(map[string]bool)
+		for _, ptrRecord := range endpoints {
+			if ptrRecord.RecordType != endpoint.RecordTypePTR {
+				continue
+			}
+			ptrRecordsMap[ptrRecord.DNSName] = true
+		}
+
+		for i := range endpoints {
+			if endpoints[i].RecordType != endpoint.RecordTypeA {
+				continue
+			}
+			// if PTR record already exists for A record, then mark it as such
+			if ptrRecordsMap[endpoints[i].DNSName] {
+				found := false
+				for j := range endpoints[i].ProviderSpecific {
+					if endpoints[i].ProviderSpecific[j].Name == providerSpecificInfobloxPtrRecord {
+						endpoints[i].ProviderSpecific[j].Value = "true"
+						found = true
+					}
+				}
+				if !found {
+					endpoints[i].WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+				}
+			}
+		}
+	}
 	logrus.Debugf("fetched %d records from infoblox", len(endpoints))
 	return endpoints, nil
+}
+
+func (p *InfobloxProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	if !p.createPTR {
+		return endpoints
+	}
+
+	// for all A records, we want to create PTR records
+	// so add provider specific property to track if the record was created or not
+	for i := range endpoints {
+		if endpoints[i].RecordType == endpoint.RecordTypeA {
+			found := false
+			for j := range endpoints[i].ProviderSpecific {
+				if endpoints[i].ProviderSpecific[j].Name == providerSpecificInfobloxPtrRecord {
+					endpoints[i].ProviderSpecific[j].Value = "true"
+					found = true
+				}
+			}
+			if !found {
+				endpoints[i].WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+			}
+		}
+	}
+
+	return endpoints
 }
 
 // ApplyChanges applies the given changes.
@@ -418,7 +495,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj := ibclient.NewRecordPTR(
 			ibclient.RecordPTR{
 				PtrdName: ep.DNSName,
-				Ipv4Addr: ep.Targets[0],
+				Ipv4Addr: ep.Targets[targetIndex],
 				View:     p.view,
 			},
 		)
