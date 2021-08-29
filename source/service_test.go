@@ -1324,7 +1324,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		labels                   map[string]string
 		clusterIP                string
-		hostnames                map[string]string
+		hostnames                map[string][]string
 		serviceTypesFilter       []string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
@@ -1342,8 +1342,8 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string]string{
-				"1.2.3.4": "foo.example.org",
+			map[string][]string{
+				"1.2.3.4": {"foo.example.org", ""},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1364,10 +1364,10 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string]string{
-				"1.2.3.4": "foo.example.org",
-				"1.2.3.5": "foo.example.org",
-				"1.2.3.6": "foo.example.org",
+			map[string][]string{
+				"1.2.3.4": {"foo.example.org", ""},
+				"1.2.3.5": {"foo.example.org", ""},
+				"1.2.3.6": {"foo.example.org", ""},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1388,20 +1388,44 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string]string{
-				"1.2.3.5":  "foo.example.org",
-				"10.1.1.3": "bar.example.org",
-				"10.1.1.1": "bar.example.org",
-				"1.2.3.4":  "foo.example.org",
-				"10.1.1.2": "bar.example.org",
-				"20.1.1.1": "foobar.example.org",
-				"1.2.3.6":  "foo.example.org",
+			map[string][]string{
+				"1.2.3.5":  {"foo.example.org", ""},
+				"10.1.1.3": {"bar.example.org", ""},
+				"10.1.1.1": {"bar.example.org", ""},
+				"1.2.3.4":  {"foo.example.org", ""},
+				"10.1.1.2": {"bar.example.org", ""},
+				"20.1.1.1": {"foobar.example.org", ""},
+				"1.2.3.6":  {"foo.example.org", ""},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"1.2.3.4", "1.2.3.5", "1.2.3.6"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foo1.2.3.4"}},
 				{DNSName: "bar.example.org", Targets: endpoint.Targets{"10.1.1.1", "10.1.1.2", "10.1.1.3"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foo10.1.1.1"}},
 				{DNSName: "foobar.example.org", Targets: endpoint.Targets{"20.1.1.1"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foo20.1.1.1"}},
+			},
+			false,
+		},
+		{
+			"test that services with different set-identifier do not get merged together",
+			"",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeLoadBalancer,
+			"",
+			"",
+			false,
+			false,
+			map[string]string{},
+			"",
+			map[string][]string{
+				"a.elb.com": {"foo.example.org", "a"},
+				"b.elb.com": {"foo.example.org", "b"},
+			},
+			[]string{},
+			[]*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"a.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/fooa.elb.com"}, SetIdentifier: "a"},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"b.elb.com"}, Labels: map[string]string{endpoint.ResourceLabelKey: "service/testing/foob.elb.com"}, SetIdentifier: "b"},
 			},
 			false,
 		},
@@ -1414,12 +1438,13 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			kubernetes := fake.NewSimpleClientset()
 
 			// Create services to test against
-			for serviceip, hostname := range tc.hostnames {
+			for lb, hostname := range tc.hostnames {
 				ingresses := []v1.LoadBalancerIngress{}
-				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: serviceip})
+				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
 
 				annotations := make(map[string]string)
-				annotations[hostnameAnnotationKey] = hostname
+				annotations[hostnameAnnotationKey] = hostname[0]
+				annotations[SetIdentifierKey] = hostname[1]
 
 				service := &v1.Service{
 					Spec: v1.ServiceSpec{
@@ -1428,7 +1453,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 					},
 					ObjectMeta: metav1.ObjectMeta{
 						Namespace:   tc.svcNamespace,
-						Name:        tc.svcName + serviceip,
+						Name:        tc.svcName + lb,
 						Labels:      tc.labels,
 						Annotations: annotations,
 					},
