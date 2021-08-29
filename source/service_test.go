@@ -1324,7 +1324,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		labels                   map[string]string
 		clusterIP                string
-		hostnames                map[string][]string
+		services                 map[string]map[string]string
 		serviceTypesFilter       []string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
@@ -1342,8 +1342,8 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string][]string{
-				"1.2.3.4": {"foo.example.org", ""},
+			map[string]map[string]string{
+				"1.2.3.4": {hostnameAnnotationKey: "foo.example.org"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1364,10 +1364,10 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string][]string{
-				"1.2.3.4": {"foo.example.org", ""},
-				"1.2.3.5": {"foo.example.org", ""},
-				"1.2.3.6": {"foo.example.org", ""},
+			map[string]map[string]string{
+				"1.2.3.4": {hostnameAnnotationKey: "foo.example.org"},
+				"1.2.3.5": {hostnameAnnotationKey: "foo.example.org"},
+				"1.2.3.6": {hostnameAnnotationKey: "foo.example.org"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1388,14 +1388,14 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string][]string{
-				"1.2.3.5":  {"foo.example.org", ""},
-				"10.1.1.3": {"bar.example.org", ""},
-				"10.1.1.1": {"bar.example.org", ""},
-				"1.2.3.4":  {"foo.example.org", ""},
-				"10.1.1.2": {"bar.example.org", ""},
-				"20.1.1.1": {"foobar.example.org", ""},
-				"1.2.3.6":  {"foo.example.org", ""},
+			map[string]map[string]string{
+				"1.2.3.5":  {hostnameAnnotationKey: "foo.example.org"},
+				"10.1.1.3": {hostnameAnnotationKey: "bar.example.org"},
+				"10.1.1.1": {hostnameAnnotationKey: "bar.example.org"},
+				"1.2.3.4":  {hostnameAnnotationKey: "foo.example.org"},
+				"10.1.1.2": {hostnameAnnotationKey: "bar.example.org"},
+				"20.1.1.1": {hostnameAnnotationKey: "foobar.example.org"},
+				"1.2.3.6":  {hostnameAnnotationKey: "foo.example.org"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1418,9 +1418,9 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			false,
 			map[string]string{},
 			"",
-			map[string][]string{
-				"a.elb.com": {"foo.example.org", "a"},
-				"b.elb.com": {"foo.example.org", "b"},
+			map[string]map[string]string{
+				"a.elb.com": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "a"},
+				"b.elb.com": {hostnameAnnotationKey: "foo.example.org", SetIdentifierKey: "b"},
 			},
 			[]string{},
 			[]*endpoint.Endpoint{
@@ -1438,13 +1438,9 @@ func testMultipleServicesEndpoints(t *testing.T) {
 			kubernetes := fake.NewSimpleClientset()
 
 			// Create services to test against
-			for lb, hostname := range tc.hostnames {
+			for lb, annotations := range tc.services {
 				ingresses := []v1.LoadBalancerIngress{}
 				ingresses = append(ingresses, v1.LoadBalancerIngress{IP: lb})
-
-				annotations := make(map[string]string)
-				annotations[hostnameAnnotationKey] = hostname[0]
-				annotations[SetIdentifierKey] = hostname[1]
 
 				service := &v1.Service{
 					Spec: v1.ServiceSpec{
