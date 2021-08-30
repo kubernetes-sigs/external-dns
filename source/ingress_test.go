@@ -278,8 +278,8 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 		{
 			title: "No ingress-hostname-source annotation, one rule.host",
 			ingress: fakeIngress{
-				dnsnames:    []string{"foo.bar"},
-				hostnames:   []string{"lb.com"},
+				dnsnames:  []string{"foo.bar"},
+				hostnames: []string{"lb.com"},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -1190,7 +1190,6 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
 			)
-
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
 			if ti.expectError {
