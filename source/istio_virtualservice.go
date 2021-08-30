@@ -17,13 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 
@@ -70,18 +68,9 @@ func NewIstioVirtualServiceSource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
@@ -113,18 +102,11 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
-
-	err = wait.Poll(time.Second, 60*time.Second, func() (bool, error) {
-		return virtualServiceInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+		return nil, err
 	}
 
 	return &virtualServiceSource{
@@ -205,19 +187,7 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler func()) {
 	log.Debug("Adding event handler for Istio VirtualService")
 
-	sc.virtualserviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService networkingv1alpha3.VirtualService) *networkingv1alpha3.Gateway {
@@ -249,28 +219,20 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, virtualService)
+	hostnames, err := execTemplate(sc.fqdnTemplate, &virtualService)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on istio config %v: %v", virtualService, err)
+		return nil, err
 	}
-
-	hostnamesTemplate := buf.String()
 
 	ttl, err := getTTLFromAnnotations(virtualService.Annotations)
 	if err != nil {
 		log.Warn(err)
 	}
 
-	var endpoints []*endpoint.Endpoint
-
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
 
-	// splits the FQDN template and removes the trailing periods
-	hostnames := strings.Split(strings.Replace(hostnamesTemplate, " ", "", -1), ",")
+	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		hostname = strings.TrimSuffix(hostname, ".")
 		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
 		if err != nil {
 			return endpoints, err
@@ -317,6 +279,16 @@ func (sc *virtualServiceSource) setResourceLabel(virtualservice networkingv1alph
 	}
 }
 
+// append a target to the list of targets unless it's already in the list
+func appendUnique(targets []string, target string) []string {
+	for _, element := range targets {
+		if element == target {
+			return targets
+		}
+	}
+	return append(targets, target)
+}
+
 func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
@@ -332,7 +304,9 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if err != nil {
 			return targets, err
 		}
-		targets = append(targets, tgs...)
+		for _, target := range tgs {
+			targets = appendUnique(targets, target)
+		}
 	}
 
 	return targets, nil

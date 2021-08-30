@@ -166,7 +166,7 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zone, residualZones []pgo.Zone) {
 	if c.domainFilter.IsConfigured() {
 		for _, zone := range zones {
-			if c.domainFilter.Match(zone.Name) {
+			if c.domainFilter.Match(zone.Name) || c.domainFilter.MatchParent(zone.Name) {
 				filteredZones = append(filteredZones, zone)
 			} else {
 				residualZones = append(residualZones, zone)
@@ -257,13 +257,16 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error) {
 	endpoints = []*endpoint.Endpoint{}
+	var targets = []string{}
 
 	for _, record := range rr.Records {
 		// If a record is "Disabled", it's not supposed to be "visible"
 		if !record.Disabled {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rr.Type_, endpoint.TTL(rr.Ttl), record.Content))
+			targets = append(targets, record.Content)
 		}
 	}
+
+	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rr.Type_, endpoint.TTL(rr.Ttl), targets...))
 	return endpoints, nil
 }
 

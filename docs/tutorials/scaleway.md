@@ -24,7 +24,6 @@ Note that you will also need to the Organization ID, which can be retrieve on th
 Three environment variables are needed to run ExternalDNS with Scaleway DNS:
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
-- `SCW_DEFAULT_ORGANIZATION_ID` which is your Organization ID.
 
 ## Deploy ExternalDNS
 
@@ -53,7 +52,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
+        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -63,8 +62,6 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
-        - name: SCW_DEFAULT_ORGANIZATION_ID
-          value: "<your organization ID>"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -74,7 +71,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -89,7 +86,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list","watch"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -121,7 +118,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.4
+        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -131,8 +128,6 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
-        - name: SCW_DEFAULT_ORGANIZATION_ID
-          value: "<your organization ID>"
 ```
 
 

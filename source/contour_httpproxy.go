@@ -17,13 +17,10 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
-	"time"
 
 	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -63,17 +60,9 @@ func NewContourHTTPProxySource(
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informer to listen for add/update/delete of HTTPProxys in the specified namespace.
@@ -93,11 +82,8 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return httpProxyInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to sync cache")
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := NewUnstructuredConverter()
@@ -197,14 +183,10 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 }
 
 func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, httpProxy)
+	hostnames, err := execTemplate(sc.fqdnTemplate, httpProxy)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to apply template on HTTPProxy %s/%s", httpProxy.Namespace, httpProxy.Name)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
 	if err != nil {
@@ -212,7 +194,6 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	}
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
-
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
@@ -227,10 +208,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
@@ -324,17 +302,5 @@ func (sc *httpProxySource) AddEventHandler(ctx context.Context, handler func()) 
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.httpProxyInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.httpProxyInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

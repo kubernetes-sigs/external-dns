@@ -27,6 +27,23 @@ cover:
 cover-html: cover
 	go tool cover -html cover.out
 
+# find or download controller-gen
+# download controller-gen if necessary
+controller-gen:
+ifeq (, $(shell which controller-gen))
+	@{ \
+	set -e ;\
+	CONTROLLER_GEN_TMP_DIR=$$(mktemp -d) ;\
+	cd $$CONTROLLER_GEN_TMP_DIR ;\
+	go mod init tmp ;\
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.5.0 ;\
+	rm -rf $$CONTROLLER_GEN_TMP_DIR ;\
+	}
+CONTROLLER_GEN=$(GOBIN)/controller-gen
+else
+CONTROLLER_GEN=$(shell which controller-gen)
+endif
+
 .PHONY: go-lint
 
 # Run the golangci-lint tool
@@ -51,6 +68,11 @@ licensecheck:
 # Run all the linters
 lint: licensecheck go-lint
 
+.PHONY: crd
+
+# generates CRD using controller-gen
+crd: controller-gen
+	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: verify test
@@ -82,7 +104,8 @@ build.push/multiarch:
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
 		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
-		docker pull $${arch}/alpine:3.12 ;\
+		docker pull $${arch}/alpine:3.13 ;\
+		docker pull golang:1.16 ;\
 		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
 		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\

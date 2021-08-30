@@ -1,4 +1,4 @@
-# Setting up ExternalDNS on Google Container Engine
+# Setting up ExternalDNS on Google Kubernetes Engine
 
 This tutorial describes how to setup ExternalDNS for usage within a GKE cluster. Make sure to use **>=0.4** version of ExternalDNS for this tutorial
 
@@ -70,7 +70,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -85,7 +85,7 @@ rules:
   resources: ["nodes"]
   verbs: ["get", "watch", "list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -116,13 +116,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
         args:
         - --source=service
         - --source=ingress
         - --domain-filter=external-dns-test.gcp.zalan.do # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
         - --provider=google
 #        - --google-project=zalando-external-dns-test # Use this to specify a project different from the one external-dns is running inside
+        - --google-zone-visibility=private # Use this to filter to only zones with this visibility. Set to either 'public' or 'private'. Omitting will match public and private zones
         - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -211,7 +212,7 @@ $ curl nginx.external-dns-test.gcp.zalan.do
 Let's check that Ingress works as well. Create the following Ingress.
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx
@@ -439,7 +440,7 @@ spec:
             - --google-project=zalando-external-dns-test
             - --registry=txt
             - --txt-owner-id=my-identifier
-          image: k8s.gcr.io/external-dns/external-dns:v0.7.3
+          image: k8s.gcr.io/external-dns/external-dns:v0.8.0
           name: external-dns
       securityContext:
         fsGroup: 65534
@@ -460,7 +461,7 @@ $ kubectl annotate serviceaccount --namespace=external-dns external-dns \
 Create the following sample application to test that ExternalDNS works.
 
 ```yaml
-apiVersion: networking.k8s.io/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx

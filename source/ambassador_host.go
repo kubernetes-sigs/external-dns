@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/pkg/errors"
@@ -38,7 +37,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	api "k8s.io/kubernetes/pkg/apis/core"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -87,12 +85,8 @@ func NewAmbassadorHostSource(
 	// TODO informer is not explicitly stopped since controller is not passing in its channel.
 	informerFactory.Start(wait.NeverStop)
 
-	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ambassadorHostInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to sync cache")
+	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	uc, err := newUnstructuredConverter()
@@ -240,7 +234,7 @@ func parseAmbLoadBalancerService(service string) (namespace, name string, err er
 		// If here, we have no separator, so the whole string is the service, and
 		// we can assume the default namespace.
 		name := service
-		namespace := api.NamespaceDefault
+		namespace := "default"
 
 		return namespace, name, nil
 	} else if len(parts) == 2 {
