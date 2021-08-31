@@ -113,8 +113,9 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
 	var page *string
+
+	// List GLOBAL zones
 	for {
-		// List GLOBAL zones
 		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
 			CompartmentId: &p.cfg.CompartmentID,
 			ZoneType:      dns.ListZonesZoneTypePrimary,
@@ -133,7 +134,13 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 			}
 		}
 
-		// List PRIVATE zones
+		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+			break
+		}
+	}
+
+	// List PRIVATE zones
+	for {
 		privZonesResp, privZoneErr := p.client.ListZones(ctx, dns.ListZonesRequest{
 			CompartmentId: &p.cfg.CompartmentID,
 			ZoneType:      dns.ListZonesZoneTypePrimary,
@@ -153,7 +160,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 			}
 		}
 
-		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+		if page = privZonesResp.OpcNextPage; privZonesResp.OpcNextPage == nil {
 			break
 		}
 	}

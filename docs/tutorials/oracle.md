@@ -109,6 +109,19 @@ spec:
           secretName: external-dns-config
 ```
 
+## Arguments
+
+This list is not the full list, but a few arguments that where chosen.
+
+### oci-config
+
+`oci-config-file` specify the OCI configuration file.
+
+### oci-zone-scope
+
+`oci-zone-scope` allows filtering for GLOBAL and PRIVATE zones, defaults to GLOBAL.
+To target both (GLOBAL and PRIVATE zones), set it to empty string (`--oci-zone-scope ""`).
+
 ## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.

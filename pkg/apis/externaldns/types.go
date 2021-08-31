@@ -114,6 +114,7 @@ type Config struct {
 	DynPassword                       string `secure:"yes"`
 	DynMinTTLSeconds                  int
 	OCIConfigFile                     string
+	OCIZoneScope                      string
 	InMemoryZones                     []string
 	OVHEndpoint                       string
 	OVHApiRateLimit                   int
@@ -238,6 +239,7 @@ var defaultConfig = &Config{
 	InfobloxMaxResults:          0,
 	InfobloxFQDNRegEx:           "",
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
+	OCIZoneScope:                "GLOBAL",
 	InMemoryZones:               []string{},
 	OVHEndpoint:                 "ovh-eu",
 	OVHApiRateLimit:             20,
@@ -429,6 +431,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
 	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
 	app.Flag("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci").Default(defaultConfig.OCIConfigFile).StringVar(&cfg.OCIConfigFile)
+	app.Flag("oci-zone-scope", "When using OCI provider, filter for zones with this scope (optional, options: GLOBAL, PRIVATE). Defaults to GLOBAL, setting to empty value will target both.").Default(defaultConfig.OCIZoneScope).EnumVar(&cfg.OCIZoneScope, "", "GLOBAL", "PRIVATE")
 	app.Flag("rcodezero-txt-encrypt", "When using the Rcodezero provider with txt registry option, set if TXT rrs are encrypted (default: false)").Default(strconv.FormatBool(defaultConfig.RcodezeroTXTEncrypt)).BoolVar(&cfg.RcodezeroTXTEncrypt)
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
