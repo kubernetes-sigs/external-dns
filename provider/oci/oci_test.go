@@ -101,7 +101,7 @@ func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.Pat
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
-func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) *OCIProvider {
+func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) *OCIProvider {
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
@@ -109,6 +109,7 @@ func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zon
 		},
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
+		zoneScope:    zoneScope,
 		dryRun:       dryRun,
 	}
 }
@@ -186,6 +187,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 				tc.config,
 				endpoint.NewDomainFilter([]string{"com"}),
 				provider.NewZoneIDFilter([]string{""}),
+				string(dns.GetZoneScopeGlobal),
 				false,
 			)
 			if err == nil {
@@ -202,12 +204,14 @@ func TestOCIZones(t *testing.T) {
 		name         string
 		domainFilter endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
+		zoneScope    string
 		expected     map[string]dns.ZoneSummary
 	}{
 		{
 			name:         "DomainFilter_com",
 			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    string(dns.GetZoneScopeGlobal),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -218,10 +222,12 @@ func TestOCIZones(t *testing.T) {
 					Name: common.String("bar.com"),
 				},
 			},
-		}, {
+		},
+		{
 			name:         "DomainFilter_foo.com",
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    string(dns.GetZoneScopeGlobal),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -232,6 +238,7 @@ func TestOCIZones(t *testing.T) {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
+			zoneScope:    string(dns.GetZoneScopeGlobal),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -242,7 +249,7 @@ func TestOCIZones(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
+			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneScope, false)
 			zones, err := provider.zones(context.Background())
 			require.NoError(t, err)
 			validateOCIZones(t, zones, tc.expected)
@@ -255,6 +262,7 @@ func TestOCIRecords(t *testing.T) {
 		name         string
 		domainFilter endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
+		zoneScope    string
 		expected     []*endpoint.Endpoint
 	}{
 		{
@@ -287,7 +295,7 @@ func TestOCIRecords(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
+			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneScope, false)
 			endpoints, err := provider.Records(context.Background())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
@@ -640,6 +648,7 @@ func TestOCIApplyChanges(t *testing.T) {
 		zones             []dns.ZoneSummary
 		records           map[string][]dns.Record
 		changes           *plan.Changes
+		zoneScope         string
 		dryRun            bool
 		err               error
 		expectedEndpoints []*endpoint.Endpoint
@@ -828,6 +837,7 @@ func TestOCIApplyChanges(t *testing.T) {
 				client,
 				endpoint.NewDomainFilter([]string{""}),
 				provider.NewZoneIDFilter([]string{""}),
+				tc.zoneScope,
 				tc.dryRun,
 			)
 

@@ -59,6 +59,7 @@ type OCIProvider struct {
 
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
+	zoneScope    string
 	dryRun       bool
 }
 
@@ -85,7 +86,7 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 }
 
 // NewOCIProvider initializes a new OCI DNS based Provider.
-func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
+func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	client, err := dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
 		cfg.Auth.TenancyID,
@@ -104,6 +105,7 @@ func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFil
 		cfg:          cfg,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
+		zoneScope:    zoneScope,
 		dryRun:       dryRun,
 	}, nil
 }
@@ -114,54 +116,60 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
 	var page *string
 
-	// List GLOBAL zones
-	for {
-		resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
-			CompartmentId: &p.cfg.CompartmentID,
-			ZoneType:      dns.ListZonesZoneTypePrimary,
-			Page:          page,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "listing zones in %q", p.cfg.CompartmentID)
-		}
+	// set zone scope based on configuration flag
+	scope := dns.ListZonesScopeEnum(p.zoneScope)
+	if scope == "" {
+		// return zones with GLOBAL and PRIVATE scopes
+		scopes := dns.GetGetZoneScopeEnumValues()
+		for _, scope := range scopes {
+			for {
+				resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
+					CompartmentId: &p.cfg.CompartmentID,
+					ZoneType:      dns.ListZonesZoneTypePrimary,
+					Scope:         dns.ListZonesScopeEnum(scope),
+					Page:          page,
+				})
+				if err != nil {
+					return nil, errors.Wrapf(err, "listing zones in %q", p.cfg.CompartmentID)
+				}
 
-		for _, zone := range resp.Items {
-			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
-				zones[*zone.Name] = zone
-				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
-			} else {
-				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+				for _, zone := range resp.Items {
+					if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
+						zones[*zone.Name] = zone
+						log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
+					} else {
+						log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+					}
+				}
+				if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+					break
+				}
 			}
 		}
-
-		if page = resp.OpcNextPage; resp.OpcNextPage == nil {
-			break
-		}
-	}
-
-	// List PRIVATE zones
-	for {
-		privZonesResp, privZoneErr := p.client.ListZones(ctx, dns.ListZonesRequest{
-			CompartmentId: &p.cfg.CompartmentID,
-			ZoneType:      dns.ListZonesZoneTypePrimary,
-			Page:          page,
-			Scope:         dns.ListZonesScopePrivate,
-		})
-		if privZoneErr != nil {
-			return nil, errors.Wrapf(privZoneErr, "listing private zones in %q", p.cfg.CompartmentID)
-		}
-
-		for _, zone := range privZonesResp.Items {
-			if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
-				zones[*zone.Name] = zone
-				log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
-			} else {
-				log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+	} else {
+		for {
+			resp, err := p.client.ListZones(ctx, dns.ListZonesRequest{
+				CompartmentId: &p.cfg.CompartmentID,
+				ZoneType:      dns.ListZonesZoneTypePrimary,
+				Scope:         dns.ListZonesScopeEnum(scope),
+				Page:          page,
+			})
+			if err != nil {
+				return nil, errors.Wrapf(err, "listing zones in %q", p.cfg.CompartmentID)
 			}
-		}
 
-		if page = privZonesResp.OpcNextPage; privZonesResp.OpcNextPage == nil {
-			break
+			for _, zone := range resp.Items {
+				if p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.Id) {
+					zones[*zone.Name] = zone
+					log.Debugf("Matched %q (%q)", *zone.Name, *zone.Id)
+				} else {
+					log.Debugf("Filtered %q (%q)", *zone.Name, *zone.Id)
+				}
+			}
+
+			if page = resp.OpcNextPage; resp.OpcNextPage == nil {
+				break
+			}
 		}
 	}
 
@@ -197,23 +205,12 @@ func (p *OCIProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	for _, zone := range zones {
 		var page *string
 		for {
-			// Get record based on zone scope
-			var resp dns.GetZoneRecordsResponse
-			var err error
-			if zone.Scope == "PRIVATE" {
-				resp, err = p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
-					ZoneNameOrId:  zone.Id,
-					Page:          page,
-					CompartmentId: &p.cfg.CompartmentID,
-					Scope:         "PRIVATE",
-				})
-			} else {
-				resp, err = p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
-					ZoneNameOrId:  zone.Id,
-					Page:          page,
-					CompartmentId: &p.cfg.CompartmentID,
-				})
-			}
+			resp, err := p.client.GetZoneRecords(ctx, dns.GetZoneRecordsRequest{
+				ZoneNameOrId:  zone.Id,
+				Page:          page,
+				CompartmentId: &p.cfg.CompartmentID,
+				Scope:         dns.GetZoneRecordsScopeEnum(zone.Scope),
+			})
 			if err != nil {
 				return nil, errors.Wrapf(err, "getting records for zone %q", *zone.Id)
 			}
@@ -276,20 +273,18 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 		return nil
 	}
 
-	for zoneID, ops := range opsByZone {
-		if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
-			CompartmentId:           &p.cfg.CompartmentID,
-			ZoneNameOrId:            &zoneID,
-			PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
-		}); err != nil {
-			// Try to insert private zone records
-			if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
-				CompartmentId:           &p.cfg.CompartmentID,
-				ZoneNameOrId:            &zoneID,
-				PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
-				Scope:                   "PRIVATE",
-			}); err != nil {
-				return err
+	// Loop zones to get zone scope for zone patch records
+	for _, zone := range zones {
+		for zoneID, ops := range opsByZone {
+			if *zone.Id == zoneID {
+				if _, err := p.client.PatchZoneRecords(ctx, dns.PatchZoneRecordsRequest{
+					CompartmentId:           &p.cfg.CompartmentID,
+					ZoneNameOrId:            &zoneID,
+					PatchZoneRecordsDetails: dns.PatchZoneRecordsDetails{Items: ops},
+					Scope:                   dns.PatchZoneRecordsScopeEnum(zone.Scope),
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}
