@@ -21,8 +21,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v46/common"
+	"github.com/oracle/oci-go-sdk/v46/dns"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -300,7 +300,7 @@ func TestNewRecordOperation(t *testing.T) {
 		name     string
 		ep       *endpoint.Endpoint
 		opType   dns.RecordOperationOperationEnum
-		expected dns.RecordOperation
+		expected []dns.RecordOperation
 	}{
 		{
 			name:   "A_record",
@@ -310,12 +310,38 @@ func TestNewRecordOperation(t *testing.T) {
 				endpoint.RecordTypeA,
 				endpoint.TTL(ociRecordTTL),
 				"127.0.0.1"),
-			expected: dns.RecordOperation{
-				Domain:    common.String("foo.foo.com"),
-				Rdata:     common.String("127.0.0.1"),
-				Rtype:     common.String("A"),
-				Ttl:       common.Int(300),
-				Operation: dns.RecordOperationOperationAdd,
+			expected: []dns.RecordOperation{
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("127.0.0.1"),
+					Rtype:     common.String("A"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
+			},
+		}, {
+			name:   "A_records",
+			opType: dns.RecordOperationOperationAdd,
+			ep: endpoint.NewEndpointWithTTL(
+				"foo.foo.com",
+				endpoint.RecordTypeA,
+				endpoint.TTL(ociRecordTTL),
+				"127.0.0.1", "127.0.0.2"),
+			expected: []dns.RecordOperation{
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("127.0.0.1"),
+					Rtype:     common.String("A"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("127.0.0.2"),
+					Rtype:     common.String("A"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
 			},
 		}, {
 			name:   "TXT_record",
@@ -325,12 +351,14 @@ func TestNewRecordOperation(t *testing.T) {
 				endpoint.RecordTypeTXT,
 				endpoint.TTL(ociRecordTTL),
 				"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
-			expected: dns.RecordOperation{
-				Domain:    common.String("foo.foo.com"),
-				Rdata:     common.String("heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
-				Rtype:     common.String("TXT"),
-				Ttl:       common.Int(300),
-				Operation: dns.RecordOperationOperationAdd,
+			expected: []dns.RecordOperation{
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
+					Rtype:     common.String("TXT"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
 			},
 		}, {
 			name:   "CNAME_record",
@@ -340,12 +368,14 @@ func TestNewRecordOperation(t *testing.T) {
 				endpoint.RecordTypeCNAME,
 				endpoint.TTL(ociRecordTTL),
 				"bar.com."),
-			expected: dns.RecordOperation{
-				Domain:    common.String("foo.foo.com"),
-				Rdata:     common.String("bar.com."),
-				Rtype:     common.String("CNAME"),
-				Ttl:       common.Int(300),
-				Operation: dns.RecordOperationOperationAdd,
+			expected: []dns.RecordOperation{
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("bar.com."),
+					Rtype:     common.String("CNAME"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
 			},
 		},
 	}
@@ -407,6 +437,48 @@ func TestOperationsByZone(t *testing.T) {
 					{
 						Domain:    common.String("foo.bar.com"),
 						Rdata:     common.String("127.0.0.1"),
+						Rtype:     common.String("A"),
+						Ttl:       common.Int(300),
+						Operation: dns.RecordOperationOperationAdd,
+					},
+				},
+			},
+		}, {
+			name: "multiple_ips_for_same_hostname",
+			zones: map[string]dns.ZoneSummary{
+				"foo": {
+					Id:   common.String("foo"),
+					Name: common.String("foo.com"),
+				},
+			},
+			ops: []dns.RecordOperation{
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("127.0.0.1"),
+					Rtype:     common.String("A"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
+				{
+					Domain:    common.String("foo.foo.com"),
+					Rdata:     common.String("127.0.0.2"),
+					Rtype:     common.String("A"),
+					Ttl:       common.Int(300),
+					Operation: dns.RecordOperationOperationAdd,
+				},
+			},
+			expected: map[string][]dns.RecordOperation{
+				"foo": {
+					{
+						Domain:    common.String("foo.foo.com"),
+						Rdata:     common.String("127.0.0.1"),
+						Rtype:     common.String("A"),
+						Ttl:       common.Int(300),
+						Operation: dns.RecordOperationOperationAdd,
+					},
+					{
+						Domain:    common.String("foo.foo.com"),
+						Rdata:     common.String("127.0.0.2"),
 						Rtype:     common.String("A"),
 						Ttl:       common.Int(300),
 						Operation: dns.RecordOperationOperationAdd,

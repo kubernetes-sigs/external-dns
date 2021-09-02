@@ -19,10 +19,9 @@ package oci
 import (
 	"context"
 	"io/ioutil"
-	"strings"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v46/common"
+	"github.com/oracle/oci-go-sdk/v46/dns"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -152,7 +151,8 @@ func (p *OCIProvider) newFilteredRecordOperations(endpoints []*endpoint.Endpoint
 	ops := []dns.RecordOperation{}
 	for _, endpoint := range endpoints {
 		if p.domainFilter.Match(endpoint.DNSName) {
-			ops = append(ops, newRecordOperation(endpoint, opType))
+			newOps := newRecordOperation(endpoint, opType)
+			ops = append(ops, newOps...)
 		}
 	}
 	return ops
@@ -250,26 +250,31 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 }
 
 // newRecordOperation returns a RecordOperation based on a given endpoint.
-func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) dns.RecordOperation {
+func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) []dns.RecordOperation {
 	targets := make([]string, len(ep.Targets))
+	var operations []dns.RecordOperation
 	copy(targets, []string(ep.Targets))
 	if ep.RecordType == endpoint.RecordTypeCNAME {
 		targets[0] = provider.EnsureTrailingDot(targets[0])
 	}
-	rdata := strings.Join(targets, " ")
 
-	ttl := ociRecordTTL
-	if ep.RecordTTL.IsConfigured() {
-		ttl = int(ep.RecordTTL)
+	for _, target := range targets {
+		rdata := target
+		ttl := ociRecordTTL
+		if ep.RecordTTL.IsConfigured() {
+			ttl = int(ep.RecordTTL)
+		}
+
+		operations = append(operations, dns.RecordOperation{
+			Domain:    &ep.DNSName,
+			Rdata:     &rdata,
+			Ttl:       &ttl,
+			Rtype:     &ep.RecordType,
+			Operation: opType,
+		})
 	}
 
-	return dns.RecordOperation{
-		Domain:    &ep.DNSName,
-		Rdata:     &rdata,
-		Ttl:       &ttl,
-		Rtype:     &ep.RecordType,
-		Operation: opType,
-	}
+	return operations
 }
 
 // operationsByZone segments a slice of RecordOperations by their zone.
