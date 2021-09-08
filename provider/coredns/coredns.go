@@ -46,7 +46,8 @@ const (
 	priority    = 10 // default priority when nothing is set
 	etcdTimeout = 5 * time.Second
 
-	randomPrefixLabel = "prefix"
+	randomPrefixLabel     = "prefix"
+	providerSpecificGroup = "coredns/group"
 )
 
 // coreDNSClient is an interface to work with CoreDNS service records in etcd
@@ -311,6 +312,9 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 					endpoint.TTL(service.TTL),
 					service.Host,
 				)
+				if service.Group != "" {
+					ep.WithProviderSpecific(providerSpecificGroup, service.Group)
+				}
 				log.Debugf("Creating new ep (%s) with new service host (%s)", ep, service.Host)
 			}
 			ep.Labels["originalText"] = service.Text
@@ -360,6 +364,10 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					prefix = fmt.Sprintf("%08x", rand.Int31())
 					log.Infof("Generating new prefix: (%s)", prefix)
 				}
+				group := ""
+				if prop, ok := ep.GetProviderSpecificProperty(providerSpecificGroup); ok {
+					group = prop.Value
+				}
 
 				service := Service{
 					Host:        target,
@@ -367,6 +375,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
+					Group:       group,
 				}
 				services = append(services, service)
 				ep.Labels[target] = prefix

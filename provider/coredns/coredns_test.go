@@ -190,6 +190,50 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 	}
 }
 
+func TestApplyChangesAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]*Service{},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+
+	changes1 := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			endpoint.NewEndpoint("domain1.local", endpoint.RecordTypeA, "5.5.5.5").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain2.local", endpoint.RecordTypeA, "5.5.5.6").WithProviderSpecific(providerSpecificGroup, "test1"),
+			endpoint.NewEndpoint("domain3.local", endpoint.RecordTypeA, "5.5.5.7").WithProviderSpecific(providerSpecificGroup, "test2"),
+		},
+	}
+	coredns.ApplyChanges(context.Background(), changes1)
+
+	expectedServices1 := map[string]*Service{
+		"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
+		"/skydns/local/domain2": {Host: "5.5.5.6", Group: "test1"},
+		"/skydns/local/domain3": {Host: "5.5.5.7", Group: "test2"},
+	}
+	validateServices(client.services, expectedServices1, t, 1)
+}
+
+func TestRecordsAWithGroupServiceTranslation(t *testing.T) {
+	client := fakeETCDClient{
+		map[string]*Service{
+			"/skydns/local/domain1": {Host: "5.5.5.5", Group: "test1"},
+		},
+	}
+	coredns := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+	}
+	endpoints, _ := coredns.Records(context.Background())
+	if prop, ok := endpoints[0].GetProviderSpecificProperty(providerSpecificGroup); !ok {
+		t.Error("go no Group name")
+	} else if prop.Value != "test1" {
+		t.Errorf("got unexpected Group name: %s != %s", prop.Value, "test1")
+	}
+}
+
 func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 	expectedTargets := map[string]string{
 		endpoint.RecordTypeCNAME: "example.net",
@@ -347,6 +391,9 @@ func validateServices(services, expectedServices map[string]*Service, t *testing
 		}
 		if value.Text != expectedService.Text {
 			t.Errorf("wrong text for service %s: %s != %s on step %d", key, value.Text, expectedService.Text, step)
+		}
+		if value.Group != expectedService.Group {
+			t.Errorf("wrong group for service %s: %s != %s on step %d", key, value.Group, expectedService.Group, step)
 		}
 	}
 }

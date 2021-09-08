@@ -230,3 +230,9 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#
 ```
+
+## Custom attributes
+
+Coredns offers currently a single custom attribute:
+
+* [Grouped](https://github.com/skynetservices/skydns#groups) records: `external-dns.alpha.kubernetes.io/coredns-group`
