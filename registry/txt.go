@@ -45,10 +45,12 @@ type TXTRegistry struct {
 	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
 	// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
 	wildcardReplacement string
+
+	preFilterExternalOwnedRecords bool
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, preFilterExternalOwnedEndpoints bool) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -60,11 +62,12 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
 
 	return &TXTRegistry{
-		provider:            provider,
-		ownerID:             ownerID,
-		mapper:              mapper,
-		cacheInterval:       cacheInterval,
-		wildcardReplacement: txtWildcardReplacement,
+		provider:                      provider,
+		ownerID:                       ownerID,
+		mapper:                        mapper,
+		cacheInterval:                 cacheInterval,
+		wildcardReplacement:           txtWildcardReplacement,
+		preFilterExternalOwnedRecords: preFilterExternalOwnedEndpoints,
 	}, nil
 }
 
@@ -129,6 +132,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 				ep.Labels[k] = v
 			}
 		}
+	}
+	if im.preFilterExternalOwnedRecords {
+		endpoints = filterOwnedRecords(im.ownerID, endpoints)
 	}
 
 	// Update the cache.

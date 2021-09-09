@@ -138,6 +138,7 @@ type Config struct {
 	LogLevel                          string
 	TXTCacheInterval                  time.Duration
 	TXTWildcardReplacement            string
+	TXTPreFilterExternalOwnedRecords  bool
 	ExoscaleEndpoint                  string
 	ExoscaleAPIKey                    string `secure:"yes"`
 	ExoscaleAPISecret                 string `secure:"yes"`
@@ -484,6 +485,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
+	app.Flag("txt-pre-filter-external-owned-records", "When using the TXT registry, records are pre filter based on the txt-owner-id (default: false)").BoolVar(&cfg.TXTPreFilterExternalOwnedRecords)
 
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)

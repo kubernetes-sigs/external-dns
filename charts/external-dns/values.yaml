@@ -100,6 +100,7 @@ policy: upsert-only
 
 registry: txt
 txtOwnerId: ""
+txtPreFilterExternalOwnedRecords: false
 txtPrefix: ""
 
 domainFilters: []

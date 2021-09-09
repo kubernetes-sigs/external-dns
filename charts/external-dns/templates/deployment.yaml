@@ -63,6 +63,9 @@ spec:
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}
+            {{- if .Values.txtPreFilterExternalOwnedRecords }}
+            - --txt-pre-filter-external-owned-records
+            {{- end }}
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- end }}
