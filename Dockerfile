@@ -29,6 +29,8 @@ RUN make test build.$ARCH
 # final image
 FROM $ARCH/alpine:3.14
 
+RUN apk --no-cache add tzdata
+
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
