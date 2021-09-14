@@ -147,6 +147,7 @@ type Config struct {
 	CFAPIEndpoint                     string
 	CFUsername                        string
 	CFPassword                        string
+	RFC2136EnableCompression          bool
 	RFC2136Host                       string
 	RFC2136Port                       int
 	RFC2136Zone                       string
@@ -271,6 +272,7 @@ var defaultConfig = &Config{
 	CFAPIEndpoint:               "",
 	CFUsername:                  "",
 	CFPassword:                  "",
+	RFC2136EnableCompression:    false,
 	RFC2136Host:                 "",
 	RFC2136Port:                 0,
 	RFC2136Zone:                 "",
@@ -456,6 +458,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to RFC2136 provider
+	app.Flag("rfc2136-enable-compression", "When using the RFC2136 provider, requires to use compression when sending message").Default(strconv.FormatBool(defaultConfig.RFC2136EnableCompression)).BoolVar(&cfg.RFC2136EnableCompression)
 	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server").Default(defaultConfig.RFC2136Host).StringVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify the zone entry of the DNS server to use").Default(defaultConfig.RFC2136Zone).StringVar(&cfg.RFC2136Zone)
