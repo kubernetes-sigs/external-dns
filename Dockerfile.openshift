@@ -1,9 +1,9 @@
-FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.9 AS builder
+FROM registry.ci.openshift.org/ocp/builder:rhel-8-golang-1.16-openshift-4.10 AS builder
 WORKDIR /sigs.k8s.io/external-dns
 COPY . .
 RUN make build
 
-FROM registry.ci.openshift.org/ocp/4.9:base
+FROM registry.ci.openshift.org/ocp/4.10:base
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /usr/bin/
 ENTRYPOINT ["/usr/bin/external-dns"]
 LABEL io.openshift.release.operator="true"
