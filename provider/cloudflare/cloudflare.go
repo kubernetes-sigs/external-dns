@@ -186,24 +186,20 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	}
 
 	log.Debugln("no zoneIDFilter configured, looking at all zones")
-	for {
-		zonesResponse, err := p.Client.ListZonesContext(ctx, cloudflare.WithPagination(p.PaginationOptions))
-		if err != nil {
-			return nil, err
-		}
 
-		for _, zone := range zonesResponse.Result {
-			if !p.domainFilter.Match(zone.Name) {
-				log.Debugf("zone %s not in domain filter", zone.Name)
-				continue
-			}
-			result = append(result, zone)
-		}
-		if p.PaginationOptions.Page == zonesResponse.ResultInfo.TotalPages {
-			break
-		}
-		p.PaginationOptions.Page++
+	zonesResponse, err := p.Client.ListZonesContext(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	for _, zone := range zonesResponse.Result {
+		if !p.domainFilter.Match(zone.Name) {
+			log.Debugf("zone %s not in domain filter", zone.Name)
+			continue
+		}
+		result = append(result, zone)
+	}
+
 	return result, nil
 }
 
