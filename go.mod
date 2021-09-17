@@ -23,7 +23,6 @@ require (
 	github.com/digitalocean/godo v1.36.0
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.18.1
-	github.com/f5devcentral/go-bigip v0.0.0-20210106153155-d1f99f158c0c
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f

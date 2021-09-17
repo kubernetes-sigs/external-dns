@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -33,8 +34,12 @@ import (
 )
 
 const (
-	contentType                  = "application/json"
-	providerSpecificPropertyName = "bigip/virtual-server"
+	contentType                                   = "application/json"
+	providerSpecificPropertyName                  = "bigip/virtual-server"
+	providerSpecificPropertyWideIPPoolLbMode      = "bigip/pool-lb-mode"
+	providerSpecificPropertyPoolAlternateMode     = "bigip/pool-member-alternate-mode"
+	providerSpecificPropertyPoolLoadBalancingMode = "bigip/pool-member-load-balancing-mode"
+	providerSpecificPropertyPoolFallbackMode      = "bigip/pool-member-fallback-mode"
 )
 
 var (
@@ -66,6 +71,7 @@ type WideIP struct {
 	Description    string        `json:"description"`
 	Enabled        bool          `json:"enabled"`
 	LastResortPool string        `json:"lastResortPool"`
+	PoolLbMode     string        `json:"poolLbMode"`
 	PoolAs         []WideIPPoolA `json:"pools"`
 }
 
@@ -161,25 +167,39 @@ func (p F5BigipProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 	for _, wideIP := range wideIPs {
 		dnsName := wideIP.Name
+		poolLbMode := wideIP.PoolLbMode
 		for _, poolA := range wideIP.PoolAs {
-			// Get bigip pool A members and ttl
-			poolAMembers, ttl, err := p.getPoolAMemberAndTtl(poolA)
-			if err != nil {
-				return nil, err
+			// Only pools with the same name as wideipa name are created by us
+			if dnsName == poolA.Name {
+				// Get bigip pool A members and ttl
+				poolAMembers, ttl, err := p.getPoolAMemberAndTtl(poolA)
+				if err != nil {
+					return nil, err
+				}
+				// The reason poolADetail is needed is that poolA on wideip is actually incomplete.
+				// We have to get the corresponding load balancing method on poola.
+				poolADetail, err := p.getPoolA(poolA)
+				if err != nil {
+					return nil, err
+				}
+				// Get vs address via pool A member
+				target, err := p.getPoolAMemberVSRecords(poolAMembers)
+				if err != nil {
+					return nil, err
+				}
+				ep := endpoint.NewEndpointWithTTL(
+					dnsName,
+					endpoint.RecordTypeA,
+					endpoint.TTL(ttl),
+					target...,
+				)
+				ep.WithProviderSpecific(providerSpecificPropertyName, wideIP.Description)
+				ep.WithProviderSpecific(providerSpecificPropertyWideIPPoolLbMode, poolLbMode)
+				ep.WithProviderSpecific(providerSpecificPropertyPoolAlternateMode, poolADetail.AlternateMode)
+				ep.WithProviderSpecific(providerSpecificPropertyPoolLoadBalancingMode, poolADetail.LoadBalancingMode)
+				ep.WithProviderSpecific(providerSpecificPropertyPoolFallbackMode, poolADetail.FallbackMode)
+				result = append(result, ep)
 			}
-			// Get vs address via pool A member
-			target, err := p.getPoolAMemberVSRecords(poolAMembers)
-			if err != nil {
-				return nil, err
-			}
-			ep := endpoint.NewEndpointWithTTL(
-				dnsName,
-				endpoint.RecordTypeA,
-				endpoint.TTL(ttl),
-				target...,
-			)
-			ep.WithProviderSpecific(providerSpecificPropertyName, wideIP.Description)
-			result = append(result, ep)
 		}
 	}
 	return filter(result, p.config.DomainFilter), nil
@@ -208,6 +228,7 @@ func (p *F5BigipProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 
 	// Update New
 	if len(changes.UpdateNew) > 0 {
+		log.Infof("changes.UpdateNew: %v", changes.UpdateNew)
 		var allVsRecords []bigip.VSrecord
 		// The key is vsRecord.Name values is virtual servers
 		mapVsRecords := make(map[string][]bigip.VSrecord)
@@ -230,6 +251,7 @@ func (p *F5BigipProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 				}
 			}
 		}
+		log.Infof("vsRecords: %v", allVsRecords)
 		err := p.updateServer(allVsRecords)
 		if err != nil {
 			return err
@@ -317,6 +339,25 @@ func (p F5BigipProvider) getWideIP(name string) (WideIP, error) {
 	return wideIP, nil
 }
 
+func (p F5BigipProvider) getPoolA(poolA WideIPPoolA) (PoolA, error) {
+	var poolADetail PoolA
+	poolAOptions := &bigip.APIRequest{
+		"get",
+		fmt.Sprintf("/mgmt/tm/gtm/pool/a/~%s~%s", poolA.Partition, poolA.Name),
+		"",
+		contentType,
+	}
+	respPool, err := p.client.APICall(poolAOptions)
+	if err != nil {
+		return poolADetail, err
+	}
+	err = json.Unmarshal(respPool, &poolADetail)
+	if err != nil {
+		return poolADetail, err
+	}
+	return poolADetail, nil
+}
+
 func (p F5BigipProvider) getPoolAMemberAndTtl(poolA WideIPPoolA) ([]PoolAMember, endpoint.TTL, error) {
 	var poolMember PoolAMembers
 	poolOptions := &bigip.APIRequest{
@@ -376,7 +417,9 @@ func (p F5BigipProvider) getPoolAMemberVSRecords(poolAMembers []PoolAMember) ([]
 			// Obtain the address of the ipv4
 			r := regexp.MustCompile(`\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d{2})?`)
 			host := r.FindString(vsRecord.Destination)
-			target = append(target, host)
+			if !in(host, target) {
+				target = append(target, host)
+			}
 		} else {
 			err := fmt.Errorf("%s unable to extract the virtual server name", member.Name)
 			return nil, err
@@ -423,7 +466,7 @@ func (p F5BigipProvider) createRecords(endpoints []*endpoint.Endpoint) error {
 	}
 	for _, endpoint := range endpoints {
 		if endpoint.RecordType == "A" && len(mapVsRecords[endpoint.DNSName]) > 0 {
-			err := p.createPoolA(endpoint.DNSName, endpoint.RecordTTL)
+			err := p.createPoolA(endpoint)
 			if err != nil {
 				log.Errorf("create pool A err: %v", err)
 			}
@@ -476,6 +519,7 @@ func (p F5BigipProvider) updateServer(vsRecords []bigip.VSrecord) error {
 	if server == nil {
 		log.Errorf("Get pool Virtual Server error: %s", serverName)
 	}
+	log.Infof("eeeee %v", vsRecords)
 	updateServer := &bigip.Server{
 		serverName,
 		server.Datacenter,
@@ -550,7 +594,6 @@ func (p F5BigipProvider) deleteVirtualServers(vsName []string) error {
 			}
 		}
 	}
-	log.Infof("vsRecords: %v", vsRecords)
 	server, err := p.client.GetGtmserver(serverName)
 	if err != nil {
 		return err
@@ -574,17 +617,28 @@ func (p F5BigipProvider) deleteVirtualServers(vsName []string) error {
 	return nil
 }
 
-func (p F5BigipProvider) createPoolA(poolAName string, ttl endpoint.TTL) error {
+func (p F5BigipProvider) createPoolA(endpoint *endpoint.Endpoint) error {
 	createPoolA := PoolA{
-		poolAName,
+		endpoint.DNSName,
 		"round-robin",
 		partition,
 		true,
 		"any",
 		"return-to-dns",
 		"round-robin",
-		ttl,
+		endpoint.RecordTTL,
 		"enabled",
+	}
+	for _, item := range endpoint.ProviderSpecific {
+		if item.Name == providerSpecificPropertyPoolAlternateMode {
+			createPoolA.AlternateMode = item.Value
+		}
+		if item.Name == providerSpecificPropertyPoolLoadBalancingMode {
+			createPoolA.LoadBalancingMode = item.Value
+		}
+		if item.Name == providerSpecificPropertyPoolFallbackMode {
+			createPoolA.FallbackMode = item.Value
+		}
 	}
 	reqBody, err := json.Marshal(createPoolA)
 	if err != nil {
@@ -666,6 +720,17 @@ func (p F5BigipProvider) updatePoolA(endpoint *endpoint.Endpoint) error {
 	if err != nil {
 		return err
 	}
+	for _, item := range endpoint.ProviderSpecific {
+		if item.Name == providerSpecificPropertyPoolAlternateMode {
+			poolA.AlternateMode = item.Value
+		}
+		if item.Name == providerSpecificPropertyPoolLoadBalancingMode {
+			poolA.LoadBalancingMode = item.Value
+		}
+		if item.Name == providerSpecificPropertyPoolFallbackMode {
+			poolA.FallbackMode = item.Value
+		}
+	}
 	if poolA.Ttl != endpoint.RecordTTL {
 		poolA.Ttl = endpoint.RecordTTL
 		reqBody, err := json.Marshal(poolA)
@@ -723,10 +788,12 @@ func (p F5BigipProvider) updateWideIP(endpoint *endpoint.Endpoint) error {
 		if item.Name == providerSpecificPropertyName {
 			description = formartDescription(item.Value)
 		}
+		if item.Name == providerSpecificPropertyWideIPPoolLbMode {
+			wideIP.PoolLbMode = item.Value
+		}
 	}
 	wideIP.Description = description
 	wideIP.LastResortPool = "none"
-	log.Infof("wideIP update: %v", wideIP)
 	reqBody, err := json.Marshal(wideIP)
 	if err != nil {
 		return err
@@ -754,18 +821,22 @@ func (p F5BigipProvider) createWideIP(endpoint *endpoint.Endpoint) error {
 	}
 	wideIpPoolAs = append(wideIpPoolAs, createPoolA)
 	description := ""
-	for _, item := range endpoint.ProviderSpecific {
-		if item.Name == providerSpecificPropertyName {
-			description = formartDescription(item.Value)
-		}
-	}
 	createWideIp := WideIP{
 		endpoint.DNSName,
 		partition,
 		description,
 		true,
 		"none",
+		"round-robin",
 		wideIpPoolAs,
+	}
+	for _, item := range endpoint.ProviderSpecific {
+		if item.Name == providerSpecificPropertyName {
+			createWideIp.Description = formartDescription(item.Value)
+		}
+		if item.Name == providerSpecificPropertyWideIPPoolLbMode {
+			createWideIp.PoolLbMode = item.Value
+		}
 	}
 	reqBody, err := json.Marshal(createWideIp)
 	if err != nil {
@@ -933,4 +1004,13 @@ func formartDescription(providerSpecifi string) string {
 		return ""
 	}
 	return string(description)
+}
+
+func in(target string, str_array []string) bool {
+	sort.Strings(str_array)
+	index := sort.SearchStrings(str_array, target)
+	if index < len(str_array) && str_array[index] == target {
+		return true
+	}
+	return false
 }
