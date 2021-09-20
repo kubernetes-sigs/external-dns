@@ -65,7 +65,7 @@ type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
 	DeregisterInstance(input *sd.DeregisterInstanceInput) (*sd.DeregisterInstanceOutput, error)
 	GetService(input *sd.GetServiceInput) (*sd.GetServiceOutput, error)
-	ListInstancesPages(input *sd.ListInstancesInput, fn func(*sd.ListInstancesOutput, bool) bool) error
+	DiscoverInstances(input *sd.DiscoverInstancesInput) (*sd.DiscoverInstancesOutput, error)
 	ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error
 	ListServicesPages(input *sd.ListServicesInput, fn func(*sd.ListServicesOutput, bool) bool) error
 	RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error)
@@ -153,7 +153,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 		}
 
 		for _, srv := range services {
-			instances, err := p.ListInstancesByServiceID(srv.Id)
+			instances, err := p.DiscoverInstancesByServiceName(ns.Name, srv.Name)
 			if err != nil {
 				return nil, err
 			}
@@ -168,7 +168,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 	return endpoints, nil
 }
 
-func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Service, instances []*sd.InstanceSummary) *endpoint.Endpoint {
+func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Service, instances []*sd.HttpInstanceSummary) *endpoint.Endpoint {
 	// DNS name of the record is a concatenation of service and namespace
 	recordName := *srv.Name + "." + *ns.Name
 
@@ -405,22 +405,19 @@ func (p *AWSSDProvider) GetServiceDetail(serviceID *string) (*sd.Service, error)
 	return output.Service, nil
 }
 
-// ListInstancesByServiceID returns list of instances registered in given service.
-func (p *AWSSDProvider) ListInstancesByServiceID(serviceID *string) ([]*sd.InstanceSummary, error) {
-	instances := make([]*sd.InstanceSummary, 0)
+// DiscoverInstancesByServiceID returns list of instances registered in given service.
+func (p *AWSSDProvider) DiscoverInstancesByServiceName(namespaceName, serviceName *string) ([]*sd.HttpInstanceSummary, error) {
+	instances := make([]*sd.HttpInstanceSummary, 0)
 
-	f := func(resp *sd.ListInstancesOutput, lastPage bool) bool {
-		instances = append(instances, resp.Instances...)
-
-		return true
-	}
-
-	err := p.client.ListInstancesPages(&sd.ListInstancesInput{
-		ServiceId: serviceID,
-	}, f)
+	resp, err := p.client.DiscoverInstances(&sd.DiscoverInstancesInput{
+		NamespaceName: namespaceName,
+		ServiceName:   serviceName,
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	instances = append(instances, resp.Instances...)
 
 	return instances, nil
 }
@@ -588,13 +585,13 @@ func serviceToServiceSummary(service *sd.Service) *sd.ServiceSummary {
 
 // nolint: deadcode
 // used from unit test
-func instanceToInstanceSummary(instance *sd.Instance) *sd.InstanceSummary {
+func instanceToHttpInstanceSummary(instance *sd.Instance) *sd.HttpInstanceSummary {
 	if instance == nil {
 		return nil
 	}
 
-	return &sd.InstanceSummary{
-		Id:         instance.Id,
+	return &sd.HttpInstanceSummary{
+		InstanceId: instance.Id,
 		Attributes: instance.Attributes,
 	}
 }
