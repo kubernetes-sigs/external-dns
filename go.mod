@@ -59,7 +59,7 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.uber.org/ratelimit v0.1.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e
+	golang.org/x/net v0.0.0-20210924151903-3ad01bbaa167
 	golang.org/x/oauth2 v0.0.0-20210805134026-6f1e6394065a
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	google.golang.org/api v0.54.0
