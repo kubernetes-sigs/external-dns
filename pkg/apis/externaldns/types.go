@@ -172,6 +172,9 @@ type Config struct {
 	GoDaddySecretKey                  string `secure:"yes"`
 	GoDaddyTTL                        int64
 	GoDaddyOTE                        bool
+	PiholeServer                      string
+	PiholePassword                    string `secure:"yes"`
+	PiholeTLSInsecureSkipVerify       bool
 }
 
 var defaultConfig = &Config{
@@ -295,6 +298,9 @@ var defaultConfig = &Config{
 	GoDaddySecretKey:            "",
 	GoDaddyTTL:                  600,
 	GoDaddyOTE:                  false,
+	PiholeServer:                "",
+	PiholePassword:              "",
+	PiholeTLSInsecureSkipVerify: false,
 }
 
 // NewConfig returns new Config object
@@ -474,6 +480,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
 	app.Flag("transip-keyfile", "When using the TransIP provider, specify the path to the private key file (required when --provider=transip)").Default(defaultConfig.TransIPPrivateKeyFile).StringVar(&cfg.TransIPPrivateKeyFile)
+
+	// Flags related to Pihole provider
+	app.Flag("pihole-server", "When using the Pihole provider, the base URL of the Pihole web server (required when --provider=pihole)").Default(defaultConfig.PiholeServer).StringVar(&cfg.PiholeServer)
+	app.Flag("pihole-password", "When using the Pihole provider, the password to the server if it is protected").Default(defaultConfig.PiholePassword).StringVar(&cfg.PiholePassword)
+	app.Flag("pihole-tls-skip-verify", "When using the Pihole provider, disable verification of any TLS certificates").BoolVar(&cfg.PiholeTLSInsecureSkipVerify)
 
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only", "create-only")

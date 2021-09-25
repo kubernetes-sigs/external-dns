@@ -14,13 +14,13 @@ import (
 )
 
 func (p *PiholeProvider) retrieveNewToken(ctx context.Context) error {
-	if p.passw == "" {
+	if p.cfg.Password == "" {
 		return nil
 	}
 
 	form := &url.Values{}
-	form.Add("pw", p.passw)
-	url := fmt.Sprintf("%s/admin/index.php?login", p.server)
+	form.Add("pw", p.cfg.Password)
+	url := fmt.Sprintf("%s/admin/index.php?login", p.cfg.Server)
 	log.Debugf("Fetching new token from %s", url)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))

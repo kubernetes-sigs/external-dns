@@ -319,7 +319,15 @@ func main() {
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
 	case "pihole":
-		p, err = pihole.NewPiholeProvider(domainFilter, cfg.DryRun)
+		p, err = pihole.NewPiholeProvider(
+			pihole.PiholeConfig{
+				Server:                cfg.PiholeServer,
+				Password:              cfg.PiholePassword,
+				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+				DomainFilter:          domainFilter,
+				DryRun:                cfg.DryRun,
+			},
+		)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

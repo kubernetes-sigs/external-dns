@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -21,32 +20,35 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-// Environment variables.
-const (
-	PiholeServerEnvVar     = "PIHOLE_SERVER"
-	PiholePasswordEnvVar   = "PIHOLE_PASSWORD"
-	PiholeSkipVerifyEnvVar = "PIHOLE_TLS_INSECURE_SKIP_VERIFY"
-)
-
 // ErrNoPiholeServer is returned when there is no Pihole server configured
 // in the environment.
-var ErrNoPiholeServer = fmt.Errorf("no %s found in the environment", PiholeServerEnvVar)
+var ErrNoPiholeServer = fmt.Errorf("no pihole server found in the environment or flags")
 
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
 	provider.BaseProvider
+	cfg    PiholeConfig
+	token  string
+	client *http.Client
+}
 
-	server, passw string
-	token         string
-	client        *http.Client
-	domainFilter  endpoint.DomainFilter
-	dryRun        bool
+// PiholeConfig is used for configuring a PiholeProvider.
+type PiholeConfig struct {
+	// The root URL of the Pi-hole server.
+	Server string
+	// An optional password if the server is protected.
+	Password string
+	// Disable verification of TLS certificates.
+	TLSInsecureSkipVerify bool
+	// A filter to apply when looking up and applying records.
+	DomainFilter endpoint.DomainFilter
+	// Do nothing and log what would have changed to stdout.
+	DryRun bool
 }
 
 // NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
-func NewPiholeProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*PiholeProvider, error) {
-	server, ok := os.LookupEnv(PiholeServerEnvVar)
-	if !ok {
+func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
+	if cfg.Server == "" {
 		return nil, ErrNoPiholeServer
 	}
 
@@ -60,26 +62,23 @@ func NewPiholeProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*Pihole
 		Jar: jar,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: os.Getenv(PiholeSkipVerifyEnvVar) == "true",
+				InsecureSkipVerify: cfg.TLSInsecureSkipVerify,
 			},
 		},
 	}
 
 	return &PiholeProvider{
-		server:       server,
-		passw:        os.Getenv(PiholePasswordEnvVar), // This can be blank to signify an unprotected Pi-hole DNS server.
-		client:       cl,
-		domainFilter: domainFilter,
-		dryRun:       dryRun,
+		cfg:    cfg,
+		client: cl,
 	}, nil
 }
 
 func (p *PiholeProvider) aRecordsScript() string {
-	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customdns.php", p.server)
+	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customdns.php", p.cfg.Server)
 }
 
 func (p *PiholeProvider) cnameRecordsScript() string {
-	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customcname.php", p.server)
+	return fmt.Sprintf("%s/admin/scripts/pi-hole/php/customcname.php", p.cfg.Server)
 }
 
 func (p *PiholeProvider) urlForRecordType(rtype string) (string, error) {
@@ -96,7 +95,7 @@ func (p *PiholeProvider) urlForRecordType(rtype string) (string, error) {
 // Records implements Provider, populating a slice of endpoints from
 // Pi-Hole local DNS.
 func (p *PiholeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	if p.passw != "" {
+	if p.cfg.Password != "" {
 		// Retrieve a new token on every request until catch and retry logic
 		// is implemented for expired tokens.
 		if err := p.retrieveNewToken(ctx); err != nil {
@@ -162,7 +161,7 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 	for _, rec := range data {
 		name := rec[0]
 		target := rec[1]
-		if !p.domainFilter.MatchParent(target) {
+		if !p.cfg.DomainFilter.MatchParent(target) {
 			log.Debugf("Skipping %s target that does not match domain filter", target)
 			continue
 		}
@@ -178,7 +177,7 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 
 // ApplyChanges implements Provider, syncing desired state with the Pi-hole server Local DNS.
 func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	if p.passw != "" {
+	if p.cfg.Password != "" {
 		// Retrieve a new token on every request until catch and retry logic
 		// is implemented for expired tokens.
 		if err := p.retrieveNewToken(ctx); err != nil {
@@ -188,7 +187,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	// Handle deletions first - there are no endpoints for updating in place.
 	for _, ep := range changes.Delete {
-		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+		if !p.cfg.DomainFilter.MatchParent(ep.Targets[0]) {
 			log.Debugf("Skipping delete %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
@@ -197,7 +196,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 	}
 	for _, ep := range changes.UpdateOld {
-		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+		if !p.cfg.DomainFilter.MatchParent(ep.Targets[0]) {
 			log.Debugf("Skipping delete %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
@@ -208,7 +207,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	// Handle desired state
 	for _, ep := range changes.Create {
-		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+		if !p.cfg.DomainFilter.MatchParent(ep.Targets[0]) {
 			log.Debugf("Skipping create %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
@@ -217,7 +216,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 	}
 	for _, ep := range changes.UpdateNew {
-		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+		if !p.cfg.DomainFilter.MatchParent(ep.Targets[0]) {
 			log.Debugf("Skipping create %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
@@ -240,7 +239,7 @@ func (p *PiholeProvider) apply(ctx context.Context, action string, ep *endpoint.
 		return nil
 	}
 
-	if p.dryRun {
+	if p.cfg.DryRun {
 		log.Infof("DRY RUN: %s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
 		return nil
 	}
