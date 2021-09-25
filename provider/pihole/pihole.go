@@ -126,6 +126,8 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 		return nil, err
 	}
 
+	log.Debugf("Listing %s records from %s", rtype, url)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
@@ -158,11 +160,16 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 		return out, nil
 	}
 	for _, rec := range data {
+		name := rec[0]
+		target := rec[1]
+		if !p.domainFilter.MatchParent(target) {
+			log.Debugf("Skipping %s target that does not match domain filter", target)
+			continue
+		}
 		out = append(out, &endpoint.Endpoint{
-			DNSName:    rec[0],
-			Targets:    []string{rec[1]},
+			DNSName:    name,
+			Targets:    []string{target},
 			RecordType: rtype,
-			RecordTTL:  300, // It actually is ignored
 		})
 	}
 
@@ -182,6 +189,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	// Handle deletions first - there are no endpoints for updating in place.
 	for _, ep := range changes.Delete {
 		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+			log.Debugf("Skipping delete %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
 		if err := p.apply(ctx, "delete", ep); err != nil {
@@ -190,6 +198,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 	for _, ep := range changes.UpdateOld {
 		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+			log.Debugf("Skipping delete %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
 		if err := p.apply(ctx, "delete", ep); err != nil {
@@ -200,6 +209,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	// Handle desired state
 	for _, ep := range changes.Create {
 		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+			log.Debugf("Skipping create %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
 		if err := p.apply(ctx, "add", ep); err != nil {
@@ -208,6 +218,7 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 	for _, ep := range changes.UpdateNew {
 		if !p.domainFilter.MatchParent(ep.Targets[0]) {
+			log.Debugf("Skipping create %s that does not match domain filter", ep.Targets[0])
 			continue
 		}
 		if err := p.apply(ctx, "add", ep); err != nil {
@@ -223,17 +234,21 @@ type actionResponse struct {
 }
 
 func (p *PiholeProvider) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
-	if p.dryRun {
-		return nil
-	}
-
-	uraw, err := p.urlForRecordType(ep.RecordType)
+	url, err := p.urlForRecordType(ep.RecordType)
 	if err != nil {
 		log.Warnf("Skipping unsupported endpoint %s %s %v", ep.DNSName, ep.RecordType, ep.Targets)
 		return nil
 	}
+
+	if p.dryRun {
+		log.Infof("DRY RUN: %s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+		return nil
+	}
+
+	log.Infof("%s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+
 	form := p.newDNSActionForm(action, ep)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, uraw, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
 	}
@@ -273,7 +288,9 @@ func (p *PiholeProvider) newDNSActionForm(action string, ep *endpoint.Endpoint) 
 	case endpoint.RecordTypeCNAME:
 		form.Add("target", ep.Targets[0])
 	}
-	form.Add("token", p.token)
+	if p.token != "" {
+		form.Add("token", p.token)
+	}
 	return form
 }
 

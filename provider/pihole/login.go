@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
 )
 
@@ -16,9 +17,12 @@ func (p *PiholeProvider) retrieveNewToken(ctx context.Context) error {
 	if p.passw == "" {
 		return nil
 	}
+
 	form := &url.Values{}
 	form.Add("pw", p.passw)
 	url := fmt.Sprintf("%s/admin/index.php?login", p.server)
+	log.Debugf("Fetching new token from %s", url)
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
