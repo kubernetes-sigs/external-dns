@@ -133,8 +133,8 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 	for _, rec := range data {
 		name := rec[0]
 		target := rec[1]
-		if !p.cfg.DomainFilter.MatchParent(target) {
-			log.Debugf("Skipping %s target that does not match domain filter", target)
+		if !p.cfg.DomainFilter.MatchParent(name) {
+			log.Debugf("Skipping %s that does not match domain filter", name)
 			continue
 		}
 		out = append(out, &endpoint.Endpoint{
@@ -180,6 +180,10 @@ type actionResponse struct {
 }
 
 func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
+	if !p.cfg.DomainFilter.MatchParent(ep.DNSName) {
+		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
+		return nil
+	}
 	url, err := p.urlForRecordType(ep.RecordType)
 	if err != nil {
 		log.Warnf("Skipping unsupported endpoint %s %s %v", ep.DNSName, ep.RecordType, ep.Targets)
