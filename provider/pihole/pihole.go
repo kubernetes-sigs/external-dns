@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -58,7 +59,7 @@ func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 		return nil, err
 	}
 	// Setup an HTTP client using the cookiejar
-	cl := &http.Client{
+	httpClient := &http.Client{
 		Jar: jar,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
@@ -66,11 +67,20 @@ func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 			},
 		},
 	}
+	cl := instrumented_http.NewClient(httpClient, &instrumented_http.Callbacks{})
 
-	return &PiholeProvider{
+	p := &PiholeProvider{
 		cfg:    cfg,
 		client: cl,
-	}, nil
+	}
+
+	if cfg.Password != "" {
+		if err := p.retrieveNewToken(context.Background()); err != nil {
+			return nil, err
+		}
+	}
+
+	return p, nil
 }
 
 func (p *PiholeProvider) aRecordsScript() string {
@@ -95,14 +105,6 @@ func (p *PiholeProvider) urlForRecordType(rtype string) (string, error) {
 // Records implements Provider, populating a slice of endpoints from
 // Pi-Hole local DNS.
 func (p *PiholeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	if p.cfg.Password != "" {
-		// Retrieve a new token on every request until catch and retry logic
-		// is implemented for expired tokens.
-		if err := p.retrieveNewToken(ctx); err != nil {
-			return nil, err
-		}
-	}
-
 	aRecords, err := p.listRecords(ctx, endpoint.RecordTypeA)
 	if err != nil {
 		return nil, err
@@ -111,14 +113,15 @@ func (p *PiholeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	if err != nil {
 		return nil, err
 	}
-
 	return append(aRecords, cnameRecords...), nil
 }
 
 func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endpoint.Endpoint, error) {
 	form := &url.Values{}
 	form.Add("action", "get")
-	form.Add("token", p.token)
+	if p.token != "" {
+		form.Add("token", p.token)
+	}
 
 	url, err := p.urlForRecordType(rtype)
 	if err != nil {
@@ -149,8 +152,20 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 	var res map[string][][]string
 	if err := json.Unmarshal(raw, &res); err != nil {
 		// Unfortunately this could also just mean we needed to authenticate (still returns a 200).
+		// Thankfully the body is a short and concise error.
+		err = errors.New(string(raw))
+		if strings.Contains(err.Error(), "expired") && p.cfg.Password != "" {
+			// Try to fetch a new token and redo the request.
+			// Full error message at time of writing:
+			// "Not allowed (login session invalid or expired, please relogin on the Pi-hole dashboard)!"
+			log.Info("Pihole token has expired, fetching a new one")
+			if err := p.retrieveNewToken(ctx); err != nil {
+				return nil, err
+			}
+			return p.listRecords(ctx, rtype)
+		}
 		// Return raw body as error.
-		return nil, errors.New(string(raw))
+		return nil, err
 	}
 
 	out := make([]*endpoint.Endpoint, 0)
@@ -177,14 +192,6 @@ func (p *PiholeProvider) listRecords(ctx context.Context, rtype string) ([]*endp
 
 // ApplyChanges implements Provider, syncing desired state with the Pi-hole server Local DNS.
 func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	if p.cfg.Password != "" {
-		// Retrieve a new token on every request until catch and retry logic
-		// is implemented for expired tokens.
-		if err := p.retrieveNewToken(ctx); err != nil {
-			return err
-		}
-	}
-
 	// Handle deletions first - there are no endpoints for updating in place.
 	for _, ep := range changes.Delete {
 		if !p.cfg.DomainFilter.MatchParent(ep.Targets[0]) {
@@ -266,8 +273,18 @@ func (p *PiholeProvider) apply(ctx context.Context, action string, ep *endpoint.
 
 	var res actionResponse
 	if err := json.Unmarshal(raw, &res); err != nil {
-		// Unfortunately this could also just mean a generic server error. Return the raw body.
-		return errors.New(string(raw))
+		// Unfortunately this could also be a generic server or auth error.
+		err = errors.New(string(raw))
+		if strings.Contains(err.Error(), "expired") && p.cfg.Password != "" {
+			// Try to fetch a new token and redo the request.
+			log.Info("Pihole token has expired, fetching a new one")
+			if err := p.retrieveNewToken(ctx); err != nil {
+				return err
+			}
+			return p.apply(ctx, action, ep)
+		}
+		// Return raw body as error.
+		return err
 	}
 
 	if !res.Success {
