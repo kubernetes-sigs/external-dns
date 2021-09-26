@@ -109,6 +109,7 @@ The following table clarifies the current status of the providers according to t
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
+| Pihole | Alpha | @tinyzimmer |
 
 ## Running ExternalDNS:
 
@@ -164,6 +165,7 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
+* [Pihole](docs/tutorials/pihole.md)
 
 ### Running Locally
 
