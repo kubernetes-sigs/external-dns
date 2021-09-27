@@ -16,10 +16,9 @@ jobs:
           make build.docker
       
       - uses: cachix/install-nix-action@v13
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
       - uses: workflow/nix-shell-action@v1
-        env:
         with:
           packages: trivy
           script: |
