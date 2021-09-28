@@ -2,7 +2,7 @@ package pihole
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -11,7 +11,7 @@ import (
 
 // ErrNoPiholeServer is returned when there is no Pihole server configured
 // in the environment.
-var ErrNoPiholeServer = fmt.Errorf("no pihole server found in the environment or flags")
+var ErrNoPiholeServer = errors.New("no pihole server found in the environment or flags")
 
 // PiholeProvider is an implementation of Provider for Pi-hole Local DNS.
 type PiholeProvider struct {
@@ -35,15 +35,10 @@ type PiholeConfig struct {
 
 // NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
 func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
-	if cfg.Server == "" {
-		return nil, ErrNoPiholeServer
-	}
-
 	api, err := newPiholeClient(cfg)
 	if err != nil {
 		return nil, err
 	}
-
 	return &PiholeProvider{api: api}, nil
 }
 
