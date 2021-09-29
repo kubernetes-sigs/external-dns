@@ -35,6 +35,21 @@ import (
 
 type mockDigitalOceanClient struct{}
 
+func (m *mockDigitalOceanClient) RecordsByName(context.Context, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
+
+func (m *mockDigitalOceanClient) RecordsByTypeAndName(context.Context, string, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
+
+func (m *mockDigitalOceanClient) RecordsByType(context.Context, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
+
 func (m *mockDigitalOceanClient) List(ctx context.Context, opt *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
 	if opt == nil || opt.Page == 0 {
 		return []godo.Domain{{Name: "foo.com"}, {Name: "example.com"}}, &godo.Response{
@@ -111,6 +126,21 @@ func (m *mockDigitalOceanClient) Records(ctx context.Context, domain string, opt
 }
 
 type mockDigitalOceanRecordsFail struct{}
+
+func (m *mockDigitalOceanRecordsFail) RecordsByName(context.Context, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
+
+func (m *mockDigitalOceanRecordsFail) RecordsByTypeAndName(context.Context, string, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
+
+func (m *mockDigitalOceanRecordsFail) RecordsByType(context.Context, string, string, *godo.ListOptions) ([]godo.DomainRecord, *godo.Response, error) {
+	// not used, here only to correctly implement the interface
+	return nil, nil, nil
+}
 
 func (m *mockDigitalOceanRecordsFail) List(context.Context, *godo.ListOptions) ([]godo.Domain, *godo.Response, error) {
 	return []godo.Domain{{Name: "foo.com"}, {Name: "bar.com"}}, nil, nil
