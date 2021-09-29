@@ -24,8 +24,6 @@ require (
 	github.com/digitalocean/godo v1.44.0
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.73.2
-	github.com/fatih/color v1.13.0 // indirect
-	github.com/fatih/structs v1.1.0 // indirect
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
@@ -38,11 +36,13 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.19.0
-	github.com/mattn/go-colorable v0.1.10 // indirect
-	github.com/maxatome/go-testdeep v1.9.2
+	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/maxatome/go-testdeep v1.10.1
 	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
+	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
+	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
 	github.com/oracle/oci-go-sdk v21.4.0+incompatible
@@ -63,14 +63,13 @@ require (
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.uber.org/ratelimit v0.1.0
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/mod v0.5.1 // indirect
 	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/tools v0.1.7 // indirect
 	google.golang.org/api v0.58.0
+	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/ns1/ns1-go.v2 v2.0.0-20190322154155-0dafb5275fd1
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
@@ -78,10 +77,7 @@ require (
 	k8s.io/api v0.22.2
 	k8s.io/apimachinery v0.22.2
 	k8s.io/client-go v0.22.2
-	k8s.io/gengo v0.0.0-20210915205010-39e73c8a59cd // indirect
 	k8s.io/klog/v2 v2.20.0 // indirect
 	k8s.io/utils v0.0.0-20210820185131-d34e5cb4466e // indirect
-	sigs.k8s.io/controller-tools v0.7.0 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.12.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
