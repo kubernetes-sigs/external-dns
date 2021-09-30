@@ -735,8 +735,8 @@ github.com/lightstep/lightstep-tracer-common/golang/gogo v0.0.0-20190605223551-b
 github.com/lightstep/lightstep-tracer-go v0.18.1/go.mod h1:jlF1pusYV4pidLvZ+XD0UBX0ZE6WURAspgAczcDHrL4=
 github.com/linki/instrumented_http v0.3.0 h1:dsN92+mXpfZtjJraartcQ99jnuw7fqsnPDjr85ma2dA=
 github.com/linki/instrumented_http v0.3.0/go.mod h1:pjYbItoegfuVi2GUOMhEqzvm/SJKuEL3H0tc8QRLRFk=
-github.com/linode/linodego v0.19.0 h1:JxYBTxUcXcOlCwLMuugc7Il0RMtJ7riaddqz6gG/ACA=
-github.com/linode/linodego v0.19.0/go.mod h1:XOWXRHjqeU2uPS84tKLgfWIfTlv3TYzCS0io4GOQzEI=
+github.com/linode/linodego v0.32.2 h1:ubQMQuQGt73N1hMzY15lx2MRdZbcGbuvEVlSpJEB+lc=
+github.com/linode/linodego v0.32.2/go.mod h1:BR0gVkCJffEdIGJSl6bHR80Ty+Uvg/2jkjmrWaFectM=
 github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
 github.com/lyft/protoc-gen-star v0.4.10/go.mod h1:mE8fbna26u7aEA2QCVvvfBU/ZrPgocG1206xAFPcs94=
 github.com/lyft/protoc-gen-validate v0.0.13/go.mod h1:XbGvPuh87YZc5TdIa2/I4pLk0QoUACkjt2znoq26NVQ=
