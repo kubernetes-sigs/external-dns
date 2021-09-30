@@ -3,7 +3,7 @@ module sigs.k8s.io/external-dns
 go 1.16
 
 require (
-	cloud.google.com/go v0.94.1
+	cloud.google.com/go v0.97.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.20
@@ -37,7 +37,7 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.32.2
 	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/maxatome/go-testdeep v1.9.2
+	github.com/maxatome/go-testdeep v1.10.1
 	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/nesv/go-dynect v0.6.0
@@ -55,7 +55,7 @@ require (
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
-	github.com/transip/gotransip/v6 v6.6.0
+	github.com/transip/gotransip/v6 v6.6.2
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.8.1
