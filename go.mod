@@ -3,7 +3,7 @@ module sigs.k8s.io/external-dns
 go 1.16
 
 require (
-	cloud.google.com/go v0.94.1
+	cloud.google.com/go v0.97.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.20
