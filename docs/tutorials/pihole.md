@@ -58,13 +58,12 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: external-dns
-  namespace: external-dns
+  namespace: default
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
-  namespace: external-dns
 spec:
   strategy:
     type: Recreate
