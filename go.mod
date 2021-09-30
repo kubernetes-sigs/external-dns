@@ -7,7 +7,7 @@ require (
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v46.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.20
-	github.com/Azure/go-autorest/autorest/adal v0.9.14
+	github.com/Azure/go-autorest/autorest/adal v0.9.16
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
@@ -25,7 +25,6 @@ require (
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.73.2
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
-	github.com/form3tech-oss/jwt-go v3.2.5+incompatible // indirect
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
 	github.com/go-logr/logr v1.1.0 // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
@@ -37,7 +36,7 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.32.2
 	github.com/mattn/go-isatty v0.0.14 // indirect
-  github.com/maxatome/go-testdeep v1.10.1
+	github.com/maxatome/go-testdeep v1.10.1
 	github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/nesv/go-dynect v0.6.0
