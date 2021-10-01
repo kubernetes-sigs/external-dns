@@ -103,7 +103,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -118,7 +118,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -259,4 +259,12 @@ $ curl -kl \
       -X DELETE \
       -u ${WAPI_USERNAME}:${WAPI_PASSWORD} \
          https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/zone_auth?fqdn=example.com
+```
+
+## Ability to filter results from the zone auth API using a regular expression
+
+There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature for the zone_auth service, set the parameter infoblox-fqdn-regex for external-dns to a regular expression that makes sense for you.  For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
+
+```
+--infoblox-fqdn-regex=^staging.*test.com$
 ```

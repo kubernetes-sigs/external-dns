@@ -48,14 +48,15 @@ const (
 // rfc2136 provider type
 type rfc2136Provider struct {
 	provider.BaseProvider
-	nameserver    string
-	zoneName      string
-	tsigKeyName   string
-	tsigSecret    string
-	tsigSecretAlg string
-	insecure      bool
-	axfr          bool
-	minTTL        time.Duration
+	nameserver      string
+	zoneName        string
+	tsigKeyName     string
+	tsigSecret      string
+	tsigSecretAlg   string
+	insecure        bool
+	axfr            bool
+	minTTL          time.Duration
+	batchChangeSize int
 
 	// options specific to rfc3645 gss-tsig support
 	gssTsig      bool
@@ -85,7 +86,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Realm string, krb5Username string, krb5Password string, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -96,17 +97,18 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 	}
 
 	r := &rfc2136Provider{
-		nameserver:   net.JoinHostPort(host, strconv.Itoa(port)),
-		zoneName:     dns.Fqdn(zoneName),
-		insecure:     insecure,
-		gssTsig:      gssTsig,
-		krb5Username: krb5Username,
-		krb5Password: krb5Password,
-		krb5Realm:    krb5Realm,
-		domainFilter: domainFilter,
-		dryRun:       dryRun,
-		axfr:         axfr,
-		minTTL:       minTTL,
+		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
+		zoneName:        dns.Fqdn(zoneName),
+		insecure:        insecure,
+		gssTsig:         gssTsig,
+		krb5Username:    krb5Username,
+		krb5Password:    krb5Password,
+		krb5Realm:       strings.ToUpper(krb5Realm),
+		domainFilter:    domainFilter,
+		dryRun:          dryRun,
+		axfr:            axfr,
+		minTTL:          minTTL,
+		batchChangeSize: batchChangeSize,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -246,40 +248,88 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
-	m := new(dns.Msg)
-	m.SetUpdate(r.zoneName)
+	var errors []error
 
-	for _, ep := range changes.Create {
-		if !r.domainFilter.Match(ep.DNSName) {
-			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-			continue
+	for c, chunk := range chunkBy(changes.Create, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of create changes", c)
+
+		m := new(dns.Msg)
+		m.SetUpdate(r.zoneName)
+
+		for _, ep := range chunk {
+			if !r.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
+
+			r.AddRecord(m, ep)
 		}
 
-		r.AddRecord(m, ep)
+		// only send if there are records available
+		if len(m.Ns) > 0 {
+			err := r.actions.SendMessage(m)
+			if err != nil {
+				log.Errorf("RFC2136 update failed: %v", err)
+				errors = append(errors, err)
+				continue
+			}
+		}
 	}
-	for i, ep := range changes.UpdateNew {
-		if !r.domainFilter.Match(ep.DNSName) {
-			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-			continue
+
+	for c, chunk := range chunkBy(changes.UpdateNew, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of update changes", c)
+
+		m := new(dns.Msg)
+		m.SetUpdate(r.zoneName)
+
+		for i, ep := range chunk {
+			if !r.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
+
+			r.UpdateRecord(m, changes.UpdateOld[i], ep)
 		}
 
-		r.UpdateRecord(m, changes.UpdateOld[i], ep)
+		// only send if there are records available
+		if len(m.Ns) > 0 {
+			err := r.actions.SendMessage(m)
+			if err != nil {
+				log.Errorf("RFC2136 update failed: %v", err)
+				errors = append(errors, err)
+				continue
+			}
+		}
 	}
-	for _, ep := range changes.Delete {
-		if !r.domainFilter.Match(ep.DNSName) {
-			log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
-			continue
+
+	for c, chunk := range chunkBy(changes.Delete, r.batchChangeSize) {
+		log.Debugf("Processing batch %d of delete changes", c)
+
+		m := new(dns.Msg)
+		m.SetUpdate(r.zoneName)
+
+		for _, ep := range chunk {
+			if !r.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
+
+			r.RemoveRecord(m, ep)
 		}
 
-		r.RemoveRecord(m, ep)
+		// only send if there are records available
+		if len(m.Ns) > 0 {
+			err := r.actions.SendMessage(m)
+			if err != nil {
+				log.Errorf("RFC2136 update failed: %v", err)
+				errors = append(errors, err)
+				continue
+			}
+		}
 	}
 
-	// only send if there are records available
-	if len(m.Ns) > 0 {
-		err := r.actions.SendMessage(m)
-		if err != nil {
-			return fmt.Errorf("RFC2136 update failed: %v", err)
-		}
+	if len(errors) > 0 {
+		return fmt.Errorf("RFC2136 had errors in one or more of its batches: %v", errors)
 	}
 
 	return nil
@@ -387,4 +437,20 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 	log.Debugf("SendMessage.success")
 	return nil
+}
+
+func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
+	var chunks [][]*endpoint.Endpoint
+
+	for i := 0; i < len(slice); i += chunkSize {
+		end := i + chunkSize
+
+		if end > len(slice) {
+			end = len(slice)
+		}
+
+		chunks = append(chunks, slice[i:end])
+	}
+
+	return chunks
 }

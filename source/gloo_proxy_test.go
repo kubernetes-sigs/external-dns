@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -211,8 +212,13 @@ var externalProxySource = metav1.PartialObjectMetadata{
 }
 
 func TestGlooSource(t *testing.T) {
+	t.Parallel()
+
 	fakeKubernetesClient := fakeKube.NewSimpleClientset()
-	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(runtime.NewScheme())
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{
+			proxyGVR: "ProxyList",
+		})
 
 	source, err := NewGlooSource(fakeDynamicClient, fakeKubernetesClient, defaultGlooNamespace)
 	assert.NoError(t, err)
@@ -263,7 +269,7 @@ func TestGlooSource(t *testing.T) {
 	endpoints, err := source.Endpoints(context.Background())
 	assert.NoError(t, err)
 	assert.Len(t, endpoints, 5)
-	assert.Equal(t, endpoints, []*endpoint.Endpoint{
+	assert.ElementsMatch(t, endpoints, []*endpoint.Endpoint{
 		&endpoint.Endpoint{
 			DNSName:          "a.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},

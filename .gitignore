@@ -48,3 +48,9 @@ external-dns
 vendor/
 
 profile.cov
+
+# github codespaces
+.venv/
+
+# Helm charts
+!/charts/external-dns/

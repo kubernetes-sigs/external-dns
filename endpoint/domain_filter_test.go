@@ -40,121 +40,121 @@ type regexDomainFilterTest struct {
 var domainFilterTests = []domainFilterTest{
 	{
 		[]string{"google.com.", "exaring.de", "inovex.de"},
-		[]string{""},
+		[]string{},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
 	{
 		[]string{"google.com.", "exaring.de", "inovex.de"},
-		[]string{""},
+		[]string{},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
 	{
 		[]string{"google.com.", "exaring.de.", "inovex.de"},
-		[]string{""},
+		[]string{},
 		[]string{"google.com", "exaring.de", "inovex.de"},
 		true,
 	},
 	{
 		[]string{"foo.org.      "},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		true,
 	},
 	{
 		[]string{"   foo.org"},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		true,
 	},
 	{
 		[]string{"foo.org."},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		true,
 	},
 	{
 		[]string{"foo.org."},
-		[]string{""},
+		[]string{},
 		[]string{"baz.org"},
 		false,
 	},
 	{
 		[]string{"baz.foo.org."},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		false,
 	},
 	{
 		[]string{"", "foo.org."},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		true,
 	},
 	{
 		[]string{"", "foo.org."},
-		[]string{""},
+		[]string{},
 		[]string{},
 		true,
 	},
 	{
 		[]string{""},
-		[]string{""},
+		[]string{},
 		[]string{"foo.org"},
 		true,
 	},
 	{
 		[]string{""},
-		[]string{""},
+		[]string{},
 		[]string{},
 		true,
 	},
 	{
 		[]string{" "},
-		[]string{""},
+		[]string{},
 		[]string{},
 		true,
 	},
 	{
 		[]string{"bar.sub.example.org"},
-		[]string{""},
+		[]string{},
 		[]string{"foo.bar.sub.example.org"},
 		true,
 	},
 	{
 		[]string{"example.org"},
-		[]string{""},
+		[]string{},
 		[]string{"anexample.org", "test.anexample.org"},
 		false,
 	},
 	{
 		[]string{".example.org"},
-		[]string{""},
+		[]string{},
 		[]string{"anexample.org", "test.anexample.org"},
 		false,
 	},
 	{
 		[]string{".example.org"},
-		[]string{""},
+		[]string{},
 		[]string{"example.org"},
 		false,
 	},
 	{
 		[]string{".example.org"},
-		[]string{""},
+		[]string{},
 		[]string{"test.example.org"},
 		true,
 	},
 	{
 		[]string{"anexample.org"},
-		[]string{""},
+		[]string{},
 		[]string{"example.org", "test.example.org"},
 		false,
 	},
 	{
 		[]string{".org"},
-		[]string{""},
+		[]string{},
 		[]string{"example.org", "test.example.org", "foo.test.example.org"},
 		true,
 	},
@@ -262,7 +262,8 @@ var regexDomainFilterTests = []regexDomainFilterTest{
 func TestDomainFilterMatch(t *testing.T) {
 	for i, tt := range domainFilterTests {
 		if len(tt.exclusions) > 0 {
-			t.Skip("NewDomainFilter() doesn't support exclusions")
+			t.Logf("NewDomainFilter() doesn't support exclusions - skipping test %+v", tt)
+			continue
 		}
 		domainFilter := NewDomainFilter(tt.domainFilter)
 		for _, domain := range tt.domains {
@@ -274,6 +275,9 @@ func TestDomainFilterMatch(t *testing.T) {
 
 func TestDomainFilterWithExclusions(t *testing.T) {
 	for i, tt := range domainFilterTests {
+		if len(tt.exclusions) == 0 {
+			tt.exclusions = append(tt.exclusions, "")
+		}
 		domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
 		for _, domain := range tt.domains {
 			assert.Equal(t, tt.expected, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
@@ -288,6 +292,72 @@ func TestDomainFilterMatchWithEmptyFilter(t *testing.T) {
 		for i, domain := range tt.domains {
 			assert.True(t, domainFilter.Match(domain), "should not fail: %v in test-case #%v", domain, i)
 			assert.True(t, domainFilter.Match(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
+		}
+	}
+}
+
+func TestDomainFilterMatchParent(t *testing.T) {
+	parentMatchTests := []domainFilterTest{
+		{
+			[]string{"a.example.com."},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{" a.example.com "},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{""},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{".a.example.com."},
+			[]string{},
+			[]string{"example.com"},
+			false,
+		},
+		{
+			[]string{"a.example.com.", "b.example.com"},
+			[]string{},
+			[]string{"example.com"},
+			true,
+		},
+		{
+			[]string{"a.example.com"},
+			[]string{},
+			[]string{"b.example.com"},
+			false,
+		},
+		{
+			[]string{"example.com"},
+			[]string{},
+			[]string{"example.com"},
+			false,
+		},
+		{
+			[]string{"example.com"},
+			[]string{},
+			[]string{"anexample.com"},
+			false,
+		},
+		{
+			[]string{""},
+			[]string{},
+			[]string{""},
+			true,
+		},
+	}
+	for i, tt := range parentMatchTests {
+		domainFilter := NewDomainFilterWithExclusions(tt.domainFilter, tt.exclusions)
+		for _, domain := range tt.domains {
+			assert.Equal(t, tt.expected, domainFilter.MatchParent(domain), "should not fail: %v in test-case #%v", domain, i)
+			assert.Equal(t, tt.expected, domainFilter.MatchParent(domain+"."), "should not fail: %v in test-case #%v", domain+".", i)
 		}
 	}
 }
@@ -307,6 +377,10 @@ func TestPrepareFiltersStripsWhitespaceAndDotSuffix(t *testing.T) {
 		input  []string
 		output []string
 	}{
+		{
+			[]string{},
+			[]string{},
+		},
 		{
 			[]string{""},
 			[]string{""},

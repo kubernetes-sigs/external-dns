@@ -42,6 +42,10 @@ func NewAWSSDRegistry(provider provider.Provider, ownerID string) (*AWSSDRegistr
 	}, nil
 }
 
+func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+	return sdr.provider.GetDomainFilter()
+}
+
 // Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized
 // value in the AWSSDDescriptionLabel value in the Labels map
 func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -83,6 +87,9 @@ func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Change
 
 func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
+		if ep.Labels == nil {
+			ep.Labels = make(map[string]string)
+		}
 		ep.Labels[endpoint.OwnerLabelKey] = sdr.ownerID
 		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.Serialize(false)
 	}

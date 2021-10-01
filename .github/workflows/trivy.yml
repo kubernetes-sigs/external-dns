@@ -1,0 +1,27 @@
+name: trivy vulnerability scanner
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build an image from Dockerfile
+        run: |
+          make build.docker
+      
+      - uses: cachix/install-nix-action@v13
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - uses: workflow/nix-shell-action@v1
+        with:
+          packages: trivy
+          script: |
+            make build.docker
+            ./scripts/run-trivy.sh 
+            

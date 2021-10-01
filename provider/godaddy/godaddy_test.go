@@ -19,6 +19,7 @@ package godaddy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sort"
 	"testing"
 
@@ -360,8 +361,8 @@ func TestGoDaddyChange(t *testing.T) {
 		},
 	}, nil).Once()
 
-	// Update domain
-	client.On("Put", "/v1/domains/example.net/records", []gdRecordField{
+	// Add entry
+	client.On("Patch", "/v1/domains/example.net/records", []gdRecordField{
 		{
 			Name: "@",
 			Type: "A",
@@ -370,7 +371,78 @@ func TestGoDaddyChange(t *testing.T) {
 		},
 	}).Return(nil, nil).Once()
 
+	// Delete entry
+	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(nil, nil).Once()
+
 	assert.NoError(provider.ApplyChanges(context.TODO(), &changes))
+
+	client.AssertExpectations(t)
+}
+
+const (
+	operationFailedTestErrCode = "GD500"
+	operationFailedTestReason  = "Could not apply request"
+	recordNotFoundErrCode      = "GD404"
+	recordNotFoundReason       = "The requested record is not found in DNS zone"
+)
+
+func TestGoDaddyErrorResponse(t *testing.T) {
+	assert := assert.New(t)
+	client := newMockGoDaddyClient(t)
+	provider := &GDProvider{
+		client: client,
+	}
+
+	changes := plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    ".example.net",
+				RecordType: "A",
+				RecordTTL:  gdMinimalTTL,
+				Targets: []string{
+					"203.0.113.42",
+				},
+			},
+		},
+		Delete: []*endpoint.Endpoint{
+			{
+				DNSName:    "godaddy.example.net",
+				RecordType: "A",
+				Targets: []string{
+					"203.0.113.43",
+				},
+			},
+		},
+	}
+
+	// Fetch domains
+	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+		{
+			Domain: zoneNameExampleNet,
+		},
+	}, nil).Once()
+
+	// Fetch record
+	client.On("Get", "/v1/domains/example.net/records").Return([]gdRecordField{
+		{
+			Name: "godaddy",
+			Type: "A",
+			TTL:  gdMinimalTTL,
+			Data: "203.0.113.43",
+		},
+	}, nil).Once()
+
+	// Delete entry
+	client.On("Delete", "/v1/domains/example.net/records/A/godaddy").Return(GDErrorResponse{
+		Code:    operationFailedTestErrCode,
+		Message: operationFailedTestReason,
+		Fields: []GDErrorField{{
+			Code:    recordNotFoundErrCode,
+			Message: recordNotFoundReason,
+		}},
+	}, errors.New(operationFailedTestReason)).Once()
+
+	assert.Error(provider.ApplyChanges(context.TODO(), &changes))
 
 	client.AssertExpectations(t)
 }

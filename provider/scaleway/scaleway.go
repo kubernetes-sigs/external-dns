@@ -63,10 +63,6 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 		return nil, err
 	}
 
-	if _, ok := scwClient.GetDefaultOrganizationID(); !ok {
-		return nil, fmt.Errorf("default organization is not set")
-	}
-
 	if _, ok := scwClient.GetAccessKey(); !ok {
 		return nil, fmt.Errorf("access key no set")
 	}
@@ -282,7 +278,7 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	}
 	var priority = scalewayDefaultPriority
 	if prop, ok := ep.GetProviderSpecificProperty(scalewayPriorityKey); ok {
-		prio, err := strconv.ParseUint(prop.Value, 10, 64)
+		prio, err := strconv.ParseUint(prop.Value, 10, 32)
 		if err != nil {
 			log.Errorf("Failed parsing value of %s: %s: %v; using priority of %d", scalewayPriorityKey, prop.Value, err, scalewayDefaultPriority)
 		} else {

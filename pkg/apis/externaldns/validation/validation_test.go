@@ -132,6 +132,21 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
 	cfg.RFC2136MinTTL = -1
+	cfg.RFC2136BatchChangeSize = 50
+
+	err := ValidateConfig(cfg)
+
+	assert.NotNil(t, err)
+}
+
+func TestValidateBadRfc2136Batch(t *testing.T) {
+	cfg := externaldns.NewConfig()
+
+	cfg.LogFormat = "json"
+	cfg.Sources = []string{"test-source"}
+	cfg.Provider = "rfc2136"
+	cfg.RFC2136MinTTL = 3600
+	cfg.RFC2136BatchChangeSize = 0
 
 	err := ValidateConfig(cfg)
 
@@ -145,6 +160,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
 	cfg.RFC2136MinTTL = 3600
+	cfg.RFC2136BatchChangeSize = 50
 
 	err := ValidateConfig(cfg)
 
@@ -158,18 +174,22 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
 			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "test-user",
 			RFC2136KerberosPassword: "",
 			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
 		},
 		{
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
 			Provider:                "rfc2136",
 			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "",
 			RFC2136KerberosPassword: "test-pass",
 			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
 		},
 		{
 			LogFormat:               "json",
@@ -177,9 +197,56 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 			Provider:                "rfc2136",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         true,
+			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "test-user",
 			RFC2136KerberosPassword: "test-pass",
 			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "",
+			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136Insecure:         true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
+		},
+		{
+			LogFormat:               "json",
+			Sources:                 []string{"test-source"},
+			Provider:                "rfc2136",
+			RFC2136GSSTSIG:          true,
+			RFC2136KerberosRealm:    "",
+			RFC2136KerberosUsername: "test-user",
+			RFC2136KerberosPassword: "test-pass",
+			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
 		},
 	}
 
@@ -198,9 +265,11 @@ func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
 			Provider:                "rfc2136",
 			RFC2136GSSTSIG:          true,
 			RFC2136Insecure:         false,
+			RFC2136KerberosRealm:    "test-realm",
 			RFC2136KerberosUsername: "test-user",
 			RFC2136KerberosPassword: "test-pass",
 			RFC2136MinTTL:           3600,
+			RFC2136BatchChangeSize:  50,
 		},
 	}
 
