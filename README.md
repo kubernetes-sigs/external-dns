@@ -21,9 +21,9 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://codemine.be/posts/20190125-devops-eks-externaldns/).
 
-## The Latest Release: v0.8
+## The Latest Release
 
-ExternalDNS' current release is `v0.8`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various DNS providers:
+ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various DNS providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
