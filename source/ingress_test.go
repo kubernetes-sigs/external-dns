@@ -100,6 +100,7 @@ func TestNewIngressSource(t *testing.T) {
 		fqdnTemplate             string
 		combineFQDNAndAnnotation bool
 		expectError              bool
+		ingressClassNames        []string
 	}{
 		{
 			title:        "invalid template",
@@ -131,6 +132,17 @@ func TestNewIngressSource(t *testing.T) {
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
+		{
+			title:            "non-empty ingress class name list",
+			expectError:      false,
+			ingressClassNames: []string{"internal", "external"},
+		},
+		{
+			title:            "ingress class name and annotation filter jointly specified",
+			expectError:      true,
+			ingressClassNames: []string{"internal", "external"},
+			annotationFilter: "kubernetes.io/ingress.class=nginx",
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -145,7 +157,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				false,
-				[]string{},
+				ti.ingressClassNames,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
