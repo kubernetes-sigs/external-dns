@@ -261,7 +261,7 @@ then you can start two ExternalDNS providers one with `--ingress-class=nginx-int
 If you need to search for multiple ingress classes, you can specify the argument multiple times, like so:
 `--ingress-class=nginx-internal --ingress-class=alb-ingress-internal`.
 
-The `--ingress-class` argument will check both the ingressClassName field as well as the deprecated `kubernetes.io/ingress.class` annotation.
+The `--ingress-class` argument will check both the `ingressClassName` field as well as the deprecated `kubernetes.io/ingress.class` annotation.
 
 Note: the `--ingress-class` argument cannot be used at the same time as a `kubernetes.io/ingress.class` annotation filter; if you do this an error will be raised.
 
