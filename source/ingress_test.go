@@ -360,7 +360,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
-		ingressClassNameFilter   []string
+		ingressClassNames   []string
 	}{
 		{
 			title:           "no ingress",

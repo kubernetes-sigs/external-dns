@@ -54,7 +54,7 @@ type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
-	ingressClassNameFilter   []string
+	ingressClassNames             []string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -64,7 +64,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ingressClassNameFilter []string) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ingressClassNames []string) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		client:                   kubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
-		ingressClassNameFilter:   ingressClassNameFilter,
+		ingressClassNames:        ingressClassNames,
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
@@ -221,7 +221,7 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 // class
 func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
 	// if no class filter is specified then there's nothing to do
-	if sc.ingressClassNameFilter == nil {
+	if sc.ingressClassNames == nil {
 		return ingresses, nil
 	}
 
@@ -234,7 +234,7 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 		}
 
 		var matched = false;
-		for _, nameFilter := range sc.ingressClassNameFilter {
+		for _, nameFilter := range sc.ingressClassNames {
 			if nameFilter == *ingress.Spec.IngressClassName {
 				filteredList = append(filteredList, ingress)
 				matched = true;
