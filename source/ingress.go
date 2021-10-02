@@ -262,13 +262,13 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 				matched = true;
 			}
 
-			if matched == true {
+			if matched {
 				filteredList = append(filteredList, ingress)
 				break
 			}
 		}
 
-		if matched == false {
+		if !matched {
 			log.Debugf("Discarding ingress %s/%s because it does not match required ingress classes %v", ingress.Namespace, ingress.Name, sc.ingressClassNames)
 		}
 	}
