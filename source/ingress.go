@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
@@ -241,24 +242,34 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 		return ingresses, nil
 	}
 
+	classNameReq, err := labels.NewRequirement("kubernetes.io/ingress.class", selection.In, sc.ingressClassNames)
+	if err != nil {
+		return nil, errors.New("Failed to create selector requirement from ingress class names")
+	}
+
+	selector := labels.NewSelector()
+	selector = selector.Add(*classNameReq)
+
 	filteredList := []*networkv1.Ingress{}
 
 	for _, ingress := range ingresses {
-		// we have a filter class but this ingress doesn't have its class set
-		if ingress.Spec.IngressClassName == nil {
-			log.Debugf("Ignoring ingress %s/%s because ingressClassName is not set", ingress.Namespace, ingress.Name)
-		}
-
 		var matched = false;
+
 		for _, nameFilter := range sc.ingressClassNames {
-			if nameFilter == *ingress.Spec.IngressClassName {
-				filteredList = append(filteredList, ingress)
+			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
 				matched = true;
+			} else if matchLabelSelector(selector, ingress.Annotations) {
+				matched = true;
+			}
+
+			if matched == true {
+				filteredList = append(filteredList, ingress)
 				break
 			}
 		}
+
 		if matched == false {
-			log.Debugf("Ignoring ingress %s/%s because ingressClassName '%s' is not in specified list", ingress.Namespace, ingress.Name, *ingress.Spec.IngressClassName)
+			log.Debugf("Discarding ingress %s/%s because it does not match required ingress classes %v", ingress.Namespace, ingress.Name, sc.ingressClassNames)
 		}
 	}
 

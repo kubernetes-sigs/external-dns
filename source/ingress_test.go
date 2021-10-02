@@ -1198,6 +1198,15 @@ func testIngressEndpoints(t *testing.T) {
 					ips:              []string{"3.4.5.6"},
 					ingressClassName: "dmz",
 				},
+				{
+					name:             "annotated-dmz",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"annodmz.example.org"}},
+					ips:              []string{"4.5.6.7"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz",
+					},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
@@ -1207,6 +1216,10 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName: "dmz.example.org",
 					Targets: endpoint.Targets{"3.4.5.6"},
+				},
+				{
+					DNSName: "annodmz.example.org",
+					Targets: endpoint.Targets{"4.5.6.7"},
 				},
 			},
 		},
