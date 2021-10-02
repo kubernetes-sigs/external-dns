@@ -254,13 +254,16 @@ Sometimes you need to run an internal and an external dns service.
 The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
 one to expose DNS to the internet.
 
-To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
+To do this with ExternalDNS you can use the `--ingress-class` to specifically tie an instance of ExternalDNS to
 an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
-and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
+then you can start two ExternalDNS providers one with `--ingress-class=nginx-internal` and one with `--ingress-class=nginx-external`.
 
-If you need to search for multiple values of said annotation, you can provide a comma separated list, like so:
-`--annotation-filter=kubernetes.io/ingress.class in (nginx-internal, alb-ingress-internal)`.
+If you need to search for multiple ingress classes, you can specify the argument multiple times, like so:
+`--ingress-class=nginx-internal --ingress-class=alb-ingress-internal`.
+
+The `--ingress-class` argument will check both the ingressClassName field as well as the deprecated `kubernetes.io/ingress.class` annotation.
+
+Note: the `--ingress-class` argument cannot be used at the same time as a `kubernetes.io/ingress.class` annotation filter; if you do this an error will be raised.
 
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
