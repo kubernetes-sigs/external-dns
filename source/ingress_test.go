@@ -1175,7 +1175,7 @@ func testIngressEndpoints(t *testing.T) {
 		{
 			title:                  "ingressClassName filtering",
 			targetNamespace:        "",
-			ingressClassNameFilter: []string{"public"},
+			ingressClassNames:      []string{"public", "dmz"},
 			ingressItems: []fakeIngress{
 				{
 					name:             "fake-public",
@@ -1191,11 +1191,22 @@ func testIngressEndpoints(t *testing.T) {
 					ips:              []string{"2.3.4.5"},
 					ingressClassName: "internal",
 				},
+				{
+					name:             "fake-dmz",
+					namespace:        namespace,
+					tlsdnsnames:      [][]string{{"dmz.example.org"}},
+					ips:              []string{"3.4.5.6"},
+					ingressClassName: "dmz",
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.org",
 					Targets: endpoint.Targets{"1.2.3.4"},
+				},
+				{
+					DNSName: "dmz.example.org",
+					Targets: endpoint.Targets{"3.4.5.6"},
 				},
 			},
 		},
@@ -1219,7 +1230,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
-				ti.ingressClassNameFilter,
+				ti.ingressClassNames,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
