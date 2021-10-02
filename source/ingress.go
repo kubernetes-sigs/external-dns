@@ -220,7 +220,7 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 // filterByIngressClass filters a list of ingresses based on a required ingress
 // class
 func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
-	// if no class is specified then there's nothing to do
+	// if no class filter is specified then there's nothing to do
 	if sc.ingressClassNameFilter == nil {
 		return ingresses, nil
 	}
@@ -228,12 +228,21 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 	filteredList := []*networkv1.Ingress{}
 
 	for _, ingress := range ingresses {
+		// we have a filter class but this ingress doesn't have its class set
+		if ingress.Spec.IngressClassName == nil {
+			log.Debugf("Ignoring ingress %s/%s because ingressClassName is not set", ingress.Namespace, ingress.Name)
+		}
+
+		var matched = false;
 		for _, nameFilter := range sc.ingressClassNameFilter {
-			// include ingress if its annotations match the selector
-			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
+			if nameFilter == *ingress.Spec.IngressClassName {
 				filteredList = append(filteredList, ingress)
+				matched = true;
 				break
 			}
+		}
+		if matched == false {
+			log.Debugf("Ignoring ingress %s/%s because ingressClassName '%s' is not in specified list", ingress.Namespace, ingress.Name, *ingress.Spec.IngressClassName)
 		}
 	}
 
