@@ -244,7 +244,7 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 
 	classNameReq, err := labels.NewRequirement("kubernetes.io/ingress.class", selection.In, sc.ingressClassNames)
 	if err != nil {
-		return nil, errors.New("Failed to create selector requirement from ingress class names")
+		return nil, err
 	}
 
 	selector := labels.NewSelector()
