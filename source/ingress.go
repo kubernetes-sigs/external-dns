@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -70,6 +71,21 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		return nil, err
 	}
 
+	// ensure that ingress class is only set in either the ingressClassNames or
+	// annotationFilter but not both
+	if ingressClassNames != nil && annotationFilter != "" {
+		selector, err := getLabelSelector(annotationFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		requirements, _ := selector.Requirements()
+		for _, requirement := range requirements {
+			if requirement.Key() == "kubernetes.io/ingress.class" {
+				return nil, errors.New("--ingress-class is mutually exclusive with kubernetes.io/ingress.class annotation")
+			}
+		}
+	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
