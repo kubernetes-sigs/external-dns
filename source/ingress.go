@@ -219,13 +219,13 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 
 // filterByIngressClass filters a list of ingresses based on a required ingress
 // class
-func (sc *ingressSource) filterByIngressClass(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
+func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
 	// if no class is specified then there's nothing to do
 	if sc.ingressClassNameFilter == nil {
 		return ingresses, nil
 	}
 
-	filteredList := []*v1beta1.Ingress{}
+	filteredList := []*networkv1.Ingress{}
 
 	for _, ingress := range ingresses {
 		for _, nameFilter := range sc.ingressClassNameFilter {
