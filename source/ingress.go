@@ -56,7 +56,7 @@ type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
-	ingressClassNames             []string
+	ingressClassNames        []string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -135,7 +135,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 
-        ingresses, err = sc.filterByIngressClass(ingresses)
+	ingresses, err = sc.filterByIngressClass(ingresses)
 	if err != nil {
 		return nil, err
 	}
@@ -253,13 +253,13 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 	filteredList := []*networkv1.Ingress{}
 
 	for _, ingress := range ingresses {
-		var matched = false;
+		var matched = false
 
 		for _, nameFilter := range sc.ingressClassNames {
 			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
-				matched = true;
+				matched = true
 			} else if matchLabelSelector(selector, ingress.Annotations) {
-				matched = true;
+				matched = true
 			}
 
 			if matched {
