@@ -63,6 +63,7 @@ spec:
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}
+            - --registry={{ .Values.registry }}
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- end }}
