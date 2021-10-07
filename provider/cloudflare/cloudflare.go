@@ -41,6 +41,8 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultCloudFlareRecordTTL 1 = automatic
 	defaultCloudFlareRecordTTL = 1
+	// planKeyword = "plan"
+	planKeyword = "plan"
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -340,12 +342,25 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
+		p.enhanceEndpoint(e)
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
 		}
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints
+}
+
+func (p *CloudFlareProvider) enhanceEndpoint(record *endpoint.Endpoint) {
+	zone, err := p.findZoneFromRecord(record)
+	if err != nil {
+		return
+	}
+
+	record.ProviderSpecific = append(record.ProviderSpecific, endpoint.ProviderSpecificProperty{
+		Name:  planKeyword,
+		Value: zone.Plan.Name,
+	})
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -397,6 +412,31 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 			Content: target,
 		},
 	}
+}
+
+func (p *CloudFlareProvider) findZoneFromRecord(endpoint *endpoint.Endpoint) (*cloudflare.Zone, error) {
+	zoneNameIDMapper := provider.ZoneIDName{}
+	idToZoneMapper := map[string]*cloudflare.Zone{}
+
+	zones, err := p.Zones(context.Background())
+	if err != nil {
+		return &cloudflare.Zone{}, err
+	}
+
+	for _, z := range zones {
+		zoneNameIDMapper.Add(z.ID, z.Name)
+		idToZoneMapper[z.ID] = &z
+	}
+
+	zoneId, zoneName := zoneNameIDMapper.FindZone(endpoint.DNSName)
+
+	if zoneId == "" || zoneName == "" {
+		return &cloudflare.Zone{}, fmt.Errorf("Could not find cloudflare zone endpoint=%s", endpoint)
+	}
+
+	zone, _ := idToZoneMapper[zoneId]
+
+	return zone, nil
 }
 
 func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
