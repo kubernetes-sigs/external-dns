@@ -21,9 +21,10 @@ import (
   "fmt"
   "os"
 
+  "github.com/ukfast/sdk-go/pkg/service/safedns"
+  log "github.com/sirupsen/logrus"
   ukf_client "github.com/ukfast/sdk-go/pkg/client"
   ukf_connection "github.com/ukfast/sdk-go/pkg/connection"
-  "github.com/ukfast/sdk-go/pkg/service/safedns"
 
   "sigs.k8s.io/external-dns/provider"
   "sigs.k8s.io/external-dns/endpoint"
@@ -50,6 +51,15 @@ type SafeDNSProvider struct {
   domainFilter      endpoint.DomainFilter
   DryRun            bool
   APIRequestParams  ukf_connection.APIRequestParameters
+}
+
+type ZoneRecord struct {
+  ID      int
+  Name    string
+  Type    safedns.RecordType
+  TTL     safedns.RecordTTL
+  Zone    string
+  Content string
 }
 
 func NewSafeDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*SafeDNSProvider, error) {
@@ -92,14 +102,13 @@ func (p *SafeDNSProvider) Zones(ctx context.Context) ([]safedns.Zone, error) {
   return zones, nil
 }
 
-// Records returns a list of Endpoint resources created from all records in supported zones.
-func (p *SafeDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *SafeDNSProvider) ZoneRecords(ctx context.Context) ([]ZoneRecord, error){
   zones, err := p.Zones(ctx)
   if err != nil {
     return nil, err
   }
 
-  endpoints := []*endpoint.Endpoint{}
+  var zoneRecords []ZoneRecord
   for _, zone := range zones {
     // For each zone in the zonelist, get all records of an ExternalDNS supported type.
     records, err := p.Client.GetZoneRecords(zone.Name, p.APIRequestParams)
@@ -107,9 +116,30 @@ func (p *SafeDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
       return nil, err
     }
     for _, r := range records {
-      if provider.SupportedRecordType(string(r.Type)) {
-        endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, string(r.Type), endpoint.TTL(r.TTL), r.Content))
+      zoneRecord := ZoneRecord{
+        ID:      r.ID,
+        Name:    r.Name,
+        Type:    r.Type,
+        TTL:     r.TTL,
+        Zone:    zone.Name,
+        Content: r.Content,
       }
+      zoneRecords = append(zoneRecords, zoneRecord)
+    }
+  }
+  return zoneRecords, nil
+}
+
+// Records returns a list of Endpoint resources created from all records in supported zones.
+func (p *SafeDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+  var endpoints []*endpoint.Endpoint
+  zoneRecords, err := p.ZoneRecords(ctx)
+  if err != nil {
+    return nil, err
+  }
+  for _, r := range zoneRecords {
+    if provider.SupportedRecordType(string(r.Type)) {
+      endpoints = append(endpoints, endpoint.NewEndpointWithTTL(r.Name, string(r.Type), endpoint.TTL(r.TTL), r.Content))
     }
   }
   return endpoints, nil
@@ -117,6 +147,93 @@ func (p *SafeDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-  // TODO: Implement this
+  // Identify the zone name for each record
+  zoneNameIDMapper := provider.ZoneIDName{}
+
+  zones, err := p.Zones(ctx)
+  if err != nil {
+    return err
+  }
+  for _, zone := range zones {
+    zoneNameIDMapper.Add(zone.Name, zone.Name)
+  }
+
+  zoneRecords, err := p.ZoneRecords(ctx)
+  if err != nil {
+    return err
+  }
+
+  for _, endpoint := range changes.Create {
+    _, ZoneName := zoneNameIDMapper.FindZone(endpoint.DNSName)
+    for _, target := range endpoint.Targets {
+      request := safedns.CreateRecordRequest {
+        Name:     endpoint.DNSName,
+        Type:     endpoint.RecordType,
+        Content:  target,
+      }
+      log.WithFields(log.Fields{
+        "zoneID":   ZoneName,
+        "dnsName":  endpoint.DNSName,
+        "recordType": endpoint.RecordType,
+        "Value":      target,
+      }).Info("Creating record")
+      _, err := p.Client.CreateZoneRecord(ZoneName, request)
+      if err != nil {
+        return err
+      }
+    }
+  }
+  for _, endpoint := range changes.UpdateNew {
+    // TODO: Find a more effient way of doing this.
+    // Currently iterates over each zoneRecord in ZoneRecords for each Endpoint in UpdateNew; the same will go for
+    // Delete. As it's double-iteration, that's O(n^2), which isn't great.
+    var zoneRecord ZoneRecord
+    for _, target := range endpoint.Targets {
+      for _, zr := range zoneRecords {
+        if zr.Name == endpoint.DNSName && zr.Content == target {
+          zoneRecord = zr
+          break
+        }
+      }
+
+      newTTL := safedns.RecordTTL(int(endpoint.RecordTTL))
+      newRecord := safedns.PatchRecordRequest{
+        Name: endpoint.DNSName,
+        Content: target,
+        TTL: &newTTL,
+        Type: endpoint.RecordType,
+      }
+      log.WithFields(log.Fields{
+        "zoneID":   zoneRecord.Zone,
+        "dnsName":  newRecord.Name,
+        "recordType": newRecord.Type,
+        "Value":      newRecord.Content,
+        "Priority":   newRecord.Priority,
+      }).Info("Patching record")
+      _, err = p.Client.PatchZoneRecord(zoneRecord.Zone, zoneRecord.ID, newRecord)
+      if err != nil {
+        return err
+      }
+    }
+  }
+  for _, endpoint := range changes.Delete {
+    // TODO: Find a more effient way of doing this.
+    var zoneRecord ZoneRecord
+    for _, zr := range zoneRecords {
+      if zr.Name == endpoint.DNSName && string(zr.Type) == endpoint.RecordType {
+        zoneRecord = zr
+        break
+      }
+    }
+    log.WithFields(log.Fields{
+      "zoneID":   zoneRecord.Zone,
+      "dnsName":  zoneRecord.Name,
+      "recordType": zoneRecord.Type,
+    }).Info("Deleting record")
+    err := p.Client.DeleteZoneRecord(zoneRecord.Zone, zoneRecord.ID)
+    if err != nil {
+      return err
+    }
+  }
   return nil
 }
