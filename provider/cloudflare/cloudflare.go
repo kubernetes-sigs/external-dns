@@ -18,6 +18,7 @@ package cloudflare
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -341,8 +342,22 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
+
+	zoneNameIDMapper, idToZoneMapper, err := p.prepareZoneMappings()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"endpoints": endpoints,
+		}).WithError(err).Errorf("Cannot adjust endpoints because zone mapping failed")
+
+		return endpoints
+	}
+
 	for _, e := range endpoints {
-		p.enhanceEndpoint(e)
+		if err := p.enhanceEndpoint(e, zoneNameIDMapper, idToZoneMapper); err != nil {
+			log.WithFields(log.Fields{
+				"endpoint": e,
+			}).WithError(err).Errorf("Cannot enhance endpoint to include plan information")
+		}
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
 		}
@@ -351,16 +366,21 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 	return adjustedEndpoints
 }
 
-func (p *CloudFlareProvider) enhanceEndpoint(record *endpoint.Endpoint) {
-	zone, err := p.findZoneFromRecord(record)
-	if err != nil {
-		return
+func (p *CloudFlareProvider) enhanceEndpoint(record *endpoint.Endpoint, zoneNameIDMapper provider.ZoneIDName, idToZoneMapper map[string]cloudflare.Zone) error {
+	zoneId, zoneName := zoneNameIDMapper.FindZone(record.DNSName)
+
+	if zoneId == "" || zoneName == "" {
+		return errors.New("Could not find cloudflare zone associated with record")
 	}
+
+	zone, _ := idToZoneMapper[zoneId]
 
 	record.ProviderSpecific = append(record.ProviderSpecific, endpoint.ProviderSpecificProperty{
 		Name:  planKeyword,
 		Value: zone.Plan.Name,
 	})
+
+	return nil
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
@@ -414,33 +434,27 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	}
 }
 
-func (p *CloudFlareProvider) findZoneFromRecord(endpoint *endpoint.Endpoint) (*cloudflare.Zone, error) {
+func (p *CloudFlareProvider) prepareZoneMappings() (provider.ZoneIDName, map[string]cloudflare.Zone, error) {
 	zoneNameIDMapper := provider.ZoneIDName{}
-	idToZoneMapper := map[string]*cloudflare.Zone{}
+	idToZoneMapper := map[string]cloudflare.Zone{}
 
 	zones, err := p.Zones(context.Background())
 	if err != nil {
-		return &cloudflare.Zone{}, err
+		return zoneNameIDMapper, idToZoneMapper, err
 	}
 
 	for _, z := range zones {
 		zoneNameIDMapper.Add(z.ID, z.Name)
-		idToZoneMapper[z.ID] = &z
+		idToZoneMapper[z.ID] = z
 	}
 
-	zoneId, zoneName := zoneNameIDMapper.FindZone(endpoint.DNSName)
-
-	if zoneId == "" || zoneName == "" {
-		return &cloudflare.Zone{}, fmt.Errorf("Could not find cloudflare zone endpoint=%s", endpoint)
-	}
-
-	zone, _ := idToZoneMapper[zoneId]
-
-	return zone, nil
+	return zoneNameIDMapper, idToZoneMapper, nil
 }
 
 func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
+
+	plan := ""
 
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == source.CloudflareProxiedKey {
@@ -450,11 +464,17 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 			} else {
 				proxied = b
 			}
-			break
+		} else if v.Name == planKeyword {
+			plan = v.Value
 		}
 	}
 
-	if cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*") {
+	// disables proxying for wildcard DNS records unless they are in a zone using the enterprise plan
+	if strings.Contains(endpoint.DNSName, "*") && !strings.Contains(strings.ToLower(plan), "enterprise") {
+		proxied = false
+	}
+
+	if cloudFlareTypeNotSupported[endpoint.RecordType] {
 		proxied = false
 	}
 	return proxied
