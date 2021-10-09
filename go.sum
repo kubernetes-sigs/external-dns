@@ -789,6 +789,7 @@ github.com/miekg/dns v1.1.6/go.mod h1:W1PPwlIAgtquWBMBEV9nkV9Cazfe8ScdGz/Lj7v3Nr
 github.com/miekg/dns v1.1.31/go.mod h1:KNUDUusw/aVsxyTYZM1oqvCicbwhgbNgztCETuNZ7xM=
 github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1 h1:kZZmnTeY2r+88mDNCVV/uCXL2gG3rkVPTN9jcYfGQcI=
 github.com/miekg/dns v1.1.36-0.20210109083720-731b191cabd1/go.mod h1:KNUDUusw/aVsxyTYZM1oqvCicbwhgbNgztCETuNZ7xM=
+github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b h1:5f5B1kp+QerGOF91q1qVJcUWWvXsVEN3OKiyEzAAjIM=
 github.com/mikkeloscar/knolog v0.0.0-20190326191552-80742771eb6b/go.mod h1:PizLs/1ddmVrXpFgWOGNmTJ2YHSWUkpUXMYuUkTo3Go=
 github.com/mitchellh/cli v1.0.0/go.mod h1:hNIlj7HEI86fIcpObd7a0FcrxTWetlwJDGcceTlRvqc=
 github.com/mitchellh/copystructure v1.0.0/go.mod h1:SNtv71yrdKgLRyLFxmLdkAbkKEFWgYaq1OVrnRcwhnw=
