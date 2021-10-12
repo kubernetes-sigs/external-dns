@@ -251,7 +251,6 @@ func (p *F5BigipProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 				}
 			}
 		}
-		log.Infof("vsRecords: %v", allVsRecords)
 		err := p.updateServer(allVsRecords)
 		if err != nil {
 			return err
@@ -519,7 +518,6 @@ func (p F5BigipProvider) updateServer(vsRecords []bigip.VSrecord) error {
 	if server == nil {
 		log.Errorf("Get pool Virtual Server error: %s", serverName)
 	}
-	log.Infof("eeeee %v", vsRecords)
 	updateServer := &bigip.Server{
 		serverName,
 		server.Datacenter,
@@ -731,22 +729,20 @@ func (p F5BigipProvider) updatePoolA(endpoint *endpoint.Endpoint) error {
 			poolA.FallbackMode = item.Value
 		}
 	}
-	if poolA.Ttl != endpoint.RecordTTL {
-		poolA.Ttl = endpoint.RecordTTL
-		reqBody, err := json.Marshal(poolA)
-		if err != nil {
-			return err
-		}
-		updatePoolAOptions := &bigip.APIRequest{
-			"put",
-			fmt.Sprintf("/mgmt/tm/gtm/pool/a/~%s~%s", partition, endpoint.DNSName),
-			string(reqBody),
-			contentType,
-		}
-		_, err = p.client.APICall(updatePoolAOptions)
-		if err != nil {
-			return err
-		}
+	poolA.Ttl = endpoint.RecordTTL
+	reqBody, err := json.Marshal(poolA)
+	if err != nil {
+		return err
+	}
+	updatePoolAOptions := &bigip.APIRequest{
+		"put",
+		fmt.Sprintf("/mgmt/tm/gtm/pool/a/~%s~%s", partition, endpoint.DNSName),
+		string(reqBody),
+		contentType,
+	}
+	_, err = p.client.APICall(updatePoolAOptions)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -868,10 +864,13 @@ func (p F5BigipProvider) delete(req *bigip.APIRequest, name string) error {
 }
 
 func (p *F5BigipProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name != providerSpecificPropertyName {
-		return true
+	if name == providerSpecificPropertyName {
+		return previous == strings.Replace(formartDescription(current), "\"", "", -1)
 	}
-	return previous == strings.Replace(formartDescription(current), "\"", "", -1)
+	if name == providerSpecificPropertyWideIPPoolLbMode || name == providerSpecificPropertyPoolAlternateMode || name == providerSpecificPropertyPoolLoadBalancingMode || name == providerSpecificPropertyPoolFallbackMode {
+		return previous == current
+	}
+	return true
 }
 
 func createServer(client *bigip.BigIP) error {
