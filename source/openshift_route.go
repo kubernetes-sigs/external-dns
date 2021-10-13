@@ -48,6 +48,7 @@ type ocpRouteSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	routeInformer            routeInformer.RouteInformer
+	labelSelector            labels.Selector
 }
 
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
@@ -58,6 +59,7 @@ func NewOcpRouteSource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	labelSelector labels.Selector,
 ) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
@@ -66,11 +68,11 @@ func NewOcpRouteSource(
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewFilteredSharedInformerFactory(ocpClient, 0, namespace, nil)
-	routeInformer := informerFactory.Route().V1().Routes()
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0, extInformers.WithNamespace(namespace))
+	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	routeInformer.Informer().AddEventHandler(
+	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -92,7 +94,8 @@ func NewOcpRouteSource(
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		routeInformer:            routeInformer,
+		routeInformer:            informer,
+		labelSelector:            labelSelector,
 	}, nil
 }
 
@@ -104,7 +107,7 @@ func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) 
 // Retrieves all OpenShift Route resources on all namespaces, unless an explicit namespace
 // is specified in ocpRouteSource.
 func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(labels.Everything())
+	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(ors.labelSelector)
 	if err != nil {
 		return nil, err
 	}

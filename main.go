@@ -26,6 +26,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"sigs.k8s.io/external-dns/controller"
@@ -99,11 +100,14 @@ func main() {
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
 
+	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
+	labelSelector, _ := labels.Parse(cfg.LabelFilter)
+
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
-		LabelFilter:                    cfg.LabelFilter,
+		LabelFilter:                    labelSelector,
 		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,

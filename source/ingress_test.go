@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -63,6 +64,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		false,
+		labels.Everything(),
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -144,6 +146,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				false,
+				labels.Everything(),
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -358,6 +361,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ingressLabelSelector     labels.Selector
 	}{
 		{
 			title:           "no ingress",
@@ -1169,6 +1173,41 @@ func testIngressEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			ingressLabelSelector: labels.SelectorFromSet(labels.Set{"app": "web-external"}),
+			title:                "ingress with matching labels",
+			targetNamespace:      "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+					labels:    map[string]string{"app": "web-external", "name": "reverse-proxy"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			ingressLabelSelector: labels.SelectorFromSet(labels.Set{"app": "web-external"}),
+			title:                "ingress without matching labels",
+			targetNamespace:      "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"8.8.8.8"},
+					labels:    map[string]string{"app": "web-internal", "name": "reverse-proxy"},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -1180,6 +1219,11 @@ func testIngressEndpoints(t *testing.T) {
 				_, err := fakeClient.NetworkingV1().Ingresses(ingress.Namespace).Create(context.Background(), ingress, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
+
+			if ti.ingressLabelSelector == nil {
+				ti.ingressLabelSelector = labels.Everything()
+			}
+
 			source, _ := NewIngressSource(
 				fakeClient,
 				ti.targetNamespace,
@@ -1189,6 +1233,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
+				ti.ingressLabelSelector,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
@@ -1211,6 +1256,7 @@ type fakeIngress struct {
 	namespace   string
 	name        string
 	annotations map[string]string
+	labels      map[string]string
 }
 
 func (ing fakeIngress) Ingress() *networkv1.Ingress {
@@ -1219,6 +1265,7 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 			Namespace:   ing.namespace,
 			Name:        ing.name,
 			Annotations: ing.annotations,
+			Labels:      ing.labels,
 		},
 		Spec: networkv1.IngressSpec{
 			Rules: []networkv1.IngressRule{},
