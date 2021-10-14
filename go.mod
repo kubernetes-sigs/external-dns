@@ -29,7 +29,7 @@ require (
 	github.com/go-logr/logr v1.1.0 // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.5.6
-	github.com/gophercloud/gophercloud v0.21.0
+	github.com/gophercloud/gophercloud v0.22.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client v1.1.1
 	github.com/json-iterator/go v1.1.12 // indirect
