@@ -23,7 +23,7 @@ require (
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
 	github.com/digitalocean/godo v1.69.1
 	github.com/dnsimple/dnsimple-go v0.60.0
-	github.com/exoscale/egoscale v0.73.2
+	github.com/exoscale/egoscale v0.80.1
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
 	github.com/go-logr/logr v1.1.0 // indirect
