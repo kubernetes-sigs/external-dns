@@ -138,6 +138,9 @@ type Endpoint struct {
 	// ProviderSpecific stores provider specific config
 	// +optional
 	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	// ProviderSpecificRegistry stores provider specific config specifically for the registry
+	// +optional
+	ProviderSpecificRegistry ProviderSpecific `json:"ProviderSpecificRegistry,omitempty"`
 }
 
 // NewEndpoint initialization method to be used to create an endpoint

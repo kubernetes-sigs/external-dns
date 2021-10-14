@@ -592,6 +592,16 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoin
 				Value: fmt.Sprintf("%t", p.evaluateTargetHealth),
 			})
 		}
+
+		// adjust providerSpecificRegistry for cases where failover is set
+		var providerSpecificRegistry endpoint.ProviderSpecific
+		for _, i := range ep.ProviderSpecific {
+			if i.Name == providerSpecificFailover {
+				i.Name = providerSpecificMultiValueAnswer
+			}
+			providerSpecificRegistry = append(providerSpecificRegistry, i)
+		}
+		ep.ProviderSpecificRegistry = providerSpecificRegistry
 	}
 	return endpoints
 }
