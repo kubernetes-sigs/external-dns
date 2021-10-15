@@ -347,7 +347,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 	if err != nil {
 		log.WithFields(log.Fields{
 			"endpoints": endpoints,
-		}).WithError(err).Errorf("Cannot adjust endpoints because zone mapping failed")
+		}).WithError(err).Debugf("Cannot adjust endpoints because zone mapping failed")
 
 		return endpoints
 	}
@@ -356,7 +356,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 		if err := p.enhanceEndpoint(e, zoneNameIDMapper, idToZoneMapper); err != nil {
 			log.WithFields(log.Fields{
 				"endpoint": e,
-			}).WithError(err).Errorf("Cannot enhance endpoint to include plan information")
+			}).WithError(err).Debugf("Cannot enhance endpoint to include plan information")
 		}
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
