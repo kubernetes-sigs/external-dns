@@ -27,12 +27,25 @@ import (
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
+)
+
+const (
+	ingressControllerOwnerLabel = "ingresscontroller.operator.openshift.io/owning-ingresscontroller"
+	ocpMajorVersion3            = 3
+	ocpMajorVersion4            = 4
+)
+
+var (
+	// Openshift Container Platform Major version for openshift cluster
+	ocpMajorVersion int
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
@@ -41,7 +54,8 @@ import (
 // The targetAnnotationKey can be used to explicitly set an alternative
 // endpoint, if desired.
 type ocpRouteSource struct {
-	client                   versioned.Interface
+	ocpClient                versioned.Interface
+	kubeClient               kubernetes.Interface
 	namespace                string
 	annotationFilter         string
 	fqdnTemplate             *template.Template
@@ -53,6 +67,7 @@ type ocpRouteSource struct {
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
 func NewOcpRouteSource(
 	ocpClient versioned.Interface,
+	kubeClient kubernetes.Interface,
 	namespace string,
 	annotationFilter string,
 	fqdnTemplate string,
@@ -85,8 +100,11 @@ func NewOcpRouteSource(
 		return nil, err
 	}
 
+	ocpMajorVersion = getOCPMajorVersion(kubeClient)
+
 	return &ocpRouteSource{
-		client:                   ocpClient,
+		ocpClient:                ocpClient,
+		kubeClient:               kubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
 		fqdnTemplate:             tmpl,
@@ -94,6 +112,24 @@ func NewOcpRouteSource(
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		routeInformer:            routeInformer,
 	}, nil
+}
+
+// Returns Openshift Container Platform Major Version
+func getOCPMajorVersion(kubeClient kubernetes.Interface) int {
+	// Since, IngressController was introduced in OCP v4.x we can verify if the current cluster is on OCP v4.x by
+	// ensuring that resource exists against Group(operator.openshift.io), Version(v1) and Kind(IngressController)
+	// In case it doesn't exist we assume that it's running on OCP v3.x
+	resources, err := kubeClient.Discovery().ServerResourcesForGroupVersion("operator.openshift.io/v1")
+	if err != nil {
+		return ocpMajorVersion3
+	}
+
+	for _, apiResource := range resources.APIResources {
+		if apiResource.Kind == "IngressController" {
+			return ocpMajorVersion4
+		}
+	}
+	return ocpMajorVersion3
 }
 
 // TODO add a meaningful EventHandler
@@ -125,7 +161,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 			continue
 		}
 
-		orEndpoints := endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
+		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
 		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
@@ -171,7 +207,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -220,7 +256,7 @@ func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routev1.Route, endpoints [
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
-func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
+func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
@@ -231,7 +267,7 @@ func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation boo
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -250,14 +286,54 @@ func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation boo
 	return endpoints
 }
 
-func targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
+func (ors *ocpRouteSource) targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, ing := range status.Ingress {
-		if ing.RouterCanonicalHostname != "" {
+		if len(ing.RouterName) != 0 && ocpMajorVersion == ocpMajorVersion4 {
+			// Extract load balancer IPs/Hostnames for the route
+			target, err := ors.getRouterLoadBalancerTargets(ing.RouterName)
+			if err != nil {
+				log.Warn(err)
+			}
+			targets = append(targets, target...)
+		} else if len(ing.RouterCanonicalHostname) != 0 && ocpMajorVersion == ocpMajorVersion3 {
+			// Append RouterCanonicalHostname in case it's OCP v3
 			targets = append(targets, ing.RouterCanonicalHostname)
 		}
 	}
 
 	return targets
+}
+
+func (ors *ocpRouteSource) getRouterLoadBalancerTargets(routerName string) (endpoint.Targets, error) {
+	// LabelSelector for selecting services corresponding to router
+	labelSelector, err := metav1.ParseToLabelSelector(ingressControllerOwnerLabel + "=" + routerName)
+	if err != nil {
+		return nil, err
+	}
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	listOptions := metav1.ListOptions{
+		LabelSelector: selector.String(),
+	}
+
+	// List of services filtered by owning ingress controller
+	services, err := ors.kubeClient.CoreV1().Services(ors.namespace).List(context.TODO(), listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	// Iterate through services and find service of loadbalancer type
+	var targets endpoint.Targets
+	for _, service := range services.Items {
+		if service.Spec.Type == v1.ServiceTypeLoadBalancer {
+			// Add load balancer IPs/Hostnames against the route
+			targets = append(targets, extractLoadBalancerTargets(&service)...)
+		}
+	}
+	return targets, err
 }

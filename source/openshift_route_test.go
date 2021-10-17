@@ -26,6 +26,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
+	kubernetesFakeClient "k8s.io/client-go/kubernetes/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -39,15 +40,17 @@ type OCPRouteSuite struct {
 
 func (suite *OCPRouteSuite) SetupTest() {
 	fakeClient := fake.NewSimpleClientset()
+	kubeFakeClient := kubernetesFakeClient.NewSimpleClientset()
 	var err error
 
 	suite.sc, err = NewOcpRouteSource(
 		fakeClient,
-		"",
+		kubeFakeClient,
 		"",
 		"{{.Name}}",
+		"",
 		false,
-		false,
+		true,
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -131,11 +134,12 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 
 			_, err := NewOcpRouteSource(
 				fake.NewSimpleClientset(),
-				"",
+				kubernetesFakeClient.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
+				"",
 				false,
-				false,
+				true,
 			)
 
 			if ti.expectError {
@@ -248,16 +252,19 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			// Create a Kubernetes testing client
 			fakeClient := fake.NewSimpleClientset()
 
+			kubeFakeClient := kubernetesFakeClient.NewSimpleClientset()
+
 			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
 				fakeClient,
-				"",
+				kubeFakeClient,
 				"",
 				"{{.Name}}",
+				"",
 				false,
-				false,
+				true,
 			)
 			require.NoError(t, err)
 

@@ -253,7 +253,11 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewOcpRouteSource(ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		kubeClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewOcpRouteSource(ocpClient, kubeClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
