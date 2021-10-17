@@ -149,6 +149,9 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 			log.Infof("Google project auto-detected: %s", mProject)
 			project = mProject
 		}
+		if mProject == "" {
+			log.Errorf("Google project still not detected, please run with --google-project flag.")
+		}
 	}
 
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)
