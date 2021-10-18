@@ -55,7 +55,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
 		Content: "1.2.3.4",
-		Proxied: ProxyDisabled,
+		Proxied: proxyDisabled,
 	},
 	{
 		ID:      "2345678901",
@@ -64,7 +64,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
 		Content: "3.4.5.6",
-		Proxied: ProxyDisabled,
+		Proxied: proxyDisabled,
 	},
 	{
 		ID:      "1231231233",
@@ -73,7 +73,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     1,
 		Content: "2.3.4.5",
-		Proxied: ProxyDisabled,
+		Proxied: proxyDisabled,
 	},
 }
 
@@ -292,7 +292,7 @@ func TestCloudflareA(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -303,7 +303,7 @@ func TestCloudflareA(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.2",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -330,7 +330,7 @@ func TestCloudflareCname(t *testing.T) {
 				Name:    "cname.bar.com",
 				Content: "google.com",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -341,7 +341,7 @@ func TestCloudflareCname(t *testing.T) {
 				Name:    "cname.bar.com",
 				Content: "facebook.com",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -368,7 +368,7 @@ func TestCloudflareCustomTTL(t *testing.T) {
 				Name:    "ttl.bar.com",
 				Content: "127.0.0.1",
 				TTL:     120,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -394,7 +394,7 @@ func TestCloudflareProxiedDefault(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -426,7 +426,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -458,7 +458,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -490,7 +490,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -499,8 +499,8 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 }
 
 func TestCloudflareSetProxied(t *testing.T) {
-	var proxied *bool = ProxyEnabled
-	var notProxied *bool = ProxyDisabled
+	var proxied *bool = proxyEnabled
+	var notProxied *bool = proxyDisabled
 	var testCases = []struct {
 		recordType string
 		domain     string
@@ -686,7 +686,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				Name:    "new.bar.com",
 				Content: "target",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -696,7 +696,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				Name:    "foobar.bar.com",
 				Content: "target-new",
 				TTL:     1,
-				Proxied: ProxyDisabled,
+				Proxied: proxyDisabled,
 			},
 		},
 	})
@@ -783,7 +783,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -810,14 +810,14 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -844,28 +844,28 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -905,21 +905,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -959,21 +959,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    "NOT SUPPORTED",
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
-					Proxied: ProxyDisabled,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -1009,25 +1009,25 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 		{
 			Name:                     "ProxyDefault: false, ShouldBeProxied: false, ExpectUpdates: false",
 			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        ProxyDisabled,
+			RecordsAreProxied:        proxyDisabled,
 			ShouldBeUpdated:          false,
 		},
 		{
 			Name:                     "ProxyDefault: true, ShouldBeProxied: true, ExpectUpdates: false",
 			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        ProxyEnabled,
+			RecordsAreProxied:        proxyEnabled,
 			ShouldBeUpdated:          false,
 		},
 		{
 			Name:                     "ProxyDefault: true, ShouldBeProxied: false, ExpectUpdates: true",
 			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        ProxyDisabled,
+			RecordsAreProxied:        proxyDisabled,
 			ShouldBeUpdated:          true,
 		},
 		{
 			Name:                     "ProxyDefault: false, ShouldBeProxied: true, ExpectUpdates: true",
 			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        ProxyEnabled,
+			RecordsAreProxied:        proxyEnabled,
 			ShouldBeUpdated:          true,
 		},
 	}
@@ -1153,7 +1153,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Type:    "A",
 				Content: "2.3.4.5",
 				TTL:     1,
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 		MockAction{
@@ -1165,7 +1165,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Type:    "A",
 				Content: "1.2.3.4",
 				TTL:     1,
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 		MockAction{
@@ -1186,7 +1186,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 				Type:    endpoint.RecordTypeA,
 				TTL:     1,
 				Content: "1.2.3.4",
-				Proxied: ProxyEnabled,
+				Proxied: proxyEnabled,
 			},
 		},
 	})
