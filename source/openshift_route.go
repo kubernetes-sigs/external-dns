@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 	"text/template"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -36,7 +37,6 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
-
 
 const (
 	ingressControllerOwnerLabel = "ingresscontroller.operator.openshift.io/owning-ingresscontroller"
@@ -101,8 +101,6 @@ func NewOcpRouteSource(
 		return nil, err
 	}
 
-	ocpMajorVersion = getOCPMajorVersion(kubeClient)
-
 	return &ocpRouteSource{
 		ocpClient:                ocpClient,
 		kubeClient:               kubeClient,
@@ -114,25 +112,6 @@ func NewOcpRouteSource(
 		routeInformer:            routeInformer,
 	}, nil
 }
-
-// Returns Openshift Container Platform Major Version
-func getOCPMajorVersion(kubeClient kubernetes.Interface) int {
-	// Since, IngressController was introduced in OCP v4.x we can verify if the current cluster is on OCP v4.x by
-	// ensuring that resource exists against Group(operator.openshift.io), Version(v1) and Kind(IngressController)
-	// In case it doesn't exist we assume that it's running on OCP v3.x
-	resources, err := kubeClient.Discovery().ServerResourcesForGroupVersion("operator.openshift.io/v1")
-	if err != nil {
-		return ocpMajorVersion3
-	}
-
-	for _, apiResource := range resources.APIResources {
-		if apiResource.Kind == "IngressController" {
-			return ocpMajorVersion4
-		}
-	}
-	return ocpMajorVersion3
-}
-
 
 // TODO add a meaningful EventHandler
 func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
@@ -155,6 +134,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	endpoints := []*endpoint.Endpoint{}
 
 	for _, ocpRoute := range ocpRoutes {
+
 		// Check controller annotation to see if we are responsible.
 		controller, ok := ocpRoute.Annotations[controllerAnnotationKey]
 		if ok && controller != controllerAnnotationValue {
@@ -276,7 +256,30 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	if host := ocpRoute.Spec.Host; host != "" {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		// If we there is a CNAME record then we ill pick up the first one for a hostname as we can't have CNAME records
+		// for a single hostname. Multiple CNAME records for the same fully-qualified domain name is a violation of the specs for DNS.
+		// https://datatracker.ietf.org/doc/html/rfc1912#section-2.4
+
+		var updatedTargets endpoint.Targets
+		var aTargets endpoint.Targets
+		var cnameTargets endpoint.Targets
+		for _, t := range targets {
+			switch suitableType(t) {
+			case endpoint.RecordTypeA:
+				aTargets = append(aTargets, t)
+			default:
+				cnameTargets = append(cnameTargets, t)
+			}
+		}
+		if aTargets != nil {
+			updatedTargets = aTargets
+		}
+
+		if cnameTargets != nil {
+			updatedTargets = append(updatedTargets, cnameTargets[0])
+
+		}
+		endpoints = append(endpoints, endpointsForHostname(host, updatedTargets, ttl, providerSpecific, setIdentifier)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -289,18 +292,45 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	return endpoints
 }
 
+// Returns Openshift Container Platform Major Version
+//func (ors *ocpRouteSource) getOCPMajorVersion(kubeClient kubernetes.Interface) int {
+func (ors *ocpRouteSource) getOCPMajorVersion() int {
+	// Since, IngressController was introduced in OCP v4.x we can verify if the current cluster is on OCP v4.x by
+	// ensuring that resource exists against Group(operator.openshift.io), Version(v1) and Kind(IngressController)
+	// In case it doesn't exist we assume that it's running on OCP v3.x
+	resources, err := ors.kubeClient.Discovery().ServerResourcesForGroupVersion("operator.openshift.io/v1")
+	if err != nil {
+		return ocpMajorVersion3
+	}
+
+	for _, apiResource := range resources.APIResources {
+		if apiResource.Kind == "IngressController" {
+			return ocpMajorVersion4
+		}
+	}
+	return ocpMajorVersion3
+}
+
 func (ors *ocpRouteSource) targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
 	var targets endpoint.Targets
+	ocpMajorVersion = ors.getOCPMajorVersion()
 
 	for _, ing := range status.Ingress {
-		if ing.RouterName != "" && ocpMajorVersion == ocpMajorVersion4 {
+		routeHost := ing.Host
+		routerCanonicalHostname := ing.RouterCanonicalHostname
+		extractFirstPartOfrouterCanonicalHostname := strings.Join(strings.Split(routerCanonicalHostname, ".")[:1], "")
+		desiredFirstPartOfrouterCanonicalHostname := "router-" + ing.RouterName
+		domainOfRouterCanonicalHostname := strings.Join(strings.Split(routerCanonicalHostname, ".")[1:], ".")
+
+		if len(ing.RouterName) != 0 && ocpMajorVersion == ocpMajorVersion4 && strings.HasSuffix(routeHost, domainOfRouterCanonicalHostname) && extractFirstPartOfrouterCanonicalHostname == desiredFirstPartOfrouterCanonicalHostname {
 			// Extract load balancer IPs/Hostnames for the route
 			target, err := ors.getRouterLoadBalancerTargets(ing.RouterName)
 			if err != nil {
 				log.Warn(err)
 			}
 			targets = append(targets, target...)
-		} else if ing.RouterCanonicalHostname != "" && ocpMajorVersion == ocpMajorVersion3 {
+		} else if len(ing.RouterCanonicalHostname) != 0 && ocpMajorVersion == ocpMajorVersion3 {
+			//fmt.Printf("ing.RouterCanonicalHostname %v", len(ing.RouterCanonicalHostname))
 			// Append RouterCanonicalHostname in case it's OCP v3
 			targets = append(targets, ing.RouterCanonicalHostname)
 		}
@@ -325,7 +355,7 @@ func (ors *ocpRouteSource) getRouterLoadBalancerTargets(routerName string) (endp
 	}
 
 	// List of services filtered by owning ingress controller
-	services, err := ors.kubeClient.CoreV1().Services(ors.namespace).List(context.TODO(), listOptions)
+	services, err := ors.kubeClient.CoreV1().Services("openshift-ingress").List(context.TODO(), listOptions)
 	if err != nil {
 		return nil, err
 	}
