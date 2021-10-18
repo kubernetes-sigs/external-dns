@@ -46,11 +46,11 @@ const (
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
 // see: https://github.com/cloudflare/cloudflare-go/pull/595
 
-// ProxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
-var ProxyEnabled *bool = &[]bool{true}[0]
+// proxyEnabled is a pointer to a bool true showing the record should be proxied through cloudflare
+var proxyEnabled *bool = boolPtr(true)
 
-// ProxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
-var ProxyDisabled *bool = &[]bool{false}[0]
+// proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
+var proxyDisabled *bool = boolPtr(false)
 
 var cloudFlareTypeNotSupported = map[string]bool{
 	"LOC": true,
@@ -460,4 +460,10 @@ func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 	}
 
 	return endpoints
+}
+
+// boolPtr is used as a helper function to return a pointer to a boolean
+// Needed because some parameters require a pointer.
+func boolPtr(b bool) *bool {
+	return &b
 }

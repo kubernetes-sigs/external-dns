@@ -212,6 +212,8 @@ github.com/cloudflare/cloudflare-go v0.10.1/go.mod h1:C0Y6eWnTJPMK2ceuOxx2pjh78U
 github.com/cloudflare/cloudflare-go v0.13.2/go.mod h1:27kfc1apuifUmJhp069y0+hwlKDg4bd8LWlu7oKeZvM=
 github.com/cloudflare/cloudflare-go v0.22.0 h1:3TYbkyz/IBbM6XozrTKWiNpv7RjJGamALy9yu2SBqTo=
 github.com/cloudflare/cloudflare-go v0.22.0/go.mod h1:sPWL/lIC6biLEdyGZwBQ1rGQKF1FhM7N60fuNiFdYTI=
+github.com/cloudflare/cloudflare-go v0.25.0 h1:GwyKwGq8ciGNjKiTpjj6RvU3+uJNuPBNjlUkeQRx0yU=
+github.com/cloudflare/cloudflare-go v0.25.0/go.mod h1:sPWL/lIC6biLEdyGZwBQ1rGQKF1FhM7N60fuNiFdYTI=
 github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381 h1:rdRS5BT13Iae9ssvcslol66gfOOXjaLYwqerEn/cl9s=
 github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381/go.mod h1:e5+USP2j8Le2M0Jo3qKPFnNhuo1wueU4nWHCXBOfQ14=
 github.com/cncf/udpa v0.0.0-20200324003616-bae28a880fdb/go.mod h1:HNVadOiXCy7Jk3R2knJ+qm++zkncJxxBMpjdGgJ+UJc=
