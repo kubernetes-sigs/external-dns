@@ -17,7 +17,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.40.53
 	github.com/bodgit/tsig v0.0.2
-	github.com/cloudflare/cloudflare-go v0.13.2
+	github.com/cloudflare/cloudflare-go v0.26.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
@@ -26,7 +26,6 @@ require (
 	github.com/exoscale/egoscale v0.73.2
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
-	github.com/go-logr/logr v1.1.0 // indirect
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.5.6
 	github.com/gophercloud/gophercloud v0.21.0
