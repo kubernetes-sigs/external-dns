@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -110,5 +112,9 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
+	_, err := labels.Parse(cfg.LabelFilter)
+	if err != nil {
+		return errors.New("--label-filter does not specify a valid label selector")
+	}
 	return nil
 }
