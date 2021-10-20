@@ -23,6 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"k8s.io/apimachinery/pkg/labels"
 
 	routev1 "github.com/openshift/api/route/v1"
 	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
@@ -48,6 +49,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		labels.Everything(),
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -104,6 +106,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 		annotationFilter string
 		fqdnTemplate     string
 		expectError      bool
+		labelFilter      string
 	}{
 		{
 			title:        "invalid template",
@@ -124,8 +127,15 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
+		{
+			title:       "valid label selector",
+			expectError: false,
+			labelFilter: "app=web-external",
+		},
 	} {
 		ti := ti
+		labelSelector, err := labels.Parse(ti.labelFilter)
+		require.NoError(t, err)
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
@@ -136,6 +146,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 				ti.fqdnTemplate,
 				false,
 				false,
+				labelSelector,
 			)
 
 			if ti.expectError {
@@ -160,6 +171,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		ocpRoute                 *routev1.Route
 		expected                 []*endpoint.Endpoint
 		expectError              bool
+		labelFilter              string
 	}{
 		{
 			title:                    "route with basic hostname and route status target",
@@ -240,6 +252,61 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			},
 			expectError: false,
 		},
+		{
+			title:                    "route with matching labels",
+			labelFilter:              "app=web-external",
+			ignoreHostnameAnnotation: false,
+			ocpRoute: &routev1.Route{
+
+				Spec: routev1.RouteSpec{
+					Host: "my-annotation-domain.com",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-matching-labels",
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+					},
+					Labels: map[string]string{
+						"app":  "web-external",
+						"name": "service-frontend",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "my-annotation-domain.com",
+					Targets: []string{
+						"my.site.foo.com",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			title:                    "route without matching labels",
+			labelFilter:              "app=web-external",
+			ignoreHostnameAnnotation: false,
+			ocpRoute: &routev1.Route{
+
+				Spec: routev1.RouteSpec{
+					Host: "my-annotation-domain.com",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-without-matching-labels",
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
+					},
+					Labels: map[string]string{
+						"app":  "web-internal",
+						"name": "service-frontend",
+					},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+			expectError: false,
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
@@ -251,6 +318,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
+			labelSelector, err := labels.Parse(tc.labelFilter)
+			require.NoError(t, err)
+
 			source, err := NewOcpRouteSource(
 				fakeClient,
 				"",
@@ -258,6 +328,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				"{{.Name}}",
 				false,
 				false,
+				labelSelector,
 			)
 			require.NoError(t, err)
 

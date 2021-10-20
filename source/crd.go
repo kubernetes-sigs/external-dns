@@ -43,7 +43,7 @@ type crdSource struct {
 	crdResource      string
 	codec            runtime.ParameterCodec
 	annotationFilter string
-	labelFilter      string
+	labelSelector    labels.Selector
 }
 
 func addKnownTypes(scheme *runtime.Scheme, groupVersion schema.GroupVersion) error {
@@ -103,12 +103,12 @@ func NewCRDClientForAPIVersionKind(client kubernetes.Interface, kubeConfig, apiS
 }
 
 // NewCRDSource creates a new crdSource with the given config.
-func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, labelFilter string, scheme *runtime.Scheme) (Source, error) {
+func NewCRDSource(crdClient rest.Interface, namespace, kind string, annotationFilter string, labelSelector labels.Selector, scheme *runtime.Scheme) (Source, error) {
 	return &crdSource{
 		crdResource:      strings.ToLower(kind) + "s",
 		namespace:        namespace,
 		annotationFilter: annotationFilter,
-		labelFilter:      labelFilter,
+		labelSelector:    labelSelector,
 		crdClient:        crdClient,
 		codec:            runtime.NewParameterCodec(scheme),
 	}, nil
@@ -126,11 +126,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		err    error
 	)
 
-	if cs.labelFilter != "" {
-		result, err = cs.List(ctx, &metav1.ListOptions{LabelSelector: cs.labelFilter})
-	} else {
-		result, err = cs.List(ctx, &metav1.ListOptions{})
-	}
+	result, err = cs.List(ctx, &metav1.ListOptions{LabelSelector: cs.labelSelector.String()})
 	if err != nil {
 		return nil, err
 	}
