@@ -49,6 +49,7 @@ type ocpRouteSource struct {
 	ignoreHostnameAnnotation bool
 	routeInformer            routeInformer.RouteInformer
 	labelSelector            labels.Selector
+	ocpRouterName            string
 }
 
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
@@ -60,6 +61,7 @@ func NewOcpRouteSource(
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
 	labelSelector labels.Selector,
+	ocpRouterName string,
 ) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
@@ -96,6 +98,7 @@ func NewOcpRouteSource(
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
 		routeInformer:            informer,
 		labelSelector:            labelSelector,
+		ocpRouterName:            ocpRouterName,
 	}, nil
 }
 
@@ -128,7 +131,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 			continue
 		}
 
-		orEndpoints := endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
+		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
 		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
@@ -174,7 +177,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -223,7 +226,7 @@ func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routev1.Route, endpoints [
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
-func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
+func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
@@ -234,7 +237,7 @@ func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation boo
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -253,14 +256,18 @@ func endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation boo
 	return endpoints
 }
 
-func targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
+func (ors *ocpRouteSource) targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
 	var targets endpoint.Targets
-
 	for _, ing := range status.Ingress {
-		if ing.RouterCanonicalHostname != "" {
+		if len(ors.ocpRouterName) != 0 {
+			if ing.RouterName == ors.ocpRouterName {
+				targets = append(targets, ing.RouterCanonicalHostname)
+				return targets
+			}
+		} else if ing.RouterCanonicalHostname != "" {
 			targets = append(targets, ing.RouterCanonicalHostname)
+			return targets
 		}
 	}
-
 	return targets
 }
