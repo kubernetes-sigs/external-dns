@@ -50,6 +50,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 		false,
 		false,
 		labels.Everything(),
+		"",
 	)
 
 	suite.routeWithTargets = &routev1.Route{
@@ -147,6 +148,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 				false,
 				false,
 				labelSelector,
+				"",
 			)
 
 			if ti.expectError {
@@ -160,8 +162,6 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 
 // testOcpRouteSourceEndpoints tests that various OCP routes generate the correct endpoints.
 func testOcpRouteSourceEndpoints(t *testing.T) {
-	t.Parallel()
-
 	for _, tc := range []struct {
 		title                    string
 		targetNamespace          string
@@ -172,6 +172,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 		labelFilter              string
+		ocpRouterName            string
 	}{
 		{
 			title:                    "route with basic hostname and route status target",
@@ -196,11 +197,125 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
+			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "my-domain.com",
 					Targets: []string{
 						"apps.my-domain.com",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterNames defined",
+			targetNamespace:          "",
+			annotationFilter:         "",
+			fqdnTemplate:             "",
+			ignoreHostnameAnnotation: false,
+			ocpRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "my-domain.com",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "default",
+					Name:        "route-with-target",
+					Annotations: map[string]string{},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+						},
+					},
+				},
+			},
+			ocpRouterName: "default",
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "my-domain.com",
+					Targets: []string{
+						"router-default.my-domain.com",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterNames defined and two router canonical names",
+			targetNamespace:          "",
+			annotationFilter:         "",
+			fqdnTemplate:             "",
+			ignoreHostnameAnnotation: false,
+			ocpRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "my-domain.com",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "default",
+					Name:        "route-with-target",
+					Annotations: map[string]string{},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+						},
+						{
+							RouterName:              "test",
+							RouterCanonicalHostname: "router-test.my-domain.com",
+						},
+					},
+				},
+			},
+			ocpRouterName: "default",
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "my-domain.com",
+					Targets: []string{
+						"router-default.my-domain.com",
+					},
+				},
+			},
+			expectError: false,
+		},
+		{
+			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterName defined and two router canonical names",
+			targetNamespace:          "",
+			annotationFilter:         "",
+			fqdnTemplate:             "",
+			ignoreHostnameAnnotation: false,
+			ocpRoute: &routev1.Route{
+				Spec: routev1.RouteSpec{
+					Host: "my-domain.com",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "default",
+					Name:        "route-with-target",
+					Annotations: map[string]string{},
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+						},
+						{
+							RouterName:              "test",
+							RouterCanonicalHostname: "router-test.my-domain.com",
+						},
+					},
+				},
+			},
+			ocpRouterName: "default",
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "my-domain.com",
+					Targets: []string{
+						"router-default.my-domain.com",
 					},
 				},
 			},
@@ -221,8 +336,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: false,
+			ocpRouterName: "",
+			expected:      []*endpoint.Endpoint{},
+			expectError:   false,
 		},
 		{
 			title:                    "route with basic hostname and annotation target",
@@ -242,6 +358,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
+			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "my-annotation-domain.com",
@@ -273,6 +390,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
+			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "my-annotation-domain.com",
@@ -304,17 +422,16 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
-			expectError: false,
+			ocpRouterName: "",
+			expected:      []*endpoint.Endpoint{},
+			expectError:   false,
 		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
-
 			// Create a Kubernetes testing client
 			fakeClient := fake.NewSimpleClientset()
-
 			_, err := fakeClient.RouteV1().Routes(tc.ocpRoute.Namespace).Create(context.Background(), tc.ocpRoute, metav1.CreateOptions{})
 			require.NoError(t, err)
 
@@ -329,7 +446,9 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				false,
 				false,
 				labelSelector,
+				tc.ocpRouterName,
 			)
+
 			require.NoError(t, err)
 
 			res, err := source.Endpoints(context.Background())
