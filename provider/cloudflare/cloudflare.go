@@ -367,13 +367,13 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 }
 
 func (p *CloudFlareProvider) enhanceEndpoint(record *endpoint.Endpoint, zoneNameIDMapper provider.ZoneIDName, idToZoneMapper map[string]cloudflare.Zone) error {
-	zoneId, zoneName := zoneNameIDMapper.FindZone(record.DNSName)
+	zoneID, zoneName := zoneNameIDMapper.FindZone(record.DNSName)
 
-	if zoneId == "" || zoneName == "" {
-		return errors.New("Could not find cloudflare zone associated with record")
+	if zoneID == "" || zoneName == "" {
+		return errors.New("could not find cloudflare zone associated with record")
 	}
 
-	zone, _ := idToZoneMapper[zoneId]
+	zone := idToZoneMapper[zoneID]
 
 	record.ProviderSpecific = append(record.ProviderSpecific, endpoint.ProviderSpecificProperty{
 		Name:  planKeyword,
