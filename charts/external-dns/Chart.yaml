@@ -4,6 +4,7 @@ description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses 
 type: application
 version: 1.4.0
 appVersion: 0.10.1
+kubeVersion: ">= 1.19.0"
 keywords:
   - kubernetes
   - external-dns
