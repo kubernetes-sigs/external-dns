@@ -268,6 +268,11 @@ Note: the `--ingress-class` argument cannot be used at the same time as a `kuber
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
 
+**Note:** Filtering based on annotation means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
+In larger clusters with many resources which change frequently this can cause performance issues. If only some resources need to be managed by an instance
+of external-dns then label filtering can be used instead of annotation filtering. This means that only those resources which match the selector specified
+in `--label-filter` will be passed to the controller.
+
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
 If your Nodes have both public and private IP addresses, you might want to write DNS records with one or the other.

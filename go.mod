@@ -6,10 +6,11 @@ require (
 	cloud.google.com/go v0.97.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v46.4.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.20
+	github.com/Azure/go-autorest/autorest v0.11.21
 	github.com/Azure/go-autorest/autorest/adal v0.9.16
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.1.1
+	github.com/StackExchange/dnscontrol v0.2.8
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
@@ -21,7 +22,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
-	github.com/digitalocean/godo v1.44.0
+	github.com/digitalocean/godo v1.69.1
 	github.com/dnsimple/dnsimple-go v0.60.0
 	github.com/exoscale/egoscale v0.73.2
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -57,7 +58,7 @@ require (
 	github.com/transip/gotransip/v6 v6.6.2
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
-	github.com/vultr/govultr/v2 v2.8.1
+	github.com/vultr/govultr/v2 v2.9.0
 	go.etcd.io/etcd/api/v3 v3.5.0
 	go.etcd.io/etcd/client/v3 v3.5.0
 	go.uber.org/ratelimit v0.2.0
@@ -80,3 +81,5 @@ require (
 	k8s.io/utils v0.0.0-20210820185131-d34e5cb4466e // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace k8s.io/klog/v2 => github.com/Raffo/knolog v0.0.0-20211016155154-e4d5e0cc970a

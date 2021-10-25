@@ -78,6 +78,7 @@ spec:
         - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
         - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
         - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -158,6 +159,7 @@ spec:
         - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
         - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
         - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -268,3 +270,11 @@ There is also the ability to filter results from the Infoblox zone_auth service 
 ```
 --infoblox-fqdn-regex=^staging.*test.com$
 ```
+
+## Infoblox PTR record support
+
+There is an option to enable PTR records support for infoblox provider. PTR records allow to do reverse dns search. To enable PTR records support, add following into arguments for external-dns:  
+`--infoblox-create-ptr` to allow management of PTR records.  
+You can also add a filter for reverse dns zone to limit PTR records to specific zones only:  
+`--domain-filter=10.196.0.0/16` change this to the reverse zone(s) as defined in your infoblox.  
+Now external-dns will manage PTR records for you.
