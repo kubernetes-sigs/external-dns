@@ -83,6 +83,7 @@ func Shallow(expectedPtr interface{}) TestDeep {
 		reflect.UnsafePointer:
 		shallow.expectedPointer = vptr.Pointer()
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	case reflect.String:
 		shallow.expectedStr = vptr.String()
@@ -143,18 +144,29 @@ func (s *tdShallow) String() string {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return &shallow
+||||||| parent of 5ce8c7613 (update vendored files)
+		return &shallow
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	case reflect.String:
 		shallow.expectedStr = vptr.String()
 		shallow.expectedPointer = stringPointer(shallow.expectedStr)
-		return &shallow
 
 	default:
-		panic("usage: Shallow(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)")
+		shallow.err = ctxerr.OpBadUsage(
+			"Shallow", "(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)",
+			expectedPtr, 1, true)
 	}
+
+	return &shallow
 }
 
 func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if s.err != nil {
+		return ctx.CollectError(s.err)
+	}
+
 	if got.Kind() != s.expectedKind {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -189,6 +201,14 @@ func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (s *tdShallow) String() string {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if s.err != nil {
+		return s.stringError()
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	return fmt.Sprintf("(%s) 0x%x", s.expectedKind, s.expectedPointer)
 }

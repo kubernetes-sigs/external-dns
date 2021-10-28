@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright (c) 2018-2021, Maxime Soulé
 // All rights reserved.
 //
@@ -64,6 +65,11 @@ func (l Location) String() string {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Copyright (c) 2018, Maxime Soulé
+||||||| parent of 5ce8c7613 (update vendored files)
+// Copyright (c) 2018, Maxime Soulé
+=======
+// Copyright (c) 2018-2021, Maxime Soulé
+>>>>>>> 5ce8c7613 (update vendored files)
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -77,11 +83,12 @@ import (
 	"strings"
 )
 
-// Location record a place in a source file.
+// Location records a place in a source file.
 type Location struct {
 	File      string // File name
 	Func      string // Function name
 	Line      int    // Line number inside file
+	Inside    string // Inside is used when Location is inside something else
 	BehindCmp bool   // BehindCmp is true when operator is behind a Cmp* function
 }
 
@@ -123,6 +130,12 @@ func (l Location) IsInitialized() bool {
 
 // Implements fmt.Stringer.
 func (l Location) String() string {
+<<<<<<< HEAD
 	return fmt.Sprintf("%s at %s:%d", l.Func, l.File, l.Line)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return fmt.Sprintf("%s at %s:%d", l.Func, l.File, l.Line)
+=======
+	return fmt.Sprintf("%s %sat %s:%d", l.Func, l.Inside, l.File, l.Line)
+>>>>>>> 5ce8c7613 (update vendored files)
 }

@@ -6,8 +6,14 @@ const SDKName = "aws-sdk-go"
 
 // SDKVersion is the version of this SDK
 <<<<<<< HEAD
+<<<<<<< HEAD
 const SDKVersion = "1.40.53"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 const SDKVersion = "1.31.4"
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+const SDKVersion = "1.31.4"
+=======
+const SDKVersion = "1.40.53"
+>>>>>>> 5ce8c7613 (update vendored files)

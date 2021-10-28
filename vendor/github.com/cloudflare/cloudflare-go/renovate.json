@@ -2,6 +2,7 @@
   "extends": [
     "config:base"
 <<<<<<< HEAD
+<<<<<<< HEAD
   ],
   "packageRules": [
     {
@@ -11,5 +12,14 @@
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+  ],
+  "packageRules": [
+    {
+      "packageNames": ["golang.org/x/net"],
+      "extends": ["schedule:weekly"]
+    }
+>>>>>>> 5ce8c7613 (update vendored files)
   ]
 }

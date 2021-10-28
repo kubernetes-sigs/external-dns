@@ -61,6 +61,7 @@ prompted for your password.
 ### Authentication
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 > NOTE: It is now recommended to use the `clientconfig` package found at
 > https://github.com/gophercloud/utils/tree/master/openstack/clientconfig
 > for all authentication purposes.
@@ -71,6 +72,16 @@ prompted for your password.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+> NOTE: It is now recommended to use the `clientconfig` package found at
+> https://github.com/gophercloud/utils/tree/master/openstack/clientconfig
+> for all authentication purposes.
+>
+> The below documentation is still relevant. clientconfig simply implements
+> the below and presents it in an easier and more flexible way.
+
+>>>>>>> 5ce8c7613 (update vendored files)
 Once you have access to your credentials, you can begin plugging them into
 Gophercloud. The next step is authentication, and this is handled by a base
 "Provider" struct. To get one, you can either pass in your credentials

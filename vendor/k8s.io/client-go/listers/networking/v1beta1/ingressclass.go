@@ -27,6 +27,7 @@ import (
 
 // IngressClassLister helps list IngressClasses.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type IngressClassLister interface {
 	// List lists all IngressClasses in the indexer.
@@ -36,11 +37,21 @@ type IngressClassLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type IngressClassLister interface {
 	// List lists all IngressClasses in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.IngressClass, err error)
 	// Get retrieves the IngressClass from the index for a given name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta1.IngressClass, error)
 	IngressClassListerExpansion
 }

@@ -28,6 +28,7 @@ const (
 
 	// TaintNodeUnschedulable will be added when node becomes unschedulable
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// and removed when node becomes schedulable.
 	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
 
@@ -48,6 +49,11 @@ const (
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// and removed when node becomes scheduable.
+||||||| parent of 5ce8c7613 (update vendored files)
+	// and removed when node becomes scheduable.
+=======
+	// and removed when node becomes schedulable.
+>>>>>>> 5ce8c7613 (update vendored files)
 	TaintNodeUnschedulable = "node.kubernetes.io/unschedulable"
 
 	// TaintNodeMemoryPressure will be added when node has memory pressure
@@ -63,7 +69,13 @@ const (
 	TaintNodeNetworkUnavailable = "node.kubernetes.io/network-unavailable"
 
 	// TaintNodePIDPressure will be added when node has pid pressure
+<<<<<<< HEAD
 	// and removed when node has enough disk.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	// and removed when node has enough disk.
+=======
+	// and removed when node has enough pid.
+>>>>>>> 5ce8c7613 (update vendored files)
 	TaintNodePIDPressure = "node.kubernetes.io/pid-pressure"
 )

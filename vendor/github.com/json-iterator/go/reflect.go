@@ -66,11 +66,17 @@ func (iter *Iterator) ReadVal(obj interface{}) {
 	if decoder == nil {
 		typ := reflect2.TypeOf(obj)
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if typ == nil || typ.Kind() != reflect.Ptr {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		if typ.Kind() != reflect.Ptr {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		if typ.Kind() != reflect.Ptr {
+=======
+		if typ == nil || typ.Kind() != reflect.Ptr {
+>>>>>>> 5ce8c7613 (update vendored files)
 			iter.ReportError("ReadVal", "can only unmarshal into pointer")
 			return
 		}

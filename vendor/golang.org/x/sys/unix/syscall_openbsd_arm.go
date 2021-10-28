@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build arm && openbsd
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build arm && openbsd
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build arm,openbsd
 
 package unix

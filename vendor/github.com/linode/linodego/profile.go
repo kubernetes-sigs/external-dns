@@ -110,10 +110,15 @@ func (c *Client) UpdateProfile(ctx context.Context, updateOpts ProfileUpdateOpti
 		SetBody(body).
 		Put(e))
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

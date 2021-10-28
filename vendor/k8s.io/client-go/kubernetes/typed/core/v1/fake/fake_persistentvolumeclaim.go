@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -185,6 +186,11 @@ func (c *FakePersistentVolumeClaims) ApplyStatus(ctx context.Context, persistent
 		Invokes(testing.NewPatchSubresourceAction(persistentvolumeclaimsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.PersistentVolumeClaim{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -192,6 +198,7 @@ func (c *FakePersistentVolumeClaims) ApplyStatus(ctx context.Context, persistent
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -300,6 +307,51 @@ func (c *FakePersistentVolumeClaims) Patch(ctx context.Context, name string, pt 
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(persistentvolumeclaimsResource, c.ns, name, pt, data, subresources...), &corev1.PersistentVolumeClaim{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.PersistentVolumeClaim), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied persistentVolumeClaim.
+func (c *FakePersistentVolumeClaims) Apply(ctx context.Context, persistentVolumeClaim *applyconfigurationscorev1.PersistentVolumeClaimApplyConfiguration, opts v1.ApplyOptions) (result *corev1.PersistentVolumeClaim, err error) {
+	if persistentVolumeClaim == nil {
+		return nil, fmt.Errorf("persistentVolumeClaim provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(persistentVolumeClaim)
+	if err != nil {
+		return nil, err
+	}
+	name := persistentVolumeClaim.Name
+	if name == nil {
+		return nil, fmt.Errorf("persistentVolumeClaim.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(persistentvolumeclaimsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.PersistentVolumeClaim{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.PersistentVolumeClaim), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakePersistentVolumeClaims) ApplyStatus(ctx context.Context, persistentVolumeClaim *applyconfigurationscorev1.PersistentVolumeClaimApplyConfiguration, opts v1.ApplyOptions) (result *corev1.PersistentVolumeClaim, err error) {
+	if persistentVolumeClaim == nil {
+		return nil, fmt.Errorf("persistentVolumeClaim provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(persistentVolumeClaim)
+	if err != nil {
+		return nil, err
+	}
+	name := persistentVolumeClaim.Name
+	if name == nil {
+		return nil, fmt.Errorf("persistentVolumeClaim.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(persistentvolumeclaimsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.PersistentVolumeClaim{})
 
 	if obj == nil {
 		return nil, err

@@ -63,6 +63,7 @@ func (Volume) ResourceType() string {
 func (vol Volume) ListRequest() (ListCommand, error) {
 	req := &ListVolumes{
 <<<<<<< HEAD
+<<<<<<< HEAD
 		ID:               vol.ID,
 		Name:             vol.Name,
 		Type:             vol.Type,
@@ -104,6 +105,10 @@ type ListVolumes struct {
 	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs). Note: multiple tags are OR'ed, not AND'ed."`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		ID:               vol.ID,
+>>>>>>> 5ce8c7613 (update vendored files)
 		Name:             vol.Name,
 		Type:             vol.Type,
 		VirtualMachineID: vol.VirtualMachineID,
@@ -141,8 +146,14 @@ type ListVolumes struct {
 	Name             string        `json:"name,omitempty" doc:"The name of the disk volume"`
 	Page             int           `json:"page,omitempty"`
 	PageSize         int           `json:"pagesize,omitempty"`
+<<<<<<< HEAD
 	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+=======
+	Tags             []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs). Note: multiple tags are OR'ed, not AND'ed."`
+>>>>>>> 5ce8c7613 (update vendored files)
 	Type             string        `json:"type,omitempty" doc:"The type of disk volume"`
 	VirtualMachineID *UUID         `json:"virtualmachineid,omitempty" doc:"The ID of the virtual machine"`
 	ZoneID           *UUID         `json:"zoneid,omitempty" doc:"The ID of the availability zone"`

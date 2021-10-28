@@ -16,6 +16,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/helpers/tdutil"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/color"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
@@ -328,6 +329,10 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 			err = deepValueEqual(ctx.AddField(field.Name),
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"github.com/maxatome/go-testdeep/internal/color"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/dark"
 	"github.com/maxatome/go-testdeep/internal/types"
@@ -352,6 +357,13 @@ func deepValueEqualFinal(ctx ctxerr.Context, got, expected reflect.Value) (err *
 	return
 }
 
+func deepValueEqualFinalOK(ctx ctxerr.Context, got, expected reflect.Value) bool {
+	ctx = ctx.ResetErrors()
+	ctx.BooleanError = true
+
+	return deepValueEqualFinal(ctx, got, expected) == nil
+}
+
 // nilHandler is called when one of got or expected is nil (but never
 // both, it is caller responsibility).
 func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
@@ -359,7 +371,7 @@ func nilHandler(ctx ctxerr.Context, got, expected reflect.Value) *ctxerr.Error {
 
 	if expected.IsValid() { // here: !got.IsValid()
 		if expected.Type().Implements(testDeeper) {
-			curOperator := expected.Interface().(TestDeep)
+			curOperator := dark.MustGetInterface(expected).(TestDeep)
 			ctx.CurOperator = curOperator
 			if curOperator.HandleInvalid() {
 				return curOperator.Match(ctx, got)
@@ -412,7 +424,7 @@ func isCustomEqual(a, b reflect.Value) (bool, bool) {
 			ft.NumIn() == 2 &&
 			ft.NumOut() == 1 &&
 			ft.In(0).AssignableTo(ft.In(1)) &&
-			ft.Out(0) == boolType &&
+			ft.Out(0) == types.Bool &&
 			bType.AssignableTo(ft.In(1)) {
 			return true, equal.Func.Call([]reflect.Value{a, b})[0].Bool()
 		}
@@ -421,6 +433,12 @@ func isCustomEqual(a, b reflect.Value) (bool, bool) {
 }
 
 func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxerr.Error) {
+	// "got" must not implement testDeeper
+	if got.IsValid() && got.Type().Implements(testDeeper) {
+		panic(color.Bad("Found a TestDeep operator in got param, " +
+			"can only use it in expected one!"))
+	}
+
 	if !got.IsValid() || !expected.IsValid() {
 		if got.IsValid() == expected.IsValid() {
 			return
@@ -428,13 +446,33 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		return nilHandler(ctx, got, expected)
 	}
 
-	// "got" must not implement testDeeper
-	if got.Type().Implements(testDeeper) {
-		panic("Found a TestDeep operator in got param, " +
-			"can only use it in expected one!")
+	// Check if a Smuggle hook matches got type
+	if handled, e := ctx.Hooks.Smuggle(&got); handled {
+		if e != nil {
+			// ctx.BooleanError is always false here as hooks cannot be set globally
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  e.Error(),
+				Got:      got,
+				Expected: expected,
+			})
+		}
 	}
 
-	if ctx.UseEqual {
+	// Check if a Cmp hook matches got & expected types
+	if handled, e := ctx.Hooks.Cmp(got, expected); handled {
+		if e == nil {
+			return
+		}
+		// ctx.BooleanError is always false here as hooks cannot be set globally
+		return ctx.CollectError(&ctxerr.Error{
+			Message:  e.Error(),
+			Got:      got,
+			Expected: expected,
+		})
+	}
+
+	// Look for an Equal() method
+	if ctx.UseEqual || ctx.Hooks.UseEqual(got.Type()) {
 		hasEqual, isEqual := isCustomEqual(got, expected)
 		if hasEqual {
 			if isEqual {
@@ -453,7 +491,7 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 
 	if got.Type() != expected.Type() {
 		if expected.Type().Implements(testDeeper) {
-			curOperator := expected.Interface().(TestDeep)
+			curOperator := dark.MustGetInterface(expected).(TestDeep)
 
 			// Resolve interface
 			if got.Kind() == reflect.Interface {
@@ -485,11 +523,7 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
-		return ctx.CollectError(&ctxerr.Error{
-			Message:  "type mismatch",
-			Got:      types.RawString(got.Type().String()),
-			Expected: types.RawString(expected.Type().String()),
-		})
+		return ctx.CollectError(ctxerr.TypeMismatch(got.Type(), expected.Type()))
 	}
 
 	// if ctx.Depth > 10 { panic("deepValueEqual") } // for debugging
@@ -550,6 +584,13 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 			maxLen = gotLen
 		}
 
+		// Special case for internal tuple type: it is clearer to read
+		// TUPLE instead of DATA when an error occurs when using this type
+		if got.Type() == tupleType &&
+			ctx.Path.Len() == 1 && ctx.Path.String() == contextDefaultRootName {
+			ctx = ctx.ResetPath("TUPLE")
+		}
+
 		for i := 0; i < maxLen; i++ {
 			err = deepValueEqual(ctx.AddArrayIndex(i),
 				got.Index(i), expected.Index(i))
@@ -584,19 +625,6 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 		return
 
 	case reflect.Interface:
-		if got.IsNil() || expected.IsNil() {
-			if got.IsNil() == expected.IsNil() {
-				return
-			}
-			if ctx.BooleanError {
-				return ctxerr.BooleanError
-			}
-			return ctx.CollectError(&ctxerr.Error{
-				Message:  "nil interface",
-				Got:      isNilStr(got.IsNil()),
-				Expected: isNilStr(expected.IsNil()),
-			})
-		}
 		return deepValueEqual(ctx, got.Elem(), expected.Elem())
 
 	case reflect.Ptr:
@@ -607,9 +635,20 @@ func deepValueEqual(ctx ctxerr.Context, got, expected reflect.Value) (err *ctxer
 
 	case reflect.Struct:
 		sType := got.Type()
+		ignoreUnexported := ctx.IgnoreUnexported || ctx.Hooks.IgnoreUnexported(sType)
 		for i, n := 0, got.NumField(); i < n; i++ {
+<<<<<<< HEAD
 			err = deepValueEqual(ctx.AddField(sType.Field(i).Name),
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			err = deepValueEqual(ctx.AddField(sType.Field(i).Name),
+=======
+			field := sType.Field(i)
+			if ignoreUnexported && field.PkgPath != "" {
+				continue
+			}
+			err = deepValueEqual(ctx.AddField(field.Name),
+>>>>>>> 5ce8c7613 (update vendored files)
 				got.Field(i), expected.Field(i))
 			if err != nil {
 				return

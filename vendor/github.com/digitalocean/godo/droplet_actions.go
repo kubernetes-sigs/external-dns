@@ -13,11 +13,17 @@ type ActionRequest map[string]interface{}
 // DropletActionsService is an interface for interfacing with the Droplet actions
 // endpoints of the DigitalOcean API
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Droplet-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#droplet-actions
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#droplet-actions
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Droplet-Actions
+>>>>>>> 5ce8c7613 (update vendored files)
 type DropletActionsService interface {
 	Shutdown(context.Context, int) (*Action, *Response, error)
 	ShutdownByTag(context.Context, string) ([]Action, *Response, error)

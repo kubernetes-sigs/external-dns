@@ -20,6 +20,7 @@ func typedslicecopy(elemType unsafe.Pointer, dst, src sliceHeader) int
 //go:linkname mapassign reflect.mapassign
 //go:noescape
 <<<<<<< HEAD
+<<<<<<< HEAD
 func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key unsafe.Pointer, val unsafe.Pointer)
 
 //go:linkname mapaccess reflect.mapaccess
@@ -55,16 +56,15 @@ type hiter struct {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key, val unsafe.Pointer)
+||||||| parent of 5ce8c7613 (update vendored files)
+func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key, val unsafe.Pointer)
+=======
+func mapassign(rtype unsafe.Pointer, m unsafe.Pointer, key unsafe.Pointer, val unsafe.Pointer)
+>>>>>>> 5ce8c7613 (update vendored files)
 
 //go:linkname mapaccess reflect.mapaccess
 //go:noescape
 func mapaccess(rtype unsafe.Pointer, m unsafe.Pointer, key unsafe.Pointer) (val unsafe.Pointer)
-
-// m escapes into the return value, but the caller of mapiterinit
-// doesn't let the return value escape.
-//go:noescape
-//go:linkname mapiterinit reflect.mapiterinit
-func mapiterinit(rtype unsafe.Pointer, m unsafe.Pointer) *hiter
 
 //go:noescape
 //go:linkname mapiternext reflect.mapiternext
@@ -77,10 +77,32 @@ func ifaceE2I(rtype unsafe.Pointer, src interface{}, dst unsafe.Pointer)
 // If you modify hiter, also change cmd/internal/gc/reflect.go to indicate
 // the layout of this structure.
 type hiter struct {
+<<<<<<< HEAD
 	key   unsafe.Pointer // Must be in first position.  Write nil to indicate iteration end (see cmd/internal/gc/range.go).
 	value unsafe.Pointer // Must be in second position (see cmd/internal/gc/range.go).
 	// rest fields are ignored
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	key   unsafe.Pointer // Must be in first position.  Write nil to indicate iteration end (see cmd/internal/gc/range.go).
+	value unsafe.Pointer // Must be in second position (see cmd/internal/gc/range.go).
+	// rest fields are ignored
+=======
+	key         unsafe.Pointer
+	value       unsafe.Pointer
+	t           unsafe.Pointer
+	h           unsafe.Pointer
+	buckets     unsafe.Pointer
+	bptr        unsafe.Pointer
+	overflow    *[]unsafe.Pointer
+	oldoverflow *[]unsafe.Pointer
+	startBucket uintptr
+	offset      uint8
+	wrapped     bool
+	B           uint8
+	i           uint8
+	bucket      uintptr
+	checkBucket uintptr
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // add returns p+x.

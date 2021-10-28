@@ -25,6 +25,10 @@ import (
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	// Ingresses returns a IngressInformer.
 	Ingresses() IngressInformer
 	// IngressClasses returns a IngressClassInformer.
@@ -52,6 +56,7 @@ func (v *version) Ingresses() IngressInformer {
 // IngressClasses returns a IngressClassInformer.
 func (v *version) IngressClasses() IngressClassInformer {
 	return &ingressClassInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// NetworkPolicies returns a NetworkPolicyInformer.
@@ -68,6 +73,9 @@ type version struct {
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // NetworkPolicies returns a NetworkPolicyInformer.

@@ -766,11 +766,17 @@ func unescape(s string) (ch string, tail string, err error) {
 			return "", "", fmt.Errorf(`\%c%s is not a valid Unicode code point`, r, ss)
 		}
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return string(rune(i)), s, nil
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return string(i), s, nil
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return string(i), s, nil
+=======
+		return string(rune(i)), s, nil
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	return "", "", fmt.Errorf(`unknown escape \%c`, r)
 }

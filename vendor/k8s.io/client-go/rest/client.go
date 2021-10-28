@@ -95,6 +95,7 @@ type RESTClient struct {
 	rateLimiter flowcontrol.RateLimiter
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// warningHandler is shared among all requests created by this client.
 	// If not set, defaultWarningHandler is used.
 	warningHandler WarningHandler
@@ -131,6 +132,13 @@ func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ClientConte
 // GetRateLimiter returns rate limiter for a given client, or nil if it's called on a nil client
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// warningHandler is shared among all requests created by this client.
+	// If not set, defaultWarningHandler is used.
+	warningHandler WarningHandler
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	// Set specific behavior of the client.  If not set http.DefaultClient will be used.
 	Client *http.Client
 }
@@ -160,8 +168,14 @@ func NewRESTClient(baseURL *url.URL, versionedAPIPath string, config ClientConte
 	}, nil
 }
 
+<<<<<<< HEAD
 // GetRateLimiter returns rate limier for a given client, or nil if it's called on a nil client
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// GetRateLimiter returns rate limier for a given client, or nil if it's called on a nil client
+=======
+// GetRateLimiter returns rate limiter for a given client, or nil if it's called on a nil client
+>>>>>>> 5ce8c7613 (update vendored files)
 func (c *RESTClient) GetRateLimiter() flowcontrol.RateLimiter {
 	if c == nil {
 		return nil

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 dist/
 test/
 listApis.json
@@ -11,3 +12,15 @@ ops.asc
 vendor
 listApis.json
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+.token
+dist
+ops.asc
+vendor
+listApis.json
+=======
+dist/
+test/
+listApis.json
+public-api.json
+>>>>>>> 5ce8c7613 (update vendored files)

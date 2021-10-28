@@ -8,6 +8,10 @@ package types
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	"encoding/json"
 	"strconv"
 )
@@ -75,6 +79,7 @@ func AsOperatorNotJSONMarshallableError(err error) (OperatorNotJSONMarshallableE
 	}
 
 	return "", false
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"strconv"
@@ -110,4 +115,7 @@ func (i RawInt) _TestDeep() {}
 func (i RawInt) String() string {
 	return strconv.Itoa(int(i))
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }

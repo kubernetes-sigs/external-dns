@@ -71,6 +71,7 @@ aix_ppc64)
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	;;
 <<<<<<< HEAD
+<<<<<<< HEAD
 darwin_amd64)
 	mkerrors="$mkerrors -m64"
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
@@ -197,14 +198,17 @@ darwin_386)
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	mkasm="go run mkasm_darwin.go"
 	;;
-darwin_amd64)
-	mkerrors="$mkerrors -m64"
+||||||| parent of 5ce8c7613 (update vendored files)
+darwin_386)
+	mkerrors="$mkerrors -m32"
+	mksyscall="go run mksyscall.go -l32"
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	mkasm="go run mkasm_darwin.go"
 	;;
-darwin_arm)
-	mkerrors="$mkerrors"
-	mksyscall="go run mksyscall.go -l32"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
+darwin_amd64)
+	mkerrors="$mkerrors -m64"
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	mkasm="go run mkasm_darwin.go"
 	;;
@@ -320,8 +324,14 @@ illumos_amd64)
         mksyscall="go run mksyscall_solaris.go"
 	mkerrors=
 	mksysnum=
+<<<<<<< HEAD
 	mktypes=
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	mktypes=
+=======
+	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
+>>>>>>> 5ce8c7613 (update vendored files)
 	;;
 *)
 	echo 'unrecognized $GOOS_$GOARCH: ' "$GOOSARCH" 1>&2

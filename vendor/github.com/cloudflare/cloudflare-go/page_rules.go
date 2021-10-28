@@ -33,6 +33,7 @@ Valid IDs are:
   cache_deception_armor
   cache_level
 <<<<<<< HEAD
+<<<<<<< HEAD
   cache_key_fields
   cache_on_cookie
   disable_apps
@@ -115,6 +116,10 @@ type PageRule struct {
 	Status     string           `json:"status"`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+  cache_key_fields
+>>>>>>> 5ce8c7613 (update vendored files)
   cache_on_cookie
   disable_apps
   disable_performance
@@ -158,6 +163,7 @@ var PageRuleActions = map[string]string{
 	"cache_by_device_type":        "Cache By Device Type",        // Value of type string
 	"cache_deception_armor":       "Cache Deception Armor",       // Value of type string
 	"cache_level":                 "Cache Level",                 // Value of type string
+	"cache_key_fields":            "Custom Cache Key",            // Value of type map[string]interface
 	"cache_on_cookie":             "Cache On Cookie",             // Value of type string
 	"disable_apps":                "Disable Apps",                // Value of type interface{}
 	"disable_performance":         "Disable Performance",         // Value of type interface{}
@@ -192,8 +198,14 @@ type PageRule struct {
 	Targets    []PageRuleTarget `json:"targets"`
 	Actions    []PageRuleAction `json:"actions"`
 	Priority   int              `json:"priority"`
+<<<<<<< HEAD
 	Status     string           `json:"status"` // can be: active, paused
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	Status     string           `json:"status"` // can be: active, paused
+=======
+	Status     string           `json:"status"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	ModifiedOn time.Time        `json:"modified_on,omitempty"`
 	CreatedOn  time.Time        `json:"created_on,omitempty"`
 }

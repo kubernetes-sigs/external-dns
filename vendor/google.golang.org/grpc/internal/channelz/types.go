@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // entry represents a node in the channelz database.
@@ -680,6 +681,10 @@ const (
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"google.golang.org/grpc/grpclog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"google.golang.org/grpc/grpclog"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 // entry represents a node in the channelz database.
@@ -713,17 +718,17 @@ func (d *dummyEntry) addChild(id int64, e entry) {
 	// the addrConn will create a new transport. And when registering the new transport in
 	// channelz, its parent addrConn could have already been torn down and deleted
 	// from channelz tracking, and thus reach the code here.
-	grpclog.Infof("attempt to add child of type %T with id %d to a parent (id=%d) that doesn't currently exist", e, id, d.idNotFound)
+	logger.Infof("attempt to add child of type %T with id %d to a parent (id=%d) that doesn't currently exist", e, id, d.idNotFound)
 }
 
 func (d *dummyEntry) deleteChild(id int64) {
 	// It is possible for a normal program to reach here under race condition.
 	// Refer to the example described in addChild().
-	grpclog.Infof("attempt to delete child with id %d from a parent (id=%d) that doesn't currently exist", id, d.idNotFound)
+	logger.Infof("attempt to delete child with id %d from a parent (id=%d) that doesn't currently exist", id, d.idNotFound)
 }
 
 func (d *dummyEntry) triggerDelete() {
-	grpclog.Warningf("attempt to delete an entry (id=%d) that doesn't currently exist", d.idNotFound)
+	logger.Warningf("attempt to delete an entry (id=%d) that doesn't currently exist", d.idNotFound)
 }
 
 func (*dummyEntry) deleteSelfIfReady() {
@@ -868,7 +873,7 @@ func (c *channel) addChild(id int64, e entry) {
 	case *channel:
 		c.nestedChans[id] = v.refName
 	default:
-		grpclog.Errorf("cannot add a child (id = %d) of type %T to a channel", id, e)
+		logger.Errorf("cannot add a child (id = %d) of type %T to a channel", id, e)
 	}
 }
 
@@ -979,7 +984,7 @@ func (sc *subChannel) addChild(id int64, e entry) {
 	if v, ok := e.(*normalSocket); ok {
 		sc.sockets[id] = v.refName
 	} else {
-		grpclog.Errorf("cannot add a child (id = %d) of type %T to a subChannel", id, e)
+		logger.Errorf("cannot add a child (id = %d) of type %T to a subChannel", id, e)
 	}
 }
 
@@ -1146,11 +1151,11 @@ type listenSocket struct {
 }
 
 func (ls *listenSocket) addChild(id int64, e entry) {
-	grpclog.Errorf("cannot add a child (id = %d) of type %T to a listen socket", id, e)
+	logger.Errorf("cannot add a child (id = %d) of type %T to a listen socket", id, e)
 }
 
 func (ls *listenSocket) deleteChild(id int64) {
-	grpclog.Errorf("cannot delete a child (id = %d) from a listen socket", id)
+	logger.Errorf("cannot delete a child (id = %d) from a listen socket", id)
 }
 
 func (ls *listenSocket) triggerDelete() {
@@ -1159,7 +1164,7 @@ func (ls *listenSocket) triggerDelete() {
 }
 
 func (ls *listenSocket) deleteSelfIfReady() {
-	grpclog.Errorf("cannot call deleteSelfIfReady on a listen socket")
+	logger.Errorf("cannot call deleteSelfIfReady on a listen socket")
 }
 
 func (ls *listenSocket) getParentID() int64 {
@@ -1175,11 +1180,11 @@ type normalSocket struct {
 }
 
 func (ns *normalSocket) addChild(id int64, e entry) {
-	grpclog.Errorf("cannot add a child (id = %d) of type %T to a normal socket", id, e)
+	logger.Errorf("cannot add a child (id = %d) of type %T to a normal socket", id, e)
 }
 
 func (ns *normalSocket) deleteChild(id int64) {
-	grpclog.Errorf("cannot delete a child (id = %d) from a normal socket", id)
+	logger.Errorf("cannot delete a child (id = %d) from a normal socket", id)
 }
 
 func (ns *normalSocket) triggerDelete() {
@@ -1188,7 +1193,7 @@ func (ns *normalSocket) triggerDelete() {
 }
 
 func (ns *normalSocket) deleteSelfIfReady() {
-	grpclog.Errorf("cannot call deleteSelfIfReady on a normal socket")
+	logger.Errorf("cannot call deleteSelfIfReady on a normal socket")
 }
 
 func (ns *normalSocket) getParentID() int64 {
@@ -1247,7 +1252,7 @@ func (s *server) addChild(id int64, e entry) {
 	case *listenSocket:
 		s.listenSockets[id] = v.refName
 	default:
-		grpclog.Errorf("cannot add a child (id = %d) of type %T to a server", id, e)
+		logger.Errorf("cannot add a child (id = %d) of type %T to a server", id, e)
 	}
 }
 
@@ -1326,11 +1331,23 @@ func (c *channelTrace) clear() {
 type Severity int
 
 const (
+<<<<<<< HEAD
 	// CtUNKNOWN indicates unknown severity of a trace event.
 	CtUNKNOWN Severity = iota
 	// CtINFO indicates info level severity of a trace event.
 	CtINFO
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	// CtUNKNOWN indicates unknown severity of a trace event.
+	CtUNKNOWN Severity = iota
+	// CtINFO indicates info level severity of a trace event.
+	CtINFO
+=======
+	// CtUnknown indicates unknown severity of a trace event.
+	CtUnknown Severity = iota
+	// CtInfo indicates info level severity of a trace event.
+	CtInfo
+>>>>>>> 5ce8c7613 (update vendored files)
 	// CtWarning indicates warning level severity of a trace event.
 	CtWarning
 	// CtError indicates error level severity of a trace event.

@@ -637,6 +637,7 @@ func (m *FieldMask) Unmarshal(dAtA []byte) error {
 				return err
 			}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -645,6 +646,14 @@ func (m *FieldMask) Unmarshal(dAtA []byte) error {
 			}
 			if (iNdEx + skippy) < 0 {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthFieldMask
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 5ce8c7613 (update vendored files)
 				return ErrInvalidLengthFieldMask
 			}
 			if (iNdEx + skippy) > l {

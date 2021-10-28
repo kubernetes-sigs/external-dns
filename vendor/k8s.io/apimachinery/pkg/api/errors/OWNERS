@@ -12,6 +12,7 @@ reviewers:
 - mikedanese
 - liggitt
 <<<<<<< HEAD
+<<<<<<< HEAD
 - saad-ali
 - janetkuo
 - tallclair
@@ -24,13 +25,23 @@ reviewers:
 - nikhiljindal
 - gmarek
 - erictune
+||||||| parent of 5ce8c7613 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 - saad-ali
 - janetkuo
 - tallclair
-- eparis
 - dims
 - hongchaodeng
 - krousey
 - cjcullen
+<<<<<<< HEAD
 - david-mcmahon
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+- david-mcmahon
+=======
+>>>>>>> 5ce8c7613 (update vendored files)

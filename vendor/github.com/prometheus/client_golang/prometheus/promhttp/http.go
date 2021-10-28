@@ -100,6 +100,7 @@ func HandlerFor(reg prometheus.Gatherer, opts HandlerOpts) http.Handler {
 	}
 	if opts.Registry != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		// Initialize all possibilities that can occur below.
 		errCnt.WithLabelValues("gathering")
 		errCnt.WithLabelValues("encoding")
@@ -313,6 +314,11 @@ type HandlerOpts struct {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		// Initialize all possibilites that can occur below.
+||||||| parent of 5ce8c7613 (update vendored files)
+		// Initialize all possibilites that can occur below.
+=======
+		// Initialize all possibilities that can occur below.
+>>>>>>> 5ce8c7613 (update vendored files)
 		errCnt.WithLabelValues("gathering")
 		errCnt.WithLabelValues("encoding")
 		if err := opts.Registry.Register(errCnt); err != nil {
@@ -516,9 +522,21 @@ type Logger interface {
 // HandlerOpts specifies options how to serve metrics via an http.Handler. The
 // zero value of HandlerOpts is a reasonable default.
 type HandlerOpts struct {
+<<<<<<< HEAD
 	// ErrorLog specifies an optional logger for errors collecting and
 	// serving metrics. If nil, errors are not logged at all.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	// ErrorLog specifies an optional logger for errors collecting and
+	// serving metrics. If nil, errors are not logged at all.
+=======
+	// ErrorLog specifies an optional Logger for errors collecting and
+	// serving metrics. If nil, errors are not logged at all. Note that the
+	// type of a reported error is often prometheus.MultiError, which
+	// formats into a multi-line error string. If you want to avoid the
+	// latter, create a Logger implementation that detects a
+	// prometheus.MultiError and formats the contained errors into one line.
+>>>>>>> 5ce8c7613 (update vendored files)
 	ErrorLog Logger
 	// ErrorHandling defines how errors are handled. Note that errors are
 	// logged regardless of the configured ErrorHandling provided ErrorLog

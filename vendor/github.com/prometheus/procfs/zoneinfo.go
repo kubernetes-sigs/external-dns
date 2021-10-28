@@ -75,6 +75,7 @@ func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
 	data, err := ioutil.ReadFile(fs.proc.Path("zoneinfo"))
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
 	}
 	zoneinfo, err := parseZoneinfo(data)
@@ -83,11 +84,22 @@ func (fs FS) Zoneinfo() ([]Zoneinfo, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return nil, fmt.Errorf("error reading zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+=======
+		return nil, fmt.Errorf("error reading zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	zoneinfo, err := parseZoneinfo(data)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return nil, fmt.Errorf("error parsing zoneinfo %s: %s", fs.proc.Path("zoneinfo"), err)
+=======
+		return nil, fmt.Errorf("error parsing zoneinfo %q: %w", fs.proc.Path("zoneinfo"), err)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	return zoneinfo, nil
 }

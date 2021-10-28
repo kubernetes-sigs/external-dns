@@ -138,6 +138,7 @@ func trimOWS(x string) string {
 // case-insensitively.
 func headerValueContainsToken(v string, token string) bool {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	for comma := strings.IndexByte(v, ','); comma != -1; comma = strings.IndexByte(v, ',') {
 		if tokenEqual(trimOWS(v[:comma]), token) {
 			return true
@@ -150,9 +151,26 @@ func headerValueContainsToken(v string, token string) bool {
 	v = trimOWS(v)
 	if comma := strings.IndexByte(v, ','); comma != -1 {
 		return tokenEqual(trimOWS(v[:comma]), token) || headerValueContainsToken(v[comma+1:], token)
+||||||| parent of 5ce8c7613 (update vendored files)
+	v = trimOWS(v)
+	if comma := strings.IndexByte(v, ','); comma != -1 {
+		return tokenEqual(trimOWS(v[:comma]), token) || headerValueContainsToken(v[comma+1:], token)
+=======
+	for comma := strings.IndexByte(v, ','); comma != -1; comma = strings.IndexByte(v, ',') {
+		if tokenEqual(trimOWS(v[:comma]), token) {
+			return true
+		}
+		v = v[comma+1:]
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
+<<<<<<< HEAD
 	return tokenEqual(v, token)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return tokenEqual(v, token)
+=======
+	return tokenEqual(trimOWS(v), token)
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // lowerASCII returns the ASCII lowercase version of b.

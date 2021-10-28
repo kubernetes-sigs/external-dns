@@ -78,6 +78,7 @@ func (ss Snapshot) ListRequest() (ListCommand, error) {
 		SnapshotType: ss.SnapshotType,
 		ZoneID:       ss.ZoneID,
 <<<<<<< HEAD
+<<<<<<< HEAD
 	}
 
 	return req, nil
@@ -161,6 +162,10 @@ func (ExportSnapshot) AsyncResponse() interface{} {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		// TODO: tags
+||||||| parent of 5ce8c7613 (update vendored files)
+		// TODO: tags
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 
 	return req, nil
@@ -177,7 +182,7 @@ type ListSnapshots struct {
 	Page         int           `json:"page,omitempty"`
 	PageSize     int           `json:"pagesize,omitempty"`
 	SnapshotType string        `json:"snapshottype,omitempty" doc:"valid values are MANUAL or RECURRING."`
-	Tags         []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs)"`
+	Tags         []ResourceTag `json:"tags,omitempty" doc:"List resources by tags (key/value pairs). Note: multiple tags are OR'ed, not AND'ed."`
 	VolumeID     *UUID         `json:"volumeid,omitempty" doc:"the ID of the disk volume"`
 	ZoneID       *UUID         `json:"zoneid,omitempty" doc:"list snapshots by zone id"`
 	_            bool          `name:"listSnapshots" description:"Lists all available snapshots for the account."`
@@ -220,4 +225,26 @@ func (RevertSnapshot) Response() interface{} {
 func (RevertSnapshot) AsyncResponse() interface{} {
 	return new(BooleanResponse)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// ExportSnapshot (Async) exports a volume snapshot
+type ExportSnapshot struct {
+	ID *UUID `json:"id" doc:"The ID of the snapshot"`
+	_  bool  `name:"exportSnapshot" description:"Exports an instant snapshot of a volume."`
+}
+
+// ExportSnapshotResponse represents the response of a snapshot export operation
+type ExportSnapshotResponse struct {
+	PresignedURL string `json:"presignedurl"`
+	MD5sum       string `json:"md5sum"`
+}
+
+// Response returns the struct to unmarshal
+func (ExportSnapshot) Response() interface{} {
+	return new(AsyncJobResult)
+}
+
+// AsyncResponse returns the struct to unmarshal the async job
+func (ExportSnapshot) AsyncResponse() interface{} {
+	return new(ExportSnapshotResponse)
 }

@@ -111,6 +111,10 @@ func autoConvert_internalversion_ListOptions_To_v1_ListOptions(in *ListOptions, 
 	out.AllowWatchBookmarks = in.AllowWatchBookmarks
 	out.ResourceVersion = in.ResourceVersion
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	out.ResourceVersionMatch = v1.ResourceVersionMatch(in.ResourceVersionMatch)
 	out.TimeoutSeconds = (*int64)(unsafe.Pointer(in.TimeoutSeconds))
 	out.Limit = in.Limit
@@ -134,6 +138,7 @@ func autoConvert_v1_ListOptions_To_internalversion_ListOptions(in *v1.ListOption
 	out.AllowWatchBookmarks = in.AllowWatchBookmarks
 	out.ResourceVersion = in.ResourceVersion
 	out.ResourceVersionMatch = v1.ResourceVersionMatch(in.ResourceVersionMatch)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	out.TimeoutSeconds = (*int64)(unsafe.Pointer(in.TimeoutSeconds))
@@ -158,6 +163,9 @@ func autoConvert_v1_ListOptions_To_internalversion_ListOptions(in *v1.ListOption
 	out.AllowWatchBookmarks = in.AllowWatchBookmarks
 	out.ResourceVersion = in.ResourceVersion
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	out.TimeoutSeconds = (*int64)(unsafe.Pointer(in.TimeoutSeconds))
 	out.Limit = in.Limit
 	out.Continue = in.Continue

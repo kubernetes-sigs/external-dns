@@ -31,11 +31,17 @@ func (Export) LegacyMessageTypeOf(m piface.MessageV1, name pref.FullName) pref.M
 		return mv.ProtoReflect().Type()
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return legacyLoadMessageType(reflect.TypeOf(m), name)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return legacyLoadMessageInfo(reflect.TypeOf(m), name)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return legacyLoadMessageInfo(reflect.TypeOf(m), name)
+=======
+	return legacyLoadMessageType(reflect.TypeOf(m), name)
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // UnmarshalJSONEnum unmarshals an enum from a JSON-encoded input.

@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/client-go/pkg/apis/clientauthentication"
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
@@ -107,6 +108,10 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 		provider, err := exec.GetAuthenticator(c.ExecProvider, cluster)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"k8s.io/client-go/pkg/apis/clientauthentication"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"k8s.io/client-go/plugin/pkg/client/auth/exec"
 	"k8s.io/client-go/transport"
 )
@@ -171,7 +176,8 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 			Groups:   c.Impersonate.Groups,
 			Extra:    c.Impersonate.Extra,
 		},
-		Dial: c.Dial,
+		Dial:  c.Dial,
+		Proxy: c.Proxy,
 	}
 
 	if c.ExecProvider != nil && c.AuthProvider != nil {
@@ -179,8 +185,22 @@ func (c *Config) TransportConfig() (*transport.Config, error) {
 	}
 
 	if c.ExecProvider != nil {
+<<<<<<< HEAD
 		provider, err := exec.GetAuthenticator(c.ExecProvider)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		provider, err := exec.GetAuthenticator(c.ExecProvider)
+=======
+		var cluster *clientauthentication.Cluster
+		if c.ExecProvider.ProvideClusterInfo {
+			var err error
+			cluster, err = ConfigToExecCluster(c)
+			if err != nil {
+				return nil, err
+			}
+		}
+		provider, err := exec.GetAuthenticator(c.ExecProvider, cluster)
+>>>>>>> 5ce8c7613 (update vendored files)
 		if err != nil {
 			return nil, err
 		}

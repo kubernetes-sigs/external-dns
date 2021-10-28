@@ -35,6 +35,7 @@ type GroupResource struct {
 
 func (gr *GroupResource) String() string {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if gr == nil {
 		return "<nil>"
 	}
@@ -76,6 +77,12 @@ func (gk *GroupKind) String() string {
 	}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if gr == nil {
+		return "<nil>"
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	if len(gr.Group) == 0 {
 		return gr.Resource
 	}
@@ -93,6 +100,9 @@ type GroupVersionResource struct {
 }
 
 func (gvr *GroupVersionResource) String() string {
+	if gvr == nil {
+		return "<nil>"
+	}
 	return strings.Join([]string{gvr.Group, "/", gvr.Version, ", Resource=", gvr.Resource}, "")
 }
 
@@ -106,7 +116,14 @@ type GroupKind struct {
 }
 
 func (gk *GroupKind) String() string {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if gk == nil {
+		return "<nil>"
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	if len(gk.Group) == 0 {
 		return gk.Kind
 	}

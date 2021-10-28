@@ -33,6 +33,10 @@ var _ TestDeep = &tdAll{}
 //   )) // succeeds
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 // Note Flatten function can be used to group or reuse some values or
 // operators and so avoid boring and inefficient copies:
 //
@@ -93,6 +97,7 @@ func (a *tdAll) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 
 func (a *tdAll) TypeBehind() reflect.Type {
 	return uniqTypeBehindSlice(a.items)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // TypeBehind method can return a non-nil reflect.Type if all items
@@ -135,4 +140,8 @@ func (a *tdAll) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 func (a *tdAll) TypeBehind() reflect.Type {
 	return a.uniqTypeBehind()
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return a.uniqTypeBehind()
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }

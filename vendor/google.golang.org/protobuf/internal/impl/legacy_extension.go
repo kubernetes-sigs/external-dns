@@ -155,12 +155,19 @@ func (x placeholderExtension) Cardinality() pref.Cardinality              { retu
 func (x placeholderExtension) Kind() pref.Kind                            { return 0 }
 func (x placeholderExtension) HasJSONName() bool                          { return false }
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (x placeholderExtension) JSONName() string                           { return "[" + string(x.name) + "]" }
 func (x placeholderExtension) TextName() string                           { return "[" + string(x.name) + "]" }
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (x placeholderExtension) JSONName() string                           { return "" }
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+func (x placeholderExtension) JSONName() string                           { return "" }
+=======
+func (x placeholderExtension) JSONName() string                           { return "[" + string(x.name) + "]" }
+func (x placeholderExtension) TextName() string                           { return "[" + string(x.name) + "]" }
+>>>>>>> 5ce8c7613 (update vendored files)
 func (x placeholderExtension) HasPresence() bool                          { return false }
 func (x placeholderExtension) HasOptionalKeyword() bool                   { return false }
 func (x placeholderExtension) IsExtension() bool                          { return true }

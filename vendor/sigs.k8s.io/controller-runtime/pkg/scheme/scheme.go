@@ -47,6 +47,7 @@ limitations under the License.
 //
 //  func main() {
 <<<<<<< HEAD
+<<<<<<< HEAD
 //  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
 //  		Scheme: scheme,
 //  	})
@@ -71,6 +72,11 @@ type Builder struct {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
+||||||| parent of 5ce8c7613 (update vendored files)
+//  	mgr := controllers.NewManager(controllers.GetConfigOrDie(), manager.Options{
+=======
+//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
+>>>>>>> 5ce8c7613 (update vendored files)
 //  		Scheme: scheme,
 //  	})
 //  	// ...
@@ -90,8 +96,14 @@ type Builder struct {
 	runtime.SchemeBuilder
 }
 
+<<<<<<< HEAD
 // Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// Register adds one or objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+=======
+// Register adds one or more objects to the SchemeBuilder so they can be added to a Scheme.  Register mutates bld.
+>>>>>>> 5ce8c7613 (update vendored files)
 func (bld *Builder) Register(object ...runtime.Object) *Builder {
 	bld.SchemeBuilder.Register(func(scheme *runtime.Scheme) error {
 		scheme.AddKnownTypes(bld.GroupVersion, object...)

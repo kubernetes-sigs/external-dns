@@ -42,6 +42,7 @@ type LKEClusterCreateOptions struct {
 // LKEClusterUpdateOptions fields are those accepted by UpdateLKECluster
 type LKEClusterUpdateOptions struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	K8sVersion string    `json:"k8s_version,omitempty"`
 	Label      string    `json:"label,omitempty"`
 	Tags       *[]string `json:"tags,omitempty"`
@@ -286,6 +287,14 @@ func (c *Client) RecycleLKEClusterNodes(ctx context.Context, id int) error {
 =======
 	Label string    `json:"label,omitempty"`
 	Tags  *[]string `json:"tags,omitempty"`
+||||||| parent of 5ce8c7613 (update vendored files)
+	Label string    `json:"label,omitempty"`
+	Tags  *[]string `json:"tags,omitempty"`
+=======
+	K8sVersion string    `json:"k8s_version,omitempty"`
+	Label      string    `json:"label,omitempty"`
+	Tags       *[]string `json:"tags,omitempty"`
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // LKEClusterAPIEndpoint fields are those returned by ListLKEClusterAPIEndpoints
@@ -337,6 +346,7 @@ func (i LKECluster) GetCreateOptions() (o LKEClusterCreateOptions) {
 
 // GetUpdateOptions converts a LKECluster to LKEClusterUpdateOptions for use in UpdateLKECluster
 func (i LKECluster) GetUpdateOptions() (o LKEClusterUpdateOptions) {
+	o.K8sVersion = i.K8sVersion
 	o.Label = i.Label
 	o.Tags = &i.Tags
 	return
@@ -385,7 +395,7 @@ func (LKEVersionsPagedResponse) endpoint(c *Client) string {
 
 // endpoint gets the endpoint URL for LKEClusterAPIEndpoints
 func (LKEClusterAPIEndpointsPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.LKEClusterAPIEndpoints.endpointWithID(id)
+	endpoint, err := c.LKEClusterAPIEndpoints.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -445,7 +455,6 @@ func (c *Client) CreateLKECluster(ctx context.Context, createOpts LKEClusterCrea
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -472,7 +481,6 @@ func (c *Client) UpdateLKECluster(ctx context.Context, id int, updateOpts LKEClu
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -514,6 +522,17 @@ func (c *Client) GetLKEClusterKubeconfig(ctx context.Context, id int) (*LKEClust
 	}
 	return r.Result().(*LKEClusterKubeconfig), nil
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// RecycleLKEClusterNodes recycles all nodes in all pools of the specified LKE Cluster.
+func (c *Client) RecycleLKEClusterNodes(ctx context.Context, id int) error {
+	e, err := c.LKEClusters.Endpoint()
+	if err != nil {
+		return err
+	}
+	e = fmt.Sprintf("%s/%d/recycle", e, id)
+	_, err = coupleAPIErrors(c.R(ctx).Post(e))
+	return err
 }
 
 // GetLKEVersion gets details about a specific LKE Version

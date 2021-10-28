@@ -27,6 +27,7 @@ import (
 
 // IngressLister helps list Ingresses.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type IngressLister interface {
 	// List lists all Ingresses in the indexer.
@@ -70,8 +71,13 @@ type IngressNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type IngressLister interface {
 	// List lists all Ingresses in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Ingress, err error)
 	// Ingresses returns an object that can list and get Ingresses.
 	Ingresses(namespace string) IngressNamespaceLister
@@ -102,11 +108,18 @@ func (s *ingressLister) Ingresses(namespace string) IngressNamespaceLister {
 }
 
 // IngressNamespaceLister helps list and get Ingresses.
+// All objects returned here must be treated as read-only.
 type IngressNamespaceLister interface {
 	// List lists all Ingresses in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Ingress, err error)
 	// Get retrieves the Ingress from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta1.Ingress, error)
 	IngressNamespaceListerExpansion
 }

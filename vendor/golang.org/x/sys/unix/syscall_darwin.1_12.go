@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin && go1.12 && !go1.13
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build darwin && go1.12 && !go1.13
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build darwin,go1.12,!go1.13
 
 package unix

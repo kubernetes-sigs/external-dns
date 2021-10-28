@@ -17,11 +17,17 @@
  */
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:generate ./regenerate.sh
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:generate ./regenerate.sh
+
+>>>>>>> 5ce8c7613 (update vendored files)
 /*
 Package grpc implements an RPC system called gRPC.
 

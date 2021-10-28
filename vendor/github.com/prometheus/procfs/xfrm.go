@@ -113,12 +113,19 @@ func (fs FS) NewXfrmStat() (XfrmStat, error) {
 
 		if len(fields) != 2 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			return XfrmStat{}, fmt.Errorf(
 				"couldn't parse %s line %s", file.Name(), s.Text())
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			return XfrmStat{}, fmt.Errorf(
+				"couldn't parse %s line %s", file.Name(), s.Text())
+=======
+			return XfrmStat{}, fmt.Errorf("couldn't parse %q line %q", file.Name(), s.Text())
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 
 		name := fields[0]

@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # 1.8.1
 Code quality:
   * move magefile in its own subdir/submodule to remove magefile dependency on logrus consumer
@@ -38,6 +39,45 @@ Features:
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+# 1.8.1
+Code quality:
+  * move magefile in its own subdir/submodule to remove magefile dependency on logrus consumer
+  * improve timestamp format documentation
+
+Fixes:
+  * fix race condition on logger hooks
+
+
+# 1.8.0
+
+Correct versioning number replacing v1.7.1.
+
+# 1.7.1
+
+Beware this release has introduced a new public API and its semver is therefore incorrect.
+
+Code quality:
+  * use go 1.15 in travis
+  * use magefile as task runner
+
+Fixes:
+  * small fixes about new go 1.13 error formatting system
+  * Fix for long time race condiction with mutating data hooks
+
+Features:
+  * build support for zos
+
+# 1.7.0
+Fixes:
+  * the dependency toward a windows terminal library has been removed
+
+Features:
+  * a new buffer pool management API has been added
+  * a set of `<LogLevel>Fn()` functions have been added
+
+>>>>>>> 5ce8c7613 (update vendored files)
 # 1.6.0
 Fixes:
   * end of line cleanup

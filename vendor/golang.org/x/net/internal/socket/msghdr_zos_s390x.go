@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build s390x && zos
 // +build s390x,zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -10,6 +11,13 @@
 // +build s390x
 // +build zos
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build s390x
+// +build zos
+=======
+//go:build s390x && zos
+// +build s390x,zos
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package socket
 

@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -150,6 +151,11 @@ func (c *FakeLeases) Apply(ctx context.Context, lease *applyconfigurationscoordi
 		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, *name, types.ApplyPatchType, data), &coordinationv1.Lease{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	coordinationv1 "k8s.io/api/coordination/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,6 +163,7 @@ func (c *FakeLeases) Apply(ctx context.Context, lease *applyconfigurationscoordi
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscoordinationv1 "k8s.io/client-go/applyconfigurations/coordination/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -253,6 +260,28 @@ func (c *FakeLeases) Patch(ctx context.Context, name string, pt types.PatchType,
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, name, pt, data, subresources...), &coordinationv1.Lease{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*coordinationv1.Lease), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied lease.
+func (c *FakeLeases) Apply(ctx context.Context, lease *applyconfigurationscoordinationv1.LeaseApplyConfiguration, opts v1.ApplyOptions) (result *coordinationv1.Lease, err error) {
+	if lease == nil {
+		return nil, fmt.Errorf("lease provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(lease)
+	if err != nil {
+		return nil, err
+	}
+	name := lease.Name
+	if name == nil {
+		return nil, fmt.Errorf("lease.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(leasesResource, c.ns, *name, types.ApplyPatchType, data), &coordinationv1.Lease{})
 
 	if obj == nil {
 		return nil, err

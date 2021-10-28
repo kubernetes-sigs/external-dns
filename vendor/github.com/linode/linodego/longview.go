@@ -37,10 +37,15 @@ func (c *Client) ListLongviewClients(ctx context.Context, opts *ListOptions) ([]
 	response := LongviewClientsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

@@ -89,10 +89,15 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&ConfigMap{},
 		&ConfigMapList{},
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		&EphemeralContainers{},
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		&EphemeralContainers{},
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	)
 
 	// Add common types

@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // IngressListerExpansion allows custom methods to be added to
 // IngressLister.
 type IngressListerExpansion interface{}
@@ -34,6 +35,21 @@ type IngressClassListerExpansion interface{}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// IngressListerExpansion allows custom methods to be added to
+// IngressLister.
+type IngressListerExpansion interface{}
+
+// IngressNamespaceListerExpansion allows custom methods to be added to
+// IngressNamespaceLister.
+type IngressNamespaceListerExpansion interface{}
+
+// IngressClassListerExpansion allows custom methods to be added to
+// IngressClassLister.
+type IngressClassListerExpansion interface{}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 // NetworkPolicyListerExpansion allows custom methods to be added to
 // NetworkPolicyLister.
 type NetworkPolicyListerExpansion interface{}

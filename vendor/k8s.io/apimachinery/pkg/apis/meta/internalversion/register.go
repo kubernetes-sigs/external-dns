@@ -53,6 +53,7 @@ func addToGroupVersion(scheme *runtime.Scheme) error {
 		&ListOptions{},
 		&metav1.GetOptions{},
 <<<<<<< HEAD
+<<<<<<< HEAD
 		&metav1.DeleteOptions{},
 		&metav1.CreateOptions{},
 		&metav1.UpdateOptions{},
@@ -82,6 +83,10 @@ func addToGroupVersion(scheme *runtime.Scheme) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		&metav1.ExportOptions{},
+||||||| parent of 5ce8c7613 (update vendored files)
+		&metav1.ExportOptions{},
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 		&metav1.DeleteOptions{},
 		&metav1.CreateOptions{},
 		&metav1.UpdateOptions{},
@@ -105,7 +110,14 @@ func addToGroupVersion(scheme *runtime.Scheme) error {
 		&metav1.UpdateOptions{})
 
 	metav1.AddToGroupVersion(scheme, metav1.SchemeGroupVersion)
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if err := metav1beta1.RegisterConversions(scheme); err != nil {
+		return err
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	return nil
 }
 

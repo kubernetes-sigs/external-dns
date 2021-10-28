@@ -49,6 +49,7 @@ type BackoffConfig struct {
 // https://github.com/grpc/grpc/blob/master/doc/connection-backoff.md.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This type is EXPERIMENTAL and may be changed or removed in a
@@ -57,6 +58,14 @@ type BackoffConfig struct {
 =======
 // This API is EXPERIMENTAL.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// This API is EXPERIMENTAL.
+=======
+// Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ConnectParams struct {
 	// Backoff specifies the configuration options for connection backoff.
 	Backoff backoff.Config

@@ -13,6 +13,7 @@ import (
 
 func csQuotePlus(s string) string {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	s = strings.ReplaceAll(s, "+", "%20")
 	// This line is used to safeguard the "*" when producing the signature
 	s = strings.ReplaceAll(s, "%2A", "*")
@@ -20,6 +21,13 @@ func csQuotePlus(s string) string {
 =======
 	s = strings.Replace(s, "+", "%20", -1)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	s = strings.Replace(s, "+", "%20", -1)
+=======
+	s = strings.ReplaceAll(s, "+", "%20")
+	// This line is used to safeguard the "*" when producing the signature
+	s = strings.ReplaceAll(s, "%2A", "*")
+>>>>>>> 5ce8c7613 (update vendored files)
 	return s
 }
 

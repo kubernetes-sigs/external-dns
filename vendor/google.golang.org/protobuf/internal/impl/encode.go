@@ -80,6 +80,7 @@ func (mi *MessageInfo) sizePointerSlow(p pointer, opts marshalOptions) (size int
 	}
 	if mi.unknownOffset.IsValid() {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if u := mi.getUnknownBytes(p); u != nil {
 			size += len(*u)
 		}
@@ -150,6 +151,14 @@ func (mi *MessageInfo) marshalAppendPointer(b []byte, p pointer, opts marshalOpt
 =======
 		u := *p.Apply(mi.unknownOffset).Bytes()
 		size += len(u)
+||||||| parent of 5ce8c7613 (update vendored files)
+		u := *p.Apply(mi.unknownOffset).Bytes()
+		size += len(u)
+=======
+		if u := mi.getUnknownBytes(p); u != nil {
+			size += len(*u)
+		}
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	if mi.sizecacheOffset.IsValid() {
 		if size > math.MaxInt32 {
@@ -210,9 +219,18 @@ func (mi *MessageInfo) marshalAppendPointer(b []byte, p pointer, opts marshalOpt
 		}
 	}
 	if mi.unknownOffset.IsValid() && !mi.isMessageSet {
+<<<<<<< HEAD
 		u := *p.Apply(mi.unknownOffset).Bytes()
 		b = append(b, u...)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		u := *p.Apply(mi.unknownOffset).Bytes()
+		b = append(b, u...)
+=======
+		if u := mi.getUnknownBytes(p); u != nil {
+			b = append(b, (*u)...)
+		}
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	return b, nil
 }

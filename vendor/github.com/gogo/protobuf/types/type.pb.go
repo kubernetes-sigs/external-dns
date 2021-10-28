@@ -2484,6 +2484,7 @@ func (m *Type) Unmarshal(dAtA []byte) error {
 				return err
 			}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthType
 			}
@@ -3261,6 +3262,14 @@ func (m *Option) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) < 0 {
+||||||| parent of 5ce8c7613 (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthType
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 5ce8c7613 (update vendored files)
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) > l {
@@ -3569,10 +3578,7 @@ func (m *Field) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthType
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) > l {
@@ -3778,10 +3784,7 @@ func (m *Enum) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthType
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) > l {
@@ -3917,10 +3920,7 @@ func (m *EnumValue) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthType
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) > l {
@@ -4039,11 +4039,20 @@ func (m *Option) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+<<<<<<< HEAD
 			if skippy < 0 {
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) < 0 {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthType
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 5ce8c7613 (update vendored files)
 				return ErrInvalidLengthType
 			}
 			if (iNdEx + skippy) > l {

@@ -133,6 +133,7 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 	if n := len(r.remaining); n > 0 {
 		if n <= len(data) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			//lint:ignore SA4006,SA4010 underlying array of data is modified here.
 			data = append(data[0:0], r.remaining...)
 			r.remaining = nil
@@ -161,12 +162,17 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 		//lint:ignore SA4006,SA4010 underlying array of data is modified here.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+			//lint:ignore SA4006,SA4010 underlying array of data is modified here.
+>>>>>>> 5ce8c7613 (update vendored files)
 			data = append(data[0:0], r.remaining...)
 			r.remaining = nil
 			return n, nil
 		}
 
 		n = len(data)
+		//lint:ignore SA4006,SA4010 underlying array of data is modified here.
 		data = append(data[0:0], r.remaining[:n]...)
 		r.remaining = r.remaining[n:]
 		return n, io.ErrShortBuffer
@@ -184,7 +190,12 @@ func (r *jsonFrameReader) Read(data []byte) (int, error) {
 	// and set m to it, which means we need to copy the partial result back into data and preserve
 	// the remaining result for subsequent reads.
 	if len(m) > n {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		//lint:ignore SA4006,SA4010 underlying array of data is modified here.
+>>>>>>> 5ce8c7613 (update vendored files)
 		data = append(data[0:0], m[:n]...)
 		r.remaining = m[n:]
 		return n, io.ErrShortBuffer

@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -73,6 +74,11 @@ func ListAccessor(obj interface{}) (List, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 // errNotList is returned when an object implements the Object style interfaces but not the List style
@@ -86,8 +92,6 @@ var errNotCommon = fmt.Errorf("object does not implement the common interface fo
 func CommonAccessor(obj interface{}) (metav1.Common, error) {
 	switch t := obj.(type) {
 	case List:
-		return t, nil
-	case metav1.ListInterface:
 		return t, nil
 	case ListMetaAccessor:
 		if m := t.GetListMeta(); m != nil {
@@ -119,9 +123,15 @@ func ListAccessor(obj interface{}) (List, error) {
 	switch t := obj.(type) {
 	case List:
 		return t, nil
+<<<<<<< HEAD
 	case metav1.ListInterface:
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		return t, nil
+||||||| parent of 5ce8c7613 (update vendored files)
+	case metav1.ListInterface:
+		return t, nil
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	case ListMetaAccessor:
 		if m := t.GetListMeta(); m != nil {
 			return m, nil

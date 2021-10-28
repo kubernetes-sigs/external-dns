@@ -23,6 +23,7 @@ package zap
 import (
 	"runtime"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"sync"
 
 	"go.uber.org/zap/internal/bufferpool"
@@ -86,12 +87,14 @@ func newProgramCounters(size int) *programCounters {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"strings"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"strings"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	"sync"
 
 	"go.uber.org/zap/internal/bufferpool"
 )
-
-const _zapPackage = "go.uber.org/zap"
 
 var (
 	_stacktracePool = sync.Pool{
@@ -99,14 +102,9 @@ var (
 			return newProgramCounters(64)
 		},
 	}
-
-	// We add "." and "/" suffixes to the package name to ensure we only match
-	// the exact package and not any package with the same prefix.
-	_zapStacktracePrefixes       = addPrefix(_zapPackage, ".", "/")
-	_zapStacktraceVendorContains = addPrefix("/vendor/", _zapStacktracePrefixes...)
 )
 
-func takeStacktrace() string {
+func takeStacktrace(skip int) string {
 	buffer := bufferpool.Get()
 	defer buffer.Free()
 	programCounters := _stacktracePool.Get().(*programCounters)
@@ -114,9 +112,9 @@ func takeStacktrace() string {
 
 	var numFrames int
 	for {
-		// Skip the call to runtime.Counters and takeStacktrace so that the
+		// Skip the call to runtime.Callers and takeStacktrace so that the
 		// program counters start at the caller of takeStacktrace.
-		numFrames = runtime.Callers(2, programCounters.pcs)
+		numFrames = runtime.Callers(skip+2, programCounters.pcs)
 		if numFrames < len(programCounters.pcs) {
 			break
 		}
@@ -126,19 +124,12 @@ func takeStacktrace() string {
 	}
 
 	i := 0
-	skipZapFrames := true // skip all consecutive zap frames at the beginning.
 	frames := runtime.CallersFrames(programCounters.pcs[:numFrames])
 
 	// Note: On the last iteration, frames.Next() returns false, with a valid
 	// frame, but we ignore this frame. The last frame is a a runtime frame which
 	// adds noise, since it's only either runtime.main or runtime.goexit.
 	for frame, more := frames.Next(); more; frame, more = frames.Next() {
-		if skipZapFrames && isZapFrame(frame.Function) {
-			continue
-		} else {
-			skipZapFrames = false
-		}
-
 		if i != 0 {
 			buffer.AppendByte('\n')
 		}
@@ -154,24 +145,6 @@ func takeStacktrace() string {
 	return buffer.String()
 }
 
-func isZapFrame(function string) bool {
-	for _, prefix := range _zapStacktracePrefixes {
-		if strings.HasPrefix(function, prefix) {
-			return true
-		}
-	}
-
-	// We can't use a prefix match here since the location of the vendor
-	// directory affects the prefix. Instead we do a contains match.
-	for _, contains := range _zapStacktraceVendorContains {
-		if strings.Contains(function, contains) {
-			return true
-		}
-	}
-
-	return false
-}
-
 type programCounters struct {
 	pcs []uintptr
 }
@@ -179,6 +152,7 @@ type programCounters struct {
 func newProgramCounters(size int) *programCounters {
 	return &programCounters{make([]uintptr, size)}
 }
+<<<<<<< HEAD
 
 func addPrefix(prefix string, ss ...string) []string {
 	withPrefix := make([]string, len(ss))
@@ -188,3 +162,14 @@ func addPrefix(prefix string, ss ...string) []string {
 	return withPrefix
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
+||||||| parent of 5ce8c7613 (update vendored files)
+
+func addPrefix(prefix string, ss ...string) []string {
+	withPrefix := make([]string, len(ss))
+	for i, s := range ss {
+		withPrefix[i] = prefix + s
+	}
+	return withPrefix
+}
+=======
+>>>>>>> 5ce8c7613 (update vendored files)

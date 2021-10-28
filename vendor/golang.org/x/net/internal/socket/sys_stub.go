@@ -3,6 +3,10 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 //go:build !aix && !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris && !windows && !zos
 // +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
 
@@ -19,6 +23,7 @@ const (
 
 	sizeofSockaddrInet4 = 0x10
 	sizeofSockaddrInet6 = 0x1c
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
@@ -34,6 +39,9 @@ const (
 
 	sysSOCK_RAW = 0x3
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 func marshalInetAddr(ip net.IP, port int, zone string) []byte {

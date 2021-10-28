@@ -7,6 +7,7 @@
 .settings/**
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Idea files
 .idea/**
 .idea/
@@ -14,6 +15,13 @@
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+# Idea files
+.idea/**
+.idea/
+
+>>>>>>> 5ce8c7613 (update vendored files)
 # Emacs save files
 *~
 

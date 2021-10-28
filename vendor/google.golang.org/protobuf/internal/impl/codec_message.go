@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/internal/encoding/messageset"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/internal/order"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	piface "google.golang.org/protobuf/runtime/protoiface"
@@ -217,6 +218,11 @@ func (mi *MessageInfo) mutableUnknownBytes(p pointer) *[]byte {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"google.golang.org/protobuf/internal/fieldsort"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"google.golang.org/protobuf/internal/fieldsort"
+=======
+	"google.golang.org/protobuf/internal/order"
+>>>>>>> 5ce8c7613 (update vendored files)
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	piface "google.golang.org/protobuf/runtime/protoiface"
 )
@@ -232,6 +238,7 @@ type coderMessageInfo struct {
 	coderFields        map[protowire.Number]*coderFieldInfo
 	sizecacheOffset    offset
 	unknownOffset      offset
+	unknownPtrKind     bool
 	extensionOffset    offset
 	needsInitCheck     bool
 	isMessageSet       bool
@@ -252,9 +259,20 @@ type coderFieldInfo struct {
 }
 
 func (mi *MessageInfo) makeCoderMethods(t reflect.Type, si structInfo) {
-	mi.sizecacheOffset = si.sizecacheOffset
-	mi.unknownOffset = si.unknownOffset
-	mi.extensionOffset = si.extensionOffset
+	mi.sizecacheOffset = invalidOffset
+	mi.unknownOffset = invalidOffset
+	mi.extensionOffset = invalidOffset
+
+	if si.sizecacheOffset.IsValid() && si.sizecacheType == sizecacheType {
+		mi.sizecacheOffset = si.sizecacheOffset
+	}
+	if si.unknownOffset.IsValid() && (si.unknownType == unknownFieldsAType || si.unknownType == unknownFieldsBType) {
+		mi.unknownOffset = si.unknownOffset
+		mi.unknownPtrKind = si.unknownType.Kind() == reflect.Ptr
+	}
+	if si.extensionOffset.IsValid() && si.extensionType == extensionFieldsType {
+		mi.extensionOffset = si.extensionOffset
+	}
 
 	mi.coderFields = make(map[protowire.Number]*coderFieldInfo)
 	fields := mi.Desc.Fields()
@@ -278,6 +296,27 @@ func (mi *MessageInfo) makeCoderMethods(t reflect.Type, si structInfo) {
 		var funcs pointerCoderFuncs
 		var childMessage *MessageInfo
 		switch {
+		case ft == nil:
+			// This never occurs for generated message types.
+			// It implies that a hand-crafted type has missing Go fields
+			// for specific protobuf message fields.
+			funcs = pointerCoderFuncs{
+				size: func(p pointer, f *coderFieldInfo, opts marshalOptions) int {
+					return 0
+				},
+				marshal: func(b []byte, p pointer, f *coderFieldInfo, opts marshalOptions) ([]byte, error) {
+					return nil, nil
+				},
+				unmarshal: func(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, opts unmarshalOptions) (unmarshalOutput, error) {
+					panic("missing Go struct field for " + string(fd.FullName()))
+				},
+				isInit: func(p pointer, f *coderFieldInfo) error {
+					panic("missing Go struct field for " + string(fd.FullName()))
+				},
+				merge: func(dst, src pointer, f *coderFieldInfo, opts mergeOptions) {
+					panic("missing Go struct field for " + string(fd.FullName()))
+				},
+			}
 		case isOneof:
 			fieldOffset = offsetOf(fs, mi.Exporter)
 		case fd.IsWeak():
@@ -341,7 +380,7 @@ func (mi *MessageInfo) makeCoderMethods(t reflect.Type, si structInfo) {
 		sort.Slice(mi.orderedCoderFields, func(i, j int) bool {
 			fi := fields.ByNumber(mi.orderedCoderFields[i].num)
 			fj := fields.ByNumber(mi.orderedCoderFields[j].num)
-			return fieldsort.Less(fi, fj)
+			return order.LegacyFieldOrder(fi, fj)
 		})
 	}
 
@@ -361,5 +400,30 @@ func (mi *MessageInfo) makeCoderMethods(t reflect.Type, si structInfo) {
 	if mi.methods.Merge == nil {
 		mi.methods.Merge = mi.merge
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+}
+
+// getUnknownBytes returns a *[]byte for the unknown fields.
+// It is the caller's responsibility to check whether the pointer is nil.
+// This function is specially designed to be inlineable.
+func (mi *MessageInfo) getUnknownBytes(p pointer) *[]byte {
+	if mi.unknownPtrKind {
+		return *p.Apply(mi.unknownOffset).BytesPtr()
+	} else {
+		return p.Apply(mi.unknownOffset).Bytes()
+	}
+}
+
+// mutableUnknownBytes returns a *[]byte for the unknown fields.
+// The returned pointer is guaranteed to not be nil.
+func (mi *MessageInfo) mutableUnknownBytes(p pointer) *[]byte {
+	if mi.unknownPtrKind {
+		bp := p.Apply(mi.unknownOffset).BytesPtr()
+		if *bp == nil {
+			*bp = new([]byte)
+		}
+		return *bp
+	} else {
+		return p.Apply(mi.unknownOffset).Bytes()
 	}
 }

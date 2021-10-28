@@ -108,13 +108,23 @@ func main() {
 	fmt.Println(string(y))
 	/* Output:
 <<<<<<< HEAD
+<<<<<<< HEAD
 	age: 30
 	name: John
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	name: John
+||||||| parent of 5ce8c7613 (update vendored files)
+	name: John
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	age: 30
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	name: John
+>>>>>>> 5ce8c7613 (update vendored files)
 	*/
 	j2, err := yaml.YAMLToJSON(y)
 	if err != nil {

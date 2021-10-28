@@ -11,11 +11,17 @@ const keysBasePath = "v2/account/keys"
 // KeysService is an interface for interfacing with the keys
 // endpoints of the DigitalOcean API
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/SSH-Keys
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#keys
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#keys
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/SSH-Keys
+>>>>>>> 5ce8c7613 (update vendored files)
 type KeysService interface {
 	List(context.Context, *ListOptions) ([]Key, *Response, error)
 	GetByID(context.Context, int) (*Key, *Response, error)

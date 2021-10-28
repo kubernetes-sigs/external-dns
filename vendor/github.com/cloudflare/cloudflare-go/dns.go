@@ -70,6 +70,7 @@ func (api *API) DNSRecords(zoneID string, rr DNSRecord) ([]DNSRecord, error) {
 	// Construct a query string
 	v := url.Values{}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Request as many records as possible per page - API max is 100
 	v.Set("per_page", "100")
 	if rr.Name != "" {
@@ -149,6 +150,13 @@ func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
 =======
 	// Request as many records as possible per page - API max is 50
 	v.Set("per_page", "50")
+||||||| parent of 5ce8c7613 (update vendored files)
+	// Request as many records as possible per page - API max is 50
+	v.Set("per_page", "50")
+=======
+	// Request as many records as possible per page - API max is 100
+	v.Set("per_page", "100")
+>>>>>>> 5ce8c7613 (update vendored files)
 	if rr.Name != "" {
 		v.Set("name", rr.Name)
 	}
@@ -219,8 +227,16 @@ func (api *API) UpdateDNSRecord(zoneID, recordID string, rr DNSRecord) error {
 	if rr.Name == "" {
 		rr.Name = rec.Name
 	}
+<<<<<<< HEAD
 	rr.Type = rec.Type
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	rr.Type = rec.Type
+=======
+	if rr.Type == "" {
+		rr.Type = rec.Type
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	uri := "/zones/" + zoneID + "/dns_records/" + recordID
 	res, err := api.makeRequest("PATCH", uri, rr)
 	if err != nil {

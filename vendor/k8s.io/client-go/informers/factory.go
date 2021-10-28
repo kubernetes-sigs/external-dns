@@ -28,6 +28,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	admissionregistration "k8s.io/client-go/informers/admissionregistration"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
 	apps "k8s.io/client-go/informers/apps"
 	autoscaling "k8s.io/client-go/informers/autoscaling"
@@ -278,8 +279,11 @@ func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
 	return scheduling.New(f, f.namespace, f.tweakListOptions)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	apiserverinternal "k8s.io/client-go/informers/apiserverinternal"
+>>>>>>> 5ce8c7613 (update vendored files)
 	apps "k8s.io/client-go/informers/apps"
-	auditregistration "k8s.io/client-go/informers/auditregistration"
 	autoscaling "k8s.io/client-go/informers/autoscaling"
 	batch "k8s.io/client-go/informers/batch"
 	certificates "k8s.io/client-go/informers/certificates"
@@ -295,7 +299,6 @@ func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
 	policy "k8s.io/client-go/informers/policy"
 	rbac "k8s.io/client-go/informers/rbac"
 	scheduling "k8s.io/client-go/informers/scheduling"
-	settings "k8s.io/client-go/informers/settings"
 	storage "k8s.io/client-go/informers/storage"
 	kubernetes "k8s.io/client-go/kubernetes"
 	cache "k8s.io/client-go/tools/cache"
@@ -442,8 +445,8 @@ type SharedInformerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 
 	Admissionregistration() admissionregistration.Interface
+	Internal() apiserverinternal.Interface
 	Apps() apps.Interface
-	Auditregistration() auditregistration.Interface
 	Autoscaling() autoscaling.Interface
 	Batch() batch.Interface
 	Certificates() certificates.Interface
@@ -458,7 +461,6 @@ type SharedInformerFactory interface {
 	Policy() policy.Interface
 	Rbac() rbac.Interface
 	Scheduling() scheduling.Interface
-	Settings() settings.Interface
 	Storage() storage.Interface
 }
 
@@ -466,12 +468,12 @@ func (f *sharedInformerFactory) Admissionregistration() admissionregistration.In
 	return admissionregistration.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Apps() apps.Interface {
-	return apps.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Internal() apiserverinternal.Interface {
+	return apiserverinternal.New(f, f.namespace, f.tweakListOptions)
 }
 
-func (f *sharedInformerFactory) Auditregistration() auditregistration.Interface {
-	return auditregistration.New(f, f.namespace, f.tweakListOptions)
+func (f *sharedInformerFactory) Apps() apps.Interface {
+	return apps.New(f, f.namespace, f.tweakListOptions)
 }
 
 func (f *sharedInformerFactory) Autoscaling() autoscaling.Interface {
@@ -530,11 +532,19 @@ func (f *sharedInformerFactory) Scheduling() scheduling.Interface {
 	return scheduling.New(f, f.namespace, f.tweakListOptions)
 }
 
+<<<<<<< HEAD
 func (f *sharedInformerFactory) Settings() settings.Interface {
 	return settings.New(f, f.namespace, f.tweakListOptions)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
+||||||| parent of 5ce8c7613 (update vendored files)
+func (f *sharedInformerFactory) Settings() settings.Interface {
+	return settings.New(f, f.namespace, f.tweakListOptions)
+}
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 func (f *sharedInformerFactory) Storage() storage.Interface {
 	return storage.New(f, f.namespace, f.tweakListOptions)
 }

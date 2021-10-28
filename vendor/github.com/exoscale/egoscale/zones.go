@@ -6,11 +6,17 @@ import (
 
 // Zone represents a data center
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //
 // TODO: represent correctly the capacity field.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+//
+// TODO: represent correctly the capacity field.
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 type Zone struct {
 	AllocationState       string            `json:"allocationstate,omitempty" doc:"the allocation state of the cluster"`
 	Description           string            `json:"description,omitempty" doc:"Zone description"`

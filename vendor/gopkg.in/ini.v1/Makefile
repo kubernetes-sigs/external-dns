@@ -7,11 +7,17 @@ test:
 
 bench:
 <<<<<<< HEAD
+<<<<<<< HEAD
 	go test -v -cover -test.bench=. -test.benchmem
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	go test -v -cover -race -test.bench=. -test.benchmem
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	go test -v -cover -race -test.bench=. -test.benchmem
+=======
+	go test -v -cover -test.bench=. -test.benchmem
+>>>>>>> 5ce8c7613 (update vendored files)
 
 vet:
 	go vet

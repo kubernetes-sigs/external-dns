@@ -18,6 +18,7 @@ const (
 
 // ProjectsService is an interface for creating and managing Projects with the DigitalOcean API.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Projects
 type ProjectsService interface {
 	List(context.Context, *ListOptions) ([]Project, *Response, error)
@@ -256,6 +257,11 @@ func (p *ProjectsServiceOp) ListResources(ctx context.Context, projectID string,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#projects
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#projects
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Projects
+>>>>>>> 5ce8c7613 (update vendored files)
 type ProjectsService interface {
 	List(context.Context, *ListOptions) ([]Project, *Response, error)
 	GetDefault(context.Context) (*Project, *Response, error)
@@ -355,7 +361,7 @@ type ProjectResource struct {
 	Status     string                `json:"status,omitempty"`
 }
 
-// ProjetResourceLinks specify the link for more information about the resource.
+// ProjectResourceLinks specify the link for more information about the resource.
 type ProjectResourceLinks struct {
 	Self string `json:"self"`
 }
@@ -490,8 +496,13 @@ func (p *ProjectsServiceOp) ListResources(ctx context.Context, projectID string,
 
 // AssignResources assigns one or more resources to a project. AssignResources
 // accepts resources in two possible formats:
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 //  1. The resource type, like `&Droplet{ID: 1}` or `&FloatingIP{IP: "1.2.3.4"}`
 //  2. A valid DO URN as a string, like "do:droplet:1234"
 //

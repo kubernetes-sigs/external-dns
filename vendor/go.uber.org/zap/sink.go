@@ -137,11 +137,17 @@ func newFileSink(u *url.URL) (Sink, error) {
 		return nopCloserSink{os.Stderr}, nil
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+=======
+	return os.OpenFile(u.Path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func normalizeScheme(s string) (string, error) {

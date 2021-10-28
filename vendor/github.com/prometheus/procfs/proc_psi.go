@@ -60,11 +60,17 @@ func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 	data, err := util.ReadFileNoStat(fs.proc.Path(fmt.Sprintf("%s/%s", "pressure", resource)))
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %s", resource)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %s", resource)
+=======
+		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 
 	return parsePSIStats(resource, bytes.NewReader(data))

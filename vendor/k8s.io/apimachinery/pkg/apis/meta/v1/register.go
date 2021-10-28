@@ -56,10 +56,15 @@ var ParameterCodec = runtime.NewParameterCodec(scheme)
 var optionsTypes = []runtime.Object{
 	&ListOptions{},
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	&ExportOptions{},
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	&ExportOptions{},
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	&GetOptions{},
 	&DeleteOptions{},
 	&CreateOptions{},

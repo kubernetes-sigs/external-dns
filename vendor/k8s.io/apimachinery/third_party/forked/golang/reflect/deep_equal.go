@@ -17,6 +17,7 @@ import (
 type Equalities map[reflect.Type]reflect.Value
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // For convenience, panics on errors
 func EqualitiesOrDie(funcs ...interface{}) Equalities {
 	e := Equalities{}
@@ -234,6 +235,11 @@ func (e Equalities) deepValueEqual(v1, v2 reflect.Value, visited map[visit]bool,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // For convenience, panics on errrors
+||||||| parent of 5ce8c7613 (update vendored files)
+// For convenience, panics on errrors
+=======
+// For convenience, panics on errors
+>>>>>>> 5ce8c7613 (update vendored files)
 func EqualitiesOrDie(funcs ...interface{}) Equalities {
 	e := Equalities{}
 	if err := e.AddFuncs(funcs...); err != nil {
@@ -446,8 +452,14 @@ func (e Equalities) deepValueEqual(v1, v2 reflect.Value, visited map[visit]bool,
 //
 // An empty slice *is* equal to a nil slice for our purposes; same for maps.
 //
+<<<<<<< HEAD
 // Unexported field members cannot be compared and will cause an imformative panic; you must add an Equality
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// Unexported field members cannot be compared and will cause an imformative panic; you must add an Equality
+=======
+// Unexported field members cannot be compared and will cause an informative panic; you must add an Equality
+>>>>>>> 5ce8c7613 (update vendored files)
 // function for these types.
 func (e Equalities) DeepEqual(a1, a2 interface{}) bool {
 	if a1 == nil || a2 == nil {

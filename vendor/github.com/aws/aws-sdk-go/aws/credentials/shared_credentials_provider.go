@@ -18,6 +18,7 @@ var (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // A SharedCredentialsProvider retrieves access key pair (access key ID,
 // secret access key, and session token if present) credentials from the current
 // user's home directory, and keeps track if those credentials are expired.
@@ -26,6 +27,14 @@ var (
 // A SharedCredentialsProvider retrieves credentials from the current user's home
 // directory, and keeps track if those credentials are expired.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// A SharedCredentialsProvider retrieves credentials from the current user's home
+// directory, and keeps track if those credentials are expired.
+=======
+// A SharedCredentialsProvider retrieves access key pair (access key ID,
+// secret access key, and session token if present) credentials from the current
+// user's home directory, and keeps track if those credentials are expired.
+>>>>>>> 5ce8c7613 (update vendored files)
 //
 // Profile ini file example: $HOME/.aws/credentials
 type SharedCredentialsProvider struct {

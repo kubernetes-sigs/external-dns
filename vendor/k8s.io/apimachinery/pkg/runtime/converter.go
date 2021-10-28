@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"sigs.k8s.io/structured-merge-diff/v4/value"
 
 	"k8s.io/klog/v2"
@@ -191,8 +192,13 @@ func fromUnstructured(sv, dv reflect.Value) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"sigs.k8s.io/structured-merge-diff/v3/value"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"sigs.k8s.io/structured-merge-diff/v3/value"
+=======
+	"sigs.k8s.io/structured-merge-diff/v4/value"
+>>>>>>> 5ce8c7613 (update vendored files)
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // UnstructuredConverter is an interface for converting between interface{}
@@ -344,6 +350,9 @@ func fromUnstructured(sv, dv reflect.Value) error {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 					reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+					dv.Set(sv.Convert(dt))
+					return nil
+				case reflect.Float32, reflect.Float64:
 					dv.Set(sv.Convert(dt))
 					return nil
 				}

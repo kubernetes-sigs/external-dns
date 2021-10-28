@@ -77,6 +77,7 @@ func newMap(model interface{}, entries MapEntries, kind mapKind) *tdMap {
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	m.err = ctxerr.OpBadUsage(
 		m.GetLocation().Func, "(MAP|&MAP, EXPECTED_ENTRIES)",
 		model, 1, true)
@@ -401,6 +402,15 @@ func (m *tdMap) String() string {
 =======
 	panic(fmt.Sprintf("usage: %s(MAP|&MAP, EXPECTED_ENTRIES)",
 		m.GetLocation().Func))
+||||||| parent of 5ce8c7613 (update vendored files)
+	panic(fmt.Sprintf("usage: %s(MAP|&MAP, EXPECTED_ENTRIES)",
+		m.GetLocation().Func))
+=======
+	m.err = ctxerr.OpBadUsage(
+		m.GetLocation().Func, "(MAP|&MAP, EXPECTED_ENTRIES)",
+		model, 1, true)
+	return &m
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflect.Value) {
@@ -420,11 +430,13 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 	for key, expectedValue := range entries {
 		vkey := reflect.ValueOf(key)
 		if !vkey.Type().AssignableTo(keyType) {
-			panic(fmt.Sprintf(
+			m.err = ctxerr.OpBad(
+				m.GetLocation().Func,
 				"expected key %s type mismatch: %s != model key type (%s)",
 				util.ToString(key),
 				vkey.Type(),
-				keyType))
+				keyType)
+			return
 		}
 
 		if expectedValue == nil {
@@ -433,21 +445,25 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 				reflect.Ptr, reflect.Slice:
 				entryInfo.expected = reflect.Zero(valueType) // change to a typed nil
 			default:
-				panic(fmt.Sprintf(
+				m.err = ctxerr.OpBad(
+					m.GetLocation().Func,
 					"expected key %s value cannot be nil as entries value type is %s",
 					util.ToString(key),
-					valueType))
+					valueType)
+				return
 			}
 		} else {
 			entryInfo.expected = reflect.ValueOf(expectedValue)
 
 			if _, ok := expectedValue.(TestDeep); !ok {
 				if !entryInfo.expected.Type().AssignableTo(valueType) {
-					panic(fmt.Sprintf(
+					m.err = ctxerr.OpBad(
+						m.GetLocation().Func,
 						"expected key %s value type mismatch: %s != model key type (%s)",
 						util.ToString(key),
 						entryInfo.expected.Type(),
-						valueType))
+						valueType)
+					return
 				}
 			}
 		}
@@ -466,8 +482,11 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 		entryInfo.expected = v
 
 		if checkedEntries[k.Interface()] {
-			panic(fmt.Sprintf(
-				"%s entry exists in both model & expectedEntries", util.ToString(k)))
+			m.err = ctxerr.OpBad(
+				m.GetLocation().Func,
+				"%s entry exists in both model & expectedEntries",
+				util.ToString(k))
+			return false
 		}
 
 		entryInfo.key = k
@@ -598,6 +617,10 @@ func SuperMapOf(model interface{}, expectedEntries MapEntries) TestDeep {
 }
 
 func (m *tdMap) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error) {
+	if m.err != nil {
+		return ctx.CollectError(m.err)
+	}
+
 	err = m.checkPtr(ctx, &got, true)
 	if err != nil {
 		return ctx.CollectError(err)
@@ -700,7 +723,15 @@ func (m *tdMap) match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 }
 
 func (m *tdMap) String() string {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if m.err != nil {
+		return m.stringError()
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	buf := &bytes.Buffer{}
 
 	if m.kind != allMap {

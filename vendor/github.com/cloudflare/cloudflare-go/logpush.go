@@ -12,6 +12,7 @@ import (
 type LogpushJob struct {
 	ID                 int        `json:"id,omitempty"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Dataset            string     `json:"dataset"`
 	Enabled            bool       `json:"enabled"`
 	Name               string     `json:"name"`
@@ -233,6 +234,10 @@ func (api *API) GetLogpushOwnershipChallenge(zoneID, destinationConf string) (*L
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	Dataset            string     `json:"dataset"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	Enabled            bool       `json:"enabled"`
 	Name               string     `json:"name"`
 	LogpullOptions     string     `json:"logpull_options"`
@@ -255,6 +260,15 @@ type LogpushJobDetailsResponse struct {
 	Result LogpushJob `json:"result"`
 }
 
+// LogpushFieldsResponse is the API response for a datasets fields
+type LogpushFieldsResponse struct {
+	Response
+	Result LogpushFields `json:"result"`
+}
+
+// LogpushFields is a map of available Logpush field names & descriptions
+type LogpushFields map[string]string
+
 // LogpushGetOwnershipChallenge describes a ownership validation.
 type LogpushGetOwnershipChallenge struct {
 	Filename string `json:"filename"`
@@ -273,9 +287,9 @@ type LogpushGetOwnershipChallengeRequest struct {
 	DestinationConf string `json:"destination_conf"`
 }
 
-// LogpushOwnershipChallangeValidationResponse is the API response,
+// LogpushOwnershipChallengeValidationResponse is the API response,
 // containing a ownership challenge validation result.
-type LogpushOwnershipChallangeValidationResponse struct {
+type LogpushOwnershipChallengeValidationResponse struct {
 	Response
 	Result struct {
 		Valid bool `json:"valid"`
@@ -332,6 +346,40 @@ func (api *API) LogpushJobs(zoneID string) ([]LogpushJob, error) {
 	err = json.Unmarshal(res, &r)
 	if err != nil {
 		return []LogpushJob{}, errors.Wrap(err, errUnmarshalError)
+	}
+	return r.Result, nil
+}
+
+// LogpushJobsForDataset returns all Logpush Jobs for a dataset in a zone.
+//
+// API reference: https://api.cloudflare.com/#logpush-jobs-list-logpush-jobs-for-a-dataset
+func (api *API) LogpushJobsForDataset(zoneID, dataset string) ([]LogpushJob, error) {
+	uri := "/zones/" + zoneID + "/logpush/datasets/" + dataset + "/jobs"
+	res, err := api.makeRequest("GET", uri, nil)
+	if err != nil {
+		return []LogpushJob{}, errors.Wrap(err, errMakeRequestError)
+	}
+	var r LogpushJobsResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return []LogpushJob{}, errors.Wrap(err, errUnmarshalError)
+	}
+	return r.Result, nil
+}
+
+// LogpushFields returns fields for a given dataset.
+//
+// API reference: https://api.cloudflare.com/#logpush-jobs-list-logpush-jobs
+func (api *API) LogpushFields(zoneID, dataset string) (LogpushFields, error) {
+	uri := "/zones/" + zoneID + "/logpush/datasets/" + dataset + "/fields"
+	res, err := api.makeRequest("GET", uri, nil)
+	if err != nil {
+		return LogpushFields{}, errors.Wrap(err, errMakeRequestError)
+	}
+	var r LogpushFieldsResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return LogpushFields{}, errors.Wrap(err, errUnmarshalError)
 	}
 	return r.Result, nil
 }
@@ -403,7 +451,16 @@ func (api *API) GetLogpushOwnershipChallenge(zoneID, destinationConf string) (*L
 	if err != nil {
 		return nil, errors.Wrap(err, errUnmarshalError)
 	}
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+	if !r.Result.Valid {
+		return nil, errors.New(r.Result.Message)
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	return &r.Result, nil
 }
 

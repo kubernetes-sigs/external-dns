@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/url"
 )
 
@@ -112,6 +113,10 @@ func (c *Config) HasCertAuth() bool {
 // HasCertCallback returns whether the configuration has certificate callback or not.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"net/url"
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 // Config holds various options for establishing a transport.
@@ -125,10 +130,10 @@ type Config struct {
 
 	// Username and password for basic authentication
 	Username string
-	Password string
+	Password string `datapolicy:"password"`
 
 	// Bearer token for authentication
-	BearerToken string
+	BearerToken string `datapolicy:"token"`
 
 	// Path to a file containing a BearerToken.
 	// If set, the contents are periodically read.
@@ -159,6 +164,13 @@ type Config struct {
 
 	// Dial specifies the dial function for creating unencrypted TCP connections.
 	Dial func(ctx context.Context, network, address string) (net.Conn, error)
+
+	// Proxy is the proxy func to be used for all requests made by this
+	// transport. If Proxy is nil, http.ProxyFromEnvironment is used. If Proxy
+	// returns a nil *URL, no proxy is used.
+	//
+	// socks5 proxying does not currently support spdy streaming endpoints.
+	Proxy func(*http.Request) (*url.URL, error)
 }
 
 // ImpersonationConfig has all the available impersonation options
@@ -191,8 +203,14 @@ func (c *Config) HasCertAuth() bool {
 	return (len(c.TLS.CertData) != 0 || len(c.TLS.CertFile) != 0) && (len(c.TLS.KeyData) != 0 || len(c.TLS.KeyFile) != 0)
 }
 
+<<<<<<< HEAD
 // HasCertCallbacks returns whether the configuration has certificate callback or not.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// HasCertCallbacks returns whether the configuration has certificate callback or not.
+=======
+// HasCertCallback returns whether the configuration has certificate callback or not.
+>>>>>>> 5ce8c7613 (update vendored files)
 func (c *Config) HasCertCallback() bool {
 	return c.TLS.GetCert != nil
 }

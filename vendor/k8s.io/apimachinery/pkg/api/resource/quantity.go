@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"math"
 	"math/big"
 	"strconv"
@@ -706,6 +707,10 @@ func NewDecimalQuantity(b inf.Dec, format Format) *Quantity {
 	}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"math"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"math/big"
 	"strconv"
 	"strings"
@@ -806,7 +811,7 @@ const (
 )
 
 // MustParse turns the given string into a quantity or panics; for tests
-// or others cases where you know the string is valid.
+// or other cases where you know the string is valid.
 func MustParse(str string) Quantity {
 	q, err := ParseQuantity(str)
 	if err != nil {
@@ -1128,6 +1133,36 @@ func (q *Quantity) CanonicalizeBytes(out []byte) (result, suffix []byte) {
 	}
 }
 
+// AsApproximateFloat64 returns a float64 representation of the quantity which may
+// lose precision. If the value of the quantity is outside the range of a float64
+// +Inf/-Inf will be returned.
+func (q *Quantity) AsApproximateFloat64() float64 {
+	var base float64
+	var exponent int
+	if q.d.Dec != nil {
+		base, _ = big.NewFloat(0).SetInt(q.d.Dec.UnscaledBig()).Float64()
+		exponent = int(-q.d.Dec.Scale())
+	} else {
+		base = float64(q.i.value)
+		exponent = int(q.i.scale)
+	}
+	if exponent == 0 {
+		return base
+	}
+
+	// multiply by the appropriate exponential scale
+	switch q.Format {
+	case DecimalExponent, DecimalSI:
+		return base * math.Pow10(exponent)
+	default:
+		// fast path for exponents that can fit in 64 bits
+		if exponent > 0 && exponent < 7 {
+			return base * float64(int64(1)<<(exponent*10))
+		}
+		return base * math.Pow(2, float64(exponent*10))
+	}
+}
+
 // AsInt64 returns a representation of the current value as an int64 if a fast conversion
 // is possible. If false is returned, callers must use the inf.Dec form of this quantity.
 func (q *Quantity) AsInt64() (int64, bool) {
@@ -1284,6 +1319,9 @@ const int64QuantityExpectedBytes = 18
 // String is an expensive operation and caching this result significantly reduces the cost of
 // normal parse / marshal operations on Quantity.
 func (q *Quantity) String() string {
+	if q == nil {
+		return "<nil>"
+	}
 	if len(q.s) == 0 {
 		result := make([]byte, 0, int64QuantityExpectedBytes)
 		number, suffix := q.CanonicalizeBytes(result)
@@ -1347,6 +1385,15 @@ func (q *Quantity) UnmarshalJSON(value []byte) error {
 	*q = parsed
 	return nil
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// NewDecimalQuantity returns a new Quantity representing the given
+// value in the given format.
+func NewDecimalQuantity(b inf.Dec, format Format) *Quantity {
+	return &Quantity{
+		d:      infDecAmount{&b},
+		Format: format,
+	}
 }
 
 // NewQuantity returns a new Quantity representing the given

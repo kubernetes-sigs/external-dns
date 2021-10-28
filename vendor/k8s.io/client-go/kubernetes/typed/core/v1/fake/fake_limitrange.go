@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -150,6 +151,11 @@ func (c *FakeLimitRanges) Apply(ctx context.Context, limitRange *applyconfigurat
 		Invokes(testing.NewPatchSubresourceAction(limitrangesResource, c.ns, *name, types.ApplyPatchType, data), &corev1.LimitRange{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,6 +163,7 @@ func (c *FakeLimitRanges) Apply(ctx context.Context, limitRange *applyconfigurat
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -253,6 +260,28 @@ func (c *FakeLimitRanges) Patch(ctx context.Context, name string, pt types.Patch
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(limitrangesResource, c.ns, name, pt, data, subresources...), &corev1.LimitRange{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.LimitRange), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied limitRange.
+func (c *FakeLimitRanges) Apply(ctx context.Context, limitRange *applyconfigurationscorev1.LimitRangeApplyConfiguration, opts v1.ApplyOptions) (result *corev1.LimitRange, err error) {
+	if limitRange == nil {
+		return nil, fmt.Errorf("limitRange provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(limitRange)
+	if err != nil {
+		return nil, err
+	}
+	name := limitRange.Name
+	if name == nil {
+		return nil, fmt.Errorf("limitRange.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(limitrangesResource, c.ns, *name, types.ApplyPatchType, data), &corev1.LimitRange{})
 
 	if obj == nil {
 		return nil, err

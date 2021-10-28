@@ -27,6 +27,7 @@ import (
 
 // LeaseLister helps list Leases.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type LeaseLister interface {
 	// List lists all Leases in the indexer.
@@ -70,8 +71,13 @@ type LeaseNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type LeaseLister interface {
 	// List lists all Leases in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Lease, err error)
 	// Leases returns an object that can list and get Leases.
 	Leases(namespace string) LeaseNamespaceLister
@@ -102,11 +108,18 @@ func (s *leaseLister) Leases(namespace string) LeaseNamespaceLister {
 }
 
 // LeaseNamespaceLister helps list and get Leases.
+// All objects returned here must be treated as read-only.
 type LeaseNamespaceLister interface {
 	// List lists all Leases in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Lease, err error)
 	// Get retrieves the Lease from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1.Lease, error)
 	LeaseNamespaceListerExpansion
 }

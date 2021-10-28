@@ -129,6 +129,7 @@ package protoreflect
 import (
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"strings"
 
 	"google.golang.org/protobuf/encoding/protowire"
@@ -477,6 +478,10 @@ func isLetterDigit(c byte) bool {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"regexp"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"regexp"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	"strings"
 
 	"google.golang.org/protobuf/encoding/protowire"
@@ -756,19 +761,14 @@ type EnumRanges interface {
 	doNotImplement
 }
 
-var (
-	regexName     = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]*$`)
-	regexFullName = regexp.MustCompile(`^[_a-zA-Z][_a-zA-Z0-9]*(\.[_a-zA-Z][_a-zA-Z0-9]*)*$`)
-)
-
 // Name is the short name for a proto declaration. This is not the name
 // as used in Go source code, which might not be identical to the proto name.
 type Name string // e.g., "Kind"
 
-// IsValid reports whether n is a syntactically valid name.
+// IsValid reports whether s is a syntactically valid name.
 // An empty name is invalid.
-func (n Name) IsValid() bool {
-	return regexName.MatchString(string(n))
+func (s Name) IsValid() bool {
+	return consumeIdent(string(s)) == len(s)
 }
 
 // Names represent a list of names.
@@ -791,11 +791,51 @@ type Names interface {
 // This should not have any leading or trailing dots.
 type FullName string // e.g., "google.protobuf.Field.Kind"
 
-// IsValid reports whether n is a syntactically valid full name.
+// IsValid reports whether s is a syntactically valid full name.
 // An empty full name is invalid.
+<<<<<<< HEAD
 func (n FullName) IsValid() bool {
 	return regexFullName.MatchString(string(n))
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+func (n FullName) IsValid() bool {
+	return regexFullName.MatchString(string(n))
+=======
+func (s FullName) IsValid() bool {
+	i := consumeIdent(string(s))
+	if i < 0 {
+		return false
+	}
+	for len(s) > i {
+		if s[i] != '.' {
+			return false
+		}
+		i++
+		n := consumeIdent(string(s[i:]))
+		if n < 0 {
+			return false
+		}
+		i += n
+	}
+	return true
+}
+
+func consumeIdent(s string) (i int) {
+	if len(s) == 0 || !isLetter(s[i]) {
+		return -1
+	}
+	i++
+	for len(s) > i && isLetterDigit(s[i]) {
+		i++
+	}
+	return i
+}
+func isLetter(c byte) bool {
+	return c == '_' || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+func isLetterDigit(c byte) bool {
+	return isLetter(c) || ('0' <= c && c <= '9')
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // Name returns the short name, which is the last identifier segment.

@@ -27,6 +27,7 @@ import (
 
 // DaemonSetLister helps list DaemonSets.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type DaemonSetLister interface {
 	// List lists all DaemonSets in the indexer.
@@ -70,8 +71,13 @@ type DaemonSetNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type DaemonSetLister interface {
 	// List lists all DaemonSets in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.DaemonSet, err error)
 	// DaemonSets returns an object that can list and get DaemonSets.
 	DaemonSets(namespace string) DaemonSetNamespaceLister
@@ -102,11 +108,18 @@ func (s *daemonSetLister) DaemonSets(namespace string) DaemonSetNamespaceLister 
 }
 
 // DaemonSetNamespaceLister helps list and get DaemonSets.
+// All objects returned here must be treated as read-only.
 type DaemonSetNamespaceLister interface {
 	// List lists all DaemonSets in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.DaemonSet, err error)
 	// Get retrieves the DaemonSet from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1.DaemonSet, error)
 	DaemonSetNamespaceListerExpansion
 }

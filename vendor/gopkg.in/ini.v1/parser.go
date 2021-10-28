@@ -85,6 +85,7 @@ func (p *parser) BOM() error {
 		fallthrough
 	case mask[0] == 255 && mask[1] == 254:
 <<<<<<< HEAD
+<<<<<<< HEAD
 		_, err = p.buf.Read(mask)
 		if err != nil {
 			return err
@@ -474,6 +475,14 @@ func (f *File) parse(reader io.Reader) (err error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		p.buf.Read(mask)
+||||||| parent of 5ce8c7613 (update vendored files)
+		p.buf.Read(mask)
+=======
+		_, err = p.buf.Read(mask)
+		if err != nil {
+			return err
+		}
+>>>>>>> 5ce8c7613 (update vendored files)
 	case mask[0] == 239 && mask[1] == 187:
 		mask, err := p.buf.Peek(3)
 		if err != nil && err != io.EOF {
@@ -482,7 +491,10 @@ func (f *File) parse(reader io.Reader) (err error) {
 			return nil
 		}
 		if mask[2] == 191 {
-			p.buf.Read(mask)
+			_, err = p.buf.Read(mask)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -524,7 +536,7 @@ func readKeyName(delimiters string, in []byte) (string, int, error) {
 	}
 
 	// Get out key name
-	endIdx := -1
+	var endIdx int
 	if len(keyQuote) > 0 {
 		startIdx := len(keyQuote)
 		// FIXME: fail case -> """"""name"""=value
@@ -570,7 +582,7 @@ func (p *parser) readMultilines(line, val, valQuote string) (string, error) {
 		}
 		val += next
 		if p.isEOF {
-			return "", fmt.Errorf("missing closing key quote from '%s' to '%s'", line, next)
+			return "", fmt.Errorf("missing closing key quote from %q to %q", line, next)
 		}
 	}
 	return val, nil
@@ -760,7 +772,7 @@ func (f *File) parse(reader io.Reader) (err error) {
 
 	// Ignore error because default section name is never empty string.
 	name := DefaultSection
-	if f.options.Insensitive {
+	if f.options.Insensitive || f.options.InsensitiveSections {
 		name = strings.ToLower(DefaultSection)
 	}
 	section, _ := f.NewSection(name)
@@ -802,7 +814,10 @@ func (f *File) parse(reader io.Reader) (err error) {
 		if f.options.AllowNestedValues &&
 			isLastValueEmpty && len(line) > 0 {
 			if line[0] == ' ' || line[0] == '\t' {
-				lastRegularKey.addNestedValue(string(bytes.TrimSpace(line)))
+				err = lastRegularKey.addNestedValue(string(bytes.TrimSpace(line)))
+				if err != nil {
+					return err
+				}
 				continue
 			}
 		}
@@ -842,15 +857,21 @@ func (f *File) parse(reader io.Reader) (err error) {
 
 			section.Comment = strings.TrimSpace(p.comment.String())
 
-			// Reset aotu-counter and comments
+			// Reset auto-counter and comments
 			p.comment.Reset()
 			p.count = 1
 
 			inUnparseableSection = false
 			for i := range f.options.UnparseableSections {
 				if f.options.UnparseableSections[i] == name ||
+<<<<<<< HEAD
 					(f.options.Insensitive && strings.ToLower(f.options.UnparseableSections[i]) == strings.ToLower(name)) {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+					(f.options.Insensitive && strings.ToLower(f.options.UnparseableSections[i]) == strings.ToLower(name)) {
+=======
+					((f.options.Insensitive || f.options.InsensitiveSections) && strings.EqualFold(f.options.UnparseableSections[i], name)) {
+>>>>>>> 5ce8c7613 (update vendored files)
 					inUnparseableSection = true
 					continue
 				}

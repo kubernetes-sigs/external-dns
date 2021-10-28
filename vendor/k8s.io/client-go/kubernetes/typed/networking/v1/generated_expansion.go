@@ -19,6 +19,7 @@ limitations under the License.
 package v1
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 type IngressExpansion interface{}
 
 type IngressClassExpansion interface{}
@@ -26,4 +27,11 @@ type IngressClassExpansion interface{}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+type IngressExpansion interface{}
+
+type IngressClassExpansion interface{}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 type NetworkPolicyExpansion interface{}

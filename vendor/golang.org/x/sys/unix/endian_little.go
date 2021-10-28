@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build 386 || amd64 || amd64p32 || alpha || arm || arm64 || mipsle || mips64le || mips64p32le || nios2 || ppc64le || riscv || riscv64 || sh
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build 386 || amd64 || amd64p32 || alpha || arm || arm64 || mipsle || mips64le || mips64p32le || nios2 || ppc64le || riscv || riscv64 || sh
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build 386 amd64 amd64p32 alpha arm arm64 mipsle mips64le mips64p32le nios2 ppc64le riscv riscv64 sh
 
 package unix

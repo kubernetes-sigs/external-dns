@@ -27,6 +27,7 @@ import (
 
 // ControllerRevisionLister helps list ControllerRevisions.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ControllerRevisionLister interface {
 	// List lists all ControllerRevisions in the indexer.
@@ -70,8 +71,13 @@ type ControllerRevisionNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ControllerRevisionLister interface {
 	// List lists all ControllerRevisions in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta2.ControllerRevision, err error)
 	// ControllerRevisions returns an object that can list and get ControllerRevisions.
 	ControllerRevisions(namespace string) ControllerRevisionNamespaceLister
@@ -102,11 +108,18 @@ func (s *controllerRevisionLister) ControllerRevisions(namespace string) Control
 }
 
 // ControllerRevisionNamespaceLister helps list and get ControllerRevisions.
+// All objects returned here must be treated as read-only.
 type ControllerRevisionNamespaceLister interface {
 	// List lists all ControllerRevisions in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta2.ControllerRevision, err error)
 	// Get retrieves the ControllerRevision from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta2.ControllerRevision, error)
 	ControllerRevisionNamespaceListerExpansion
 }

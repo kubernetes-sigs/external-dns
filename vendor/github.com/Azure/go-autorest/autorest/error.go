@@ -97,6 +97,7 @@ func (e DetailedError) Error() string {
 	return fmt.Sprintf("%s#%s: %s: StatusCode=%d -- Original Error: %v", e.PackageType, e.Method, e.Message, e.StatusCode, e.Original)
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // Unwrap returns the original error.
 func (e DetailedError) Unwrap() error {
@@ -105,3 +106,11 @@ func (e DetailedError) Unwrap() error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+// Unwrap returns the original error.
+func (e DetailedError) Unwrap() error {
+	return e.Original
+}
+>>>>>>> 5ce8c7613 (update vendored files)

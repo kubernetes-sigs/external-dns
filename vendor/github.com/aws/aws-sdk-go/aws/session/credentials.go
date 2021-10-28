@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/processcreds"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/aws/aws-sdk-go/aws/credentials/ssocreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
@@ -175,6 +176,10 @@ func resolveSSOCredentials(cfg *aws.Config, sharedCfg sharedConfig, handlers req
 	), nil
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"github.com/aws/aws-sdk-go/aws/credentials/ssocreds"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -266,10 +271,6 @@ func resolveCredsFromProfile(cfg *aws.Config,
 			sharedCfg.Creds,
 		)
 
-	case len(sharedCfg.CredentialProcess) != 0:
-		// Get credentials from CredentialProcess
-		creds = processcreds.NewCredentials(sharedCfg.CredentialProcess)
-
 	case len(sharedCfg.CredentialSource) != 0:
 		creds, err = resolveCredsFromSource(cfg, envCfg,
 			sharedCfg, handlers, sessOpts,
@@ -284,6 +285,13 @@ func resolveCredsFromProfile(cfg *aws.Config,
 			sharedCfg.RoleARN,
 			sharedCfg.RoleSessionName,
 		)
+
+	case sharedCfg.hasSSOConfiguration():
+		creds, err = resolveSSOCredentials(cfg, sharedCfg, handlers)
+
+	case len(sharedCfg.CredentialProcess) != 0:
+		// Get credentials from CredentialProcess
+		creds = processcreds.NewCredentials(sharedCfg.CredentialProcess)
 
 	default:
 		// Fallback to default credentials provider, include mock errors for
@@ -316,6 +324,25 @@ func resolveCredsFromProfile(cfg *aws.Config,
 
 	return creds, nil
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func resolveSSOCredentials(cfg *aws.Config, sharedCfg sharedConfig, handlers request.Handlers) (*credentials.Credentials, error) {
+	if err := sharedCfg.validateSSOConfiguration(); err != nil {
+		return nil, err
+	}
+
+	cfgCopy := cfg.Copy()
+	cfgCopy.Region = &sharedCfg.SSORegion
+
+	return ssocreds.NewCredentials(
+		&Session{
+			Config:   cfgCopy,
+			Handlers: handlers.Copy(),
+		},
+		sharedCfg.SSOAccountID,
+		sharedCfg.SSORoleName,
+		sharedCfg.SSOStartURL,
+	), nil
 }
 
 // valid credential source values

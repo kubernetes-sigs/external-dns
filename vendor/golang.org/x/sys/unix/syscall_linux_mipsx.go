@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build linux && (mips || mipsle)
 // +build linux
 // +build mips mipsle
@@ -208,6 +209,10 @@ func (rsa *RawSockaddrNFCLLCP) SetServiceNameLen(length int) {
 	rsa.Service_name_len = uint32(length)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build linux && (mips || mipsle)
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build linux
 // +build mips mipsle
 
@@ -220,8 +225,6 @@ import (
 
 func Syscall9(trap, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, err syscall.Errno)
 
-//sys	dup2(oldfd int, newfd int) (err error)
-//sysnb	EpollCreate(size int) (fd int, err error)
 //sys	EpollWait(epfd int, events []EpollEvent, msec int) (n int, err error)
 //sys	Fadvise(fd int, offset int64, length int64, advice int) (err error) = SYS_FADVISE64
 //sys	Fchown(fd int, uid int, gid int) (err error)
@@ -265,7 +268,6 @@ func Syscall9(trap, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr,
 //sys	recvmsg(s int, msg *Msghdr, flags int) (n int, err error)
 //sys	sendmsg(s int, msg *Msghdr, flags int) (n int, err error)
 
-//sysnb	InotifyInit() (fd int, err error)
 //sys	Ioperm(from int, num int, on int) (err error)
 //sys	Iopl(level int) (err error)
 
@@ -318,29 +320,6 @@ func setTimeval(sec, usec int64) Timeval {
 	return Timeval{Sec: int32(sec), Usec: int32(usec)}
 }
 
-//sysnb pipe2(p *[2]_C_int, flags int) (err error)
-
-func Pipe2(p []int, flags int) (err error) {
-	if len(p) != 2 {
-		return EINVAL
-	}
-	var pp [2]_C_int
-	err = pipe2(&pp, flags)
-	p[0] = int(pp[0])
-	p[1] = int(pp[1])
-	return
-}
-
-//sysnb pipe() (p1 int, p2 int, err error)
-
-func Pipe(p []int) (err error) {
-	if len(p) != 2 {
-		return EINVAL
-	}
-	p[0], p[1], err = pipe()
-	return
-}
-
 //sys	mmap2(addr uintptr, length uintptr, prot int, flags int, fd int, pageOffset uintptr) (xaddr uintptr, err error)
 
 func mmap(addr uintptr, length uintptr, prot int, flags int, fd int, offset int64) (xaddr uintptr, err error) {
@@ -359,10 +338,10 @@ type rlimit32 struct {
 	Max uint32
 }
 
-//sysnb getrlimit(resource int, rlim *rlimit32) (err error) = SYS_GETRLIMIT
+//sysnb	getrlimit(resource int, rlim *rlimit32) (err error) = SYS_GETRLIMIT
 
 func Getrlimit(resource int, rlim *Rlimit) (err error) {
-	err = prlimit(0, resource, nil, rlim)
+	err = Prlimit(0, resource, nil, rlim)
 	if err != ENOSYS {
 		return err
 	}
@@ -387,10 +366,10 @@ func Getrlimit(resource int, rlim *Rlimit) (err error) {
 	return
 }
 
-//sysnb setrlimit(resource int, rlim *rlimit32) (err error) = SYS_SETRLIMIT
+//sysnb	setrlimit(resource int, rlim *rlimit32) (err error) = SYS_SETRLIMIT
 
 func Setrlimit(resource int, rlim *Rlimit) (err error) {
-	err = prlimit(0, resource, rlim, nil)
+	err = Prlimit(0, resource, rlim, nil)
 	if err != ENOSYS {
 		return err
 	}
@@ -434,6 +413,7 @@ func (cmsg *Cmsghdr) SetLen(length int) {
 	cmsg.Len = uint32(length)
 }
 
+<<<<<<< HEAD
 //sys	poll(fds *PollFd, nfds int, timeout int) (n int, err error)
 
 func Poll(fds []PollFd, timeout int) (n int, err error) {
@@ -442,4 +422,16 @@ func Poll(fds []PollFd, timeout int) (n int, err error) {
 	}
 	return poll(&fds[0], len(fds), timeout)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+//sys	poll(fds *PollFd, nfds int, timeout int) (n int, err error)
+
+func Poll(fds []PollFd, timeout int) (n int, err error) {
+	if len(fds) == 0 {
+		return poll(nil, 0, timeout)
+	}
+	return poll(&fds[0], len(fds), timeout)
+=======
+func (rsa *RawSockaddrNFCLLCP) SetServiceNameLen(length int) {
+	rsa.Service_name_len = uint32(length)
+>>>>>>> 5ce8c7613 (update vendored files)
 }

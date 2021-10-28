@@ -309,11 +309,17 @@ func (b *xmlBuilder) buildScalar(value reflect.Value, current *XMLNode, tag refl
 		attr := xml.Attr{Name: xname, Value: str}
 		current.Attr = append(current.Attr, attr)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	} else if len(xname.Local) == 0 {
 		current.Text = str
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	} else if len(xname.Local) == 0 {
+		current.Text = str
+>>>>>>> 5ce8c7613 (update vendored files)
 	} else { // regular text node
 		current.AddChild(&XMLNode{Name: xname, Text: str})
 	}

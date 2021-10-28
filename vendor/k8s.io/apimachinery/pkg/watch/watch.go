@@ -21,6 +21,7 @@ import (
 	"sync"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -281,6 +282,11 @@ func (f *RaceFreeFakeWatcher) Action(action EventType, obj runtime.Object) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -292,8 +298,8 @@ type Interface interface {
 	Stop()
 
 	// Returns a chan which will receive all the events. If an error occurs
-	// or Stop() is called, this channel will be closed, in which case the
-	// watch should be completely cleaned up.
+	// or Stop() is called, the implementation will close this channel and
+	// release any resources used by the watch.
 	ResultChan() <-chan Event
 }
 
@@ -306,7 +312,9 @@ const (
 	Deleted  EventType = "DELETED"
 	Bookmark EventType = "BOOKMARK"
 	Error    EventType = "ERROR"
+)
 
+var (
 	DefaultChanSize int32 = 100
 )
 
@@ -534,8 +542,14 @@ func (f *RaceFreeFakeWatcher) Action(action EventType, obj runtime.Object) {
 	}
 }
 
+<<<<<<< HEAD
 // ProxyWatcher lets you wrap your channel in watch Interface. Threadsafe.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// ProxyWatcher lets you wrap your channel in watch Interface. Threadsafe.
+=======
+// ProxyWatcher lets you wrap your channel in watch Interface. threadsafe.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ProxyWatcher struct {
 	result chan Event
 	stopCh chan struct{}

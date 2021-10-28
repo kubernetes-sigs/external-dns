@@ -110,6 +110,10 @@ func (r CreateResult) ExtractTokenID() (string, error) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 // ExtractTokenID implements the gophercloud.AuthResult interface. The returned
 // string is the same as the ID field of the Token struct returned from
 // ExtractToken().
@@ -159,6 +163,7 @@ func (r commonResult) ExtractDomain() (*Domain, error) {
 	}
 	err := r.ExtractInto(&s)
 	return s.Domain, err
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // ExtractServiceCatalog returns the ServiceCatalog that was generated along
@@ -195,6 +200,9 @@ func (r commonResult) ExtractProject() (*Project, error) {
 	err := r.ExtractInto(&s)
 	return s.Project, err
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // CreateResult is the response from a Create request. Use ExtractToken()

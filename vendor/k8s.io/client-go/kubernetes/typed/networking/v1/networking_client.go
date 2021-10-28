@@ -27,6 +27,10 @@ import (
 type NetworkingV1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	IngressesGetter
 	IngressClassesGetter
 	NetworkPoliciesGetter
@@ -43,6 +47,7 @@ func (c *NetworkingV1Client) Ingresses(namespace string) IngressInterface {
 
 func (c *NetworkingV1Client) IngressClasses() IngressClassInterface {
 	return newIngressClasses(c)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	NetworkPoliciesGetter
@@ -52,6 +57,9 @@ func (c *NetworkingV1Client) IngressClasses() IngressClassInterface {
 type NetworkingV1Client struct {
 	restClient rest.Interface
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (c *NetworkingV1Client) NetworkPolicies(namespace string) NetworkPolicyInterface {

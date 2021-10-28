@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"log"
@@ -148,6 +149,10 @@ func (client *Client) ListRunstatusPages(ctx context.Context) ([]RunstatusPage, 
 // PaginateRunstatusPages paginate on runstatus pages
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"errors"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"fmt"
 	"log"
 	"time"
@@ -167,7 +172,7 @@ type RunstatusPage struct {
 	Logo             string                 `json:"logo,omitempty"`
 	Maintenances     []RunstatusMaintenance `json:"maintenances,omitempty"`
 	MaintenancesURL  string                 `json:"maintenances_url,omitempty"`
-	Name             string                 `json:"name"` //fake field (used to post a new runstatus page)
+	Name             string                 `json:"name"` // fake field (used to post a new runstatus page)
 	OkText           string                 `json:"ok_text,omitempty"`
 	Plan             string                 `json:"plan,omitempty"`
 	PublicURL        string                 `json:"public_url,omitempty"`
@@ -244,7 +249,7 @@ func (client *Client) GetRunstatusPage(ctx context.Context, page RunstatusPage) 
 		}
 	}
 
-	return nil, fmt.Errorf("%#v not found", page)
+	return nil, errors.New("page not found")
 }
 
 func (client *Client) getRunstatusPage(ctx context.Context, pageURL string) (*RunstatusPage, error) {
@@ -288,8 +293,14 @@ func (client *Client) ListRunstatusPages(ctx context.Context) ([]RunstatusPage, 
 	return p.Pages, nil
 }
 
+<<<<<<< HEAD
 //PaginateRunstatusPages paginate on runstatus pages
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+//PaginateRunstatusPages paginate on runstatus pages
+=======
+// PaginateRunstatusPages paginate on runstatus pages
+>>>>>>> 5ce8c7613 (update vendored files)
 func (client *Client) PaginateRunstatusPages(ctx context.Context, callback func(pages []RunstatusPage, e error) bool) {
 	pageURL := client.Endpoint + runstatusPagesURL
 	for pageURL != "" {

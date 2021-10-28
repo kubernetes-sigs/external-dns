@@ -82,6 +82,7 @@ func decodeV3Endpoints(modelDef modelDefinition, opts DecodeModelOptions) (Resol
 	for i := 0; i < len(ps); i++ {
 		p := &ps[i]
 <<<<<<< HEAD
+<<<<<<< HEAD
 		custAddS3DualStack(p)
 		custRegionalS3(p)
 		custRmIotDataService(p)
@@ -141,6 +142,10 @@ func custAddDualstack(p *partition, svcName string) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		custAddEC2Metadata(p)
+||||||| parent of 5ce8c7613 (update vendored files)
+		custAddEC2Metadata(p)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 		custAddS3DualStack(p)
 		custRegionalS3(p)
 		custRmIotDataService(p)
@@ -199,6 +204,7 @@ func custAddDualstack(p *partition, svcName string) {
 	p.Services[svcName] = s
 }
 
+<<<<<<< HEAD
 func custAddEC2Metadata(p *partition) {
 	p.Services["ec2metadata"] = service{
 		IsRegionalized:    boxedFalse,
@@ -213,6 +219,22 @@ func custAddEC2Metadata(p *partition) {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
 
+||||||| parent of 5ce8c7613 (update vendored files)
+func custAddEC2Metadata(p *partition) {
+	p.Services["ec2metadata"] = service{
+		IsRegionalized:    boxedFalse,
+		PartitionEndpoint: "aws-global",
+		Endpoints: endpoints{
+			"aws-global": endpoint{
+				Hostname:  "169.254.169.254/latest",
+				Protocols: []string{"http"},
+			},
+		},
+	}
+}
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 func custRmIotDataService(p *partition) {
 	delete(p.Services, "data.iot")
 }

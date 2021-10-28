@@ -27,6 +27,7 @@ import (
 
 // NetworkPolicyLister helps list NetworkPolicies.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type NetworkPolicyLister interface {
 	// List lists all NetworkPolicies in the indexer.
@@ -70,8 +71,13 @@ type NetworkPolicyNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type NetworkPolicyLister interface {
 	// List lists all NetworkPolicies in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.NetworkPolicy, err error)
 	// NetworkPolicies returns an object that can list and get NetworkPolicies.
 	NetworkPolicies(namespace string) NetworkPolicyNamespaceLister
@@ -102,11 +108,18 @@ func (s *networkPolicyLister) NetworkPolicies(namespace string) NetworkPolicyNam
 }
 
 // NetworkPolicyNamespaceLister helps list and get NetworkPolicies.
+// All objects returned here must be treated as read-only.
 type NetworkPolicyNamespaceLister interface {
 	// List lists all NetworkPolicies in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.NetworkPolicy, err error)
 	// Get retrieves the NetworkPolicy from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1.NetworkPolicy, error)
 	NetworkPolicyNamespaceListerExpansion
 }

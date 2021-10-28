@@ -45,6 +45,7 @@ linters:
     - interfacer
     - gomnd
 <<<<<<< HEAD
+<<<<<<< HEAD
     - nlreturn
     - wrapcheck
     - wastedassign
@@ -57,4 +58,16 @@ linters:
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+    - nlreturn
+    - wrapcheck
+    - wastedassign
+    - goerr113
+    - exhaustivestruct
+    - durationcheck
+    - errorlint
+    - cyclop
+    - godot
+>>>>>>> 5ce8c7613 (update vendored files)
   fast: false

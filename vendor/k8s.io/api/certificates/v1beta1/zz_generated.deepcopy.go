@@ -57,6 +57,10 @@ func (in *CertificateSigningRequestCondition) DeepCopyInto(out *CertificateSigni
 	*out = *in
 	in.LastUpdateTime.DeepCopyInto(&out.LastUpdateTime)
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	in.LastTransitionTime.DeepCopyInto(&out.LastTransitionTime)
 	return
 }
@@ -120,6 +124,7 @@ func (in *CertificateSigningRequestSpec) DeepCopyInto(out *CertificateSigningReq
 	if in.ExpirationSeconds != nil {
 		in, out := &in.ExpirationSeconds, &out.ExpirationSeconds
 		*out = new(int32)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return
@@ -180,6 +185,9 @@ func (in *CertificateSigningRequestSpec) DeepCopyInto(out *CertificateSigningReq
 		in, out := &in.SignerName, &out.SignerName
 		*out = new(string)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 		**out = **in
 	}
 	if in.Usages != nil {

@@ -39,6 +39,7 @@ func AuthOptionsFromEnv() (gophercloud.AuthOptions, error) {
 	userID := os.Getenv("OS_USERID")
 	password := os.Getenv("OS_PASSWORD")
 <<<<<<< HEAD
+<<<<<<< HEAD
 	passcode := os.Getenv("OS_PASSCODE")
 	tenantID := os.Getenv("OS_TENANT_ID")
 	tenantName := os.Getenv("OS_TENANT_NAME")
@@ -118,6 +119,10 @@ func AuthOptionsFromEnv() (gophercloud.AuthOptions, error) {
 		Passcode:                    passcode,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	passcode := os.Getenv("OS_PASSCODE")
+>>>>>>> 5ce8c7613 (update vendored files)
 	tenantID := os.Getenv("OS_TENANT_ID")
 	tenantName := os.Getenv("OS_TENANT_NAME")
 	domainID := os.Getenv("OS_DOMAIN_ID")
@@ -153,8 +158,9 @@ func AuthOptionsFromEnv() (gophercloud.AuthOptions, error) {
 		}
 	}
 
-	if password == "" && applicationCredentialID == "" && applicationCredentialName == "" {
+	if password == "" && passcode == "" && applicationCredentialID == "" && applicationCredentialName == "" {
 		err := gophercloud.ErrMissingEnvironmentVariable{
+			// silently ignore TOTP passcode warning, since it is not a common auth method
 			EnvironmentVariable: "OS_PASSWORD",
 		}
 		return nilOptions, err
@@ -192,7 +198,12 @@ func AuthOptionsFromEnv() (gophercloud.AuthOptions, error) {
 		UserID:                      userID,
 		Username:                    username,
 		Password:                    password,
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		Passcode:                    passcode,
+>>>>>>> 5ce8c7613 (update vendored files)
 		TenantID:                    tenantID,
 		TenantName:                  tenantName,
 		DomainID:                    domainID,

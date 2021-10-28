@@ -403,11 +403,17 @@ func (f *MyJSONFormatter) Format(entry *Entry) ([]byte, error) {
   serialized, err := json.Marshal(entry.Data)
     if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
       return nil, fmt.Errorf("Failed to marshal fields to JSON, %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
       return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+      return nil, fmt.Errorf("Failed to marshal fields to JSON, %v", err)
+=======
+      return nil, fmt.Errorf("Failed to marshal fields to JSON, %w", err)
+>>>>>>> 5ce8c7613 (update vendored files)
     }
   return append(serialized, '\n'), nil
 }

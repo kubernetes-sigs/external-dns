@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -142,6 +143,11 @@ func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *storagev1b
 		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, *name, types.ApplyPatchType, data), &v1beta1.StorageClass{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +155,7 @@ func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *storagev1b
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1beta1 "k8s.io/client-go/applyconfigurations/storage/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -238,6 +245,27 @@ func (c *FakeStorageClasses) Patch(ctx context.Context, name string, pt types.Pa
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, name, pt, data, subresources...), &v1beta1.StorageClass{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.StorageClass), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied storageClass.
+func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *storagev1beta1.StorageClassApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.StorageClass, err error) {
+	if storageClass == nil {
+		return nil, fmt.Errorf("storageClass provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(storageClass)
+	if err != nil {
+		return nil, err
+	}
+	name := storageClass.Name
+	if name == nil {
+		return nil, fmt.Errorf("storageClass.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, *name, types.ApplyPatchType, data), &v1beta1.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}

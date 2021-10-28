@@ -3,6 +3,7 @@ package gophercloud
 import (
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 	"strings"
 )
@@ -112,6 +113,10 @@ type StatusCodeError interface {
 	GetStatusCode() int
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"net/http"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"strings"
 )
 
@@ -187,11 +192,12 @@ func (e ErrMissingAnyoneOfEnvironmentVariables) Error() string {
 // those listed in OkCodes is encountered.
 type ErrUnexpectedResponseCode struct {
 	BaseError
-	URL      string
-	Method   string
-	Expected []int
-	Actual   int
-	Body     []byte
+	URL            string
+	Method         string
+	Expected       []int
+	Actual         int
+	Body           []byte
+	ResponseHeader http.Header
 }
 
 func (e ErrUnexpectedResponseCode) Error() string {
@@ -201,6 +207,23 @@ func (e ErrUnexpectedResponseCode) Error() string {
 	)
 	return e.choseErrString()
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// GetStatusCode returns the actual status code of the error.
+func (e ErrUnexpectedResponseCode) GetStatusCode() int {
+	return e.Actual
+}
+
+// StatusCodeError is a convenience interface to easily allow access to the
+// status code field of the various ErrDefault* types.
+//
+// By using this interface, you only have to make a single type cast of
+// the returned error to err.(StatusCodeError) and then call GetStatusCode()
+// instead of having a large switch statement checking for each of the
+// ErrDefault* types.
+type StatusCodeError interface {
+	Error() string
+	GetStatusCode() int
 }
 
 // ErrDefault400 is the default error type returned on a 400 HTTP response code.

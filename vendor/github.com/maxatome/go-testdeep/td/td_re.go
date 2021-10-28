@@ -26,6 +26,7 @@ type tdRe struct {
 var _ TestDeep = &tdRe{}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func newRe(regIf interface{}, capture ...interface{}) *tdRe {
 	r := &tdRe{
 		base: newBase(4),
@@ -283,7 +284,24 @@ func (r *tdRe) String() string {
 =======
 func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
 	r = &tdRe{
+||||||| parent of 5ce8c7613 (update vendored files)
+func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
+	r = &tdRe{
+=======
+func newRe(regIf interface{}, capture ...interface{}) *tdRe {
+	r := &tdRe{
+>>>>>>> 5ce8c7613 (update vendored files)
 		base: newBase(4),
+	}
+
+	const (
+		usageRe    = "(STRING|*regexp.Regexp[, NON_NIL_CAPTURE])"
+		usageReAll = "(STRING|*regexp.Regexp, NON_NIL_CAPTURE)"
+	)
+
+	usage := usageRe
+	if len(r.location.Func) != 2 {
+		usage = usageReAll
 	}
 
 	switch len(capture) {
@@ -293,18 +311,26 @@ func newRe(regIf interface{}, capture ...interface{}) (r *tdRe) {
 			r.captures = reflect.ValueOf(capture[0])
 		}
 	default:
-		r.usage()
+		r.err = ctxerr.OpTooManyParams(r.location.Func, usage)
+		return r
 	}
 
 	switch reg := regIf.(type) {
 	case *regexp.Regexp:
 		r.re = reg
 	case string:
-		r.re = regexp.MustCompile(reg)
+		var err error
+		r.re, err = regexp.Compile(reg)
+		if err != nil {
+			r.err = &ctxerr.Error{
+				Message: "invalid regexp given to " + r.location.Func + " operator",
+				Summary: ctxerr.NewSummary(err.Error()),
+			}
+		}
 	default:
-		r.usage()
+		r.err = ctxerr.OpBadUsage(r.location.Func, usage, regIf, 1, false)
 	}
-	return
+	return r
 }
 
 // summary(Re): allows to apply a regexp on a string (or convertible),
@@ -356,15 +382,10 @@ func Re(reg interface{}, capture ...interface{}) TestDeep {
 //     td.ReAll(`(\w+)(?: |\z)`, []string{"John", "Doe"})) // succeeds
 //   td.Cmp(t, "John Doe",
 //     td.ReAll(`(\w+)(?: |\z)`, td.Bag("Doe", "John"))) // succeeds
-func ReAll(reg interface{}, capture interface{}) TestDeep {
+func ReAll(reg, capture interface{}) TestDeep {
 	r := newRe(reg, capture)
 	r.numMatches = -1
 	return r
-}
-
-func (r *tdRe) usage() {
-	panic(fmt.Sprintf("usage: %s(STRING|*regexp.Regexp[, NON_NIL_CAPTURE])",
-		r.location.Func))
 }
 
 func (r *tdRe) needCaptures() bool {
@@ -382,13 +403,24 @@ func (r *tdRe) matchByteCaptures(ctx ctxerr.Context, got []byte, result [][][]by
 	}
 
 	// Not perfect but cast captured groups to string
+
+	// Special case to accepted expected []interface{} type
+	if r.captures.Type() == types.SliceInterface {
+		captures := make([]interface{}, 0, num)
+		for _, set := range result {
+			for _, match := range set[1:] {
+				captures = append(captures, string(match))
+			}
+		}
+		return r.matchCaptures(ctx, captures)
+	}
+
 	captures := make([]string, 0, num)
 	for _, set := range result {
 		for _, match := range set[1:] {
 			captures = append(captures, string(match))
 		}
 	}
-
 	return r.matchCaptures(ctx, captures)
 }
 
@@ -402,15 +434,25 @@ func (r *tdRe) matchStringCaptures(ctx ctxerr.Context, got string, result [][]st
 		num += len(set) - 1
 	}
 
+	// Special case to accepted expected []interface{} type
+	if r.captures.Type() == types.SliceInterface {
+		captures := make([]interface{}, 0, num)
+		for _, set := range result {
+			for _, match := range set[1:] {
+				captures = append(captures, match)
+			}
+		}
+		return r.matchCaptures(ctx, captures)
+	}
+
 	captures := make([]string, 0, num)
 	for _, set := range result {
 		captures = append(captures, set[1:]...)
 	}
-
 	return r.matchCaptures(ctx, captures)
 }
 
-func (r *tdRe) matchCaptures(ctx ctxerr.Context, captures []string) (err *ctxerr.Error) {
+func (r *tdRe) matchCaptures(ctx ctxerr.Context, captures interface{}) (err *ctxerr.Error) {
 	return deepValueEqual(
 		ctx.ResetPath("("+ctx.Path.String()+" =~ "+r.String()+")"),
 		reflect.ValueOf(captures), r.captures)
@@ -435,6 +477,10 @@ func (r *tdRe) doesNotMatch(ctx ctxerr.Context, got interface{}) *ctxerr.Error {
 }
 
 func (r *tdRe) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if r.err != nil {
+		return ctx.CollectError(r.err)
+	}
+
 	var str string
 	switch got.Kind() {
 	case reflect.String:
@@ -493,6 +539,13 @@ func (r *tdRe) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (r *tdRe) String() string {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if r.err != nil {
+		return r.stringError()
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	return r.re.String()
 }

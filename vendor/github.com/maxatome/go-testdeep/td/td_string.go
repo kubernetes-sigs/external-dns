@@ -35,11 +35,17 @@ func getString(ctx ctxerr.Context, got reflect.Value) (string, *ctxerr.Error) {
 
 	case reflect.Slice:
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if got.Type().Elem() == types.Uint8 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		if got.Type().Elem() == uint8Type {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		if got.Type().Elem() == uint8Type {
+=======
+		if got.Type().Elem() == types.Uint8 {
+>>>>>>> 5ce8c7613 (update vendored files)
 			return string(got.Bytes()), nil
 		}
 		fallthrough

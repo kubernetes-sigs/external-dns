@@ -43,10 +43,16 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 		// create a new slice to fool govet and avoid "call has possible
 		// formatting directive" errors
 <<<<<<< HEAD
+<<<<<<< HEAD
 		fmt.Fprint(w, args[:]...) // nolint: errcheck,gocritic
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		fmt.Fprint(w, args[:]...) // nolint: errcheck
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		fmt.Fprint(w, args[:]...) // nolint: errcheck
+=======
+		fmt.Fprint(w, args[:]...) // nolint: errcheck,gocritic
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 }

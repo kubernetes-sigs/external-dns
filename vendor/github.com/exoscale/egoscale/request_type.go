@@ -65,11 +65,17 @@ const (
 	// Unauthorized represents ... (TODO)
 	Unauthorized ErrorCode = 401
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// NotFound represents ... (TODO)
 	NotFound ErrorCode = 404
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// NotFound represents ... (TODO)
+	NotFound ErrorCode = 404
+>>>>>>> 5ce8c7613 (update vendored files)
 	// MethodNotAllowed represents ... (TODO)
 	MethodNotAllowed ErrorCode = 405
 	// UnsupportedActionError represents ... (TODO)

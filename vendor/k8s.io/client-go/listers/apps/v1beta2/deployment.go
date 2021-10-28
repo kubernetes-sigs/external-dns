@@ -27,6 +27,7 @@ import (
 
 // DeploymentLister helps list Deployments.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type DeploymentLister interface {
 	// List lists all Deployments in the indexer.
@@ -70,8 +71,13 @@ type DeploymentNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type DeploymentLister interface {
 	// List lists all Deployments in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta2.Deployment, err error)
 	// Deployments returns an object that can list and get Deployments.
 	Deployments(namespace string) DeploymentNamespaceLister
@@ -102,11 +108,18 @@ func (s *deploymentLister) Deployments(namespace string) DeploymentNamespaceList
 }
 
 // DeploymentNamespaceLister helps list and get Deployments.
+// All objects returned here must be treated as read-only.
 type DeploymentNamespaceLister interface {
 	// List lists all Deployments in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta2.Deployment, err error)
 	// Get retrieves the Deployment from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta2.Deployment, error)
 	DeploymentNamespaceListerExpansion
 }

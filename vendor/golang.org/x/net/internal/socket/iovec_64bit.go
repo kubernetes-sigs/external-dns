@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (arm64 || amd64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && (aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || zos)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build (arm64 || amd64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && (aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || zos)
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build arm64 amd64 ppc64 ppc64le mips64 mips64le riscv64 s390x
 // +build aix darwin dragonfly freebsd linux netbsd openbsd zos
 

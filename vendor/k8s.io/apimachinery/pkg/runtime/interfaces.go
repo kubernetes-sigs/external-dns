@@ -58,11 +58,17 @@ type Encoder interface {
 	// object it will be encoded to the same representation by both of them.
 	//
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+=======
+	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
+>>>>>>> 5ce8c7613 (update vendored files)
 	// correctly handle CacheableObject, Encode() method should look similar to below, where
 	// doEncode() is the encoding logic of implemented encoder:
 	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {

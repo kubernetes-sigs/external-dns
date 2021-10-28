@@ -27,6 +27,7 @@ import (
 
 // EventLister helps list Events.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EventLister interface {
 	// List lists all Events in the indexer.
@@ -70,8 +71,13 @@ type EventNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type EventLister interface {
 	// List lists all Events in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Event, err error)
 	// Events returns an object that can list and get Events.
 	Events(namespace string) EventNamespaceLister
@@ -102,11 +108,18 @@ func (s *eventLister) Events(namespace string) EventNamespaceLister {
 }
 
 // EventNamespaceLister helps list and get Events.
+// All objects returned here must be treated as read-only.
 type EventNamespaceLister interface {
 	// List lists all Events in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Event, err error)
 	// Get retrieves the Event from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta1.Event, error)
 	EventNamespaceListerExpansion
 }

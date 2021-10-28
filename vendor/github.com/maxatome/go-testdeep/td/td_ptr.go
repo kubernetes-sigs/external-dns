@@ -42,6 +42,7 @@ var _ TestDeep = &tdPtr{}
 // pointer on the returned value (if non-nil of course).
 func Ptr(val interface{}) TestDeep {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	p := tdPtr{
 		tdSmugglerBase: newSmugglerBase(val),
 	}
@@ -209,17 +210,36 @@ func (p *tdPPtr) TypeBehind() reflect.Type {
 		p := tdPtr{
 			tdSmugglerBase: newSmugglerBase(val),
 		}
-
-		if !p.isTestDeeper {
-			p.expectedValue = reflect.New(vval.Type())
-			p.expectedValue.Elem().Set(vval)
+||||||| parent of 5ce8c7613 (update vendored files)
+	vval := reflect.ValueOf(val)
+	if vval.IsValid() {
+		p := tdPtr{
+			tdSmugglerBase: newSmugglerBase(val),
 		}
+=======
+	p := tdPtr{
+		tdSmugglerBase: newSmugglerBase(val),
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
+
+	vval := reflect.ValueOf(val)
+	if !vval.IsValid() {
+		p.err = ctxerr.OpBadUsage("Ptr", "(NON_NIL_VALUE)", val, 1, true)
 		return &p
 	}
-	panic("usage: Ptr(NON_NIL_VALUE)")
+
+	if !p.isTestDeeper {
+		p.expectedValue = reflect.New(vval.Type())
+		p.expectedValue.Elem().Set(vval)
+	}
+	return &p
 }
 
 func (p *tdPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if p.err != nil {
+		return ctx.CollectError(p.err)
+	}
+
 	if got.Kind() != reflect.Ptr {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -238,6 +258,10 @@ func (p *tdPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (p *tdPtr) String() string {
+	if p.err != nil {
+		return p.stringError()
+	}
+
 	if p.isTestDeeper {
 		return "*<something>"
 	}
@@ -245,6 +269,10 @@ func (p *tdPtr) String() string {
 }
 
 func (p *tdPtr) TypeBehind() reflect.Type {
+	if p.err != nil {
+		return nil
+	}
+
 	// If the expected value is a TestDeep operator, delegate TypeBehind to it
 	if p.isTestDeeper {
 		typ := p.expectedValue.Interface().(TestDeep).TypeBehind()
@@ -292,25 +320,31 @@ var _ TestDeep = &tdPPtr{}
 // reflect.Type of a pointer on a pointer on the returned value (if
 // non-nil of course).
 func PPtr(val interface{}) TestDeep {
+	p := tdPPtr{
+		tdSmugglerBase: newSmugglerBase(val),
+	}
+
 	vval := reflect.ValueOf(val)
-	if vval.IsValid() {
-		p := tdPPtr{
-			tdSmugglerBase: newSmugglerBase(val),
-		}
-
-		if !p.isTestDeeper {
-			pVval := reflect.New(vval.Type())
-			pVval.Elem().Set(vval)
-
-			p.expectedValue = reflect.New(pVval.Type())
-			p.expectedValue.Elem().Set(pVval)
-		}
+	if !vval.IsValid() {
+		p.err = ctxerr.OpBadUsage("PPtr", "(NON_NIL_VALUE)", val, 1, true)
 		return &p
 	}
-	panic("usage: PPtr(NON_NIL_VALUE)")
+
+	if !p.isTestDeeper {
+		pVval := reflect.New(vval.Type())
+		pVval.Elem().Set(vval)
+
+		p.expectedValue = reflect.New(pVval.Type())
+		p.expectedValue.Elem().Set(pVval)
+	}
+	return &p
 }
 
 func (p *tdPPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if p.err != nil {
+		return ctx.CollectError(p.err)
+	}
+
 	if got.Kind() != reflect.Ptr || got.Elem().Kind() != reflect.Ptr {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -329,6 +363,10 @@ func (p *tdPPtr) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (p *tdPPtr) String() string {
+	if p.err != nil {
+		return p.stringError()
+	}
+
 	if p.isTestDeeper {
 		return "**<something>"
 	}
@@ -336,7 +374,15 @@ func (p *tdPPtr) String() string {
 }
 
 func (p *tdPPtr) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if p.err != nil {
+		return nil
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	// If the expected value is a TestDeep operator, delegate TypeBehind to it
 	if p.isTestDeeper {
 		typ := p.expectedValue.Interface().(TestDeep).TypeBehind()

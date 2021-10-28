@@ -20,6 +20,7 @@
 // components.
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
@@ -79,6 +80,14 @@ func (a *Attributes) Value(key interface{}) interface{} {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // All APIs in this package are EXPERIMENTAL.
+||||||| parent of 5ce8c7613 (update vendored files)
+// All APIs in this package are EXPERIMENTAL.
+=======
+// Experimental
+//
+// Notice: This package is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> 5ce8c7613 (update vendored files)
 package attributes
 
 import "fmt"
@@ -109,6 +118,9 @@ func New(kvs ...interface{}) *Attributes {
 // times, the last value overwrites all previous values for that key.  To
 // remove an existing key, use a nil value.
 func (a *Attributes) WithValues(kvs ...interface{}) *Attributes {
+	if a == nil {
+		return New(kvs...)
+	}
 	if len(kvs)%2 != 0 {
 		panic(fmt.Sprintf("attributes.New called with unexpected input: len(kvs) = %v", len(kvs)))
 	}
@@ -125,6 +137,13 @@ func (a *Attributes) WithValues(kvs ...interface{}) *Attributes {
 // Value returns the value associated with these attributes for key, or nil if
 // no value is associated with key.
 func (a *Attributes) Value(key interface{}) interface{} {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if a == nil {
+		return nil
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	return a.m[key]
 }

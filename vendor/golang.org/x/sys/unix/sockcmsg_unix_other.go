@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin freebsd linux netbsd openbsd solaris zos
 
@@ -45,6 +46,12 @@ func cmsgAlignOf(salen int) int {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin freebsd linux netbsd openbsd solaris
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build aix darwin freebsd linux netbsd openbsd solaris
+=======
+//go:build aix || darwin || freebsd || linux || netbsd || openbsd || solaris || zos
+// +build aix darwin freebsd linux netbsd openbsd solaris zos
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package unix
 
@@ -78,7 +85,15 @@ func cmsgAlignOf(salen int) int {
 		if runtime.GOOS == "netbsd" && runtime.GOARCH == "arm64" {
 			salign = 16
 		}
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	case "zos":
+		// z/OS socket macros use [32-bit] sizeof(int) alignment,
+		// not pointer width.
+		salign = SizeofInt
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 
 	return (salen + salign - 1) & ^(salign - 1)

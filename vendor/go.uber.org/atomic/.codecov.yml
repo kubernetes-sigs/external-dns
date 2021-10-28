@@ -14,6 +14,7 @@ coverage:
         if_ci_failed: error    # if ci fails report status as success, error, or failure
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Also update COVER_IGNORE_PKGS in the Makefile.
 ignore:
   - /internal/gen-atomicint/
@@ -21,3 +22,10 @@ ignore:
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+# Also update COVER_IGNORE_PKGS in the Makefile.
+ignore:
+  - /internal/gen-atomicint/
+  - /internal/gen-valuewrapper/
+>>>>>>> 5ce8c7613 (update vendored files)

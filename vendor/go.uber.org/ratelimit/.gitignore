@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 /bin
 /vendor
 cover.html
@@ -7,6 +8,19 @@ cover.out
 *.swp
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+/bin
+>>>>>>> 5ce8c7613 (update vendored files)
 /vendor
+<<<<<<< HEAD
 /cover.out
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+/cover.out
+=======
+cover.html
+cover.out
+
+*.swp
+>>>>>>> 5ce8c7613 (update vendored files)

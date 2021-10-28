@@ -45,6 +45,7 @@ type ListOptions struct {
 	// this field is ignored.
 	AllowWatchBookmarks bool
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// resourceVersion sets a constraint on what resource versions a request may be served from.
 	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for
 	// details.
@@ -64,8 +65,31 @@ type ListOptions struct {
 	// - if unset, then the result is returned from remote storage based on quorum-read flag;
 	// - if it's 0, then we simply return what we currently have in cache, no guarantee;
 	// - if set to non zero, then the result is at least as fresh as given rv.
+||||||| parent of 5ce8c7613 (update vendored files)
+	// When specified with a watch call, shows changes that occur after that particular version of a resource.
+	// Defaults to changes from the beginning of history.
+	// When specified for list:
+	// - if unset, then the result is returned from remote storage based on quorum-read flag;
+	// - if it's 0, then we simply return what we currently have in cache, no guarantee;
+	// - if set to non zero, then the result is at least as fresh as given rv.
+=======
+	// resourceVersion sets a constraint on what resource versions a request may be served from.
+	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for
+	// details.
+>>>>>>> 5ce8c7613 (update vendored files)
 	ResourceVersion string
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// resourceVersionMatch determines how resourceVersion is applied to list calls.
+	// It is highly recommended that resourceVersionMatch be set for list calls where
+	// resourceVersion is set.
+	// See https://kubernetes.io/docs/reference/using-api/api-concepts/#resource-versions for
+	// details.
+	ResourceVersionMatch metav1.ResourceVersionMatch
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	// Timeout for the list/watch call.
 	TimeoutSeconds *int64
 	// Limit specifies the maximum number of results to return from the server. The server may

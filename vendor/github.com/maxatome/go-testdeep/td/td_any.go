@@ -33,6 +33,7 @@ var _ TestDeep = &tdAny{}
 //   )) // succeeds coz "f" prefix
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Note Flatten function can be used to group or reuse some values or
 // operators and so avoid boring and inefficient copies:
 //
@@ -72,6 +73,18 @@ func (a *tdAny) TypeBehind() reflect.Type {
 	return uniqTypeBehindSlice(a.items)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// Note Flatten function can be used to group or reuse some values or
+// operators and so avoid boring and inefficient copies:
+//
+//   stringOps := td.Flatten([]td.TestDeep{td.HasPrefix("f"), td.HasSuffix("z")})
+//   td.Cmp(t, "foobar", td.All(
+//     td.Len(4),
+//     stringOps,
+//   )) // succeeds coz "f" prefix
+//
+>>>>>>> 5ce8c7613 (update vendored files)
 // TypeBehind method can return a non-nil reflect.Type if all items
 // known non-interface types are equal, or if only interface types
 // are found (mostly issued from Isa()) and they are equal.
@@ -83,7 +96,7 @@ func Any(expectedValues ...interface{}) TestDeep {
 
 func (a *tdAny) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	for _, item := range a.items {
-		if deepValueEqualOK(got, item) {
+		if deepValueEqualFinalOK(ctx, got, item) {
 			return nil
 		}
 	}
@@ -99,6 +112,12 @@ func (a *tdAny) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (a *tdAny) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 	return a.uniqTypeBehind()
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return a.uniqTypeBehind()
+=======
+	return uniqTypeBehindSlice(a.items)
+>>>>>>> 5ce8c7613 (update vendored files)
 }

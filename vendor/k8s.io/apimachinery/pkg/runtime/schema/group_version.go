@@ -177,6 +177,7 @@ func (gv GroupVersion) Empty() bool {
 // it returns "v1".
 func (gv GroupVersion) String() string {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if len(gv.Group) > 0 {
 		return gv.Group + "/" + gv.Version
 	}
@@ -259,6 +260,18 @@ func (gvs GroupVersions) Identifier() string {
 	if len(gv.Group) == 0 && gv.Version == "v1" {
 		return gv.Version
 	}
+||||||| parent of 5ce8c7613 (update vendored files)
+	// special case the internal apiVersion for the legacy kube types
+	if gv.Empty() {
+		return ""
+	}
+
+	// special case of "v1" for backward compatibility
+	if len(gv.Group) == 0 && gv.Version == "v1" {
+		return gv.Version
+	}
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if len(gv.Group) > 0 {
 		return gv.Group + "/" + gv.Version
 	}
@@ -326,11 +339,23 @@ func (gv GroupVersion) WithResource(resource string) GroupVersionResource {
 type GroupVersions []GroupVersion
 
 // Identifier implements runtime.GroupVersioner interface.
+<<<<<<< HEAD
 func (gv GroupVersions) Identifier() string {
 	groupVersions := make([]string, 0, len(gv))
 	for i := range gv {
 		groupVersions = append(groupVersions, gv[i].String())
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+func (gv GroupVersions) Identifier() string {
+	groupVersions := make([]string, 0, len(gv))
+	for i := range gv {
+		groupVersions = append(groupVersions, gv[i].String())
+=======
+func (gvs GroupVersions) Identifier() string {
+	groupVersions := make([]string, 0, len(gvs))
+	for i := range gvs {
+		groupVersions = append(groupVersions, gvs[i].String())
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	return fmt.Sprintf("[%s]", strings.Join(groupVersions, ","))
 }

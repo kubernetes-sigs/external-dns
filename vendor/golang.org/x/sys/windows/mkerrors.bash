@@ -10,6 +10,10 @@ shopt -s nullglob
 winerror="$(printf '%s\n' "/mnt/c/Program Files (x86)/Windows Kits/"/*/Include/*/shared/winerror.h | sort -Vr | head -n 1)"
 [[ -n $winerror ]] || { echo "Unable to find winerror.h" >&2; exit 1; }
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 ntstatus="$(printf '%s\n' "/mnt/c/Program Files (x86)/Windows Kits/"/*/Include/*/shared/ntstatus.h | sort -Vr | head -n 1)"
 [[ -n $ntstatus ]] || { echo "Unable to find ntstatus.h" >&2; exit 1; }
 
@@ -66,6 +70,7 @@ declare -A errors
 		[[ $line =~ ^#define\ (STATUS_[^\s]+)\ +\(\(NTSTATUS\)((0x)?[0-9a-fA-F]+)L?\) ]] || continue
 		echo "${BASH_REMATCH[1]} NTStatus = ${BASH_REMATCH[2]}"
 	done < "$ntstatus"
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
@@ -118,6 +123,9 @@ declare -A errors
 		echo "$key $vtype = $value"
 	done < "$winerror"
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	echo ")"
 } | gofmt > "zerrors_windows.go"

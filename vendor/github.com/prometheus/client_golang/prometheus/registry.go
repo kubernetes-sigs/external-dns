@@ -27,6 +27,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/expfmt"
@@ -221,6 +222,11 @@ type MultiError []error
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 5ce8c7613 (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 5ce8c7613 (update vendored files)
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/expfmt"
 
@@ -409,7 +415,13 @@ func (err AlreadyRegisteredError) Error() string {
 // by a Gatherer to report multiple errors during MetricFamily gathering.
 type MultiError []error
 
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// Error formats the contained errors as a bullet point list, preceded by the
+// total number of errors. Note that this results in a multi-line string.
+>>>>>>> 5ce8c7613 (update vendored files)
 func (errs MultiError) Error() string {
 	if len(errs) == 0 {
 		return ""

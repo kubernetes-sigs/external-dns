@@ -26,6 +26,7 @@ const (
 	// EndpointSlices.
 	LabelManagedBy = "endpointslice.kubernetes.io/managed-by"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
 	// that the EndpointSliceMirroring controller should not mirror this
 	// resource with EndpointSlices.
@@ -33,4 +34,11 @@ const (
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
+	// that the EndpointSliceMirroring controller should not mirror this
+	// resource with EndpointSlices.
+	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
+>>>>>>> 5ce8c7613 (update vendored files)
 )

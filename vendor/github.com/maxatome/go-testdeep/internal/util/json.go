@@ -23,6 +23,7 @@ var (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // `{"foo": $bar}`, 8 → `{"foo": "$bar"}`.
 func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 	r, size := utf8.DecodeRune(buf[dollar+1:]) // just after $
@@ -89,6 +90,11 @@ func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // `{"foo": $bar}`, 8 → `{"foo": "$bar"}`
+||||||| parent of 5ce8c7613 (update vendored files)
+// `{"foo": $bar}`, 8 → `{"foo": "$bar"}`
+=======
+// `{"foo": $bar}`, 8 → `{"foo": "$bar"}`.
+>>>>>>> 5ce8c7613 (update vendored files)
 func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 	r, size := utf8.DecodeRune(buf[dollar+1:]) // just after $
 	cur := dollar + 1 + int64(size)
@@ -150,8 +156,14 @@ func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 	return buf, nil
 }
 
+<<<<<<< HEAD
 // `{"foo": 123 /* comment */}`, 13 → `{"foo": 123              }`
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// `{"foo": 123 /* comment */}`, 13 → `{"foo": 123              }`
+=======
+// `{"foo": 123 /* comment */}`, 13 → `{"foo": 123              }`.
+>>>>>>> 5ce8c7613 (update vendored files)
 func clearComment(buf []byte, slash int64, origErr error) error {
 	r, _ := utf8.DecodeRune(buf[slash+1:]) // just after /
 

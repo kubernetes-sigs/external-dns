@@ -96,6 +96,7 @@ func (cmd *unregisterFromViewReq) handleCommand(w *worker) {
 
 		// Report pending data for this view before removing it.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		w.reportView(vi)
 
 		vi.unsubscribe()
@@ -168,6 +169,11 @@ func (cmd *recordReq) handleCommand(w *worker) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		w.reportView(vi, time.Now())
+||||||| parent of 5ce8c7613 (update vendored files)
+		w.reportView(vi, time.Now())
+=======
+		w.reportView(vi)
+>>>>>>> 5ce8c7613 (update vendored files)
 
 		vi.unsubscribe()
 		if !vi.isSubscribed() {
@@ -175,7 +181,7 @@ func (cmd *recordReq) handleCommand(w *worker) {
 			// The collected data can be cleared.
 			vi.clearRows()
 		}
-		w.unregisterView(name)
+		w.unregisterView(vi)
 	}
 	cmd.done <- struct{}{}
 }
@@ -235,8 +241,14 @@ func (cmd *recordReq) handleCommand(w *worker) {
 		}
 		ref := w.getMeasureRef(m.Measure().Name())
 		for v := range ref.views {
+<<<<<<< HEAD
 			v.addSample(cmd.tm, m.Value(), cmd.attachments, time.Now())
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			v.addSample(cmd.tm, m.Value(), cmd.attachments, time.Now())
+=======
+			v.addSample(cmd.tm, m.Value(), cmd.attachments, cmd.t)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 	}
 }

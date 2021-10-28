@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -142,6 +143,11 @@ func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *appl
 		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, *name, types.ApplyPatchType, data), &corev1.ComponentStatus{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +155,7 @@ func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *appl
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -238,6 +245,27 @@ func (c *FakeComponentStatuses) Patch(ctx context.Context, name string, pt types
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, name, pt, data, subresources...), &corev1.ComponentStatus{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ComponentStatus), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied componentStatus.
+func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *applyconfigurationscorev1.ComponentStatusApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ComponentStatus, err error) {
+	if componentStatus == nil {
+		return nil, fmt.Errorf("componentStatus provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(componentStatus)
+	if err != nil {
+		return nil, err
+	}
+	name := componentStatus.Name
+	if name == nil {
+		return nil, fmt.Errorf("componentStatus.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, *name, types.ApplyPatchType, data), &corev1.ComponentStatus{})
 	if obj == nil {
 		return nil, err
 	}

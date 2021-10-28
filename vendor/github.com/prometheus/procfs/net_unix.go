@@ -109,6 +109,7 @@ func parseNetUNIX(r io.Reader) (*NetUNIX, error) {
 		item, err := nu.parseLine(line, hasInode, minFields)
 		if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
 		}
 
@@ -163,13 +164,18 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
+||||||| parent of 5ce8c7613 (update vendored files)
+			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %v", line, err)
+=======
+			return nil, fmt.Errorf("failed to parse /proc/net/unix data %q: %w", line, err)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 
 		nu.Rows = append(nu.Rows, item)
 	}
 
 	if err := s.Err(); err != nil {
-		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %v", err)
+		return nil, fmt.Errorf("failed to scan /proc/net/unix data: %w", err)
 	}
 
 	return &nu, nil
@@ -190,30 +196,36 @@ func (u *NetUNIX) parseLine(line string, hasInode bool, min int) (*NetUNIXLine, 
 
 	users, err := u.parseUsers(fields[1])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse ref count(%s): %v", fields[1], err)
+		return nil, fmt.Errorf("failed to parse ref count %q: %w", fields[1], err)
 	}
 
 	flags, err := u.parseFlags(fields[3])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse flags(%s): %v", fields[3], err)
+		return nil, fmt.Errorf("failed to parse flags %q: %w", fields[3], err)
 	}
 
 	typ, err := u.parseType(fields[4])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse type(%s): %v", fields[4], err)
+		return nil, fmt.Errorf("failed to parse type %q: %w", fields[4], err)
 	}
 
 	state, err := u.parseState(fields[5])
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse state(%s): %v", fields[5], err)
+		return nil, fmt.Errorf("failed to parse state %q: %w", fields[5], err)
 	}
 
 	var inode uint64
 	if hasInode {
 		inode, err = u.parseInode(fields[6])
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			return nil, fmt.Errorf("failed to parse inode(%s): %v", fields[6], err)
+=======
+			return nil, fmt.Errorf("failed to parse inode %q: %w", fields[6], err)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 	}
 

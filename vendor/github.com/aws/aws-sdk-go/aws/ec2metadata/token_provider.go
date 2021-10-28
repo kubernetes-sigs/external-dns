@@ -88,10 +88,15 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 	if e, ok := r.Error.(awserr.RequestFailure); ok && e != nil &&
 		e.StatusCode() == http.StatusUnauthorized {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		t.token.Store(ec2Token{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		t.token.Store(ec2Token{})
+>>>>>>> 5ce8c7613 (update vendored files)
 		atomic.StoreUint32(&t.disabled, 0)
 	}
 }

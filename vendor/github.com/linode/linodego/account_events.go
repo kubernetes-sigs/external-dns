@@ -237,6 +237,7 @@ func (c *Client) ListEvents(ctx context.Context, opts *ListOptions) ([]Event, er
 	response := EventsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -256,6 +257,10 @@ func (c *Client) GetEvent(ctx context.Context, id int) (*Event, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +277,13 @@ func (c *Client) GetEvent(ctx context.Context, id int) (*Event, error) {
 
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := c.R(ctx).SetResult(&Event{}).Get(e)
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

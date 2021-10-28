@@ -203,6 +203,7 @@ func (n *lazyNode) equal(o *lazyNode) bool {
 		}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if len(n.doc) != len(o.doc) {
 			return false
 		}
@@ -728,10 +729,21 @@ func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		if len(n.doc) != len(o.doc) {
+			return false
+		}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 		for k, v := range n.doc {
 			ov, ok := o.doc[k]
 
 			if !ok {
+				return false
+			}
+
+			if (v == nil) != (ov == nil) {
 				return false
 			}
 
@@ -955,14 +967,14 @@ func (d *partialArray) add(key string, val *lazyNode) error {
 		return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 	}
 
-	if SupportNegativeIndices {
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
 		if idx < -len(ary) {
 			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 		}
-
-		if idx < 0 {
-			idx += len(ary)
-		}
+		idx += len(ary)
 	}
 
 	copy(ary[0:idx], cur[0:idx])
@@ -999,14 +1011,14 @@ func (d *partialArray) remove(key string) error {
 		return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 	}
 
-	if SupportNegativeIndices {
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
 		if idx < -len(cur) {
 			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 		}
-
-		if idx < 0 {
-			idx += len(cur)
-		}
+		idx += len(cur)
 	}
 
 	ary := make([]*lazyNode, len(cur)-1)
@@ -1239,7 +1251,15 @@ func (p Patch) Apply(doc []byte) ([]byte, error) {
 // ApplyIndent mutates a JSON document according to the patch, and returns the new
 // document indented.
 func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if len(doc) == 0 {
+		return doc, nil
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	var pd container
 	if doc[0] == '[' {
 		pd = &partialArray{}

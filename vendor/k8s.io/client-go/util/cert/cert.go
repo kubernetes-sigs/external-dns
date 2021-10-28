@@ -29,6 +29,7 @@ import (
 	"math/big"
 	"net"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"path/filepath"
 	"strings"
 	"time"
@@ -103,6 +104,11 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"path"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"path"
+=======
+	"path/filepath"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"strings"
 	"time"
 
@@ -136,6 +142,7 @@ func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, erro
 			CommonName:   cfg.CommonName,
 			Organization: cfg.Organization,
 		},
+		DNSNames:              []string{cfg.CommonName},
 		NotBefore:             now.UTC(),
 		NotAfter:              now.Add(duration365d * 10).UTC(),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -170,9 +177,17 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 	maxAge := time.Hour * 24 * 365          // one year self-signed certs
 
 	baseName := fmt.Sprintf("%s_%s_%s", host, strings.Join(ipsToStrings(alternateIPs), "-"), strings.Join(alternateDNS, "-"))
+<<<<<<< HEAD
 	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
 	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
+	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
+=======
+	certFixturePath := filepath.Join(fixtureDirectory, baseName+".crt")
+	keyFixturePath := filepath.Join(fixtureDirectory, baseName+".key")
+>>>>>>> 5ce8c7613 (update vendored files)
 	if len(fixtureDirectory) > 0 {
 		cert, err := ioutil.ReadFile(certFixturePath)
 		if err == nil {

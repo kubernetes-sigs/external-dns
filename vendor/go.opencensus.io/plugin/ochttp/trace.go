@@ -205,14 +205,22 @@ func TraceStatus(httpStatusCode int, statusLine string) trace.Status {
 	case http.StatusOK:
 		code = trace.StatusCodeOK
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	case http.StatusConflict:
 		code = trace.StatusCodeAlreadyExists
 	}
 
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	return trace.Status{Code: code, Message: codeToStr[code]}
 }
 

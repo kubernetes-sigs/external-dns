@@ -69,6 +69,7 @@ func ParseTraceID(tid string) (trace.TraceID, bool) {
 	}
 	b, err := hex.DecodeString(tid)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil || len(b) > 16 {
 		return trace.TraceID{}, false
 	}
@@ -95,6 +96,11 @@ func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if err != nil {
+||||||| parent of 5ce8c7613 (update vendored files)
+	if err != nil {
+=======
+	if err != nil || len(b) > 16 {
+>>>>>>> 5ce8c7613 (update vendored files)
 		return trace.TraceID{}, false
 	}
 	var traceID trace.TraceID
@@ -116,8 +122,14 @@ func ParseSpanID(sid string) (spanID trace.SpanID, ok bool) {
 		return trace.SpanID{}, false
 	}
 	b, err := hex.DecodeString(sid)
+<<<<<<< HEAD
 	if err != nil {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	if err != nil {
+=======
+	if err != nil || len(b) > 8 {
+>>>>>>> 5ce8c7613 (update vendored files)
 		return trace.SpanID{}, false
 	}
 	start := 8 - len(b)

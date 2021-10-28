@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Go rate limiter [![GoDoc][doc-img]][doc] [![Coverage Status][cov-img]][cov] ![test][test-img]
 
 This package provides a Golang implementation of the leaky-bucket rate limit algorithm.
@@ -48,6 +49,11 @@ func main() {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 # Go rate limiter
+||||||| parent of 5ce8c7613 (update vendored files)
+# Go rate limiter
+=======
+# Go rate limiter [![GoDoc][doc-img]][doc] [![Coverage Status][cov-img]][cov] ![test][test-img]
+>>>>>>> 5ce8c7613 (update vendored files)
 
 This package provides a Golang implementation of the leaky-bucket rate limit algorithm.
 This implementation refills the bucket based on the time elapsed between
@@ -87,4 +93,14 @@ func main() {
     // 9 10ms
 }
 ```
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+[cov-img]: https://codecov.io/gh/uber-go/ratelimit/branch/master/graph/badge.svg?token=zhLeUjjrm2
+[cov]: https://codecov.io/gh/uber-go/ratelimit
+[doc-img]: https://pkg.go.dev/badge/go.uber.org/ratelimit
+[doc]: https://pkg.go.dev/go.uber.org/ratelimit
+[test-img]: https://github.com/uber-go/ratelimit/workflows/test/badge.svg
+>>>>>>> 5ce8c7613 (update vendored files)

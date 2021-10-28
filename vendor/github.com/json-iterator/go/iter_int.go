@@ -10,6 +10,7 @@ var intDigits []int8
 const uint32SafeToMultiply10 = uint32(0xffffffff)/10 - 1
 const uint64SafeToMultiple10 = uint64(0xffffffffffffffff)/10 - 1
 <<<<<<< HEAD
+<<<<<<< HEAD
 const maxFloat64 = 1<<53 - 1
 
 func init() {
@@ -344,6 +345,10 @@ func (iter *Iterator) assertInteger() {
 	if iter.head < iter.tail && iter.buf[iter.head] == '.' {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+const maxFloat64 = 1<<53 - 1
+>>>>>>> 5ce8c7613 (update vendored files)
 
 func init() {
 	intDigits = make([]int8, 256)
@@ -674,8 +679,14 @@ func (iter *Iterator) readUint64(c byte) (ret uint64) {
 }
 
 func (iter *Iterator) assertInteger() {
+<<<<<<< HEAD
 	if iter.head < len(iter.buf) && iter.buf[iter.head] == '.' {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	if iter.head < len(iter.buf) && iter.buf[iter.head] == '.' {
+=======
+	if iter.head < iter.tail && iter.buf[iter.head] == '.' {
+>>>>>>> 5ce8c7613 (update vendored files)
 		iter.ReportError("assertInteger", "can not decode float as int")
 	}
 }

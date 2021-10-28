@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"crypto/tls"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"io"
@@ -267,6 +268,10 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 	}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"errors"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -280,7 +285,7 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 
 const (
 	// DefaultPollingDelay is a reasonable delay between polling requests.
-	DefaultPollingDelay = 60 * time.Second
+	DefaultPollingDelay = 30 * time.Second
 
 	// DefaultPollingDuration is a reasonable total polling duration.
 	DefaultPollingDuration = 15 * time.Minute
@@ -415,7 +420,8 @@ type Client struct {
 	// Setting this to zero will use the provided context to control the duration.
 	PollingDuration time.Duration
 
-	// RetryAttempts sets the default number of retry attempts for client.
+	// RetryAttempts sets the total number of times the client will attempt to make an HTTP request.
+	// Set the value to 1 to disable retries.  DO NOT set the value to less than 1.
 	RetryAttempts int
 
 	// RetryDuration sets the delay duration for retries.
@@ -509,7 +515,14 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 		},
 	})
 	resp, err := SendWithSender(c.sender(tls.RenegotiateNever), r)
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if resp == nil && err == nil {
+		err = errors.New("autorest: received nil response and error")
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	logger.Instance.WriteResponse(resp, logger.Filter{})
 	Respond(resp, c.ByInspecting())
 	return resp, err

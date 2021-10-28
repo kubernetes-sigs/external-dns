@@ -23,6 +23,7 @@ package zapcore
 import (
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"runtime"
 	"strings"
 	"sync"
@@ -239,6 +240,10 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		runtime.Goexit()
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"runtime"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"strings"
 	"sync"
 	"time"
@@ -287,10 +292,11 @@ func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 
 // EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
-	Defined bool
-	PC      uintptr
-	File    string
-	Line    int
+	Defined  bool
+	PC       uintptr
+	File     string
+	Line     int
+	Function string
 }
 
 // String returns the full path and line number of the caller.
@@ -375,6 +381,8 @@ const (
 	// WriteThenNoop indicates that nothing special needs to be done. It's the
 	// default behavior.
 	WriteThenNoop CheckWriteAction = iota
+	// WriteThenGoexit runs runtime.Goexit after Write.
+	WriteThenGoexit
 	// WriteThenPanic causes a panic after Write.
 	WriteThenPanic
 	// WriteThenFatal causes a fatal os.Exit after Write.
@@ -447,7 +455,13 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		panic(msg)
 	case WriteThenFatal:
 		exit.Exit()
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	case WriteThenGoexit:
+		runtime.Goexit()
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 }
 

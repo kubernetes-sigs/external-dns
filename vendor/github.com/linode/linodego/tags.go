@@ -145,6 +145,7 @@ func (c *Client) ListTaggedObjects(ctx context.Context, label string, opts *List
 	response := TaggedObjectsPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, label, opts)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -220,6 +221,10 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -292,8 +297,13 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

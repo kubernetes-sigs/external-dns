@@ -27,6 +27,7 @@ import (
 
 // HorizontalPodAutoscalerLister helps list HorizontalPodAutoscalers.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type HorizontalPodAutoscalerLister interface {
 	// List lists all HorizontalPodAutoscalers in the indexer.
@@ -70,8 +71,13 @@ type HorizontalPodAutoscalerNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type HorizontalPodAutoscalerLister interface {
 	// List lists all HorizontalPodAutoscalers in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.HorizontalPodAutoscaler, err error)
 	// HorizontalPodAutoscalers returns an object that can list and get HorizontalPodAutoscalers.
 	HorizontalPodAutoscalers(namespace string) HorizontalPodAutoscalerNamespaceLister
@@ -102,11 +108,18 @@ func (s *horizontalPodAutoscalerLister) HorizontalPodAutoscalers(namespace strin
 }
 
 // HorizontalPodAutoscalerNamespaceLister helps list and get HorizontalPodAutoscalers.
+// All objects returned here must be treated as read-only.
 type HorizontalPodAutoscalerNamespaceLister interface {
 	// List lists all HorizontalPodAutoscalers in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.HorizontalPodAutoscaler, err error)
 	// Get retrieves the HorizontalPodAutoscaler from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1.HorizontalPodAutoscaler, error)
 	HorizontalPodAutoscalerNamespaceListerExpansion
 }

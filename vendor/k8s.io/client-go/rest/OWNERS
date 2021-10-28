@@ -9,12 +9,19 @@ reviewers:
 - brendandburns
 - liggitt
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 - nikhiljindal
 - gmarek
 - erictune
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 - sttts
 - luxas
 - dims

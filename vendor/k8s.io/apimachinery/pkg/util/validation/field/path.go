@@ -23,6 +23,10 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 type pathOptions struct {
 	path *Path
 }
@@ -94,6 +98,7 @@ func (p *Path) String() string {
 	if p == nil {
 		return "<nil>"
 	}
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Path represents the path from some root to a particular field.
@@ -142,6 +147,9 @@ func (p *Path) Key(key string) *Path {
 // String produces a string representation of the Path.
 func (p *Path) String() string {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	// make a slice to iterate
 	elems := []*Path{}
 	for ; p != nil; p = p.parent {

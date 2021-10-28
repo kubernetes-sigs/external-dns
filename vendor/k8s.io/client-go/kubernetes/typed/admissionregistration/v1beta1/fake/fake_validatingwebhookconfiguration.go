@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -142,6 +143,11 @@ func (c *FakeValidatingWebhookConfigurations) Apply(ctx context.Context, validat
 		Invokes(testing.NewRootPatchSubresourceAction(validatingwebhookconfigurationsResource, *name, types.ApplyPatchType, data), &v1beta1.ValidatingWebhookConfiguration{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +155,7 @@ func (c *FakeValidatingWebhookConfigurations) Apply(ctx context.Context, validat
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	admissionregistrationv1beta1 "k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -238,6 +245,27 @@ func (c *FakeValidatingWebhookConfigurations) Patch(ctx context.Context, name st
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(validatingwebhookconfigurationsResource, name, pt, data, subresources...), &v1beta1.ValidatingWebhookConfiguration{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.ValidatingWebhookConfiguration), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied validatingWebhookConfiguration.
+func (c *FakeValidatingWebhookConfigurations) Apply(ctx context.Context, validatingWebhookConfiguration *admissionregistrationv1beta1.ValidatingWebhookConfigurationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ValidatingWebhookConfiguration, err error) {
+	if validatingWebhookConfiguration == nil {
+		return nil, fmt.Errorf("validatingWebhookConfiguration provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(validatingWebhookConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	name := validatingWebhookConfiguration.Name
+	if name == nil {
+		return nil, fmt.Errorf("validatingWebhookConfiguration.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(validatingwebhookconfigurationsResource, *name, types.ApplyPatchType, data), &v1beta1.ValidatingWebhookConfiguration{})
 	if obj == nil {
 		return nil, err
 	}

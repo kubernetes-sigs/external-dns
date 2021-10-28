@@ -20,10 +20,15 @@ type FirewallRule struct {
 	Priority    interface{} `json:"priority"`
 	Filter      Filter      `json:"filter"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Products    []string    `json:"products,omitempty"`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	Products    []string    `json:"products,omitempty"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	CreatedOn   time.Time   `json:"created_on,omitempty"`
 	ModifiedOn  time.Time   `json:"modified_on,omitempty"`
 }

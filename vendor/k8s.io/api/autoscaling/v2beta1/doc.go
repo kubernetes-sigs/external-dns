@@ -18,9 +18,14 @@ limitations under the License.
 // +k8s:protobuf-gen=package
 // +k8s:openapi-gen=true
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// +k8s:prerelease-lifecycle-gen=true
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package v2beta1 // import "k8s.io/api/autoscaling/v2beta1"

@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/internal/errors"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // The MessageSet wire format is equivalent to a message defined as follows,
@@ -62,9 +63,13 @@ func IsMessageSetExtension(fd pref.FieldDescriptor) bool {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	preg "google.golang.org/protobuf/reflect/protoregistry"
+||||||| parent of 5ce8c7613 (update vendored files)
+	preg "google.golang.org/protobuf/reflect/protoregistry"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
-// The MessageSet wire format is equivalent to a message defiend as follows,
+// The MessageSet wire format is equivalent to a message defined as follows,
 // where each Item defines an extension field with a field number of 'type_id'
 // and content of 'message'. MessageSet extensions must be non-repeated message
 // fields.
@@ -98,11 +103,17 @@ func IsMessageSet(md pref.MessageDescriptor) bool {
 	return ok && xmd.IsMessageSet()
 }
 
-// IsMessageSetExtension reports this field extends a MessageSet.
+// IsMessageSetExtension reports this field properly extends a MessageSet.
 func IsMessageSetExtension(fd pref.FieldDescriptor) bool {
-	if fd.Name() != ExtensionName {
+	switch {
+	case fd.Name() != ExtensionName:
+		return false
+	case !IsMessageSet(fd.ContainingMessage()):
+		return false
+	case fd.FullName().Parent() != fd.Message().FullName():
 		return false
 	}
+<<<<<<< HEAD
 	if fd.FullName().Parent() != fd.Message().FullName() {
 		return false
 	}
@@ -126,6 +137,32 @@ func FindMessageSetExtension(r preg.ExtensionTypeResolver, s pref.FullName) (pre
 	}
 	return xt, nil
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	if fd.FullName().Parent() != fd.Message().FullName() {
+		return false
+	}
+	return IsMessageSet(fd.ContainingMessage())
+}
+
+// FindMessageSetExtension locates a MessageSet extension field by name.
+// In text and JSON formats, the extension name used is the message itself.
+// The extension field name is derived by appending ExtensionName.
+func FindMessageSetExtension(r preg.ExtensionTypeResolver, s pref.FullName) (pref.ExtensionType, error) {
+	name := s.Append(ExtensionName)
+	xt, err := r.FindExtensionByName(name)
+	if err != nil {
+		if err == preg.NotFound {
+			return nil, err
+		}
+		return nil, errors.Wrap(err, "%q", name)
+	}
+	if !IsMessageSetExtension(xt.TypeDescriptor()) {
+		return nil, preg.NotFound
+	}
+	return xt, nil
+=======
+	return true
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // SizeField returns the size of a MessageSet item field containing an extension

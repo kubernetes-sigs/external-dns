@@ -33,6 +33,7 @@ func init() {
 	Error = errors.Error
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // MessageName returns the full name of m.
 // If m is nil, it returns an empty string.
@@ -45,3 +46,15 @@ func MessageName(m Message) protoreflect.FullName {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+// MessageName returns the full name of m.
+// If m is nil, it returns an empty string.
+func MessageName(m Message) protoreflect.FullName {
+	if m == nil {
+		return ""
+	}
+	return m.ProtoReflect().Descriptor().FullName()
+}
+>>>>>>> 5ce8c7613 (update vendored files)

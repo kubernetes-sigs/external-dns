@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -150,6 +151,11 @@ func (c *FakeEvents) Apply(ctx context.Context, event *eventsv1beta1.EventApplyC
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.Event{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1beta1 "k8s.io/api/events/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -157,6 +163,7 @@ func (c *FakeEvents) Apply(ctx context.Context, event *eventsv1beta1.EventApplyC
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	eventsv1beta1 "k8s.io/client-go/applyconfigurations/events/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -253,6 +260,28 @@ func (c *FakeEvents) Patch(ctx context.Context, name string, pt types.PatchType,
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &v1beta1.Event{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.Event), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied event.
+func (c *FakeEvents) Apply(ctx context.Context, event *eventsv1beta1.EventApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Event, err error) {
+	if event == nil {
+		return nil, fmt.Errorf("event provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+	name := event.Name
+	if name == nil {
+		return nil, fmt.Errorf("event.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.Event{})
 
 	if obj == nil {
 		return nil, err

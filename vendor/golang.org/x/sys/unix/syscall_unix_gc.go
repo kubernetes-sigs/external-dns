@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
 // +build gc
@@ -10,9 +11,21 @@
 // +build !ppc64
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
+<<<<<<< HEAD
 // +build gc,!ppc64le,!ppc64
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build gc,!ppc64le,!ppc64
+=======
+// +build gc
+// +build !ppc64le
+// +build !ppc64
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package unix
 

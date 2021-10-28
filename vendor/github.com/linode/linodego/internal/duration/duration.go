@@ -38,11 +38,17 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // durationToSeconds takes a hh:mm:ss string and returns the number of seconds
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
+=======
+// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
+>>>>>>> 5ce8c7613 (update vendored files)
 func durationToSeconds(s string) (int, error) {
 	multipliers := [3]int{60 * 60, 60, 1}
 	segs := strings.Split(s, ":")

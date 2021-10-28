@@ -40,6 +40,7 @@ const maxDepth = 10000
 
 // Unmarshal unmarshals the given data
 <<<<<<< HEAD
+<<<<<<< HEAD
 // If v is a *map[string]interface{}, *[]interface{}, or *interface{} numbers
 // are converted to int64 or float64
 func Unmarshal(data []byte, v interface{}) error {
@@ -143,6 +144,12 @@ func ConvertSliceNumbers(s []interface{}, depth int) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // If v is a *map[string]interface{}, numbers are converted to int64 or float64
+||||||| parent of 5ce8c7613 (update vendored files)
+// If v is a *map[string]interface{}, numbers are converted to int64 or float64
+=======
+// If v is a *map[string]interface{}, *[]interface{}, or *interface{} numbers
+// are converted to int64 or float64
+>>>>>>> 5ce8c7613 (update vendored files)
 func Unmarshal(data []byte, v interface{}) error {
 	switch v := v.(type) {
 	case *map[string]interface{}:
@@ -155,7 +162,7 @@ func Unmarshal(data []byte, v interface{}) error {
 			return err
 		}
 		// If the decode succeeds, post-process the map to convert json.Number objects to int64 or float64
-		return convertMapNumbers(*v, 0)
+		return ConvertMapNumbers(*v, 0)
 
 	case *[]interface{}:
 		// Build a decoder from the given data
@@ -167,7 +174,7 @@ func Unmarshal(data []byte, v interface{}) error {
 			return err
 		}
 		// If the decode succeeds, post-process the map to convert json.Number objects to int64 or float64
-		return convertSliceNumbers(*v, 0)
+		return ConvertSliceNumbers(*v, 0)
 
 	case *interface{}:
 		// Build a decoder from the given data
@@ -179,29 +186,31 @@ func Unmarshal(data []byte, v interface{}) error {
 			return err
 		}
 		// If the decode succeeds, post-process the map to convert json.Number objects to int64 or float64
-		return convertInterfaceNumbers(v, 0)
+		return ConvertInterfaceNumbers(v, 0)
 
 	default:
 		return json.Unmarshal(data, v)
 	}
 }
 
-func convertInterfaceNumbers(v *interface{}, depth int) error {
+// ConvertInterfaceNumbers converts any json.Number values to int64 or float64.
+// Values which are map[string]interface{} or []interface{} are recursively visited
+func ConvertInterfaceNumbers(v *interface{}, depth int) error {
 	var err error
 	switch v2 := (*v).(type) {
 	case json.Number:
 		*v, err = convertNumber(v2)
 	case map[string]interface{}:
-		err = convertMapNumbers(v2, depth+1)
+		err = ConvertMapNumbers(v2, depth+1)
 	case []interface{}:
-		err = convertSliceNumbers(v2, depth+1)
+		err = ConvertSliceNumbers(v2, depth+1)
 	}
 	return err
 }
 
-// convertMapNumbers traverses the map, converting any json.Number values to int64 or float64.
+// ConvertMapNumbers traverses the map, converting any json.Number values to int64 or float64.
 // values which are map[string]interface{} or []interface{} are recursively visited
-func convertMapNumbers(m map[string]interface{}, depth int) error {
+func ConvertMapNumbers(m map[string]interface{}, depth int) error {
 	if depth > maxDepth {
 		return fmt.Errorf("exceeded max depth of %d", maxDepth)
 	}
@@ -212,9 +221,9 @@ func convertMapNumbers(m map[string]interface{}, depth int) error {
 		case json.Number:
 			m[k], err = convertNumber(v)
 		case map[string]interface{}:
-			err = convertMapNumbers(v, depth+1)
+			err = ConvertMapNumbers(v, depth+1)
 		case []interface{}:
-			err = convertSliceNumbers(v, depth+1)
+			err = ConvertSliceNumbers(v, depth+1)
 		}
 		if err != nil {
 			return err
@@ -223,9 +232,9 @@ func convertMapNumbers(m map[string]interface{}, depth int) error {
 	return nil
 }
 
-// convertSliceNumbers traverses the slice, converting any json.Number values to int64 or float64.
+// ConvertSliceNumbers traverses the slice, converting any json.Number values to int64 or float64.
 // values which are map[string]interface{} or []interface{} are recursively visited
-func convertSliceNumbers(s []interface{}, depth int) error {
+func ConvertSliceNumbers(s []interface{}, depth int) error {
 	if depth > maxDepth {
 		return fmt.Errorf("exceeded max depth of %d", maxDepth)
 	}
@@ -236,10 +245,16 @@ func convertSliceNumbers(s []interface{}, depth int) error {
 		case json.Number:
 			s[i], err = convertNumber(v)
 		case map[string]interface{}:
-			err = convertMapNumbers(v, depth+1)
+			err = ConvertMapNumbers(v, depth+1)
 		case []interface{}:
+<<<<<<< HEAD
 			err = convertSliceNumbers(v, depth+1)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			err = convertSliceNumbers(v, depth+1)
+=======
+			err = ConvertSliceNumbers(v, depth+1)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 		if err != nil {
 			return err

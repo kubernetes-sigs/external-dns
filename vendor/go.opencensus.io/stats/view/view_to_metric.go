@@ -19,6 +19,7 @@ import (
 	"time"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"go.opencensus.io/resource"
 
 	"go.opencensus.io/metric/metricdata"
@@ -145,6 +146,11 @@ func viewToMetric(v *viewInternal, r *resource.Resource, now time.Time) *metricd
 		Resource:   r,
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"go.opencensus.io/resource"
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	"go.opencensus.io/metric/metricdata"
 	"go.opencensus.io/stats"
 )
@@ -244,20 +250,15 @@ func toLabelValues(row *Row, expectedKeys []metricdata.LabelKey) []metricdata.La
 	return labelValues
 }
 
-func rowToTimeseries(v *viewInternal, row *Row, now time.Time, startTime time.Time) *metricdata.TimeSeries {
+func rowToTimeseries(v *viewInternal, row *Row, now time.Time) *metricdata.TimeSeries {
 	return &metricdata.TimeSeries{
 		Points:      []metricdata.Point{row.Data.toPoint(v.metricDescriptor.Type, now)},
 		LabelValues: toLabelValues(row, v.metricDescriptor.LabelKeys),
-		StartTime:   startTime,
+		StartTime:   row.Data.StartTime(),
 	}
 }
 
-func viewToMetric(v *viewInternal, now time.Time, startTime time.Time) *metricdata.Metric {
-	if v.metricDescriptor.Type == metricdata.TypeGaugeInt64 ||
-		v.metricDescriptor.Type == metricdata.TypeGaugeFloat64 {
-		startTime = time.Time{}
-	}
-
+func viewToMetric(v *viewInternal, r *resource.Resource, now time.Time) *metricdata.Metric {
 	rows := v.collectedRows()
 	if len(rows) == 0 {
 		return nil
@@ -265,13 +266,18 @@ func viewToMetric(v *viewInternal, now time.Time, startTime time.Time) *metricda
 
 	ts := []*metricdata.TimeSeries{}
 	for _, row := range rows {
-		ts = append(ts, rowToTimeseries(v, row, now, startTime))
+		ts = append(ts, rowToTimeseries(v, row, now))
 	}
 
 	m := &metricdata.Metric{
 		Descriptor: *v.metricDescriptor,
 		TimeSeries: ts,
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		Resource:   r,
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	return m
 }

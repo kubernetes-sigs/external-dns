@@ -26,6 +26,7 @@ type SnapshotServiceHandler struct {
 // Snapshot represents a Vultr snapshot
 type Snapshot struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ID             string `json:"id"`
 	DateCreated    string `json:"date_created"`
 	Description    string `json:"description"`
@@ -44,6 +45,24 @@ type Snapshot struct {
 	OsID        int    `json:"os_id"`
 	AppID       int    `json:"app_id"`
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	ID          string `json:"id"`
+	DateCreated string `json:"date_created"`
+	Description string `json:"description"`
+	Size        int    `json:"size"`
+	Status      string `json:"status"`
+	OsID        int    `json:"os_id"`
+	AppID       int    `json:"app_id"`
+=======
+	ID             string `json:"id"`
+	DateCreated    string `json:"date_created"`
+	Description    string `json:"description"`
+	Size           int    `json:"size"`
+	CompressedSize int    `json:"compressed_size"`
+	Status         string `json:"status"`
+	OsID           int    `json:"os_id"`
+	AppID          int    `json:"app_id"`
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // SnapshotReq struct is used to create snapshots.

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build riscv64 && gc
 // +build riscv64
 // +build gc
@@ -10,6 +11,13 @@
 =======
 // +build riscv64,gc
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build riscv64,gc
+=======
+//go:build riscv64 && gc
+// +build riscv64
+// +build gc
+>>>>>>> 5ce8c7613 (update vendored files)
 
 #include "textflag.h"
 

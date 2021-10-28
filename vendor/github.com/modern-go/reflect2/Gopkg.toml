@@ -27,6 +27,7 @@
 ignored = []
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [[constraint]]
@@ -34,6 +35,13 @@ ignored = []
   version = "1.0.0"
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+[[constraint]]
+  name = "github.com/modern-go/concurrent"
+  version = "1.0.0"
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 [prune]
   go-tests = true
   unused-packages = true

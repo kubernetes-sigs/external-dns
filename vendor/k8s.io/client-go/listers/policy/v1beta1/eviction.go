@@ -27,6 +27,7 @@ import (
 
 // EvictionLister helps list Evictions.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type EvictionLister interface {
 	// List lists all Evictions in the indexer.
@@ -70,8 +71,13 @@ type EvictionNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type EvictionLister interface {
 	// List lists all Evictions in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Eviction, err error)
 	// Evictions returns an object that can list and get Evictions.
 	Evictions(namespace string) EvictionNamespaceLister
@@ -102,11 +108,18 @@ func (s *evictionLister) Evictions(namespace string) EvictionNamespaceLister {
 }
 
 // EvictionNamespaceLister helps list and get Evictions.
+// All objects returned here must be treated as read-only.
 type EvictionNamespaceLister interface {
 	// List lists all Evictions in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Eviction, err error)
 	// Get retrieves the Eviction from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta1.Eviction, error)
 	EvictionNamespaceListerExpansion
 }

@@ -27,6 +27,7 @@ import (
 	"time"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//lint:ignore SA1019 Keep using module since it's still being maintained and the api of google.golang.org/protobuf/proto differs
 	"github.com/golang/protobuf/proto"
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
@@ -506,8 +507,12 @@ func NewDiscoveryClientForConfigOrDie(c *restclient.Config) *DiscoveryClient {
 // NewDiscoveryClient returns a new DiscoveryClient for the given RESTClient.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	//lint:ignore SA1019 Keep using module since it's still being maintained and the api of google.golang.org/protobuf/proto differs
+>>>>>>> 5ce8c7613 (update vendored files)
 	"github.com/golang/protobuf/proto"
-	openapi_v2 "github.com/googleapis/gnostic/OpenAPIv2"
+	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -521,7 +526,7 @@ func NewDiscoveryClientForConfigOrDie(c *restclient.Config) *DiscoveryClient {
 )
 
 const (
-	// defaultRetries is the number of times a resource discovery is repeated if an api group disappears on the fly (e.g. ThirdPartyResources).
+	// defaultRetries is the number of times a resource discovery is repeated if an api group disappears on the fly (e.g. CustomResourceDefinitions).
 	defaultRetries = 2
 	// protobuf mime type
 	mimePb = "application/com.github.proto-openapi.spec.v2@v1.0+protobuf"
@@ -575,7 +580,7 @@ type ServerResourcesInterface interface {
 	//
 	// Deprecated: use ServerGroupsAndResources instead.
 	ServerResources() ([]*metav1.APIResourceList, error)
-	// ServerResources returns the supported groups and resources for all groups and versions.
+	// ServerGroupsAndResources returns the supported groups and resources for all groups and versions.
 	//
 	// The returned group and resource lists might be non-nil with partial results even in the
 	// case of non-nil error.
@@ -981,8 +986,14 @@ func NewDiscoveryClientForConfigOrDie(c *restclient.Config) *DiscoveryClient {
 
 }
 
+<<<<<<< HEAD
 // NewDiscoveryClient returns  a new DiscoveryClient for the given RESTClient.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// NewDiscoveryClient returns  a new DiscoveryClient for the given RESTClient.
+=======
+// NewDiscoveryClient returns a new DiscoveryClient for the given RESTClient.
+>>>>>>> 5ce8c7613 (update vendored files)
 func NewDiscoveryClient(c restclient.Interface) *DiscoveryClient {
 	return &DiscoveryClient{restClient: c, LegacyPrefix: "/api"}
 }

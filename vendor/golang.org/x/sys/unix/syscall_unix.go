@@ -3,6 +3,10 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
@@ -316,6 +320,7 @@ func Recvfrom(fd int, p []byte, flags int) (n int, from Sockaddr, err error) {
 
 func Send(s int, buf []byte, flags int) (err error) {
 	return sendto(s, buf, flags, nil, 0)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
@@ -627,6 +632,9 @@ func Recvfrom(fd int, p []byte, flags int) (n int, from Sockaddr, err error) {
 	}
 	return
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func Sendto(fd int, p []byte, flags int, to Sockaddr) (err error) {

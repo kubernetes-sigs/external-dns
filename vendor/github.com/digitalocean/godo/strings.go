@@ -11,11 +11,17 @@ import (
 var timestampType = reflect.TypeOf(Timestamp{})
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ResourceWithURN is an interface for interfacing with the types
 // that implement the URN method.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// ResourceWithURN is an interface for interfacing with the types
+// that implement the URN method.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ResourceWithURN interface {
 	URN() string
 }

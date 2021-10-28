@@ -11,11 +11,17 @@ const tagsBasePath = "v2/tags"
 // TagsService is an interface for interfacing with the tags
 // endpoints of the DigitalOcean API
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Tags
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#tags
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#tags
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Tags
+>>>>>>> 5ce8c7613 (update vendored files)
 type TagsService interface {
 	List(context.Context, *ListOptions) ([]Tag, *Response, error)
 	Get(context.Context, string) (*Tag, *Response, error)

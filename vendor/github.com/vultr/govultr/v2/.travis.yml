@@ -2,13 +2,23 @@ language: go
 
 go:
 <<<<<<< HEAD
+<<<<<<< HEAD
   - 1.16.x
   - 1.17.x
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
   - 1.15.x
+||||||| parent of 5ce8c7613 (update vendored files)
+  - 1.15.x
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
   - 1.16.x
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+  - 1.17.x
+>>>>>>> 5ce8c7613 (update vendored files)
   - tip
 
 matrix:

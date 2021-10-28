@@ -217,6 +217,7 @@ func RegisterChannel(c Channel, pid int64, ref string) int64 {
 func RegisterSubChannel(c Channel, pid int64, ref string) int64 {
 	if pid == 0 {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		logger.Error("a SubChannel's parent id cannot be 0")
 		return 0
 	}
@@ -309,6 +310,11 @@ func AddTraceEvent(l grpclog.DepthLoggerV2, id int64, depth int, desc *TraceEven
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		grpclog.Error("a SubChannel's parent id cannot be 0")
+||||||| parent of 5ce8c7613 (update vendored files)
+		grpclog.Error("a SubChannel's parent id cannot be 0")
+=======
+		logger.Error("a SubChannel's parent id cannot be 0")
+>>>>>>> 5ce8c7613 (update vendored files)
 		return 0
 	}
 	id := idGen.genID()
@@ -345,7 +351,7 @@ func RegisterServer(s Server, ref string) int64 {
 // this listen socket.
 func RegisterListenSocket(s Socket, pid int64, ref string) int64 {
 	if pid == 0 {
-		grpclog.Error("a ListenSocket's parent id cannot be 0")
+		logger.Error("a ListenSocket's parent id cannot be 0")
 		return 0
 	}
 	id := idGen.genID()
@@ -360,7 +366,7 @@ func RegisterListenSocket(s Socket, pid int64, ref string) int64 {
 // this normal socket.
 func RegisterNormalSocket(s Socket, pid int64, ref string) int64 {
 	if pid == 0 {
-		grpclog.Error("a NormalSocket's parent id cannot be 0")
+		logger.Error("a NormalSocket's parent id cannot be 0")
 		return 0
 	}
 	id := idGen.genID()
@@ -386,8 +392,24 @@ type TraceEventDesc struct {
 }
 
 // AddTraceEvent adds trace related to the entity with specified id, using the provided TraceEventDesc.
+<<<<<<< HEAD
 func AddTraceEvent(id int64, desc *TraceEventDesc) {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+func AddTraceEvent(id int64, desc *TraceEventDesc) {
+=======
+func AddTraceEvent(l grpclog.DepthLoggerV2, id int64, depth int, desc *TraceEventDesc) {
+	for d := desc; d != nil; d = d.Parent {
+		switch d.Severity {
+		case CtUnknown, CtInfo:
+			l.InfoDepth(depth+1, d.Desc)
+		case CtWarning:
+			l.WarningDepth(depth+1, d.Desc)
+		case CtError:
+			l.ErrorDepth(depth+1, d.Desc)
+		}
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	if getMaxTraceEntry() == 0 {
 		return
 	}

@@ -164,11 +164,17 @@ func matchesError(err error, fns ...Matcher) bool {
 // filterErrors returns any errors (or nested errors, if the list contains
 // nested Errors) for which all fns return false. If no errors
 <<<<<<< HEAD
+<<<<<<< HEAD
 // remain a nil list is returned. The resulting slice will have all
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // remain a nil list is returned. The resulting silec will have all
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// remain a nil list is returned. The resulting silec will have all
+=======
+// remain a nil list is returned. The resulting slice will have all
+>>>>>>> 5ce8c7613 (update vendored files)
 // nested slices flattened as a side effect.
 func filterErrors(list []error, fns ...Matcher) []error {
 	result := []error{}

@@ -27,6 +27,7 @@ import (
 
 // ConfigMapLister helps list ConfigMaps.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ConfigMapLister interface {
 	// List lists all ConfigMaps in the indexer.
@@ -70,8 +71,13 @@ type ConfigMapNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ConfigMapLister interface {
 	// List lists all ConfigMaps in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ConfigMap, err error)
 	// ConfigMaps returns an object that can list and get ConfigMaps.
 	ConfigMaps(namespace string) ConfigMapNamespaceLister
@@ -102,11 +108,18 @@ func (s *configMapLister) ConfigMaps(namespace string) ConfigMapNamespaceLister 
 }
 
 // ConfigMapNamespaceLister helps list and get ConfigMaps.
+// All objects returned here must be treated as read-only.
 type ConfigMapNamespaceLister interface {
 	// List lists all ConfigMaps in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.ConfigMap, err error)
 	// Get retrieves the ConfigMap from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1.ConfigMap, error)
 	ConfigMapNamespaceListerExpansion
 }

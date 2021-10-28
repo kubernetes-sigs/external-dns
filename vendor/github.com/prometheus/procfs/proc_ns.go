@@ -41,6 +41,7 @@ func (p Proc) Namespaces() (Namespaces, error) {
 	names, err := d.Readdirnames(-1)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
 	}
 
@@ -63,6 +64,11 @@ func (p Proc) Namespaces() (Namespaces, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return nil, fmt.Errorf("failed to read contents of ns dir: %v", err)
+=======
+		return nil, fmt.Errorf("failed to read contents of ns dir: %w", err)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 
 	ns := make(Namespaces, len(names))
@@ -74,14 +80,20 @@ func (p Proc) Namespaces() (Namespaces, error) {
 
 		fields := strings.SplitN(target, ":", 2)
 		if len(fields) != 2 {
-			return nil, fmt.Errorf("failed to parse namespace type and inode from '%v'", target)
+			return nil, fmt.Errorf("failed to parse namespace type and inode from %q", target)
 		}
 
 		typ := fields[0]
 		inode, err := strconv.ParseUint(strings.Trim(fields[1], "[]"), 10, 32)
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			return nil, fmt.Errorf("failed to parse inode from '%v': %v", fields[1], err)
+=======
+			return nil, fmt.Errorf("failed to parse inode from %q: %w", fields[1], err)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 
 		ns[name] = Namespace{typ, uint32(inode)}

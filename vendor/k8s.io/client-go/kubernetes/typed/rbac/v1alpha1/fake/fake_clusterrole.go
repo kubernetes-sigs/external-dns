@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -142,6 +143,11 @@ func (c *FakeClusterRoles) Apply(ctx context.Context, clusterRole *rbacv1alpha1.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterrolesResource, *name, types.ApplyPatchType, data), &v1alpha1.ClusterRole{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1alpha1 "k8s.io/api/rbac/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +155,7 @@ func (c *FakeClusterRoles) Apply(ctx context.Context, clusterRole *rbacv1alpha1.
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1alpha1 "k8s.io/client-go/applyconfigurations/rbac/v1alpha1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -238,6 +245,27 @@ func (c *FakeClusterRoles) Patch(ctx context.Context, name string, pt types.Patc
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterrolesResource, name, pt, data, subresources...), &v1alpha1.ClusterRole{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.ClusterRole), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied clusterRole.
+func (c *FakeClusterRoles) Apply(ctx context.Context, clusterRole *rbacv1alpha1.ClusterRoleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.ClusterRole, err error) {
+	if clusterRole == nil {
+		return nil, fmt.Errorf("clusterRole provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(clusterRole)
+	if err != nil {
+		return nil, err
+	}
+	name := clusterRole.Name
+	if name == nil {
+		return nil, fmt.Errorf("clusterRole.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(clusterrolesResource, *name, types.ApplyPatchType, data), &v1alpha1.ClusterRole{})
 	if obj == nil {
 		return nil, err
 	}

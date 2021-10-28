@@ -109,6 +109,7 @@ func newSerializersForScheme(scheme *runtime.Scheme, mf json.MetaFactory, option
 // versions and content types.
 type CodecFactory struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	scheme    *runtime.Scheme
 	universal runtime.Decoder
 	accepts   []runtime.SerializerInfo
@@ -224,6 +225,16 @@ func newCodecFactory(scheme *runtime.Scheme, serializers []serializerType) Codec
 	serializers []serializerType
 	universal   runtime.Decoder
 	accepts     []runtime.SerializerInfo
+||||||| parent of 5ce8c7613 (update vendored files)
+	scheme      *runtime.Scheme
+	serializers []serializerType
+	universal   runtime.Decoder
+	accepts     []runtime.SerializerInfo
+=======
+	scheme    *runtime.Scheme
+	universal runtime.Decoder
+	accepts   []runtime.SerializerInfo
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	legacySerializer runtime.Serializer
 }
@@ -328,10 +339,19 @@ func newCodecFactory(scheme *runtime.Scheme, serializers []serializerType) Codec
 	}
 
 	return CodecFactory{
+<<<<<<< HEAD
 		scheme:      scheme,
 		serializers: serializers,
 		universal:   recognizer.NewDecoder(decoders...),
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		scheme:      scheme,
+		serializers: serializers,
+		universal:   recognizer.NewDecoder(decoders...),
+=======
+		scheme:    scheme,
+		universal: recognizer.NewDecoder(decoders...),
+>>>>>>> 5ce8c7613 (update vendored files)
 
 		accepts: accepts,
 

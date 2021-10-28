@@ -27,6 +27,10 @@ import (
 type BatchV1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	CronJobsGetter
 	JobsGetter
 }
@@ -38,6 +42,7 @@ type BatchV1Client struct {
 
 func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
 	return newCronJobs(c, namespace)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	JobsGetter
@@ -47,6 +52,9 @@ func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
 type BatchV1Client struct {
 	restClient rest.Interface
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (c *BatchV1Client) Jobs(namespace string) JobInterface {

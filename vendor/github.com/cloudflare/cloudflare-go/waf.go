@@ -3,6 +3,7 @@ package cloudflare
 import (
 	"encoding/json"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/url"
 	"strconv"
 
@@ -314,6 +315,11 @@ func (api *API) ListWAFRules(zoneID, packageID string) ([]WAFRule, error) {
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"net/url"
+	"strconv"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	"github.com/pkg/errors"
 )
@@ -413,26 +419,46 @@ type WAFRuleOptions struct {
 //
 // API Reference: https://api.cloudflare.com/#waf-rule-packages-list-firewall-packages
 func (api *API) ListWAFPackages(zoneID string) ([]WAFPackage, error) {
-	var p WAFPackagesResponse
+	// Construct a query string
+	v := url.Values{}
+	// Request as many WAF packages as possible per page - API max is 100
+	v.Set("per_page", "100")
+
 	var packages []WAFPackage
 	var res []byte
 	var err error
-	uri := "/zones/" + zoneID + "/firewall/waf/packages"
-	res, err = api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return []WAFPackage{}, errors.Wrap(err, errMakeRequestError)
+	page := 1
+
+	// Loop over makeRequest until what we've fetched all records
+	for {
+		v.Set("page", strconv.Itoa(page))
+		query := "?" + v.Encode()
+		uri := "/zones/" + zoneID + "/firewall/waf/packages" + query
+		res, err = api.makeRequest("GET", uri, nil)
+		if err != nil {
+			return []WAFPackage{}, errors.Wrap(err, errMakeRequestError)
+		}
+
+		var p WAFPackagesResponse
+		err = json.Unmarshal(res, &p)
+		if err != nil {
+			return []WAFPackage{}, errors.Wrap(err, errUnmarshalError)
+		}
+
+		if !p.Success {
+			// TODO: Provide an actual error message instead of always returning nil
+			return []WAFPackage{}, err
+		}
+
+		packages = append(packages, p.Result...)
+		if p.ResultInfo.Page >= p.ResultInfo.TotalPages {
+			break
+		}
+
+		// Loop around and fetch the next page
+		page++
 	}
-	err = json.Unmarshal(res, &p)
-	if err != nil {
-		return []WAFPackage{}, errors.Wrap(err, errUnmarshalError)
-	}
-	if !p.Success {
-		// TODO: Provide an actual error message instead of always returning nil
-		return []WAFPackage{}, err
-	}
-	for pi := range p.Result {
-		packages = append(packages, p.Result[pi])
-	}
+
 	return packages, nil
 }
 
@@ -477,29 +503,44 @@ func (api *API) UpdateWAFPackage(zoneID, packageID string, opts WAFPackageOption
 //
 // API Reference: https://api.cloudflare.com/#waf-rule-groups-list-rule-groups
 func (api *API) ListWAFGroups(zoneID, packageID string) ([]WAFGroup, error) {
+	// Construct a query string
+	v := url.Values{}
+	// Request as many WAF groups as possible per page - API max is 100
+	v.Set("per_page", "100")
+
 	var groups []WAFGroup
 	var res []byte
 	var err error
+	page := 1
 
-	uri := "/zones/" + zoneID + "/firewall/waf/packages/" + packageID + "/groups"
-	res, err = api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return []WAFGroup{}, errors.Wrap(err, errMakeRequestError)
-	}
+	// Loop over makeRequest until what we've fetched all records
+	for {
+		v.Set("page", strconv.Itoa(page))
+		query := "?" + v.Encode()
+		uri := "/zones/" + zoneID + "/firewall/waf/packages/" + packageID + "/groups" + query
+		res, err = api.makeRequest("GET", uri, nil)
+		if err != nil {
+			return []WAFGroup{}, errors.Wrap(err, errMakeRequestError)
+		}
 
-	var r WAFGroupsResponse
-	err = json.Unmarshal(res, &r)
-	if err != nil {
-		return []WAFGroup{}, errors.Wrap(err, errUnmarshalError)
-	}
+		var r WAFGroupsResponse
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []WAFGroup{}, errors.Wrap(err, errUnmarshalError)
+		}
 
-	if !r.Success {
-		// TODO: Provide an actual error message instead of always returning nil
-		return []WAFGroup{}, err
-	}
+		if !r.Success {
+			// TODO: Provide an actual error message instead of always returning nil
+			return []WAFGroup{}, err
+		}
 
-	for gi := range r.Result {
-		groups = append(groups, r.Result[gi])
+		groups = append(groups, r.Result...)
+		if r.ResultInfo.Page >= r.ResultInfo.TotalPages {
+			break
+		}
+
+		// Loop around and fetch the next page
+		page++
 	}
 	return groups, nil
 }
@@ -546,16 +587,47 @@ func (api *API) UpdateWAFGroup(zoneID, packageID, groupID, mode string) (WAFGrou
 //
 // API Reference: https://api.cloudflare.com/#waf-rules-list-rules
 func (api *API) ListWAFRules(zoneID, packageID string) ([]WAFRule, error) {
+	// Construct a query string
+	v := url.Values{}
+	// Request as many WAF rules as possible per page - API max is 100
+	v.Set("per_page", "100")
+
 	var rules []WAFRule
 	var res []byte
 	var err error
+	page := 1
 
-	uri := "/zones/" + zoneID + "/firewall/waf/packages/" + packageID + "/rules"
-	res, err = api.makeRequest("GET", uri, nil)
-	if err != nil {
-		return []WAFRule{}, errors.Wrap(err, errMakeRequestError)
+	// Loop over makeRequest until what we've fetched all records
+	for {
+		v.Set("page", strconv.Itoa(page))
+		query := "?" + v.Encode()
+		uri := "/zones/" + zoneID + "/firewall/waf/packages/" + packageID + "/rules" + query
+		res, err = api.makeRequest("GET", uri, nil)
+		if err != nil {
+			return []WAFRule{}, errors.Wrap(err, errMakeRequestError)
+		}
+
+		var r WAFRulesResponse
+		err = json.Unmarshal(res, &r)
+		if err != nil {
+			return []WAFRule{}, errors.Wrap(err, errUnmarshalError)
+		}
+
+		if !r.Success {
+			// TODO: Provide an actual error message instead of always returning nil
+			return []WAFRule{}, err
+		}
+
+		rules = append(rules, r.Result...)
+		if r.ResultInfo.Page >= r.ResultInfo.TotalPages {
+			break
+		}
+
+		// Loop around and fetch the next page
+		page++
 	}
 
+<<<<<<< HEAD
 	var r WAFRulesResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
@@ -571,6 +643,23 @@ func (api *API) ListWAFRules(zoneID, packageID string) ([]WAFRule, error) {
 		rules = append(rules, r.Result[ri])
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	var r WAFRulesResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return []WAFRule{}, errors.Wrap(err, errUnmarshalError)
+	}
+
+	if !r.Success {
+		// TODO: Provide an actual error message instead of always returning nil
+		return []WAFRule{}, err
+	}
+
+	for ri := range r.Result {
+		rules = append(rules, r.Result[ri])
+	}
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	return rules, nil
 }
 

@@ -27,6 +27,7 @@ import (
 
 // RoleBindingLister helps list RoleBindings.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type RoleBindingLister interface {
 	// List lists all RoleBindings in the indexer.
@@ -70,8 +71,13 @@ type RoleBindingNamespaceLister interface {
 	// Objects returned here must be treated as read-only.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 type RoleBindingLister interface {
 	// List lists all RoleBindings in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RoleBinding, err error)
 	// RoleBindings returns an object that can list and get RoleBindings.
 	RoleBindings(namespace string) RoleBindingNamespaceLister
@@ -102,11 +108,18 @@ func (s *roleBindingLister) RoleBindings(namespace string) RoleBindingNamespaceL
 }
 
 // RoleBindingNamespaceLister helps list and get RoleBindings.
+// All objects returned here must be treated as read-only.
 type RoleBindingNamespaceLister interface {
 	// List lists all RoleBindings in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.RoleBinding, err error)
 	// Get retrieves the RoleBinding from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 5ce8c7613 (update vendored files)
 	Get(name string) (*v1beta1.RoleBinding, error)
 	RoleBindingNamespaceListerExpansion
 }

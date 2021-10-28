@@ -18,6 +18,7 @@ import (
 	"time"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
@@ -94,6 +95,11 @@ type Opts struct {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 5ce8c7613 (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 5ce8c7613 (update vendored files)
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
 
@@ -134,7 +140,7 @@ type Metric interface {
 }
 
 // Opts bundles the options for creating most Metric types. Each metric
-// implementation XXX has its own XXXOpts type, but in most cases, it is just be
+// implementation XXX has its own XXXOpts type, but in most cases, it is just
 // an alias of this type (which might change when the requirement arises.)
 //
 // It is mandatory to set Name to a non-empty string. All other fields are
@@ -165,8 +171,14 @@ type Opts struct {
 	// better covered by target labels set by the scraping Prometheus
 	// server, or by one specific metric (e.g. a build_info or a
 	// machine_role metric). See also
+<<<<<<< HEAD
 	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
+=======
+	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
+>>>>>>> 5ce8c7613 (update vendored files)
 	ConstLabels Labels
 }
 

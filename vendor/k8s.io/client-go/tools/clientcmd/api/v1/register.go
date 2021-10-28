@@ -38,11 +38,17 @@ func init() {
 	// generated functions takes place in the generated files. The separation
 	// makes the code compile even when the generated files are missing.
 <<<<<<< HEAD
+<<<<<<< HEAD
 	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	localSchemeBuilder.Register(addKnownTypes)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	localSchemeBuilder.Register(addKnownTypes)
+=======
+	localSchemeBuilder.Register(addKnownTypes, addDefaultingFuncs)
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func addKnownTypes(scheme *runtime.Scheme) error {

@@ -24,6 +24,7 @@
 package buffer // import "go.uber.org/zap/buffer"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"strconv"
 	"time"
@@ -59,6 +60,14 @@ func (b *Buffer) AppendTime(t time.Time, layout string) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 import "strconv"
+||||||| parent of 5ce8c7613 (update vendored files)
+import "strconv"
+=======
+import (
+	"strconv"
+	"time"
+)
+>>>>>>> 5ce8c7613 (update vendored files)
 
 const _size = 1024 // by default, create 1 KiB buffers
 
@@ -83,6 +92,11 @@ func (b *Buffer) AppendString(s string) {
 func (b *Buffer) AppendInt(i int64) {
 	b.bs = strconv.AppendInt(b.bs, i, 10)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// AppendTime appends the time formatted using the specified layout.
+func (b *Buffer) AppendTime(t time.Time, layout string) {
+	b.bs = t.AppendFormat(b.bs, layout)
 }
 
 // AppendUint appends an unsigned integer to the underlying buffer (assuming

@@ -64,6 +64,7 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 		if responseContentType != expectedContentType {
 			msg := fmt.Sprintf(
 <<<<<<< HEAD
+<<<<<<< HEAD
 				"Unexpected Content-Type: Expected: %v, Received: %v\nResponse body: %s",
 				expectedContentType,
 				responseContentType,
@@ -74,12 +75,24 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 				"Unexpected Content-Type: Expected: %v, Received: %v",
+||||||| parent of 5ce8c7613 (update vendored files)
+				"Unexpected Content-Type: Expected: %v, Received: %v",
+=======
+				"Unexpected Content-Type: Expected: %v, Received: %v\nResponse body: %s",
+>>>>>>> 5ce8c7613 (update vendored files)
 				expectedContentType,
 				responseContentType,
+				string(r.Body()),
 			)
 
+<<<<<<< HEAD
 			return nil, NewError(msg)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			return nil, NewError(msg)
+=======
+			return nil, Error{Code: r.StatusCode(), Message: msg}
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 
 		apiError, ok := r.Error().(*APIError)

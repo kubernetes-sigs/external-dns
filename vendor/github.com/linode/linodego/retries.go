@@ -10,6 +10,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const (
 	retryAfterHeaderName      = "Retry-After"
 	maintenanceModeHeaderName = "X-Maintenance-Mode"
@@ -76,9 +77,20 @@ func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 const retryAfterHeaderName = "Retry-After"
+||||||| parent of 5ce8c7613 (update vendored files)
+const retryAfterHeaderName = "Retry-After"
+=======
+const (
+	retryAfterHeaderName      = "Retry-After"
+	maintenanceModeHeaderName = "X-Maintenance-Mode"
+)
+>>>>>>> 5ce8c7613 (update vendored files)
 
 // type RetryConditional func(r *resty.Response) (shouldRetry bool)
 type RetryConditional resty.RetryConditionFunc
+
+// type RetryAfter func(c *resty.Client, r *resty.Response) (time.Duration, error)
+type RetryAfter resty.RetryAfterFunc
 
 // Configures resty to
 // lock until enough time has passed to retry the request as determined by the Retry-After response header.
@@ -117,8 +129,28 @@ func tooManyRequestsRetryCondition(r *resty.Response, _ error) bool {
 }
 
 func serviceUnavailableRetryCondition(r *resty.Response, _ error) bool {
+<<<<<<< HEAD
 	return r.StatusCode() == http.StatusServiceUnavailable
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return r.StatusCode() == http.StatusServiceUnavailable
+=======
+	serviceUnavailable := r.StatusCode() == http.StatusServiceUnavailable
+
+	// During maintenance events, the API will return a 503 and add
+	// an `X-MAINTENANCE-MODE` header. Don't retry during maintenance
+	// events, only for legitimate 503s.
+	if serviceUnavailable && r.Header().Get(maintenanceModeHeaderName) != "" {
+		log.Printf("[INFO] Linode API is under maintenance, request will not be retried - please see status.linode.com for more information")
+		return false
+	}
+
+	return serviceUnavailable
+}
+
+func requestTimeoutRetryCondition(r *resty.Response, _ error) bool {
+	return r.StatusCode() == http.StatusRequestTimeout
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func respectRetryAfter(client *resty.Client, resp *resty.Response) (time.Duration, error) {

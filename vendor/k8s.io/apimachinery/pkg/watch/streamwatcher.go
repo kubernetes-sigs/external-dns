@@ -22,6 +22,7 @@ import (
 	"sync"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -135,6 +136,11 @@ func (sw *StreamWatcher) receive() {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/net"
@@ -168,7 +174,7 @@ type StreamWatcher struct {
 	source   Decoder
 	reporter Reporter
 	result   chan Event
-	stopped  bool
+	done     chan struct{}
 }
 
 // NewStreamWatcher creates a StreamWatcher from the given decoder.
@@ -180,6 +186,11 @@ func NewStreamWatcher(d Decoder, r Reporter) *StreamWatcher {
 		// goroutine/channel, but impossible for them to remove it,
 		// so nonbuffered is better.
 		result: make(chan Event),
+		// If the watcher is externally stopped there is no receiver anymore
+		// and the send operations on the result channel, especially the
+		// error reporting might block forever.
+		// Therefore a dedicated stop channel is used to resolve this blocking.
+		done: make(chan struct{}),
 	}
 	go sw.receive()
 	return sw
@@ -195,31 +206,23 @@ func (sw *StreamWatcher) Stop() {
 	// Call Close() exactly once by locking and setting a flag.
 	sw.Lock()
 	defer sw.Unlock()
-	if !sw.stopped {
-		sw.stopped = true
+	// closing a closed channel always panics, therefore check before closing
+	select {
+	case <-sw.done:
+	default:
+		close(sw.done)
 		sw.source.Close()
 	}
 }
 
-// stopping returns true if Stop() was called previously.
-func (sw *StreamWatcher) stopping() bool {
-	sw.Lock()
-	defer sw.Unlock()
-	return sw.stopped
-}
-
 // receive reads result from the decoder in a loop and sends down the result channel.
 func (sw *StreamWatcher) receive() {
+	defer utilruntime.HandleCrash()
 	defer close(sw.result)
 	defer sw.Stop()
-	defer utilruntime.HandleCrash()
 	for {
 		action, obj, err := sw.source.Decode()
 		if err != nil {
-			// Ignore expected error.
-			if sw.stopping() {
-				return
-			}
 			switch err {
 			case io.EOF:
 				// watch closed normally
@@ -229,18 +232,29 @@ func (sw *StreamWatcher) receive() {
 				if net.IsProbableEOF(err) || net.IsTimeout(err) {
 					klog.V(5).Infof("Unable to decode an event from the watch stream: %v", err)
 				} else {
-					sw.result <- Event{
+					select {
+					case <-sw.done:
+					case sw.result <- Event{
 						Type:   Error,
 						Object: sw.reporter.AsObject(fmt.Errorf("unable to decode an event from the watch stream: %v", err)),
+					}:
 					}
 				}
 			}
 			return
 		}
-		sw.result <- Event{
+		select {
+		case <-sw.done:
+			return
+		case sw.result <- Event{
 			Type:   action,
 			Object: obj,
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		}:
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 	}
 }

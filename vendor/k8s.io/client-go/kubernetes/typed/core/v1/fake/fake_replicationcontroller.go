@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -186,6 +187,11 @@ func (c *FakeReplicationControllers) ApplyStatus(ctx context.Context, replicatio
 		Invokes(testing.NewPatchSubresourceAction(replicationcontrollersResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.ReplicationController{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -194,6 +200,7 @@ func (c *FakeReplicationControllers) ApplyStatus(ctx context.Context, replicatio
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -302,6 +309,51 @@ func (c *FakeReplicationControllers) Patch(ctx context.Context, name string, pt 
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(replicationcontrollersResource, c.ns, name, pt, data, subresources...), &corev1.ReplicationController{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ReplicationController), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied replicationController.
+func (c *FakeReplicationControllers) Apply(ctx context.Context, replicationController *applyconfigurationscorev1.ReplicationControllerApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ReplicationController, err error) {
+	if replicationController == nil {
+		return nil, fmt.Errorf("replicationController provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicationController)
+	if err != nil {
+		return nil, err
+	}
+	name := replicationController.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicationController.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicationcontrollersResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ReplicationController{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ReplicationController), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeReplicationControllers) ApplyStatus(ctx context.Context, replicationController *applyconfigurationscorev1.ReplicationControllerApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ReplicationController, err error) {
+	if replicationController == nil {
+		return nil, fmt.Errorf("replicationController provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicationController)
+	if err != nil {
+		return nil, err
+	}
+	name := replicationController.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicationController.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicationcontrollersResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.ReplicationController{})
 
 	if obj == nil {
 		return nil, err

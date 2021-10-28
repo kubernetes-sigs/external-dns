@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"time"
@@ -72,11 +73,15 @@ func (client *Client) GetRunstatusIncident(ctx context.Context, incident Runstat
 	return nil, errors.New("incident not found")
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"errors"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"fmt"
 	"time"
 )
 
-//RunstatusIncident is a runstatus incident
+// RunstatusIncident is a runstatus incident
 type RunstatusIncident struct {
 	EndDate    *time.Time       `json:"end_date,omitempty"`
 	Events     []RunstatusEvent `json:"events,omitempty"`
@@ -107,7 +112,7 @@ func (incident RunstatusIncident) Match(other RunstatusIncident) bool {
 	return false
 }
 
-//RunstatusIncidentList is a list of incident
+// RunstatusIncidentList is a list of incident
 type RunstatusIncidentList struct {
 	Next      string              `json:"next"`
 	Previous  string              `json:"previous"`
@@ -136,8 +141,14 @@ func (client *Client) GetRunstatusIncident(ctx context.Context, incident Runstat
 		}
 	}
 
+<<<<<<< HEAD
 	return nil, fmt.Errorf("%#v not found", incident)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	return nil, fmt.Errorf("%#v not found", incident)
+=======
+	return nil, errors.New("incident not found")
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (client *Client) getRunstatusIncident(ctx context.Context, incidentURL string) (*RunstatusIncident, error) {

@@ -17,6 +17,7 @@ type universalSSLSettingResponse struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // UniversalSSLVerificationDetails represents a universal ssl verification's properties.
 type UniversalSSLVerificationDetails struct {
 	CertificateStatus  string                       `json:"certificate_status"`
@@ -76,6 +77,11 @@ func (api *API) EditUniversalSSLSetting(zoneID string, setting UniversalSSLSetti
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // UniversalSSLVerificationDetails represents a universal ssl verifcation's properties.
+||||||| parent of 5ce8c7613 (update vendored files)
+// UniversalSSLVerificationDetails represents a universal ssl verifcation's properties.
+=======
+// UniversalSSLVerificationDetails represents a universal ssl verification's properties.
+>>>>>>> 5ce8c7613 (update vendored files)
 type UniversalSSLVerificationDetails struct {
 	CertificateStatus  string                       `json:"certificate_status"`
 	VerificationType   string                       `json:"verification_type"`
@@ -113,7 +119,7 @@ func (api *API) UniversalSSLSettingDetails(zoneID string) (UniversalSSLSetting, 
 	return r.Result, nil
 }
 
-// EditUniversalSSLSetting edits the uniersal ssl setting for a zone
+// EditUniversalSSLSetting edits the universal ssl setting for a zone
 //
 // API reference: https://api.cloudflare.com/#universal-ssl-settings-for-a-zone-edit-universal-ssl-settings
 func (api *API) EditUniversalSSLSetting(zoneID string, setting UniversalSSLSetting) (UniversalSSLSetting, error) {
@@ -130,8 +136,14 @@ func (api *API) EditUniversalSSLSetting(zoneID string, setting UniversalSSLSetti
 
 }
 
+<<<<<<< HEAD
 // UniversalSSLVerificationDetails returns the details for a universal ssl verifcation
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// UniversalSSLVerificationDetails returns the details for a universal ssl verifcation
+=======
+// UniversalSSLVerificationDetails returns the details for a universal ssl verification
+>>>>>>> 5ce8c7613 (update vendored files)
 //
 // API reference: https://api.cloudflare.com/#ssl-verification-ssl-verification-details
 func (api *API) UniversalSSLVerificationDetails(zoneID string) ([]UniversalSSLVerificationDetails, error) {

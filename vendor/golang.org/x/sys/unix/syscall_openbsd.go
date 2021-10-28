@@ -93,6 +93,7 @@ func Pipe2(p []int, flags int) error {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //sys	Getdents(fd int, buf []byte) (n int, err error)
 func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
 	n, err = Getdents(fd, buf)
@@ -159,6 +160,11 @@ func setattrlistTimes(path string, times []Timespec, flags int) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //sys Getdents(fd int, buf []byte) (n int, err error)
+||||||| parent of 5ce8c7613 (update vendored files)
+//sys Getdents(fd int, buf []byte) (n int, err error)
+=======
+//sys	Getdents(fd int, buf []byte) (n int, err error)
+>>>>>>> 5ce8c7613 (update vendored files)
 func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {
 	n, err = Getdents(fd, buf)
 	if err != nil || basep == nil {
@@ -220,8 +226,14 @@ func setattrlistTimes(path string, times []Timespec, flags int) error {
 
 //sys	ioctl(fd int, req uint, arg uintptr) (err error)
 
+<<<<<<< HEAD
 //sys   sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+//sys   sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+=======
+//sys	sysctl(mib []_C_int, old *byte, oldlen *uintptr, new *byte, newlen uintptr) (err error) = SYS___SYSCTL
+>>>>>>> 5ce8c7613 (update vendored files)
 
 //sys	ppoll(fds *PollFd, nfds int, timeout *Timespec, sigmask *Sigset_t) (n int, err error)
 

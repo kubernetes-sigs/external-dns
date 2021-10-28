@@ -8,6 +8,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 const (
 	ec2MetadataEndpointIPv6 = "http://[fd00:ec2::254]/latest"
 	ec2MetadataEndpointIPv4 = "http://169.254.169.254/latest"
@@ -388,6 +389,16 @@ func validateInputRegion(region string) bool {
 }
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+const (
+	ec2MetadataEndpointIPv6 = "http://[fd00:ec2::254]/latest"
+	ec2MetadataEndpointIPv4 = "http://169.254.169.254/latest"
+)
+
+var regionValidationRegex = regexp.MustCompile(`^[[:alnum:]]([[:alnum:]\-]*[[:alnum:]])?$`)
+
+>>>>>>> 5ce8c7613 (update vendored files)
 type partitions []partition
 
 func (ps partitions) EndpointFor(service, region string, opts ...func(*Options)) (ResolvedEndpoint, error) {
@@ -481,6 +492,12 @@ func (p partition) EndpointFor(service, region string, opts ...func(*Options)) (
 	opt.Set(opts...)
 
 	s, hasService := p.Services[service]
+
+	if service == Ec2metadataServiceID && !hasService {
+		endpoint := getEC2MetadataEndpoint(p.ID, service, opt.EC2MetadataEndpointMode)
+		return endpoint, nil
+	}
+
 	if len(service) == 0 || !(hasService || opt.ResolveUnknownService) {
 		// Only return error if the resolver will not fallback to creating
 		// endpoint based on service endpoint ID passed in.
@@ -505,7 +522,32 @@ func (p partition) EndpointFor(service, region string, opts ...func(*Options)) (
 
 	defs := []endpoint{p.Defaults, s.Defaults}
 
-	return e.resolve(service, p.ID, region, p.DNSSuffix, defs, opt), nil
+	return e.resolve(service, p.ID, region, p.DNSSuffix, defs, opt)
+}
+
+func getEC2MetadataEndpoint(partitionID, service string, mode EC2IMDSEndpointModeState) ResolvedEndpoint {
+	switch mode {
+	case EC2IMDSEndpointModeStateIPv6:
+		return ResolvedEndpoint{
+			URL:                ec2MetadataEndpointIPv6,
+			PartitionID:        partitionID,
+			SigningRegion:      "aws-global",
+			SigningName:        service,
+			SigningNameDerived: true,
+			SigningMethod:      "v4",
+		}
+	case EC2IMDSEndpointModeStateIPv4:
+		fallthrough
+	default:
+		return ResolvedEndpoint{
+			URL:                ec2MetadataEndpointIPv4,
+			PartitionID:        partitionID,
+			SigningRegion:      "aws-global",
+			SigningName:        service,
+			SigningNameDerived: true,
+			SigningMethod:      "v4",
+		}
+	}
 }
 
 func serviceList(ss services) []string {
@@ -557,12 +599,12 @@ type service struct {
 }
 
 func (s *service) endpointForRegion(region string) (endpoint, bool) {
-	if s.IsRegionalized == boxedFalse {
-		return s.Endpoints[s.PartitionEndpoint], region == s.PartitionEndpoint
-	}
-
 	if e, ok := s.Endpoints[region]; ok {
 		return e, true
+	}
+
+	if s.IsRegionalized == boxedFalse {
+		return s.Endpoints[s.PartitionEndpoint], region == s.PartitionEndpoint
 	}
 
 	// Unable to find any matching endpoint, return
@@ -614,7 +656,7 @@ func getByPriority(s []string, p []string, def string) string {
 	return s[0]
 }
 
-func (e endpoint) resolve(service, partitionID, region, dnsSuffix string, defs []endpoint, opts Options) ResolvedEndpoint {
+func (e endpoint) resolve(service, partitionID, region, dnsSuffix string, defs []endpoint, opts Options) (ResolvedEndpoint, error) {
 	var merged endpoint
 	for _, def := range defs {
 		merged.mergeIn(def)
@@ -641,6 +683,10 @@ func (e endpoint) resolve(service, partitionID, region, dnsSuffix string, defs [
 		region = signingRegion
 	}
 
+	if !validateInputRegion(region) {
+		return ResolvedEndpoint{}, fmt.Errorf("invalid region identifier format provided")
+	}
+
 	u := strings.Replace(hostname, "{service}", service, 1)
 	u = strings.Replace(u, "{region}", region, 1)
 	u = strings.Replace(u, "{dnsSuffix}", dnsSuffix, 1)
@@ -655,7 +701,7 @@ func (e endpoint) resolve(service, partitionID, region, dnsSuffix string, defs [
 		SigningName:        signingName,
 		SigningNameDerived: signingNameDerived,
 		SigningMethod:      getByPriority(e.SignatureVersions, signerPriority, defaultSigner),
-	}
+	}, nil
 }
 
 func getEndpointScheme(protocols []string, disableSSL bool) string {
@@ -720,4 +766,12 @@ const (
 	boxedFalse
 	boxedTrue
 )
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+func validateInputRegion(region string) bool {
+	return regionValidationRegex.MatchString(region)
+}
+>>>>>>> 5ce8c7613 (update vendored files)

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && solaris
 // +build amd64,solaris
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -10,6 +11,13 @@
 // +build amd64
 // +build solaris
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build amd64
+// +build solaris
+=======
+//go:build amd64 && solaris
+// +build amd64,solaris
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package socket
 

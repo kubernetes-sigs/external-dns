@@ -77,6 +77,7 @@ ForkExec wrapper. Unlike the first two, it does not call into the scheduler to
 let it know that a system call is running.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 When porting Go to a new architecture/OS, this file must be implemented for
 each GOOS/GOARCH pair.
 
@@ -142,6 +143,11 @@ and a wide variety of miscellaneous constants. The constants come from the list
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 When porting Go to an new architecture/OS, this file must be implemented for
+||||||| parent of 5ce8c7613 (update vendored files)
+When porting Go to an new architecture/OS, this file must be implemented for
+=======
+When porting Go to a new architecture/OS, this file must be implemented for
+>>>>>>> 5ce8c7613 (update vendored files)
 each GOOS/GOARCH pair.
 
 ### mksysnum
@@ -172,7 +178,7 @@ prototype can be exported (capitalized) or not.
 Adding a new syscall often just requires adding a new `//sys` function prototype
 with the desired arguments and a capitalized name so it is exported. However, if
 you want the interface to the syscall to be different, often one will make an
-unexported `//sys` prototype, an then write a custom wrapper in
+unexported `//sys` prototype, and then write a custom wrapper in
 `syscall_${GOOS}.go`.
 
 ### types files
@@ -202,8 +208,14 @@ some `#if/#elif` macros in your include statements.
 
 This script is used to generate the system's various constants. This doesn't
 just include the error numbers and error strings, but also the signal numbers
+<<<<<<< HEAD
 an a wide variety of miscellaneous constants. The constants come from the list
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+an a wide variety of miscellaneous constants. The constants come from the list
+=======
+and a wide variety of miscellaneous constants. The constants come from the list
+>>>>>>> 5ce8c7613 (update vendored files)
 of include files in the `includes_${uname}` variable. A regex then picks out
 the desired `#define` statements, and generates the corresponding Go constants.
 The error numbers and strings are generated from `#include <errno.h>`, and the

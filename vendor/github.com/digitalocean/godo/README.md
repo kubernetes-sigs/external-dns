@@ -8,6 +8,7 @@ Godo is a Go client library for accessing the DigitalOcean V2 API.
 You can view the client API docs here: [http://godoc.org/github.com/digitalocean/godo](http://godoc.org/github.com/digitalocean/godo)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 You can view DigitalOcean API docs here: [https://docs.digitalocean.com/reference/api/api-reference/](https://docs.digitalocean.com/reference/api/api-reference/)
 
 ## Install
@@ -132,6 +133,11 @@ For a comprehensive list of examples, check out the [API documentation](https://
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 You can view DigitalOcean API docs here: [https://developers.digitalocean.com/documentation/v2/](https://developers.digitalocean.com/documentation/v2/)
+||||||| parent of 5ce8c7613 (update vendored files)
+You can view DigitalOcean API docs here: [https://developers.digitalocean.com/documentation/v2/](https://developers.digitalocean.com/documentation/v2/)
+=======
+You can view DigitalOcean API docs here: [https://docs.digitalocean.com/reference/api/api-reference/](https://docs.digitalocean.com/reference/api/api-reference/)
+>>>>>>> 5ce8c7613 (update vendored files)
 
 ## Install
 ```sh
@@ -190,7 +196,7 @@ createRequest := &godo.DropletCreateRequest{
     Region: "nyc3",
     Size:   "s-1vcpu-1gb",
     Image: godo.DropletCreateImage{
-        Slug: "ubuntu-14-04-x64",
+        Slug: "ubuntu-20-04-x64",
     },
 }
 
@@ -222,9 +228,7 @@ func DropletList(ctx context.Context, client *godo.Client) ([]godo.Droplet, erro
         }
 
         // append the current page's droplets to our list
-        for _, d := range droplets {
-            list = append(list, d)
-        }
+        list = append(list, droplets...)
 
         // if we are at the last page, break out the for loop
         if resp.Links == nil || resp.Links.IsLastPage() {
@@ -253,8 +257,14 @@ To see the list of past versions, run `git tag`.
 
 ## Documentation
 
+<<<<<<< HEAD
 For a comprehensive list of examples, check out the [API documentation](https://developers.digitalocean.com/documentation/v2/).
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+For a comprehensive list of examples, check out the [API documentation](https://developers.digitalocean.com/documentation/v2/).
+=======
+For a comprehensive list of examples, check out the [API documentation](https://docs.digitalocean.com/reference/api/api-reference/#tag/SSH-Keys).
+>>>>>>> 5ce8c7613 (update vendored files)
 
 For details on all the functionality in this library, see the [GoDoc](http://godoc.org/github.com/digitalocean/godo) documentation.
 

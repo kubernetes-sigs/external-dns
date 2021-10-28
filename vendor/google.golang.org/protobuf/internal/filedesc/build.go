@@ -4,6 +4,7 @@
 
 // Package filedesc provides functionality for constructing descriptors.
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // The types in this package implement interfaces in the protoreflect package
 // related to protobuf descripriptors.
@@ -150,11 +151,17 @@ func (db *Builder) unmarshalCounts(b []byte, isFile bool) {
 				case genid.DescriptorProto_Extension_field_number:
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//
+// The types in this package implement interfaces in the protoreflect package
+// related to protobuf descripriptors.
+>>>>>>> 5ce8c7613 (update vendored files)
 package filedesc
 
 import (
 	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/internal/fieldnum"
+	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	preg "google.golang.org/protobuf/reflect/protoregistry"
@@ -273,25 +280,31 @@ func (db *Builder) unmarshalCounts(b []byte, isFile bool) {
 			b = b[m:]
 			if isFile {
 				switch num {
-				case fieldnum.FileDescriptorProto_EnumType:
+				case genid.FileDescriptorProto_EnumType_field_number:
 					db.NumEnums++
-				case fieldnum.FileDescriptorProto_MessageType:
+				case genid.FileDescriptorProto_MessageType_field_number:
 					db.unmarshalCounts(v, false)
 					db.NumMessages++
-				case fieldnum.FileDescriptorProto_Extension:
+				case genid.FileDescriptorProto_Extension_field_number:
 					db.NumExtensions++
-				case fieldnum.FileDescriptorProto_Service:
+				case genid.FileDescriptorProto_Service_field_number:
 					db.NumServices++
 				}
 			} else {
 				switch num {
-				case fieldnum.DescriptorProto_EnumType:
+				case genid.DescriptorProto_EnumType_field_number:
 					db.NumEnums++
-				case fieldnum.DescriptorProto_NestedType:
+				case genid.DescriptorProto_NestedType_field_number:
 					db.unmarshalCounts(v, false)
 					db.NumMessages++
+<<<<<<< HEAD
 				case fieldnum.DescriptorProto_Extension:
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+				case fieldnum.DescriptorProto_Extension:
+=======
+				case genid.DescriptorProto_Extension_field_number:
+>>>>>>> 5ce8c7613 (update vendored files)
 					db.NumExtensions++
 				}
 			}

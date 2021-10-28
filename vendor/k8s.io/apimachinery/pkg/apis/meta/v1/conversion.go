@@ -346,6 +346,7 @@ func Convert_url_Values_To_v1_DeleteOptions(in *url.Values, out *DeleteOptions, 
 	return nil
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
 func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
@@ -357,3 +358,14 @@ func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *Resource
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+// Convert_Slice_string_To_v1_ResourceVersionMatch allows converting a URL query parameter to ResourceVersionMatch
+func Convert_Slice_string_To_v1_ResourceVersionMatch(in *[]string, out *ResourceVersionMatch, s conversion.Scope) error {
+	if len(*in) > 0 {
+		*out = ResourceVersionMatch((*in)[0])
+	}
+	return nil
+}
+>>>>>>> 5ce8c7613 (update vendored files)

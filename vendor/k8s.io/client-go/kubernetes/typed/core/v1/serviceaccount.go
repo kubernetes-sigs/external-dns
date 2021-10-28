@@ -21,6 +21,7 @@ package v1
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -207,6 +208,11 @@ func (c *serviceAccounts) Apply(ctx context.Context, serviceAccount *corev1.Serv
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 	"time"
 
 	authenticationv1 "k8s.io/api/authentication/v1"
@@ -214,6 +220,7 @@ func (c *serviceAccounts) Apply(ctx context.Context, serviceAccount *corev1.Serv
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -234,6 +241,7 @@ type ServiceAccountInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.ServiceAccountList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ServiceAccount, err error)
+	Apply(ctx context.Context, serviceAccount *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ServiceAccount, err error)
 	CreateToken(ctx context.Context, serviceAccountName string, tokenRequest *authenticationv1.TokenRequest, opts metav1.CreateOptions) (*authenticationv1.TokenRequest, error)
 
 	ServiceAccountExpansion
@@ -362,6 +370,32 @@ func (c *serviceAccounts) Patch(ctx context.Context, name string, pt types.Patch
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied serviceAccount.
+func (c *serviceAccounts) Apply(ctx context.Context, serviceAccount *corev1.ServiceAccountApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ServiceAccount, err error) {
+	if serviceAccount == nil {
+		return nil, fmt.Errorf("serviceAccount provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(serviceAccount)
+	if err != nil {
+		return nil, err
+	}
+	name := serviceAccount.Name
+	if name == nil {
+		return nil, fmt.Errorf("serviceAccount.Name must be provided to Apply")
+	}
+	result = &v1.ServiceAccount{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("serviceaccounts").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -142,6 +143,11 @@ func (c *FakePodSecurityPolicies) Apply(ctx context.Context, podSecurityPolicy *
 		Invokes(testing.NewRootPatchSubresourceAction(podsecuritypoliciesResource, *name, types.ApplyPatchType, data), &v1beta1.PodSecurityPolicy{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1beta1 "k8s.io/api/policy/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +155,7 @@ func (c *FakePodSecurityPolicies) Apply(ctx context.Context, podSecurityPolicy *
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	policyv1beta1 "k8s.io/client-go/applyconfigurations/policy/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -238,6 +245,27 @@ func (c *FakePodSecurityPolicies) Patch(ctx context.Context, name string, pt typ
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(podsecuritypoliciesResource, name, pt, data, subresources...), &v1beta1.PodSecurityPolicy{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.PodSecurityPolicy), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied podSecurityPolicy.
+func (c *FakePodSecurityPolicies) Apply(ctx context.Context, podSecurityPolicy *policyv1beta1.PodSecurityPolicyApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.PodSecurityPolicy, err error) {
+	if podSecurityPolicy == nil {
+		return nil, fmt.Errorf("podSecurityPolicy provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(podSecurityPolicy)
+	if err != nil {
+		return nil, err
+	}
+	name := podSecurityPolicy.Name
+	if name == nil {
+		return nil, fmt.Errorf("podSecurityPolicy.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(podsecuritypoliciesResource, *name, types.ApplyPatchType, data), &v1beta1.PodSecurityPolicy{})
 	if obj == nil {
 		return nil, err
 	}

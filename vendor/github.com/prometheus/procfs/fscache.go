@@ -237,11 +237,17 @@ func (fs FS) Fscacheinfo() (Fscacheinfo, error) {
 	m, err := parseFscacheinfo(bytes.NewReader(b))
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
+=======
+		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 
 	return *m, nil

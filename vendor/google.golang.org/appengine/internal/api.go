@@ -59,6 +59,7 @@ var (
 	apiHTTPClient = &http.Client{
 		Transport: &http.Transport{
 <<<<<<< HEAD
+<<<<<<< HEAD
 			Proxy:               http.ProxyFromEnvironment,
 			Dial:                limitDial,
 			MaxIdleConns:        1000,
@@ -69,6 +70,16 @@ var (
 			Proxy: http.ProxyFromEnvironment,
 			Dial:  limitDial,
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			Proxy: http.ProxyFromEnvironment,
+			Dial:  limitDial,
+=======
+			Proxy:               http.ProxyFromEnvironment,
+			Dial:                limitDial,
+			MaxIdleConns:        1000,
+			MaxIdleConnsPerHost: 10000,
+			IdleConnTimeout:     90 * time.Second,
+>>>>>>> 5ce8c7613 (update vendored files)
 		},
 	}
 

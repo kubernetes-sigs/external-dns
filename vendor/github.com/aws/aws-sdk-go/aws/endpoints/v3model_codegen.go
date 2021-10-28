@@ -1,8 +1,13 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build codegen
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build codegen
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build codegen
 
 package endpoints

@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -185,6 +186,11 @@ func (c *FakeResourceQuotas) ApplyStatus(ctx context.Context, resourceQuota *app
 		Invokes(testing.NewPatchSubresourceAction(resourcequotasResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.ResourceQuota{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -192,6 +198,7 @@ func (c *FakeResourceQuotas) ApplyStatus(ctx context.Context, resourceQuota *app
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -300,6 +307,51 @@ func (c *FakeResourceQuotas) Patch(ctx context.Context, name string, pt types.Pa
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(resourcequotasResource, c.ns, name, pt, data, subresources...), &corev1.ResourceQuota{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ResourceQuota), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied resourceQuota.
+func (c *FakeResourceQuotas) Apply(ctx context.Context, resourceQuota *applyconfigurationscorev1.ResourceQuotaApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ResourceQuota, err error) {
+	if resourceQuota == nil {
+		return nil, fmt.Errorf("resourceQuota provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(resourceQuota)
+	if err != nil {
+		return nil, err
+	}
+	name := resourceQuota.Name
+	if name == nil {
+		return nil, fmt.Errorf("resourceQuota.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(resourcequotasResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ResourceQuota{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ResourceQuota), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeResourceQuotas) ApplyStatus(ctx context.Context, resourceQuota *applyconfigurationscorev1.ResourceQuotaApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ResourceQuota, err error) {
+	if resourceQuota == nil {
+		return nil, fmt.Errorf("resourceQuota provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(resourceQuota)
+	if err != nil {
+		return nil, err
+	}
+	name := resourceQuota.Name
+	if name == nil {
+		return nil, fmt.Errorf("resourceQuota.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(resourcequotasResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.ResourceQuota{})
 
 	if obj == nil {
 		return nil, err

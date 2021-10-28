@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix && ppc
 // +build aix,ppc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -10,6 +11,13 @@
 // +build aix
 // +build ppc
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build aix
+// +build ppc
+=======
+//go:build aix && ppc
+// +build aix,ppc
+>>>>>>> 5ce8c7613 (update vendored files)
 
 // Functions to access/create device major and minor numbers matching the
 // encoding used by AIX.

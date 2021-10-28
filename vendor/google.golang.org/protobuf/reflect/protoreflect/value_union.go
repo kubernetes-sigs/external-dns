@@ -86,11 +86,17 @@ func ValueOf(v interface{}) Value {
 	case Message, List, Map:
 		return valueOfIface(v)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case ProtoMessage:
 		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	case ProtoMessage:
+		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
+>>>>>>> 5ce8c7613 (update vendored files)
 	default:
 		panic(fmt.Sprintf("invalid type: %T", v))
 	}

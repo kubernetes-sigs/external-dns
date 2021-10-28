@@ -1,9 +1,15 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 Copyright (c) 2015-2020, Cloudflare. All rights reserved.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 Copyright (c) 2015-2019, Cloudflare. All rights reserved.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+Copyright (c) 2015-2019, Cloudflare. All rights reserved.
+=======
+Copyright (c) 2015-2020, Cloudflare. All rights reserved.
+>>>>>>> 5ce8c7613 (update vendored files)
 
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:

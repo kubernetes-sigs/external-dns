@@ -27,6 +27,10 @@ import (
 type StorageV1alpha1Interface interface {
 	RESTClient() rest.Interface
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	CSIStorageCapacitiesGetter
 	VolumeAttachmentsGetter
 }
@@ -38,6 +42,7 @@ type StorageV1alpha1Client struct {
 
 func (c *StorageV1alpha1Client) CSIStorageCapacities(namespace string) CSIStorageCapacityInterface {
 	return newCSIStorageCapacities(c, namespace)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	VolumeAttachmentsGetter
@@ -47,6 +52,9 @@ func (c *StorageV1alpha1Client) CSIStorageCapacities(namespace string) CSIStorag
 type StorageV1alpha1Client struct {
 	restClient rest.Interface
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (c *StorageV1alpha1Client) VolumeAttachments() VolumeAttachmentInterface {

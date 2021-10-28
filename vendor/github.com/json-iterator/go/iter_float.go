@@ -289,12 +289,19 @@ non_decimal_loop:
 			}
 			value = (value << 3) + (value << 1) + uint64(ind)
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if value > maxFloat64 {
 				return iter.readFloat64SlowPath()
 			}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+			if value > maxFloat64 {
+				return iter.readFloat64SlowPath()
+			}
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 	}
 	return iter.readFloat64SlowPath()

@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build arm64 && darwin
 // +build arm64,darwin
 
@@ -50,6 +51,10 @@ func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, 
 //sys	ptrace1(request int, pid int, addr uintptr, data uintptr) (err error) = SYS_ptrace
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build arm64 && darwin
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build arm64,darwin
 
 package unix
@@ -93,7 +98,13 @@ func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, 
 //sys	Fstatfs(fd int, stat *Statfs_t) (err error)
 //sys	getfsstat(buf unsafe.Pointer, size uintptr, flags int) (n int, err error) = SYS_GETFSSTAT
 //sys	Lstat(path string, stat *Stat_t) (err error)
+<<<<<<< HEAD
 //sys	ptrace(request int, pid int, addr uintptr, data uintptr) (err error)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+//sys	ptrace(request int, pid int, addr uintptr, data uintptr) (err error)
+=======
+//sys	ptrace1(request int, pid int, addr uintptr, data uintptr) (err error) = SYS_ptrace
+>>>>>>> 5ce8c7613 (update vendored files)
 //sys	Stat(path string, stat *Stat_t) (err error)
 //sys	Statfs(path string, stat *Statfs_t) (err error)

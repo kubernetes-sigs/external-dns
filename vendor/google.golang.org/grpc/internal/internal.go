@@ -26,6 +26,7 @@ import (
 
 	"google.golang.org/grpc/connectivity"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/grpc/serviceconfig"
 )
 
@@ -67,11 +68,13 @@ var (
 	DrainServerTransports interface{} // func(*grpc.Server, string)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	"google.golang.org/grpc/serviceconfig"
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 var (
-	// WithResolverBuilder is set by dialoptions.go
-	WithResolverBuilder interface{} // func (resolver.Builder) grpc.DialOption
 	// WithHealthCheckFunc is set by dialoptions.go
 	WithHealthCheckFunc interface{} // func (HealthChecker) DialOption
 	// HealthCheckFunc is used to provide client-side LB channel health checking
@@ -81,18 +84,37 @@ var (
 	// KeepaliveMinPingTime is the minimum ping interval.  This must be 10s by
 	// default, but tests may wish to set it lower for convenience.
 	KeepaliveMinPingTime = 10 * time.Second
-	// StatusRawProto is exported by status/status.go. This func returns a
-	// pointer to the wrapped Status proto for a given status.Status without a
-	// call to proto.Clone(). The returned Status proto should not be mutated by
-	// the caller.
-	StatusRawProto interface{} // func (*status.Status) *spb.Status
-	// NewRequestInfoContext creates a new context based on the argument context attaching
-	// the passed in RequestInfo to the new context.
-	NewRequestInfoContext interface{} // func(context.Context, credentials.RequestInfo) context.Context
 	// ParseServiceConfigForTesting is for creating a fake
 	// ClientConn for resolver testing only
 	ParseServiceConfigForTesting interface{} // func(string) *serviceconfig.ParseResult
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// EqualServiceConfigForTesting is for testing service config generation and
+	// parsing. Both a and b should be returned by ParseServiceConfigForTesting.
+	// This function compares the config without rawJSON stripped, in case the
+	// there's difference in white space.
+	EqualServiceConfigForTesting func(a, b serviceconfig.Config) bool
+	// GetCertificateProviderBuilder returns the registered builder for the
+	// given name. This is set by package certprovider for use from xDS
+	// bootstrap code while parsing certificate provider configs in the
+	// bootstrap file.
+	GetCertificateProviderBuilder interface{} // func(string) certprovider.Builder
+	// GetXDSHandshakeInfoForTesting returns a pointer to the xds.HandshakeInfo
+	// stored in the passed in attributes. This is set by
+	// credentials/xds/xds.go.
+	GetXDSHandshakeInfoForTesting interface{} // func (*attributes.Attributes) *xds.HandshakeInfo
+	// GetServerCredentials returns the transport credentials configured on a
+	// gRPC server. An xDS-enabled server needs to know what type of credentials
+	// is configured on the underlying gRPC server. This is set by server.go.
+	GetServerCredentials interface{} // func (*grpc.Server) credentials.TransportCredentials
+	// DrainServerTransports initiates a graceful close of existing connections
+	// on a gRPC server accepted on the provided listener address. An
+	// xDS-enabled server invokes this method on a grpc.Server when a particular
+	// listener moves to "not-serving" mode.
+	DrainServerTransports interface{} // func(*grpc.Server, string)
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 // HealthChecker defines the signature of the client-side LB channel health checking function.

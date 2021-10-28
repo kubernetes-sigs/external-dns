@@ -16,6 +16,7 @@ const (
 // StorageService is an interface for interfacing with the storage
 // endpoints of the Digital Ocean API.
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage
 type StorageService interface {
 	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
@@ -65,6 +66,11 @@ func (f Volume) String() string {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#block-storage
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#block-storage
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage
+>>>>>>> 5ce8c7613 (update vendored files)
 type StorageService interface {
 	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
 	GetVolume(context.Context, string) (*Volume, *Response, error)
@@ -109,7 +115,12 @@ func (f Volume) String() string {
 	return Stringify(f)
 }
 
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// URN returns the volume ID as a valid DO API URN
+>>>>>>> 5ce8c7613 (update vendored files)
 func (f Volume) URN() string {
 	return ToURN("Volume", f.ID)
 }

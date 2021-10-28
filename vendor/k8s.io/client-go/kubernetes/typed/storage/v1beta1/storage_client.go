@@ -29,6 +29,10 @@ type StorageV1beta1Interface interface {
 	CSIDriversGetter
 	CSINodesGetter
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	CSIStorageCapacitiesGetter
 	StorageClassesGetter
 	VolumeAttachmentsGetter
@@ -49,6 +53,7 @@ func (c *StorageV1beta1Client) CSINodes() CSINodeInterface {
 
 func (c *StorageV1beta1Client) CSIStorageCapacities(namespace string) CSIStorageCapacityInterface {
 	return newCSIStorageCapacities(c, namespace)
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	StorageClassesGetter
@@ -67,6 +72,9 @@ func (c *StorageV1beta1Client) CSIDrivers() CSIDriverInterface {
 func (c *StorageV1beta1Client) CSINodes() CSINodeInterface {
 	return newCSINodes(c)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (c *StorageV1beta1Client) StorageClasses() StorageClassInterface {

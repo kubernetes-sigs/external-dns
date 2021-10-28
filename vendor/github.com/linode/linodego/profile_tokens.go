@@ -110,6 +110,7 @@ func (c *Client) ListTokens(ctx context.Context, opts *ListOptions) ([]Token, er
 	response := TokensPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -191,6 +192,10 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -243,7 +248,6 @@ func (c *Client) CreateToken(ctx context.Context, createOpts TokenCreateOptions)
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -270,8 +274,13 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

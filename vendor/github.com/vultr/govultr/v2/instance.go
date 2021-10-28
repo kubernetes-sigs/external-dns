@@ -94,6 +94,7 @@ type Instance struct {
 	OsID             int      `json:"os_id"`
 	AppID            int      `json:"app_id"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ImageID          string   `json:"image_id"`
 	FirewallGroupID  string   `json:"firewall_group_id"`
 	Features         []string `json:"features"`
@@ -243,6 +244,10 @@ type InstanceUpdateReq struct {
 	ImageID              string   `json:"image_id,omitempty"`
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	ImageID          string   `json:"image_id"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	FirewallGroupID  string   `json:"firewall_group_id"`
 	Features         []string `json:"features"`
 }
@@ -364,6 +369,7 @@ type InstanceCreateReq struct {
 	OsID                 int      `json:"os_id,omitempty"`
 	ISOID                string   `json:"iso_id,omitempty"`
 	AppID                int      `json:"app_id,omitempty"`
+	ImageID              string   `json:"image_id,omitempty"`
 	FirewallGroupID      string   `json:"firewall_group_id,omitempty"`
 	Hostname             string   `json:"hostname,omitempty"`
 	IPXEChainURL         string   `json:"ipxe_chain_url,omitempty"`
@@ -387,7 +393,12 @@ type InstanceUpdateReq struct {
 	Tag                  string   `json:"tag,omitempty"`
 	OsID                 int      `json:"os_id,omitempty"`
 	AppID                int      `json:"app_id,omitempty"`
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	ImageID              string   `json:"image_id,omitempty"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	EnableIPv6           *bool    `json:"enable_ipv6,omitempty"`
 	EnablePrivateNetwork *bool    `json:"enable_private_network,omitempty"`
 	AttachPrivateNetwork []string `json:"attach_private_network,omitempty"`

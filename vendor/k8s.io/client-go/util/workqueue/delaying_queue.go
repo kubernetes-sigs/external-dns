@@ -39,6 +39,7 @@ func NewDelayingQueue() DelayingInterface {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
 // inject custom queue Interface instead of the default one
 func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
@@ -69,6 +70,15 @@ func newDelayingQueue(clock clock.Clock, q Interface, name string) *delayingType
 	go ret.waitingLoop()
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
+// inject custom queue Interface instead of the default one
+func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
+	return newDelayingQueue(clock.RealClock{}, q, name)
+}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 // NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
 func NewNamedDelayingQueue(name string) DelayingInterface {
 	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
@@ -77,8 +87,12 @@ func NewNamedDelayingQueue(name string) DelayingInterface {
 // NewDelayingQueueWithCustomClock constructs a new named workqueue
 // with ability to inject real or fake clock for testing purposes
 func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
+	return newDelayingQueue(clock, NewNamed(name), name)
+}
+
+func newDelayingQueue(clock clock.Clock, q Interface, name string) *delayingType {
 	ret := &delayingType{
-		Interface:       NewNamed(name),
+		Interface:       q,
 		clock:           clock,
 		heartbeat:       clock.NewTicker(maxWait),
 		stopCh:          make(chan struct{}),
@@ -87,8 +101,13 @@ func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInt
 	}
 
 	go ret.waitingLoop()
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	return ret
 }
 

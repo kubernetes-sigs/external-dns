@@ -42,12 +42,19 @@ func methodFamily(m string) string {
 		m = m[:i] // remove everything from second slash
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if i := strings.LastIndex(m, "."); i >= 0 {
 		m = m[i+1:] // cut down to last dotted component
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	if i := strings.LastIndex(m, "."); i >= 0 {
+		m = m[i+1:] // cut down to last dotted component
+	}
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	return m
 }
 

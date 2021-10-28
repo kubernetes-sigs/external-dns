@@ -19,6 +19,10 @@ package clientcmd
 import (
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	"net/url"
 	"strconv"
 	"time"
@@ -48,6 +52,7 @@ func parseProxyURL(proxyURL string) (*url.URL, error) {
 		return nil, fmt.Errorf("unsupported scheme %q, must be http, https, or socks5", u.Scheme)
 	}
 	return u, nil
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"strconv"
@@ -65,4 +70,7 @@ func ParseTimeout(duration string) (time.Duration, error) {
 	}
 	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 }

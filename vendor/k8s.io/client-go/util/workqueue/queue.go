@@ -56,6 +56,7 @@ func newQueue(c clock.Clock, metrics queueMetrics, updatePeriod time.Duration) *
 		unfinishedWorkUpdatePeriod: updatePeriod,
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// Don't start the goroutine for a type of noMetrics so we don't consume
 	// resources unnecessarily
@@ -67,6 +68,17 @@ func newQueue(c clock.Clock, metrics queueMetrics, updatePeriod time.Duration) *
 =======
 	go t.updateUnfinishedWorkLoop()
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	go t.updateUnfinishedWorkLoop()
+=======
+
+	// Don't start the goroutine for a type of noMetrics so we don't consume
+	// resources unnecessarily
+	if _, ok := metrics.(noMetrics); !ok {
+		go t.updateUnfinishedWorkLoop()
+	}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 	return t
 }
 

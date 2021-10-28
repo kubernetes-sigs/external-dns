@@ -9,11 +9,17 @@ import (
 // BalanceService is an interface for interfacing with the Balance
 // endpoints of the DigitalOcean API
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#operation/get_customer_balance
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#balance
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#balance
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#operation/get_customer_balance
+>>>>>>> 5ce8c7613 (update vendored files)
 type BalanceService interface {
 	Get(context.Context) (*Balance, *Response, error)
 }

@@ -76,6 +76,7 @@ import (
 type Info struct {
 	User        string
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Password    string `datapolicy:"password"`
 	CAFile      string
 	CertFile    string
@@ -84,11 +85,22 @@ type Info struct {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Password    string
+||||||| parent of 5ce8c7613 (update vendored files)
+	Password    string
+=======
+	Password    string `datapolicy:"password"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	CAFile      string
 	CertFile    string
 	KeyFile     string
+<<<<<<< HEAD
 	BearerToken string
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	BearerToken string
+=======
+	BearerToken string `datapolicy:"token"`
+>>>>>>> 5ce8c7613 (update vendored files)
 	Insecure    *bool
 }
 

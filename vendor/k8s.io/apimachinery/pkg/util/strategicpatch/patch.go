@@ -988,6 +988,7 @@ func validatePatchWithSetOrderList(patchList, setOrderList interface{}, mergeKey
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var nonDeleteList []interface{}
 	var err error
 	if len(mergeKey) > 0 {
@@ -1325,9 +1326,14 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	var nonDeleteList, toDeleteList []interface{}
+||||||| parent of 5ce8c7613 (update vendored files)
+	var nonDeleteList, toDeleteList []interface{}
+=======
+	var nonDeleteList []interface{}
+>>>>>>> 5ce8c7613 (update vendored files)
 	var err error
 	if len(mergeKey) > 0 {
-		nonDeleteList, toDeleteList, err = extractToDeleteItems(typedPatchList)
+		nonDeleteList, _, err = extractToDeleteItems(typedPatchList)
 		if err != nil {
 			return err
 		}
@@ -1355,7 +1361,6 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 	if patchIndex < len(nonDeleteList) && setOrderIndex >= len(typedSetOrderList) {
 		return fmt.Errorf("The order in patch list:\n%v\n doesn't match %s list:\n%v\n", typedPatchList, setElementOrderDirectivePrefix, setOrderList)
 	}
-	typedPatchList = append(nonDeleteList, toDeleteList...)
 	return nil
 }
 
@@ -1658,10 +1663,18 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 		// Preserving the null value is useful when we want to send an explicit
 		// delete to the API server.
 		if patchV == nil {
+<<<<<<< HEAD
 			if _, ok := original[k]; ok {
 				delete(original, k)
 			}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			if _, ok := original[k]; ok {
+				delete(original, k)
+			}
+=======
+			delete(original, k)
+>>>>>>> 5ce8c7613 (update vendored files)
 			if mergeOptions.IgnoreUnmatchedNulls {
 				continue
 			}

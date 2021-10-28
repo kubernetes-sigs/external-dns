@@ -57,6 +57,7 @@ type ScaleStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen:introduced=1.6
 // +k8s:prerelease-lifecycle-gen:deprecated=1.8
 // +k8s:prerelease-lifecycle-gen:removed=1.16
@@ -601,6 +602,13 @@ type ControllerRevision struct {
 // +k8s:prerelease-lifecycle-gen:replacement=apps,v1,ControllerRevisionList
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// +k8s:prerelease-lifecycle-gen:introduced=1.6
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=autoscaling,v1,Scale
+>>>>>>> 5ce8c7613 (update vendored files)
 
 // Scale represents a scaling request for a resource.
 type Scale struct {
@@ -620,6 +628,10 @@ type Scale struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.5
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,StatefulSet
 
 // DEPRECATED - This group version of StatefulSet is deprecated by apps/v1beta2/StatefulSet. See the release notes for
 // more information.
@@ -755,6 +767,13 @@ type StatefulSetSpec struct {
 	// consists of all revisions not represented by a currently applied
 	// StatefulSetSpec version. The default value is 10.
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty" protobuf:"varint,8,opt,name=revisionHistoryLimit"`
+
+	// Minimum number of seconds for which a newly created pod should be ready
+	// without any of its container crashing for it to be considered available.
+	// Defaults to 0 (pod will be considered available as soon as it is ready)
+	// This is an alpha field and requires enabling StatefulSetMinReadySeconds feature gate.
+	// +optional
+	MinReadySeconds int32 `json:"minReadySeconds,omitempty" protobuf:"varint,9,opt,name=minReadySeconds"`
 }
 
 // StatefulSetStatus represents the current state of a StatefulSet.
@@ -797,6 +816,12 @@ type StatefulSetStatus struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	Conditions []StatefulSetCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,10,rep,name=conditions"`
+
+	// Total number of available pods (ready for at least minReadySeconds) targeted by this StatefulSet.
+	// This is an alpha field and requires enabling StatefulSetMinReadySeconds feature gate.
+	// Remove omitempty when graduating to beta
+	// +optional
+	AvailableReplicas int32 `json:"availableReplicas,omitempty" protobuf:"varint,11,opt,name=availableReplicas"`
 }
 
 type StatefulSetConditionType string
@@ -819,6 +844,10 @@ type StatefulSetCondition struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.5
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,StatefulSetList
 
 // StatefulSetList is a collection of StatefulSets.
 type StatefulSetList struct {
@@ -830,6 +859,10 @@ type StatefulSetList struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.6
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,Deployment
 
 // DEPRECATED - This group version of Deployment is deprecated by apps/v1beta2/Deployment. See the release notes for
 // more information.
@@ -900,6 +933,10 @@ type DeploymentSpec struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.6
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,DeploymentRollback
 
 // DEPRECATED.
 // DeploymentRollback stores the information required to rollback a deployment.
@@ -1057,6 +1094,10 @@ type DeploymentCondition struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.6
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,DeploymentList
 
 // DeploymentList is a list of Deployments.
 type DeploymentList struct {
@@ -1071,6 +1112,10 @@ type DeploymentList struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.7
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,ControllerRevision
 
 // DEPRECATED - This group version of ControllerRevision is deprecated by apps/v1beta2/ControllerRevision. See the
 // release notes for more information.
@@ -1098,7 +1143,15 @@ type ControllerRevision struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// +k8s:prerelease-lifecycle-gen:introduced=1.7
+// +k8s:prerelease-lifecycle-gen:deprecated=1.8
+// +k8s:prerelease-lifecycle-gen:removed=1.16
+// +k8s:prerelease-lifecycle-gen:replacement=apps,v1,ControllerRevisionList
+>>>>>>> 5ce8c7613 (update vendored files)
 
 // ControllerRevisionList is a resource containing a list of ControllerRevision objects.
 type ControllerRevisionList struct {

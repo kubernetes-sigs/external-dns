@@ -268,12 +268,19 @@ func (in *ExecConfig) DeepCopyInto(out *ExecConfig) {
 		copy(*out, *in)
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if in.Config != nil {
 		out.Config = in.Config.DeepCopyObject()
 	}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if in.Config != nil {
+		out.Config = in.Config.DeepCopyObject()
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	return
 }
 

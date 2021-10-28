@@ -41,6 +41,7 @@ func (c *Client) GetAccountSettings(ctx context.Context) (*AccountSettings, erro
 
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&AccountSettings{}).Get(e))
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -71,6 +72,10 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +88,6 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 	var body string
 
 	e, err := c.AccountSettings.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +103,13 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

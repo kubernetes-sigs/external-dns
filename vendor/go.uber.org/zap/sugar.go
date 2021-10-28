@@ -223,6 +223,7 @@ func (s *SugaredLogger) log(lvl zapcore.Level, template string, fmtArgs []interf
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	msg := getMessage(template, fmtArgs)
 	if ce := s.base.Check(lvl, msg); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
@@ -255,10 +256,40 @@ func getMessage(template string, fmtArgs []interface{}) string {
 		msg = fmt.Sprintf(template, fmtArgs...)
 	}
 
+||||||| parent of 5ce8c7613 (update vendored files)
+	// Format with Sprint, Sprintf, or neither.
+	msg := template
+	if msg == "" && len(fmtArgs) > 0 {
+		msg = fmt.Sprint(fmtArgs...)
+	} else if msg != "" && len(fmtArgs) > 0 {
+		msg = fmt.Sprintf(template, fmtArgs...)
+	}
+
+=======
+	msg := getMessage(template, fmtArgs)
+>>>>>>> 5ce8c7613 (update vendored files)
 	if ce := s.base.Check(lvl, msg); ce != nil {
 		ce.Write(s.sweetenFields(context)...)
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// getMessage format with Sprint, Sprintf, or neither.
+func getMessage(template string, fmtArgs []interface{}) string {
+	if len(fmtArgs) == 0 {
+		return template
+	}
+
+	if template != "" {
+		return fmt.Sprintf(template, fmtArgs...)
+	}
+
+	if len(fmtArgs) == 1 {
+		if str, ok := fmtArgs[0].(string); ok {
+			return str
+		}
+	}
+	return fmt.Sprint(fmtArgs...)
 }
 
 func (s *SugaredLogger) sweetenFields(args []interface{}) []Field {

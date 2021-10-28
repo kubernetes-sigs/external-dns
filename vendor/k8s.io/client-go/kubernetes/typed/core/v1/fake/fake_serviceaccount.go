@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -151,6 +152,11 @@ func (c *FakeServiceAccounts) Apply(ctx context.Context, serviceAccount *applyco
 		Invokes(testing.NewPatchSubresourceAction(serviceaccountsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ServiceAccount{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -159,6 +165,7 @@ func (c *FakeServiceAccounts) Apply(ctx context.Context, serviceAccount *applyco
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -255,6 +262,28 @@ func (c *FakeServiceAccounts) Patch(ctx context.Context, name string, pt types.P
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(serviceaccountsResource, c.ns, name, pt, data, subresources...), &corev1.ServiceAccount{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ServiceAccount), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied serviceAccount.
+func (c *FakeServiceAccounts) Apply(ctx context.Context, serviceAccount *applyconfigurationscorev1.ServiceAccountApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ServiceAccount, err error) {
+	if serviceAccount == nil {
+		return nil, fmt.Errorf("serviceAccount provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(serviceAccount)
+	if err != nil {
+		return nil, err
+	}
+	name := serviceAccount.Name
+	if name == nil {
+		return nil, fmt.Errorf("serviceAccount.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(serviceaccountsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ServiceAccount{})
 
 	if obj == nil {
 		return nil, err

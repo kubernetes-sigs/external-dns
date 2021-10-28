@@ -3,6 +3,7 @@
 
 // Added for go1.11 compatibility
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix
 // +build aix
 
@@ -11,11 +12,16 @@ package ipv4
 const (
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build aix
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build aix
 
 package ipv4
 
 const (
+<<<<<<< HEAD
 	sysIP_OPTIONS     = 0x1
 	sysIP_HDRINCL     = 0x2
 	sysIP_TOS         = 0x3
@@ -34,6 +40,26 @@ const (
 	sysIP_DROP_MEMBERSHIP = 0xd
 
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	sysIP_OPTIONS     = 0x1
+	sysIP_HDRINCL     = 0x2
+	sysIP_TOS         = 0x3
+	sysIP_TTL         = 0x4
+	sysIP_RECVOPTS    = 0x5
+	sysIP_RECVRETOPTS = 0x6
+	sysIP_RECVDSTADDR = 0x7
+	sysIP_RETOPTS     = 0x8
+	sysIP_RECVIF      = 0x20
+	sysIP_RECVTTL     = 0x22
+
+	sysIP_MULTICAST_IF    = 0x9
+	sysIP_MULTICAST_TTL   = 0xa
+	sysIP_MULTICAST_LOOP  = 0xb
+	sysIP_ADD_MEMBERSHIP  = 0xc
+	sysIP_DROP_MEMBERSHIP = 0xd
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	sizeofIPMreq = 0x8
 )
 

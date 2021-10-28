@@ -17,6 +17,7 @@ import (
 
 const (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	version     = "2.9.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
@@ -112,6 +113,11 @@ func NewClient(httpClient *http.Client) *Client {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	version     = "2.5.1"
+||||||| parent of 5ce8c7613 (update vendored files)
+	version     = "2.5.1"
+=======
+	version     = "2.9.0"
+>>>>>>> 5ce8c7613 (update vendored files)
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
 	rateLimit   = 500 * time.Millisecond
@@ -150,6 +156,7 @@ type Client struct {
 	FirewallRule    FireWallRuleService
 	Instance        InstanceService
 	ISO             ISOService
+	Kubernetes      KubernetesService
 	LoadBalancer    LoadBalancerService
 	Network         NetworkService
 	ObjectStorage   ObjectStorageService
@@ -201,7 +208,12 @@ func NewClient(httpClient *http.Client) *Client {
 	client.FirewallRule = &FireWallRuleServiceHandler{client}
 	client.Instance = &InstanceServiceHandler{client}
 	client.ISO = &ISOServiceHandler{client}
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	client.Kubernetes = &KubernetesHandler{client}
+>>>>>>> 5ce8c7613 (update vendored files)
 	client.LoadBalancer = &LoadBalancerHandler{client}
 	client.Network = &NetworkServiceHandler{client}
 	client.ObjectStorage = &ObjectStorageServiceHandler{client}

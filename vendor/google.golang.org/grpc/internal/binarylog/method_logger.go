@@ -28,6 +28,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	pb "google.golang.org/grpc/binarylog/grpc_binarylog_v1"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -329,6 +330,10 @@ func (c *ServerTrailer) toProto() *pb.GrpcLogEntry {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"google.golang.org/grpc/grpclog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"google.golang.org/grpc/grpclog"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
@@ -367,7 +372,7 @@ func newMethodLogger(h, m uint64) *MethodLogger {
 		callID:          idGen.next(),
 		idWithinCallGen: &callIDGenerator{},
 
-		sink: defaultSink, // TODO(blog): make it plugable.
+		sink: DefaultSink, // TODO(blog): make it plugable.
 	}
 }
 
@@ -520,12 +525,12 @@ func (c *ClientMessage) toProto() *pb.GrpcLogEntry {
 	if m, ok := c.Message.(proto.Message); ok {
 		data, err = proto.Marshal(m)
 		if err != nil {
-			grpclog.Infof("binarylogging: failed to marshal proto message: %v", err)
+			grpclogLogger.Infof("binarylogging: failed to marshal proto message: %v", err)
 		}
 	} else if b, ok := c.Message.([]byte); ok {
 		data = b
 	} else {
-		grpclog.Infof("binarylogging: message to log is neither proto.message nor []byte")
+		grpclogLogger.Infof("binarylogging: message to log is neither proto.message nor []byte")
 	}
 	ret := &pb.GrpcLogEntry{
 		Type: pb.GrpcLogEntry_EVENT_TYPE_CLIENT_MESSAGE,
@@ -560,12 +565,12 @@ func (c *ServerMessage) toProto() *pb.GrpcLogEntry {
 	if m, ok := c.Message.(proto.Message); ok {
 		data, err = proto.Marshal(m)
 		if err != nil {
-			grpclog.Infof("binarylogging: failed to marshal proto message: %v", err)
+			grpclogLogger.Infof("binarylogging: failed to marshal proto message: %v", err)
 		}
 	} else if b, ok := c.Message.([]byte); ok {
 		data = b
 	} else {
-		grpclog.Infof("binarylogging: message to log is neither proto.message nor []byte")
+		grpclogLogger.Infof("binarylogging: message to log is neither proto.message nor []byte")
 	}
 	ret := &pb.GrpcLogEntry{
 		Type: pb.GrpcLogEntry_EVENT_TYPE_SERVER_MESSAGE,
@@ -616,7 +621,7 @@ type ServerTrailer struct {
 func (c *ServerTrailer) toProto() *pb.GrpcLogEntry {
 	st, ok := status.FromError(c.Err)
 	if !ok {
-		grpclog.Info("binarylogging: error in trailer is not a status error")
+		grpclogLogger.Info("binarylogging: error in trailer is not a status error")
 	}
 	var (
 		detailsBytes []byte
@@ -626,8 +631,14 @@ func (c *ServerTrailer) toProto() *pb.GrpcLogEntry {
 	if stProto != nil && len(stProto.Details) != 0 {
 		detailsBytes, err = proto.Marshal(stProto)
 		if err != nil {
+<<<<<<< HEAD
 			grpclog.Infof("binarylogging: failed to marshal status proto: %v", err)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			grpclog.Infof("binarylogging: failed to marshal status proto: %v", err)
+=======
+			grpclogLogger.Infof("binarylogging: failed to marshal status proto: %v", err)
+>>>>>>> 5ce8c7613 (update vendored files)
 		}
 	}
 	ret := &pb.GrpcLogEntry{

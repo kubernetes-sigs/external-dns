@@ -78,6 +78,7 @@ type Schema interface {
 	// Describes the field.
 	GetDescription() string
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Default for that schema.
 	GetDefault() interface{}
 	// Returns type extensions.
@@ -149,6 +150,11 @@ func (b *BaseSchema) GetDefault() interface{} {
 	return b.Default
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// Default for that schema.
+	GetDefault() interface{}
+>>>>>>> 5ce8c7613 (update vendored files)
 	// Returns type extensions.
 	GetExtensions() map[string]interface{}
 }
@@ -201,6 +207,7 @@ func (p *Path) FieldPath(field string) Path {
 type BaseSchema struct {
 	Description string
 	Extensions  map[string]interface{}
+	Default     interface{}
 
 	Path Path
 }
@@ -212,6 +219,10 @@ func (b *BaseSchema) GetDescription() string {
 func (b *BaseSchema) GetExtensions() map[string]interface{} {
 	return b.Extensions
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func (b *BaseSchema) GetDefault() interface{} {
+	return b.Default
 }
 
 func (b *BaseSchema) GetPath() *Path {

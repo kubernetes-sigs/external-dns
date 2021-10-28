@@ -17,6 +17,7 @@ const (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // LKEClusterPoolDisk represents a Node disk in an LKEClusterPool object
 type LKEClusterPoolDisk struct {
 	Size int    `json:"size"`
@@ -202,6 +203,21 @@ func (c *Client) DeleteLKEClusterPoolNode(ctx context.Context, clusterID int, id
 	e = fmt.Sprintf("%s/%d/nodes/%s", e, clusterID, id)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// LKEClusterPoolDisk represents a Node disk in an LKEClusterPool object
+type LKEClusterPoolDisk struct {
+	Size int    `json:"size"`
+	Type string `json:"type"`
+}
+
+type LKEClusterPoolAutoscaler struct {
+	Enabled bool `json:"enabled"`
+	Min     int  `json:"min"`
+	Max     int  `json:"max"`
+}
+
+>>>>>>> 5ce8c7613 (update vendored files)
 // LKEClusterPoolLinode represents a LKEClusterPoolLinode object
 type LKEClusterPoolLinode struct {
 	ID         string          `json:"id"`
@@ -214,30 +230,46 @@ type LKEClusterPool struct {
 	ID      int                    `json:"id"`
 	Count   int                    `json:"count"`
 	Type    string                 `json:"type"`
+	Disks   []LKEClusterPoolDisk   `json:"disks"`
 	Linodes []LKEClusterPoolLinode `json:"nodes"`
+	Tags    []string               `json:"tags"`
+
+	Autoscaler LKEClusterPoolAutoscaler `json:"autoscaler"`
 }
 
 // LKEClusterPoolCreateOptions fields are those accepted by CreateLKEClusterPool
 type LKEClusterPoolCreateOptions struct {
-	Count int    `json:"count"`
-	Type  string `json:"type"`
+	Count int                  `json:"count"`
+	Type  string               `json:"type"`
+	Disks []LKEClusterPoolDisk `json:"disks"`
+	Tags  []string             `json:"tags"`
+
+	Autoscaler *LKEClusterPoolAutoscaler `json:"autoscaler,omitempty"`
 }
 
 // LKEClusterPoolUpdateOptions fields are those accepted by UpdateLKEClusterPool
 type LKEClusterPoolUpdateOptions struct {
-	Count int `json:"count"`
+	Count int       `json:"count,omitempty"`
+	Tags  *[]string `json:"tags,omitempty"`
+
+	Autoscaler *LKEClusterPoolAutoscaler `json:"autoscaler,omitempty"`
 }
 
 // GetCreateOptions converts a LKEClusterPool to LKEClusterPoolCreateOptions for
 // use in CreateLKEClusterPool
 func (l LKEClusterPool) GetCreateOptions() (o LKEClusterPoolCreateOptions) {
 	o.Count = l.Count
+	o.Disks = l.Disks
+	o.Tags = l.Tags
+	o.Autoscaler = &l.Autoscaler
 	return
 }
 
 // GetUpdateOptions converts a LKEClusterPool to LKEClusterPoolUpdateOptions for use in UpdateLKEClusterPool
 func (l LKEClusterPool) GetUpdateOptions() (o LKEClusterPoolUpdateOptions) {
 	o.Count = l.Count
+	o.Tags = &l.Tags
+	o.Autoscaler = &l.Autoscaler
 	return
 }
 
@@ -249,7 +281,7 @@ type LKEClusterPoolsPagedResponse struct {
 
 // endpointWithID gets the endpoint URL for InstanceConfigs of a given Instance
 func (LKEClusterPoolsPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.LKEClusterPools.endpointWithID(id)
+	endpoint, err := c.LKEClusterPools.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -274,7 +306,7 @@ func (c *Client) ListLKEClusterPools(ctx context.Context, clusterID int, opts *L
 
 // GetLKEClusterPool gets the lkeClusterPool with the provided ID
 func (c *Client) GetLKEClusterPool(ctx context.Context, clusterID, id int) (*LKEClusterPool, error) {
-	e, err := c.LKEClusterPools.endpointWithID(clusterID)
+	e, err := c.LKEClusterPools.endpointWithParams(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +321,7 @@ func (c *Client) GetLKEClusterPool(ctx context.Context, clusterID, id int) (*LKE
 // CreateLKEClusterPool creates a LKEClusterPool
 func (c *Client) CreateLKEClusterPool(ctx context.Context, clusterID int, createOpts LKEClusterPoolCreateOptions) (*LKEClusterPool, error) {
 	var body string
-	e, err := c.LKEClusterPools.endpointWithID(clusterID)
+	e, err := c.LKEClusterPools.endpointWithParams(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -305,7 +337,6 @@ func (c *Client) CreateLKEClusterPool(ctx context.Context, clusterID int, create
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -315,7 +346,7 @@ func (c *Client) CreateLKEClusterPool(ctx context.Context, clusterID int, create
 // UpdateLKEClusterPool updates the LKEClusterPool with the specified id
 func (c *Client) UpdateLKEClusterPool(ctx context.Context, clusterID, id int, updateOpts LKEClusterPoolUpdateOptions) (*LKEClusterPool, error) {
 	var body string
-	e, err := c.LKEClusterPools.endpointWithID(clusterID)
+	e, err := c.LKEClusterPools.endpointWithParams(clusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +363,6 @@ func (c *Client) UpdateLKEClusterPool(ctx context.Context, clusterID, id int, up
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -342,12 +372,24 @@ func (c *Client) UpdateLKEClusterPool(ctx context.Context, clusterID, id int, up
 // DeleteLKEClusterPool deletes the LKEClusterPool with the specified id
 func (c *Client) DeleteLKEClusterPool(ctx context.Context,
 	clusterID, id int) error {
-	e, err := c.LKEClusterPools.endpointWithID(clusterID)
+	e, err := c.LKEClusterPools.endpointWithParams(clusterID)
 	if err != nil {
 		return err
 	}
 	e = fmt.Sprintf("%s/%d", e, id)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
+	return err
+}
+
+// DeleteLKEClusterPoolNode deletes a given node from a cluster pool
+func (c *Client) DeleteLKEClusterPoolNode(ctx context.Context, clusterID int, id string) error {
+	e, err := c.LKEClusters.Endpoint()
+	if err != nil {
+		return err
+	}
+	e = fmt.Sprintf("%s/%d/nodes/%s", e, clusterID, id)
 
 	_, err = coupleAPIErrors(c.R(ctx).Delete(e))
 	return err

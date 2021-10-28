@@ -853,6 +853,7 @@ func (m *Overhead) Unmarshal(dAtA []byte) error {
 						return err
 					}
 <<<<<<< HEAD
+<<<<<<< HEAD
 					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthGenerated
 					}
@@ -1472,6 +1473,11 @@ func (m *Scheduling) Unmarshal(dAtA []byte) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 					if skippy < 0 {
+||||||| parent of 5ce8c7613 (update vendored files)
+					if skippy < 0 {
+=======
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 5ce8c7613 (update vendored files)
 						return ErrInvalidLengthGenerated
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -1488,10 +1494,7 @@ func (m *Scheduling) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -1607,10 +1610,7 @@ func (m *RuntimeClass) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -1727,10 +1727,7 @@ func (m *RuntimeClassList) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -1884,10 +1881,7 @@ func (m *RuntimeClassSpec) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -2047,7 +2041,7 @@ func (m *Scheduling) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthGenerated
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -2098,11 +2092,20 @@ func (m *Scheduling) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+<<<<<<< HEAD
 			if skippy < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) < 0 {
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 5ce8c7613 (update vendored files)
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {

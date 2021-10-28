@@ -100,6 +100,7 @@ func deepMap(dst, src reflect.Value, visited map[uintptr]*visit, depth int, conf
 			}
 			if srcKind == dstKind {
 <<<<<<< HEAD
+<<<<<<< HEAD
 				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
 					return
 				}
@@ -165,10 +166,15 @@ func _map(dst, src interface{}, opts ...func(*Config)) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+||||||| parent of 5ce8c7613 (update vendored files)
+				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+=======
+				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+>>>>>>> 5ce8c7613 (update vendored files)
 					return
 				}
 			} else if dstKind == reflect.Interface && dstElement.Kind() == reflect.Interface {
-				if _, err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
+				if err = deepMerge(dstElement, srcElement, visited, depth+1, config); err != nil {
 					return
 				}
 			} else if srcKind == reflect.Map {
@@ -206,6 +212,9 @@ func MapWithOverwrite(dst, src interface{}, opts ...func(*Config)) error {
 }
 
 func _map(dst, src interface{}, opts ...func(*Config)) error {
+	if dst != nil && reflect.ValueOf(dst).Kind() != reflect.Ptr {
+		return ErrNonPointerAgument
+	}
 	var (
 		vDst, vSrc reflect.Value
 		err        error
@@ -222,9 +231,16 @@ func _map(dst, src interface{}, opts ...func(*Config)) error {
 	// To be friction-less, we redirect equal-type arguments
 	// to deepMerge. Only because arguments can be anything.
 	if vSrc.Kind() == vDst.Kind() {
+<<<<<<< HEAD
 		_, err := deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
 		return err
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		_, err := deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
+		return err
+=======
+		return deepMerge(vDst, vSrc, make(map[uintptr]*visit), 0, config)
+>>>>>>> 5ce8c7613 (update vendored files)
 	}
 	switch vSrc.Kind() {
 	case reflect.Struct:

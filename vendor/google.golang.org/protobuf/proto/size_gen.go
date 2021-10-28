@@ -12,6 +12,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (o MarshalOptions) sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.Value) int {
 	switch kind {
 	case protoreflect.BoolKind:
@@ -53,6 +54,11 @@ func (o MarshalOptions) sizeSingular(num protowire.Number, kind protoreflect.Kin
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.Value) int {
+||||||| parent of 5ce8c7613 (update vendored files)
+func sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.Value) int {
+=======
+func (o MarshalOptions) sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.Value) int {
+>>>>>>> 5ce8c7613 (update vendored files)
 	switch kind {
 	case protoreflect.BoolKind:
 		return protowire.SizeVarint(protowire.EncodeBool(v.Bool()))
@@ -87,10 +93,16 @@ func sizeSingular(num protowire.Number, kind protoreflect.Kind, v protoreflect.V
 	case protoreflect.BytesKind:
 		return protowire.SizeBytes(len(v.Bytes()))
 	case protoreflect.MessageKind:
-		return protowire.SizeBytes(sizeMessage(v.Message()))
+		return protowire.SizeBytes(o.size(v.Message()))
 	case protoreflect.GroupKind:
+<<<<<<< HEAD
 		return protowire.SizeGroup(num, sizeMessage(v.Message()))
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+		return protowire.SizeGroup(num, sizeMessage(v.Message()))
+=======
+		return protowire.SizeGroup(num, o.size(v.Message()))
+>>>>>>> 5ce8c7613 (update vendored files)
 	default:
 		return 0
 	}

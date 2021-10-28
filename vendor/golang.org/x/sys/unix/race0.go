@@ -3,12 +3,19 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || (darwin && !race) || (linux && !race) || (freebsd && !race) || netbsd || openbsd || solaris || dragonfly || zos
 // +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly
+=======
+//go:build aix || (darwin && !race) || (linux && !race) || (freebsd && !race) || netbsd || openbsd || solaris || dragonfly || zos
+// +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly zos
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package unix
 

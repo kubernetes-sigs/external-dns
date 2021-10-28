@@ -1,6 +1,10 @@
 # Changelog
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 ## 1.17.0 (25 May 2021)
 
 Bugfixes:
@@ -459,6 +463,7 @@ upgrade to the upcoming stable release.
 [#928]: https://github.com/uber-go/zap/pull/928
 [#931]: https://github.com/uber-go/zap/pull/931
 [#936]: https://github.com/uber-go/zap/pull/936
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ## 1.13.0 (13 Nov 2019)
@@ -812,3 +817,6 @@ upgrade to the upcoming stable release.
 [#751]: https://github.com/uber-go/zap/pull/751
 [#758]: https://github.com/uber-go/zap/pull/758
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)

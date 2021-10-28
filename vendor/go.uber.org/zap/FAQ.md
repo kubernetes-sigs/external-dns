@@ -28,6 +28,10 @@ Your applications should define and depend upon an interface that includes
 just the methods you use.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 ### Why are some of my logs missing?
 
 Logs are dropped intentionally by zap when sampling is enabled. The production
@@ -159,6 +163,7 @@ We're aware of the following extensions, but haven't used them ourselves:
 | `github.com/blendle/zapdriver` | Stackdriver |
 | `github.com/moul/zapgorm` | Gorm |
 | `github.com/moul/zapfilter` | Advanced filtering rules |
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ### Why sample application logs?
@@ -284,6 +289,9 @@ We're aware of the following extensions, but haven't used them ourselves:
 | `github.com/fgrosse/zaptest` | Ginkgo |
 | `github.com/blendle/zapdriver` | Stackdriver |
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 
 [go-proverbs]: https://go-proverbs.github.io/
 [import-path]: https://golang.org/cmd/go/#hdr-Remote_import_paths

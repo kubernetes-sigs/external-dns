@@ -3,14 +3,25 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build linux && s390x && gc
 // +build linux
 // +build s390x
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build s390x
+||||||| parent of 5ce8c7613 (update vendored files)
+// +build s390x
+=======
+//go:build linux && s390x && gc
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build linux
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// +build s390x
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build gc
 
 #include "textflag.h"

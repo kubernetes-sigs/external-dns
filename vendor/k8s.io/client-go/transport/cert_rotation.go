@@ -30,11 +30,17 @@ import (
 	"k8s.io/client-go/util/connrotation"
 	"k8s.io/client-go/util/workqueue"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 const workItemKey = "key"

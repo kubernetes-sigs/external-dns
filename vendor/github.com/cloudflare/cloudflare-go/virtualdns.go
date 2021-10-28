@@ -22,11 +22,17 @@ type VirtualDNS struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // VirtualDNSAnalyticsMetrics represents a group of aggregated Virtual DNS metrics.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // VirtualDNSAnalyticsMetrics respresents a group of aggregated Virtual DNS metrics.
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+// VirtualDNSAnalyticsMetrics respresents a group of aggregated Virtual DNS metrics.
+=======
+// VirtualDNSAnalyticsMetrics represents a group of aggregated Virtual DNS metrics.
+>>>>>>> 5ce8c7613 (update vendored files)
 type VirtualDNSAnalyticsMetrics struct {
 	QueryCount         *int64   `json:"queryCount"`
 	UncachedCount      *int64   `json:"uncachedCount"`

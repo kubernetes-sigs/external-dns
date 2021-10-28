@@ -1,8 +1,14 @@
 .idea
 .vscode/
 <<<<<<< HEAD
+<<<<<<< HEAD
 cmd/flarectl/dist/
 cmd/flarectl/flarectl
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+cmd/flarectl/dist/
+cmd/flarectl/flarectl
+>>>>>>> 5ce8c7613 (update vendored files)

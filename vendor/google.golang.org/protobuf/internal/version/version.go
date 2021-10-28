@@ -53,6 +53,7 @@ import (
 const (
 	Major      = 1
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Minor      = 27
 	Patch      = 1
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -60,6 +61,13 @@ const (
 	Minor      = 23
 	Patch      = 0
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	Minor      = 23
+	Patch      = 0
+=======
+	Minor      = 27
+	Patch      = 1
+>>>>>>> 5ce8c7613 (update vendored files)
 	PreRelease = ""
 )
 

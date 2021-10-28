@@ -17,9 +17,14 @@ limitations under the License.
 // +k8s:conversion-gen=k8s.io/client-go/tools/clientcmd/api
 // +k8s:deepcopy-gen=package
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:defaulter-gen=Kind
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// +k8s:defaulter-gen=Kind
+>>>>>>> 5ce8c7613 (update vendored files)
 
 package v1

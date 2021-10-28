@@ -18,6 +18,7 @@ limitations under the License.
 
 package v1
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // CronJobListerExpansion allows custom methods to be added to
 // CronJobLister.
@@ -29,3 +30,14 @@ type CronJobNamespaceListerExpansion interface{}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+
+// CronJobListerExpansion allows custom methods to be added to
+// CronJobLister.
+type CronJobListerExpansion interface{}
+
+// CronJobNamespaceListerExpansion allows custom methods to be added to
+// CronJobNamespaceLister.
+type CronJobNamespaceListerExpansion interface{}
+>>>>>>> 5ce8c7613 (update vendored files)

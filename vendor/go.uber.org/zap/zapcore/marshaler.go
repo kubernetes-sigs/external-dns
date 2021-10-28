@@ -24,6 +24,10 @@ package zapcore
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 //
 // Note: ObjectMarshaler is only used when zap.Object is used or when
 // passed directly to zap.Any. It is not used when reflection-based
@@ -48,6 +52,7 @@ func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
 // Note: ArrayMarshaler is only used when zap.Array is used or when
 // passed directly to zap.Any. It is not used when reflection-based
 // encoding is used.
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 type ObjectMarshaler interface {
@@ -67,6 +72,9 @@ func (f ObjectMarshalerFunc) MarshalLogObject(enc ObjectEncoder) error {
 // logging context, and to selectively omit information which shouldn't be
 // included in logs (e.g., passwords).
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 type ArrayMarshaler interface {
 	MarshalLogArray(ArrayEncoder) error
 }

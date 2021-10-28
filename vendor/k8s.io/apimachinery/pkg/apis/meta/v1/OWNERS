@@ -9,6 +9,7 @@ reviewers:
 - caesarxuchao
 - liggitt
 <<<<<<< HEAD
+<<<<<<< HEAD
 - davidopp
 - sttts
 - quinton-hoole
@@ -27,6 +28,12 @@ reviewers:
 - nikhiljindal
 - gmarek
 - erictune
+||||||| parent of 5ce8c7613 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 - davidopp
 - sttts
 - quinton-hoole
@@ -36,14 +43,14 @@ reviewers:
 - ncdc
 - soltysh
 - dims
-- madhusudancs
 - hongchaodeng
 - krousey
-- mml
-- mbohlool
-- david-mcmahon
 - therc
-- mqliang
 - kevin-wangzefeng
+<<<<<<< HEAD
 - jianhuiz
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+- jianhuiz
+=======
+>>>>>>> 5ce8c7613 (update vendored files)

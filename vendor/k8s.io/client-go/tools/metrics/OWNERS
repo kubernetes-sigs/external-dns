@@ -3,9 +3,14 @@
 reviewers:
 - wojtek-t
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 - eparis
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+- eparis
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 - krousey
 - jayunit100

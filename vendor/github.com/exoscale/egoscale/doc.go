@@ -64,6 +64,7 @@ Debugging and traces
 As this library is mostly an HTTP client, you can reuse all the existing tools around it.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	cs := egoscale.NewClient("https://api.exoscale.com/v1", "EXO...", "...")
 	// sets a logger on stderr
 	cs.Logger = log.New(os.Stderr, "prefix", log.LstdFlags)
@@ -81,6 +82,11 @@ All the available APIs on the server and provided by the API Discovery plugin.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
+||||||| parent of 5ce8c7613 (update vendored files)
+	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
+=======
+	cs := egoscale.NewClient("https://api.exoscale.com/v1", "EXO...", "...")
+>>>>>>> 5ce8c7613 (update vendored files)
 	// sets a logger on stderr
 	cs.Logger = log.New(os.Stderr, "prefix", log.LstdFlags)
 	// activates the HTTP traces
@@ -93,8 +99,14 @@ APIs
 
 All the available APIs on the server and provided by the API Discovery plugin.
 
+<<<<<<< HEAD
 	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	cs := egoscale.NewClient("https://api.exoscale.com/compute", "EXO...", "...")
+=======
+	cs := egoscale.NewClient("https://api.exoscale.com/v1", "EXO...", "...")
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	resp, err := cs.Request(&egoscale.ListAPIs{})
 	if err != nil {

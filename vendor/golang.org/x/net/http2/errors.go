@@ -54,6 +54,10 @@ func (e ErrCode) String() string {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 func (e ErrCode) stringToken() string {
 	if s, ok := errCodeName[e]; ok {
 		return s
@@ -79,6 +83,7 @@ type StreamError struct {
 // indicate that the StreamError was sent from the peer over the wire
 // and wasn't locally generated in the Transport.
 var errFromPeer = errors.New("received from peer")
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // ConnectionError is an error that results in the termination of the
@@ -95,6 +100,9 @@ type StreamError struct {
 	Cause    error // optional additional detail
 }
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 
 func streamError(id uint32, code ErrCode) StreamError {
 	return StreamError{StreamID: id, Code: code}

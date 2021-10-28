@@ -29,6 +29,7 @@ var (
 		return &gax.Backoff{Initial: 100 * time.Millisecond}
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// isRetryable is a platform-specific hook, specified in retryable_linux.go
 	syscallRetryable func(error) bool = func(err error) bool { return false }
 )
@@ -258,6 +259,11 @@ func shouldRetry(status int, err error) bool {
 	return false
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	// isRetryable is a platform-specific hook, specified in retryable_linux.go
+	syscallRetryable func(error) bool = func(err error) bool { return false }
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 const (
@@ -390,21 +396,6 @@ func (rx *ResumableUpload) transferChunk(ctx context.Context) (*http.Response, e
 // rx is private to the auto-generated API code.
 // Exactly one of resp or err will be nil.  If resp is non-nil, the caller must call resp.Body.Close.
 func (rx *ResumableUpload) Upload(ctx context.Context) (resp *http.Response, err error) {
-	var shouldRetry = func(status int, err error) bool {
-		if 500 <= status && status <= 599 {
-			return true
-		}
-		if status == statusTooManyRequests {
-			return true
-		}
-		if err == io.ErrUnexpectedEOF {
-			return true
-		}
-		if err, ok := err.(interface{ Temporary() bool }); ok {
-			return err.Temporary()
-		}
-		return false
-	}
 
 	// There are a couple of cases where it's possible for err and resp to both
 	// be non-nil. However, we expose a simpler contract to our callers: exactly
@@ -469,4 +460,34 @@ func (rx *ResumableUpload) Upload(ctx context.Context) (resp *http.Response, err
 		return prepareReturn(resp, err)
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// shouldRetry indicates whether an error is retryable for the purposes of this
+// package, following guidance from
+// https://cloud.google.com/storage/docs/exponential-backoff .
+func shouldRetry(status int, err error) bool {
+	if 500 <= status && status <= 599 {
+		return true
+	}
+	if status == statusTooManyRequests {
+		return true
+	}
+	if err == io.ErrUnexpectedEOF {
+		return true
+	}
+	// Transient network errors should be retried.
+	if syscallRetryable(err) {
+		return true
+	}
+	if err, ok := err.(interface{ Temporary() bool }); ok {
+		if err.Temporary() {
+			return true
+		}
+	}
+	// If Go 1.13 error unwrapping is available, use this to examine wrapped
+	// errors.
+	if err, ok := err.(interface{ Unwrap() error }); ok {
+		return shouldRetry(status, err.Unwrap())
+	}
+	return false
 }

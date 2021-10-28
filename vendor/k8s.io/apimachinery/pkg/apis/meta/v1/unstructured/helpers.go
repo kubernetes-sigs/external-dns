@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -282,6 +283,11 @@ func getNestedString(obj map[string]interface{}, fields ...string) string {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 // NestedFieldCopy returns a deep copy of the value of a nested field.
@@ -536,6 +542,7 @@ func getNestedString(obj map[string]interface{}, fields ...string) string {
 	return val
 }
 
+<<<<<<< HEAD
 func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
 	val, found, err := NestedInt64(obj, fields...)
 	if !found || err != nil {
@@ -545,6 +552,17 @@ func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
 	return val
 }
 
+||||||| parent of 5ce8c7613 (update vendored files)
+func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
+	val, found, err := NestedInt64(obj, fields...)
+	if !found || err != nil {
+		return 0
+	}
+	return val
+}
+
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 func getNestedInt64Pointer(obj map[string]interface{}, fields ...string) *int64 {
 	val, found, err := NestedInt64(obj, fields...)
 	if !found || err != nil {

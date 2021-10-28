@@ -11,6 +11,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 type tdIsa struct {
@@ -97,6 +98,10 @@ func (i *tdIsa) String() string {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/maxatome/go-testdeep/internal/types"
+||||||| parent of 5ce8c7613 (update vendored files)
+	"github.com/maxatome/go-testdeep/internal/types"
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 )
 
 type tdIsa struct {
@@ -135,19 +140,29 @@ var _ TestDeep = &tdIsa{}
 //
 // TypeBehind method returns the reflect.Type of "model".
 func Isa(model interface{}) TestDeep {
-	modelType := reflect.ValueOf(model).Type()
-
-	return &tdIsa{
+	modelType := reflect.TypeOf(model)
+	i := tdIsa{
 		tdExpectedType: tdExpectedType{
 			base:         newBase(3),
 			expectedType: modelType,
 		},
-		checkImplement: modelType.Kind() == reflect.Ptr &&
-			modelType.Elem().Kind() == reflect.Interface,
 	}
+
+	if modelType == nil {
+		i.err = ctxerr.OpBad("Isa", "Isa(nil) is not allowed. To check an interface, try Isa((*fmt.Stringer)(nil)), for fmt.Stringer for example")
+		return &i
+	}
+
+	i.checkImplement = modelType.Kind() == reflect.Ptr &&
+		modelType.Elem().Kind() == reflect.Interface
+	return &i
 }
 
 func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if i.err != nil {
+		return ctx.CollectError(i.err)
+	}
+
 	gotType := got.Type()
 
 	if gotType == i.expectedType {
@@ -163,10 +178,17 @@ func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
-	return ctx.CollectError(i.errorTypeMismatch(types.RawString(gotType.String())))
+	return ctx.CollectError(i.errorTypeMismatch(gotType))
 }
 
 func (i *tdIsa) String() string {
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	if i.err != nil {
+		return i.stringError()
+	}
+>>>>>>> 5ce8c7613 (update vendored files)
 	return i.expectedType.String()
 }

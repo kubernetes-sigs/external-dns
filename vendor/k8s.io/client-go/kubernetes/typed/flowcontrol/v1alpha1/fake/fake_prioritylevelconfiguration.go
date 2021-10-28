@@ -21,6 +21,7 @@ package fake
 import (
 	"context"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -175,6 +176,11 @@ func (c *FakePriorityLevelConfigurations) ApplyStatus(ctx context.Context, prior
 		Invokes(testing.NewRootPatchSubresourceAction(prioritylevelconfigurationsResource, *name, types.ApplyPatchType, data, "status"), &v1alpha1.PriorityLevelConfiguration{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	v1alpha1 "k8s.io/api/flowcontrol/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -182,6 +188,7 @@ func (c *FakePriorityLevelConfigurations) ApplyStatus(ctx context.Context, prior
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	flowcontrolv1alpha1 "k8s.io/client-go/applyconfigurations/flowcontrol/v1alpha1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -282,6 +289,49 @@ func (c *FakePriorityLevelConfigurations) Patch(ctx context.Context, name string
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(prioritylevelconfigurationsResource, name, pt, data, subresources...), &v1alpha1.PriorityLevelConfiguration{})
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.PriorityLevelConfiguration), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied priorityLevelConfiguration.
+func (c *FakePriorityLevelConfigurations) Apply(ctx context.Context, priorityLevelConfiguration *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.PriorityLevelConfiguration, err error) {
+	if priorityLevelConfiguration == nil {
+		return nil, fmt.Errorf("priorityLevelConfiguration provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(priorityLevelConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	name := priorityLevelConfiguration.Name
+	if name == nil {
+		return nil, fmt.Errorf("priorityLevelConfiguration.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(prioritylevelconfigurationsResource, *name, types.ApplyPatchType, data), &v1alpha1.PriorityLevelConfiguration{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.PriorityLevelConfiguration), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakePriorityLevelConfigurations) ApplyStatus(ctx context.Context, priorityLevelConfiguration *flowcontrolv1alpha1.PriorityLevelConfigurationApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.PriorityLevelConfiguration, err error) {
+	if priorityLevelConfiguration == nil {
+		return nil, fmt.Errorf("priorityLevelConfiguration provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(priorityLevelConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	name := priorityLevelConfiguration.Name
+	if name == nil {
+		return nil, fmt.Errorf("priorityLevelConfiguration.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(prioritylevelconfigurationsResource, *name, types.ApplyPatchType, data, "status"), &v1alpha1.PriorityLevelConfiguration{})
 	if obj == nil {
 		return nil, err
 	}

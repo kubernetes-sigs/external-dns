@@ -305,6 +305,7 @@ func (h *Heap) IsClosed() bool {
 	h.lock.RLock()
 	defer h.lock.RUnlock()
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return h.closed
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -313,6 +314,14 @@ func (h *Heap) IsClosed() bool {
 	}
 	return false
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	if h.closed {
+		return true
+	}
+	return false
+=======
+	return h.closed
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 // NewHeap returns a Heap which can be used to queue up items to process.

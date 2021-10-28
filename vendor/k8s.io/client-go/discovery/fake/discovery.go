@@ -20,11 +20,17 @@ import (
 	"fmt"
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"github.com/googleapis/gnostic/OpenAPIv2"
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	"github.com/googleapis/gnostic/OpenAPIv2"
+=======
+	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
+>>>>>>> 5ce8c7613 (update vendored files)
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"

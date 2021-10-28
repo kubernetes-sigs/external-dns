@@ -2,6 +2,7 @@
 
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5673AF.svg?style=flat-square)](https://godoc.org/github.com/cloudflare/cloudflare-go)
 <<<<<<< HEAD
+<<<<<<< HEAD
 ![Test](https://github.com/cloudflare/cloudflare-go/workflows/Test/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudflare/cloudflare-go?style=flat-square)](https://goreportcard.com/report/github.com/cloudflare/cloudflare-go)
 
@@ -47,6 +48,11 @@ The current feature list includes:
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Build Status](https://img.shields.io/travis/cloudflare/cloudflare-go/master.svg?style=flat-square)](https://travis-ci.org/cloudflare/cloudflare-go)
+||||||| parent of 5ce8c7613 (update vendored files)
+[![Build Status](https://img.shields.io/travis/cloudflare/cloudflare-go/master.svg?style=flat-square)](https://travis-ci.org/cloudflare/cloudflare-go)
+=======
+![Test](https://github.com/cloudflare/cloudflare-go/workflows/Test/badge.svg)
+>>>>>>> 5ce8c7613 (update vendored files)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudflare/cloudflare-go?style=flat-square)](https://goreportcard.com/report/github.com/cloudflare/cloudflare-go)
 
 > **Note**: This library is under active development as we expand it to cover
@@ -87,7 +93,12 @@ The current feature list includes:
 * [x] Web Application Firewall (WAF)
 * [x] Zone Lockdown and User-Agent Block rules
 * [x] Zones
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+* [x] Workers KV
+>>>>>>> 5ce8c7613 (update vendored files)
 
 Pull Requests are welcome, but please open an issue (or comment in an existing
 issue) to discuss any non-trivial changes before submitting code.

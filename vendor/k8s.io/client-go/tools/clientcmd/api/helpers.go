@@ -99,12 +99,19 @@ func ShortenConfig(config *Config) {
 			authInfo.ClientCertificateData = redactedBytes
 		}
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if len(authInfo.Token) > 0 {
 			authInfo.Token = "REDACTED"
 		}
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+		if len(authInfo.Token) > 0 {
+			authInfo.Token = "REDACTED"
+		}
+>>>>>>> 5ce8c7613 (update vendored files)
 		config.AuthInfos[key] = authInfo
 	}
 	for key, cluster := range config.Clusters {

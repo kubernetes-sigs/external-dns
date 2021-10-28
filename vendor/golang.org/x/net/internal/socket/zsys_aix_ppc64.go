@@ -3,6 +3,7 @@
 
 // Added for go1.11 compatibility
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix
 // +build aix
 
@@ -40,6 +41,10 @@ const (
 	sizeofMsghdr = 0x30
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+//go:build aix
+>>>>>>> 5ce8c7613 (update vendored files)
 // +build aix
 
 package socket
@@ -71,28 +76,18 @@ type cmsghdr struct {
 	Type  int32
 }
 
-type sockaddrInet struct {
-	Len    uint8
-	Family uint8
-	Port   uint16
-	Addr   [4]byte /* in_addr */
-	Zero   [8]uint8
-}
-
-type sockaddrInet6 struct {
-	Len      uint8
-	Family   uint8
-	Port     uint16
-	Flowinfo uint32
-	Addr     [16]byte /* in6_addr */
-	Scope_id uint32
-}
-
 const (
 	sizeofIovec  = 0x10
 	sizeofMsghdr = 0x30
+<<<<<<< HEAD
 
 	sizeofSockaddrInet  = 0x10
 	sizeofSockaddrInet6 = 0x1c
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x1c
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 )

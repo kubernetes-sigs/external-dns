@@ -42,6 +42,7 @@ func (req RunstatusValidationErrorResponse) Error() string {
 		return fmt.Sprintf("Runstatus error: %s", strings.Join(errs, "; "))
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return "Runstatus error"
 }
 
@@ -86,6 +87,11 @@ func (client *Client) runstatusRequest(ctx context.Context, uri string, structPa
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return fmt.Sprintf("Runstatus error")
+||||||| parent of 5ce8c7613 (update vendored files)
+	return fmt.Sprintf("Runstatus error")
+=======
+	return "Runstatus error"
+>>>>>>> 5ce8c7613 (update vendored files)
 }
 
 func (client *Client) runstatusRequest(ctx context.Context, uri string, structParam interface{}, method string) (json.RawMessage, error) {
@@ -126,8 +132,13 @@ func (client *Client) runstatusRequest(ctx context.Context, uri string, structPa
 
 	hdr.Add("Authorization", fmt.Sprintf("Exoscale-HMAC-SHA256 %s:%s", client.APIKey, signature))
 	hdr.Add("Exoscale-Date", time)
+<<<<<<< HEAD
 	hdr.Add("User-Agent", UserAgent)
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+	hdr.Add("User-Agent", UserAgent)
+=======
+>>>>>>> 5ce8c7613 (update vendored files)
 	hdr.Add("Accept", "application/json")
 	if params != "" {
 		hdr.Add("Content-Type", "application/json")

@@ -64,6 +64,7 @@ type Rule struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ScopeType specifies a scope for a Rule.
 type ScopeType string
 
@@ -503,6 +504,10 @@ type RuleWithOperations struct {
 // OperationType specifies an operation for a request.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// ScopeType specifies a scope for a Rule.
+>>>>>>> 5ce8c7613 (update vendored files)
 type ScopeType string
 
 const (
@@ -515,6 +520,7 @@ const (
 	AllScopes ScopeType = "*"
 )
 
+// FailurePolicyType specifies a failure policy that defines how unrecognized errors from the admission endpoint are handled.
 type FailurePolicyType string
 
 const (
@@ -534,6 +540,7 @@ const (
 	Equivalent MatchPolicyType = "Equivalent"
 )
 
+// SideEffectClass specifies the types of side effects a webhook may have.
 type SideEffectClass string
 
 const (
@@ -553,6 +560,10 @@ const (
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
+// +k8s:prerelease-lifecycle-gen:deprecated=1.16
+// +k8s:prerelease-lifecycle-gen:removed=1.22
+// +k8s:prerelease-lifecycle-gen:replacement=admissionregistration.k8s.io,v1,ValidatingWebhookConfiguration
 
 // ValidatingWebhookConfiguration describes the configuration of and admission webhook that accept or reject and object without changing it.
 // Deprecated in v1.16, planned for removal in v1.19. Use admissionregistration.k8s.io/v1 ValidatingWebhookConfiguration instead.
@@ -569,6 +580,10 @@ type ValidatingWebhookConfiguration struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
+// +k8s:prerelease-lifecycle-gen:deprecated=1.16
+// +k8s:prerelease-lifecycle-gen:removed=1.22
+// +k8s:prerelease-lifecycle-gen:replacement=admissionregistration.k8s.io,v1,ValidatingWebhookConfigurationList
 
 // ValidatingWebhookConfigurationList is a list of ValidatingWebhookConfiguration.
 type ValidatingWebhookConfigurationList struct {
@@ -584,6 +599,10 @@ type ValidatingWebhookConfigurationList struct {
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
+// +k8s:prerelease-lifecycle-gen:deprecated=1.16
+// +k8s:prerelease-lifecycle-gen:removed=1.22
+// +k8s:prerelease-lifecycle-gen:replacement=admissionregistration.k8s.io,v1,MutatingWebhookConfiguration
 
 // MutatingWebhookConfiguration describes the configuration of and admission webhook that accept or reject and may change the object.
 // Deprecated in v1.16, planned for removal in v1.19. Use admissionregistration.k8s.io/v1 MutatingWebhookConfiguration instead.
@@ -600,6 +619,10 @@ type MutatingWebhookConfiguration struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +k8s:prerelease-lifecycle-gen:introduced=1.9
+// +k8s:prerelease-lifecycle-gen:deprecated=1.16
+// +k8s:prerelease-lifecycle-gen:removed=1.22
+// +k8s:prerelease-lifecycle-gen:replacement=admissionregistration.k8s.io,v1,MutatingWebhookConfigurationList
 
 // MutatingWebhookConfigurationList is a list of MutatingWebhookConfiguration.
 type MutatingWebhookConfigurationList struct {
@@ -718,7 +741,7 @@ type ValidatingWebhook struct {
 	// SideEffects states whether this webhook has side effects.
 	// Acceptable values are: Unknown, None, Some, NoneOnDryRun
 	// Webhooks with side effects MUST implement a reconciliation system, since a request may be
-	// rejected by a future step in the admission change and the side effects therefore need to be undone.
+	// rejected by a future step in the admission chain and the side effects therefore need to be undone.
 	// Requests with the dryRun attribute will be auto-rejected if they match a webhook with
 	// sideEffects == Unknown or Some. Defaults to Unknown.
 	// +optional
@@ -850,7 +873,7 @@ type MutatingWebhook struct {
 	// SideEffects states whether this webhook has side effects.
 	// Acceptable values are: Unknown, None, Some, NoneOnDryRun
 	// Webhooks with side effects MUST implement a reconciliation system, since a request may be
-	// rejected by a future step in the admission change and the side effects therefore need to be undone.
+	// rejected by a future step in the admission chain and the side effects therefore need to be undone.
 	// Requests with the dryRun attribute will be auto-rejected if they match a webhook with
 	// sideEffects == Unknown or Some. Defaults to Unknown.
 	// +optional
@@ -910,8 +933,8 @@ const (
 // RuleWithOperations is a tuple of Operations and Resources. It is recommended to make
 // sure that all the tuple expansions are valid.
 type RuleWithOperations struct {
-	// Operations is the operations the admission hook cares about - CREATE, UPDATE, or *
-	// for all operations.
+	// Operations is the operations the admission hook cares about - CREATE, UPDATE, DELETE, CONNECT or *
+	// for all of those operations and any future admission operations that are added.
 	// If '*' is present, the length of the slice must be one.
 	// Required.
 	Operations []OperationType `json:"operations,omitempty" protobuf:"bytes,1,rep,name=operations,casttype=OperationType"`
@@ -920,7 +943,12 @@ type RuleWithOperations struct {
 	Rule `json:",inline" protobuf:"bytes,2,opt,name=rule"`
 }
 
+<<<<<<< HEAD
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 5ce8c7613 (update vendored files)
+=======
+// OperationType specifies an operation for a request.
+>>>>>>> 5ce8c7613 (update vendored files)
 type OperationType string
 
 // The constants should be kept in sync with those defined in k8s.io/kubernetes/pkg/admission/interface.go.

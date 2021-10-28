@@ -138,6 +138,7 @@ func (api *API) SetAuthType(authType int) {
 // ZoneIDByName retrieves a zone's ID from the name.
 func (api *API) ZoneIDByName(zoneName string) (string, error) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	zoneName = normalizeZoneName(zoneName)
 	res, err := api.ListZonesContext(context.TODO(), WithZoneFilters(zoneName, "", ""))
 	if err != nil {
@@ -471,6 +472,12 @@ func errorFromResponse(statusCode int, respBody []byte) error {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	res, err := api.ListZonesContext(context.TODO(), WithZoneFilter(zoneName))
+||||||| parent of 5ce8c7613 (update vendored files)
+	res, err := api.ListZonesContext(context.TODO(), WithZoneFilter(zoneName))
+=======
+	zoneName = normalizeZoneName(zoneName)
+	res, err := api.ListZonesContext(context.TODO(), WithZoneFilters(zoneName, "", ""))
+>>>>>>> 5ce8c7613 (update vendored files)
 	if err != nil {
 		return "", errors.Wrap(err, "ListZonesContext command failed")
 	}
@@ -591,9 +598,9 @@ func (api *API) makeRequestWithAuthTypeAndHeaders(ctx context.Context, method, u
 	switch {
 	case resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices:
 	case resp.StatusCode == http.StatusUnauthorized:
-		return nil, errors.Errorf("HTTP status %d: invalid credentials", resp.StatusCode)
+		return nil, errorFromResponse(resp.StatusCode, respBody)
 	case resp.StatusCode == http.StatusForbidden:
-		return nil, errors.Errorf("HTTP status %d: insufficient permissions", resp.StatusCode)
+		return nil, errorFromResponse(resp.StatusCode, respBody)
 	case resp.StatusCode == http.StatusServiceUnavailable,
 		resp.StatusCode == http.StatusBadGateway,
 		resp.StatusCode == http.StatusGatewayTimeout,
@@ -695,13 +702,21 @@ type Response struct {
 	Messages []ResponseInfo `json:"messages"`
 }
 
+// ResultInfoCursors contains information about cursors.
+type ResultInfoCursors struct {
+	Before string `json:"before"`
+	After  string `json:"after"`
+}
+
 // ResultInfo contains metadata about the Response.
 type ResultInfo struct {
-	Page       int `json:"page"`
-	PerPage    int `json:"per_page"`
-	TotalPages int `json:"total_pages"`
-	Count      int `json:"count"`
-	Total      int `json:"total_count"`
+	Page       int               `json:"page"`
+	PerPage    int               `json:"per_page"`
+	TotalPages int               `json:"total_pages"`
+	Count      int               `json:"count"`
+	Total      int               `json:"total_count"`
+	Cursor     string            `json:"cursor"`
+	Cursors    ResultInfoCursors `json:"cursors"`
 }
 
 // RawResponse keeps the result as JSON form
@@ -752,10 +767,20 @@ type reqOption struct {
 	params url.Values
 }
 
-// WithZoneFilter applies a filter based on zone name.
-func WithZoneFilter(zone string) ReqOption {
+// WithZoneFilters applies a filter based on zone properties.
+func WithZoneFilters(zoneName, accountID, status string) ReqOption {
 	return func(opt *reqOption) {
-		opt.params.Set("name", zone)
+		if zoneName != "" {
+			opt.params.Set("name", normalizeZoneName(zoneName))
+		}
+
+		if accountID != "" {
+			opt.params.Set("account.id", accountID)
+		}
+
+		if status != "" {
+			opt.params.Set("status", status)
+		}
 	}
 }
 
@@ -766,4 +791,20 @@ func WithPagination(opts PaginationOptions) ReqOption {
 		opt.params.Set("per_page", strconv.Itoa(opts.PerPage))
 	}
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// errorFromResponse returns a formatted error from the status code and error messages
+// from the response body.
+func errorFromResponse(statusCode int, respBody []byte) error {
+	var r Response
+	err := json.Unmarshal(respBody, &r)
+	if err != nil {
+		return errors.Wrap(err, errUnmarshalError)
+	}
+
+	errMsgs := []string{}
+	for _, v := range r.Errors {
+		errMsgs = append(errMsgs, v.Message)
+	}
+	return errors.Errorf("HTTP status %d: %s", statusCode, strings.Join(errMsgs, " "))
 }
