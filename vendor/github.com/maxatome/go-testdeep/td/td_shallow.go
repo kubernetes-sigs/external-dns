@@ -82,19 +82,25 @@ func Shallow(expectedPtr interface{}) TestDeep {
 		reflect.Slice,
 		reflect.UnsafePointer:
 		shallow.expectedPointer = vptr.Pointer()
-		return &shallow
 
 	case reflect.String:
 		shallow.expectedStr = vptr.String()
 		shallow.expectedPointer = stringPointer(shallow.expectedStr)
-		return &shallow
 
 	default:
-		panic("usage: Shallow(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)")
+		shallow.err = ctxerr.OpBadUsage(
+			"Shallow", "(CHANNEL|FUNC|MAP|PTR|SLICE|UNSAFE_PTR|STRING)",
+			expectedPtr, 1, true)
 	}
+
+	return &shallow
 }
 
 func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if s.err != nil {
+		return ctx.CollectError(s.err)
+	}
+
 	if got.Kind() != s.expectedKind {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -129,5 +135,9 @@ func (s *tdShallow) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (s *tdShallow) String() string {
+	if s.err != nil {
+		return s.stringError()
+	}
+
 	return fmt.Sprintf("(%s) 0x%x", s.expectedKind, s.expectedPointer)
 }

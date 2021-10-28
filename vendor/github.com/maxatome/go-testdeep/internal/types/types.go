@@ -7,6 +7,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strconv"
 )
 
@@ -39,4 +40,38 @@ func (i RawInt) _TestDeep() {}
 
 func (i RawInt) String() string {
 	return strconv.Itoa(int(i))
+}
+
+var _ = []TestDeepStringer{RawString(""), RawInt(0)}
+
+// OperatorNotJSONMarshallableError implements error interface. It
+// is returned by (*td.TestDeep).MarshalJSON() to notice the user an
+// operator cannot be JSON Marshal'led.
+type OperatorNotJSONMarshallableError string
+
+// Error implements error interface.
+func (e OperatorNotJSONMarshallableError) Error() string {
+	return string(e) + " TestDeep operator cannot be json.Marshal'led"
+}
+
+// Operator returns the operator behind this error.
+func (e OperatorNotJSONMarshallableError) Operator() string {
+	return string(e)
+}
+
+// AsOperatorNotJSONMarshallableError checks that err is or contains
+// an OperatorNotJSONMarshallableError and if yes, returns it and
+// true.
+func AsOperatorNotJSONMarshallableError(err error) (OperatorNotJSONMarshallableError, bool) {
+	switch err := err.(type) {
+	case OperatorNotJSONMarshallableError:
+		return err, true
+
+	case *json.MarshalerError:
+		if err, ok := err.Err.(OperatorNotJSONMarshallableError); ok {
+			return err, true
+		}
+	}
+
+	return "", false
 }

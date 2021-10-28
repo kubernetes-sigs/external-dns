@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/net/idna"
 )
 
 // Owner describes the resource owner.
@@ -43,11 +44,12 @@ type Zone struct {
 		Name    string
 		Website string
 	} `json:"host"`
-	VanityNS    []string `json:"vanity_name_servers"`
-	Betas       []string `json:"betas"`
-	DeactReason string   `json:"deactivation_reason"`
-	Meta        ZoneMeta `json:"meta"`
-	Account     Account  `json:"account"`
+	VanityNS        []string `json:"vanity_name_servers"`
+	Betas           []string `json:"betas"`
+	DeactReason     string   `json:"deactivation_reason"`
+	Meta            ZoneMeta `json:"meta"`
+	Account         Account  `json:"account"`
+	VerificationKey string   `json:"verification_key"`
 }
 
 // ZoneMeta describes metadata about a zone.
@@ -138,7 +140,7 @@ type ZoneRatePlanResponse struct {
 type ZoneSetting struct {
 	ID            string      `json:"id"`
 	Editable      bool        `json:"editable"`
-	ModifiedOn    string      `json:"modified_on"`
+	ModifiedOn    string      `json:"modified_on,omitempty"`
 	Value         interface{} `json:"value"`
 	TimeRemaining int         `json:"time_remaining"`
 }
@@ -147,6 +149,12 @@ type ZoneSetting struct {
 type ZoneSettingResponse struct {
 	Response
 	Result []ZoneSetting `json:"result"`
+}
+
+// ZoneSettingSingleResponse represents the response from the Zone Setting endpoint for the specified setting.
+type ZoneSettingSingleResponse struct {
+	Response
+	Result ZoneSetting `json:"result"`
 }
 
 // ZoneSSLSetting contains ssl setting for a zone.
@@ -280,6 +288,14 @@ type FallbackOriginResponse struct {
 	Result FallbackOrigin `json:"result"`
 }
 
+// zoneSubscriptionRatePlanPayload is used to build the JSON payload for
+// setting a particular rate plan on an existing zone.
+type zoneSubscriptionRatePlanPayload struct {
+	RatePlan struct {
+		ID string `json:"id"`
+	} `json:"rate_plan"`
+}
+
 // CreateZone creates a zone on an account.
 //
 // Setting jumpstart to true will attempt to automatically scan for existing
@@ -344,7 +360,7 @@ func (api *API) ListZones(z ...string) ([]Zone, error) {
 	var err error
 	if len(z) > 0 {
 		for _, zone := range z {
-			v.Set("name", zone)
+			v.Set("name", normalizeZoneName(zone))
 			res, err = api.makeRequest("GET", "/zones?"+v.Encode(), nil)
 			if err != nil {
 				return []Zone{}, errors.Wrap(err, errMakeRequestError)
@@ -478,20 +494,49 @@ func (api *API) ZoneSetVanityNS(zoneID string, ns []string) (Zone, error) {
 	return zone, nil
 }
 
-// ZoneSetPlan changes the zone plan.
-func (api *API) ZoneSetPlan(zoneID string, plan ZonePlan) (Zone, error) {
-	zoneopts := ZoneOptions{Plan: &plan}
-	zone, err := api.EditZone(zoneID, zoneopts)
+// ZoneSetPlan sets the rate plan of an existing zone.
+//
+// Valid values for `planType` are "CF_FREE", "CF_PRO", "CF_BIZ" and
+// "CF_ENT".
+//
+// API reference: https://api.cloudflare.com/#zone-subscription-create-zone-subscription
+func (api *API) ZoneSetPlan(zoneID string, planType string) error {
+	zonePayload := zoneSubscriptionRatePlanPayload{}
+	zonePayload.RatePlan.ID = planType
+
+	uri := fmt.Sprintf("/zones/%s/subscription", zoneID)
+
+	_, err := api.makeRequest("POST", uri, zonePayload)
 	if err != nil {
-		return Zone{}, err
+		return errors.Wrap(err, errMakeRequestError)
 	}
 
-	return zone, nil
+	return nil
+}
+
+// ZoneUpdatePlan updates the rate plan of an existing zone.
+//
+// Valid values for `planType` are "CF_FREE", "CF_PRO", "CF_BIZ" and
+// "CF_ENT".
+//
+// API reference: https://api.cloudflare.com/#zone-subscription-update-zone-subscription
+func (api *API) ZoneUpdatePlan(zoneID string, planType string) error {
+	zonePayload := zoneSubscriptionRatePlanPayload{}
+	zonePayload.RatePlan.ID = planType
+
+	uri := fmt.Sprintf("/zones/%s/subscription", zoneID)
+
+	_, err := api.makeRequest("PUT", uri, zonePayload)
+	if err != nil {
+		return errors.Wrap(err, errMakeRequestError)
+	}
+
+	return nil
 }
 
 // EditZone edits the given zone.
 //
-// This is usually called by ZoneSetPaused, ZoneSetVanityNS or ZoneSetPlan.
+// This is usually called by ZoneSetPaused or ZoneSetVanityNS.
 //
 // API reference: https://api.cloudflare.com/#zone-edit-zone-properties
 func (api *API) EditZone(zoneID string, zoneOpts ZoneOptions) (Zone, error) {
@@ -532,8 +577,15 @@ func (api *API) PurgeEverything(zoneID string) (PurgeCacheResponse, error) {
 //
 // API reference: https://api.cloudflare.com/#zone-purge-individual-files-by-url-and-cache-tags
 func (api *API) PurgeCache(zoneID string, pcr PurgeCacheRequest) (PurgeCacheResponse, error) {
+	return api.PurgeCacheContext(context.TODO(), zoneID, pcr)
+}
+
+// PurgeCacheContext purges the cache using the given PurgeCacheRequest (zone/url/tag).
+//
+// API reference: https://api.cloudflare.com/#zone-purge-individual-files-by-url-and-cache-tags
+func (api *API) PurgeCacheContext(ctx context.Context, zoneID string, pcr PurgeCacheRequest) (PurgeCacheResponse, error) {
 	uri := "/zones/" + zoneID + "/purge_cache"
-	res, err := api.makeRequest("POST", uri, pcr)
+	res, err := api.makeRequestContext(ctx, "POST", uri, pcr)
 	if err != nil {
 		return PurgeCacheResponse{}, errors.Wrap(err, errMakeRequestError)
 	}
@@ -737,4 +789,64 @@ func (api *API) UpdateFallbackOrigin(zoneID string, fbo FallbackOrigin) (*Fallba
 	}
 
 	return response, nil
+}
+
+// normalizeZoneName tries to convert IDNs (international domain names)
+// from Punycode to Unicode form. If the given zone name is not represented
+// as Punycode, or converting fails (for invalid representations), it
+// is returned unchanged.
+//
+// Note: conversion errors are silently discarded.
+func normalizeZoneName(name string) string {
+	if n, err := idna.ToUnicode(name); err == nil {
+		return n
+	}
+	return name
+}
+
+// ZoneSingleSetting returns information about specified setting to the specified zone.
+//
+// API reference: https://api.cloudflare.com/#zone-settings-get-all-zone-settings
+func (api *API) ZoneSingleSetting(zoneID, settingName string) (ZoneSetting, error) {
+	uri := "/zones/" + zoneID + "/settings/" + settingName
+	res, err := api.makeRequest("GET", uri, nil)
+	if err != nil {
+		return ZoneSetting{}, errors.Wrap(err, errMakeRequestError)
+	}
+	var r ZoneSettingSingleResponse
+	err = json.Unmarshal(res, &r)
+	if err != nil {
+		return ZoneSetting{}, errors.Wrap(err, errUnmarshalError)
+	}
+	return r.Result, nil
+}
+
+// UpdateZoneSingleSetting updates the specified setting for a given zone.
+//
+// API reference: https://api.cloudflare.com/#zone-settings-edit-zone-settings-info
+func (api *API) UpdateZoneSingleSetting(zoneID, settingName string, setting ZoneSetting) (*ZoneSettingSingleResponse, error) {
+	uri := "/zones/" + zoneID + "/settings/" + settingName
+	res, err := api.makeRequest("PATCH", uri, setting)
+	if err != nil {
+		return nil, errors.Wrap(err, errMakeRequestError)
+	}
+
+	response := &ZoneSettingSingleResponse{}
+	err = json.Unmarshal(res, &response)
+	if err != nil {
+		return nil, errors.Wrap(err, errUnmarshalError)
+	}
+
+	return response, nil
+}
+
+// ZoneExport returns the text BIND config for the given zone
+//
+// API reference: https://api.cloudflare.com/#dns-records-for-a-zone-export-dns-records
+func (api *API) ZoneExport(zoneID string) (string, error) {
+	res, err := api.makeRequest("GET", "/zones/"+zoneID+"/dns_records/export", nil)
+	if err != nil {
+		return "", errors.Wrap(err, errMakeRequestError)
+	}
+	return string(res), nil
 }

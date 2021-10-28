@@ -53,7 +53,6 @@ func (resp *InvoicesPagedResponse) appendData(r *InvoicesPagedResponse) {
 func (c *Client) ListInvoices(ctx context.Context, opts *ListOptions) ([]Invoice, error) {
 	response := InvoicesPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +111,6 @@ func (c *Client) GetInvoice(ctx context.Context, id int) (*Invoice, error) {
 
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Invoice{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +126,7 @@ type InvoiceItemsPagedResponse struct {
 
 // endpointWithID gets the endpoint URL for InvoiceItems associated with a specific Invoice
 func (InvoiceItemsPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.InvoiceItems.endpointWithID(id)
+	endpoint, err := c.InvoiceItems.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -145,7 +143,6 @@ func (resp *InvoiceItemsPagedResponse) appendData(r *InvoiceItemsPagedResponse) 
 func (c *Client) ListInvoiceItems(ctx context.Context, id int, opts *ListOptions) ([]InvoiceItem, error) {
 	response := InvoiceItemsPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, id, opts)
-
 	if err != nil {
 		return nil, err
 	}

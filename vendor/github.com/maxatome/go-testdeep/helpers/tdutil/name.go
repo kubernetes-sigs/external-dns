@@ -42,6 +42,6 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 	} else {
 		// create a new slice to fool govet and avoid "call has possible
 		// formatting directive" errors
-		fmt.Fprint(w, args[:]...) // nolint: errcheck
+		fmt.Fprint(w, args[:]...) // nolint: errcheck,gocritic
 	}
 }

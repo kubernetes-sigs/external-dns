@@ -39,7 +39,6 @@ func (resp *LongviewSubscriptionsPagedResponse) appendData(r *LongviewSubscripti
 func (c *Client) ListLongviewSubscriptions(ctx context.Context, opts *ListOptions) ([]LongviewSubscription, error) {
 	response := LongviewSubscriptionsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}

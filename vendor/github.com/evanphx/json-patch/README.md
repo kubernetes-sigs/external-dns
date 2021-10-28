@@ -1,5 +1,5 @@
 # JSON-Patch
-`jsonpatch` is a library which provides functionallity for both applying
+`jsonpatch` is a library which provides functionality for both applying
 [RFC6902 JSON patches](http://tools.ietf.org/html/rfc6902) against documents, as
 well as for calculating & applying [RFC7396 JSON merge patches](https://tools.ietf.org/html/rfc7396).
 
@@ -11,10 +11,11 @@ well as for calculating & applying [RFC7396 JSON merge patches](https://tools.ie
 
 **Latest and greatest**: 
 ```bash
-go get -u github.com/evanphx/json-patch
+go get -u github.com/evanphx/json-patch/v5
 ```
 
 **Stable Versions**:
+* Version 5: `go get -u gopkg.in/evanphx/json-patch.v5`
 * Version 4: `go get -u gopkg.in/evanphx/json-patch.v4`
 
 (previous versions below `v3` are unavailable)
@@ -37,6 +38,25 @@ go get -u github.com/evanphx/json-patch
 * There is a global configuration variable `jsonpatch.AccumulatedCopySizeLimit`,
   which limits the total size increase in bytes caused by "copy" operations in a
   patch. It defaults to 0, which means there is no limit.
+
+These global variables control the behavior of `jsonpatch.Apply`.
+
+An alternative to `jsonpatch.Apply` is `jsonpatch.ApplyWithOptions` whose behavior
+is controlled by an `options` parameter of type `*jsonpatch.ApplyOptions`.
+
+Structure `jsonpatch.ApplyOptions` includes the configuration options above 
+and adds two new options: `AllowMissingPathOnRemove` and `EnsurePathExistsOnAdd`.
+
+When `AllowMissingPathOnRemove` is set to `true`, `jsonpatch.ApplyWithOptions` will ignore
+`remove` operations whose `path` points to a non-existent location in the JSON document.
+`AllowMissingPathOnRemove` defaults to `false` which will lead to `jsonpatch.ApplyWithOptions`
+returning an error when hitting a missing `path` on `remove`.
+
+When `EnsurePathExistsOnAdd` is set to `true`, `jsonpatch.ApplyWithOptions` will make sure
+that `add` operations produce all the `path` elements that are missing from the target object.
+
+Use `jsonpatch.NewApplyOptions` to create an instance of `jsonpatch.ApplyOptions`
+whose values are populated from the global configuration variables.
 
 ## Create and apply a merge patch
 Given both an original JSON document and a modified JSON document, you can create
@@ -82,7 +102,7 @@ When ran, you get the following output:
 ```bash
 $ go run main.go
 patch document:   {"height":null,"name":"Jane"}
-updated tina doc: {"age":28,"name":"Jane"}
+updated alternative doc: {"age":28,"name":"Jane"}
 ```
 
 ## Create and apply a JSON Patch
@@ -164,7 +184,7 @@ func main() {
 	}
 
 	if !jsonpatch.Equal(original, different) {
-		fmt.Println(`"original" is _not_ structurally equal to "similar"`)
+		fmt.Println(`"original" is _not_ structurally equal to "different"`)
 	}
 }
 ```
@@ -173,7 +193,7 @@ When ran, you get the following output:
 ```bash
 $ go run main.go
 "original" is structurally equal to "similar"
-"original" is _not_ structurally equal to "similar"
+"original" is _not_ structurally equal to "different"
 ```
 
 ## Combine merge patches

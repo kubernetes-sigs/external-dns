@@ -10,11 +10,12 @@ const vpcsBasePath = "/v2/vpcs"
 
 // VPCsService is an interface for managing Virtual Private Cloud configurations with the
 // DigitalOcean API.
-// See: https://developers.digitalocean.com/documentation/v2#vpcs
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/VPCs
 type VPCsService interface {
 	Create(context.Context, *VPCCreateRequest) (*VPC, *Response, error)
 	Get(context.Context, string) (*VPC, *Response, error)
 	List(context.Context, *ListOptions) ([]*VPC, *Response, error)
+	ListMembers(context.Context, string, *VPCListMembersRequest, *ListOptions) ([]*VPCMember, *Response, error)
 	Update(context.Context, string, *VPCUpdateRequest) (*VPC, *Response, error)
 	Set(context.Context, string, ...VPCSetField) (*VPC, *Response, error)
 	Delete(context.Context, string) (*Response, error)
@@ -39,6 +40,7 @@ type VPCCreateRequest struct {
 type VPCUpdateRequest struct {
 	Name        string `json:"name,omitempty"`
 	Description string `json:"description,omitempty"`
+	Default     *bool  `json:"default,omitempty"`
 }
 
 // VPCSetField allows one to set individual fields within a VPC configuration.
@@ -54,6 +56,16 @@ type VPCSetName string
 // Ex.: VPCs.Set(..., VPCSetDescription("vpc description"))
 type VPCSetDescription string
 
+// VPCSetDefault is used when one wants to enable the `default` field of a VPC, to
+// set a VPC as the default one in the region
+// Ex.: VPCs.Set(..., VPCSetDefault())
+func VPCSetDefault() VPCSetField {
+	return &vpcSetDefault{}
+}
+
+// vpcSetDefault satisfies the VPCSetField interface
+type vpcSetDefault struct{}
+
 // VPC represents a DigitalOcean Virtual Private Cloud configuration.
 type VPC struct {
 	ID          string    `json:"id,omitempty"`
@@ -66,6 +78,16 @@ type VPC struct {
 	Default     bool      `json:"default,omitempty"`
 }
 
+type VPCListMembersRequest struct {
+	ResourceType string `url:"resource_type,omitempty"`
+}
+
+type VPCMember struct {
+	URN       string    `json:"urn,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+}
+
 type vpcRoot struct {
 	VPC *VPC `json:"vpc"`
 }
@@ -74,6 +96,12 @@ type vpcsRoot struct {
 	VPCs  []*VPC `json:"vpcs"`
 	Links *Links `json:"links"`
 	Meta  *Meta  `json:"meta"`
+}
+
+type vpcMembersRoot struct {
+	Members []*VPCMember `json:"members"`
+	Links   *Links       `json:"links"`
+	Meta    *Meta        `json:"meta"`
 }
 
 // Get returns the details of a Virtual Private Cloud.
@@ -161,6 +189,10 @@ func (n VPCSetDescription) vpcSetField(in map[string]interface{}) {
 	in["description"] = n
 }
 
+func (*vpcSetDefault) vpcSetField(in map[string]interface{}) {
+	in["default"] = true
+}
+
 // Set updates specific properties of a Virtual Private Cloud.
 func (v *VPCsServiceOp) Set(ctx context.Context, id string, fields ...VPCSetField) (*VPC, *Response, error) {
 	path := vpcsBasePath + "/" + id
@@ -198,4 +230,36 @@ func (v *VPCsServiceOp) Delete(ctx context.Context, id string) (*Response, error
 	}
 
 	return resp, nil
+}
+
+func (v *VPCsServiceOp) ListMembers(ctx context.Context, id string, request *VPCListMembersRequest, opt *ListOptions) ([]*VPCMember, *Response, error) {
+	path := vpcsBasePath + "/" + id + "/members"
+	pathWithResourceType, err := addOptions(path, request)
+	if err != nil {
+		return nil, nil, err
+	}
+	pathWithOpts, err := addOptions(pathWithResourceType, opt)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := v.client.NewRequest(ctx, http.MethodGet, pathWithOpts, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	root := new(vpcMembersRoot)
+	resp, err := v.client.Do(ctx, req, root)
+	if err != nil {
+		return nil, resp, err
+	}
+	if l := root.Links; l != nil {
+		resp.Links = l
+	}
+	if m := root.Meta; m != nil {
+		resp.Meta = m
+	}
+
+	return root.Members, resp, nil
+
 }

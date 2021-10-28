@@ -35,7 +35,7 @@ type InstanceStats struct {
 
 // endpointWithIDAndDate gets the endpoint URL for InstanceStats of a given Instance and Year/Month
 func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
-	endpoint, err := c.InstanceStats.endpointWithID(id)
+	endpoint, err := c.InstanceStats.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
 
 // GetInstanceStats gets the template with the provided ID
 func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
-	e, err := c.InstanceStats.endpointWithID(linodeID)
+	e, err := c.InstanceStats.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}

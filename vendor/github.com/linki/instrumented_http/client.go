@@ -11,6 +11,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	BogusStatusCode = 999
+)
+
 // Transport is a http.RoundTripper that collects Prometheus metrics of every
 // request it processes. It allows to be configured with callbacks that process
 // request path and query into a suitable label value.
@@ -23,6 +27,7 @@ type Transport struct {
 type Callbacks struct {
 	PathProcessor  func(string) string
 	QueryProcessor func(string) string
+	CodeProcessor  func(int) string
 }
 
 const (
@@ -52,6 +57,15 @@ var (
 		parts := strings.Split(path, "/")
 		return parts[len(parts)-1]
 	}
+	// IntToStringProcessor converts an integer value to its string representation.
+	IntToStringProcessor = func(input int) string { return fmt.Sprintf("%d", input) }
+	// ServerErrorCodeProcessor exports all failed responses (5xx, timeouts, ...) as status=failure
+	ServerErrorCodeProcessor = func(code int) string {
+		if code >= http.StatusInternalServerError {
+			return "failure"
+		}
+		return "success"
+	}
 )
 
 // init registers the Prometheus metric globally when the package is loaded.
@@ -62,7 +76,7 @@ func init() {
 // RoundTrip implements http.RoundTripper. It forwards the request to the
 // next RoundTripper and measures the time it took in Prometheus summary.
 func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	var statusCode int
+	statusCode := BogusStatusCode
 
 	// Remember the current time.
 	now := time.Now()
@@ -80,7 +94,7 @@ func (it *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		it.cbs.PathProcessor(req.URL.Path),
 		it.cbs.QueryProcessor(req.URL.RawQuery),
 		req.Method,
-		fmt.Sprintf("%d", statusCode),
+		it.cbs.CodeProcessor(statusCode),
 	).Observe(time.Since(now).Seconds())
 
 	// return the response and error reported from the next RoundTripper.
@@ -122,6 +136,10 @@ func NewTransport(next http.RoundTripper, cbs *Callbacks) http.RoundTripper {
 	}
 	if cbs.QueryProcessor == nil {
 		cbs.QueryProcessor = EliminatingProcessor
+	}
+	// By default, status code is set as is.
+	if cbs.CodeProcessor == nil {
+		cbs.CodeProcessor = IntToStringProcessor
 	}
 
 	return &Transport{next: next, cbs: cbs}

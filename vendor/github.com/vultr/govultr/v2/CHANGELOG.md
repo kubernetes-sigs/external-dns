@@ -2,6 +2,40 @@
 
 ## GoVultr v1 changelog is located [here](https://github.com/vultr/govultr/blob/v1/CHANGELOG.md)
 
+## [v2.9.0](https://github.com/vultr/govultr/compare/v2.8.1..v2.9.0) (2021-09-27)
+### Breaking Change
+* Kubernetes : PlanID is now Plan and Count is now NodeQuantity to follow API pattern [161](https://github.com/vultr/govultr/pull/161)
+
+### Enhancement
+* Snapshots : Add compressed size field [162](https://github.com/vultr/govultr/pull/162)
+
+## [v2.8.1](https://github.com/vultr/govultr/compare/v2.8.0..v2.8.1) (2021-08-31)
+### Enhancement
+* Kubernetes : Add support for deletion with resources [159](https://github.com/vultr/govultr/pull/159)
+* Kubernetes : Add support for getting available versions[159](https://github.com/vultr/govultr/pull/159)
+
+### Dependency Update
+* Bump Go version to 1.16 [158](https://github.com/vultr/govultr/pull/158)
+
+## [v2.8.0](https://github.com/vultr/govultr/compare/v2.7.1..v2.8.0) (2021-08-18)
+### Enhancement
+* Added support for Vultr Kubernetes Engine [156](https://github.com/vultr/govultr/pull/156)
+
+## [v2.7.1](https://github.com/vultr/govultr/compare/v2.7.0..v2.7.1) (2021-07-15)
+### Enhancement
+* BareMetal : Add support for `image_id` on update [152](https://github.com/vultr/govultr/pull/152)
+* Instances : Add support for `image_id` on update [152](https://github.com/vultr/govultr/pull/152)
+
+## [v2.7.0](https://github.com/vultr/govultr/compare/v2.6.0..v2.7.0) (2021-07-14)
+### Enhancement
+* BareMetal : Add support for `image_id` [150](https://github.com/vultr/govultr/pull/150)
+* Instances : Add support for `image_id` [150](https://github.com/vultr/govultr/pull/150)
+* Applications : added support for marketplace applications [150](https://github.com/vultr/govultr/pull/150)
+
+## [v2.6.0](https://github.com/vultr/govultr/compare/v2.5.1..v2.6.0) (2021-07-02)
+### Enhancement
+* BareMetal : Add support for `persistent_pxe` [148](https://github.com/vultr/govultr/pull/148)
+
 ## [v2.5.1](https://github.com/vultr/govultr/compare/v2.5.0..v2.5.1) (2021-05-10)
 ### Bug fix
 * Instances : BackupScheduleReq change DOW + Hour to pointers  [145](https://github.com/vultr/govultr/pull/145)

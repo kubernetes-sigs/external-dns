@@ -13,7 +13,10 @@ import (
 )
 
 // DefaultUserAgent is the default User-Agent string set in the request header.
-const DefaultUserAgent = "gophercloud/2.0.0"
+const (
+	DefaultUserAgent         = "gophercloud/2.0.0"
+	DefaultMaxBackoffRetries = 60
+)
 
 // UserAgent represents a User-Agent header.
 type UserAgent struct {
@@ -21,6 +24,14 @@ type UserAgent struct {
 	// All the strings to prepend are accumulated and prepended in the Join method.
 	prepend []string
 }
+
+type RetryBackoffFunc func(context.Context, *ErrUnexpectedResponseCode, error, uint) error
+
+// RetryFunc is a catch-all function for retrying failed API requests.
+// If it returns nil, the request will be retried.  If it returns an error,
+// the request method will exit with that error.  failCount is the number of
+// times the request has failed (starting at 1).
+type RetryFunc func(context context.Context, method, url string, options *RequestOpts, err error, failCount uint) error
 
 // Prepend prepends a user-defined string to the default User-Agent string. Users
 // may pass in one or more strings to prepend.
@@ -80,6 +91,16 @@ type ProviderClient struct {
 	// Context is the context passed to the HTTP request.
 	Context context.Context
 
+	// Retry backoff func is called when rate limited.
+	RetryBackoffFunc RetryBackoffFunc
+
+	// MaxBackoffRetries set the maximum number of backoffs. When not set, defaults to DefaultMaxBackoffRetries
+	MaxBackoffRetries uint
+
+	// A general failed request handler method - this is always called in the end if a request failed. Leave as nil
+	// to abort when an error is encountered.
+	RetryFunc RetryFunc
+
 	// mut is a mutex for the client. It protects read and write access to client attributes such as getting
 	// and setting the TokenID.
 	mut *sync.RWMutex
@@ -94,9 +115,32 @@ type ProviderClient struct {
 // reauthlock represents a set of attributes used to help in the reauthentication process.
 type reauthlock struct {
 	sync.RWMutex
-	reauthing    bool
-	reauthingErr error
-	done         *sync.Cond
+	ongoing *reauthFuture
+}
+
+// reauthFuture represents future result of the reauthentication process.
+// while done channel is not closed, reauthentication is in progress.
+// when done channel is closed, err contains the result of reauthentication.
+type reauthFuture struct {
+	done chan struct{}
+	err  error
+}
+
+func newReauthFuture() *reauthFuture {
+	return &reauthFuture{
+		make(chan struct{}),
+		nil,
+	}
+}
+
+func (f *reauthFuture) Set(err error) {
+	f.err = err
+	close(f.done)
+}
+
+func (f *reauthFuture) Get() error {
+	<-f.done
+	return f.err
 }
 
 // AuthenticatedHeaders returns a map of HTTP headers that are common for all
@@ -106,11 +150,13 @@ func (client *ProviderClient) AuthenticatedHeaders() (m map[string]string) {
 		return
 	}
 	if client.reauthmut != nil {
+		// If a Reauthenticate is in progress, wait for it to complete.
 		client.reauthmut.Lock()
-		for client.reauthmut.reauthing {
-			client.reauthmut.done.Wait()
-		}
+		ongoing := client.reauthmut.ongoing
 		client.reauthmut.Unlock()
+		if ongoing != nil {
+			_ = ongoing.Get()
+		}
 	}
 	t := client.Token()
 	if t == "" {
@@ -223,7 +269,7 @@ func (client *ProviderClient) SetThrowaway(v bool) {
 // this case, the reauthentication can be skipped if another thread has already
 // reauthenticated in the meantime. If no previous token is known, an empty
 // string should be passed instead to force unconditional reauthentication.
-func (client *ProviderClient) Reauthenticate(previousToken string) (err error) {
+func (client *ProviderClient) Reauthenticate(previousToken string) error {
 	if client.ReauthFunc == nil {
 		return nil
 	}
@@ -232,33 +278,36 @@ func (client *ProviderClient) Reauthenticate(previousToken string) (err error) {
 		return client.ReauthFunc()
 	}
 
+	future := newReauthFuture()
+
+	// Check if a Reauthenticate is in progress, or start one if not.
 	client.reauthmut.Lock()
-	if client.reauthmut.reauthing {
-		for !client.reauthmut.reauthing {
-			client.reauthmut.done.Wait()
-		}
-		err = client.reauthmut.reauthingErr
-		client.reauthmut.Unlock()
-		return err
+	ongoing := client.reauthmut.ongoing
+	if ongoing == nil {
+		client.reauthmut.ongoing = future
 	}
 	client.reauthmut.Unlock()
 
-	client.reauthmut.Lock()
-	client.reauthmut.reauthing = true
-	client.reauthmut.done = sync.NewCond(client.reauthmut)
-	client.reauthmut.reauthingErr = nil
-	client.reauthmut.Unlock()
+	// If Reauthenticate is running elsewhere, wait for its result.
+	if ongoing != nil {
+		return ongoing.Get()
+	}
 
+	// Perform the actual reauthentication.
+	var err error
 	if previousToken == "" || client.TokenID == previousToken {
 		err = client.ReauthFunc()
+	} else {
+		err = nil
 	}
 
+	// Mark Reauthenticate as finished.
 	client.reauthmut.Lock()
-	client.reauthmut.reauthing = false
-	client.reauthmut.reauthingErr = err
-	client.reauthmut.done.Broadcast()
+	client.reauthmut.ongoing.Set(err)
+	client.reauthmut.ongoing = nil
 	client.reauthmut.Unlock()
-	return
+
+	return err
 }
 
 // RequestOpts customizes the behavior of the provider.Request() method.
@@ -283,6 +332,20 @@ type RequestOpts struct {
 	// ErrorContext specifies the resource error type to return if an error is encountered.
 	// This lets resources override default error messages based on the response status code.
 	ErrorContext error
+	// KeepResponseBody specifies whether to keep the HTTP response body. Usually used, when the HTTP
+	// response body is considered for further use. Valid when JSONResponse is nil.
+	KeepResponseBody bool
+}
+
+// requestState contains temporary state for a single ProviderClient.Request() call.
+type requestState struct {
+	// This flag indicates if we have reauthenticated during this request because of a 401 response.
+	// It ensures that we don't reauthenticate multiple times for a single request. If we
+	// reauthenticate, but keep getting 401 responses with the fresh token, reauthenticating some more
+	// will just get us into an infinite loop.
+	hasReauthenticated bool
+	// Retry-After backoff counter, increments during each backoff call
+	retries uint
 }
 
 var applicationJSON = "application/json"
@@ -290,6 +353,12 @@ var applicationJSON = "application/json"
 // Request performs an HTTP request using the ProviderClient's current HTTPClient. An authentication
 // header will automatically be provided.
 func (client *ProviderClient) Request(method, url string, options *RequestOpts) (*http.Response, error) {
+	return client.doRequest(method, url, options, &requestState{
+		hasReauthenticated: false,
+	})
+}
+
+func (client *ProviderClient) doRequest(method, url string, options *RequestOpts, state *requestState) (*http.Response, error) {
 	var body io.Reader
 	var contentType *string
 
@@ -307,6 +376,11 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 
 		body = bytes.NewReader(rendered)
 		contentType = &applicationJSON
+	}
+
+	// Return an error, when "KeepResponseBody" is true and "JSONResponse" is not nil
+	if options.KeepResponseBody && options.JSONResponse != nil {
+		return nil, errors.New("cannot use KeepResponseBody when JSONResponse is not nil")
 	}
 
 	if options.RawBody != nil {
@@ -347,14 +421,21 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 		req.Header.Set(k, v)
 	}
 
-	// Set connection parameter to close the connection immediately when we've got the response
-	req.Close = true
-
 	prereqtok := req.Header.Get("X-Auth-Token")
 
 	// Issue the request.
 	resp, err := client.HTTPClient.Do(req)
 	if err != nil {
+		if client.RetryFunc != nil {
+			var e error
+			state.retries = state.retries + 1
+			e = client.RetryFunc(client.Context, method, url, options, err, state.retries)
+			if e != nil {
+				return nil, e
+			}
+
+			return client.doRequest(method, url, options, state)
+		}
 		return nil, err
 	}
 
@@ -377,11 +458,12 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 		body, _ := ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
 		respErr := ErrUnexpectedResponseCode{
-			URL:      url,
-			Method:   method,
-			Expected: options.OkCodes,
-			Actual:   resp.StatusCode,
-			Body:     body,
+			URL:            url,
+			Method:         method,
+			Expected:       okc,
+			Actual:         resp.StatusCode,
+			Body:           body,
+			ResponseHeader: resp.Header,
 		}
 
 		errType := options.ErrorContext
@@ -392,7 +474,7 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 				err = error400er.Error400(respErr)
 			}
 		case http.StatusUnauthorized:
-			if client.ReauthFunc != nil {
+			if client.ReauthFunc != nil && !state.hasReauthenticated {
 				err = client.Reauthenticate(prereqtok)
 				if err != nil {
 					e := &ErrUnableToReauthenticate{}
@@ -404,7 +486,8 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 						seeker.Seek(0, 0)
 					}
 				}
-				resp, err = client.Request(method, url, options)
+				state.hasReauthenticated = true
+				resp, err = client.doRequest(method, url, options, state)
 				if err != nil {
 					switch err.(type) {
 					case *ErrUnexpectedResponseCode:
@@ -448,10 +531,28 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 			if error409er, ok := errType.(Err409er); ok {
 				err = error409er.Error409(respErr)
 			}
-		case 429:
+		case http.StatusTooManyRequests, 498:
 			err = ErrDefault429{respErr}
 			if error429er, ok := errType.(Err429er); ok {
 				err = error429er.Error429(respErr)
+			}
+
+			maxTries := client.MaxBackoffRetries
+			if maxTries == 0 {
+				maxTries = DefaultMaxBackoffRetries
+			}
+
+			if f := client.RetryBackoffFunc; f != nil && state.retries < maxTries {
+				var e error
+
+				state.retries = state.retries + 1
+				e = f(client.Context, &respErr, err, state.retries)
+
+				if e != nil {
+					return resp, e
+				}
+
+				return client.doRequest(method, url, options, state)
 			}
 		case http.StatusInternalServerError:
 			err = ErrDefault500{respErr}
@@ -469,13 +570,49 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 			err = respErr
 		}
 
+		if err != nil && client.RetryFunc != nil {
+			var e error
+			state.retries = state.retries + 1
+			e = client.RetryFunc(client.Context, method, url, options, err, state.retries)
+			if e != nil {
+				return resp, e
+			}
+
+			return client.doRequest(method, url, options, state)
+		}
+
 		return resp, err
 	}
 
 	// Parse the response body as JSON, if requested to do so.
 	if options.JSONResponse != nil {
 		defer resp.Body.Close()
+		// Don't decode JSON when there is no content
+		if resp.StatusCode == http.StatusNoContent {
+			// read till EOF, otherwise the connection will be closed and cannot be reused
+			_, err = io.Copy(ioutil.Discard, resp.Body)
+			return resp, err
+		}
 		if err := json.NewDecoder(resp.Body).Decode(options.JSONResponse); err != nil {
+			if client.RetryFunc != nil {
+				var e error
+				state.retries = state.retries + 1
+				e = client.RetryFunc(client.Context, method, url, options, err, state.retries)
+				if e != nil {
+					return resp, e
+				}
+
+				return client.doRequest(method, url, options, state)
+			}
+			return nil, err
+		}
+	}
+
+	// Close unused body to allow the HTTP connection to be reused
+	if !options.KeepResponseBody && options.JSONResponse == nil {
+		defer resp.Body.Close()
+		// read till EOF, otherwise the connection will be closed and cannot be reused
+		if _, err := io.Copy(ioutil.Discard, resp.Body); err != nil {
 			return nil, err
 		}
 	}
@@ -484,16 +621,16 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 }
 
 func defaultOkCodes(method string) []int {
-	switch {
-	case method == "GET":
+	switch method {
+	case "GET", "HEAD":
 		return []int{200}
-	case method == "POST":
+	case "POST":
 		return []int{201, 202}
-	case method == "PUT":
+	case "PUT":
 		return []int{201, 202}
-	case method == "PATCH":
+	case "PATCH":
 		return []int{200, 202, 204}
-	case method == "DELETE":
+	case "DELETE":
 		return []int{202, 204}
 	}
 

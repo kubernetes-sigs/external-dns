@@ -26,21 +26,15 @@ const (
 	APIVersionVar = "LINODE_API_VERSION"
 	// APIProto connect to API with http(s)
 	APIProto = "https"
-	// Version of linodego
-	Version = "0.12.0"
 	// APIEnvVar environment var to check for API token
 	APIEnvVar = "LINODE_TOKEN"
 	// APISecondsPerPoll how frequently to poll for new Events or Status in WaitFor functions
 	APISecondsPerPoll = 3
 	// Maximum wait time for retries
 	APIRetryMaxWaitTime = time.Duration(30) * time.Second
-	// DefaultUserAgent is the default User-Agent sent in HTTP request headers
-	DefaultUserAgent = "linodego " + Version + " https://github.com/linode/linodego"
 )
 
-var (
-	envDebug = false
-)
+var envDebug = false
 
 // Client is a wrapper around the Resty client
 type Client struct {
@@ -52,57 +46,60 @@ type Client struct {
 
 	millisecondsPerPoll time.Duration
 
-	Account                *Resource
-	AccountSettings        *Resource
-	DomainRecords          *Resource
-	Domains                *Resource
-	Events                 *Resource
-	Firewalls              *Resource
-	FirewallDevices        *Resource
-	FirewallRules          *Resource
-	IPAddresses            *Resource
-	IPv6Pools              *Resource
-	IPv6Ranges             *Resource
-	Images                 *Resource
-	InstanceConfigs        *Resource
-	InstanceDisks          *Resource
-	InstanceIPs            *Resource
-	InstanceSnapshots      *Resource
-	InstanceStats          *Resource
-	InstanceVolumes        *Resource
-	Instances              *Resource
-	InvoiceItems           *Resource
-	Invoices               *Resource
-	Kernels                *Resource
-	LKEClusters            *Resource
-	LKEClusterAPIEndpoints *Resource
-	LKEClusterPools        *Resource
-	LKEVersions            *Resource
-	Longview               *Resource
-	LongviewClients        *Resource
-	LongviewSubscriptions  *Resource
-	Managed                *Resource
-	NodeBalancerConfigs    *Resource
-	NodeBalancerNodes      *Resource
-	NodeBalancerStats      *Resource
-	NodeBalancers          *Resource
-	Notifications          *Resource
-	OAuthClients           *Resource
-	ObjectStorageBuckets   *Resource
-	ObjectStorageClusters  *Resource
-	ObjectStorageKeys      *Resource
-	Payments               *Resource
-	Profile                *Resource
-	Regions                *Resource
-	SSHKeys                *Resource
-	StackScripts           *Resource
-	Tags                   *Resource
-	Tickets                *Resource
-	Token                  *Resource
-	Tokens                 *Resource
-	Types                  *Resource
-	Users                  *Resource
-	Volumes                *Resource
+	Account                  *Resource
+	AccountSettings          *Resource
+	DomainRecords            *Resource
+	Domains                  *Resource
+	Events                   *Resource
+	Firewalls                *Resource
+	FirewallDevices          *Resource
+	FirewallRules            *Resource
+	IPAddresses              *Resource
+	IPv6Pools                *Resource
+	IPv6Ranges               *Resource
+	Images                   *Resource
+	InstanceConfigs          *Resource
+	InstanceDisks            *Resource
+	InstanceIPs              *Resource
+	InstanceSnapshots        *Resource
+	InstanceStats            *Resource
+	InstanceVolumes          *Resource
+	Instances                *Resource
+	InvoiceItems             *Resource
+	Invoices                 *Resource
+	Kernels                  *Resource
+	LKEClusters              *Resource
+	LKEClusterAPIEndpoints   *Resource
+	LKEClusterPools          *Resource
+	LKEVersions              *Resource
+	Longview                 *Resource
+	LongviewClients          *Resource
+	LongviewSubscriptions    *Resource
+	Managed                  *Resource
+	NodeBalancerConfigs      *Resource
+	NodeBalancerNodes        *Resource
+	NodeBalancerStats        *Resource
+	NodeBalancers            *Resource
+	Notifications            *Resource
+	OAuthClients             *Resource
+	ObjectStorageBuckets     *Resource
+	ObjectStorageBucketCerts *Resource
+	ObjectStorageClusters    *Resource
+	ObjectStorageKeys        *Resource
+	Payments                 *Resource
+	Profile                  *Resource
+	Regions                  *Resource
+	SSHKeys                  *Resource
+	StackScripts             *Resource
+	Tags                     *Resource
+	Tickets                  *Resource
+	Token                    *Resource
+	Tokens                   *Resource
+	Types                    *Resource
+	UserGrants               *Resource
+	Users                    *Resource
+	VLANs                    *Resource
+	Volumes                  *Resource
 }
 
 func init() {
@@ -173,6 +170,7 @@ func (c *Client) SetRetries() *Client {
 		addRetryConditional(linodeBusyRetryCondition).
 		addRetryConditional(tooManyRequestsRetryCondition).
 		addRetryConditional(serviceUnavailableRetryCondition).
+		addRetryConditional(requestTimeoutRetryCondition).
 		SetRetryMaxWaitTime(APIRetryMaxWaitTime)
 	configureRetries(c)
 	return c
@@ -183,8 +181,28 @@ func (c *Client) addRetryConditional(retryConditional RetryConditional) *Client 
 	return c
 }
 
+// SetRetryMaxWaitTime sets the maximum delay before retrying a request.
 func (c *Client) SetRetryMaxWaitTime(max time.Duration) *Client {
 	c.resty.SetRetryMaxWaitTime(max)
+	return c
+}
+
+// SetRetryWaitTime sets the default (minimum) delay before retrying a request.
+func (c *Client) SetRetryWaitTime(min time.Duration) *Client {
+	c.resty.SetRetryWaitTime(min)
+	return c
+}
+
+// SetRetryAfter sets the callback function to be invoked with a failed request
+// to determine wben it should be retried.
+func (c *Client) SetRetryAfter(callback RetryAfter) *Client {
+	c.resty.SetRetryAfter(resty.RetryAfterFunc(callback))
+	return c
+}
+
+// SetRetryCount sets the maximum retry attempts before aborting.
+func (c *Client) SetRetryCount(count int) *Client {
+	c.resty.SetRetryCount(count)
 	return c
 }
 
@@ -192,7 +210,6 @@ func (c *Client) SetRetryMaxWaitTime(max time.Duration) *Client {
 // Affects all WaitFor* functions and retries.
 func (c *Client) SetPollDelay(delay time.Duration) *Client {
 	c.millisecondsPerPoll = delay
-	c.resty.SetRetryWaitTime(delay * time.Millisecond)
 	return c
 }
 
@@ -245,6 +262,7 @@ func NewClient(hc *http.Client) (client Client) {
 	}
 
 	client.
+		SetRetryWaitTime((1000 * APISecondsPerPoll) * time.Millisecond).
 		SetPollDelay(1000 * APISecondsPerPoll).
 		SetRetries().
 		SetDebug(envDebug)
@@ -257,56 +275,59 @@ func NewClient(hc *http.Client) (client Client) {
 // nolint
 func addResources(client *Client) {
 	resources := map[string]*Resource{
-		accountName:                NewResource(client, accountName, accountEndpoint, false, Account{}, nil),                         // really?
-		accountSettingsName:        NewResource(client, accountSettingsName, accountSettingsEndpoint, false, AccountSettings{}, nil), // really?
-		domainRecordsName:          NewResource(client, domainRecordsName, domainRecordsEndpoint, true, DomainRecord{}, DomainRecordsPagedResponse{}),
-		domainsName:                NewResource(client, domainsName, domainsEndpoint, false, Domain{}, DomainsPagedResponse{}),
-		eventsName:                 NewResource(client, eventsName, eventsEndpoint, false, Event{}, EventsPagedResponse{}),
-		firewallsName:              NewResource(client, firewallsName, firewallsEndpoint, false, Firewall{}, FirewallsPagedResponse{}),
-		firewallDevicesName:        NewResource(client, firewallDevicesName, firewallDevicesEndpoint, true, FirewallDevice{}, FirewallDevicesPagedResponse{}),
-		firewallRulesName:          NewResource(client, firewallRulesName, firewallRulesEndpoint, true, FirewallRule{}, nil),
-		imagesName:                 NewResource(client, imagesName, imagesEndpoint, false, Image{}, ImagesPagedResponse{}),
-		instanceConfigsName:        NewResource(client, instanceConfigsName, instanceConfigsEndpoint, true, InstanceConfig{}, InstanceConfigsPagedResponse{}),
-		instanceDisksName:          NewResource(client, instanceDisksName, instanceDisksEndpoint, true, InstanceDisk{}, InstanceDisksPagedResponse{}),
-		instanceIPsName:            NewResource(client, instanceIPsName, instanceIPsEndpoint, true, InstanceIP{}, nil), // really?
-		instanceSnapshotsName:      NewResource(client, instanceSnapshotsName, instanceSnapshotsEndpoint, true, InstanceSnapshot{}, nil),
-		instanceStatsName:          NewResource(client, instanceStatsName, instanceStatsEndpoint, true, InstanceStats{}, nil),
-		instanceVolumesName:        NewResource(client, instanceVolumesName, instanceVolumesEndpoint, true, nil, InstanceVolumesPagedResponse{}), // really?
-		instancesName:              NewResource(client, instancesName, instancesEndpoint, false, Instance{}, InstancesPagedResponse{}),
-		invoiceItemsName:           NewResource(client, invoiceItemsName, invoiceItemsEndpoint, true, InvoiceItem{}, InvoiceItemsPagedResponse{}),
-		invoicesName:               NewResource(client, invoicesName, invoicesEndpoint, false, Invoice{}, InvoicesPagedResponse{}),
-		ipaddressesName:            NewResource(client, ipaddressesName, ipaddressesEndpoint, false, nil, IPAddressesPagedResponse{}), // really?
-		ipv6poolsName:              NewResource(client, ipv6poolsName, ipv6poolsEndpoint, false, nil, IPv6PoolsPagedResponse{}),       // really?
-		ipv6rangesName:             NewResource(client, ipv6rangesName, ipv6rangesEndpoint, false, IPv6Range{}, IPv6RangesPagedResponse{}),
-		kernelsName:                NewResource(client, kernelsName, kernelsEndpoint, false, LinodeKernel{}, LinodeKernelsPagedResponse{}),
-		lkeClusterAPIEndpointsName: NewResource(client, lkeClusterAPIEndpointsName, lkeClusterAPIEndpointsEndpoint, true, LKEClusterAPIEndpoint{}, LKEClusterAPIEndpointsPagedResponse{}),
-		lkeClustersName:            NewResource(client, lkeClustersName, lkeClustersEndpoint, false, LKECluster{}, LKEClustersPagedResponse{}),
-		lkeClusterPoolsName:        NewResource(client, lkeClusterPoolsName, lkeClusterPoolsEndpoint, true, LKEClusterPool{}, LKEClusterPoolsPagedResponse{}),
-		lkeVersionsName:            NewResource(client, lkeVersionsName, lkeVersionsEndpoint, false, LKEVersion{}, LKEVersionsPagedResponse{}),
-		longviewName:               NewResource(client, longviewName, longviewEndpoint, false, nil, nil), // really?
-		longviewclientsName:        NewResource(client, longviewclientsName, longviewclientsEndpoint, false, LongviewClient{}, LongviewClientsPagedResponse{}),
-		longviewsubscriptionsName:  NewResource(client, longviewsubscriptionsName, longviewsubscriptionsEndpoint, false, LongviewSubscription{}, LongviewSubscriptionsPagedResponse{}),
-		managedName:                NewResource(client, managedName, managedEndpoint, false, nil, nil), // really?
-		nodebalancerconfigsName:    NewResource(client, nodebalancerconfigsName, nodebalancerconfigsEndpoint, true, NodeBalancerConfig{}, NodeBalancerConfigsPagedResponse{}),
-		nodebalancernodesName:      NewResource(client, nodebalancernodesName, nodebalancernodesEndpoint, true, NodeBalancerNode{}, NodeBalancerNodesPagedResponse{}),
-		nodebalancerStatsName:      NewResource(client, nodebalancerStatsName, nodebalancerStatsEndpoint, true, NodeBalancerStats{}, nil),
-		nodebalancersName:          NewResource(client, nodebalancersName, nodebalancersEndpoint, false, NodeBalancer{}, NodeBalancerConfigsPagedResponse{}),
-		notificationsName:          NewResource(client, notificationsName, notificationsEndpoint, false, Notification{}, NotificationsPagedResponse{}),
-		oauthClientsName:           NewResource(client, oauthClientsName, oauthClientsEndpoint, false, OAuthClient{}, OAuthClientsPagedResponse{}),
-		objectStorageBucketsName:   NewResource(client, objectStorageBucketsName, objectStorageBucketsEndpoint, false, ObjectStorageBucket{}, ObjectStorageBucketsPagedResponse{}),
-		objectStorageClustersName:  NewResource(client, objectStorageClustersName, objectStorageClustersEndpoint, false, ObjectStorageCluster{}, ObjectStorageClustersPagedResponse{}),
-		objectStorageKeysName:      NewResource(client, objectStorageKeysName, objectStorageKeysEndpoint, false, ObjectStorageKey{}, ObjectStorageKeysPagedResponse{}),
-		paymentsName:               NewResource(client, paymentsName, paymentsEndpoint, false, Payment{}, PaymentsPagedResponse{}),
-		profileName:                NewResource(client, profileName, profileEndpoint, false, nil, nil), // really?
-		regionsName:                NewResource(client, regionsName, regionsEndpoint, false, Region{}, RegionsPagedResponse{}),
-		sshkeysName:                NewResource(client, sshkeysName, sshkeysEndpoint, false, SSHKey{}, SSHKeysPagedResponse{}),
-		stackscriptsName:           NewResource(client, stackscriptsName, stackscriptsEndpoint, false, Stackscript{}, StackscriptsPagedResponse{}),
-		tagsName:                   NewResource(client, tagsName, tagsEndpoint, false, Tag{}, TagsPagedResponse{}),
-		ticketsName:                NewResource(client, ticketsName, ticketsEndpoint, false, Ticket{}, TicketsPagedResponse{}),
-		tokensName:                 NewResource(client, tokensName, tokensEndpoint, false, Token{}, TokensPagedResponse{}),
-		typesName:                  NewResource(client, typesName, typesEndpoint, false, LinodeType{}, LinodeTypesPagedResponse{}),
-		usersName:                  NewResource(client, usersName, usersEndpoint, false, User{}, UsersPagedResponse{}),
-		volumesName:                NewResource(client, volumesName, volumesEndpoint, false, Volume{}, VolumesPagedResponse{}),
+		accountName:                  NewResource(client, accountName, accountEndpoint, false, Account{}, nil),                         // really?
+		accountSettingsName:          NewResource(client, accountSettingsName, accountSettingsEndpoint, false, AccountSettings{}, nil), // really?
+		domainRecordsName:            NewResource(client, domainRecordsName, domainRecordsEndpoint, true, DomainRecord{}, DomainRecordsPagedResponse{}),
+		domainsName:                  NewResource(client, domainsName, domainsEndpoint, false, Domain{}, DomainsPagedResponse{}),
+		eventsName:                   NewResource(client, eventsName, eventsEndpoint, false, Event{}, EventsPagedResponse{}),
+		firewallsName:                NewResource(client, firewallsName, firewallsEndpoint, false, Firewall{}, FirewallsPagedResponse{}),
+		firewallDevicesName:          NewResource(client, firewallDevicesName, firewallDevicesEndpoint, true, FirewallDevice{}, FirewallDevicesPagedResponse{}),
+		firewallRulesName:            NewResource(client, firewallRulesName, firewallRulesEndpoint, true, FirewallRule{}, nil),
+		imagesName:                   NewResource(client, imagesName, imagesEndpoint, false, Image{}, ImagesPagedResponse{}),
+		instanceConfigsName:          NewResource(client, instanceConfigsName, instanceConfigsEndpoint, true, InstanceConfig{}, InstanceConfigsPagedResponse{}),
+		instanceDisksName:            NewResource(client, instanceDisksName, instanceDisksEndpoint, true, InstanceDisk{}, InstanceDisksPagedResponse{}),
+		instanceIPsName:              NewResource(client, instanceIPsName, instanceIPsEndpoint, true, InstanceIP{}, nil), // really?
+		instanceSnapshotsName:        NewResource(client, instanceSnapshotsName, instanceSnapshotsEndpoint, true, InstanceSnapshot{}, nil),
+		instanceStatsName:            NewResource(client, instanceStatsName, instanceStatsEndpoint, true, InstanceStats{}, nil),
+		instanceVolumesName:          NewResource(client, instanceVolumesName, instanceVolumesEndpoint, true, nil, InstanceVolumesPagedResponse{}), // really?
+		instancesName:                NewResource(client, instancesName, instancesEndpoint, false, Instance{}, InstancesPagedResponse{}),
+		invoiceItemsName:             NewResource(client, invoiceItemsName, invoiceItemsEndpoint, true, InvoiceItem{}, InvoiceItemsPagedResponse{}),
+		invoicesName:                 NewResource(client, invoicesName, invoicesEndpoint, false, Invoice{}, InvoicesPagedResponse{}),
+		ipaddressesName:              NewResource(client, ipaddressesName, ipaddressesEndpoint, false, nil, IPAddressesPagedResponse{}), // really?
+		ipv6poolsName:                NewResource(client, ipv6poolsName, ipv6poolsEndpoint, false, nil, IPv6PoolsPagedResponse{}),       // really?
+		ipv6rangesName:               NewResource(client, ipv6rangesName, ipv6rangesEndpoint, false, IPv6Range{}, IPv6RangesPagedResponse{}),
+		kernelsName:                  NewResource(client, kernelsName, kernelsEndpoint, false, LinodeKernel{}, LinodeKernelsPagedResponse{}),
+		lkeClusterAPIEndpointsName:   NewResource(client, lkeClusterAPIEndpointsName, lkeClusterAPIEndpointsEndpoint, true, LKEClusterAPIEndpoint{}, LKEClusterAPIEndpointsPagedResponse{}),
+		lkeClustersName:              NewResource(client, lkeClustersName, lkeClustersEndpoint, false, LKECluster{}, LKEClustersPagedResponse{}),
+		lkeClusterPoolsName:          NewResource(client, lkeClusterPoolsName, lkeClusterPoolsEndpoint, true, LKEClusterPool{}, LKEClusterPoolsPagedResponse{}),
+		lkeVersionsName:              NewResource(client, lkeVersionsName, lkeVersionsEndpoint, false, LKEVersion{}, LKEVersionsPagedResponse{}),
+		longviewName:                 NewResource(client, longviewName, longviewEndpoint, false, nil, nil), // really?
+		longviewclientsName:          NewResource(client, longviewclientsName, longviewclientsEndpoint, false, LongviewClient{}, LongviewClientsPagedResponse{}),
+		longviewsubscriptionsName:    NewResource(client, longviewsubscriptionsName, longviewsubscriptionsEndpoint, false, LongviewSubscription{}, LongviewSubscriptionsPagedResponse{}),
+		managedName:                  NewResource(client, managedName, managedEndpoint, false, nil, nil), // really?
+		nodebalancerconfigsName:      NewResource(client, nodebalancerconfigsName, nodebalancerconfigsEndpoint, true, NodeBalancerConfig{}, NodeBalancerConfigsPagedResponse{}),
+		nodebalancernodesName:        NewResource(client, nodebalancernodesName, nodebalancernodesEndpoint, true, NodeBalancerNode{}, NodeBalancerNodesPagedResponse{}),
+		nodebalancerStatsName:        NewResource(client, nodebalancerStatsName, nodebalancerStatsEndpoint, true, NodeBalancerStats{}, nil),
+		nodebalancersName:            NewResource(client, nodebalancersName, nodebalancersEndpoint, false, NodeBalancer{}, NodeBalancerConfigsPagedResponse{}),
+		notificationsName:            NewResource(client, notificationsName, notificationsEndpoint, false, Notification{}, NotificationsPagedResponse{}),
+		oauthClientsName:             NewResource(client, oauthClientsName, oauthClientsEndpoint, false, OAuthClient{}, OAuthClientsPagedResponse{}),
+		objectStorageBucketsName:     NewResource(client, objectStorageBucketsName, objectStorageBucketsEndpoint, false, ObjectStorageBucket{}, ObjectStorageBucketsPagedResponse{}),
+		objectStorageBucketCertsName: NewResource(client, objectStorageBucketCertsName, objectStorageBucketCertsEndpoint, true, ObjectStorageBucketCert{}, nil),
+		objectStorageClustersName:    NewResource(client, objectStorageClustersName, objectStorageClustersEndpoint, false, ObjectStorageCluster{}, ObjectStorageClustersPagedResponse{}),
+		objectStorageKeysName:        NewResource(client, objectStorageKeysName, objectStorageKeysEndpoint, false, ObjectStorageKey{}, ObjectStorageKeysPagedResponse{}),
+		paymentsName:                 NewResource(client, paymentsName, paymentsEndpoint, false, Payment{}, PaymentsPagedResponse{}),
+		profileName:                  NewResource(client, profileName, profileEndpoint, false, nil, nil), // really?
+		regionsName:                  NewResource(client, regionsName, regionsEndpoint, false, Region{}, RegionsPagedResponse{}),
+		sshkeysName:                  NewResource(client, sshkeysName, sshkeysEndpoint, false, SSHKey{}, SSHKeysPagedResponse{}),
+		stackscriptsName:             NewResource(client, stackscriptsName, stackscriptsEndpoint, false, Stackscript{}, StackscriptsPagedResponse{}),
+		tagsName:                     NewResource(client, tagsName, tagsEndpoint, false, Tag{}, TagsPagedResponse{}),
+		ticketsName:                  NewResource(client, ticketsName, ticketsEndpoint, false, Ticket{}, TicketsPagedResponse{}),
+		tokensName:                   NewResource(client, tokensName, tokensEndpoint, false, Token{}, TokensPagedResponse{}),
+		typesName:                    NewResource(client, typesName, typesEndpoint, false, LinodeType{}, LinodeTypesPagedResponse{}),
+		userGrantsName:               NewResource(client, typesName, userGrantsEndpoint, true, UserGrants{}, nil),
+		usersName:                    NewResource(client, usersName, usersEndpoint, false, User{}, UsersPagedResponse{}),
+		vlansName:                    NewResource(client, vlansName, vlansEndpoint, false, VLAN{}, VLANsPagedResponse{}),
+		volumesName:                  NewResource(client, volumesName, volumesEndpoint, false, Volume{}, VolumesPagedResponse{}),
 	}
 
 	client.resources = resources
@@ -345,6 +366,7 @@ func addResources(client *Client) {
 	client.Notifications = resources[notificationsName]
 	client.OAuthClients = resources[oauthClientsName]
 	client.ObjectStorageBuckets = resources[objectStorageBucketsName]
+	client.ObjectStorageBucketCerts = resources[objectStorageBucketCertsName]
 	client.ObjectStorageClusters = resources[objectStorageClustersName]
 	client.ObjectStorageKeys = resources[objectStorageKeysName]
 	client.Payments = resources[paymentsName]
@@ -356,7 +378,9 @@ func addResources(client *Client) {
 	client.Tickets = resources[ticketsName]
 	client.Tokens = resources[tokensName]
 	client.Types = resources[typesName]
+	client.UserGrants = resources[userGrantsName]
 	client.Users = resources[usersName]
+	client.VLANs = resources[vlansName]
 	client.Volumes = resources[volumesName]
 }
 
@@ -365,7 +389,7 @@ func copyBool(bPtr *bool) *bool {
 		return nil
 	}
 
-	var t = *bPtr
+	t := *bPtr
 
 	return &t
 }
@@ -375,7 +399,7 @@ func copyInt(iPtr *int) *int {
 		return nil
 	}
 
-	var t = *iPtr
+	t := *iPtr
 
 	return &t
 }
@@ -385,7 +409,7 @@ func copyString(sPtr *string) *string {
 		return nil
 	}
 
-	var t = *sPtr
+	t := *sPtr
 
 	return &t
 }
@@ -395,7 +419,7 @@ func copyTime(tPtr *time.Time) *time.Time {
 		return nil
 	}
 
-	var t = *tPtr
+	t := *tPtr
 
 	return &t
 }

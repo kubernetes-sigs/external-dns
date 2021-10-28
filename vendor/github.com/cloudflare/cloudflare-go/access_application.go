@@ -12,13 +12,29 @@ import (
 
 // AccessApplication represents an Access application.
 type AccessApplication struct {
-	ID              string     `json:"id,omitempty"`
-	CreatedAt       *time.Time `json:"created_at,omitempty"`
-	UpdatedAt       *time.Time `json:"updated_at,omitempty"`
-	AUD             string     `json:"aud,omitempty"`
-	Name            string     `json:"name"`
-	Domain          string     `json:"domain"`
-	SessionDuration string     `json:"session_duration,omitempty"`
+	ID                     string                        `json:"id,omitempty"`
+	CreatedAt              *time.Time                    `json:"created_at,omitempty"`
+	UpdatedAt              *time.Time                    `json:"updated_at,omitempty"`
+	AUD                    string                        `json:"aud,omitempty"`
+	Name                   string                        `json:"name"`
+	Domain                 string                        `json:"domain"`
+	SessionDuration        string                        `json:"session_duration,omitempty"`
+	AutoRedirectToIdentity bool                          `json:"auto_redirect_to_identity,omitempty"`
+	AllowedIdps            []string                      `json:"allowed_idps,omitempty"`
+	CorsHeaders            *AccessApplicationCorsHeaders `json:"cors_headers,omitempty"`
+}
+
+// AccessApplicationCorsHeaders represents the CORS HTTP headers for an Access
+// Application.
+type AccessApplicationCorsHeaders struct {
+	AllowedMethods   []string `json:"allowed_methods,omitempty"`
+	AllowedOrigins   []string `json:"allowed_origins,omitempty"`
+	AllowedHeaders   []string `json:"allowed_headers,omitempty"`
+	AllowAllMethods  bool     `json:"allow_all_methods,omitempty"`
+	AllowAllHeaders  bool     `json:"allow_all_headers,omitempty"`
+	AllowAllOrigins  bool     `json:"allow_all_origins,omitempty"`
+	AllowCredentials bool     `json:"allow_credentials,omitempty"`
+	MaxAge           int      `json:"max_age,omitempty"`
 }
 
 // AccessApplicationListResponse represents the response from the list
@@ -38,10 +54,10 @@ type AccessApplicationDetailResponse struct {
 	Result   AccessApplication `json:"result"`
 }
 
-// AccessApplications returns all applications within a zone.
+// AccessApplications returns all applications within an account.
 //
 // API reference: https://api.cloudflare.com/#access-applications-list-access-applications
-func (api *API) AccessApplications(zoneID string, pageOpts PaginationOptions) ([]AccessApplication, ResultInfo, error) {
+func (api *API) AccessApplications(accountID string, pageOpts PaginationOptions) ([]AccessApplication, ResultInfo, error) {
 	v := url.Values{}
 	if pageOpts.PerPage > 0 {
 		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
@@ -50,7 +66,7 @@ func (api *API) AccessApplications(zoneID string, pageOpts PaginationOptions) ([
 		v.Set("page", strconv.Itoa(pageOpts.Page))
 	}
 
-	uri := "/zones/" + zoneID + "/access/apps"
+	uri := "/accounts/" + accountID + "/access/apps"
 	if len(v) > 0 {
 		uri = uri + "?" + v.Encode()
 	}
@@ -73,10 +89,10 @@ func (api *API) AccessApplications(zoneID string, pageOpts PaginationOptions) ([
 // application ID.
 //
 // API reference: https://api.cloudflare.com/#access-applications-access-applications-details
-func (api *API) AccessApplication(zoneID, applicationID string) (AccessApplication, error) {
+func (api *API) AccessApplication(accountID, applicationID string) (AccessApplication, error) {
 	uri := fmt.Sprintf(
-		"/zones/%s/access/apps/%s",
-		zoneID,
+		"/accounts/%s/access/apps/%s",
+		accountID,
 		applicationID,
 	)
 
@@ -97,8 +113,8 @@ func (api *API) AccessApplication(zoneID, applicationID string) (AccessApplicati
 // CreateAccessApplication creates a new access application.
 //
 // API reference: https://api.cloudflare.com/#access-applications-create-access-application
-func (api *API) CreateAccessApplication(zoneID string, accessApplication AccessApplication) (AccessApplication, error) {
-	uri := "/zones/" + zoneID + "/access/apps"
+func (api *API) CreateAccessApplication(accountID string, accessApplication AccessApplication) (AccessApplication, error) {
+	uri := "/accounts/" + accountID + "/access/apps"
 
 	res, err := api.makeRequest("POST", uri, accessApplication)
 	if err != nil {
@@ -117,14 +133,14 @@ func (api *API) CreateAccessApplication(zoneID string, accessApplication AccessA
 // UpdateAccessApplication updates an existing access application.
 //
 // API reference: https://api.cloudflare.com/#access-applications-update-access-application
-func (api *API) UpdateAccessApplication(zoneID string, accessApplication AccessApplication) (AccessApplication, error) {
+func (api *API) UpdateAccessApplication(accountID string, accessApplication AccessApplication) (AccessApplication, error) {
 	if accessApplication.ID == "" {
 		return AccessApplication{}, errors.Errorf("access application ID cannot be empty")
 	}
 
 	uri := fmt.Sprintf(
-		"/zones/%s/access/apps/%s",
-		zoneID,
+		"/accounts/%s/access/apps/%s",
+		accountID,
 		accessApplication.ID,
 	)
 
@@ -145,10 +161,10 @@ func (api *API) UpdateAccessApplication(zoneID string, accessApplication AccessA
 // DeleteAccessApplication deletes an access application.
 //
 // API reference: https://api.cloudflare.com/#access-applications-delete-access-application
-func (api *API) DeleteAccessApplication(zoneID, applicationID string) error {
+func (api *API) DeleteAccessApplication(accountID, applicationID string) error {
 	uri := fmt.Sprintf(
-		"/zones/%s/access/apps/%s",
-		zoneID,
+		"/accounts/%s/access/apps/%s",
+		accountID,
 		applicationID,
 	)
 
@@ -164,10 +180,10 @@ func (api *API) DeleteAccessApplication(zoneID, applicationID string) error {
 // access application.
 //
 // API reference: https://api.cloudflare.com/#access-applications-revoke-access-tokens
-func (api *API) RevokeAccessApplicationTokens(zoneID, applicationID string) error {
+func (api *API) RevokeAccessApplicationTokens(accountID, applicationID string) error {
 	uri := fmt.Sprintf(
-		"/zones/%s/access/apps/%s/revoke-tokens",
-		zoneID,
+		"/accounts/%s/access/apps/%s/revoke-tokens",
+		accountID,
 		applicationID,
 	)
 

@@ -40,13 +40,16 @@ var _ TestDeep = &tdTag{}
 // "expectedValue" is a TestDeep operator, otherwise it returns the
 // type of "expectedValue" (or nil if it is originally untyped nil).
 func Tag(tag string, expectedValue interface{}) TestDeep {
-	if err := util.CheckTag(tag); err != nil {
-		panic(err.Error())
-	}
 	t := tdTag{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 		tag:            tag,
 	}
+
+	if err := util.CheckTag(tag); err != nil {
+		t.err = ctxerr.OpBad("Tag", err.Error())
+		return &t
+	}
+
 	if !t.isTestDeeper {
 		t.expectedValue = reflect.ValueOf(expectedValue)
 	}
@@ -54,6 +57,9 @@ func Tag(tag string, expectedValue interface{}) TestDeep {
 }
 
 func (t *tdTag) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if t.err != nil {
+		return ctx.CollectError(t.err)
+	}
 	return deepValueEqual(ctx, got, t.expectedValue)
 }
 
@@ -62,6 +68,9 @@ func (t *tdTag) HandleInvalid() bool {
 }
 
 func (t *tdTag) String() string {
+	if t.err != nil {
+		return t.stringError()
+	}
 	if t.isTestDeeper {
 		return t.expectedValue.Interface().(TestDeep).String()
 	}
@@ -69,6 +78,9 @@ func (t *tdTag) String() string {
 }
 
 func (t *tdTag) TypeBehind() reflect.Type {
+	if t.err != nil {
+		return nil
+	}
 	if t.isTestDeeper {
 		return t.expectedValue.Interface().(TestDeep).TypeBehind()
 	}

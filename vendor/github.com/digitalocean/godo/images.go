@@ -10,7 +10,7 @@ const imageBasePath = "v2/images"
 
 // ImagesService is an interface for interfacing with the images
 // endpoints of the DigitalOcean API
-// See: https://developers.digitalocean.com/documentation/v2#images
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Images
 type ImagesService interface {
 	List(context.Context, *ListOptions) ([]Image, *Response, error)
 	ListDistribution(ctx context.Context, opt *ListOptions) ([]Image, *Response, error)
@@ -52,7 +52,9 @@ type Image struct {
 
 // ImageUpdateRequest represents a request to update an image.
 type ImageUpdateRequest struct {
-	Name string `json:"name"`
+	Name         string `json:"name,omitempty"`
+	Distribution string `json:"distribution,omitempty"`
+	Description  string `json:"description,omitempty"`
 }
 
 // CustomImageCreateRequest represents a request to create a custom image.
@@ -132,6 +134,7 @@ func (s *ImagesServiceOp) GetBySlug(ctx context.Context, slug string) (*Image, *
 	return s.get(ctx, interface{}(slug))
 }
 
+// Create a new image
 func (s *ImagesServiceOp) Create(ctx context.Context, createRequest *CustomImageCreateRequest) (*Image, *Response, error) {
 	if createRequest == nil {
 		return nil, nil, NewArgError("createRequest", "cannot be nil")

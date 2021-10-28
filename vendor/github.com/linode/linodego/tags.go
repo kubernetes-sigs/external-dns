@@ -144,7 +144,6 @@ func (i *TaggedObject) fixData() (*TaggedObject, error) {
 func (c *Client) ListTaggedObjects(ctx context.Context, label string, opts *ListOptions) (TaggedObjectList, error) {
 	response := TaggedObjectsPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, label, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +216,6 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}

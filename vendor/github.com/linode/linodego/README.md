@@ -1,6 +1,6 @@
 # linodego
 
-[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
+[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
 [![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
 [![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
 [![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
@@ -94,7 +94,7 @@ kernels, err := linodego.ListKernels(context.Background(), opts)
 
 ```go
 opts := linodego.NewListOptions(2,"")
-// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
+// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
 kernels, err := linodego.ListKernels(context.Background(), opts)
 // len(kernels) == 100
 ```

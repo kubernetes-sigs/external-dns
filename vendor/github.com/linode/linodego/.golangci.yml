@@ -44,4 +44,13 @@ linters:
     - wsl
     - interfacer
     - gomnd
+    - nlreturn
+    - wrapcheck
+    - wastedassign
+    - goerr113
+    - exhaustivestruct
+    - durationcheck
+    - errorlint
+    - cyclop
+    - godot
   fast: false

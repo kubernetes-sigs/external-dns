@@ -40,7 +40,6 @@ func (c *Client) GetAccountSettings(ctx context.Context) (*AccountSettings, erro
 	}
 
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&AccountSettings{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +52,6 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 	var body string
 
 	e, err := c.AccountSettings.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +67,6 @@ func (c *Client) UpdateAccountSettings(ctx context.Context, settings AccountSett
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

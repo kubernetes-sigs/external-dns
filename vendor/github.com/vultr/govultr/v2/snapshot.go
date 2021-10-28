@@ -25,13 +25,14 @@ type SnapshotServiceHandler struct {
 
 // Snapshot represents a Vultr snapshot
 type Snapshot struct {
-	ID          string `json:"id"`
-	DateCreated string `json:"date_created"`
-	Description string `json:"description"`
-	Size        int    `json:"size"`
-	Status      string `json:"status"`
-	OsID        int    `json:"os_id"`
-	AppID       int    `json:"app_id"`
+	ID             string `json:"id"`
+	DateCreated    string `json:"date_created"`
+	Description    string `json:"description"`
+	Size           int    `json:"size"`
+	CompressedSize int    `json:"compressed_size"`
+	Status         string `json:"status"`
+	OsID           int    `json:"os_id"`
+	AppID          int    `json:"app_id"`
 }
 
 // SnapshotReq struct is used to create snapshots.

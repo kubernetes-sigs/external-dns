@@ -36,7 +36,6 @@ func (resp *LongviewClientsPagedResponse) appendData(r *LongviewClientsPagedResp
 func (c *Client) ListLongviewClients(ctx context.Context, opts *ListOptions) ([]LongviewClient, error) {
 	response := LongviewClientsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}

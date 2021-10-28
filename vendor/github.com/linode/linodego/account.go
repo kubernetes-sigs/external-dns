@@ -2,7 +2,7 @@ package linodego
 
 import "context"
 
-// Account associated with the token in use
+// Account associated with the token in use.
 type Account struct {
 	FirstName         string      `json:"first_name"`
 	LastName          string      `json:"last_name"`
@@ -27,7 +27,7 @@ type CreditCard struct {
 	Expiry   string `json:"expiry"`
 }
 
-// GetAccount gets the contact and billing information related to the Account
+// GetAccount gets the contact and billing information related to the Account.
 func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	e, err := c.Account.Endpoint()
 	if err != nil {
@@ -35,7 +35,6 @@ func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	}
 
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Account{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}

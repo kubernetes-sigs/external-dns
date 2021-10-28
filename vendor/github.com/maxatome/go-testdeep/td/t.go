@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2019, Maxime Soulé
+// Copyright (c) 2018-2021, Maxime Soulé
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -64,7 +64,7 @@ func (t *T) Any(got interface{}, expectedValues []interface{}, args ...interface
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Array(got interface{}, model interface{}, expectedEntries ArrayEntries, args ...interface{}) bool {
+func (t *T) Array(got, model interface{}, expectedEntries ArrayEntries, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Array(model, expectedEntries), args...)
 }
@@ -83,7 +83,7 @@ func (t *T) Array(got interface{}, model interface{}, expectedEntries ArrayEntri
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) ArrayEach(got interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) ArrayEach(got, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, ArrayEach(expectedValue), args...)
 }
@@ -125,7 +125,7 @@ func (t *T) Bag(got interface{}, expectedItems []interface{}, args ...interface{
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Between(got interface{}, from interface{}, to interface{}, bounds BoundsKind, args ...interface{}) bool {
+func (t *T) Between(got, from, to interface{}, bounds BoundsKind, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Between(from, to, bounds), args...)
 }
@@ -144,7 +144,7 @@ func (t *T) Between(got interface{}, from interface{}, to interface{}, bounds Bo
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Cap(got interface{}, expectedCap interface{}, args ...interface{}) bool {
+func (t *T) Cap(got, expectedCap interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Cap(expectedCap), args...)
 }
@@ -163,7 +163,7 @@ func (t *T) Cap(got interface{}, expectedCap interface{}, args ...interface{}) b
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Code(got interface{}, fn interface{}, args ...interface{}) bool {
+func (t *T) Code(got, fn interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Code(fn), args...)
 }
@@ -182,7 +182,7 @@ func (t *T) Code(got interface{}, fn interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Contains(got interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) Contains(got, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Contains(expectedValue), args...)
 }
@@ -201,7 +201,7 @@ func (t *T) Contains(got interface{}, expectedValue interface{}, args ...interfa
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) ContainsKey(got interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) ContainsKey(got, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, ContainsKey(expectedValue), args...)
 }
@@ -239,7 +239,7 @@ func (t *T) Empty(got interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Gt(got interface{}, minExpectedValue interface{}, args ...interface{}) bool {
+func (t *T) Gt(got, minExpectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Gt(minExpectedValue), args...)
 }
@@ -258,7 +258,7 @@ func (t *T) Gt(got interface{}, minExpectedValue interface{}, args ...interface{
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Gte(got interface{}, minExpectedValue interface{}, args ...interface{}) bool {
+func (t *T) Gte(got, minExpectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Gte(minExpectedValue), args...)
 }
@@ -315,7 +315,7 @@ func (t *T) HasSuffix(got interface{}, expected string, args ...interface{}) boo
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Isa(got interface{}, model interface{}, args ...interface{}) bool {
+func (t *T) Isa(got, model interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Isa(model), args...)
 }
@@ -334,9 +334,28 @@ func (t *T) Isa(got interface{}, model interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) JSON(got interface{}, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
+func (t *T) JSON(got, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, JSON(expectedJSON, params...), args...)
+}
+
+// JSONPointer is a shortcut for:
+//
+//   t.Cmp(got, td.JSONPointer(pointer, expectedValue), args...)
+//
+// See https://pkg.go.dev/github.com/maxatome/go-testdeep/td#JSONPointer for details.
+//
+// Returns true if the test is OK, false if it fails.
+//
+// "args..." are optional and allow to name the test. This name is
+// used in case of failure to qualify the test. If len(args) > 1 and
+// the first item of "args" is a string and contains a '%' rune then
+// fmt.Fprintf is used to compose the name, else "args" are passed to
+// fmt.Fprint. Do not forget it is the name of the test, not the
+// reason of a potential failure.
+func (t *T) JSONPointer(got interface{}, pointer string, expectedValue interface{}, args ...interface{}) bool {
+	t.Helper()
+	return t.Cmp(got, JSONPointer(pointer, expectedValue), args...)
 }
 
 // Keys is a shortcut for:
@@ -353,7 +372,7 @@ func (t *T) JSON(got interface{}, expectedJSON interface{}, params []interface{}
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Keys(got interface{}, val interface{}, args ...interface{}) bool {
+func (t *T) Keys(got, val interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Keys(val), args...)
 }
@@ -372,7 +391,7 @@ func (t *T) Keys(got interface{}, val interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) CmpLax(got interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) CmpLax(got, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Lax(expectedValue), args...)
 }
@@ -391,7 +410,7 @@ func (t *T) CmpLax(got interface{}, expectedValue interface{}, args ...interface
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Len(got interface{}, expectedLen interface{}, args ...interface{}) bool {
+func (t *T) Len(got, expectedLen interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Len(expectedLen), args...)
 }
@@ -410,7 +429,7 @@ func (t *T) Len(got interface{}, expectedLen interface{}, args ...interface{}) b
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Lt(got interface{}, maxExpectedValue interface{}, args ...interface{}) bool {
+func (t *T) Lt(got, maxExpectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Lt(maxExpectedValue), args...)
 }
@@ -429,7 +448,7 @@ func (t *T) Lt(got interface{}, maxExpectedValue interface{}, args ...interface{
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Lte(got interface{}, maxExpectedValue interface{}, args ...interface{}) bool {
+func (t *T) Lte(got, maxExpectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Lte(maxExpectedValue), args...)
 }
@@ -448,7 +467,7 @@ func (t *T) Lte(got interface{}, maxExpectedValue interface{}, args ...interface
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Map(got interface{}, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
+func (t *T) Map(got, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Map(model, expectedEntries), args...)
 }
@@ -467,7 +486,7 @@ func (t *T) Map(got interface{}, model interface{}, expectedEntries MapEntries, 
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) MapEach(got interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) MapEach(got, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, MapEach(expectedValue), args...)
 }
@@ -490,7 +509,7 @@ func (t *T) MapEach(got interface{}, expectedValue interface{}, args ...interfac
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) N(got interface{}, num interface{}, tolerance interface{}, args ...interface{}) bool {
+func (t *T) N(got, num, tolerance interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, N(num, tolerance), args...)
 }
@@ -566,14 +585,14 @@ func (t *T) None(got interface{}, notExpectedValues []interface{}, args ...inter
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Not(got interface{}, notExpected interface{}, args ...interface{}) bool {
+func (t *T) Not(got, notExpected interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Not(notExpected), args...)
 }
 
 // NotAny is a shortcut for:
 //
-//   t.Cmp(got, td.NotAny(expectedItems...), args...)
+//   t.Cmp(got, td.NotAny(notExpectedItems...), args...)
 //
 // See https://pkg.go.dev/github.com/maxatome/go-testdeep/td#NotAny for details.
 //
@@ -585,9 +604,9 @@ func (t *T) Not(got interface{}, notExpected interface{}, args ...interface{}) b
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) NotAny(got interface{}, expectedItems []interface{}, args ...interface{}) bool {
+func (t *T) NotAny(got interface{}, notExpectedItems []interface{}, args ...interface{}) bool {
 	t.Helper()
-	return t.Cmp(got, NotAny(expectedItems...), args...)
+	return t.Cmp(got, NotAny(notExpectedItems...), args...)
 }
 
 // NotEmpty is a shortcut for:
@@ -680,7 +699,7 @@ func (t *T) NotZero(got interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) PPtr(got interface{}, val interface{}, args ...interface{}) bool {
+func (t *T) PPtr(got, val interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, PPtr(val), args...)
 }
@@ -699,7 +718,7 @@ func (t *T) PPtr(got interface{}, val interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Ptr(got interface{}, val interface{}, args ...interface{}) bool {
+func (t *T) Ptr(got, val interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Ptr(val), args...)
 }
@@ -722,7 +741,7 @@ func (t *T) Ptr(got interface{}, val interface{}, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Re(got interface{}, reg interface{}, capture interface{}, args ...interface{}) bool {
+func (t *T) Re(got, reg, capture interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Re(reg, capture), args...)
 }
@@ -741,7 +760,7 @@ func (t *T) Re(got interface{}, reg interface{}, capture interface{}, args ...in
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) ReAll(got interface{}, reg interface{}, capture interface{}, args ...interface{}) bool {
+func (t *T) ReAll(got, reg, capture interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, ReAll(reg, capture), args...)
 }
@@ -779,7 +798,7 @@ func (t *T) Set(got interface{}, expectedItems []interface{}, args ...interface{
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Shallow(got interface{}, expectedPtr interface{}, args ...interface{}) bool {
+func (t *T) Shallow(got, expectedPtr interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Shallow(expectedPtr), args...)
 }
@@ -798,7 +817,7 @@ func (t *T) Shallow(got interface{}, expectedPtr interface{}, args ...interface{
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Slice(got interface{}, model interface{}, expectedEntries ArrayEntries, args ...interface{}) bool {
+func (t *T) Slice(got, model interface{}, expectedEntries ArrayEntries, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Slice(model, expectedEntries), args...)
 }
@@ -817,7 +836,7 @@ func (t *T) Slice(got interface{}, model interface{}, expectedEntries ArrayEntri
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Smuggle(got interface{}, fn interface{}, expectedValue interface{}, args ...interface{}) bool {
+func (t *T) Smuggle(got, fn, expectedValue interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Smuggle(fn, expectedValue), args...)
 }
@@ -836,7 +855,7 @@ func (t *T) Smuggle(got interface{}, fn interface{}, expectedValue interface{}, 
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) SStruct(got interface{}, model interface{}, expectedFields StructFields, args ...interface{}) bool {
+func (t *T) SStruct(got, model interface{}, expectedFields StructFields, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, SStruct(model, expectedFields), args...)
 }
@@ -874,7 +893,7 @@ func (t *T) String(got interface{}, expected string, args ...interface{}) bool {
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Struct(got interface{}, model interface{}, expectedFields StructFields, args ...interface{}) bool {
+func (t *T) Struct(got, model interface{}, expectedFields StructFields, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Struct(model, expectedFields), args...)
 }
@@ -912,7 +931,7 @@ func (t *T) SubBagOf(got interface{}, expectedItems []interface{}, args ...inter
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) SubJSONOf(got interface{}, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
+func (t *T) SubJSONOf(got, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, SubJSONOf(expectedJSON, params...), args...)
 }
@@ -931,7 +950,7 @@ func (t *T) SubJSONOf(got interface{}, expectedJSON interface{}, params []interf
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) SubMapOf(got interface{}, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
+func (t *T) SubMapOf(got, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, SubMapOf(model, expectedEntries), args...)
 }
@@ -988,7 +1007,7 @@ func (t *T) SuperBagOf(got interface{}, expectedItems []interface{}, args ...int
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) SuperJSONOf(got interface{}, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
+func (t *T) SuperJSONOf(got, expectedJSON interface{}, params []interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, SuperJSONOf(expectedJSON, params...), args...)
 }
@@ -1007,7 +1026,7 @@ func (t *T) SuperJSONOf(got interface{}, expectedJSON interface{}, params []inte
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) SuperMapOf(got interface{}, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
+func (t *T) SuperMapOf(got, model interface{}, expectedEntries MapEntries, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, SuperMapOf(model, expectedEntries), args...)
 }
@@ -1031,6 +1050,25 @@ func (t *T) SuperSetOf(got interface{}, expectedItems []interface{}, args ...int
 	return t.Cmp(got, SuperSetOf(expectedItems...), args...)
 }
 
+// SuperSliceOf is a shortcut for:
+//
+//   t.Cmp(got, td.SuperSliceOf(model, expectedEntries), args...)
+//
+// See https://pkg.go.dev/github.com/maxatome/go-testdeep/td#SuperSliceOf for details.
+//
+// Returns true if the test is OK, false if it fails.
+//
+// "args..." are optional and allow to name the test. This name is
+// used in case of failure to qualify the test. If len(args) > 1 and
+// the first item of "args" is a string and contains a '%' rune then
+// fmt.Fprintf is used to compose the name, else "args" are passed to
+// fmt.Fprint. Do not forget it is the name of the test, not the
+// reason of a potential failure.
+func (t *T) SuperSliceOf(got, model interface{}, expectedEntries ArrayEntries, args ...interface{}) bool {
+	t.Helper()
+	return t.Cmp(got, SuperSliceOf(model, expectedEntries), args...)
+}
+
 // TruncTime is a shortcut for:
 //
 //   t.Cmp(got, td.TruncTime(expectedTime, trunc), args...)
@@ -1049,7 +1087,7 @@ func (t *T) SuperSetOf(got interface{}, expectedItems []interface{}, args ...int
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) TruncTime(got interface{}, expectedTime interface{}, trunc time.Duration, args ...interface{}) bool {
+func (t *T) TruncTime(got, expectedTime interface{}, trunc time.Duration, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, TruncTime(expectedTime, trunc), args...)
 }
@@ -1068,7 +1106,7 @@ func (t *T) TruncTime(got interface{}, expectedTime interface{}, trunc time.Dura
 // fmt.Fprintf is used to compose the name, else "args" are passed to
 // fmt.Fprint. Do not forget it is the name of the test, not the
 // reason of a potential failure.
-func (t *T) Values(got interface{}, val interface{}, args ...interface{}) bool {
+func (t *T) Values(got, val interface{}, args ...interface{}) bool {
 	t.Helper()
 	return t.Cmp(got, Values(val), args...)
 }

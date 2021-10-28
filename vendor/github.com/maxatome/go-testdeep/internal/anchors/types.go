@@ -12,9 +12,9 @@ import (
 	"math"
 	"reflect"
 	"time"
-)
 
-var intType = reflect.TypeOf(42)
+	"github.com/maxatome/go-testdeep/internal/types"
+)
 
 type anchorableType struct {
 	typ     reflect.Type
@@ -63,7 +63,7 @@ func AddAnchorableStructType(fn interface{}) error {
 
 		if !fnType.IsVariadic() &&
 			fnType.NumIn() == 1 && fnType.NumOut() == 1 &&
-			fnType.In(0) == intType &&
+			fnType.In(0) == types.Int &&
 			fnType.Out(0).Kind() == reflect.Struct {
 			typ := fnType.Out(0)
 			if !typ.Comparable() {

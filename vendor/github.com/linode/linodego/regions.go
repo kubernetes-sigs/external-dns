@@ -35,7 +35,6 @@ func (resp *RegionsPagedResponse) appendData(r *RegionsPagedResponse) {
 func (c *Client) ListRegions(ctx context.Context, opts *ListOptions) ([]Region, error) {
 	response := RegionsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}

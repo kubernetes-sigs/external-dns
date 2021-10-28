@@ -1,4 +1,4 @@
-// Copyright (c) 2018, Maxime Soulé
+// Copyright (c) 2018-2021, Maxime Soulé
 // All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
@@ -7,11 +7,9 @@
 package td
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
 	"github.com/maxatome/go-testdeep/internal/location"
@@ -20,45 +18,21 @@ import (
 
 var (
 	testDeeper         = reflect.TypeOf((*TestDeep)(nil)).Elem()
-	interfaceInterface = reflect.TypeOf((*interface{})(nil)).Elem()
-	stringerInterface  = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
-	errorInterface     = reflect.TypeOf((*error)(nil)).Elem()
-	timeType           = reflect.TypeOf(time.Time{})
-	intType            = reflect.TypeOf(int(0))
-	uint8Type          = reflect.TypeOf(uint8(0))
-	runeType           = reflect.TypeOf(rune(0))
-	boolType           = reflect.TypeOf(false)
 	smuggledGotType    = reflect.TypeOf(SmuggledGot{})
 	smuggledGotPtrType = reflect.TypeOf((*SmuggledGot)(nil))
 )
 
 // TestingT is the minimal interface used by Cmp to report errors. It
-// is commonly implemented by *testing.T and testing.TB.
+// is commonly implemented by *testing.T and *testing.B.
 type TestingT interface {
 	Error(args ...interface{})
 	Fatal(args ...interface{})
 	Helper()
 }
 
-// TestingFT (aka TestingF<ull>T) is the interface used by T to
-// delegate common *testing.T functions to it. Of course, *testing.T
-// implements it.
-type TestingFT interface {
-	TestingT
-	Errorf(format string, args ...interface{})
-	Fail()
-	FailNow()
-	Failed() bool
-	Fatalf(format string, args ...interface{})
-	Log(args ...interface{})
-	Logf(format string, args ...interface{})
-	Name() string
-	Skip(args ...interface{})
-	SkipNow()
-	Skipf(format string, args ...interface{})
-	Skipped() bool
-	Run(name string, f func(t *testing.T)) bool
-}
+// TestingFT is a deprecated alias of testing.TB. Use testing.TB
+// directly in new code.
+type TestingFT = testing.TB
 
 // TestDeep is the representation of a go-testdeep operator. It is not
 // intended to be used directly, but through Cmp* functions.
@@ -68,6 +42,7 @@ type TestDeep interface {
 	// Match checks "got" against the operator. It returns nil if it matches.
 	Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 	setLocation(int)
+	replaceLocation(location.Location)
 	// HandleInvalid returns true if the operator is able to handle
 	// untyped nil value. Otherwise the untyped nil value is handled
 	// generically.
@@ -76,6 +51,9 @@ type TestDeep interface {
 	// is not known. tdhttp helper uses it to know how to unmarshal HTTP
 	// responses bodies before comparing them using the operator.
 	TypeBehind() reflect.Type
+	// Error returns nil if the operator is operational, the
+	// corresponding error otherwise.
+	Error() error
 }
 
 // base is a base type providing some methods needed by the TestDeep
@@ -83,21 +61,27 @@ type TestDeep interface {
 type base struct {
 	types.TestDeepStamp
 	location location.Location
+	err      *ctxerr.Error
 }
 
 func pkgFunc(full string) (string, string) {
-	// the/package.Foo      → "the/package", "Foo"
-	dotPos := strings.LastIndex(full, ".")
-	pkg, fn := full[:dotPos], full[dotPos+1:]
-
-	// the/package.(*T).Foo → "the/package", "(*T).Foo"
-	if dotPos > 0 && pkg[len(pkg)-1] == ')' {
-		dotPos = strings.LastIndex(pkg, ".")
-		pkg, fn = full[:dotPos], full[dotPos+1:]
+	// the/package.Foo         → "the/package", "Foo"
+	// the/package.(*T).Foo    → "the/package", "(*T).Foo"
+	// the/package.glob..func1 → "the/package", "glob..func1"
+	sp := strings.LastIndexByte(full, '/')
+	if sp < 0 {
+		sp = 0 // std package without any '/' in name
 	}
-	return pkg, fn
+
+	dp := strings.IndexByte(full[sp:], '.')
+	if dp < 0 {
+		return full, ""
+	}
+	dp += sp
+	return full[:dp], full[dp+1:]
 }
 
+// setLocation sets location using the stack trace going "callDepth" levels up.
 func (t *base) setLocation(callDepth int) {
 	var ok bool
 	t.location, ok = location.New(callDepth)
@@ -124,6 +108,11 @@ func (t *base) setLocation(callDepth int) {
 	}
 }
 
+// replaceLocation replaces the location by "loc".
+func (t *base) replaceLocation(loc location.Location) {
+	t.location = loc
+}
+
 // GetLocation returns a copy of the location.Location where the TestDeep
 // operator has been created.
 func (t *base) GetLocation() location.Location {
@@ -141,6 +130,28 @@ func (t base) HandleInvalid() bool {
 // returned.
 func (t base) TypeBehind() reflect.Type {
 	return nil
+}
+
+// Error returns nil if the operator is operational, the corresponding
+// error otherwise.
+func (t base) Error() error {
+	if t.err == nil {
+		return nil
+	}
+	return t.err
+}
+
+// stringError is a convenience method to call in String()
+// implementations when the operator is in error.
+func (t base) stringError() string {
+	return t.GetLocation().Func + "(<ERROR>)"
+}
+
+// MarshalJSON implements encoding/json.Marshaler only to returns an
+// error, as a TestDeep operator should never be JSON marshaled. So
+// it is better to tell the user he/she does a mistake.
+func (t base) MarshalJSON() ([]byte, error) {
+	return nil, types.OperatorNotJSONMarshallableError(t.location.Func)
 }
 
 // newBase returns a new base struct with location.Location set to the

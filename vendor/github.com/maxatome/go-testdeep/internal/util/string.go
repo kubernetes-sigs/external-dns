@@ -8,6 +8,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"reflect"
 	"strconv"
@@ -57,14 +58,14 @@ func ToString(val interface{}) string {
 
 // IndentString indents str lines (from 2nd one = 1st line is not
 // indented) by indent.
-func IndentString(str string, indent string) string {
-	return strings.Replace(str, "\n", "\n"+indent, -1)
+func IndentString(str, indent string) string {
+	return strings.Replace(str, "\n", "\n"+indent, -1) //nolint: gocritic
 }
 
 // IndentStringIn indents str lines (from 2nd one = 1st line is not
-// indented) by indent and write it to w.
-func IndentStringIn(w io.Writer, str string, indent string) {
-	repl := strings.NewReplacer("\n", "\n"+indent)
+// indented) by indent and write it to w. Before each end of line, colOff is inserted, and after each indent on new line, colOn is inserted.
+func IndentStringIn(w io.Writer, str, indent, colOn, colOff string) {
+	repl := strings.NewReplacer("\n", colOff+"\n"+indent+colOn)
 	repl.WriteString(w, str) //nolint: errcheck
 }
 
@@ -92,4 +93,107 @@ func SliceToBuffer(buf *bytes.Buffer, items []reflect.Value) *bytes.Buffer {
 	buf.WriteByte(')')
 
 	return buf
+}
+
+// TypeFullName returns the t type name with packages fully visible
+// instead of the last package part in t.String().
+func TypeFullName(t reflect.Type) string {
+	var b bytes.Buffer
+	typeFullName(&b, t)
+	return b.String()
+}
+
+func typeFullName(b *bytes.Buffer, t reflect.Type) {
+	if t.Name() != "" {
+		if pkg := t.PkgPath(); pkg != "" {
+			fmt.Fprintf(b, "%s.", pkg)
+		}
+		b.WriteString(t.Name())
+		return
+	}
+
+	switch t.Kind() {
+	case reflect.Ptr:
+		b.WriteByte('*')
+		typeFullName(b, t.Elem())
+
+	case reflect.Slice:
+		b.WriteString("[]")
+		typeFullName(b, t.Elem())
+
+	case reflect.Array:
+		fmt.Fprintf(b, "[%d]", t.Len())
+		typeFullName(b, t.Elem())
+
+	case reflect.Map:
+		b.WriteString("map[")
+		typeFullName(b, t.Key())
+		b.WriteByte(']')
+		typeFullName(b, t.Elem())
+
+	case reflect.Struct:
+		b.WriteString("struct {")
+		if num := t.NumField(); num > 0 {
+			for i := 0; i < num; i++ {
+				sf := t.Field(i)
+				if !sf.Anonymous {
+					b.WriteByte(' ')
+					b.WriteString(sf.Name)
+				}
+				b.WriteByte(' ')
+				typeFullName(b, sf.Type)
+				b.WriteByte(';')
+			}
+			b.Truncate(b.Len() - 1)
+			b.WriteByte(' ')
+		}
+		b.WriteByte('}')
+
+	case reflect.Func:
+		b.WriteString("func(")
+		if num := t.NumIn(); num > 0 {
+			for i := 0; i < num; i++ {
+				if i == num-1 && t.IsVariadic() {
+					b.WriteString("...")
+					typeFullName(b, t.In(i).Elem())
+				} else {
+					typeFullName(b, t.In(i))
+				}
+				b.WriteString(", ")
+			}
+			b.Truncate(b.Len() - 2)
+		}
+		b.WriteByte(')')
+
+		if num := t.NumOut(); num > 0 {
+			if num == 1 {
+				b.WriteByte(' ')
+			} else {
+				b.WriteString(" (")
+			}
+			for i := 0; i < num; i++ {
+				typeFullName(b, t.Out(i))
+				b.WriteString(", ")
+			}
+			b.Truncate(b.Len() - 2)
+			if num > 1 {
+				b.WriteByte(')')
+			}
+		}
+
+	case reflect.Chan:
+		switch t.ChanDir() {
+		case reflect.RecvDir:
+			b.WriteString("<-chan ")
+		case reflect.SendDir:
+			b.WriteString("chan<- ")
+		case reflect.BothDir:
+			b.WriteString("chan ")
+		}
+		typeFullName(b, t.Elem())
+
+	default:
+		// Fallback to default implementation
+		b.WriteString(t.String())
+	}
 }

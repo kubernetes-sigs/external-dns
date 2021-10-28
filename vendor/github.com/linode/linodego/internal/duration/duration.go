@@ -37,7 +37,7 @@ func UnmarshalTimeRemaining(m json.RawMessage) *int {
 	return nil
 }
 
-// durationToSeconds takes a hh:mm:ss string and returns the number of seconds
+// durationToSeconds takes a hh:mm:ss string and returns the number of seconds.
 func durationToSeconds(s string) (int, error) {
 	multipliers := [3]int{60 * 60, 60, 1}
 	segs := strings.Split(s, ":")

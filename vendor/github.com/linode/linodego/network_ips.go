@@ -82,7 +82,6 @@ func (c *Client) UpdateIPAddress(ctx context.Context, id string, updateOpts IPAd
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

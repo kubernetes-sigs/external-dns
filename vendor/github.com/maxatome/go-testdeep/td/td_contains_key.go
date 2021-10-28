@@ -81,7 +81,7 @@ func (c *tdContainsKey) doesNotContainKey(ctx ctxerr.Context, got reflect.Value)
 // getExpectedValue returns the expected value handling the
 // Contains(nil) case: in this case it returns a typed nil (same type
 // as the keys of got).
-// got is a map (it's the caller responsibility to check)
+// got is a map (it's the caller responsibility to check).
 func (c *tdContainsKey) getExpectedValue(got reflect.Value) reflect.Value {
 	// If the expectValue is non-typed nil
 	if !c.expectedValue.IsValid() {
@@ -100,10 +100,10 @@ func (c *tdContainsKey) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Err
 	if got.Kind() == reflect.Map {
 		expectedValue := c.getExpectedValue(got)
 
-		// If expected value is a TestDeep operator, check each key
-		if c.isTestDeeper {
+		// If expected value is a TestDeep operator OR BeLax, check each key
+		if c.isTestDeeper || ctx.BeLax {
 			for _, k := range got.MapKeys() {
-				if deepValueEqualOK(k, expectedValue) {
+				if deepValueEqualFinalOK(ctx, k, expectedValue) {
 					return nil
 				}
 			}

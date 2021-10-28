@@ -8,6 +8,7 @@ package ctxerr
 
 import (
 	"github.com/maxatome/go-testdeep/internal/anchors"
+	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/location"
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
@@ -27,6 +28,7 @@ type Context struct {
 	MaxErrors int
 	Errors    *[]*Error
 	Anchors   *anchors.Info
+	Hooks     *hooks.Info
 	// If true, the contents of the returned *Error will not be
 	// checked. Can be used to avoid filling Error{} with expensive
 	// computations.
@@ -37,6 +39,8 @@ type Context struct {
 	UseEqual bool
 	// See ContextConfig.BeLax for details.
 	BeLax bool
+	// See ContextConfig.IgnoreUnexported for details.
+	IgnoreUnexported bool
 }
 
 // InitErrors initializes Context *Errors slice, if MaxErrors < 0 or

@@ -1,5 +1,196 @@
 # Change Log
 
+## [v1.69.1] - 2021-10-06
+
+- #484 - @sunny-b - k8s/godo: remove ha field from update request
+
+## [v1.69.0] - 2021-10-04
+
+- #482 - @dikshant - godo/load-balancers: add DisableLetsEncryptDNSRecords field for LBaaS
+
+## [v1.68.0] - 2021-09-29
+
+- #480 - @sunny-b - kubernetes: add support for HA control plane
+
+## [v1.67.0] - 2021-09-22
+
+- #478 - @sunny-b - kubernetes: add supported_features field to the kubernetes/options response
+- #477 - @wez470 - Add size unit to LB API.
+
+## [v1.66.0] - 2021-09-21
+
+- #473 - @andrewsomething - Add Go 1.17.x to test matrix and drop unsupported versions.
+- #472 - @bsnyder788 - insights: add private (in/out)bound and public inbound bandwidth aler…
+- #470 - @gottwald - domains: remove invalid json struct tag option
+
+## [v1.65.0] - 2021-08-05
+
+- #468 - @notxarb - New alerts feature for App Platform
+- #467 - @andrewsomething - docs: Update links to API documentation.
+- #466 - @andrewsomething - Mark Response.Monitor as deprecated.
+
+## [v1.64.2] - 2021-07-23
+
+- #464 - @bsnyder788 - insights: update HTTP method for alert policy update
+
+## [v1.64.1] - 2021-07-19
+
+- #462 - @bsnyder788 - insights: fix alert policy update endpoint
+
+## [v1.64.0] - 2021-07-19
+
+- #460 - @bsnyder788 - insights: add CRUD APIs for alert policies
+
+## [v1.63.0] - 2021-07-06
+
+- #458 - @ZachEddy - apps: Add tail_lines query parameter to GetLogs function
+
+## [v1.62.0] - 2021-06-07
+
+- #454 - @house-lee - add with_droplet_agent option to create requests
+
+## [v1.61.0] - 2021-05-12
+
+- #452 - @caiofilipini - Add support for DOKS clusters as peers in Firewall rules
+- #448 - @andrewsomething - flip: Set omitempty for Region in FloatingIPCreateRequest.
+- #451 - @andrewsomething - CheckResponse: Add RequestID from header to ErrorResponse when missing from body.
+- #450 - @nanzhong - dbaas: handle ca certificates as base64 encoded
+- #449 - @nanzhong - dbaas: add support for getting cluster CA
+- #446 - @kamaln7 - app spec: update cors policy
+
+## [v1.60.0] - 2021-04-04
+
+- #443 - @andrewsomething - apps: Support pagination.
+- #442 - @andrewsomething - dbaas: Support restoring from a backup.
+- #441 - @andrewsomething - k8s: Add URN method to KubernetesCluster.
+
+## [v1.59.0] - 2021-03-29
+
+- #439 - @andrewsomething - vpcs: Support listing members of a VPC.
+- #438 - @andrewsomething - Add Go 1.16.x to the testing matrix.
+
+## [v1.58.0] - 2021-02-17
+
+- #436 - @MorrisLaw - kubernetes: add name field to associated resources
+- #434 - @andrewsomething - sizes: Add description field.
+- #433 - @andrewsomething - Deprecate Name field in godo.DropletCreateVolume
+
+## [v1.57.0] - 2021-01-15
+
+- #429 - @varshavaradarajan - kubernetes: support optional cascading deletes for clusters
+- #430 - @jonfriesen - apps: updates apps.gen.go for gitlab addition
+- #431 - @nicktate - apps: update proto to support dockerhub registry type
+
+## [v1.56.0] - 2021-01-08
+
+- #422 - @kamaln7 - apps: add ProposeApp method
+
+## [v1.55.0] - 2021-01-07
+
+- #425 - @adamwg - registry: Support the storage usage indicator
+- #423 - @ChiefMateStarbuck - Updated README example
+- #421 - @andrewsomething - Add some basic input cleaning to NewFromToken
+- #420 - @bentranter - Don't set "Content-Type" header on GET requests
+
+## [v1.54.0] - 2020-11-24
+
+- #417 - @waynr - registry: add support for garbage collection types
+
+## [v1.53.0] - 2020-11-20
+
+- #414 - @varshavaradarajan - kubernetes: add clusterlint support
+- #413 - @andrewsomething - images: Support updating distribution and description.
+
+## [v1.52.0] - 2020-11-05
+
+- #411 - @nicktate - apps: add unspecified type to image source registry types
+- #409 - @andrewsomething - registry: Add support for updating a subscription.
+- #408 - @nicktate - apps: update spec to include image source
+- #407 - @kamaln7 - apps: add the option to force build a new deployment
+
+## [v1.51.0] - 2020-11-02
+
+- #405 - @adamwg - registry: Support subscription options
+- #398 - @reeseconor - Add support for caching dependencies between GitHub Action runs
+- #404 - @andrewsomething - CONTRIBUTING.md: Suggest using github-changelog-generator.
+
+## [v1.50.0] - 2020-10-26
+
+- #400 - @waynr - registry: add garbage collection support
+- #402 - @snormore - apps: add catchall_document static site spec field and failed-deploy job type
+- #401 - @andrewlouis93 - VPC: adds option to set a VPC as the regional default
+
+## [v1.49.0] - 2020-10-21
+
+- #383 - @kamaln7 - apps: add ListRegions, Get/ListTiers, Get/ListInstanceSizes
+- #390 - @snormore - apps: add service spec internal_ports
+
+## [v1.48.0] - 2020-10-16
+
+- #388 - @varshavaradarajan - kubernetes - change docr integration api routes
+- #386 - @snormore - apps: pull in recent updates to jobs and domains
+
+## [v1.47.0] - 2020-10-14
+
+- #384 kubernetes - add registry related doks apis - @varshavaradarajan
+- #385 Fixed some typo in apps.gen.go and databases.go file - @devil-cyber
+- #382 Add GetKubeConfigWithExpiry (#334) - @ivanlemeshev
+- #381 Fix golint issues #377 - @sidsbrmnn
+- #380 refactor: Cyclomatic complexity issue - @DonRenando
+- #379 Run gofmt to fix some issues in codebase - @mycodeself
+
+## [v1.46.0] - 2020-10-05
+
+- #373 load balancers: add LB size field, currently in closed beta - @anitgandhi
+
+## [v1.45.0] - 2020-09-25
+
+**Note**: This release contains breaking changes to App Platform features currently in closed beta.
+
+- #369 update apps types to latest - @kamaln7
+- #368 Kubernetes: add taints field to node pool create and update requests - @timoreimann
+- #367 update apps types, address marshaling bug - @kamaln7
+
+## [v1.44.0] - 2020-09-08
+
+- #364 apps: support aggregate deployment logs - @kamaln7
+
+## [v1.43.0] - 2020-09-08
+
+- #362 update apps types - @kamaln7
+
+## [v1.42.1] - 2020-08-06
+
+- #360 domains: Allow for SRV records with port 0. - @andrewsomething
+
+## [v1.42.0] - 2020-07-22
+
+- #357 invoices: add category to InvoiceItem - @rbutler
+- #358 apps: add support for following logs - @nanzhong
+
+## [v1.41.0] - 2020-07-17
+
+- #355 kubernetes: Add support for surge upgrades - @varshavaradarajan
+
+## [v1.40.0] - 2020-07-16
+
+- #347 Make Rate limits thread safe - @roidelapluie
+- #353 Reuse TCP connection - @itsksaurabh
+
+## [v1.39.0] - 2020-07-14
+
+- #345, #346 Add app platform support [beta] - @nanzhong
+
+## [v1.38.0] - 2020-06-18
+
+- #341 Install 1-click applications on a Kubernetes cluster - @keladhruv
+- #340 Add RecordsByType, RecordsByName and RecordsByTypeAndName to the DomainsService - @viola
+
+## [v1.37.0] - 2020-06-01
+
+- #336 registry: URL encode repository names when building URLs. @adamwg
+- #335 Add 1-click service and request. @scottcrawford03
+
 ## [v1.36.0] - 2020-05-12
 
 - #331 Expose expiry_seconds for Registry.DockerCredentials. @andrewsomething

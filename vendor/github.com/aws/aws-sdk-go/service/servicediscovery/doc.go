@@ -3,13 +3,13 @@
 // Package servicediscovery provides the client and types for making API
 // requests to AWS Cloud Map.
 //
-// AWS Cloud Map lets you configure public DNS, private DNS, or HTTP namespaces
-// that your microservice applications run in. When an instance of the service
-// becomes available, you can call the AWS Cloud Map API to register the instance
-// with AWS Cloud Map. For public or private DNS namespaces, AWS Cloud Map automatically
-// creates DNS records and an optional health check. Clients that submit public
-// or private DNS queries, or HTTP requests, for the service receive an answer
-// that contains up to eight healthy records.
+// With Cloud Map, you can configure public DNS, private DNS, or HTTP namespaces
+// that your microservice applications run in. When an instance becomes available,
+// you can call the Cloud Map API to register the instance with Cloud Map. For
+// public or private DNS namespaces, Cloud Map automatically creates DNS records
+// and an optional health check. Clients that submit public or private DNS queries,
+// or HTTP requests, for the service receive an answer that contains up to eight
+// healthy records.
 //
 // See https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14 for more information on this service.
 //

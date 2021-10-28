@@ -18,6 +18,12 @@ type ObjectStorageBucket struct {
 	Hostname string     `json:"hostname"`
 }
 
+// ObjectStorageBucketAccess holds Object Storage access info
+type ObjectStorageBucketAccess struct {
+	ACL         ObjectStorageACL `json:"acl"`
+	CorsEnabled bool             `json:"cors_enabled"`
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface
 func (i *ObjectStorageBucket) UnmarshalJSON(b []byte) error {
 	type Mask ObjectStorageBucket
@@ -42,7 +48,27 @@ func (i *ObjectStorageBucket) UnmarshalJSON(b []byte) error {
 type ObjectStorageBucketCreateOptions struct {
 	Cluster string `json:"cluster"`
 	Label   string `json:"label"`
+
+	ACL         ObjectStorageACL `json:"acl,omitempty"`
+	CorsEnabled *bool            `json:"cors_enabled,omitempty"`
 }
+
+// ObjectStorageBucketUpdateAccessOptions fields are those accepted by UpdateObjectStorageBucketAccess
+type ObjectStorageBucketUpdateAccessOptions struct {
+	ACL         ObjectStorageACL `json:"acl,omitempty"`
+	CorsEnabled *bool            `json:"cors_enabled,omitempty"`
+}
+
+// ObjectStorageACL options start with ACL and include all known ACL types
+type ObjectStorageACL string
+
+// ObjectStorageACL options represent the access control level of a bucket.
+const (
+	ACLPrivate           ObjectStorageACL = "private"
+	ACLPublicRead        ObjectStorageACL = "public-read"
+	ACLAuthenticatedRead ObjectStorageACL = "authenticated-read"
+	ACLPublicReadWrite   ObjectStorageACL = "public-read-write"
+)
 
 // ObjectStorageBucketsPagedResponse represents a paginated ObjectStorageBucket API response
 type ObjectStorageBucketsPagedResponse struct {
@@ -68,7 +94,6 @@ func (resp *ObjectStorageBucketsPagedResponse) appendData(r *ObjectStorageBucket
 func (c *Client) ListObjectStorageBuckets(ctx context.Context, opts *ListOptions) ([]ObjectStorageBucket, error) {
 	response := ObjectStorageBucketsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -108,11 +133,56 @@ func (c *Client) CreateObjectStorageBucket(ctx context.Context, createOpts Objec
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
 	return r.Result().(*ObjectStorageBucket), nil
+}
+
+// GetObjectStorageBucketAccess gets the current access config for a bucket
+func (c *Client) GetObjectStorageBucketAccess(ctx context.Context, clusterID, label string) (*ObjectStorageBucketAccess, error) {
+	e, err := c.ObjectStorageBuckets.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%s/%s/access", e, clusterID, label)
+
+	req := c.R(ctx).SetResult(&ObjectStorageBucketAccess{})
+
+	r, err := coupleAPIErrors(
+		req.Get(e))
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Result().(*ObjectStorageBucketAccess), nil
+}
+
+// UpdateObjectStorageBucketAccess updates the access configuration for an ObjectStorageBucket
+func (c *Client) UpdateObjectStorageBucketAccess(ctx context.Context, clusterID, label string, access ObjectStorageBucketUpdateAccessOptions) error {
+	e, err := c.ObjectStorageBuckets.Endpoint()
+	if err != nil {
+		return err
+	}
+
+	e = fmt.Sprintf("%s/%s/%s/access", e, clusterID, label)
+
+	bodyData, err := json.Marshal(access)
+	if err != nil {
+		return err
+	}
+
+	body := string(bodyData)
+
+	_, err = coupleAPIErrors(c.R(ctx).
+		SetBody(body).
+		Post(e))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // DeleteObjectStorageBucket deletes the ObjectStorageBucket with the specified label

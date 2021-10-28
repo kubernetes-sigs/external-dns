@@ -1,6 +1,506 @@
 Changelog
 =========
 
+0.73.2
+------
+
+- fix: v2: add missing operations params validation
+
+0.73.1
+------
+
+- fix: v2: `SecurityGroup`: return external sources when present
+
+0.73.0
+------
+
+- feature: v2: add `Client.AddExternalSourceToSecurityGroup()`/`Client.RemoveExternalSourceFromSecurityGroup()` methods
+
+0.72.2
+------
+
+- fix: v2: update Exoscale API endpoint prefix
+
+0.72.1
+------
+
+- fix: v2: fix `Client.UpdateElasticIP()` method
+
+0.72.0
+------
+
+- feature: v2: add `AntiAffinityGroup.InstanceIDs` field
+
+0.71.1
+------
+
+- fix: v2: fix `Client.CreateSecurityGroupRule()` method
+
+0.71.0
+------
+
+- feature: v2: add `Client.UpgradeSKSClusterServiceLevel()` method
+
+0.70.0
+------
+
+- feature: v2: add `DatabaseServiceComponent` struct
+
+0.69.0
+------
+
+- feature: v2: add method `Client.GetDatabaseCACertificate()`
+
+0.68.1
+------
+
+- fix: v2: add missing `Snapshot.Size` field
+
+0.68.0
+------
+
+- feature: v2: add support for quotas management
+- change: v2: all API resource-based methods have been relocated to the `Client` struct
+
+0.67.0
+------
+
+- feature: v2: add support for SKS Nodepool add-ons
+
+0.66.0
+------
+
+- feature: v2: add `Instance.Reset()` method
+- feature: v2: add `Instance.Scale()` method
+- feature: v2: add `Instance.ResizeDisk()` method
+
+0.65.1
+------
+
+- fix: v2: fix `RegisterSSHKey()` method
+
+0.65.0
+------
+
+- feature: v2: add support for SSH keys management
+
+0.64.1
+------
+
+- tests: v2: add resource API mocks
+
+0.64.0
+------
+
+- change: v2: replace `InstancePool.ManagerID` of type `string` with `InstancePool.Manager` field of type `*InstancePoolManager`
+
+0.63.0
+------
+
+- feature: v2: add support for Private Networks to SKS Nodepools
+- feature: v2: add new `Client.RegisterTemplate()` method
+- change: v2: change `DatabaseService.UserConfig` type to pointer
+
+0.62.2
+------
+
+- v2: fix a crash in `NetworkLoadBalancer.AddService()` method
+
+0.62.1
+------
+
+- fix: v2: fix required params validation for NLB services
+
+0.62.0
+------
+
+- feature: v2: add support for Private Networks leases
+
+0.61.0
+------
+
+- feature: v2: add `PrivateNetwork.UpdateInstanceIPAddress()` method
+- feature: v2: add `Instance.Reboot()` method
+
+0.60.1
+------
+
+- fix: v2: don't return pointers to empty maps/slices
+
+0.60.0
+------
+
+- change: v2: API resource structs fields are now pointers instead of concrete types
+
+0.59.0
+------
+
+- change: v2: `Database*` structs fields are now pointers
+
+0.58.0
+------
+
+- feature: v2: add labels support for Compute instances
+
+0.57.0
+------
+
+- feature: v2: add support for Database Services
+
+0.56.0
+------
+
+- change: the `AuthorizeSecurityGroupIngress` struct now uses an `int` type for `Icmp(Code|Type)` fields (#499)
+
+0.55.0
+------
+
+- change: the `IngressRule`/`EgressRule` and `v2.SecurityGroupRule` structs now use an `int` type for the ICMP code/type storage (#498)
+
+0.54.0
+------
+
+- change: the `IngressRule`/`EgressRule` and `v2.SecurityGroupRule` structs now use an `int8` type for the ICMP code/type storage (#497)
+
+0.53.1
+------
+
+- fix: v2: only point to non-zero struct fields for optional API resource properties (#496)
+
+0.53.0
+------
+
+- feature: v2: add `Client.FindInstanceType()` method
+
+0.52.0
+------
+
+- feature: v2: make API async polling interval customizable
+- feature: v2: add `Client.Find*()` methods
+- feature: v2: add `Start`/`Stop` methods to `Instance`
+- feature: v2: add labels support for Network Load Balancers
+- fix: v2: fix Security Group parsing from API
+
+0.51.0
+------
+
+- feature: v2: add new `InstanceType` resource
+
+0.50.0
+------
+
+- change: v2: the `Instance.ManagerID` field is replaced with `Instance.Manager` of type `*InstanceManager`
+
+0.49.0
+------
+
+- deprecatation: top-level `Version` constant is replaced by `version.Version`
+- change: v2: new default HTTP client transport setting request `User-Agent` header to `v2.UserAgent`
+- feature: v2: add support for Elastic IP/Private Network/Security Group attachment/detachment to Instances
+- feature: v2: add support for Deploy Targets to SKS Nodepools
+- feature: v2: add support for Instance prefix to SKS Nodepools
+
+0.48.1
+------
+
+- fix: v2: add support for `InstancePool.IPv6Enabled` field resetting
+
+0.48.0
+------
+
+- feature: v2: add support for Instance prefix to Instance Pools
+- feature: v2: add support for Deploy Targets
+- feature: v2: add support for Compute instances management
+- feature: v2: add support for Snapshots management
+- feature: v2: add support for Templates management
+- feature: v2: add getter methods on API resources
+
+0.47.0
+------
+
+- feature: v2: add client property setters (#485)
+
+0.46.1
+------
+
+- fix: v2: make SKSCluster.RotateCCMCredentials() synchronous (#484)
+
+0.46.0
+------
+
+- feature: SKS: add SKSCluster.RotateCCMCredentials() method (#481)
+- feature: SKS: add SKSCluster.AuthorityCert() method (#480)
+
+0.45.1
+------
+
+- Fix typo in version.go
+
+0.45.0
+------
+
+- feature: v2: add support for Elastic IP management
+- fix: v2: InstancePool.ManagerID resolution (#479)
+
+0.44.0
+------
+
+- feature: v2: add request tracing middleware (#474)
+- feature: v2: add support for field resetting (#476)
+- feature: v2: add support for Instance Pools management (#471)
+- feature: v2: add support for Private Networks management (#472)
+- feature: v2: add support for Anti-Affinity Groups management (#473)
+- feature: v2: add support for Security Groups management (#475)
+
+0.43.1
+------
+
+- change: in `NewClient()`, the `v2.Client` embedded in the `Client` struct doesn't inherit the custom `http.Client` set using `WithHTTPClient()`.
+
+0.43.0
+------
+
+- change: [Exoscale API V2](https://openapi-v2.exoscale.com/) related code has been relocated under the `github.com/exoscale/egoscale/v2` package.
+  Note: `egoscale.Client` embeds a `v2.Client` initialized implicitly as a convenience.
+
+0.42.0
+------
+
+- feature: new `SKSNodepool.AntiAffinityGroupIDs` field
+- change: `SKSCluster.Level` field renamed as `SKSCluster.ServiceLevel`
+
+0.41.0
+------
+
+- feature: new method `ListZones()`
+
+0.40.1
+------
+
+- Improve API v2 async job tests and error reporting (#466)
+
+0.40.0
+------
+
+- feature: new method `UpgradeSKSCluster()`
+- feature: new fields `SKSCluster.Level` and `SKSCluster.CNI`
+- change: `SKSCluster.EnableExoscaleCloudController` replaced with `SKSCluster.AddOns`
+
+0.39.1
+------
+
+- fix: add missing `UpdateVirtualMachineSecurityGroups` operation metadata
+
+0.39.0
+------
+
+- feature: add `UpdateVirtualMachineSecurityGroups` operation (#464)
+
+0.38.0
+------
+
+- feature: add `SKSCluster.EvictNodepoolMembers()` and `ListSKSClusterVersions()` methods
+
+0.37.1
+------
+
+- fix: `UpdateIPAddress.HealthcheckTLSSkipVerify` field always set to `false` (#462)
+
+0.37.0
+------
+
+- feature: `NewClient()` now accepts options (460)
+- fix: NLB service healthcheck TLS SNI bug (#461)
+
+0.36.2
+------
+
+- fix: `CreateInstancePool.AntiAffinityGroupIDs` field is optional (#459)
+
+0.36.1
+------
+
+- feature: add support for Exoscale Cloud Controller in SKS clusters
+- fix: add missing tests for SKS Nodepools Security Groups
+
+0.36.0
+------
+
+- feature: add support for Anti-Affinity Groups to Instance Pools
+- feature: add support for Security Groups to SKS Nodepools
+
+0.35.3
+------
+
+- Fix typo in version.go
+
+0.35.2
+------
+
+- Improve API v2 errors handling (#455)
+
+0.35.1
+------
+
+- fix: various SKS-related bugs (#454)
+
+0.35.0
+------
+
+- feature: add support for SKS resources (#453)
+
+0.34.0
+------
+
+- change: `BucketUsage.Usage` is now an `int64` (#451)
+
+0.33.2
+------
+
+- fix: make `GetWithContext` return more relevant errors (#450)
+
+0.33.1
+------
+
+- fix: `UpdateNetworkLoadBalancer` call panicking following a public API change
+
+0.33.0
+------
+
+- feature: add support for Network Load Balancer service HTTPS health checking (#449)
+
+0.32.0
+------
+
+- feature: add support for Instance Pool root disk size update (#448)
+
+0.31.2
+------
+
+- fix: add missing TLS-specific parameters to `AssociateIPAddress`
+
+0.31.1
+------
+
+- fix: Instance Pool IPv6 flag handling
+
+0.31.0
+------
+
+- feature: add support for IPv6 in Instance Pools (#446)
+
+0.30.0
+------
+
+- feature: add new TLS-specific parameters to managed EIP
+
+0.29.0
+------
+
+- feature: `ListVirtualMachines` call to allow searching by `ManagerID` (#442)
+- fix: remove duplicate `User-Agent` HTTP header in Runstatus calls
+- tests: `*NetworkLoadBalancer*` calls are now tested using HTTP mocks
+- codegen: `internal/v2` updated
+
+0.28.1
+------
+
+- fix: Fix `ListVolumes` call to allow searching by ID (#440)
+
+0.28.0
+------
+
+- feature: add `Manager`/`ManagerID` fields to `VirtualMachine` structure (#438)
+- fix: HTTP request User Agent header handling (#439)
+
+0.27.0
+------
+
+- feature: Add `evictInstancePoolMembers` call to Instance Pool (#437)
+
+0.26.6
+------
+
+- change: Add support for Compute instance templates boot mode (#436)
+
+0.26.5
+------
+
+- fix: bug in the ListNetworkLoadBalancers call (#435)
+
+0.26.4
+------
+
+- Fixing typo in previous release
+
+0.26.3
+------
+
+- change: updated API V2 async operation code (#434)
+
+0.26.2
+------
+
+- change: updated OpenAPI code-generated API V2 bindings
+
+0.26.1
+------
+
+- change: the `DisplayText` property of `RegisterCustomTemplate` is now optional (#433)
+
+0.26.0
+------
+
+- feature: Add support for Network Load Balancer resources (#432)
+
+0.25.0
+------
+
+- feature: Add support for `listBucketsUsage` (#431) 
+- change: Switch CI to Github Actions (#430)
+
+0.24.0
+------
+
+- feature: Add export snapshot implementation (#427)
+- feature: Add support for public API V2 (#425)
+- change: Switch module to Go 1.14 (#429)
+- change: Travis CI: set minimum Go version to 1.13
+- doc: Annotate API doc regarding use of tags (#423)
+- tests: fix request client timeout handling (#422)
+
+0.23.0
+------
+
+- change: Add `Resources` field to `APIKey` (#420)
+
+0.22.0
+------
+
+- change: Remove all references to Network Offerings (#418)
+
+0.21.0
+------
+
+- feature: add const `NotFound` 404 on type `ErrorCode` (#417)
+
+0.20.1
+------
+
+- fix: update the `ListAPIKeysResponse` field (#415)
+
+0.20.0
+------
+
+- feature: Add Instance pool implementation (#410)
+- feature: Add IAM implementation (#411)
+
+0.19.0
+------
+
+- feature: add field `Description` on type `IPAddress` (#413)
+- change: add Json tag `omitempty` on field  `TemplateFilter` in type `ListTemplates` (#412)
+
 0.18.1
 ------
 

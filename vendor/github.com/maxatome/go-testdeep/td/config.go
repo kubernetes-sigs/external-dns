@@ -12,6 +12,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/internal/anchors"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
+	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
 
@@ -37,8 +38,9 @@ type ContextConfig struct {
 	// will be dumped.
 	MaxErrors int
 	anchors   *anchors.Info
+	hooks     *hooks.Info
 	// FailureIsFatal allows to Fatal() (instead of Error()) when a test
-	// fails. Using *testing.T instance as t.TestingFT value, FailNow()
+	// fails. Using *testing.T or *testing.B instance as t.TB value, FailNow()
 	// is called behind the scenes when Fatal() is called. See testing
 	// documentation for details.
 	FailureIsFatal bool
@@ -50,6 +52,9 @@ type ContextConfig struct {
 	// with B assignable to A.
 	//
 	// See time.Time as an example of accepted Equal() method.
+	//
+	// See (*T).UseEqual method to only apply this property to some
+	// specific types.
 	UseEqual bool
 	// BeLax allows to compare different but convertible types. If set
 	// to false (default), got and expected types must be the same. If
@@ -58,6 +63,16 @@ type ContextConfig struct {
 	// function/method and Lax operator to set this flag without
 	// providing a specific configuration.
 	BeLax bool
+	// IgnoreUnexported allows to ignore unexported struct fields. Be
+	// careful about structs entirely composed of unexported fields
+	// (like time.Time for example). With this flag set to true, they
+	// are all equal. In such case it is advised to set UseEqual flag,
+	// to use (*T).UseEqual method or to add a Cmp hook using
+	// (*T).WithCmpHooks method.
+	//
+	// See (*T).IgnoreUnexported method to only apply this property to some
+	// specific types.
+	IgnoreUnexported bool
 }
 
 // Equal returns true if both ContextConfig are equal. Only public
@@ -67,7 +82,8 @@ func (c ContextConfig) Equal(o ContextConfig) bool {
 		c.MaxErrors == o.MaxErrors &&
 		c.FailureIsFatal == o.FailureIsFatal &&
 		c.UseEqual == o.UseEqual &&
-		c.BeLax == o.BeLax
+		c.BeLax == o.BeLax &&
+		c.IgnoreUnexported == o.IgnoreUnexported
 }
 
 const (
@@ -91,11 +107,12 @@ func getMaxErrorsFromEnv() int {
 // tests failures. If overridden, new settings will impact all Cmp*
 // functions and *T methods (if not specifically configured.)
 var DefaultContextConfig = ContextConfig{
-	RootName:       contextDefaultRootName,
-	MaxErrors:      getMaxErrorsFromEnv(),
-	FailureIsFatal: false,
-	UseEqual:       false,
-	BeLax:          false,
+	RootName:         contextDefaultRootName,
+	MaxErrors:        getMaxErrorsFromEnv(),
+	FailureIsFatal:   false,
+	UseEqual:         false,
+	BeLax:            false,
+	IgnoreUnexported: false,
 }
 
 func (c *ContextConfig) sanitize() {
@@ -119,13 +136,15 @@ func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
 	config.sanitize()
 
 	ctx = ctxerr.Context{
-		Path:           ctxerr.NewPath(config.RootName),
-		Visited:        visited.NewVisited(),
-		MaxErrors:      config.MaxErrors,
-		Anchors:        config.anchors,
-		FailureIsFatal: config.FailureIsFatal,
-		UseEqual:       config.UseEqual,
-		BeLax:          config.BeLax,
+		Path:             ctxerr.NewPath(config.RootName),
+		Visited:          visited.NewVisited(),
+		MaxErrors:        config.MaxErrors,
+		Anchors:          config.anchors,
+		Hooks:            config.hooks,
+		FailureIsFatal:   config.FailureIsFatal,
+		UseEqual:         config.UseEqual,
+		BeLax:            config.BeLax,
+		IgnoreUnexported: config.IgnoreUnexported,
 	}
 
 	ctx.InitErrors()
@@ -135,9 +154,10 @@ func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
 // newBooleanContext creates a new boolean ctxerr.Context.
 func newBooleanContext() ctxerr.Context {
 	return ctxerr.Context{
-		Visited:      visited.NewVisited(),
-		BooleanError: true,
-		UseEqual:     DefaultContextConfig.UseEqual,
-		BeLax:        DefaultContextConfig.BeLax,
+		Visited:          visited.NewVisited(),
+		BooleanError:     true,
+		UseEqual:         DefaultContextConfig.UseEqual,
+		BeLax:            DefaultContextConfig.BeLax,
+		IgnoreUnexported: DefaultContextConfig.IgnoreUnexported,
 	}
 }

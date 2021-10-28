@@ -85,7 +85,6 @@ func (resp *SSHKeysPagedResponse) appendData(r *SSHKeysPagedResponse) {
 func (c *Client) ListSSHKeys(ctx context.Context, opts *ListOptions) ([]SSHKey, error) {
 	response := SSHKeysPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +124,6 @@ func (c *Client) CreateSSHKey(ctx context.Context, createOpts SSHKeyCreateOption
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +150,6 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

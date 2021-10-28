@@ -50,40 +50,52 @@ var _ TestDeep = &tdTruncTime{}
 //
 // TypeBehind method returns the reflect.Type of "expectedTime".
 func TruncTime(expectedTime interface{}, trunc ...time.Duration) TestDeep {
-	if len(trunc) <= 1 {
-		t := tdTruncTime{
-			tdExpectedType: tdExpectedType{
-				base: newBase(3),
-			},
-		}
+	const usage = "(time.Time[, time.Duration])"
 
-		if len(trunc) == 1 {
-			t.trunc = trunc[0]
-		}
-
-		vval := reflect.ValueOf(expectedTime)
-
-		t.expectedType = vval.Type()
-		if t.expectedType == timeType {
-			t.expectedTime = expectedTime.(time.Time).Truncate(t.trunc)
-			return &t
-		}
-		if t.expectedType.ConvertibleTo(timeType) {
-			t.expectedTime = vval.Convert(timeType).
-				Interface().(time.Time).Truncate(t.trunc)
-			return &t
-		}
+	t := tdTruncTime{
+		tdExpectedType: tdExpectedType{
+			base: newBase(3),
+		},
 	}
-	panic("usage: TruncTime(time.Time[, time.Duration])")
+
+	if len(trunc) > 1 {
+		t.err = ctxerr.OpTooManyParams("TruncTime", usage)
+		return &t
+	}
+
+	if len(trunc) == 1 {
+		t.trunc = trunc[0]
+	}
+
+	vval := reflect.ValueOf(expectedTime)
+
+	t.expectedType = vval.Type()
+	if t.expectedType == types.Time {
+		t.expectedTime = expectedTime.(time.Time).Truncate(t.trunc)
+		return &t
+	}
+	if !t.expectedType.ConvertibleTo(types.Time) {
+		t.err = ctxerr.OpBad("TruncTime", "usage: TruncTime%s, 1st parameter must be time.Time or convertible to time.Time, but not %T",
+			usage, expectedTime)
+		return &t
+	}
+
+	t.expectedTime = vval.Convert(types.Time).
+		Interface().(time.Time).Truncate(t.trunc)
+	return &t
 }
 
 func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if t.err != nil {
+		return ctx.CollectError(t.err)
+	}
+
 	err := t.checkType(ctx, got)
 	if err != nil {
 		return ctx.CollectError(err)
 	}
 
-	gotTime, err := getTime(ctx, got, got.Type() != timeType)
+	gotTime, err := getTime(ctx, got, got.Type() != types.Time)
 	if err != nil {
 		return ctx.CollectError(err)
 	}
@@ -99,8 +111,8 @@ func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 	}
 
 	var gotRawStr, gotTruncStr string
-	if t.expectedType != timeType &&
-		t.expectedType.Implements(stringerInterface) {
+	if t.expectedType != types.Time &&
+		t.expectedType.Implements(types.FmtStringer) {
 		gotRawStr = got.Interface().(fmt.Stringer).String()
 		gotTruncStr = reflect.ValueOf(gotTimeTrunc).Convert(t.expectedType).
 			Interface().(fmt.Stringer).String()
@@ -117,7 +129,11 @@ func (t *tdTruncTime) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 }
 
 func (t *tdTruncTime) String() string {
-	if t.expectedType.Implements(stringerInterface) {
+	if t.err != nil {
+		return t.stringError()
+	}
+
+	if t.expectedType.Implements(types.FmtStringer) {
 		return reflect.ValueOf(t.expectedTime).Convert(t.expectedType).
 			Interface().(fmt.Stringer).String()
 	}

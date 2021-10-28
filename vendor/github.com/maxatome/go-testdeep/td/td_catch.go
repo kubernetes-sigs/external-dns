@@ -10,7 +10,6 @@ import (
 	"reflect"
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
-	"github.com/maxatome/go-testdeep/internal/types"
 	"github.com/maxatome/go-testdeep/internal/util"
 )
 
@@ -41,14 +40,11 @@ var _ TestDeep = &tdCatch{}
 // It is really useful when used with JSON operator and/or tdhttp helper.
 //
 //   var id int64
-//   if tdhttp.CmpJSONResponse(t,
-//     tdhttp.Post("/item", `{"name":"foo"}`),
-//     api.Handler,
-//     tdhttp.Response{
-//       Status: http.StatusCreated,
-//       Body: td.JSON(`{"id": $id, "name": "foo"}`,
-//         td.Tag("id", td.Catch(&id, td.Gt(0)))),
-//     }) {
+//   ta := tdhttp.NewTestAPI(t, api.Handler).
+//     PostJSON("/item", `{"name":"foo"}`).
+//     CmpStatus(http.StatusCreated).
+//     CmpJSONBody(td.JSON(`{"id": $1, "name": "foo"}`, td.Catch(&id, td.Gt(0))))
+//   if !ta.Failed() {
 //     t.Logf("Created record ID is %d", id)
 //   }
 //
@@ -60,16 +56,23 @@ var _ TestDeep = &tdCatch{}
 //     td.JSON(`{"id": $1, "name": "test"}`, td.Catch(&id, td.Ignore()))) {
 //     t.Logf("Created record ID is %d", id)
 //   }
-func Catch(target interface{}, expectedValue interface{}) TestDeep {
+//
+// TypeBehind method returns the reflect.Type of "expectedValue",
+// except if "expectedValue" is a TestDeep operator. In this case, it
+// delegates TypeBehind() to the operator, but if nil is returned by
+// this call, the dereferenced reflect.Type of "target" is returned.
+func Catch(target, expectedValue interface{}) TestDeep {
 	vt := reflect.ValueOf(target)
-	if vt.Kind() != reflect.Ptr || vt.IsNil() || !vt.Elem().CanSet() {
-		panic("usage: Catch(NON_NIL_PTR, EXPECTED_VALUE)")
-	}
-
 	c := tdCatch{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 		target:         vt,
 	}
+
+	if vt.Kind() != reflect.Ptr || vt.IsNil() || !vt.Elem().CanSet() {
+		c.err = ctxerr.OpBadUsage("Catch", "(NON_NIL_PTR, EXPECTED_VALUE)", target, 1, true)
+		return &c
+	}
+
 	if !c.isTestDeeper {
 		c.expectedValue = reflect.ValueOf(expectedValue)
 	}
@@ -77,16 +80,16 @@ func Catch(target interface{}, expectedValue interface{}) TestDeep {
 }
 
 func (c *tdCatch) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if c.err != nil {
+		return ctx.CollectError(c.err)
+	}
+
 	if targetType := c.target.Elem().Type(); !got.Type().AssignableTo(targetType) {
 		if !ctx.BeLax || !got.Type().ConvertibleTo(targetType) {
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}
-			return ctx.CollectError(&ctxerr.Error{
-				Message:  "type mismatch",
-				Got:      types.RawString(got.Type().String()),
-				Expected: types.RawString(c.target.Elem().Type().String()),
-			})
+			return ctx.CollectError(ctxerr.TypeMismatch(got.Type(), c.target.Elem().Type()))
 		}
 
 		c.target.Elem().Set(got.Convert(targetType))
@@ -98,6 +101,10 @@ func (c *tdCatch) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (c *tdCatch) String() string {
+	if c.err != nil {
+		return c.stringError()
+	}
+
 	if c.isTestDeeper {
 		return c.expectedValue.Interface().(TestDeep).String()
 	}
@@ -105,8 +112,16 @@ func (c *tdCatch) String() string {
 }
 
 func (c *tdCatch) TypeBehind() reflect.Type {
+	if c.err != nil {
+		return nil
+	}
+
 	if c.isTestDeeper {
-		return c.expectedValue.Interface().(TestDeep).TypeBehind()
+		if typ := c.expectedValue.Interface().(TestDeep).TypeBehind(); typ != nil {
+			return typ
+		}
+		// Operator unknown type behind, fallback on target dereferenced type
+		return c.target.Type().Elem()
 	}
 	if c.expectedValue.IsValid() {
 		return c.expectedValue.Type()

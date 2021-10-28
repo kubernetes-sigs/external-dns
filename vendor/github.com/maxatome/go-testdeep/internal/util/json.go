@@ -22,7 +22,7 @@ var (
 	jsonErrorMesgOnce    sync.Once
 )
 
-// `{"foo": $bar}`, 8 → `{"foo": "$bar"}`
+// `{"foo": $bar}`, 8 → `{"foo": "$bar"}`.
 func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 	r, size := utf8.DecodeRune(buf[dollar+1:]) // just after $
 	cur := dollar + 1 + int64(size)
@@ -84,7 +84,7 @@ func stringifyPlaceholder(buf []byte, dollar int64) ([]byte, error) {
 	return buf, nil
 }
 
-// `{"foo": 123 /* comment */}`, 13 → `{"foo": 123              }`
+// `{"foo": 123 /* comment */}`, 13 → `{"foo": 123              }`.
 func clearComment(buf []byte, slash int64, origErr error) error {
 	r, _ := utf8.DecodeRune(buf[slash+1:]) // just after /
 

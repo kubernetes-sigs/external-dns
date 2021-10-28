@@ -109,7 +109,6 @@ func (resp *TokensPagedResponse) appendData(r *TokensPagedResponse) {
 func (c *Client) ListTokens(ctx context.Context, opts *ListOptions) ([]Token, error) {
 	response := TokensPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +161,6 @@ func (c *Client) CreateToken(ctx context.Context, createOpts TokenCreateOptions)
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +187,6 @@ func (c *Client) UpdateToken(ctx context.Context, id int, updateOpts TokenUpdate
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

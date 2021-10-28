@@ -87,13 +87,12 @@ func (i *InstanceSnapshot) UnmarshalJSON(b []byte) error {
 
 // GetInstanceSnapshot gets the snapshot with the provided ID
 func (c *Client) GetInstanceSnapshot(ctx context.Context, linodeID int, snapshotID int) (*InstanceSnapshot, error) {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
 	e = fmt.Sprintf("%s/%d", e, snapshotID)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceSnapshot{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +106,7 @@ func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label
 		return nil, err
 	}
 	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
-
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +115,6 @@ func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label
 		SetBody(body).
 		SetResult(&InstanceSnapshot{}).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -128,14 +125,13 @@ func (c *Client) CreateInstanceSnapshot(ctx context.Context, linodeID int, label
 // GetInstanceBackups gets the Instance's available Backups.
 // This is not called ListInstanceBackups because a single object is returned, matching the API response.
 func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*InstanceBackupsResponse, error) {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
 	r, err := coupleAPIErrors(c.R(ctx).
 		SetResult(&InstanceBackupsResponse{}).
 		Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +140,7 @@ func (c *Client) GetInstanceBackups(ctx context.Context, linodeID int) (*Instanc
 
 // EnableInstanceBackups Enables backups for the specified Linode.
 func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return err
 	}
@@ -156,7 +152,7 @@ func (c *Client) EnableInstanceBackups(ctx context.Context, linodeID int) error 
 
 // CancelInstanceBackups Cancels backups for the specified Linode.
 func (c *Client) CancelInstanceBackups(ctx context.Context, linodeID int) error {
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return err
 	}
@@ -173,7 +169,7 @@ func (c *Client) RestoreInstanceBackup(ctx context.Context, linodeID int, backup
 		return NewError(err)
 	}
 	body := string(o)
-	e, err := c.InstanceSnapshots.endpointWithID(linodeID)
+	e, err := c.InstanceSnapshots.endpointWithParams(linodeID)
 	if err != nil {
 		return err
 	}

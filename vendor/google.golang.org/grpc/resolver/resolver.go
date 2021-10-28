@@ -85,12 +85,19 @@ const (
 	Backend AddressType = iota
 	// GRPCLB indicates the address is for a grpclb load balancer.
 	//
-	// Deprecated: use Attributes in Address instead.
+	// Deprecated: to select the GRPCLB load balancing policy, use a service
+	// config with a corresponding loadBalancingConfig.  To supply balancer
+	// addresses to the GRPCLB load balancing policy, set State.Attributes
+	// using balancer/grpclb/state.Set.
 	GRPCLB
 )
 
 // Address represents a server the client connects to.
-// This is the EXPERIMENTAL API and may be changed or extended in the future.
+//
+// Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
 type Address struct {
 	// Addr is the server address on which a connection will be established.
 	Addr string
@@ -123,11 +130,6 @@ type Address struct {
 	// Deprecated: use Attributes instead.
 	Metadata interface{}
 }
-
-// BuildOption is a type alias of BuildOptions for legacy reasons.
-//
-// Deprecated: use BuildOptions instead.
-type BuildOption = BuildOptions
 
 // BuildOptions includes additional information for the builder to create
 // the resolver.
@@ -179,7 +181,7 @@ type State struct {
 // gRPC to add new methods to this interface.
 type ClientConn interface {
 	// UpdateState updates the state of the ClientConn appropriately.
-	UpdateState(State)
+	UpdateState(State) error
 	// ReportError notifies the ClientConn that the Resolver encountered an
 	// error.  The ClientConn will notify the load balancer and begin calling
 	// ResolveNow on the Resolver with exponential backoff.
@@ -234,11 +236,6 @@ type Builder interface {
 	// Scheme is defined at https://github.com/grpc/grpc/blob/master/doc/naming.md.
 	Scheme() string
 }
-
-// ResolveNowOption is a type alias of ResolveNowOptions for legacy reasons.
-//
-// Deprecated: use ResolveNowOptions instead.
-type ResolveNowOption = ResolveNowOptions
 
 // ResolveNowOptions includes additional information for ResolveNow.
 type ResolveNowOptions struct{}

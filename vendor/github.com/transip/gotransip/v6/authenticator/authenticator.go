@@ -205,7 +205,7 @@ func (a *Authenticator) getNonce() (string, error) {
 
 // getAuthRequest returns a rest.Request filled with a new AuthRequest
 func (a *Authenticator) getAuthRequest() (rest.Request, error) {
-	labelPostFix := time.Now().Unix()
+	labelPostFix := time.Now().UnixNano()
 
 	nonce, err := a.getNonce()
 	if err != nil {

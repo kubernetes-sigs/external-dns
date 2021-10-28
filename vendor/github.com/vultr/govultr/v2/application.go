@@ -24,6 +24,9 @@ type Application struct {
 	Name       string `json:"name"`
 	ShortName  string `json:"short_name"`
 	DeployName string `json:"deploy_name"`
+	Type       string `json:"type"`
+	Vendor     string `json:"vendor"`
+	ImageID    string `json:"image_id"`
 }
 
 type applicationBase struct {

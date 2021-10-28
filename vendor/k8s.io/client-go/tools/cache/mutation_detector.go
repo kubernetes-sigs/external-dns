@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -99,7 +99,7 @@ func (d *defaultCacheMutationDetector) Run(stopCh <-chan struct{}) {
 	for {
 		if d.lastRotated.IsZero() {
 			d.lastRotated = time.Now()
-		} else if time.Now().Sub(d.lastRotated) > d.retainDuration {
+		} else if time.Since(d.lastRotated) > d.retainDuration {
 			d.retainedCachedObjs = d.cachedObjs
 			d.cachedObjs = nil
 			d.lastRotated = time.Now()

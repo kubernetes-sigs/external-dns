@@ -236,7 +236,6 @@ func (resp *EventsPagedResponse) appendData(r *EventsPagedResponse) {
 func (c *Client) ListEvents(ctx context.Context, opts *ListOptions) ([]Event, error) {
 	response := EventsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +252,6 @@ func (c *Client) GetEvent(ctx context.Context, id int) (*Event, error) {
 
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := c.R(ctx).SetResult(&Event{}).Get(e)
-
 	if err != nil {
 		return nil, err
 	}

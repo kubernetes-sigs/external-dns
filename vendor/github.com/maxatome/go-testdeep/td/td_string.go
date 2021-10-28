@@ -34,7 +34,7 @@ func getString(ctx ctxerr.Context, got reflect.Value) (string, *ctxerr.Error) {
 		return got.String(), nil
 
 	case reflect.Slice:
-		if got.Type().Elem() == uint8Type {
+		if got.Type().Elem() == types.Uint8 {
 			return string(got.Bytes()), nil
 		}
 		fallthrough

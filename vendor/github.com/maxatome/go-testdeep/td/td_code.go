@@ -77,13 +77,21 @@ var _ TestDeep = &tdCode{}
 func Code(fn interface{}) TestDeep {
 	vfn := reflect.ValueOf(fn)
 
+	c := tdCode{
+		base:     newBase(3),
+		function: vfn,
+	}
+
 	if vfn.Kind() != reflect.Func {
-		panic("usage: Code(FUNC)")
+		c.err = ctxerr.OpBadUsage("Code", "(FUNC)", fn, 1, true)
+		return &c
 	}
 
 	fnType := vfn.Type()
 	if fnType.IsVariadic() || fnType.NumIn() != 1 {
-		panic("Code(FUNC): FUNC must take only one argument")
+		c.err = ctxerr.OpBad("Code",
+			"Code(FUNC): FUNC must take only one non-variadic argument")
+		return &c
 	}
 
 	switch fnType.NumOut() {
@@ -97,28 +105,38 @@ func Code(fn interface{}) TestDeep {
 		// (*bool*) or (*bool*, string)
 		if fnType.Out(0).Kind() == reflect.Bool ||
 			// (*error*)
-			(fnType.NumOut() == 1 && fnType.Out(0) == errorInterface) {
-			return &tdCode{
-				base:     newBase(3),
-				function: vfn,
-				argType:  fnType.In(0),
+			(fnType.NumOut() == 1 && fnType.Out(0) == types.Error) {
+			if vfn.IsNil() {
+				c.err = ctxerr.OpBad("Code", "Code(FUNC): FUNC cannot be a nil function")
+				return &c
 			}
+			c.argType = fnType.In(0)
+			return &c
 		}
 	}
 
-	panic("Code(FUNC): FUNC must return bool or (bool, string) or error")
+	c.err = ctxerr.OpBad("Code",
+		"Code(FUNC): FUNC must return bool or (bool, string) or error")
+	return &c
 }
 
 func (c *tdCode) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if c.err != nil {
+		return ctx.CollectError(c.err)
+	}
+
 	if !got.Type().AssignableTo(c.argType) {
-		if ctx.BooleanError {
-			return ctxerr.BooleanError
+		if !ctx.BeLax || !got.Type().ConvertibleTo(c.argType) {
+			if ctx.BooleanError {
+				return ctxerr.BooleanError
+			}
+			return ctx.CollectError(&ctxerr.Error{
+				Message:  "incompatible parameter type",
+				Got:      types.RawString(got.Type().String()),
+				Expected: types.RawString(c.argType.String()),
+			})
 		}
-		return ctx.CollectError(&ctxerr.Error{
-			Message:  "incompatible parameter type",
-			Got:      types.RawString(got.Type().String()),
-			Expected: types.RawString(c.argType.String()),
-		})
+		got = got.Convert(c.argType)
 	}
 
 	// Refuse to override unexported fields access in this case. It is a
@@ -166,9 +184,15 @@ func (c *tdCode) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (c *tdCode) String() string {
+	if c.err != nil {
+		return c.stringError()
+	}
 	return "Code(" + c.function.Type().String() + ")"
 }
 
 func (c *tdCode) TypeBehind() reflect.Type {
+	if c.err != nil {
+		return nil
+	}
 	return c.argType
 }

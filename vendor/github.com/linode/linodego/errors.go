@@ -63,12 +63,13 @@ func coupleAPIErrors(r *resty.Response, err error) (*resty.Response, error) {
 
 		if responseContentType != expectedContentType {
 			msg := fmt.Sprintf(
-				"Unexpected Content-Type: Expected: %v, Received: %v",
+				"Unexpected Content-Type: Expected: %v, Received: %v\nResponse body: %s",
 				expectedContentType,
 				responseContentType,
+				string(r.Body()),
 			)
 
-			return nil, NewError(msg)
+			return nil, Error{Code: r.StatusCode(), Message: msg}
 		}
 
 		apiError, ok := r.Error().(*APIError)

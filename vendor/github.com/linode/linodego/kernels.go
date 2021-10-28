@@ -11,6 +11,7 @@ type LinodeKernel struct {
 	Label        string `json:"label"`
 	Version      string `json:"version"`
 	Architecture string `json:"architecture"`
+	Deprecated   bool   `json:"deprecated"`
 	KVM          bool   `json:"kvm"`
 	XEN          bool   `json:"xen"`
 	PVOPS        bool   `json:"pvops"`

@@ -109,7 +109,6 @@ func (c *Client) UpdateProfile(ctx context.Context, updateOpts ProfileUpdateOpti
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

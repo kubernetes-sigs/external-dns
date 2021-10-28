@@ -20,10 +20,9 @@ type tdKVBase struct {
 }
 
 func (b *tdKVBase) initKVBase(val interface{}) bool {
-	vval := reflect.ValueOf(val)
-	if vval.IsValid() {
-		b.tdSmugglerBase = newSmugglerBase(val, 5)
+	b.tdSmugglerBase = newSmugglerBase(val, 1)
 
+	if vval := reflect.ValueOf(val); vval.IsValid() {
 		if b.isTestDeeper {
 			return true
 		}
@@ -61,13 +60,17 @@ var _ TestDeep = &tdKeys{}
 //   td.Cmp(t, got, td.Keys(td.Bag("c", "a", "b"))) // succeeds
 func Keys(val interface{}) TestDeep {
 	k := tdKeys{}
-	if k.initKVBase(val) {
-		return &k
+	if !k.initKVBase(val) {
+		k.err = ctxerr.OpBadUsage("Keys", "(TESTDEEP_OPERATOR|SLICE)", val, 1, true)
 	}
-	panic("usage: Keys(TESTDEEP_OPERATOR|SLICE)")
+	return &k
 }
 
 func (k *tdKeys) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if k.err != nil {
+		return ctx.CollectError(k.err)
+	}
+
 	if got.Kind() != reflect.Map {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -89,6 +92,9 @@ func (k *tdKeys) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (k *tdKeys) String() string {
+	if k.err != nil {
+		return k.stringError()
+	}
 	if k.isTestDeeper {
 		return "keys: " + k.expectedValue.Interface().(TestDeep).String()
 	}
@@ -120,13 +126,17 @@ var _ TestDeep = &tdValues{}
 //   td.Cmp(t, got, td.Values(td.Bag("c", "a", "b"))) // succeeds
 func Values(val interface{}) TestDeep {
 	v := tdValues{}
-	if v.initKVBase(val) {
-		return &v
+	if !v.initKVBase(val) {
+		v.err = ctxerr.OpBadUsage("Values", "(TESTDEEP_OPERATOR|SLICE)", val, 1, true)
 	}
-	panic("usage: Values(TESTDEEP_OPERATOR|SLICE)")
+	return &v
 }
 
 func (v *tdValues) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if v.err != nil {
+		return ctx.CollectError(v.err)
+	}
+
 	if got.Kind() != reflect.Map {
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
@@ -148,6 +158,9 @@ func (v *tdValues) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 }
 
 func (v *tdValues) String() string {
+	if v.err != nil {
+		return v.stringError()
+	}
 	if v.isTestDeeper {
 		return "values: " + v.expectedValue.Interface().(TestDeep).String()
 	}

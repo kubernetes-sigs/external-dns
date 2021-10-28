@@ -107,7 +107,6 @@ func (resp *OAuthClientsPagedResponse) appendData(r *OAuthClientsPagedResponse) 
 func (c *Client) ListOAuthClients(ctx context.Context, opts *ListOptions) ([]OAuthClient, error) {
 	response := OAuthClientsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,6 @@ func (c *Client) GetOAuthClient(ctx context.Context, id string) (*OAuthClient, e
 
 	e = fmt.Sprintf("%s/%s", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&OAuthClient{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,6 @@ func (c *Client) CreateOAuthClient(ctx context.Context, createOpts OAuthClientCr
 	var body string
 
 	e, err := c.OAuthClients.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +150,6 @@ func (c *Client) CreateOAuthClient(ctx context.Context, createOpts OAuthClientCr
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +162,6 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 	var body string
 
 	e, err := c.OAuthClients.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +179,6 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

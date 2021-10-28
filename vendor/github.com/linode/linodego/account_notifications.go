@@ -85,7 +85,6 @@ func (resp *NotificationsPagedResponse) appendData(r *NotificationsPagedResponse
 func (c *Client) ListNotifications(ctx context.Context, opts *ListOptions) ([]Notification, error) {
 	response := NotificationsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}

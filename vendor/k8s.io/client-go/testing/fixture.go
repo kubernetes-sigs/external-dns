@@ -19,6 +19,8 @@ package testing
 import (
 	"fmt"
 	"reflect"
+	"sort"
+	"strings"
 	"sync"
 
 	jsonpatch "github.com/evanphx/json-patch"
@@ -197,7 +199,7 @@ type tracker struct {
 	scheme  ObjectScheme
 	decoder runtime.Decoder
 	lock    sync.RWMutex
-	objects map[schema.GroupVersionResource][]runtime.Object
+	objects map[schema.GroupVersionResource]map[types.NamespacedName]runtime.Object
 	// The value type of watchers is a map of which the key is either a namespace or
 	// all/non namespace aka "" and its value is list of fake watchers.
 	// Manipulations on resources will broadcast the notification events into the
@@ -214,7 +216,7 @@ func NewObjectTracker(scheme ObjectScheme, decoder runtime.Decoder) ObjectTracke
 	return &tracker{
 		scheme:   scheme,
 		decoder:  decoder,
-		objects:  make(map[schema.GroupVersionResource][]runtime.Object),
+		objects:  make(map[schema.GroupVersionResource]map[types.NamespacedName]runtime.Object),
 		watchers: make(map[schema.GroupVersionResource]map[string][]*watch.RaceFreeFakeWatcher),
 	}
 }
@@ -282,31 +284,15 @@ func (t *tracker) Get(gvr schema.GroupVersionResource, ns, name string) (runtime
 		return nil, errNotFound
 	}
 
-	var matchingObjs []runtime.Object
-	for _, obj := range objs {
-		acc, err := meta.Accessor(obj)
-		if err != nil {
-			return nil, err
-		}
-		if acc.GetNamespace() != ns {
-			continue
-		}
-		if acc.GetName() != name {
-			continue
-		}
-		matchingObjs = append(matchingObjs, obj)
-	}
-	if len(matchingObjs) == 0 {
+	matchingObj, ok := objs[types.NamespacedName{Namespace: ns, Name: name}]
+	if !ok {
 		return nil, errNotFound
-	}
-	if len(matchingObjs) > 1 {
-		return nil, fmt.Errorf("more than one object matched gvr %s, ns: %q name: %q", gvr, ns, name)
 	}
 
 	// Only one object should match in the tracker if it works
 	// correctly, as Add/Update methods enforce kind/namespace/name
 	// uniqueness.
-	obj := matchingObjs[0].DeepCopyObject()
+	obj := matchingObj.DeepCopyObject()
 	if status, ok := obj.(*metav1.Status); ok {
 		if status.Status != metav1.StatusSuccess {
 			return nil, &errors.StatusError{ErrStatus: *status}
@@ -405,21 +391,22 @@ func (t *tracker) add(gvr schema.GroupVersionResource, obj runtime.Object, ns st
 		return errors.NewBadRequest(msg)
 	}
 
-	for i, existingObj := range t.objects[gvr] {
-		oldMeta, err := meta.Accessor(existingObj)
-		if err != nil {
-			return err
-		}
-		if oldMeta.GetNamespace() == newMeta.GetNamespace() && oldMeta.GetName() == newMeta.GetName() {
-			if replaceExisting {
-				for _, w := range t.getWatches(gvr, ns) {
-					w.Modify(obj)
-				}
-				t.objects[gvr][i] = obj
-				return nil
+	_, ok := t.objects[gvr]
+	if !ok {
+		t.objects[gvr] = make(map[types.NamespacedName]runtime.Object)
+	}
+
+	namespacedName := types.NamespacedName{Namespace: newMeta.GetNamespace(), Name: newMeta.GetName()}
+	if _, ok = t.objects[gvr][namespacedName]; ok {
+		if replaceExisting {
+			for _, w := range t.getWatches(gvr, ns) {
+				// To avoid the object from being accidentally modified by watcher
+				w.Modify(obj.DeepCopyObject())
 			}
-			return errors.NewAlreadyExists(gr, newMeta.GetName())
+			t.objects[gvr][namespacedName] = obj
+			return nil
 		}
+		return errors.NewAlreadyExists(gr, newMeta.GetName())
 	}
 
 	if replaceExisting {
@@ -427,10 +414,11 @@ func (t *tracker) add(gvr schema.GroupVersionResource, obj runtime.Object, ns st
 		return errors.NewNotFound(gr, newMeta.GetName())
 	}
 
-	t.objects[gvr] = append(t.objects[gvr], obj)
+	t.objects[gvr][namespacedName] = obj
 
 	for _, w := range t.getWatches(gvr, ns) {
-		w.Add(obj)
+		// To avoid the object from being accidentally modified by watcher
+		w.Add(obj.DeepCopyObject())
 	}
 
 	return nil
@@ -457,35 +445,28 @@ func (t *tracker) Delete(gvr schema.GroupVersionResource, ns, name string) error
 	t.lock.Lock()
 	defer t.lock.Unlock()
 
-	found := false
-
-	for i, existingObj := range t.objects[gvr] {
-		objMeta, err := meta.Accessor(existingObj)
-		if err != nil {
-			return err
-		}
-		if objMeta.GetNamespace() == ns && objMeta.GetName() == name {
-			obj := t.objects[gvr][i]
-			t.objects[gvr] = append(t.objects[gvr][:i], t.objects[gvr][i+1:]...)
-			for _, w := range t.getWatches(gvr, ns) {
-				w.Delete(obj)
-			}
-			found = true
-			break
-		}
+	objs, ok := t.objects[gvr]
+	if !ok {
+		return errors.NewNotFound(gvr.GroupResource(), name)
 	}
 
-	if found {
-		return nil
+	namespacedName := types.NamespacedName{Namespace: ns, Name: name}
+	obj, ok := objs[namespacedName]
+	if !ok {
+		return errors.NewNotFound(gvr.GroupResource(), name)
 	}
 
-	return errors.NewNotFound(gvr.GroupResource(), name)
+	delete(objs, namespacedName)
+	for _, w := range t.getWatches(gvr, ns) {
+		w.Delete(obj.DeepCopyObject())
+	}
+	return nil
 }
 
 // filterByNamespace returns all objects in the collection that
 // match provided namespace. Empty namespace matches
 // non-namespaced objects.
-func filterByNamespace(objs []runtime.Object, ns string) ([]runtime.Object, error) {
+func filterByNamespace(objs map[types.NamespacedName]runtime.Object, ns string) ([]runtime.Object, error) {
 	var res []runtime.Object
 
 	for _, obj := range objs {
@@ -499,6 +480,15 @@ func filterByNamespace(objs []runtime.Object, ns string) ([]runtime.Object, erro
 		res = append(res, obj)
 	}
 
+	// Sort res to get deterministic order.
+	sort.Slice(res, func(i, j int) bool {
+		acc1, _ := meta.Accessor(res[i])
+		acc2, _ := meta.Accessor(res[j])
+		if acc1.GetNamespace() != acc2.GetNamespace() {
+			return acc1.GetNamespace() < acc2.GetNamespace()
+		}
+		return acc1.GetName() < acc2.GetName()
+	})
 	return res, nil
 }
 
@@ -522,12 +512,8 @@ func (r *SimpleReactor) Handles(action Action) bool {
 	if !verbCovers {
 		return false
 	}
-	resourceCovers := r.Resource == "*" || r.Resource == action.GetResource().Resource
-	if !resourceCovers {
-		return false
-	}
 
-	return true
+	return resourceCovers(r.Resource, action)
 }
 
 func (r *SimpleReactor) React(action Action) (bool, runtime.Object, error) {
@@ -543,12 +529,7 @@ type SimpleWatchReactor struct {
 }
 
 func (r *SimpleWatchReactor) Handles(action Action) bool {
-	resourceCovers := r.Resource == "*" || r.Resource == action.GetResource().Resource
-	if !resourceCovers {
-		return false
-	}
-
-	return true
+	return resourceCovers(r.Resource, action)
 }
 
 func (r *SimpleWatchReactor) React(action Action) (bool, watch.Interface, error) {
@@ -564,14 +545,27 @@ type SimpleProxyReactor struct {
 }
 
 func (r *SimpleProxyReactor) Handles(action Action) bool {
-	resourceCovers := r.Resource == "*" || r.Resource == action.GetResource().Resource
-	if !resourceCovers {
-		return false
-	}
-
-	return true
+	return resourceCovers(r.Resource, action)
 }
 
 func (r *SimpleProxyReactor) React(action Action) (bool, restclient.ResponseWrapper, error) {
 	return r.Reaction(action)
+}
+
+func resourceCovers(resource string, action Action) bool {
+	if resource == "*" {
+		return true
+	}
+
+	if resource == action.GetResource().Resource {
+		return true
+	}
+
+	if index := strings.Index(resource, "/"); index != -1 &&
+		resource[:index] == action.GetResource().Resource &&
+		resource[index+1:] == action.GetSubresource() {
+		return true
+	}
+
+	return false
 }

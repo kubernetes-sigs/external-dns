@@ -24,7 +24,7 @@ type tdIgnore struct {
 // for example. Or comparing a struct with SStruct and wanting to
 // ignore some fields:
 //
-//   td.Cmp(t, td.SStruct(
+//   td.Cmp(t, got, td.SStruct(
 //     Person{
 //       Name: "John Doe",
 //     },

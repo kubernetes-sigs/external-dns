@@ -166,7 +166,6 @@ func (c *Client) CreateNodeBalancer(ctx context.Context, nodebalancer NodeBalanc
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +192,6 @@ func (c *Client) UpdateNodeBalancer(ctx context.Context, id int, updateOpts Node
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}

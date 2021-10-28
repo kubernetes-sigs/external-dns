@@ -1,5 +1,3 @@
-module k8s.io/klog/v2
+module github.com/Raffo/knolog
 
-go 1.13
-
-require github.com/go-logr/logr v0.1.0
+go 1.16

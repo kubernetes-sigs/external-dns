@@ -12,7 +12,7 @@ type InstanceVolumesPagedResponse struct {
 
 // endpoint gets the endpoint URL for InstanceVolume
 func (InstanceVolumesPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.InstanceVolumes.endpointWithID(id)
+	endpoint, err := c.InstanceVolumes.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -28,7 +28,6 @@ func (resp *InstanceVolumesPagedResponse) appendData(r *InstanceVolumesPagedResp
 func (c *Client) ListInstanceVolumes(ctx context.Context, linodeID int, opts *ListOptions) ([]Volume, error) {
 	response := InstanceVolumesPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, linodeID, opts)
-
 	if err != nil {
 		return nil, err
 	}

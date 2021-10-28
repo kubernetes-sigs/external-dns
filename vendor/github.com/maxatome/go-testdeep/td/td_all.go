@@ -32,6 +32,27 @@ var _ TestDeep = &tdAll{}
 //     td.HasSuffix("ar"),
 //   )) // succeeds
 //
+// Note Flatten function can be used to group or reuse some values or
+// operators and so avoid boring and inefficient copies:
+//
+//   stringOps := td.Flatten([]td.TestDeep{td.HasPrefix("fo"), td.HasSuffix("ar")})
+//   td.Cmp(t, "foobar", td.All(
+//     td.Len(6),
+//     stringOps,
+//   )) // succeeds
+//
+// One can do the same with All operator itself:
+//
+//   stringOps := td.All(td.HasPrefix("fo"), td.HasSuffix("ar"))
+//   td.Cmp(t, "foobar", td.All(
+//     td.Len(6),
+//     stringOps,
+//   )) // succeeds
+//
+// but if an error occurs in the nested All, the report is a bit more
+// complex to read due to the nested level. Flatten does not create a
+// new level, its slice is just flattened in the All parameters.
+//
 // TypeBehind method can return a non-nil reflect.Type if all items
 // known non-interface types are equal, or if only interface types
 // are found (mostly issued from Isa()) and they are equal.
@@ -70,5 +91,5 @@ func (a *tdAll) Match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 }
 
 func (a *tdAll) TypeBehind() reflect.Type {
-	return a.uniqTypeBehind()
+	return uniqTypeBehindSlice(a.items)
 }

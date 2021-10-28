@@ -10,7 +10,6 @@ import (
 	"reflect"
 
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
-	"github.com/maxatome/go-testdeep/internal/types"
 )
 
 type tdIsa struct {
@@ -49,19 +48,29 @@ var _ TestDeep = &tdIsa{}
 //
 // TypeBehind method returns the reflect.Type of "model".
 func Isa(model interface{}) TestDeep {
-	modelType := reflect.ValueOf(model).Type()
-
-	return &tdIsa{
+	modelType := reflect.TypeOf(model)
+	i := tdIsa{
 		tdExpectedType: tdExpectedType{
 			base:         newBase(3),
 			expectedType: modelType,
 		},
-		checkImplement: modelType.Kind() == reflect.Ptr &&
-			modelType.Elem().Kind() == reflect.Interface,
 	}
+
+	if modelType == nil {
+		i.err = ctxerr.OpBad("Isa", "Isa(nil) is not allowed. To check an interface, try Isa((*fmt.Stringer)(nil)), for fmt.Stringer for example")
+		return &i
+	}
+
+	i.checkImplement = modelType.Kind() == reflect.Ptr &&
+		modelType.Elem().Kind() == reflect.Interface
+	return &i
 }
 
 func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if i.err != nil {
+		return ctx.CollectError(i.err)
+	}
+
 	gotType := got.Type()
 
 	if gotType == i.expectedType {
@@ -77,9 +86,12 @@ func (i *tdIsa) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	if ctx.BooleanError {
 		return ctxerr.BooleanError
 	}
-	return ctx.CollectError(i.errorTypeMismatch(types.RawString(gotType.String())))
+	return ctx.CollectError(i.errorTypeMismatch(gotType))
 }
 
 func (i *tdIsa) String() string {
+	if i.err != nil {
+		return i.stringError()
+	}
 	return i.expectedType.String()
 }

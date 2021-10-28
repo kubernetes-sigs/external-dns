@@ -104,7 +104,6 @@ func (c *Client) ListFirewalls(ctx context.Context, opts *ListOptions) ([]Firewa
 	response := FirewallsPagedResponse{}
 
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +130,6 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
