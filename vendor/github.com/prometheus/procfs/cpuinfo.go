@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 	"regexp"
 	"strconv"
@@ -1379,6 +1380,10 @@ func parseCPUInfoDummy(_ []byte) ([]CPUInfo, error) { // nolint:unused,deadcode
 	return nil, errors.New("not implemented")
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"regexp"
 	"strconv"
 	"strings"
@@ -1437,7 +1442,7 @@ func parseCPUInfoX86(info []byte) ([]CPUInfo, error) {
 	// find the first "processor" line
 	firstLine := firstNonEmptyLine(scanner)
 	if !strings.HasPrefix(firstLine, "processor") || !strings.Contains(firstLine, ":") {
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	v, err := strconv.ParseUint(field[1], 0, 32)
@@ -1552,7 +1557,7 @@ func parseCPUInfoARM(info []byte) ([]CPUInfo, error) {
 	firstLine := firstNonEmptyLine(scanner)
 	match, _ := regexp.MatchString("^[Pp]rocessor", firstLine)
 	if !match || !strings.Contains(firstLine, ":") {
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	cpuinfo := []CPUInfo{}
@@ -1616,7 +1621,7 @@ func parseCPUInfoS390X(info []byte) ([]CPUInfo, error) {
 
 	firstLine := firstNonEmptyLine(scanner)
 	if !strings.HasPrefix(firstLine, "vendor_id") || !strings.Contains(firstLine, ":") {
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	cpuinfo := []CPUInfo{}
@@ -1641,7 +1646,7 @@ func parseCPUInfoS390X(info []byte) ([]CPUInfo, error) {
 		if strings.HasPrefix(line, "processor") {
 			match := cpuinfoS390XProcessorRegexp.FindStringSubmatch(line)
 			if len(match) < 2 {
-				return nil, errors.New("Invalid line found in cpuinfo: " + line)
+				return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 			}
 			cpu := commonCPUInfo
 			v, err := strconv.ParseUint(match[1], 0, 32)
@@ -1673,6 +1678,22 @@ func parseCPUInfoS390X(info []byte) ([]CPUInfo, error) {
 				return nil, err
 			}
 			cpuinfo[i].CPUMHz = v
+		case "physical id":
+			cpuinfo[i].PhysicalID = field[1]
+		case "core id":
+			cpuinfo[i].CoreID = field[1]
+		case "cpu cores":
+			v, err := strconv.ParseUint(field[1], 0, 32)
+			if err != nil {
+				return nil, err
+			}
+			cpuinfo[i].CPUCores = uint(v)
+		case "siblings":
+			v, err := strconv.ParseUint(field[1], 0, 32)
+			if err != nil {
+				return nil, err
+			}
+			cpuinfo[i].Siblings = uint(v)
 		}
 	}
 
@@ -1685,7 +1706,7 @@ func parseCPUInfoMips(info []byte) ([]CPUInfo, error) {
 	// find the first "processor" line
 	firstLine := firstNonEmptyLine(scanner)
 	if !strings.HasPrefix(firstLine, "system type") || !strings.Contains(firstLine, ":") {
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	cpuinfo := []CPUInfo{}
@@ -1727,7 +1748,7 @@ func parseCPUInfoPPC(info []byte) ([]CPUInfo, error) {
 
 	firstLine := firstNonEmptyLine(scanner)
 	if !strings.HasPrefix(firstLine, "processor") || !strings.Contains(firstLine, ":") {
-		return nil, errors.New("invalid cpuinfo file: " + firstLine)
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
 	}
 	field := strings.SplitN(firstLine, ": ", 2)
 	v, err := strconv.ParseUint(field[1], 0, 32)
@@ -1766,6 +1787,50 @@ func parseCPUInfoPPC(info []byte) ([]CPUInfo, error) {
 	}
 	return cpuinfo, nil
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func parseCPUInfoRISCV(info []byte) ([]CPUInfo, error) {
+	scanner := bufio.NewScanner(bytes.NewReader(info))
+
+	firstLine := firstNonEmptyLine(scanner)
+	if !strings.HasPrefix(firstLine, "processor") || !strings.Contains(firstLine, ":") {
+		return nil, fmt.Errorf("invalid cpuinfo file: %q", firstLine)
+	}
+	field := strings.SplitN(firstLine, ": ", 2)
+	v, err := strconv.ParseUint(field[1], 0, 32)
+	if err != nil {
+		return nil, err
+	}
+	firstcpu := CPUInfo{Processor: uint(v)}
+	cpuinfo := []CPUInfo{firstcpu}
+	i := 0
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if !strings.Contains(line, ":") {
+			continue
+		}
+		field := strings.SplitN(line, ": ", 2)
+		switch strings.TrimSpace(field[0]) {
+		case "processor":
+			v, err := strconv.ParseUint(field[1], 0, 32)
+			if err != nil {
+				return nil, err
+			}
+			i = int(v)
+			cpuinfo = append(cpuinfo, CPUInfo{}) // start of the next processor
+			cpuinfo[i].Processor = uint(v)
+		case "hart":
+			cpuinfo[i].CoreID = field[1]
+		case "isa":
+			cpuinfo[i].ModelName = field[1]
+		}
+	}
+	return cpuinfo, nil
+}
+
+func parseCPUInfoDummy(_ []byte) ([]CPUInfo, error) { // nolint:unused,deadcode
+	return nil, errors.New("not implemented")
 }
 
 // firstNonEmptyLine advances the scanner to the first non-empty line

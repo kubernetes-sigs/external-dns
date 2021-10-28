@@ -248,6 +248,7 @@ func (k *ASRep) DecryptEncPart(c *credentials.Credentials) (types.EncryptionKey,
 func (k *ASRep) Verify(cfg *config.Config, creds *credentials.Credentials, asReq ASReq) (bool, error) {
 	//Ref RFC 4120 Section 3.1.5
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if !k.CName.Equal(asReq.ReqBody.CName) {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", asReq.ReqBody.CName, k.CName)
 	}
@@ -324,12 +325,12 @@ func (k *TGSRep) Verify(cfg *config.Config, tgsReq TGSReq) (bool, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if k.CName.NameType != asReq.ReqBody.CName.NameType || k.CName.NameString == nil {
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if k.CName.NameType != asReq.ReqBody.CName.NameType || k.CName.NameString == nil {
+=======
+	if !k.CName.Equal(asReq.ReqBody.CName) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", asReq.ReqBody.CName, k.CName)
-	}
-	for i := range k.CName.NameString {
-		if k.CName.NameString[i] != asReq.ReqBody.CName.NameString[i] {
-			return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", asReq.ReqBody.CName, k.CName)
-		}
 	}
 	if k.CRealm != asReq.ReqBody.Realm {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "CRealm in response does not match what was requested. Requested: %s; Reply: %s", asReq.ReqBody.Realm, k.CRealm)
@@ -341,14 +342,8 @@ func (k *TGSRep) Verify(cfg *config.Config, tgsReq TGSReq) (bool, error) {
 	if k.DecryptedEncPart.Nonce != asReq.ReqBody.Nonce {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "possible replay attack, nonce in response does not match that in request")
 	}
-	if k.DecryptedEncPart.SName.NameType != asReq.ReqBody.SName.NameType || k.DecryptedEncPart.SName.NameString == nil {
+	if !k.DecryptedEncPart.SName.Equal(asReq.ReqBody.SName) {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "SName in response does not match what was requested. Requested: %v; Reply: %v", asReq.ReqBody.SName, k.DecryptedEncPart.SName)
-	}
-	//TODO is there something wrong here...>
-	for i := range k.CName.NameString {
-		if k.DecryptedEncPart.SName.NameString[i] != asReq.ReqBody.SName.NameString[i] {
-			return false, krberror.NewErrorf(krberror.KRBMsgError, "SName in response does not match what was requested. Requested: %+v; Reply: %+v", asReq.ReqBody.SName, k.DecryptedEncPart.SName)
-		}
 	}
 	if k.DecryptedEncPart.SRealm != asReq.ReqBody.Realm {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "SRealm in response does not match what was requested. Requested: %s; Reply: %s", asReq.ReqBody.Realm, k.DecryptedEncPart.SRealm)
@@ -405,6 +400,7 @@ func (k *TGSRep) DecryptEncPart(key types.EncryptionKey) error {
 
 // Verify checks the validity of the TGS_REP message.
 func (k *TGSRep) Verify(cfg *config.Config, tgsReq TGSReq) (bool, error) {
+<<<<<<< HEAD
 	if k.CName.NameType != tgsReq.ReqBody.CName.NameType || k.CName.NameString == nil {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "CName type in response does not match what was requested. Requested: %+v; Reply: %+v", tgsReq.ReqBody.CName, k.CName)
 	}
@@ -413,6 +409,18 @@ func (k *TGSRep) Verify(cfg *config.Config, tgsReq TGSReq) (bool, error) {
 			return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", tgsReq.ReqBody.CName, k.CName)
 		}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if k.CName.NameType != tgsReq.ReqBody.CName.NameType || k.CName.NameString == nil {
+		return false, krberror.NewErrorf(krberror.KRBMsgError, "CName type in response does not match what was requested. Requested: %+v; Reply: %+v", tgsReq.ReqBody.CName, k.CName)
+	}
+	for i := range k.CName.NameString {
+		if k.CName.NameString[i] != tgsReq.ReqBody.CName.NameString[i] {
+			return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", tgsReq.ReqBody.CName, k.CName)
+		}
+=======
+	if !k.CName.Equal(tgsReq.ReqBody.CName) {
+		return false, krberror.NewErrorf(krberror.KRBMsgError, "CName in response does not match what was requested. Requested: %+v; Reply: %+v", tgsReq.ReqBody.CName, k.CName)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	if k.Ticket.Realm != tgsReq.ReqBody.Realm {
 		return false, krberror.NewErrorf(krberror.KRBMsgError, "realm in response ticket does not match what was requested. Requested: %s; Reply: %s", tgsReq.ReqBody.Realm, k.Ticket.Realm)

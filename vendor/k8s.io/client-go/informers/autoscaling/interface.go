@@ -21,6 +21,7 @@ package autoscaling
 import (
 	v1 "k8s.io/client-go/informers/autoscaling/v1"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	v2 "k8s.io/client-go/informers/autoscaling/v2"
 	v2beta1 "k8s.io/client-go/informers/autoscaling/v2beta1"
 	v2beta2 "k8s.io/client-go/informers/autoscaling/v2beta2"
@@ -60,6 +61,10 @@ func (g *group) V2() v2.Interface {
 	return v2.New(g.factory, g.namespace, g.tweakListOptions)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	v2 "k8s.io/client-go/informers/autoscaling/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	v2beta1 "k8s.io/client-go/informers/autoscaling/v2beta1"
 	v2beta2 "k8s.io/client-go/informers/autoscaling/v2beta2"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
@@ -69,6 +74,8 @@ func (g *group) V2() v2.Interface {
 type Interface interface {
 	// V1 provides access to shared informers for resources in V1.
 	V1() v1.Interface
+	// V2 provides access to shared informers for resources in V2.
+	V2() v2.Interface
 	// V2beta1 provides access to shared informers for resources in V2beta1.
 	V2beta1() v2beta1.Interface
 	// V2beta2 provides access to shared informers for resources in V2beta2.
@@ -90,6 +97,11 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 func (g *group) V1() v1.Interface {
 	return v1.New(g.factory, g.namespace, g.tweakListOptions)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// V2 returns a new v2.Interface.
+func (g *group) V2() v2.Interface {
+	return v2.New(g.factory, g.namespace, g.tweakListOptions)
 }
 
 // V2beta1 returns a new v2beta1.Interface.

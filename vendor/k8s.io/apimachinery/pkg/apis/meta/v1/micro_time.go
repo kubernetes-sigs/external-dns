@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 const RFC3339Micro = "2006-01-02T15:04:05.000000Z07:00"
@@ -588,6 +589,11 @@ var _ fuzz.Interface = &MicroTime{}
 =======
 
 	"github.com/google/gofuzz"
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+	"github.com/google/gofuzz"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 const RFC3339Micro = "2006-01-02T15:04:05.000000Z07:00"
@@ -748,6 +754,7 @@ func (t MicroTime) MarshalQueryParameter() (string, error) {
 
 	return t.UTC().Format(RFC3339Micro), nil
 }
+<<<<<<< HEAD
 
 // Fuzz satisfies fuzz.Interface.
 func (t *MicroTime) Fuzz(c fuzz.Continue) {
@@ -762,3 +769,19 @@ func (t *MicroTime) Fuzz(c fuzz.Continue) {
 
 var _ fuzz.Interface = &MicroTime{}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+// Fuzz satisfies fuzz.Interface.
+func (t *MicroTime) Fuzz(c fuzz.Continue) {
+	if t == nil {
+		return
+	}
+	// Allow for about 1000 years of randomness. Accurate to a tenth of
+	// micro second. Leave off nanoseconds because JSON doesn't
+	// represent them so they can't round-trip properly.
+	t.Time = time.Unix(c.Rand.Int63n(1000*365*24*60*60), 1000*c.Rand.Int63n(1000000))
+}
+
+var _ fuzz.Interface = &MicroTime{}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

@@ -22,10 +22,15 @@
 // Go versions prior to 1.4 are disabled because they use a different layout
 // for interfaces which make the implementation of unsafeReflectValue more complex.
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build !js && !appengine && !safe && !disableunsafe && go1.4
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build !js && !appengine && !safe && !disableunsafe && go1.4
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !js,!appengine,!safe,!disableunsafe,go1.4
 
 package dark

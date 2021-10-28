@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || (darwin && !race) || (linux && !race) || (freebsd && !race) || netbsd || openbsd || solaris || dragonfly || zos
 // +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -33,6 +34,12 @@
 =======
 // +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly
+=======
+//go:build aix || (darwin && !race) || (linux && !race) || (freebsd && !race) || netbsd || openbsd || solaris || dragonfly || zos
+// +build aix darwin,!race linux,!race freebsd,!race netbsd openbsd solaris dragonfly zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package unix
 

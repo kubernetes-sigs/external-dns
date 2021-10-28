@@ -119,6 +119,7 @@ type LBFirewallRule struct {
 // SSL represents valid SSL config
 type SSL struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	PrivateKey  string `json:"private_key,omitempty"`
 	Certificate string `json:"certificate,omitempty"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -126,6 +127,13 @@ type SSL struct {
 	PrivateKey  string `json:"ssl_private_key,omitempty"`
 	Certificate string `json:"ssl_certificate,omitempty"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	PrivateKey  string `json:"ssl_private_key,omitempty"`
+	Certificate string `json:"ssl_certificate,omitempty"`
+=======
+	PrivateKey  string `json:"private_key,omitempty"`
+	Certificate string `json:"certificate,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Chain       string `json:"chain,omitempty"`
 }
 

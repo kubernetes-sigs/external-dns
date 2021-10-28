@@ -76,6 +76,7 @@ type Queue interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// operation if that happened before any Add, AddIfNotPresent,
 	// Update, or Delete; otherwise the first batch is empty.
 	HasSynced() bool
@@ -742,6 +743,13 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 =======
 	// operation if that happened before any Add, Update, or Delete;
 	// otherwise the first batch is empty.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// operation if that happened before any Add, Update, or Delete;
+	// otherwise the first batch is empty.
+=======
+	// operation if that happened before any Add, AddIfNotPresent,
+	// Update, or Delete; otherwise the first batch is empty.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	HasSynced() bool
 
 	// Close the queue
@@ -796,9 +804,8 @@ type FIFO struct {
 
 	// Indication the queue is closed.
 	// Used to indicate a queue is closed so a control loop can exit when a queue is empty.
-	// Currently, not used to gate any of CRED operations.
-	closed     bool
-	closedLock sync.Mutex
+	// Currently, not used to gate any of CRUD operations.
+	closed bool
 }
 
 var (
@@ -807,14 +814,14 @@ var (
 
 // Close the queue.
 func (f *FIFO) Close() {
-	f.closedLock.Lock()
-	defer f.closedLock.Unlock()
+	f.lock.Lock()
+	defer f.lock.Unlock()
 	f.closed = true
 	f.cond.Broadcast()
 }
 
 // HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
-// or an Update called first but the first batch of items inserted by Replace() has been popped
+// or the first batch of items inserted by Replace() has been popped.
 func (f *FIFO) HasSynced() bool {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -931,12 +938,9 @@ func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
 
 // IsClosed checks if the queue is closed
 func (f *FIFO) IsClosed() bool {
-	f.closedLock.Lock()
-	defer f.closedLock.Unlock()
-	if f.closed {
-		return true
-	}
-	return false
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return f.closed
 }
 
 // Pop waits until an item is ready and processes it. If multiple items are
@@ -953,8 +957,14 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			// When the queue is empty, invocation of Pop() is blocked until new item is enqueued.
 			// When Close() is called, the f.closed is set and the condition is broadcasted.
 			// Which causes this loop to continue and return from the Pop().
+<<<<<<< HEAD
 			if f.IsClosed() {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			if f.IsClosed() {
+=======
+			if f.closed {
+>>>>>>> 4d7e5ad26 (update vendored files)
 				return nil, ErrFIFOClosed
 			}
 

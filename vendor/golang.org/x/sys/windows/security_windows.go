@@ -629,6 +629,7 @@ func (tml *Tokenmandatorylabel) Size() uint32 {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //sys	isTokenRestricted(tokenHandle Token) (ret bool, err error) [!failretval] = advapi32.IsTokenRestricted
 //sys	OpenProcessToken(process Handle, access uint32, token *Token) (err error) = advapi32.OpenProcessToken
 //sys	OpenThreadToken(thread Handle, access uint32, openAsSelf bool, token *Token) (err error) = advapi32.OpenThreadToken
@@ -2851,6 +2852,10 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//sys	isTokenRestricted(tokenHandle Token) (ret bool, err error) [!failretval] = advapi32.IsTokenRestricted
+>>>>>>> 4d7e5ad26 (update vendored files)
 //sys	OpenProcessToken(process Handle, access uint32, token *Token) (err error) = advapi32.OpenProcessToken
 //sys	OpenThreadToken(thread Handle, access uint32, openAsSelf bool, token *Token) (err error) = advapi32.OpenThreadToken
 //sys	ImpersonateSelf(impersonationlevel uint32) (err error) = advapi32.ImpersonateSelf
@@ -3064,6 +3069,16 @@ func (t Token) IsMember(sid *SID) (bool, error) {
 	return b != 0, nil
 }
 
+// IsRestricted reports whether the access token t is a restricted token.
+func (t Token) IsRestricted() (isRestricted bool, err error) {
+	isRestricted, err = isTokenRestricted(t)
+	if !isRestricted && err == syscall.EINVAL {
+		// If err is EINVAL, this returned ERROR_SUCCESS indicating a non-restricted token.
+		err = nil
+	}
+	return
+}
+
 const (
 	WTS_CONSOLE_CONNECT        = 0x1
 	WTS_CONSOLE_DISCONNECT     = 0x2
@@ -3105,6 +3120,7 @@ type WTS_SESSION_INFO struct {
 //sys WTSQueryUserToken(session uint32, token *Token) (err error) = wtsapi32.WTSQueryUserToken
 //sys WTSEnumerateSessions(handle Handle, reserved uint32, version uint32, sessions **WTS_SESSION_INFO, count *uint32) (err error) = wtsapi32.WTSEnumerateSessionsW
 //sys WTSFreeMemory(ptr uintptr) = wtsapi32.WTSFreeMemory
+//sys WTSGetActiveConsoleSessionId() (sessionID uint32)
 
 type ACL struct {
 	aclRevision byte
@@ -3123,6 +3139,19 @@ type SECURITY_DESCRIPTOR struct {
 	sacl     *ACL
 	dacl     *ACL
 }
+
+type SECURITY_QUALITY_OF_SERVICE struct {
+	Length              uint32
+	ImpersonationLevel  uint32
+	ContextTrackingMode byte
+	EffectiveOnly       byte
+}
+
+// Constants for the ContextTrackingMode field of SECURITY_QUALITY_OF_SERVICE.
+const (
+	SECURITY_STATIC_TRACKING  = 0
+	SECURITY_DYNAMIC_TRACKING = 1
+)
 
 type SecurityAttributes struct {
 	Length             uint32
@@ -3537,7 +3566,11 @@ func (absoluteSD *SECURITY_DESCRIPTOR) ToSelfRelative() (selfRelativeSD *SECURIT
 }
 
 func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() *SECURITY_DESCRIPTOR {
-	sdLen := (int)(selfRelativeSD.Length())
+	sdLen := int(selfRelativeSD.Length())
+	const min = int(unsafe.Sizeof(SECURITY_DESCRIPTOR{}))
+	if sdLen < min {
+		sdLen = min
+	}
 
 	var src []byte
 	h := (*unsafeheader.Slice)(unsafe.Pointer(&src))
@@ -3545,8 +3578,22 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 	h.Len = sdLen
 	h.Cap = sdLen
 
+<<<<<<< HEAD
 	dst := make([]byte, sdLen)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	dst := make([]byte, sdLen)
+=======
+	const psize = int(unsafe.Sizeof(uintptr(0)))
+
+	var dst []byte
+	h = (*unsafeheader.Slice)(unsafe.Pointer(&dst))
+	alloc := make([]uintptr, (sdLen+psize-1)/psize)
+	h.Data = (*unsafeheader.Slice)(unsafe.Pointer(&alloc)).Data
+	h.Len = sdLen
+	h.Cap = sdLen
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	copy(dst, src)
 	return (*SECURITY_DESCRIPTOR)(unsafe.Pointer(&dst[0]))
 }

@@ -439,6 +439,7 @@ Option:
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func packDataOpt(options []EDNS0, msg []byte, off int) (int, error) {
 	for _, el := range options {
 		b, err := el.pack()
@@ -835,6 +836,38 @@ func makeDataOpt(code uint16) EDNS0 {
 	}
 }
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+func makeDataOpt(code uint16) EDNS0 {
+	switch code {
+	case EDNS0NSID:
+		return new(EDNS0_NSID)
+	case EDNS0SUBNET:
+		return new(EDNS0_SUBNET)
+	case EDNS0COOKIE:
+		return new(EDNS0_COOKIE)
+	case EDNS0EXPIRE:
+		return new(EDNS0_EXPIRE)
+	case EDNS0UL:
+		return new(EDNS0_UL)
+	case EDNS0LLQ:
+		return new(EDNS0_LLQ)
+	case EDNS0DAU:
+		return new(EDNS0_DAU)
+	case EDNS0DHU:
+		return new(EDNS0_DHU)
+	case EDNS0N3U:
+		return new(EDNS0_N3U)
+	case EDNS0PADDING:
+		return new(EDNS0_PADDING)
+	default:
+		e := new(EDNS0_LOCAL)
+		e.Code = code
+		return e
+	}
+}
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func packDataOpt(options []EDNS0, msg []byte, off int) (int, error) {
 	for _, el := range options {
 		b, err := el.pack()
@@ -954,6 +987,16 @@ func typeBitMapLen(bitmap []uint16) int {
 func packDataNsec(bitmap []uint16, msg []byte, off int) (int, error) {
 	if len(bitmap) == 0 {
 		return off, nil
+	}
+	if off > len(msg) {
+		return off, &Error{err: "overflow packing nsec"}
+	}
+	toZero := msg[off:]
+	if maxLen := typeBitMapLen(bitmap); maxLen < len(toZero) {
+		toZero = toZero[:maxLen]
+	}
+	for i := range toZero {
+		toZero[i] = 0
 	}
 	var lastwindow, lastlength uint16
 	for _, t := range bitmap {
@@ -1178,6 +1221,8 @@ func unpackDataAplPrefix(msg []byte, off int) (APLPrefix, int, error) {
 	if off+afdlen > len(msg) {
 		return APLPrefix{}, len(msg), &Error{err: "overflow unpacking APL address"}
 	}
+
+	// Address MUST NOT contain trailing zero bytes per RFC3123 Sections 4.1 and 4.2.
 	off += copy(ip, msg[off:off+afdlen])
 	if afdlen > 0 {
 		last := ip[afdlen-1]
@@ -1189,11 +1234,19 @@ func unpackDataAplPrefix(msg []byte, off int) (APLPrefix, int, error) {
 		IP:   ip,
 		Mask: net.CIDRMask(int(prefix), 8*len(ip)),
 	}
+<<<<<<< HEAD
 	network := ipnet.IP.Mask(ipnet.Mask)
 	if !network.Equal(ipnet.IP) {
 		return APLPrefix{}, len(msg), &Error{err: "invalid APL address length"}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 	}
+||||||| parent of 4d7e5ad26 (update vendored files)
+	network := ipnet.IP.Mask(ipnet.Mask)
+	if !network.Equal(ipnet.IP) {
+		return APLPrefix{}, len(msg), &Error{err: "invalid APL address length"}
+	}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	return APLPrefix{
 		Negation: (nlen & 0x80) != 0,

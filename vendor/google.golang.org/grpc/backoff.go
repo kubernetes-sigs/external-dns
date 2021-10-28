@@ -53,6 +53,7 @@ type BackoffConfig struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This type is EXPERIMENTAL and may be changed or removed in a
@@ -85,6 +86,14 @@ type BackoffConfig struct {
 =======
 // This API is EXPERIMENTAL.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// This API is EXPERIMENTAL.
+=======
+// Experimental
+//
+// Notice: This type is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type ConnectParams struct {
 	// Backoff specifies the configuration options for connection backoff.
 	Backoff backoff.Config

@@ -46,6 +46,7 @@ func (ws *randomWriteScheduler) AdjustStream(streamID uint32, priority PriorityP
 
 func (ws *randomWriteScheduler) Push(wr FrameWriteRequest) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if wr.isControl() {
 		ws.zero.push(wr)
 		return
@@ -65,9 +66,16 @@ func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
 =======
 	id := wr.StreamID()
 	if id == 0 {
+||||||| parent of 4d7e5ad26 (update vendored files)
+	id := wr.StreamID()
+	if id == 0 {
+=======
+	if wr.isControl() {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		ws.zero.push(wr)
 		return
 	}
+	id := wr.StreamID()
 	q, ok := ws.sq[id]
 	if !ok {
 		q = ws.queuePool.get()
@@ -77,8 +85,14 @@ func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
 }
 
 func (ws *randomWriteScheduler) Pop() (FrameWriteRequest, bool) {
+<<<<<<< HEAD
 	// Control frames first.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// Control frames first.
+=======
+	// Control and RST_STREAM frames first.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if !ws.zero.empty() {
 		return ws.zero.shift(), true
 	}

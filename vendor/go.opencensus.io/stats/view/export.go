@@ -19,6 +19,7 @@ package view
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Exporter exports the collected records as view data.
 //
 // The ExportView method should return quickly; if an
@@ -176,6 +177,16 @@ var (
 	exporters   = make(map[Exporter]struct{})
 )
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+import "sync"
+
+var (
+	exportersMu sync.RWMutex // guards exporters
+	exporters   = make(map[Exporter]struct{})
+)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 // Exporter exports the collected records as view data.
 //
 // The ExportView method should return quickly; if an
@@ -198,17 +209,23 @@ type Exporter interface {
 //
 // Binaries can register exporters, libraries shouldn't register exporters.
 func RegisterExporter(e Exporter) {
-	exportersMu.Lock()
-	defer exportersMu.Unlock()
-
-	exporters[e] = struct{}{}
+	defaultWorker.RegisterExporter(e)
 }
 
 // UnregisterExporter unregisters an exporter.
 func UnregisterExporter(e Exporter) {
+<<<<<<< HEAD
 	exportersMu.Lock()
 	defer exportersMu.Unlock()
 
 	delete(exporters, e)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	exportersMu.Lock()
+	defer exportersMu.Unlock()
+
+	delete(exporters, e)
+=======
+	defaultWorker.UnregisterExporter(e)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

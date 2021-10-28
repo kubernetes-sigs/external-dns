@@ -13,6 +13,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	libraryVersion  = "6.6.1"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -36,6 +37,11 @@ const (
 =======
 	libraryVersion  = "6.6.0"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	libraryVersion  = "6.6.0"
+=======
+	libraryVersion  = "6.14.0"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	defaultBasePath = "https://api.transip.nl/v6"
 	userAgent       = "go-client-gotransip/" + libraryVersion
 )

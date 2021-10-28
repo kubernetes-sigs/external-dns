@@ -136,6 +136,7 @@ func (c *Client) ListVolumes(ctx context.Context, opts *ListOptions) ([]Volume, 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -500,6 +501,10 @@ func (c *Client) CloneVolume(ctx context.Context, id int, label string) (*Volume
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -539,7 +544,6 @@ func (c *Client) AttachVolume(ctx context.Context, id int, options *VolumeAttach
 		SetResult(&Volume{}).
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -565,7 +569,6 @@ func (c *Client) CreateVolume(ctx context.Context, createOpts VolumeCreateOption
 		SetResult(&Volume{}).
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -593,7 +596,6 @@ func (c *Client) UpdateVolume(ctx context.Context, id int, volume VolumeUpdateOp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -614,8 +616,13 @@ func (c *Client) CloneVolume(ctx context.Context, id int, label string) (*Volume
 		SetResult(&Volume{}).
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

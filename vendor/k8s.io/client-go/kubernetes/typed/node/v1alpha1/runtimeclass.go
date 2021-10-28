@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -549,12 +550,18 @@ func (c *runtimeClasses) Apply(ctx context.Context, runtimeClass *nodev1alpha1.R
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"time"
 
 	v1alpha1 "k8s.io/api/node/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	nodev1alpha1 "k8s.io/client-go/applyconfigurations/node/v1alpha1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -575,6 +582,7 @@ type RuntimeClassInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.RuntimeClassList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.RuntimeClass, err error)
+	Apply(ctx context.Context, runtimeClass *nodev1alpha1.RuntimeClassApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RuntimeClass, err error)
 	RuntimeClassExpansion
 }
 
@@ -691,6 +699,31 @@ func (c *runtimeClasses) Patch(ctx context.Context, name string, pt types.PatchT
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied runtimeClass.
+func (c *runtimeClasses) Apply(ctx context.Context, runtimeClass *nodev1alpha1.RuntimeClassApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RuntimeClass, err error) {
+	if runtimeClass == nil {
+		return nil, fmt.Errorf("runtimeClass provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(runtimeClass)
+	if err != nil {
+		return nil, err
+	}
+	name := runtimeClass.Name
+	if name == nil {
+		return nil, fmt.Errorf("runtimeClass.Name must be provided to Apply")
+	}
+	result = &v1alpha1.RuntimeClass{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Resource("runtimeclasses").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

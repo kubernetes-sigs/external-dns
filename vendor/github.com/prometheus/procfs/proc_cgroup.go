@@ -54,6 +54,7 @@ func parseCgroupString(cgroupStr string) (*Cgroup, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	fields := strings.SplitN(cgroupStr, ":", 3)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -77,6 +78,11 @@ func parseCgroupString(cgroupStr string) (*Cgroup, error) {
 =======
 	fields := strings.Split(cgroupStr, ":")
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	fields := strings.Split(cgroupStr, ":")
+=======
+	fields := strings.SplitN(cgroupStr, ":", 3)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if len(fields) < 3 {
 		return nil, fmt.Errorf("at least 3 fields required, found %d fields in cgroup string: %s", len(fields), cgroupStr)
 	}

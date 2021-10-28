@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 package cmp
@@ -339,6 +340,11 @@ func (opts formatOptions) FormatDiff(v *valueNode, ptrs *pointerReferences) (out
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 4d7e5ad26 (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package cmp
 
@@ -417,7 +423,7 @@ func (opts formatOptions) verbosity() uint {
 	}
 }
 
-const maxVerbosityPreset = 3
+const maxVerbosityPreset = 6
 
 // verbosityPreset modifies the verbosity settings given an index
 // between 0 and maxVerbosityPreset, inclusive.
@@ -438,8 +444,14 @@ func verbosityPreset(opts formatOptions, i int) formatOptions {
 func (opts formatOptions) FormatDiff(v *valueNode, ptrs *pointerReferences) (out textNode) {
 	if opts.DiffMode == diffIdentical {
 		opts = opts.WithVerbosity(1)
+<<<<<<< HEAD
 	} else {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	} else {
+=======
+	} else if opts.verbosity() < 3 {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		opts = opts.WithVerbosity(3)
 	}
 

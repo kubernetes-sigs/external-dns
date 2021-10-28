@@ -23,12 +23,16 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"net/url"
 	"strconv"
 	"time"
@@ -58,6 +62,7 @@ func parseProxyURL(proxyURL string) (*url.URL, error) {
 		return nil, fmt.Errorf("unsupported scheme %q, must be http, https, or socks5", u.Scheme)
 	}
 	return u, nil
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -117,4 +122,7 @@ func ParseTimeout(duration string) (time.Duration, error) {
 	}
 	return 0, fmt.Errorf("Invalid timeout value. Timeout must be a single integer in seconds, or an integer followed by a corresponding time unit (e.g. 1s | 2m | 3h)")
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

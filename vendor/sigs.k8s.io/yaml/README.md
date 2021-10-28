@@ -112,6 +112,7 @@ func main() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	age: 30
 	name: John
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -145,8 +146,17 @@ func main() {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	name: John
+||||||| parent of 4d7e5ad26 (update vendored files)
+	name: John
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	age: 30
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	name: John
+>>>>>>> 4d7e5ad26 (update vendored files)
 	*/
 	j2, err := yaml.YAMLToJSON(y)
 	if err != nil {

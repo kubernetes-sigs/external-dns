@@ -14,6 +14,7 @@ func isErrConnectionReset(err error) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if strings.Contains(err.Error(), "use of closed network connection") ||
 		strings.Contains(err.Error(), "connection reset") ||
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -40,6 +41,12 @@ func isErrConnectionReset(err error) bool {
 =======
 	if strings.Contains(err.Error(), "connection reset") ||
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if strings.Contains(err.Error(), "connection reset") ||
+=======
+	if strings.Contains(err.Error(), "use of closed network connection") ||
+		strings.Contains(err.Error(), "connection reset") ||
+>>>>>>> 4d7e5ad26 (update vendored files)
 		strings.Contains(err.Error(), "broken pipe") {
 		return true
 	}

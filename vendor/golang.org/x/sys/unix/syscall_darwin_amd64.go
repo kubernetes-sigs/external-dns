@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && darwin
 // +build amd64,darwin
 
@@ -168,6 +169,10 @@ func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, 
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build amd64 && darwin
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build amd64,darwin
 
 package unix
@@ -211,7 +216,13 @@ func Syscall9(num, a1, a2, a3, a4, a5, a6, a7, a8, a9 uintptr) (r1, r2 uintptr, 
 //sys	Fstatfs(fd int, stat *Statfs_t) (err error) = SYS_FSTATFS64
 //sys	getfsstat(buf unsafe.Pointer, size uintptr, flags int) (n int, err error) = SYS_GETFSSTAT64
 //sys	Lstat(path string, stat *Stat_t) (err error) = SYS_LSTAT64
+<<<<<<< HEAD
 //sys	ptrace(request int, pid int, addr uintptr, data uintptr) (err error)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+//sys	ptrace(request int, pid int, addr uintptr, data uintptr) (err error)
+=======
+//sys	ptrace1(request int, pid int, addr uintptr, data uintptr) (err error) = SYS_ptrace
+>>>>>>> 4d7e5ad26 (update vendored files)
 //sys	Stat(path string, stat *Stat_t) (err error) = SYS_STAT64
 //sys	Statfs(path string, stat *Statfs_t) (err error) = SYS_STATFS64

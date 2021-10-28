@@ -121,11 +121,16 @@ func (c *FakeCronJobs) UpdateStatus(ctx context.Context, cronJob *batchv1.CronJo
 func (c *FakeCronJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(cronjobsResource, c.ns, name), &batchv1.CronJob{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewDeleteActionWithOptions(cronjobsResource, c.ns, name, opts), &batchv1.CronJob{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(cronjobsResource, c.ns, name, opts), &batchv1.CronJob{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	return err
 }

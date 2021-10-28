@@ -90,6 +90,7 @@ func (k KeyError) Error() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Unwrap implements errors.Unwrap
 func (k KeyError) Unwrap() error {
 	return k.Err
@@ -120,6 +121,14 @@ func (k KeyError) Unwrap() error {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// Unwrap implements errors.Unwrap
+func (k KeyError) Unwrap() error {
+	return k.Err
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // ExplicitKey can be passed to MetaNamespaceKeyFunc if you have the key for
 // the object but not the object itself.
 type ExplicitKey string

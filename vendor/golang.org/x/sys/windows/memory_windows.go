@@ -36,6 +36,7 @@ const (
 	QUOTA_LIMITS_HARDWS_MAX_ENABLE  = 0x00000004
 )
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 type MemoryBasicInformation struct {
 	BaseAddress       uintptr
@@ -50,3 +51,17 @@ type MemoryBasicInformation struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+type MemoryBasicInformation struct {
+	BaseAddress       uintptr
+	AllocationBase    uintptr
+	AllocationProtect uint32
+	PartitionId       uint16
+	RegionSize        uintptr
+	State             uint32
+	Protect           uint32
+	Type              uint32
+}
+>>>>>>> 4d7e5ad26 (update vendored files)

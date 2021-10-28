@@ -49,6 +49,7 @@ linters:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     - nlreturn
     - wrapcheck
     - wastedassign
@@ -91,4 +92,16 @@ linters:
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+    - nlreturn
+    - wrapcheck
+    - wastedassign
+    - goerr113
+    - exhaustivestruct
+    - durationcheck
+    - errorlint
+    - cyclop
+    - godot
+>>>>>>> 4d7e5ad26 (update vendored files)
   fast: false

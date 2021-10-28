@@ -141,11 +141,17 @@ func unmarshalLocationElements(resp *http.Response, v reflect.Value, lowerCaseHe
 				err := unmarshalHeaderMap(m, resp.Header, prefix, lowerCaseHeaderMaps)
 				if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 					return awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 					awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+					awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+=======
+					return awserr.New(request.ErrCodeSerialization, "failed to decode REST response", err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 				}
 			}
 		}

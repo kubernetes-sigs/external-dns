@@ -32,6 +32,7 @@ var _ TestDeep = &tdNone{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Note Flatten function can be used to group or reuse some values or
 // operators and so avoid boring and inefficient copies:
@@ -160,6 +161,16 @@ func (n *tdNone) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// Note Flatten function can be used to group or reuse some values or
+// operators and so avoid boring and inefficient copies:
+//
+//   prime := td.Flatten([]int{1, 2, 3, 5, 7, 11, 13})
+//   even := td.Flatten([]int{2, 4, 6, 8, 10, 12, 14})
+//   td.Cmp(t, 9, td.None(prime, even)) // succeeds
+>>>>>>> 4d7e5ad26 (update vendored files)
 func None(notExpectedValues ...interface{}) TestDeep {
 	return &tdNone{
 		tdList: newList(notExpectedValues...),
@@ -186,8 +197,14 @@ func Not(notExpected interface{}) TestDeep {
 
 func (n *tdNone) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 	for idx, item := range n.items {
+<<<<<<< HEAD
 		if deepValueEqualOK(got, item) {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		if deepValueEqualOK(got, item) {
+=======
+		if deepValueEqualFinalOK(ctx, got, item) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}

@@ -29,6 +29,7 @@ type Application struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Type       string `json:"type"`
 	Vendor     string `json:"vendor"`
 	ImageID    string `json:"image_id"`
@@ -53,6 +54,12 @@ type Application struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	Type       string `json:"type"`
+	Vendor     string `json:"vendor"`
+	ImageID    string `json:"image_id"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 type applicationBase struct {

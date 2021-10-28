@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -105,8 +106,13 @@ func (api *API) UpdateArgoTieredCaching(ctx context.Context, zoneID, settingValu
 		return ArgoFeatureSetting{}, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -133,12 +139,12 @@ type ArgoDetailsResponse struct {
 // ArgoSmartRouting returns the current settings for smart routing.
 //
 // API reference: https://api.cloudflare.com/#argo-smart-routing-get-argo-smart-routing-setting
-func (api *API) ArgoSmartRouting(zoneID string) (ArgoFeatureSetting, error) {
-	uri := "/zones/" + zoneID + "/argo/smart_routing"
+func (api *API) ArgoSmartRouting(ctx context.Context, zoneID string) (ArgoFeatureSetting, error) {
+	uri := fmt.Sprintf("/zones/%s/argo/smart_routing", zoneID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errMakeRequestError)
+		return ArgoFeatureSetting{}, err
 	}
 
 	var argoDetailsResponse ArgoDetailsResponse
@@ -152,16 +158,16 @@ func (api *API) ArgoSmartRouting(zoneID string) (ArgoFeatureSetting, error) {
 // UpdateArgoSmartRouting updates the setting for smart routing.
 //
 // API reference: https://api.cloudflare.com/#argo-smart-routing-patch-argo-smart-routing-setting
-func (api *API) UpdateArgoSmartRouting(zoneID, settingValue string) (ArgoFeatureSetting, error) {
+func (api *API) UpdateArgoSmartRouting(ctx context.Context, zoneID, settingValue string) (ArgoFeatureSetting, error) {
 	if !contains(validSettingValues, settingValue) {
 		return ArgoFeatureSetting{}, errors.New(fmt.Sprintf("invalid setting value '%s'. must be 'on' or 'off'", settingValue))
 	}
 
-	uri := "/zones/" + zoneID + "/argo/smart_routing"
+	uri := fmt.Sprintf("/zones/%s/argo/smart_routing", zoneID)
 
-	res, err := api.makeRequest("PATCH", uri, ArgoFeatureSetting{Value: settingValue})
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, uri, ArgoFeatureSetting{Value: settingValue})
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errMakeRequestError)
+		return ArgoFeatureSetting{}, err
 	}
 
 	var argoDetailsResponse ArgoDetailsResponse
@@ -175,12 +181,12 @@ func (api *API) UpdateArgoSmartRouting(zoneID, settingValue string) (ArgoFeature
 // ArgoTieredCaching returns the current settings for tiered caching.
 //
 // API reference: TBA
-func (api *API) ArgoTieredCaching(zoneID string) (ArgoFeatureSetting, error) {
-	uri := "/zones/" + zoneID + "/argo/tiered_caching"
+func (api *API) ArgoTieredCaching(ctx context.Context, zoneID string) (ArgoFeatureSetting, error) {
+	uri := fmt.Sprintf("/zones/%s/argo/tiered_caching", zoneID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errMakeRequestError)
+		return ArgoFeatureSetting{}, err
 	}
 
 	var argoDetailsResponse ArgoDetailsResponse
@@ -194,17 +200,23 @@ func (api *API) ArgoTieredCaching(zoneID string) (ArgoFeatureSetting, error) {
 // UpdateArgoTieredCaching updates the setting for tiered caching.
 //
 // API reference: TBA
-func (api *API) UpdateArgoTieredCaching(zoneID, settingValue string) (ArgoFeatureSetting, error) {
+func (api *API) UpdateArgoTieredCaching(ctx context.Context, zoneID, settingValue string) (ArgoFeatureSetting, error) {
 	if !contains(validSettingValues, settingValue) {
 		return ArgoFeatureSetting{}, errors.New(fmt.Sprintf("invalid setting value '%s'. must be 'on' or 'off'", settingValue))
 	}
 
-	uri := "/zones/" + zoneID + "/argo/tiered_caching"
+	uri := fmt.Sprintf("/zones/%s/argo/tiered_caching", zoneID)
 
-	res, err := api.makeRequest("PATCH", uri, ArgoFeatureSetting{Value: settingValue})
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, uri, ArgoFeatureSetting{Value: settingValue})
 	if err != nil {
+<<<<<<< HEAD
 		return ArgoFeatureSetting{}, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return ArgoFeatureSetting{}, errors.Wrap(err, errMakeRequestError)
+=======
+		return ArgoFeatureSetting{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	var argoDetailsResponse ArgoDetailsResponse

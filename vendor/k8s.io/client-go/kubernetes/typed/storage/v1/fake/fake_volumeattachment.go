@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -495,6 +496,11 @@ func (c *FakeVolumeAttachments) ApplyStatus(ctx context.Context, volumeAttachmen
 		Invokes(testing.NewRootPatchSubresourceAction(volumeattachmentsResource, *name, types.ApplyPatchType, data, "status"), &storagev1.VolumeAttachment{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	storagev1 "k8s.io/api/storage/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -502,6 +508,7 @@ func (c *FakeVolumeAttachments) ApplyStatus(ctx context.Context, volumeAttachmen
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationsstoragev1 "k8s.io/client-go/applyconfigurations/storage/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -585,7 +592,7 @@ func (c *FakeVolumeAttachments) UpdateStatus(ctx context.Context, volumeAttachme
 // Delete takes name of the volumeAttachment and deletes it. Returns an error if one occurs.
 func (c *FakeVolumeAttachments) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(volumeattachmentsResource, name), &storagev1.VolumeAttachment{})
+		Invokes(testing.NewRootDeleteActionWithOptions(volumeattachmentsResource, name, opts), &storagev1.VolumeAttachment{})
 	return err
 }
 
@@ -602,6 +609,49 @@ func (c *FakeVolumeAttachments) Patch(ctx context.Context, name string, pt types
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(volumeattachmentsResource, name, pt, data, subresources...), &storagev1.VolumeAttachment{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*storagev1.VolumeAttachment), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied volumeAttachment.
+func (c *FakeVolumeAttachments) Apply(ctx context.Context, volumeAttachment *applyconfigurationsstoragev1.VolumeAttachmentApplyConfiguration, opts v1.ApplyOptions) (result *storagev1.VolumeAttachment, err error) {
+	if volumeAttachment == nil {
+		return nil, fmt.Errorf("volumeAttachment provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(volumeAttachment)
+	if err != nil {
+		return nil, err
+	}
+	name := volumeAttachment.Name
+	if name == nil {
+		return nil, fmt.Errorf("volumeAttachment.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(volumeattachmentsResource, *name, types.ApplyPatchType, data), &storagev1.VolumeAttachment{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*storagev1.VolumeAttachment), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeVolumeAttachments) ApplyStatus(ctx context.Context, volumeAttachment *applyconfigurationsstoragev1.VolumeAttachmentApplyConfiguration, opts v1.ApplyOptions) (result *storagev1.VolumeAttachment, err error) {
+	if volumeAttachment == nil {
+		return nil, fmt.Errorf("volumeAttachment provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(volumeAttachment)
+	if err != nil {
+		return nil, err
+	}
+	name := volumeAttachment.Name
+	if name == nil {
+		return nil, fmt.Errorf("volumeAttachment.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(volumeattachmentsResource, *name, types.ApplyPatchType, data, "status"), &storagev1.VolumeAttachment{})
 	if obj == nil {
 		return nil, err
 	}

@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/client-go/pkg/apis/clientauthentication"
 )
@@ -82,9 +83,24 @@ func Convert_clientauthentication_ExecCredentialSpec_To_v1beta1_ExecCredentialSp
 =======
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	clientauthentication "k8s.io/client-go/pkg/apis/clientauthentication"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	conversion "k8s.io/apimachinery/pkg/conversion"
+	clientauthentication "k8s.io/client-go/pkg/apis/clientauthentication"
+=======
+	"k8s.io/apimachinery/pkg/conversion"
+	"k8s.io/client-go/pkg/apis/clientauthentication"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 func Convert_clientauthentication_ExecCredentialSpec_To_v1beta1_ExecCredentialSpec(in *clientauthentication.ExecCredentialSpec, out *ExecCredentialSpec, s conversion.Scope) error {
+<<<<<<< HEAD
 	return nil
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return nil
+=======
+	// This conversion intentionally omits the Response field, which were only
+	// supported in v1alpha1.
+	return autoConvert_clientauthentication_ExecCredentialSpec_To_v1beta1_ExecCredentialSpec(in, out, s)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

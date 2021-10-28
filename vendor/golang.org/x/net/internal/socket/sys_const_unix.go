@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 
@@ -82,6 +83,12 @@ const (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package socket
 
@@ -93,5 +100,12 @@ const (
 	sysAF_INET6  = unix.AF_INET6
 
 	sysSOCK_RAW = unix.SOCK_RAW
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+	sizeofSockaddrInet4 = unix.SizeofSockaddrInet4
+	sizeofSockaddrInet6 = unix.SizeofSockaddrInet6
+>>>>>>> 4d7e5ad26 (update vendored files)
 )

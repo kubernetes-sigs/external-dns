@@ -19,10 +19,15 @@ package pvtz
 type ZoneRequestTop struct {
 	Time         string `json:"Time" xml:"Time"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	BizType      string `json:"BizType" xml:"BizType"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	BizType      string `json:"BizType" xml:"BizType"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	RequestCount int64  `json:"RequestCount" xml:"RequestCount"`
 	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
 	ZoneName     string `json:"ZoneName" xml:"ZoneName"`

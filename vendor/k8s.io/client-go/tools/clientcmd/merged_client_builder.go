@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	restclient "k8s.io/client-go/rest"
@@ -232,6 +233,11 @@ func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, e
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -271,28 +277,31 @@ func NewInteractiveDeferredLoadingClientConfig(loader ClientConfigLoader, overri
 }
 
 func (config *DeferredLoadingClientConfig) createClientConfig() (ClientConfig, error) {
-	if config.clientConfig == nil {
-		config.loadingLock.Lock()
-		defer config.loadingLock.Unlock()
+	config.loadingLock.Lock()
+	defer config.loadingLock.Unlock()
 
-		if config.clientConfig == nil {
-			mergedConfig, err := config.loader.Load()
-			if err != nil {
-				return nil, err
-			}
-
-			var mergedClientConfig ClientConfig
-			if config.fallbackReader != nil {
-				mergedClientConfig = NewInteractiveClientConfig(*mergedConfig, config.overrides.CurrentContext, config.overrides, config.fallbackReader, config.loader)
-			} else {
-				mergedClientConfig = NewNonInteractiveClientConfig(*mergedConfig, config.overrides.CurrentContext, config.overrides, config.loader)
-			}
-
-			config.clientConfig = mergedClientConfig
-		}
+	if config.clientConfig != nil {
+		return config.clientConfig, nil
+	}
+	mergedConfig, err := config.loader.Load()
+	if err != nil {
+		return nil, err
 	}
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	var currentContext string
+	if config.overrides != nil {
+		currentContext = config.overrides.CurrentContext
+	}
+	if config.fallbackReader != nil {
+		config.clientConfig = NewInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.fallbackReader, config.loader)
+	} else {
+		config.clientConfig = NewNonInteractiveClientConfig(*mergedConfig, currentContext, config.overrides, config.loader)
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return config.clientConfig, nil
 }
 

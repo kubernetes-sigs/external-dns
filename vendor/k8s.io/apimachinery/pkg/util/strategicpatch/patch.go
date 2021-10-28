@@ -992,6 +992,7 @@ func validatePatchWithSetOrderList(patchList, setOrderList interface{}, mergeKey
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var nonDeleteList []interface{}
 	var err error
 	if len(mergeKey) > 0 {
@@ -2053,9 +2054,14 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	var nonDeleteList, toDeleteList []interface{}
+||||||| parent of 4d7e5ad26 (update vendored files)
+	var nonDeleteList, toDeleteList []interface{}
+=======
+	var nonDeleteList []interface{}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	var err error
 	if len(mergeKey) > 0 {
-		nonDeleteList, toDeleteList, err = extractToDeleteItems(typedPatchList)
+		nonDeleteList, _, err = extractToDeleteItems(typedPatchList)
 		if err != nil {
 			return err
 		}
@@ -2083,7 +2089,6 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 	if patchIndex < len(nonDeleteList) && setOrderIndex >= len(typedSetOrderList) {
 		return fmt.Errorf("The order in patch list:\n%v\n doesn't match %s list:\n%v\n", typedPatchList, setElementOrderDirectivePrefix, setOrderList)
 	}
-	typedPatchList = append(nonDeleteList, toDeleteList...)
 	return nil
 }
 
@@ -2386,9 +2391,7 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 		// Preserving the null value is useful when we want to send an explicit
 		// delete to the API server.
 		if patchV == nil {
-			if _, ok := original[k]; ok {
-				delete(original, k)
-			}
+			delete(original, k)
 			if mergeOptions.IgnoreUnmatchedNulls {
 				continue
 			}
@@ -2396,16 +2399,26 @@ func mergeMap(original, patch map[string]interface{}, schema LookupPatchMeta, me
 
 		_, ok := original[k]
 		if !ok {
-			// If it's not in the original document, just take the patch value.
-			original[k] = patchV
+			if !isDeleteList {
+				// If it's not in the original document, just take the patch value.
+				original[k] = patchV
+			}
 			continue
 		}
 
 		originalType := reflect.TypeOf(original[k])
 		patchType := reflect.TypeOf(patchV)
 		if originalType != patchType {
+<<<<<<< HEAD
 			original[k] = patchV
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			original[k] = patchV
+=======
+			if !isDeleteList {
+				original[k] = patchV
+			}
+>>>>>>> 4d7e5ad26 (update vendored files)
 			continue
 		}
 		// If they're both maps or lists, recurse into the value.

@@ -114,11 +114,16 @@ func (c *FakeCertificateSigningRequests) UpdateStatus(ctx context.Context, certi
 func (c *FakeCertificateSigningRequests) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewRootDeleteAction(certificatesigningrequestsResource, name), &certificatesv1.CertificateSigningRequest{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewRootDeleteActionWithOptions(certificatesigningrequestsResource, name, opts), &certificatesv1.CertificateSigningRequest{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewRootDeleteActionWithOptions(certificatesigningrequestsResource, name, opts), &certificatesv1.CertificateSigningRequest{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return err
 }
 

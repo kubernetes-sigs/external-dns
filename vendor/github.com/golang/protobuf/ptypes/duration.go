@@ -26,12 +26,16 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // Deprecated: Call the dur.AsDuration and dur.CheckValid methods instead.
 func Duration(dur *durationpb.Duration) (time.Duration, error) {
@@ -54,6 +58,7 @@ func Duration(dur *durationpb.Duration) (time.Duration, error) {
 // DurationProto converts a time.Duration to a durationpb.Duration.
 //
 // Deprecated: Call the durationpb.New function instead.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -125,6 +130,9 @@ func Duration(dur *durationpb.Duration) (time.Duration, error) {
 
 // DurationProto converts a time.Duration to a durationpb.Duration.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func DurationProto(d time.Duration) *durationpb.Duration {
 	nanos := d.Nanoseconds()
 	secs := nanos / 1e9

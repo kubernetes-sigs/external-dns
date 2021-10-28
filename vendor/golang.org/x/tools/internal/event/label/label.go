@@ -97,6 +97,7 @@ func Of64(k Key, v uint64) Label { return Label{key: k, packed: v} }
 func (t Label) Unpack64() uint64 { return t.packed }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 type stringptr unsafe.Pointer
 
 // OfString creates a new label from a key and a string.
@@ -123,6 +124,11 @@ func (t Label) UnpackString() string {
 	return v
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+type stringptr unsafe.Pointer
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // OfString creates a new label from a key and a string.
 // This method is for implementing new key types, label creation should
 // normally be done with the Of method of the key.
@@ -131,7 +137,7 @@ func OfString(k Key, v string) Label {
 	return Label{
 		key:     k,
 		packed:  uint64(hdr.Len),
-		untyped: unsafe.Pointer(hdr.Data),
+		untyped: stringptr(hdr.Data),
 	}
 }
 
@@ -142,10 +148,16 @@ func OfString(k Key, v string) Label {
 func (t Label) UnpackString() string {
 	var v string
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&v))
-	hdr.Data = uintptr(t.untyped.(unsafe.Pointer))
+	hdr.Data = uintptr(t.untyped.(stringptr))
 	hdr.Len = int(t.packed)
+<<<<<<< HEAD
 	return *(*string)(unsafe.Pointer(hdr))
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return *(*string)(unsafe.Pointer(hdr))
+=======
+	return v
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // Valid returns true if the Label is a valid one (it has a key).

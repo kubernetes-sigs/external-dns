@@ -22,6 +22,7 @@ import (
 
 // DescribeTransferDomains invokes the alidns.DescribeTransferDomains API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeTransferDomains(request *DescribeTransferDomainsRequest) (response *DescribeTransferDomainsResponse, err error) {
 	response = CreateDescribeTransferDomainsResponse()
 	err = client.DoAction(request, response)
@@ -102,6 +103,10 @@ func CreateDescribeTransferDomainsRequest() (request *DescribeTransferDomainsReq
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeTransferDomains(request *DescribeTransferDomainsRequest) (response *DescribeTransferDomainsResponse, err error) {
 	response = CreateDescribeTransferDomainsResponse()
 	err = client.DoAction(request, response)
@@ -109,8 +114,6 @@ func (client *Client) DescribeTransferDomains(request *DescribeTransferDomainsRe
 }
 
 // DescribeTransferDomainsWithChan invokes the alidns.DescribeTransferDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTransferDomainsWithChan(request *DescribeTransferDomainsRequest) (<-chan *DescribeTransferDomainsResponse, <-chan error) {
 	responseChan := make(chan *DescribeTransferDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -133,8 +136,6 @@ func (client *Client) DescribeTransferDomainsWithChan(request *DescribeTransferD
 }
 
 // DescribeTransferDomainsWithCallback invokes the alidns.DescribeTransferDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describetransferdomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTransferDomainsWithCallback(request *DescribeTransferDomainsRequest, callback func(response *DescribeTransferDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -182,7 +183,12 @@ func CreateDescribeTransferDomainsRequest() (request *DescribeTransferDomainsReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeTransferDomains", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

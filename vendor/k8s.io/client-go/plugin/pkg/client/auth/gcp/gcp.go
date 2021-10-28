@@ -38,6 +38,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -814,6 +815,11 @@ type commandTokenSource struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 func init() {
@@ -893,7 +899,16 @@ type gcpAuthProvider struct {
 	persister   restclient.AuthProviderConfigPersister
 }
 
+var warnOnce sync.Once
+
 func newGCPAuthProvider(_ string, gcpConfig map[string]string, persister restclient.AuthProviderConfigPersister) (restclient.AuthProvider, error) {
+	// deprecated in v1.22, remove in v1.25
+	// this should be updated to use klog.Warningf in v1.24 to more actively warn consumers
+	warnOnce.Do(func() {
+		klog.V(1).Infof(`WARNING: the gcp auth plugin is deprecated in v1.22+, unavailable in v1.25+; use gcloud instead.
+To learn more, consult https://kubernetes.io/docs/reference/access-authn-authz/authentication/#client-go-credential-plugins`)
+	})
+
 	ts, err := tokenSource(isCmdTokenSource(gcpConfig), gcpConfig)
 	if err != nil {
 		return nil, err
@@ -968,7 +983,7 @@ func (g *gcpAuthProvider) Login() error { return nil }
 type cachedTokenSource struct {
 	lk          sync.Mutex
 	source      oauth2.TokenSource
-	accessToken string
+	accessToken string `datapolicy:"token"`
 	expiry      time.Time
 	persister   restclient.AuthProviderConfigPersister
 	cache       map[string]string
@@ -1049,9 +1064,17 @@ func (t *cachedTokenSource) baseCache() map[string]string {
 type commandTokenSource struct {
 	cmd       string
 	args      []string
+<<<<<<< HEAD
 	tokenKey  string
 	expiryKey string
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	tokenKey  string
+	expiryKey string
+=======
+	tokenKey  string `datapolicy:"token"`
+	expiryKey string `datapolicy:"secret-key"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	timeFmt   string
 }
 

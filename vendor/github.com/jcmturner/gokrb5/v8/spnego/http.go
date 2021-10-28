@@ -117,11 +117,17 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 			req.Body = ioutil.NopCloser(&body)
 		}
 <<<<<<< HEAD
+<<<<<<< HEAD
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return c.Do(req)
 	}
 	return resp, err

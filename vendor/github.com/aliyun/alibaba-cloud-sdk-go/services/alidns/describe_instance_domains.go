@@ -22,6 +22,7 @@ import (
 
 // DescribeInstanceDomains invokes the alidns.DescribeInstanceDomains API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeInstanceDomains(request *DescribeInstanceDomainsRequest) (response *DescribeInstanceDomainsResponse, err error) {
 	response = CreateDescribeInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -100,6 +101,10 @@ func CreateDescribeInstanceDomainsRequest() (request *DescribeInstanceDomainsReq
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describeinstancedomains.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describeinstancedomains.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeInstanceDomains(request *DescribeInstanceDomainsRequest) (response *DescribeInstanceDomainsResponse, err error) {
 	response = CreateDescribeInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -107,8 +112,6 @@ func (client *Client) DescribeInstanceDomains(request *DescribeInstanceDomainsRe
 }
 
 // DescribeInstanceDomainsWithChan invokes the alidns.DescribeInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describeinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeInstanceDomainsWithChan(request *DescribeInstanceDomainsRequest) (<-chan *DescribeInstanceDomainsResponse, <-chan error) {
 	responseChan := make(chan *DescribeInstanceDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -131,8 +134,6 @@ func (client *Client) DescribeInstanceDomainsWithChan(request *DescribeInstanceD
 }
 
 // DescribeInstanceDomainsWithCallback invokes the alidns.DescribeInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describeinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeInstanceDomainsWithCallback(request *DescribeInstanceDomainsRequest, callback func(response *DescribeInstanceDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -178,7 +179,12 @@ func CreateDescribeInstanceDomainsRequest() (request *DescribeInstanceDomainsReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeInstanceDomains", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

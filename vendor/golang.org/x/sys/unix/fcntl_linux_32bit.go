@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (linux && 386) || (linux && arm) || (linux && mips) || (linux && mipsle) || (linux && ppc)
 // +build linux,386 linux,arm linux,mips linux,mipsle linux,ppc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -33,6 +34,12 @@
 =======
 // +build linux,386 linux,arm linux,mips linux,mipsle
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build linux,386 linux,arm linux,mips linux,mipsle
+=======
+//go:build (linux && 386) || (linux && arm) || (linux && mips) || (linux && mipsle) || (linux && ppc)
+// +build linux,386 linux,arm linux,mips linux,mipsle linux,ppc
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package unix
 

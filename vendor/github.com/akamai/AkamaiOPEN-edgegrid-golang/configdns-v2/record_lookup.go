@@ -450,6 +450,7 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case "SVCB":
 		for _, rcontent := range rdata {
 			parts := strings.SplitN(rcontent, " ", 3)
@@ -555,6 +556,39 @@ func ParseRData(rtype string, rdata []string) map[string]interface{} {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	case "SVCB":
+		for _, rcontent := range rdata {
+			parts := strings.SplitN(rcontent, " ", 3)
+			// has to be at least two fields.
+			if len(parts) < 2 {
+				break
+			}
+			fieldMap["svc_priority"], _ = strconv.Atoi(parts[0])
+			fieldMap["target_name"] = parts[1]
+			if len(parts) > 2 {
+				fieldMap["svc_params"] = parts[2]
+			}
+			break
+		}
+
+	case "HTTPS":
+		for _, rcontent := range rdata {
+			parts := strings.SplitN(rcontent, " ", 3)
+			// has to be at least two fields.
+			if len(parts) < 2 {
+				break
+			}
+			fieldMap["svc_priority"], _ = strconv.Atoi(parts[0])
+			fieldMap["target_name"] = parts[1]
+			if len(parts) > 2 {
+				fieldMap["svc_params"] = parts[2]
+			}
+			break
+		}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	default:
 		for _, rcontent := range rdata {
 			newrdata = append(newrdata, rcontent)

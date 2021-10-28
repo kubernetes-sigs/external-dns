@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -549,12 +550,18 @@ func (c *cSIDrivers) Apply(ctx context.Context, cSIDriver *storagev1beta1.CSIDri
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"time"
 
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1beta1 "k8s.io/client-go/applyconfigurations/storage/v1beta1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -575,6 +582,7 @@ type CSIDriverInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.CSIDriverList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CSIDriver, err error)
+	Apply(ctx context.Context, cSIDriver *storagev1beta1.CSIDriverApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CSIDriver, err error)
 	CSIDriverExpansion
 }
 
@@ -691,6 +699,31 @@ func (c *cSIDrivers) Patch(ctx context.Context, name string, pt types.PatchType,
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied cSIDriver.
+func (c *cSIDrivers) Apply(ctx context.Context, cSIDriver *storagev1beta1.CSIDriverApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CSIDriver, err error) {
+	if cSIDriver == nil {
+		return nil, fmt.Errorf("cSIDriver provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(cSIDriver)
+	if err != nil {
+		return nil, err
+	}
+	name := cSIDriver.Name
+	if name == nil {
+		return nil, fmt.Errorf("cSIDriver.Name must be provided to Apply")
+	}
+	result = &v1beta1.CSIDriver{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Resource("csidrivers").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

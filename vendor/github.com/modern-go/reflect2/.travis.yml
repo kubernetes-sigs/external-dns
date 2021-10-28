@@ -6,6 +6,7 @@ go:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   - 1.9.x
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -29,6 +30,11 @@ go:
 =======
   - 1.8.x
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+  - 1.8.x
+=======
+  - 1.9.x
+>>>>>>> 4d7e5ad26 (update vendored files)
   - 1.x
 
 before_install:

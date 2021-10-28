@@ -45,6 +45,7 @@ type Broadcaster struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	watchers     map[int64]*broadcasterWatcher
 	nextWatcher  int64
 	distributing sync.WaitGroup
@@ -840,11 +841,19 @@ func (mw *broadcasterWatcher) ResultChan() <-chan Event {
 	// the incoming channel.
 	lock sync.Mutex
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// TODO: see if this lock is needed now that new watchers go through
+	// the incoming channel.
+	lock sync.Mutex
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	watchers     map[int64]*broadcasterWatcher
 	nextWatcher  int64
 	distributing sync.WaitGroup
 
 	incoming chan Event
+	stopped  chan struct{}
 
 	// How large to make watcher's channel.
 	watchQueueLength int
@@ -864,6 +873,23 @@ func NewBroadcaster(queueLength int, fullChannelBehavior FullChannelBehavior) *B
 	m := &Broadcaster{
 		watchers:            map[int64]*broadcasterWatcher{},
 		incoming:            make(chan Event, incomingQueueLength),
+		stopped:             make(chan struct{}),
+		watchQueueLength:    queueLength,
+		fullChannelBehavior: fullChannelBehavior,
+	}
+	m.distributing.Add(1)
+	go m.loop()
+	return m
+}
+
+// NewLongQueueBroadcaster functions nearly identically to NewBroadcaster,
+// except that the incoming queue is the same size as the outgoing queues
+// (specified by queueLength).
+func NewLongQueueBroadcaster(queueLength int, fullChannelBehavior FullChannelBehavior) *Broadcaster {
+	m := &Broadcaster{
+		watchers:            map[int64]*broadcasterWatcher{},
+		incoming:            make(chan Event, queueLength),
+		stopped:             make(chan struct{}),
 		watchQueueLength:    queueLength,
 		fullChannelBehavior: fullChannelBehavior,
 	}
@@ -892,10 +918,15 @@ func (obj functionFakeRuntimeObject) DeepCopyObject() runtime.Object {
 // The purpose of this terrible hack is so that watchers added after an event
 // won't ever see that event, and will always see any event after they are
 // added.
-func (b *Broadcaster) blockQueue(f func()) {
+func (m *Broadcaster) blockQueue(f func()) {
+	select {
+	case <-m.stopped:
+		return
+	default:
+	}
 	var wg sync.WaitGroup
 	wg.Add(1)
-	b.incoming <- Event{
+	m.incoming <- Event{
 		Type: internalRunFunctionMarker,
 		Object: functionFakeRuntimeObject(func() {
 			defer wg.Done()
@@ -907,12 +938,11 @@ func (b *Broadcaster) blockQueue(f func()) {
 
 // Watch adds a new watcher to the list and returns an Interface for it.
 // Note: new watchers will only receive new events. They won't get an entire history
-// of previous events.
+// of previous events. It will block until the watcher is actually added to the
+// broadcaster.
 func (m *Broadcaster) Watch() Interface {
 	var w *broadcasterWatcher
 	m.blockQueue(func() {
-		m.lock.Lock()
-		defer m.lock.Unlock()
 		id := m.nextWatcher
 		m.nextWatcher++
 		w = &broadcasterWatcher{
@@ -923,18 +953,22 @@ func (m *Broadcaster) Watch() Interface {
 		}
 		m.watchers[id] = w
 	})
+	if w == nil {
+		// The panic here is to be consistent with the previous interface behavior
+		// we are willing to re-evaluate in the future.
+		panic("broadcaster already stopped")
+	}
 	return w
 }
 
 // WatchWithPrefix adds a new watcher to the list and returns an Interface for it. It sends
 // queuedEvents down the new watch before beginning to send ordinary events from Broadcaster.
 // The returned watch will have a queue length that is at least large enough to accommodate
-// all of the items in queuedEvents.
+// all of the items in queuedEvents. It will block until the watcher is actually added to
+// the broadcaster.
 func (m *Broadcaster) WatchWithPrefix(queuedEvents []Event) Interface {
 	var w *broadcasterWatcher
 	m.blockQueue(func() {
-		m.lock.Lock()
-		defer m.lock.Unlock()
 		id := m.nextWatcher
 		m.nextWatcher++
 		length := m.watchQueueLength
@@ -952,26 +986,29 @@ func (m *Broadcaster) WatchWithPrefix(queuedEvents []Event) Interface {
 			w.result <- e
 		}
 	})
+	if w == nil {
+		// The panic here is to be consistent with the previous interface behavior
+		// we are willing to re-evaluate in the future.
+		panic("broadcaster already stopped")
+	}
 	return w
 }
 
 // stopWatching stops the given watcher and removes it from the list.
 func (m *Broadcaster) stopWatching(id int64) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
-	w, ok := m.watchers[id]
-	if !ok {
-		// No need to do anything, it's already been removed from the list.
-		return
-	}
-	delete(m.watchers, id)
-	close(w.result)
+	m.blockQueue(func() {
+		w, ok := m.watchers[id]
+		if !ok {
+			// No need to do anything, it's already been removed from the list.
+			return
+		}
+		delete(m.watchers, id)
+		close(w.result)
+	})
 }
 
 // closeAll disconnects all watchers (presumably in response to a Shutdown call).
 func (m *Broadcaster) closeAll() {
-	m.lock.Lock()
-	defer m.lock.Unlock()
 	for _, w := range m.watchers {
 		close(w.result)
 	}
@@ -985,14 +1022,29 @@ func (m *Broadcaster) Action(action EventType, obj runtime.Object) {
 	m.incoming <- Event{action, obj}
 }
 
+// Action distributes the given event among all watchers, or drops it on the floor
+// if too many incoming actions are queued up.  Returns true if the action was sent,
+// false if dropped.
+func (m *Broadcaster) ActionOrDrop(action EventType, obj runtime.Object) bool {
+	select {
+	case m.incoming <- Event{action, obj}:
+		return true
+	default:
+		return false
+	}
+}
+
 // Shutdown disconnects all watchers (but any queued events will still be distributed).
 // You must not call Action or Watch* after calling Shutdown. This call blocks
 // until all events have been distributed through the outbound channels. Note
 // that since they can be buffered, this means that the watchers might not
 // have received the data yet as it can remain sitting in the buffered
-// channel.
+// channel. It will block until the broadcaster stop request is actually executed
 func (m *Broadcaster) Shutdown() {
-	close(m.incoming)
+	m.blockQueue(func() {
+		close(m.stopped)
+		close(m.incoming)
+	})
 	m.distributing.Wait()
 }
 
@@ -1013,8 +1065,6 @@ func (m *Broadcaster) loop() {
 
 // distribute sends event to all watchers. Blocking.
 func (m *Broadcaster) distribute(event Event) {
-	m.lock.Lock()
-	defer m.lock.Unlock()
 	if m.fullChannelBehavior == DropIfChannelFull {
 		for _, w := range m.watchers {
 			select {
@@ -1048,7 +1098,12 @@ func (mw *broadcasterWatcher) ResultChan() <-chan Event {
 }
 
 // Stop stops watching and removes mw from its list.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// It will block until the watcher stop request is actually executed
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (mw *broadcasterWatcher) Stop() {
 	mw.stop.Do(func() {
 		close(mw.stopped)

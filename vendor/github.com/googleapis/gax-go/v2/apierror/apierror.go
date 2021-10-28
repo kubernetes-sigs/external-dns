@@ -29,11 +29,16 @@
 
 // Package apierror implements a wrapper error for parsing error details from
 <<<<<<< HEAD
+<<<<<<< HEAD
 // API calls. Currently, only errors representing a gRPC status are supported.
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 // API calls. Both HTTP & gRPC status errors are supported.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// API calls. Both HTTP & gRPC status errors are supported.
+>>>>>>> 4d7e5ad26 (update vendored files)
 package apierror
 
 import (

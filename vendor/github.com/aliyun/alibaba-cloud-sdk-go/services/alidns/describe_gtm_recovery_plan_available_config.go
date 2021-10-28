@@ -22,6 +22,7 @@ import (
 
 // DescribeGtmRecoveryPlanAvailableConfig invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfig(request *DescribeGtmRecoveryPlanAvailableConfigRequest) (response *DescribeGtmRecoveryPlanAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,10 @@ func CreateDescribeGtmRecoveryPlanAvailableConfigRequest() (request *DescribeGtm
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfig(request *DescribeGtmRecoveryPlanAvailableConfigRequest) (response *DescribeGtmRecoveryPlanAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -100,8 +105,6 @@ func (client *Client) DescribeGtmRecoveryPlanAvailableConfig(request *DescribeGt
 }
 
 // DescribeGtmRecoveryPlanAvailableConfigWithChan invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithChan(request *DescribeGtmRecoveryPlanAvailableConfigRequest) (<-chan *DescribeGtmRecoveryPlanAvailableConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmRecoveryPlanAvailableConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -124,8 +127,6 @@ func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithChan(request *De
 }
 
 // DescribeGtmRecoveryPlanAvailableConfigWithCallback invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithCallback(request *DescribeGtmRecoveryPlanAvailableConfigRequest, callback func(response *DescribeGtmRecoveryPlanAvailableConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -164,7 +165,12 @@ func CreateDescribeGtmRecoveryPlanAvailableConfigRequest() (request *DescribeGtm
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmRecoveryPlanAvailableConfig", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

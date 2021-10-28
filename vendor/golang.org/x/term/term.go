@@ -8,6 +8,7 @@
 // Putting a terminal into raw mode is the most common requirement:
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // 	oldState, err := term.MakeRaw(0)
 // 	if err != nil {
 // 	        panic(err)
@@ -23,6 +24,16 @@
 //
 // Note that on non-Unix systems os.Stdin.Fd() may not be 0.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// 	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+// 	if err != nil {
+// 	        panic(err)
+// 	}
+// 	defer term.Restore(int(os.Stdin.Fd()), oldState)
+//
+// Note that on non-Unix systems os.Stdin.Fd() may not be 0.
+>>>>>>> 4d7e5ad26 (update vendored files)
 package term
 
 // State contains the state of a terminal.

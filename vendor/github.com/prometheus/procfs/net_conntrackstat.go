@@ -60,6 +60,7 @@ func readConntrackStat(path string) ([]ConntrackStatEntry, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read conntrack stats from %q: %w", path, err)
 	}
 
@@ -370,6 +371,11 @@ func parseConntrackStatField(field string) (uint64, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("failed to read conntrack stats from %q: %v", path, err)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return nil, fmt.Errorf("failed to read conntrack stats from %q: %v", path, err)
+=======
+		return nil, fmt.Errorf("failed to read conntrack stats from %q: %w", path, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return stat, nil
@@ -461,8 +467,14 @@ func parseConntrackStatEntry(fields []string) (*ConntrackStatEntry, error) {
 func parseConntrackStatField(field string) (uint64, error) {
 	val, err := strconv.ParseUint(field, 16, 64)
 	if err != nil {
+<<<<<<< HEAD
 		return 0, fmt.Errorf("couldn't parse \"%s\" field: %s", field, err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return 0, fmt.Errorf("couldn't parse \"%s\" field: %s", field, err)
+=======
+		return 0, fmt.Errorf("couldn't parse %q field: %w", field, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	return val, err
 }

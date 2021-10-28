@@ -22,6 +22,7 @@ import (
 
 // DescribeGtmInstances invokes the alidns.DescribeGtmInstances API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstances(request *DescribeGtmInstancesRequest) (response *DescribeGtmInstancesResponse, err error) {
 	response = CreateDescribeGtmInstancesResponse()
 	err = client.DoAction(request, response)
@@ -102,6 +103,10 @@ func CreateDescribeGtmInstancesRequest() (request *DescribeGtmInstancesRequest) 
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtminstances.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describegtminstances.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeGtmInstances(request *DescribeGtmInstancesRequest) (response *DescribeGtmInstancesResponse, err error) {
 	response = CreateDescribeGtmInstancesResponse()
 	err = client.DoAction(request, response)
@@ -109,8 +114,6 @@ func (client *Client) DescribeGtmInstances(request *DescribeGtmInstancesRequest)
 }
 
 // DescribeGtmInstancesWithChan invokes the alidns.DescribeGtmInstances API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstancesWithChan(request *DescribeGtmInstancesRequest) (<-chan *DescribeGtmInstancesResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstancesResponse, 1)
 	errChan := make(chan error, 1)
@@ -133,8 +136,6 @@ func (client *Client) DescribeGtmInstancesWithChan(request *DescribeGtmInstances
 }
 
 // DescribeGtmInstancesWithCallback invokes the alidns.DescribeGtmInstances API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstances.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstancesWithCallback(request *DescribeGtmInstancesRequest, callback func(response *DescribeGtmInstancesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -168,12 +169,12 @@ type DescribeGtmInstancesRequest struct {
 // DescribeGtmInstancesResponse is the response struct for api DescribeGtmInstances
 type DescribeGtmInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId    string       `json:"RequestId" xml:"RequestId"`
-	PageNumber   int          `json:"PageNumber" xml:"PageNumber"`
-	PageSize     int          `json:"PageSize" xml:"PageSize"`
-	TotalItems   int          `json:"TotalItems" xml:"TotalItems"`
-	TotalPages   int          `json:"TotalPages" xml:"TotalPages"`
-	GtmInstances GtmInstances `json:"GtmInstances" xml:"GtmInstances"`
+	PageSize     int                                `json:"PageSize" xml:"PageSize"`
+	RequestId    string                             `json:"RequestId" xml:"RequestId"`
+	PageNumber   int                                `json:"PageNumber" xml:"PageNumber"`
+	TotalPages   int                                `json:"TotalPages" xml:"TotalPages"`
+	TotalItems   int                                `json:"TotalItems" xml:"TotalItems"`
+	GtmInstances GtmInstancesInDescribeGtmInstances `json:"GtmInstances" xml:"GtmInstances"`
 }
 
 // CreateDescribeGtmInstancesRequest creates a request to invoke DescribeGtmInstances API
@@ -182,7 +183,12 @@ func CreateDescribeGtmInstancesRequest() (request *DescribeGtmInstancesRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstances", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"golang.org/x/term"
 
 	clientauth "k8s.io/client-go/tools/auth"
@@ -270,6 +271,11 @@ func promptForString(field string, r io.Reader, show bool) (result string, err e
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"golang.org/x/crypto/ssh/terminal"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"golang.org/x/crypto/ssh/terminal"
+=======
+	"golang.org/x/term"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	clientauth "k8s.io/client-go/tools/auth"
 )
@@ -336,9 +342,17 @@ func promptForString(field string, r io.Reader, show bool) (result string, err e
 		_, err = fmt.Fscan(r, &result)
 	} else {
 		var data []byte
+<<<<<<< HEAD
 		if terminal.IsTerminal(int(os.Stdin.Fd())) {
 			data, err = terminal.ReadPassword(int(os.Stdin.Fd()))
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			data, err = terminal.ReadPassword(int(os.Stdin.Fd()))
+=======
+		if term.IsTerminal(int(os.Stdin.Fd())) {
+			data, err = term.ReadPassword(int(os.Stdin.Fd()))
+>>>>>>> 4d7e5ad26 (update vendored files)
 			result = string(data)
 		} else {
 			return "", fmt.Errorf("error reading input for %s", field)

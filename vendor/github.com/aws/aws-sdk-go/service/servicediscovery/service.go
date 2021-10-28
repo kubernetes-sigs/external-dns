@@ -50,6 +50,7 @@ const (
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *ServiceDiscovery {
 	c := p.ClientConfig(EndpointsID, cfgs...)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if c.SigningNameDerived || len(c.SigningName) == 0 {
 		c.SigningName = EndpointsID
 		// No Fallback
@@ -76,14 +77,24 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+=======
+	if c.SigningNameDerived || len(c.SigningName) == 0 {
+		c.SigningName = EndpointsID
+		// No Fallback
+	}
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName, c.ResolvedRegion)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // newClient creates, initializes and returns a new service client instance.
-func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *ServiceDiscovery {
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName, resolvedRegion string) *ServiceDiscovery {
 	svc := &ServiceDiscovery{
 		Client: client.New(
 			cfg,
 			metadata.ClientInfo{
+<<<<<<< HEAD
 				ServiceName:   ServiceName,
 				ServiceID:     ServiceID,
 				SigningName:   signingName,
@@ -94,6 +105,28 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				JSONVersion:   "1.1",
 				TargetPrefix:  "Route53AutoNaming_v20170314",
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2017-03-14",
+				JSONVersion:   "1.1",
+				TargetPrefix:  "Route53AutoNaming_v20170314",
+=======
+				ServiceName:    ServiceName,
+				ServiceID:      ServiceID,
+				SigningName:    signingName,
+				SigningRegion:  signingRegion,
+				PartitionID:    partitionID,
+				Endpoint:       endpoint,
+				APIVersion:     "2017-03-14",
+				ResolvedRegion: resolvedRegion,
+				JSONVersion:    "1.1",
+				TargetPrefix:   "Route53AutoNaming_v20170314",
+>>>>>>> 4d7e5ad26 (update vendored files)
 			},
 			handlers,
 		),

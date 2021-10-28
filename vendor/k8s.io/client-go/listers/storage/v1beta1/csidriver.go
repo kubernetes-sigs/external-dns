@@ -31,6 +31,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CSIDriverLister interface {
 	// List lists all CSIDrivers in the indexer.
@@ -74,11 +75,21 @@ type CSIDriverLister interface {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type CSIDriverLister interface {
 	// List lists all CSIDrivers in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CSIDriver, err error)
 	// Get retrieves the CSIDriver from the index for a given name.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Get(name string) (*v1beta1.CSIDriver, error)
 	CSIDriverListerExpansion
 }

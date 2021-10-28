@@ -2,6 +2,7 @@
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5673AF.svg?style=flat-square)](https://godoc.org/github.com/cloudflare/cloudflare-go)
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -226,6 +227,13 @@ Also refer to the
 =======
 [![GoDoc](https://img.shields.io/badge/godoc-reference-5673AF.svg?style=flat-square)](https://godoc.org/github.com/cloudflare/cloudflare-go)
 [![Build Status](https://img.shields.io/travis/cloudflare/cloudflare-go/master.svg?style=flat-square)](https://travis-ci.org/cloudflare/cloudflare-go)
+||||||| parent of 4d7e5ad26 (update vendored files)
+[![GoDoc](https://img.shields.io/badge/godoc-reference-5673AF.svg?style=flat-square)](https://godoc.org/github.com/cloudflare/cloudflare-go)
+[![Build Status](https://img.shields.io/travis/cloudflare/cloudflare-go/master.svg?style=flat-square)](https://travis-ci.org/cloudflare/cloudflare-go)
+=======
+[![Go Reference](https://pkg.go.dev/badge/github.com/cloudflare/cloudflare-go.svg)](https://pkg.go.dev/github.com/cloudflare/cloudflare-go)
+![Test](https://github.com/cloudflare/cloudflare-go/workflows/Test/badge.svg)
+>>>>>>> 4d7e5ad26 (update vendored files)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cloudflare/cloudflare-go?style=flat-square)](https://goreportcard.com/report/github.com/cloudflare/cloudflare-go)
 
 > **Note**: This library is under active development as we expand it to cover
@@ -254,7 +262,7 @@ The current feature list includes:
 * [x] Custom hostnames
 * [x] DNS Records
 * [x] Firewall (partial)
-* [ ] [Keyless SSL](https://blog.cloudflare.com/keyless-ssl-the-nitty-gritty-technical-details/)
+* [x] [Keyless SSL](https://blog.cloudflare.com/keyless-ssl-the-nitty-gritty-technical-details/)
 * [x] [Load Balancing](https://blog.cloudflare.com/introducing-load-balancing-intelligent-failover-with-cloudflare/)
 * [x] [Logpush Jobs](https://developers.cloudflare.com/logs/logpush/)
 * [ ] Organization Administration
@@ -266,6 +274,9 @@ The current feature list includes:
 * [x] Web Application Firewall (WAF)
 * [x] Zone Lockdown and User-Agent Block rules
 * [x] Zones
+* [x] Workers KV
+* [x] Notifications
+* [x] Gateway Locations
 
 Pull Requests are welcome, but please open an issue (or comment in an existing
 issue) to discuss any non-trivial changes before submitting code.
@@ -284,6 +295,7 @@ go get github.com/cloudflare/cloudflare-go
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -293,13 +305,16 @@ import (
 
 func main() {
 	// Construct a new API object
-	api, err := cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
+	api, err := cloudflare.New(os.Getenv("CLOUDFLARE_API_KEY"), os.Getenv("CLOUDFLARE_API_EMAIL"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Most API calls require a Context
+	ctx := context.Background()
+
 	// Fetch user details on the account
-	u, err := api.UserDetails()
+	u, err := api.UserDetails(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -313,7 +328,7 @@ func main() {
 	}
 
 	// Fetch zone details
-	zone, err := api.ZoneDetails(id)
+	zone, err := api.ZoneDetails(ctx, id)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -323,8 +338,14 @@ func main() {
 ```
 
 Also refer to the
+<<<<<<< HEAD
 [API documentation](https://godoc.org/github.com/cloudflare/cloudflare-go) for
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+[API documentation](https://godoc.org/github.com/cloudflare/cloudflare-go) for
+=======
+[API documentation](https://pkg.go.dev/github.com/cloudflare/cloudflare-go) for
+>>>>>>> 4d7e5ad26 (update vendored files)
 how to use this package in-depth.
 
 # License

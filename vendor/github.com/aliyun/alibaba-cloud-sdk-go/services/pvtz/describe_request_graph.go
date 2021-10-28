@@ -22,6 +22,7 @@ import (
 
 // DescribeRequestGraph invokes the pvtz.DescribeRequestGraph API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeRequestGraph(request *DescribeRequestGraphRequest) (response *DescribeRequestGraphResponse, err error) {
 	response = CreateDescribeRequestGraphResponse()
 	err = client.DoAction(request, response)
@@ -99,6 +100,10 @@ func CreateDescribeRequestGraphRequest() (request *DescribeRequestGraphRequest) 
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeRequestGraph(request *DescribeRequestGraphRequest) (response *DescribeRequestGraphResponse, err error) {
 	response = CreateDescribeRequestGraphResponse()
 	err = client.DoAction(request, response)
@@ -106,8 +111,6 @@ func (client *Client) DescribeRequestGraph(request *DescribeRequestGraphRequest)
 }
 
 // DescribeRequestGraphWithChan invokes the pvtz.DescribeRequestGraph API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRequestGraphWithChan(request *DescribeRequestGraphRequest) (<-chan *DescribeRequestGraphResponse, <-chan error) {
 	responseChan := make(chan *DescribeRequestGraphResponse, 1)
 	errChan := make(chan error, 1)
@@ -130,8 +133,6 @@ func (client *Client) DescribeRequestGraphWithChan(request *DescribeRequestGraph
 }
 
 // DescribeRequestGraphWithCallback invokes the pvtz.DescribeRequestGraph API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describerequestgraph.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeRequestGraphWithCallback(request *DescribeRequestGraphRequest, callback func(response *DescribeRequestGraphResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -155,8 +156,10 @@ type DescribeRequestGraphRequest struct {
 	*requests.RpcRequest
 	StartTimestamp requests.Integer `position:"Query" name:"StartTimestamp"`
 	EndTimestamp   requests.Integer `position:"Query" name:"EndTimestamp"`
+	BizType        string           `position:"Query" name:"BizType"`
 	VpcId          string           `position:"Query" name:"VpcId"`
 	UserClientIp   string           `position:"Query" name:"UserClientIp"`
+	BizId          string           `position:"Query" name:"BizId"`
 	ZoneId         string           `position:"Query" name:"ZoneId"`
 	Lang           string           `position:"Query" name:"Lang"`
 }
@@ -174,7 +177,12 @@ func CreateDescribeRequestGraphRequest() (request *DescribeRequestGraphRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeRequestGraph", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

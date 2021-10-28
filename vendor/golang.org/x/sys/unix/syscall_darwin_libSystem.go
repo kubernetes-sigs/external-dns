@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin && go1.12
 // +build darwin,go1.12
 
@@ -126,11 +127,15 @@ func funcPC(f func()) uintptr {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build darwin && go1.12
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build darwin,go1.12
 
 package unix
 
-import "unsafe"
+import _ "unsafe"
 
 // Implemented in the runtime package (runtime/sys_darwin.go)
 func syscall_syscall(fn, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
@@ -148,6 +153,7 @@ func syscall_syscallPtr(fn, a1, a2, a3 uintptr) (r1, r2 uintptr, err Errno)
 //go:linkname syscall_rawSyscall syscall.rawSyscall
 //go:linkname syscall_rawSyscall6 syscall.rawSyscall6
 //go:linkname syscall_syscallPtr syscall.syscallPtr
+<<<<<<< HEAD
 
 // Find the entry point for f. See comments in runtime/proc.go for the
 // function of the same name.
@@ -156,3 +162,13 @@ func funcPC(f func()) uintptr {
 	return **(**uintptr)(unsafe.Pointer(&f))
 }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+// Find the entry point for f. See comments in runtime/proc.go for the
+// function of the same name.
+//go:nosplit
+func funcPC(f func()) uintptr {
+	return **(**uintptr)(unsafe.Pointer(&f))
+}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

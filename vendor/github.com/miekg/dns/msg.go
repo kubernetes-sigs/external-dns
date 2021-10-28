@@ -625,6 +625,7 @@ func UnpackRRWithHeader(h RR_Header, msg []byte, off int) (rr RR, off1 int, err 
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if off < 0 || off > len(msg) {
 		return &h, off, &Error{err: "bad off"}
 	}
@@ -937,9 +938,23 @@ func (dns *Msg) String() string {
 =======
 	if noRdata(h) {
 		return rr, off, nil
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if noRdata(h) {
+		return rr, off, nil
+=======
+	if off < 0 || off > len(msg) {
+		return &h, off, &Error{err: "bad off"}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	end := off + int(h.Rdlength)
+	if end < off || end > len(msg) {
+		return &h, end, &Error{err: "bad rdlength"}
+	}
+
+	if noRdata(h) {
+		return rr, off, nil
+	}
 
 	off, err = rr.unpack(msg, off)
 	if err != nil {
@@ -1046,7 +1061,7 @@ func (dns *Msg) packBufferWithCompressionMap(buf []byte, compression compression
 	}
 
 	// Set extended rcode unconditionally if we have an opt, this will allow
-	// reseting the extended rcode bits if they need to.
+	// resetting the extended rcode bits if they need to.
 	if opt := dns.IsEdns0(); opt != nil {
 		opt.SetExtendedRcode(uint16(dns.Rcode))
 	} else if dns.Rcode > 0xF {
@@ -1205,6 +1220,11 @@ func (dns *Msg) String() string {
 	s += "ANSWER: " + strconv.Itoa(len(dns.Answer)) + ", "
 	s += "AUTHORITY: " + strconv.Itoa(len(dns.Ns)) + ", "
 	s += "ADDITIONAL: " + strconv.Itoa(len(dns.Extra)) + "\n"
+	opt := dns.IsEdns0()
+	if opt != nil {
+		// OPT PSEUDOSECTION
+		s += opt.String() + "\n"
+	}
 	if len(dns.Question) > 0 {
 		s += "\n;; QUESTION SECTION:\n"
 		for _, r := range dns.Question {
@@ -1227,11 +1247,17 @@ func (dns *Msg) String() string {
 			}
 		}
 	}
-	if len(dns.Extra) > 0 {
+	if len(dns.Extra) > 0 && (opt == nil || len(dns.Extra) > 1) {
 		s += "\n;; ADDITIONAL SECTION:\n"
 		for _, r := range dns.Extra {
+<<<<<<< HEAD
 			if r != nil {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			if r != nil {
+=======
+			if r != nil && r.Header().Rrtype != TypeOPT {
+>>>>>>> 4d7e5ad26 (update vendored files)
 				s += r.String() + "\n"
 			}
 		}

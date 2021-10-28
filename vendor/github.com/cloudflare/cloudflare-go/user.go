@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"net/http"
@@ -107,7 +108,12 @@ func (api *API) UserBillingProfile(ctx context.Context) (UserBillingProfile, err
 		return UserBillingProfile{}, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -167,11 +173,11 @@ type UserBillingProfile struct {
 // UserDetails provides information about the logged-in user.
 //
 // API reference: https://api.cloudflare.com/#user-user-details
-func (api *API) UserDetails() (User, error) {
+func (api *API) UserDetails(ctx context.Context) (User, error) {
 	var r UserResponse
-	res, err := api.makeRequest("GET", "/user", nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, "/user", nil)
 	if err != nil {
-		return User{}, errors.Wrap(err, errMakeRequestError)
+		return User{}, err
 	}
 
 	err = json.Unmarshal(res, &r)
@@ -185,11 +191,11 @@ func (api *API) UserDetails() (User, error) {
 // UpdateUser updates the properties of the given user.
 //
 // API reference: https://api.cloudflare.com/#user-update-user
-func (api *API) UpdateUser(user *User) (User, error) {
+func (api *API) UpdateUser(ctx context.Context, user *User) (User, error) {
 	var r UserResponse
-	res, err := api.makeRequest("PATCH", "/user", user)
+	res, err := api.makeRequestContext(ctx, http.MethodPatch, "/user", user)
 	if err != nil {
-		return User{}, errors.Wrap(err, errMakeRequestError)
+		return User{}, err
 	}
 
 	err = json.Unmarshal(res, &r)
@@ -203,12 +209,18 @@ func (api *API) UpdateUser(user *User) (User, error) {
 // UserBillingProfile returns the billing profile of the user.
 //
 // API reference: https://api.cloudflare.com/#user-billing-profile
-func (api *API) UserBillingProfile() (UserBillingProfile, error) {
+func (api *API) UserBillingProfile(ctx context.Context) (UserBillingProfile, error) {
 	var r userBillingProfileResponse
-	res, err := api.makeRequest("GET", "/user/billing/profile", nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, "/user/billing/profile", nil)
 	if err != nil {
+<<<<<<< HEAD
 		return UserBillingProfile{}, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return UserBillingProfile{}, errors.Wrap(err, errMakeRequestError)
+=======
+		return UserBillingProfile{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	err = json.Unmarshal(res, &r)

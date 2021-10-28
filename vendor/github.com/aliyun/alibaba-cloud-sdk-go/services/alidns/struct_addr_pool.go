@@ -30,9 +30,14 @@ type AddrPool struct {
 	Status              string `json:"Status" xml:"Status"`
 	MonitorStatus       string `json:"MonitorStatus" xml:"MonitorStatus"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Type                string `json:"Type" xml:"Type"`
 }

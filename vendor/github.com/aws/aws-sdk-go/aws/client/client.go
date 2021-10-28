@@ -11,6 +11,7 @@ import (
 // A Config provides configuration to a service client instance.
 type Config struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Config         *aws.Config
 	Handlers       request.Handlers
 	PartitionID    string
@@ -130,6 +131,22 @@ func (c *Client) AddDebugHandlers() {
 	Endpoint      string
 	SigningRegion string
 	SigningName   string
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Config        *aws.Config
+	Handlers      request.Handlers
+	PartitionID   string
+	Endpoint      string
+	SigningRegion string
+	SigningName   string
+=======
+	Config         *aws.Config
+	Handlers       request.Handlers
+	PartitionID    string
+	Endpoint       string
+	SigningRegion  string
+	SigningName    string
+	ResolvedRegion string
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	// States that the signing name did not come from a modeled source but
 	// was derived based on other data. Used by service client constructors
@@ -202,11 +219,19 @@ func (c *Client) NewRequest(operation *request.Operation, params interface{}, da
 // AddDebugHandlers injects debug logging handlers into the service to log request
 // debug information.
 func (c *Client) AddDebugHandlers() {
+<<<<<<< HEAD
 	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
 		return
 	}
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
+		return
+	}
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	c.Handlers.Send.PushFrontNamed(LogHTTPRequestHandler)
 	c.Handlers.Send.PushBackNamed(LogHTTPResponseHandler)
 }

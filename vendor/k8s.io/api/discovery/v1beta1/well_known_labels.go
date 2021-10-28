@@ -30,6 +30,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
 	// that the EndpointSliceMirroring controller should not mirror this
 	// resource with EndpointSlices.
@@ -57,4 +58,11 @@ const (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// LabelSkipMirror can be set to true on an Endpoints resource to indicate
+	// that the EndpointSliceMirroring controller should not mirror this
+	// resource with EndpointSlices.
+	LabelSkipMirror = "endpointslice.kubernetes.io/skip-mirror"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )

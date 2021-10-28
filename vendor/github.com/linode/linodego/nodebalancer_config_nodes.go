@@ -84,6 +84,7 @@ func (NodeBalancerNodesPagedResponse) endpointWithTwoIDs(c *Client, nodebalancer
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
 	if err != nil {
 		panic(err)
@@ -385,6 +386,11 @@ func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int,
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	endpoint, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+=======
+	endpoint, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		panic(err)
 	}
@@ -400,7 +406,6 @@ func (resp *NodeBalancerNodesPagedResponse) appendData(r *NodeBalancerNodesPaged
 func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, configID int, opts *ListOptions) ([]NodeBalancerNode, error) {
 	response := NodeBalancerNodesPagedResponse{}
 	err := c.listHelperWithTwoIDs(ctx, &response, nodebalancerID, configID, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +414,7 @@ func (c *Client) ListNodeBalancerNodes(ctx context.Context, nodebalancerID int, 
 
 // GetNodeBalancerNode gets the template with the provided ID
 func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) (*NodeBalancerNode, error) {
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
 	if err != nil {
 		return nil, err
 	}
@@ -424,7 +429,7 @@ func (c *Client) GetNodeBalancerNode(ctx context.Context, nodebalancerID int, co
 // CreateNodeBalancerNode creates a NodeBalancerNode
 func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, createOpts NodeBalancerNodeCreateOptions) (*NodeBalancerNode, error) {
 	var body string
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
 	if err != nil {
 		return nil, err
 	}
@@ -440,7 +445,6 @@ func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int,
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -450,7 +454,7 @@ func (c *Client) CreateNodeBalancerNode(ctx context.Context, nodebalancerID int,
 // UpdateNodeBalancerNode updates the NodeBalancerNode with the specified id
 func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int, updateOpts NodeBalancerNodeUpdateOptions) (*NodeBalancerNode, error) {
 	var body string
-	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
 	if err != nil {
 		return nil, err
 	}
@@ -467,7 +471,6 @@ func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int,
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -476,8 +479,14 @@ func (c *Client) UpdateNodeBalancerNode(ctx context.Context, nodebalancerID int,
 
 // DeleteNodeBalancerNode deletes the NodeBalancerNode with the specified id
 func (c *Client) DeleteNodeBalancerNode(ctx context.Context, nodebalancerID int, configID int, nodeID int) error {
+<<<<<<< HEAD
 	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	e, err := c.NodeBalancerNodes.endpointWithID(nodebalancerID, configID)
+=======
+	e, err := c.NodeBalancerNodes.endpointWithParams(nodebalancerID, configID)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return err
 	}

@@ -62,6 +62,7 @@ type Encoder interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -154,6 +155,11 @@ type SerializerInfo struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// Identifier is inteted for use with CacheableObject#CacheEncode method. In order to
+=======
+	// Identifier is intended for use with CacheableObject#CacheEncode method. In order to
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// correctly handle CacheableObject, Encode() method should look similar to below, where
 	// doEncode() is the encoding logic of implemented encoder:
 	//   func (e *MyEncoder) Encode(obj Object, w io.Writer) error {
@@ -221,7 +227,14 @@ type SerializerInfo struct {
 	// PrettySerializer, if set, can serialize this object in a form biased towards
 	// readability.
 	PrettySerializer Serializer
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// StrictSerializer, if set, deserializes this object strictly,
+	// erring on unknown fields.
+	StrictSerializer Serializer
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// StreamSerializer, if set, describes the streaming serialization format
 	// for this media type.
 	StreamSerializer *StreamSerializerInfo

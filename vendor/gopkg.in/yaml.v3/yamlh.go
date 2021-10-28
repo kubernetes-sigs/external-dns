@@ -792,6 +792,7 @@ type yaml_emitter_t struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	key_line_comment []byte
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -813,6 +814,11 @@ type yaml_emitter_t struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	key_line_comment []byte
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// Dumper stuff
 
 	opened bool // If the stream was already opened?

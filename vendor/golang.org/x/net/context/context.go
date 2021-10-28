@@ -22,6 +22,7 @@
 // parameter, typically named ctx:
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 //	func DoSomething(ctx context.Context, arg Arg) error {
 //		// ... use ctx ...
 //	}
@@ -31,6 +32,15 @@
 // 		// ... use ctx ...
 // 	}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// 	func DoSomething(ctx context.Context, arg Arg) error {
+// 		// ... use ctx ...
+// 	}
+=======
+//	func DoSomething(ctx context.Context, arg Arg) error {
+//		// ... use ctx ...
+//	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // Do not pass a nil Context, even if a function permits it. Pass context.TODO
 // if you are unsure about which Context to use.

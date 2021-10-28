@@ -26,6 +26,7 @@ const (
 	// tends to be fetched directly from the repo.
 	// It is also used in the user-agent identify the client.
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Version = "0.71.1"
 
 	// defaultBaseURL to the DNSimple production API.
@@ -36,13 +37,26 @@ const (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Version = "0.60.0"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Version = "0.60.0"
+=======
+	Version = "0.71.1"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	// defaultBaseURL to the DNSimple production API.
 	defaultBaseURL = "https://api.dnsimple.com"
 
+<<<<<<< HEAD
 	// userAgent represents the default user agent used
 	// when no other user agent is set.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// userAgent represents the default user agent used
+	// when no other user agent is set.
+=======
+	// defaultUserAgent represents the base user agent
+	// and is appended to every request.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	defaultUserAgent = "dnsimple-go/" + Version
 
 	apiVersion = "v2"

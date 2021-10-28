@@ -49,6 +49,7 @@ const (
 func New(p client.ConfigProvider, cfgs ...*aws.Config) *STS {
 	c := p.ClientConfig(EndpointsID, cfgs...)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if c.SigningNameDerived || len(c.SigningName) == 0 {
 		c.SigningName = EndpointsID
 		// No Fallback
@@ -73,14 +74,24 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
+=======
+	if c.SigningNameDerived || len(c.SigningName) == 0 {
+		c.SigningName = EndpointsID
+		// No Fallback
+	}
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName, c.ResolvedRegion)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // newClient creates, initializes and returns a new service client instance.
-func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName string) *STS {
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName, resolvedRegion string) *STS {
 	svc := &STS{
 		Client: client.New(
 			cfg,
 			metadata.ClientInfo{
+<<<<<<< HEAD
 				ServiceName:   ServiceName,
 				ServiceID:     ServiceID,
 				SigningName:   signingName,
@@ -89,6 +100,24 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				Endpoint:      endpoint,
 				APIVersion:    "2011-06-15",
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+				ServiceName:   ServiceName,
+				ServiceID:     ServiceID,
+				SigningName:   signingName,
+				SigningRegion: signingRegion,
+				PartitionID:   partitionID,
+				Endpoint:      endpoint,
+				APIVersion:    "2011-06-15",
+=======
+				ServiceName:    ServiceName,
+				ServiceID:      ServiceID,
+				SigningName:    signingName,
+				SigningRegion:  signingRegion,
+				PartitionID:    partitionID,
+				Endpoint:       endpoint,
+				APIVersion:     "2011-06-15",
+				ResolvedRegion: resolvedRegion,
+>>>>>>> 4d7e5ad26 (update vendored files)
 			},
 			handlers,
 		),

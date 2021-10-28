@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
@@ -457,6 +458,11 @@ func MakeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 
@@ -500,7 +506,7 @@ func newValueFunc(desc *Desc, valueType ValueType, function func() float64) *val
 		desc:       desc,
 		valType:    valueType,
 		function:   function,
-		labelPairs: makeLabelPairs(desc, nil),
+		labelPairs: MakeLabelPairs(desc, nil),
 	}
 	result.init(result)
 	return result
@@ -532,7 +538,7 @@ func NewConstMetric(desc *Desc, valueType ValueType, value float64, labelValues 
 		desc:       desc,
 		valType:    valueType,
 		val:        value,
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 	}, nil
 }
 
@@ -582,8 +588,21 @@ func populateMetric(
 	return nil
 }
 
+<<<<<<< HEAD
 func makeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func makeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
+=======
+// MakeLabelPairs is a helper function to create protobuf LabelPairs from the
+// variable and constant labels in the provided Desc. The values for the
+// variable labels are defined by the labelValues slice, which must be in the
+// same order as the corresponding variable labels in the Desc.
+//
+// This function is only needed for custom Metric implementations. See MetricVec
+// example.
+func MakeLabelPairs(desc *Desc, labelValues []string) []*dto.LabelPair {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	totalLen := len(desc.variableLabels) + len(desc.constLabelPairs)
 	if totalLen == 0 {
 		// Super fast path.

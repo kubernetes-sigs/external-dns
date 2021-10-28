@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (arm || mips || mipsle || 386 || ppc) && (darwin || dragonfly || freebsd || linux || netbsd || openbsd)
 // +build arm mips mipsle 386 ppc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -33,6 +34,12 @@
 =======
 // +build arm mips mipsle 386
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build arm mips mipsle 386
+=======
+//go:build (arm || mips || mipsle || 386 || ppc) && (darwin || dragonfly || freebsd || linux || netbsd || openbsd)
+// +build arm mips mipsle 386 ppc
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build darwin dragonfly freebsd linux netbsd openbsd
 
 package socket

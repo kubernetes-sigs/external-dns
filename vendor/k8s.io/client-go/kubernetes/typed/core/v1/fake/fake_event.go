@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -420,6 +421,11 @@ func (c *FakeEvents) Apply(ctx context.Context, event *applyconfigurationscorev1
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Event{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -427,6 +433,7 @@ func (c *FakeEvents) Apply(ctx context.Context, event *applyconfigurationscorev1
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -505,7 +512,7 @@ func (c *FakeEvents) Update(ctx context.Context, event *corev1.Event, opts v1.Up
 // Delete takes name of the event and deletes it. Returns an error if one occurs.
 func (c *FakeEvents) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(eventsResource, c.ns, name), &corev1.Event{})
+		Invokes(testing.NewDeleteActionWithOptions(eventsResource, c.ns, name, opts), &corev1.Event{})
 
 	return err
 }
@@ -523,6 +530,28 @@ func (c *FakeEvents) Patch(ctx context.Context, name string, pt types.PatchType,
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, name, pt, data, subresources...), &corev1.Event{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Event), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied event.
+func (c *FakeEvents) Apply(ctx context.Context, event *applyconfigurationscorev1.EventApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Event, err error) {
+	if event == nil {
+		return nil, fmt.Errorf("event provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+	name := event.Name
+	if name == nil {
+		return nil, fmt.Errorf("event.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(eventsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Event{})
 
 	if obj == nil {
 		return nil, err

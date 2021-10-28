@@ -22,6 +22,7 @@ import (
 
 // AddZoneRecord invokes the pvtz.AddZoneRecord API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
 	response = CreateAddZoneRecordResponse()
 	err = client.DoAction(request, response)
@@ -101,6 +102,10 @@ func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *AddZoneRecordResponse, err error) {
 	response = CreateAddZoneRecordResponse()
 	err = client.DoAction(request, response)
@@ -108,8 +113,6 @@ func (client *Client) AddZoneRecord(request *AddZoneRecordRequest) (response *Ad
 }
 
 // AddZoneRecordWithChan invokes the pvtz.AddZoneRecord API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddZoneRecordWithChan(request *AddZoneRecordRequest) (<-chan *AddZoneRecordResponse, <-chan error) {
 	responseChan := make(chan *AddZoneRecordResponse, 1)
 	errChan := make(chan error, 1)
@@ -132,8 +135,6 @@ func (client *Client) AddZoneRecordWithChan(request *AddZoneRecordRequest) (<-ch
 }
 
 // AddZoneRecordWithCallback invokes the pvtz.AddZoneRecord API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/addzonerecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, callback func(response *AddZoneRecordResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -156,6 +157,7 @@ func (client *Client) AddZoneRecordWithCallback(request *AddZoneRecordRequest, c
 type AddZoneRecordRequest struct {
 	*requests.RpcRequest
 	Rr           string           `position:"Query" name:"Rr"`
+	Remark       string           `position:"Query" name:"Remark"`
 	Type         string           `position:"Query" name:"Type"`
 	Priority     requests.Integer `position:"Query" name:"Priority"`
 	Ttl          requests.Integer `position:"Query" name:"Ttl"`
@@ -169,8 +171,8 @@ type AddZoneRecordRequest struct {
 type AddZoneRecordResponse struct {
 	*responses.BaseResponse
 	RequestId string `json:"RequestId" xml:"RequestId"`
-	Success   bool   `json:"Success" xml:"Success"`
 	RecordId  int64  `json:"RecordId" xml:"RecordId"`
+	Success   bool   `json:"Success" xml:"Success"`
 }
 
 // CreateAddZoneRecordRequest creates a request to invoke AddZoneRecord API
@@ -179,7 +181,12 @@ func CreateAddZoneRecordRequest() (request *AddZoneRecordRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "AddZoneRecord", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

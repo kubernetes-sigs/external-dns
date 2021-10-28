@@ -231,6 +231,7 @@ func PrivateKeyFromBytesWithPassword(pemData, password []byte) (key *rsa.Private
 		}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		key, e = parsePKCSPrivateKey(decrypted)
 
 	} else {
@@ -257,6 +258,11 @@ func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		key, e = x509.ParsePKCS1PrivateKey(decrypted)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		key, e = x509.ParsePKCS1PrivateKey(decrypted)
+=======
+		key, e = parsePKCSPrivateKey(decrypted)
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	} else {
 		e = fmt.Errorf("PEM data was not found in buffer")
@@ -264,6 +270,22 @@ func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
 	}
 	return
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// ParsePrivateKey using PKCS1 or PKCS8
+func parsePKCSPrivateKey(decryptedKey []byte) (*rsa.PrivateKey, error) {
+	if key, err := x509.ParsePKCS1PrivateKey(decryptedKey); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(decryptedKey); err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey:
+			return key, nil
+		default:
+			return nil, fmt.Errorf("unsupportesd private key type in PKCS8 wrapping")
+		}
+	}
+	return nil, fmt.Errorf("failed to parse private key")
 }
 
 func generateRandUUID() (string, error) {

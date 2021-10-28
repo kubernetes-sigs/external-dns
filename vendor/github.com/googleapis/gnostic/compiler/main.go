@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright 2017 Google LLC. All Rights Reserved.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -26,6 +27,11 @@
 =======
 // Copyright 2017 Google Inc. All Rights Reserved.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Copyright 2017 Google Inc. All Rights Reserved.
+=======
+// Copyright 2017 Google LLC. All Rights Reserved.
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

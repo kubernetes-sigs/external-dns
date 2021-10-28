@@ -16,6 +16,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	databaseCAPath             = databaseBasePath + "/%s/ca"
 	databaseResizePath         = databaseBasePath + "/%s/resize"
 	databaseMigratePath        = databaseBasePath + "/%s/migrate"
@@ -1718,6 +1719,10 @@ func (svc *DatabasesServiceOp) CreateUser(ctx context.Context, databaseID string
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	databaseCAPath             = databaseBasePath + "/%s/ca"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	databaseResizePath         = databaseBasePath + "/%s/resize"
 	databaseMigratePath        = databaseBasePath + "/%s/migrate"
 	databaseMaintenancePath    = databaseBasePath + "/%s/maintenance"
@@ -1789,15 +1794,16 @@ const (
 // The DatabasesService provides access to the DigitalOcean managed database
 // suite of products through the public API. Customers can create new database
 // clusters, migrate them  between regions, create replicas and interact with
-// their configurations. Each database service is refered to as a Database. A
+// their configurations. Each database service is referred to as a Database. A
 // SQL database service can have multiple databases residing in the system. To
 // help make these entities distinct from Databases in godo, we refer to them
 // here as DatabaseDBs.
 //
-// See: https://developers.digitalocean.com/documentation/v2#databases
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Databases
 type DatabasesService interface {
 	List(context.Context, *ListOptions) ([]Database, *Response, error)
 	Get(context.Context, string) (*Database, *Response, error)
+	GetCA(context.Context, string) (*DatabaseCA, *Response, error)
 	Create(context.Context, *DatabaseCreateRequest) (*Database, *Response, error)
 	Delete(context.Context, string) (*Response, error)
 	Resize(context.Context, string, *DatabaseResizeRequest) (*Response, error)
@@ -1861,6 +1867,11 @@ type Database struct {
 	Tags               []string                   `json:"tags,omitempty"`
 }
 
+// DatabaseCA represents a database ca.
+type DatabaseCA struct {
+	Certificate []byte `json:"certificate"`
+}
+
 // DatabaseConnection represents a database connection
 type DatabaseConnection struct {
 	URI      string `json:"uri,omitempty"`
@@ -1900,16 +1911,23 @@ type DatabaseBackup struct {
 	SizeGigabytes float64   `json:"size_gigabytes,omitempty"`
 }
 
+// DatabaseBackupRestore contains information needed to restore a backup.
+type DatabaseBackupRestore struct {
+	DatabaseName    string `json:"database_name,omitempty"`
+	BackupCreatedAt string `json:"backup_created_at,omitempty"`
+}
+
 // DatabaseCreateRequest represents a request to create a database cluster
 type DatabaseCreateRequest struct {
-	Name               string   `json:"name,omitempty"`
-	EngineSlug         string   `json:"engine,omitempty"`
-	Version            string   `json:"version,omitempty"`
-	SizeSlug           string   `json:"size,omitempty"`
-	Region             string   `json:"region,omitempty"`
-	NumNodes           int      `json:"num_nodes,omitempty"`
-	PrivateNetworkUUID string   `json:"private_network_uuid"`
-	Tags               []string `json:"tags,omitempty"`
+	Name               string                 `json:"name,omitempty"`
+	EngineSlug         string                 `json:"engine,omitempty"`
+	Version            string                 `json:"version,omitempty"`
+	SizeSlug           string                 `json:"size,omitempty"`
+	Region             string                 `json:"region,omitempty"`
+	NumNodes           int                    `json:"num_nodes,omitempty"`
+	PrivateNetworkUUID string                 `json:"private_network_uuid"`
+	Tags               []string               `json:"tags,omitempty"`
+	BackupRestore      *DatabaseBackupRestore `json:"backup_restore,omitempty"`
 }
 
 // DatabaseResizeRequest can be used to initiate a database resize operation.
@@ -1932,7 +1950,7 @@ type DatabaseUpdateMaintenanceRequest struct {
 
 // DatabaseDB represents an engine-specific database created within a database cluster. For SQL
 // databases like PostgreSQL or MySQL, a "DB" refers to a database created on the RDBMS. For instance,
-// a PostgreSQL database server can contain many database schemas, each with it's own settings, access
+// a PostgreSQL database server can contain many database schemas, each with its own settings, access
 // permissions and data. ListDBs will return all databases present on the server.
 type DatabaseDB struct {
 	Name string `json:"name"`
@@ -1976,7 +1994,7 @@ type DatabaseCreateUserRequest struct {
 	MySQLSettings *DatabaseMySQLUserSettings `json:"mysql_settings,omitempty"`
 }
 
-// DatabaseResetUserAuth request is used to reset a users DB auth
+// DatabaseResetUserAuthRequest is used to reset a users DB auth
 type DatabaseResetUserAuthRequest struct {
 	MySQLSettings *DatabaseMySQLUserSettings `json:"mysql_settings,omitempty"`
 }
@@ -2031,6 +2049,10 @@ type databasesRoot struct {
 
 type databaseRoot struct {
 	Database *Database `json:"database"`
+}
+
+type databaseCARoot struct {
+	CA *DatabaseCA `json:"ca"`
 }
 
 type databaseBackupsRoot struct {
@@ -2102,6 +2124,21 @@ func (svc *DatabasesServiceOp) Get(ctx context.Context, databaseID string) (*Dat
 		return nil, resp, err
 	}
 	return root.Database, resp, nil
+}
+
+// GetCA retrieves the CA of a database cluster.
+func (svc *DatabasesServiceOp) GetCA(ctx context.Context, databaseID string) (*DatabaseCA, *Response, error) {
+	path := fmt.Sprintf(databaseCAPath, databaseID)
+	req, err := svc.client.NewRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	root := new(databaseCARoot)
+	resp, err := svc.client.Do(ctx, req, root)
+	if err != nil {
+		return nil, resp, err
+	}
+	return root.CA, resp, nil
 }
 
 // Create creates a database cluster
@@ -2244,7 +2281,12 @@ func (svc *DatabasesServiceOp) CreateUser(ctx context.Context, databaseID string
 	return root.User, resp, nil
 }
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// ResetUserAuth will reset user authentication
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (svc *DatabasesServiceOp) ResetUserAuth(ctx context.Context, databaseID, userID string, resetAuth *DatabaseResetUserAuthRequest) (*DatabaseUser, *Response, error) {
 	path := fmt.Sprintf(databaseResetUserAuthPath, databaseID, userID)
 	req, err := svc.client.NewRequest(ctx, http.MethodPost, path, resetAuth)

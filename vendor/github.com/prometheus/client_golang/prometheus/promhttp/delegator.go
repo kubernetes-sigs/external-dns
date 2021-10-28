@@ -88,6 +88,7 @@ func (d closeNotifierDelegator) CloseNotify() <-chan bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. http.CloseNotifier is deprecated but we keep it here to not break existing users.
 	return d.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
@@ -923,6 +924,12 @@ func newDelegator(w http.ResponseWriter, observeWriteHeaderFunc func(int)) deleg
 =======
 	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
 	//remove support from client_golang yet.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
+	//remove support from client_golang yet.
+=======
+	//nolint:staticcheck // Ignore SA1019. http.CloseNotifier is deprecated but we keep it here to not break existing users.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return d.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 func (d flusherDelegator) Flush() {
@@ -1186,9 +1193,16 @@ func newDelegator(w http.ResponseWriter, observeWriteHeaderFunc func(int)) deleg
 	}
 
 	id := 0
+<<<<<<< HEAD
 	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
 	//remove support from client_golang yet.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	//lint:ignore SA1019 http.CloseNotifier is deprecated but we don't want to
+	//remove support from client_golang yet.
+=======
+	//nolint:staticcheck // Ignore SA1019. http.CloseNotifier is deprecated but we keep it here to not break existing users.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if _, ok := w.(http.CloseNotifier); ok {
 		id += closeNotifier
 	}

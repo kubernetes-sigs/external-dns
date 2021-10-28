@@ -7,6 +7,7 @@ import "strings"
 // official type code. Also see dns.PrivateHandle and dns.PrivateHandleRemove.
 type PrivateRdata interface {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// String returns the text presentation of the Rdata of the Private RR.
 	String() string
 	// Parse parses the Rdata of the private RR.
@@ -95,6 +96,11 @@ func (r *PrivateRR) isDuplicate(r2 RR) bool { return false }
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// String returns the text presentaton of the Rdata of the Private RR.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// String returns the text presentaton of the Rdata of the Private RR.
+=======
+	// String returns the text presentation of the Rdata of the Private RR.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	String() string
 	// Parse parses the Rdata of the private RR.
 	Parse([]string) error
@@ -178,8 +184,14 @@ Fetch:
 	return nil
 }
 
+<<<<<<< HEAD
 func (r1 *PrivateRR) isDuplicate(r2 RR) bool { return false }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (r1 *PrivateRR) isDuplicate(r2 RR) bool { return false }
+=======
+func (r *PrivateRR) isDuplicate(r2 RR) bool { return false }
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 // PrivateHandle registers a private resource record type. It requires
 // string and numeric representation of private RR type and generator function as argument.

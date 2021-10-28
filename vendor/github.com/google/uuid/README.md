@@ -21,6 +21,7 @@ installing this package by using the GoDoc site here:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 http://pkg.go.dev/github.com/google/uuid
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -44,3 +45,8 @@ http://pkg.go.dev/github.com/google/uuid
 =======
 http://godoc.org/github.com/google/uuid
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+http://godoc.org/github.com/google/uuid
+=======
+http://pkg.go.dev/github.com/google/uuid
+>>>>>>> 4d7e5ad26 (update vendored files)

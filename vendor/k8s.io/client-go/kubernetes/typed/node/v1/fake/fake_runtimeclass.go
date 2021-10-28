@@ -103,11 +103,16 @@ func (c *FakeRuntimeClasses) Update(ctx context.Context, runtimeClass *nodev1.Ru
 func (c *FakeRuntimeClasses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewRootDeleteAction(runtimeclassesResource, name), &nodev1.RuntimeClass{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewRootDeleteActionWithOptions(runtimeclassesResource, name, opts), &nodev1.RuntimeClass{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewRootDeleteActionWithOptions(runtimeclassesResource, name, opts), &nodev1.RuntimeClass{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return err
 }
 

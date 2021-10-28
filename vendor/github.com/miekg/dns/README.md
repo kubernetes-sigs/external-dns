@@ -72,6 +72,10 @@ A not-so-up-to-date-list-that-may-be-actually-current:
 * https://github.com/Luzilla/dnsbl_exporter
 * https://github.com/bodgit/tsig
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 * https://github.com/v2fly/v2ray-core (test only)
 * https://kuma.io/
 * https://www.misaka.io/services/dns
@@ -178,6 +182,7 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 * 8659 - DNS Certification Authority Authorization (CAA) Resource Record
 * 8914 - Extended DNS Errors
 * 8976 - Message Digest for DNS Zones (ZONEMD RR)
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
@@ -277,6 +282,9 @@ Example programs can be found in the `github.com/miekg/exdns` repository.
 * 8080 - EdDSA for DNSSEC
 * 8499 - DNS Terminology
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 ## Loosely Based Upon
 

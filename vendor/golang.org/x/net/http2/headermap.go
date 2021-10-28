@@ -11,6 +11,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"sync"
 )
 
@@ -276,6 +277,10 @@ func lowerHeader(v string) (lower string, ascii bool) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"strings"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"strings"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"sync"
 )
 
@@ -348,11 +353,17 @@ func buildCommonHeaderMaps() {
 	}
 }
 
-func lowerHeader(v string) string {
+func lowerHeader(v string) (lower string, ascii bool) {
 	buildCommonHeaderMapsOnce()
 	if s, ok := commonLowerHeader[v]; ok {
-		return s
+		return s, true
 	}
+<<<<<<< HEAD
 	return strings.ToLower(v)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return strings.ToLower(v)
+=======
+	return asciiToLower(v)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

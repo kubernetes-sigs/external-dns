@@ -22,6 +22,7 @@ type NetworkAddresses struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	IPv4 *[]string `json:"ipv4,omitempty"`
 	IPv6 *[]string `json:"ipv6,omitempty"`
 }
@@ -175,24 +176,36 @@ func (c *Client) UpdateFirewallRules(ctx context.Context, firewallID int, rules 
 =======
 	IPv4 []string `json:"ipv4"`
 	IPv6 []string `json:"ipv6"`
+||||||| parent of 4d7e5ad26 (update vendored files)
+	IPv4 []string `json:"ipv4"`
+	IPv6 []string `json:"ipv6"`
+=======
+	IPv4 *[]string `json:"ipv4,omitempty"`
+	IPv6 *[]string `json:"ipv6,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // A FirewallRule is a whitelist of ports, protocols, and addresses for which traffic should be allowed.
 type FirewallRule struct {
-	Ports     string           `json:"ports,omitempty"`
-	Protocol  NetworkProtocol  `json:"protocol"`
-	Addresses NetworkAddresses `json:"addresses"`
+	Action      string           `json:"action"`
+	Label       string           `json:"label"`
+	Description string           `json:"description,omitempty"`
+	Ports       string           `json:"ports,omitempty"`
+	Protocol    NetworkProtocol  `json:"protocol"`
+	Addresses   NetworkAddresses `json:"addresses"`
 }
 
 // FirewallRuleSet is a pair of inbound and outbound rules that specify what network traffic should be allowed.
 type FirewallRuleSet struct {
-	Inbound  []FirewallRule `json:"inbound,omitempty"`
-	Outbound []FirewallRule `json:"outbound,omitempty"`
+	Inbound        []FirewallRule `json:"inbound"`
+	InboundPolicy  string         `json:"inbound_policy"`
+	Outbound       []FirewallRule `json:"outbound"`
+	OutboundPolicy string         `json:"outbound_policy"`
 }
 
 // GetFirewallRules gets the FirewallRuleSet for the given Firewall.
 func (c *Client) GetFirewallRules(ctx context.Context, firewallID int) (*FirewallRuleSet, error) {
-	e, err := c.FirewallRules.endpointWithID(firewallID)
+	e, err := c.FirewallRules.endpointWithParams(firewallID)
 	if err != nil {
 		return nil, err
 	}
@@ -206,8 +219,14 @@ func (c *Client) GetFirewallRules(ctx context.Context, firewallID int) (*Firewal
 
 // UpdateFirewallRules updates the FirewallRuleSet for the given Firewall
 func (c *Client) UpdateFirewallRules(ctx context.Context, firewallID int, rules FirewallRuleSet) (*FirewallRuleSet, error) {
+<<<<<<< HEAD
 	e, err := c.FirewallRules.endpointWithID(firewallID)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	e, err := c.FirewallRules.endpointWithID(firewallID)
+=======
+	e, err := c.FirewallRules.endpointWithParams(firewallID)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

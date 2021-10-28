@@ -26,6 +26,7 @@ type Stackscript struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Mine              bool              `json:"mine"`
 	Created           *time.Time        `json:"-"`
 	Updated           *time.Time        `json:"-"`
@@ -592,6 +593,10 @@ func (c *Client) UpdateStackscript(ctx context.Context, id int, updateOpts Stack
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	Mine              bool              `json:"mine"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Created           *time.Time        `json:"-"`
 	Updated           *time.Time        `json:"-"`
 	RevNote           string            `json:"rev_note"`
@@ -704,7 +709,6 @@ func (resp *StackscriptsPagedResponse) appendData(r *StackscriptsPagedResponse) 
 func (c *Client) ListStackscripts(ctx context.Context, opts *ListOptions) ([]Stackscript, error) {
 	response := StackscriptsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -746,7 +750,6 @@ func (c *Client) CreateStackscript(ctx context.Context, createOpts StackscriptCr
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -773,8 +776,13 @@ func (c *Client) UpdateStackscript(ctx context.Context, id int, updateOpts Stack
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

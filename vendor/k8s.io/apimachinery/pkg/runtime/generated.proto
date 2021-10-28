@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -45,6 +46,11 @@ syntax = "proto2";
 =======
 syntax = 'proto2';
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.apimachinery.pkg.runtime;
 

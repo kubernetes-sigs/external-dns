@@ -86,6 +86,7 @@ func (c *Client) ListPayments(ctx context.Context, opts *ListOptions) ([]Payment
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -246,6 +247,10 @@ func (c *Client) CreatePayment(ctx context.Context, createOpts PaymentCreateOpti
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +267,6 @@ func (c *Client) GetPayment(ctx context.Context, id int) (*Payment, error) {
 
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Payment{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +279,6 @@ func (c *Client) CreatePayment(ctx context.Context, createOpts PaymentCreateOpti
 	var body string
 
 	e, err := c.Payments.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -291,8 +294,13 @@ func (c *Client) CreatePayment(ctx context.Context, createOpts PaymentCreateOpti
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

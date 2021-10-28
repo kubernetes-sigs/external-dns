@@ -5,6 +5,7 @@
 package socket
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (h *cmsghdr) set(l, lvl, typ int) {
 	h.Len = int32(l)
 	h.Level = int32(lvl)
@@ -13,11 +14,17 @@ func (h *cmsghdr) set(l, lvl, typ int) {
 =======
 import "syscall"
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+import "syscall"
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (h *cmsghdr) set(l, lvl, typ int) {
 	h.Len = int32(l)
 	h.Level = int32(lvl)
 	h.Type = int32(typ)
 }
+<<<<<<< HEAD
 
 func controlHeaderLen() int {
 	return syscall.CmsgLen(0)
@@ -31,3 +38,18 @@ func controlMessageSpace(dataLen int) int {
 	return syscall.CmsgSpace(dataLen)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+func controlHeaderLen() int {
+	return syscall.CmsgLen(0)
+}
+
+func controlMessageLen(dataLen int) int {
+	return syscall.CmsgLen(dataLen)
+}
+
+func controlMessageSpace(dataLen int) int {
+	return syscall.CmsgSpace(dataLen)
+}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -396,6 +397,11 @@ func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *applyconfi
 		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, *name, types.ApplyPatchType, data), &storagev1.StorageClass{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	storagev1 "k8s.io/api/storage/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,6 +409,7 @@ func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *applyconfi
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationsstoragev1 "k8s.io/client-go/applyconfigurations/storage/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -475,7 +482,7 @@ func (c *FakeStorageClasses) Update(ctx context.Context, storageClass *storagev1
 // Delete takes name of the storageClass and deletes it. Returns an error if one occurs.
 func (c *FakeStorageClasses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(storageclassesResource, name), &storagev1.StorageClass{})
+		Invokes(testing.NewRootDeleteActionWithOptions(storageclassesResource, name, opts), &storagev1.StorageClass{})
 	return err
 }
 
@@ -492,6 +499,27 @@ func (c *FakeStorageClasses) Patch(ctx context.Context, name string, pt types.Pa
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, name, pt, data, subresources...), &storagev1.StorageClass{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*storagev1.StorageClass), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied storageClass.
+func (c *FakeStorageClasses) Apply(ctx context.Context, storageClass *applyconfigurationsstoragev1.StorageClassApplyConfiguration, opts v1.ApplyOptions) (result *storagev1.StorageClass, err error) {
+	if storageClass == nil {
+		return nil, fmt.Errorf("storageClass provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(storageClass)
+	if err != nil {
+		return nil, err
+	}
+	name := storageClass.Name
+	if name == nil {
+		return nil, fmt.Errorf("storageClass.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(storageclassesResource, *name, types.ApplyPatchType, data), &storagev1.StorageClass{})
 	if obj == nil {
 		return nil, err
 	}

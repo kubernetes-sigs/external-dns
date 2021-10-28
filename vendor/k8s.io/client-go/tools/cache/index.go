@@ -79,6 +79,7 @@ func IndexFuncToKeyFuncAdapter(indexFunc IndexFunc) KeyFunc {
 
 const (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// NamespaceIndex is the lookup name for the most common index function, which is to index by the namespace field.
 	NamespaceIndex string = "namespace"
 )
@@ -99,6 +100,11 @@ type Index map[string]sets.String
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// NamespaceIndex is the lookup name for the most comment index function, which is to index by the namespace field.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// NamespaceIndex is the lookup name for the most comment index function, which is to index by the namespace field.
+=======
+	// NamespaceIndex is the lookup name for the most common index function, which is to index by the namespace field.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	NamespaceIndex string = "namespace"
 )
 
@@ -114,8 +120,14 @@ func MetaNamespaceIndexFunc(obj interface{}) ([]string, error) {
 // Index maps the indexed value to a set of keys in the store that match on that value
 type Index map[string]sets.String
 
+<<<<<<< HEAD
 // Indexers maps a name to a IndexFunc
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Indexers maps a name to a IndexFunc
+=======
+// Indexers maps a name to an IndexFunc
+>>>>>>> 4d7e5ad26 (update vendored files)
 type Indexers map[string]IndexFunc
 
 // Indices maps a name to an Index

@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -495,6 +496,11 @@ func (c *FakePersistentVolumes) ApplyStatus(ctx context.Context, persistentVolum
 		Invokes(testing.NewRootPatchSubresourceAction(persistentvolumesResource, *name, types.ApplyPatchType, data, "status"), &corev1.PersistentVolume{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -502,6 +508,7 @@ func (c *FakePersistentVolumes) ApplyStatus(ctx context.Context, persistentVolum
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -585,7 +592,7 @@ func (c *FakePersistentVolumes) UpdateStatus(ctx context.Context, persistentVolu
 // Delete takes name of the persistentVolume and deletes it. Returns an error if one occurs.
 func (c *FakePersistentVolumes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(persistentvolumesResource, name), &corev1.PersistentVolume{})
+		Invokes(testing.NewRootDeleteActionWithOptions(persistentvolumesResource, name, opts), &corev1.PersistentVolume{})
 	return err
 }
 
@@ -602,6 +609,49 @@ func (c *FakePersistentVolumes) Patch(ctx context.Context, name string, pt types
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(persistentvolumesResource, name, pt, data, subresources...), &corev1.PersistentVolume{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.PersistentVolume), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied persistentVolume.
+func (c *FakePersistentVolumes) Apply(ctx context.Context, persistentVolume *applyconfigurationscorev1.PersistentVolumeApplyConfiguration, opts v1.ApplyOptions) (result *corev1.PersistentVolume, err error) {
+	if persistentVolume == nil {
+		return nil, fmt.Errorf("persistentVolume provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(persistentVolume)
+	if err != nil {
+		return nil, err
+	}
+	name := persistentVolume.Name
+	if name == nil {
+		return nil, fmt.Errorf("persistentVolume.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(persistentvolumesResource, *name, types.ApplyPatchType, data), &corev1.PersistentVolume{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.PersistentVolume), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakePersistentVolumes) ApplyStatus(ctx context.Context, persistentVolume *applyconfigurationscorev1.PersistentVolumeApplyConfiguration, opts v1.ApplyOptions) (result *corev1.PersistentVolume, err error) {
+	if persistentVolume == nil {
+		return nil, fmt.Errorf("persistentVolume provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(persistentVolume)
+	if err != nil {
+		return nil, err
+	}
+	name := persistentVolume.Name
+	if name == nil {
+		return nil, fmt.Errorf("persistentVolume.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(persistentvolumesResource, *name, types.ApplyPatchType, data, "status"), &corev1.PersistentVolume{})
 	if obj == nil {
 		return nil, err
 	}

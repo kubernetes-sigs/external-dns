@@ -21,6 +21,7 @@ package types
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -127,6 +128,13 @@ import (
 	"fmt"
 )
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+import (
+	"fmt"
+)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 // NamespacedName comprises a resource name, with a mandatory namespace,
 // rendered as "<namespace>/<name>".  Being a type captures intent and
 // helps make sure that UIDs, namespaced names and non-namespaced names
@@ -146,6 +154,12 @@ const (
 
 // String returns the general purpose string representation
 func (n NamespacedName) String() string {
+<<<<<<< HEAD
 	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return fmt.Sprintf("%s%c%s", n.Namespace, Separator, n.Name)
+=======
+	return n.Namespace + string(Separator) + n.Name
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

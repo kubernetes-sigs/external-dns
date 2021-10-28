@@ -376,11 +376,16 @@ func (s *AppsServiceOp) ListInstanceSizes(ctx context.Context) ([]*AppInstanceSi
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // GetInstanceSize retreives information about a specific instance size for service, worker, and job components.
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 // GetInstanceSize retrieves information about a specific instance size for service, worker, and job components.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// GetInstanceSize retrieves information about a specific instance size for service, worker, and job components.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (s *AppsServiceOp) GetInstanceSize(ctx context.Context, slug string) (*AppInstanceSize, *Response, error) {
 	path := fmt.Sprintf("%s/tiers/instance_sizes/%s", appsBasePath, slug)
 	req, err := s.client.NewRequest(ctx, http.MethodGet, path, nil)

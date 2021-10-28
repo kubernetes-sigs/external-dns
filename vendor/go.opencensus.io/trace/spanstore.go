@@ -53,6 +53,7 @@ func (i internalOnly) ReportActiveSpans(name string) []*SpanData {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	for activeSpan := range s.active {
 		if s, ok := activeSpan.(*span); ok {
 			out = append(out, s.makeSpanData())
@@ -791,6 +792,15 @@ func (s *spanStore) finished(span SpanInterface, sd *SpanData) {
 =======
 	for span := range s.active {
 		out = append(out, span.makeSpanData())
+||||||| parent of 4d7e5ad26 (update vendored files)
+	for span := range s.active {
+		out = append(out, span.makeSpanData())
+=======
+	for activeSpan := range s.active {
+		if s, ok := activeSpan.(*span); ok {
+			out = append(out, s.makeSpanData())
+		}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	return out
 }
@@ -926,7 +936,7 @@ func (i internalOnly) ReportSpansByLatency(name string, minLatency, maxLatency t
 // bucketed by latency.
 type spanStore struct {
 	mu                     sync.Mutex // protects everything below.
-	active                 map[*Span]struct{}
+	active                 map[SpanInterface]struct{}
 	errors                 map[int32]*bucket
 	latency                []bucket
 	maxSpansPerErrorBucket int
@@ -935,7 +945,7 @@ type spanStore struct {
 // newSpanStore creates a span store.
 func newSpanStore(name string, latencyBucketSize int, errorBucketSize int) *spanStore {
 	s := &spanStore{
-		active:                 make(map[*Span]struct{}),
+		active:                 make(map[SpanInterface]struct{}),
 		latency:                make([]bucket, len(defaultLatencies)+1),
 		maxSpansPerErrorBucket: errorBucketSize,
 	}
@@ -1012,7 +1022,7 @@ func (s *spanStore) resize(latencyBucketSize int, errorBucketSize int) {
 }
 
 // add adds a span to the active bucket of the spanStore.
-func (s *spanStore) add(span *Span) {
+func (s *spanStore) add(span SpanInterface) {
 	s.mu.Lock()
 	s.active[span] = struct{}{}
 	s.mu.Unlock()
@@ -1020,8 +1030,14 @@ func (s *spanStore) add(span *Span) {
 
 // finished removes a span from the active set, and adds a corresponding
 // SpanData to a latency or error bucket.
+<<<<<<< HEAD
 func (s *spanStore) finished(span *Span, sd *SpanData) {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (s *spanStore) finished(span *Span, sd *SpanData) {
+=======
+func (s *spanStore) finished(span SpanInterface, sd *SpanData) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	latency := sd.EndTime.Sub(sd.StartTime)
 	if latency < 0 {
 		latency = 0

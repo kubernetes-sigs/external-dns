@@ -24,10 +24,15 @@ type Tld struct {
 	RenewalEnabled      bool   `json:"renewal_enabled"`
 	TransferEnabled     bool   `json:"transfer_enabled"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	DnssecInterfaceType string `json:"dnssec_interface_type"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	DnssecInterfaceType string `json:"dnssec_interface_type"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // TldExtendedAttribute represents an extended attributes supported or required

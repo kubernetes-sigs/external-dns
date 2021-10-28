@@ -30,6 +30,10 @@ const (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 var (
 	_ ResettableRESTMapper = PriorityRESTMapper{}
 )
@@ -228,6 +232,7 @@ func (m PriorityRESTMapper) KindsFor(partiallySpecifiedResource schema.GroupVers
 
 func (m PriorityRESTMapper) Reset() {
 	MaybeResetRESTMapper(m.Delegate)
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // PriorityRESTMapper is a wrapper for automatically choosing a particular Resource or Kind
@@ -421,4 +426,7 @@ func (m PriorityRESTMapper) ResourcesFor(partiallySpecifiedResource schema.Group
 func (m PriorityRESTMapper) KindsFor(partiallySpecifiedResource schema.GroupVersionResource) (gvk []schema.GroupVersionKind, err error) {
 	return m.Delegate.KindsFor(partiallySpecifiedResource)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

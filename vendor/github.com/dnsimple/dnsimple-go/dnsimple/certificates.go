@@ -27,6 +27,7 @@ type Certificate struct {
 	CreatedAt           string   `json:"created_at,omitempty"`
 	UpdatedAt           string   `json:"updated_at,omitempty"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ExpiresAt           string   `json:"expires_at,omitempty"`
 	CertificateRequest  string   `json:"csr,omitempty"`
 }
@@ -48,6 +49,11 @@ type CertificatePurchase struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	ExpiresOn           string   `json:"expires_on,omitempty"`
+||||||| parent of 4d7e5ad26 (update vendored files)
+	ExpiresOn           string   `json:"expires_on,omitempty"`
+=======
+	ExpiresAt           string   `json:"expires_at,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	CertificateRequest  string   `json:"csr,omitempty"`
 }
 
@@ -64,8 +70,14 @@ type CertificateBundle struct {
 // CertificatePurchase represents a Certificate Purchase in DNSimple.
 type CertificatePurchase struct {
 	ID            int64  `json:"id,omitempty"`
+<<<<<<< HEAD
 	CertificateID int64  `json:"new_certificate_id,omitempty"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	CertificateID int64  `json:"new_certificate_id,omitempty"`
+=======
+	CertificateID int64  `json:"certificate_id,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	State         string `json:"state,omitempty"`
 	AutoRenew     bool   `json:"auto_renew,omitempty"`
 	CreatedAt     string `json:"created_at,omitempty"`

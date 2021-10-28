@@ -135,6 +135,7 @@ func (*PortRange) Type() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ends, and initializes a new PortRange from it.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -158,6 +159,11 @@ func (*PortRange) Type() string {
 =======
 // ends, and initializs a new PortRange from it.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// ends, and initializs a new PortRange from it.
+=======
+// ends, and initializes a new PortRange from it.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func ParsePortRange(value string) (*PortRange, error) {
 	pr := &PortRange{}
 	err := pr.Set(value)

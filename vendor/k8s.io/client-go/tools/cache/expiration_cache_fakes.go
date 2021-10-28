@@ -18,13 +18,23 @@ package cache
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/clock"
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/apimachinery/pkg/util/clock"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/apimachinery/pkg/util/clock"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"k8s.io/apimachinery/pkg/util/sets"
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"k8s.io/utils/clock"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 type fakeThreadSafeMap struct {

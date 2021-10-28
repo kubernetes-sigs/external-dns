@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build !go1.7
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -290,6 +291,10 @@ func (c *timerCtx) cancel(removeFromParent bool, err error) {
 //	}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build !go1.7
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !go1.7
 
 package context
@@ -551,12 +556,26 @@ func (c *timerCtx) cancel(removeFromParent bool, err error) {
 // Canceling this context releases resources associated with it, so code should
 // call cancel as soon as the operations running in this Context complete:
 //
+<<<<<<< HEAD
 // 	func slowOperationWithTimeout(ctx context.Context) (Result, error) {
 // 		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
 // 		defer cancel()  // releases resources if slowOperation completes before timeout elapses
 // 		return slowOperation(ctx)
 // 	}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// 	func slowOperationWithTimeout(ctx context.Context) (Result, error) {
+// 		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+// 		defer cancel()  // releases resources if slowOperation completes before timeout elapses
+// 		return slowOperation(ctx)
+// 	}
+=======
+//	func slowOperationWithTimeout(ctx context.Context) (Result, error) {
+//		ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+//		defer cancel()  // releases resources if slowOperation completes before timeout elapses
+//		return slowOperation(ctx)
+//	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
 	return WithDeadline(parent, time.Now().Add(timeout))
 }

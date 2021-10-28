@@ -13,6 +13,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - davidopp
 - sttts
 - quinton-hoole
@@ -93,6 +94,12 @@ reviewers:
 - nikhiljindal
 - gmarek
 - erictune
+||||||| parent of 4d7e5ad26 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 - davidopp
 - sttts
 - quinton-hoole
@@ -102,14 +109,14 @@ reviewers:
 - ncdc
 - soltysh
 - dims
-- madhusudancs
 - hongchaodeng
 - krousey
-- mml
-- mbohlool
-- david-mcmahon
 - therc
-- mqliang
 - kevin-wangzefeng
+<<<<<<< HEAD
 - jianhuiz
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+- jianhuiz
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

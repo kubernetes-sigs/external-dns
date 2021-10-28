@@ -90,6 +90,7 @@ func ValueOf(v interface{}) Value {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case ProtoMessage:
 		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -111,6 +112,11 @@ func ValueOf(v interface{}) Value {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	case ProtoMessage:
+		panic(fmt.Sprintf("invalid proto.Message(%T) type, expected a protoreflect.Message type", v))
+>>>>>>> 4d7e5ad26 (update vendored files)
 	default:
 		panic(fmt.Sprintf("invalid type: %T", v))
 	}

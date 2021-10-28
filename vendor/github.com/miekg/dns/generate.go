@@ -76,6 +76,7 @@ func (zp *ZoneParser) generate(l lex) (RR, bool) {
 		s: s,
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		cur:   start,
 		start: start,
 		end:   end,
@@ -251,6 +252,17 @@ func modToPrintf(s string) (string, int64, string) {
 		start: int(start),
 		end:   int(end),
 		step:  int(step),
+||||||| parent of 4d7e5ad26 (update vendored files)
+		cur:   int(start),
+		start: int(start),
+		end:   int(end),
+		step:  int(step),
+=======
+		cur:   start,
+		start: start,
+		end:   end,
+		step:  step,
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 		file: zp.file,
 		lex:  &l,
@@ -266,10 +278,10 @@ type generateReader struct {
 	s  string
 	si int
 
-	cur   int
-	start int
-	end   int
-	step  int
+	cur   int64
+	start int64
+	end   int64
+	step  int64
 
 	mod bytes.Buffer
 
@@ -345,7 +357,7 @@ func (r *generateReader) ReadByte() (byte, error) {
 			return '$', nil
 		}
 
-		var offset int
+		var offset int64
 
 		// Search for { and }
 		if r.s[si+1] == '{' {
@@ -360,7 +372,7 @@ func (r *generateReader) ReadByte() (byte, error) {
 			if errMsg != "" {
 				return 0, r.parseError(errMsg, si+3+sep)
 			}
-			if r.start+offset < 0 || int64(r.end) + int64(offset) > 1<<31-1 {
+			if r.start+offset < 0 || r.end+offset > 1<<31-1 {
 				return 0, r.parseError("bad offset in $GENERATE", si+3+sep)
 			}
 
@@ -380,7 +392,7 @@ func (r *generateReader) ReadByte() (byte, error) {
 }
 
 // Convert a $GENERATE modifier 0,0,d to something Printf can deal with.
-func modToPrintf(s string) (string, int, string) {
+func modToPrintf(s string) (string, int64, string) {
 	// Modifier is { offset [ ,width [ ,base ] ] } - provide default
 	// values for optional width and type, if necessary.
 	var offStr, widthStr, base string
@@ -412,9 +424,15 @@ func modToPrintf(s string) (string, int, string) {
 	}
 
 	if width == 0 {
-		return "%" + base, int(offset), ""
+		return "%" + base, offset, ""
 	}
 
+<<<<<<< HEAD
 	return "%0" + widthStr + base, int(offset), ""
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return "%0" + widthStr + base, int(offset), ""
+=======
+	return "%0" + widthStr + base, offset, ""
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

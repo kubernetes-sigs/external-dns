@@ -31,6 +31,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type RoleLister interface {
 	// List lists all Roles in the indexer.
@@ -176,8 +177,13 @@ type RoleNamespaceLister interface {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type RoleLister interface {
 	// List lists all Roles in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
 	// Roles returns an object that can list and get Roles.
 	Roles(namespace string) RoleNamespaceLister
@@ -208,11 +214,18 @@ func (s *roleLister) Roles(namespace string) RoleNamespaceLister {
 }
 
 // RoleNamespaceLister helps list and get Roles.
+// All objects returned here must be treated as read-only.
 type RoleNamespaceLister interface {
 	// List lists all Roles in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.Role, err error)
 	// Get retrieves the Role from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Get(name string) (*v1beta1.Role, error)
 	RoleNamespaceListerExpansion
 }

@@ -67,6 +67,7 @@ func newEncoder(name string, encoderConfig zapcore.EncoderConfig) (zapcore.Encod
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
 		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
 	}
@@ -94,6 +95,13 @@ func newEncoder(name string, encoderConfig zapcore.EncoderConfig) (zapcore.Encod
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if encoderConfig.TimeKey != "" && encoderConfig.EncodeTime == nil {
+		return nil, fmt.Errorf("missing EncodeTime in EncoderConfig")
+	}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	_encoderMutex.RLock()
 	defer _encoderMutex.RUnlock()
 	if name == "" {

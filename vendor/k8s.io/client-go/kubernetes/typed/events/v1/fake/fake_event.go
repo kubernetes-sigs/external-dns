@@ -109,11 +109,16 @@ func (c *FakeEvents) Update(ctx context.Context, event *eventsv1.Event, opts v1.
 func (c *FakeEvents) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(eventsResource, c.ns, name), &eventsv1.Event{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewDeleteActionWithOptions(eventsResource, c.ns, name, opts), &eventsv1.Event{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(eventsResource, c.ns, name, opts), &eventsv1.Event{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	return err
 }

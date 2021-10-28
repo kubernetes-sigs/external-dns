@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build generate
 // +build generate
 
@@ -11,9 +12,19 @@ package windows
 //go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go eventlog.go service.go syscall_windows.go security_windows.go setupapi_windows.go
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build generate
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build generate
 
 package windows
 
+<<<<<<< HEAD
 //go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go eventlog.go service.go syscall_windows.go security_windows.go
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go eventlog.go service.go syscall_windows.go security_windows.go
+=======
+//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go eventlog.go service.go syscall_windows.go security_windows.go setupapi_windows.go
+>>>>>>> 4d7e5ad26 (update vendored files)

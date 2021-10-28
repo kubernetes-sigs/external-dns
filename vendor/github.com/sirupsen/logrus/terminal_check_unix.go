@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +build linux aix zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -26,6 +27,11 @@
 =======
 // +build linux aix
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build linux aix
+=======
+// +build linux aix zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !js
 
 package logrus

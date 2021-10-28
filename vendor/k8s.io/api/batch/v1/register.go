@@ -51,6 +51,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		&CronJob{},
 		&CronJobList{},
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -72,6 +73,11 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		&CronJob{},
+		&CronJobList{},
+>>>>>>> 4d7e5ad26 (update vendored files)
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

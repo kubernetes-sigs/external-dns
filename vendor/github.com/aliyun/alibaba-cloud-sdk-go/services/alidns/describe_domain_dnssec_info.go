@@ -22,6 +22,7 @@ import (
 
 // DescribeDomainDnssecInfo invokes the alidns.DescribeDomainDnssecInfo API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainDnssecInfo(request *DescribeDomainDnssecInfoRequest) (response *DescribeDomainDnssecInfoResponse, err error) {
 	response = CreateDescribeDomainDnssecInfoResponse()
 	err = client.DoAction(request, response)
@@ -102,6 +103,10 @@ func CreateDescribeDomainDnssecInfoRequest() (request *DescribeDomainDnssecInfoR
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeDomainDnssecInfo(request *DescribeDomainDnssecInfoRequest) (response *DescribeDomainDnssecInfoResponse, err error) {
 	response = CreateDescribeDomainDnssecInfoResponse()
 	err = client.DoAction(request, response)
@@ -109,8 +114,6 @@ func (client *Client) DescribeDomainDnssecInfo(request *DescribeDomainDnssecInfo
 }
 
 // DescribeDomainDnssecInfoWithChan invokes the alidns.DescribeDomainDnssecInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainDnssecInfoWithChan(request *DescribeDomainDnssecInfoRequest) (<-chan *DescribeDomainDnssecInfoResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainDnssecInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -133,8 +136,6 @@ func (client *Client) DescribeDomainDnssecInfoWithChan(request *DescribeDomainDn
 }
 
 // DescribeDomainDnssecInfoWithCallback invokes the alidns.DescribeDomainDnssecInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainDnssecInfoWithCallback(request *DescribeDomainDnssecInfoRequest, callback func(response *DescribeDomainDnssecInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -182,7 +183,12 @@ func CreateDescribeDomainDnssecInfoRequest() (request *DescribeDomainDnssecInfoR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainDnssecInfo", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

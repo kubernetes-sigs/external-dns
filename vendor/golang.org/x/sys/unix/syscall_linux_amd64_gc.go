@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && linux && gc
 // +build amd64,linux,gc
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -38,6 +39,13 @@
 // +build amd64,linux
 // +build gc
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build amd64,linux
+// +build gc
+=======
+//go:build amd64 && linux && gc
+// +build amd64,linux,gc
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package unix
 

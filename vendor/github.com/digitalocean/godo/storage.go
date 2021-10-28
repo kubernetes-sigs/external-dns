@@ -20,6 +20,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage
 type StorageService interface {
 	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
@@ -185,6 +186,11 @@ func (f Volume) String() string {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#block-storage
+||||||| parent of 4d7e5ad26 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#block-storage
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage
+>>>>>>> 4d7e5ad26 (update vendored files)
 type StorageService interface {
 	ListVolumes(context.Context, *ListVolumeParams) ([]Volume, *Response, error)
 	GetVolume(context.Context, string) (*Volume, *Response, error)
@@ -229,7 +235,12 @@ func (f Volume) String() string {
 	return Stringify(f)
 }
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// URN returns the volume ID as a valid DO API URN
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (f Volume) URN() string {
 	return ToURN("Volume", f.ID)
 }

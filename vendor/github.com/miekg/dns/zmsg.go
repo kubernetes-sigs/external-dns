@@ -1119,6 +1119,10 @@ func (rr *X25) pack(msg []byte, off int, compression compressionMap, compress bo
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (rr *ZONEMD) pack(msg []byte, off int, compression compressionMap, compress bool) (off1 int, err error) {
 	off, err = packUint32(rr.Serial, msg, off)
 	if err != nil {
@@ -2869,6 +2873,7 @@ func (rr *ZONEMD) unpack(msg []byte, off int) (off1 int, err error) {
 		return off, nil
 	}
 	rr.Digest, off, err = unpackStringHex(msg, off, rdStart+int(rr.Hdr.Rdlength))
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // unpack*() functions
@@ -4570,6 +4575,9 @@ func (rr *X25) unpack(msg []byte, off int) (off1 int, err error) {
 
 	rr.PSDNAddress, off, err = unpackString(msg, off)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return off, err
 	}

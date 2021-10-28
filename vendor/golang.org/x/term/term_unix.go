@@ -3,6 +3,7 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd zos
 ||||||| parent of 6b7ce455e (update vendored files)
@@ -10,6 +11,11 @@
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package term
 

@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && netbsd
 // +build amd64,netbsd
 
@@ -1396,6 +1397,10 @@ const (
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build amd64 && netbsd
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build amd64,netbsd
 
 package unix
@@ -1650,6 +1655,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x14
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -1846,9 +1852,15 @@ type Ptmget struct {
 
 const (
 	AT_FDCWD            = -0x64
-	AT_SYMLINK_FOLLOW   = 0x400
+	AT_EACCESS          = 0x100
 	AT_SYMLINK_NOFOLLOW = 0x200
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	AT_SYMLINK_FOLLOW   = 0x400
+	AT_REMOVEDIR        = 0x800
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 type PollFd struct {

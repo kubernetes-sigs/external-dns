@@ -350,6 +350,7 @@ func ReverseAddr(addr string) (arpa string, err error) {
 	for i := len(ip) - 1; i >= 0; i-- {
 		v := ip[i]
 <<<<<<< HEAD
+<<<<<<< HEAD
 		buf = append(buf, hexDigit[v&0xF], '.', hexDigit[v>>4], '.')
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -358,6 +359,14 @@ func ReverseAddr(addr string) (arpa string, err error) {
 		buf = append(buf, hexDigit[v>>4])
 		buf = append(buf, '.')
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		buf = append(buf, hexDigit[v&0xF])
+		buf = append(buf, '.')
+		buf = append(buf, hexDigit[v>>4])
+		buf = append(buf, '.')
+=======
+		buf = append(buf, hexDigit[v&0xF], '.', hexDigit[v>>4], '.')
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	// Append "ip6.arpa." and return (buf already has the final .)
 	buf = append(buf, "ip6.arpa."...)

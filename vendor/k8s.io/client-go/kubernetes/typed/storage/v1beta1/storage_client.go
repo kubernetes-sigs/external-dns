@@ -20,6 +20,7 @@ package v1beta1
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1beta1 "k8s.io/api/storage/v1beta1"
@@ -140,6 +141,11 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*StorageV1beta1Clien
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"net/http"
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
@@ -149,6 +155,7 @@ type StorageV1beta1Interface interface {
 	RESTClient() rest.Interface
 	CSIDriversGetter
 	CSINodesGetter
+	CSIStorageCapacitiesGetter
 	StorageClassesGetter
 	VolumeAttachmentsGetter
 }
@@ -166,6 +173,10 @@ func (c *StorageV1beta1Client) CSINodes() CSINodeInterface {
 	return newCSINodes(c)
 }
 
+func (c *StorageV1beta1Client) CSIStorageCapacities(namespace string) CSIStorageCapacityInterface {
+	return newCSIStorageCapacities(c, namespace)
+}
+
 func (c *StorageV1beta1Client) StorageClasses() StorageClassInterface {
 	return newStorageClasses(c)
 }
@@ -175,13 +186,35 @@ func (c *StorageV1beta1Client) VolumeAttachments() VolumeAttachmentInterface {
 }
 
 // NewForConfig creates a new StorageV1beta1Client for the given config.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*StorageV1beta1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 	client, err := rest.RESTClientFor(&config)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	client, err := rest.RESTClientFor(&config)
+=======
+	httpClient, err := rest.HTTPClientFor(&config)
+	if err != nil {
+		return nil, err
+	}
+	return NewForConfigAndClient(&config, httpClient)
+}
+
+// NewForConfigAndClient creates a new StorageV1beta1Client for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*StorageV1beta1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientForConfigAndClient(&config, h)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,7 @@ import (
 
 // DescribeTags invokes the alidns.DescribeTags API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *DescribeTagsResponse, err error) {
 	response = CreateDescribeTagsResponse()
 	err = client.DoAction(request, response)
@@ -99,6 +100,10 @@ func CreateDescribeTagsRequest() (request *DescribeTagsRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describetags.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describetags.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *DescribeTagsResponse, err error) {
 	response = CreateDescribeTagsResponse()
 	err = client.DoAction(request, response)
@@ -106,8 +111,6 @@ func (client *Client) DescribeTags(request *DescribeTagsRequest) (response *Desc
 }
 
 // DescribeTagsWithChan invokes the alidns.DescribeTags API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describetags.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTagsWithChan(request *DescribeTagsRequest) (<-chan *DescribeTagsResponse, <-chan error) {
 	responseChan := make(chan *DescribeTagsResponse, 1)
 	errChan := make(chan error, 1)
@@ -130,8 +133,6 @@ func (client *Client) DescribeTagsWithChan(request *DescribeTagsRequest) (<-chan
 }
 
 // DescribeTagsWithCallback invokes the alidns.DescribeTags API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describetags.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeTagsWithCallback(request *DescribeTagsRequest, callback func(response *DescribeTagsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -176,7 +177,12 @@ func CreateDescribeTagsRequest() (request *DescribeTagsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeTags", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

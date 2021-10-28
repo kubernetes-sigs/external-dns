@@ -2,6 +2,7 @@ package dnsimple
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"net/http"
 
@@ -21,9 +22,27 @@ func StaticTokenHTTPClient(ctx context.Context, token string) *http.Client {
 }
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"net/http"
+
+	"golang.org/x/oauth2"
 )
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+// BasicAuthHTTPClient returns a client that authenticates via HTTP Basic Auth with given username and password.
+func BasicAuthHTTPClient(_ context.Context, username, password string) *http.Client {
+	tp := BasicAuthTransport{Username: username, Password: password}
+	return tp.Client()
+}
+
+// StaticTokenHTTPClient returns a client that authenticates with a static OAuth token.
+func StaticTokenHTTPClient(ctx context.Context, token string) *http.Client {
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	return oauth2.NewClient(ctx, ts)
+}
 
 // BasicAuthTransport is an http.RoundTripper that authenticates all requests
 // using HTTP Basic Authentication with the provided username and password.

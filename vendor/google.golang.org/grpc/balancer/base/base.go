@@ -42,6 +42,7 @@ type PickerBuilder interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Build returns a picker that will be used by gRPC to pick a SubConn.
 	Build(info PickerBuildInfo) balancer.Picker
 }
@@ -229,8 +230,18 @@ func NewBalancerBuilderV2(name string, pb V2PickerBuilder, config Config) balanc
 
 // V2PickerBuilder creates balancer.V2Picker.
 type V2PickerBuilder interface {
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// Build takes a slice of ready SubConns, and returns a picker that will be
+	// used by gRPC to pick a SubConn.
+	Build(readySCs map[resolver.Address]balancer.SubConn) balancer.Picker
+}
+
+// V2PickerBuilder creates balancer.V2Picker.
+type V2PickerBuilder interface {
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// Build returns a picker that will be used by gRPC to pick a SubConn.
-	Build(info PickerBuildInfo) balancer.V2Picker
+	Build(info PickerBuildInfo) balancer.Picker
 }
 
 // PickerBuildInfo contains information needed by the picker builder to
@@ -247,26 +258,21 @@ type SubConnInfo struct {
 	Address resolver.Address // the address used to create this SubConn
 }
 
-// NewBalancerBuilder returns a balancer builder. The balancers
-// built by this builder will use the picker builder to build pickers.
-func NewBalancerBuilder(name string, pb PickerBuilder) balancer.Builder {
-	return NewBalancerBuilderWithConfig(name, pb, Config{})
-}
-
 // Config contains the config info about the base balancer builder.
 type Config struct {
 	// HealthCheck indicates whether health checking should be enabled for this specific balancer.
 	HealthCheck bool
 }
 
-// NewBalancerBuilderWithConfig returns a base balancer builder configured by the provided config.
-func NewBalancerBuilderWithConfig(name string, pb PickerBuilder, config Config) balancer.Builder {
+// NewBalancerBuilder returns a base balancer builder configured by the provided config.
+func NewBalancerBuilder(name string, pb PickerBuilder, config Config) balancer.Builder {
 	return &baseBuilder{
 		name:          name,
 		pickerBuilder: pb,
 		config:        config,
 	}
 }
+<<<<<<< HEAD
 
 // NewBalancerBuilderV2 returns a base balancer builder configured by the provided config.
 func NewBalancerBuilderV2(name string, pb V2PickerBuilder, config Config) balancer.Builder {
@@ -277,3 +283,15 @@ func NewBalancerBuilderV2(name string, pb V2PickerBuilder, config Config) balanc
 	}
 }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+// NewBalancerBuilderV2 returns a base balancer builder configured by the provided config.
+func NewBalancerBuilderV2(name string, pb V2PickerBuilder, config Config) balancer.Builder {
+	return &baseBuilder{
+		name:            name,
+		v2PickerBuilder: pb,
+		config:          config,
+	}
+}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

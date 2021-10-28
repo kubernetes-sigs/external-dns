@@ -33,12 +33,16 @@ type Interface interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// CSIStorageCapacities returns a CSIStorageCapacityInformer.
 	CSIStorageCapacities() CSIStorageCapacityInformer
 	// StorageClasses returns a StorageClassInformer.
@@ -71,6 +75,7 @@ func (v *version) CSINodes() CSINodeInformer {
 // CSIStorageCapacities returns a CSIStorageCapacityInformer.
 func (v *version) CSIStorageCapacities() CSIStorageCapacityInformer {
 	return &cSIStorageCapacityInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -163,6 +168,9 @@ func (v *version) CSIDrivers() CSIDriverInformer {
 func (v *version) CSINodes() CSINodeInformer {
 	return &cSINodeInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // StorageClasses returns a StorageClassInformer.

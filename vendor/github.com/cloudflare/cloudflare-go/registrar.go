@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -169,8 +170,13 @@ func (api *API) UpdateRegistrarDomain(ctx context.Context, accountID, domainName
 		return RegistrarDomain{}, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -248,12 +254,12 @@ type RegistrarDomainsDetailResponse struct {
 // domain name.
 //
 // API reference: https://api.cloudflare.com/#registrar-domains-get-domain
-func (api *API) RegistrarDomain(accountID, domainName string) (RegistrarDomain, error) {
+func (api *API) RegistrarDomain(ctx context.Context, accountID, domainName string) (RegistrarDomain, error) {
 	uri := fmt.Sprintf("/accounts/%s/registrar/domains/%s", accountID, domainName)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
+		return RegistrarDomain{}, err
 	}
 
 	var r RegistrarDomainDetailResponse
@@ -268,12 +274,12 @@ func (api *API) RegistrarDomain(accountID, domainName string) (RegistrarDomain, 
 // ID.
 //
 // API reference: https://api.cloudflare.com/#registrar-domains-list-domains
-func (api *API) RegistrarDomains(accountID string) ([]RegistrarDomain, error) {
-	uri := "/accounts/" + accountID + "/registrar/domains"
+func (api *API) RegistrarDomains(ctx context.Context, accountID string) ([]RegistrarDomain, error) {
+	uri := fmt.Sprintf("/accounts/%s/registrar/domains", accountID)
 
-	res, err := api.makeRequest("POST", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, nil)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
+		return []RegistrarDomain{}, err
 	}
 
 	var r RegistrarDomainsDetailResponse
@@ -288,12 +294,12 @@ func (api *API) RegistrarDomains(accountID string) ([]RegistrarDomain, error) {
 // to Cloudflare Registrar.
 //
 // API reference: https://api.cloudflare.com/#registrar-domains-transfer-domain
-func (api *API) TransferRegistrarDomain(accountID, domainName string) ([]RegistrarDomain, error) {
+func (api *API) TransferRegistrarDomain(ctx context.Context, accountID, domainName string) ([]RegistrarDomain, error) {
 	uri := fmt.Sprintf("/accounts/%s/registrar/domains/%s/transfer", accountID, domainName)
 
-	res, err := api.makeRequest("POST", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, nil)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
+		return []RegistrarDomain{}, err
 	}
 
 	var r RegistrarDomainsDetailResponse
@@ -307,12 +313,12 @@ func (api *API) TransferRegistrarDomain(accountID, domainName string) ([]Registr
 // CancelRegistrarDomainTransfer cancels a pending domain transfer.
 //
 // API reference: https://api.cloudflare.com/#registrar-domains-cancel-transfer
-func (api *API) CancelRegistrarDomainTransfer(accountID, domainName string) ([]RegistrarDomain, error) {
+func (api *API) CancelRegistrarDomainTransfer(ctx context.Context, accountID, domainName string) ([]RegistrarDomain, error) {
 	uri := fmt.Sprintf("/accounts/%s/registrar/domains/%s/cancel_transfer", accountID, domainName)
 
-	res, err := api.makeRequest("POST", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, nil)
 	if err != nil {
-		return []RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
+		return []RegistrarDomain{}, err
 	}
 
 	var r RegistrarDomainsDetailResponse
@@ -326,13 +332,19 @@ func (api *API) CancelRegistrarDomainTransfer(accountID, domainName string) ([]R
 // UpdateRegistrarDomain updates an existing Registrar Domain configuration.
 //
 // API reference: https://api.cloudflare.com/#registrar-domains-update-domain
-func (api *API) UpdateRegistrarDomain(accountID, domainName string, domainConfiguration RegistrarDomainConfiguration) (RegistrarDomain, error) {
+func (api *API) UpdateRegistrarDomain(ctx context.Context, accountID, domainName string, domainConfiguration RegistrarDomainConfiguration) (RegistrarDomain, error) {
 	uri := fmt.Sprintf("/accounts/%s/registrar/domains/%s", accountID, domainName)
 
-	res, err := api.makeRequest("PUT", uri, domainConfiguration)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, domainConfiguration)
 	if err != nil {
+<<<<<<< HEAD
 		return RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return RegistrarDomain{}, errors.Wrap(err, errMakeRequestError)
+=======
+		return RegistrarDomain{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	var r RegistrarDomainDetailResponse

@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/flat"
 	"github.com/maxatome/go-testdeep/internal/util"
 )
@@ -324,6 +325,10 @@ func (l *tdList) uniqTypeBehind() reflect.Type {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"github.com/maxatome/go-testdeep/internal/flat"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"github.com/maxatome/go-testdeep/internal/util"
 )
 
@@ -332,20 +337,18 @@ type tdList struct {
 	items []reflect.Value
 }
 
-func newList(items ...interface{}) (ret tdList) {
-	ret.baseOKNil = newBaseOKNil(4)
-	ret.items = make([]reflect.Value, len(items))
-
-	for idx, item := range items {
-		ret.items[idx] = reflect.ValueOf(item)
+func newList(items ...interface{}) tdList {
+	return tdList{
+		baseOKNil: newBaseOKNil(4),
+		items:     flat.Values(items),
 	}
-	return
 }
 
 func (l *tdList) String() string {
 	return util.SliceToBuffer(bytes.NewBufferString(l.GetLocation().Func), l.items).
 		String()
 }
+<<<<<<< HEAD
 
 func (l *tdList) uniqTypeBehind() reflect.Type {
 	var (
@@ -404,3 +407,63 @@ func (l *tdList) uniqTypeBehind() reflect.Type {
 	return nil
 }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+func (l *tdList) uniqTypeBehind() reflect.Type {
+	var (
+		lastIfType, lastType, curType reflect.Type
+		severalIfTypes                bool
+	)
+
+	//
+	for _, item := range l.items {
+		if !item.IsValid() {
+			return nil // no need to go further
+		}
+
+		if item.Type().Implements(testDeeper) {
+			curType = item.Interface().(TestDeep).TypeBehind()
+
+			// Ignore unknown TypeBehind
+			if curType == nil {
+				continue
+			}
+
+			// Ignore interfaces & interface pointers too (see Isa), but
+			// keep them in mind in case we encounter always the same
+			// interface pointer
+			if curType.Kind() == reflect.Interface ||
+				(curType.Kind() == reflect.Ptr &&
+					curType.Elem().Kind() == reflect.Interface) {
+				if lastIfType == nil {
+					lastIfType = curType
+				} else if lastIfType != curType {
+					severalIfTypes = true
+				}
+				continue
+			}
+		} else {
+			curType = item.Type()
+		}
+
+		if lastType != curType {
+			if lastType != nil {
+				return nil
+			}
+			lastType = curType
+		}
+	}
+
+	// Only one type found
+	if lastType != nil {
+		return lastType
+	}
+
+	// Only one interface type found
+	if lastIfType != nil && !severalIfTypes {
+		return lastIfType
+	}
+	return nil
+}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

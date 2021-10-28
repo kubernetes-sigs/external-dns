@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -396,6 +397,11 @@ func (c *FakeRuntimeClasses) Apply(ctx context.Context, runtimeClass *nodev1alph
 		Invokes(testing.NewRootPatchSubresourceAction(runtimeclassesResource, *name, types.ApplyPatchType, data), &v1alpha1.RuntimeClass{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1alpha1 "k8s.io/api/node/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,6 +409,7 @@ func (c *FakeRuntimeClasses) Apply(ctx context.Context, runtimeClass *nodev1alph
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	nodev1alpha1 "k8s.io/client-go/applyconfigurations/node/v1alpha1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -475,7 +482,7 @@ func (c *FakeRuntimeClasses) Update(ctx context.Context, runtimeClass *v1alpha1.
 // Delete takes name of the runtimeClass and deletes it. Returns an error if one occurs.
 func (c *FakeRuntimeClasses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(runtimeclassesResource, name), &v1alpha1.RuntimeClass{})
+		Invokes(testing.NewRootDeleteActionWithOptions(runtimeclassesResource, name, opts), &v1alpha1.RuntimeClass{})
 	return err
 }
 
@@ -492,6 +499,27 @@ func (c *FakeRuntimeClasses) Patch(ctx context.Context, name string, pt types.Pa
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(runtimeclassesResource, name, pt, data, subresources...), &v1alpha1.RuntimeClass{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.RuntimeClass), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied runtimeClass.
+func (c *FakeRuntimeClasses) Apply(ctx context.Context, runtimeClass *nodev1alpha1.RuntimeClassApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RuntimeClass, err error) {
+	if runtimeClass == nil {
+		return nil, fmt.Errorf("runtimeClass provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(runtimeClass)
+	if err != nil {
+		return nil, err
+	}
+	name := runtimeClass.Name
+	if name == nil {
+		return nil, fmt.Errorf("runtimeClass.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(runtimeclassesResource, *name, types.ApplyPatchType, data), &v1alpha1.RuntimeClass{})
 	if obj == nil {
 		return nil, err
 	}

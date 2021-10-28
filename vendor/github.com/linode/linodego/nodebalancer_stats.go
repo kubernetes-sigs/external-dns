@@ -29,6 +29,7 @@ func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeB
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	e, err := c.NodeBalancerStats.endpointWithParams(linodeID)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -52,6 +53,11 @@ func (c *Client) GetNodeBalancerStats(ctx context.Context, linodeID int) (*NodeB
 =======
 	e, err := c.NodeBalancerStats.endpointWithID(linodeID)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	e, err := c.NodeBalancerStats.endpointWithID(linodeID)
+=======
+	e, err := c.NodeBalancerStats.endpointWithParams(linodeID)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

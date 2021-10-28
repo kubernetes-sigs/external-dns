@@ -75,6 +75,7 @@ func readSockstat(name string) (*NetSockstat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
 	}
 
@@ -169,6 +170,11 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return nil, fmt.Errorf("failed to read sockstats from %q: %v", name, err)
+=======
+		return nil, fmt.Errorf("failed to read sockstats from %q: %w", name, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return stat, nil
@@ -188,8 +194,14 @@ func parseSockstat(r io.Reader) (*NetSockstat, error) {
 		// The remaining fields are key/value pairs.
 		kvs, err := parseSockstatKVs(fields[1:])
 		if err != nil {
+<<<<<<< HEAD
 			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %v", s.Text(), err)
+=======
+			return nil, fmt.Errorf("error parsing sockstat key/value pairs from %q: %w", s.Text(), err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 		}
 
 		// The first field is the protocol. We must trim its colon suffix.

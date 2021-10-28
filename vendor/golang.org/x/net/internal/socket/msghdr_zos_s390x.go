@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build s390x && zos
 // +build s390x,zos
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -38,6 +39,13 @@
 // +build s390x
 // +build zos
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build s390x
+// +build zos
+=======
+//go:build s390x && zos
+// +build s390x,zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package socket
 

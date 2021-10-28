@@ -169,6 +169,7 @@ func (sd *SampleDecoder) Decode(s *model.Vector) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // families. If an error occurs during sample extraction, it continues to
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -192,6 +193,11 @@ func (sd *SampleDecoder) Decode(s *model.Vector) error {
 =======
 // families. If an error occurrs during sample extraction, it continues to
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// families. If an error occurrs during sample extraction, it continues to
+=======
+// families. If an error occurs during sample extraction, it continues to
+>>>>>>> 4d7e5ad26 (update vendored files)
 // extract from the remaining metric families. The returned error is the last
 // error that has occurred.
 func ExtractSamples(o *DecodeOptions, fams ...*dto.MetricFamily) (model.Vector, error) {

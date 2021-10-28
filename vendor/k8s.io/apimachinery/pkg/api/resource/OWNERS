@@ -14,6 +14,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - xiang90
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -57,7 +58,18 @@ reviewers:
 =======
 - tallclair
 - eparis
+||||||| parent of 4d7e5ad26 (update vendored files)
+- tallclair
+- eparis
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 - xiang90
+<<<<<<< HEAD
 - mbohlool
 - david-mcmahon
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+- mbohlool
+- david-mcmahon
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

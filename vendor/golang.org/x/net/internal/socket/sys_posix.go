@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
 
@@ -264,6 +265,10 @@ func parseInetAddr(b []byte, network string) (net.Addr, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
 
 package socket
@@ -278,35 +283,36 @@ import (
 	"time"
 )
 
-func marshalInetAddr(a net.Addr) []byte {
+// marshalInetAddr writes a in sockaddr format into the buffer b.
+// The buffer must be sufficiently large (sizeofSockaddrInet4/6).
+// Returns the number of bytes written.
+func marshalInetAddr(a net.Addr, b []byte) int {
 	switch a := a.(type) {
 	case *net.TCPAddr:
-		return marshalSockaddr(a.IP, a.Port, a.Zone)
+		return marshalSockaddr(a.IP, a.Port, a.Zone, b)
 	case *net.UDPAddr:
-		return marshalSockaddr(a.IP, a.Port, a.Zone)
+		return marshalSockaddr(a.IP, a.Port, a.Zone, b)
 	case *net.IPAddr:
-		return marshalSockaddr(a.IP, 0, a.Zone)
+		return marshalSockaddr(a.IP, 0, a.Zone, b)
 	default:
-		return nil
+		return 0
 	}
 }
 
-func marshalSockaddr(ip net.IP, port int, zone string) []byte {
+func marshalSockaddr(ip net.IP, port int, zone string, b []byte) int {
 	if ip4 := ip.To4(); ip4 != nil {
-		b := make([]byte, sizeofSockaddrInet)
 		switch runtime.GOOS {
 		case "android", "illumos", "linux", "solaris", "windows":
 			NativeEndian.PutUint16(b[:2], uint16(sysAF_INET))
 		default:
-			b[0] = sizeofSockaddrInet
+			b[0] = sizeofSockaddrInet4
 			b[1] = sysAF_INET
 		}
 		binary.BigEndian.PutUint16(b[2:4], uint16(port))
 		copy(b[4:8], ip4)
-		return b
+		return sizeofSockaddrInet4
 	}
 	if ip6 := ip.To16(); ip6 != nil && ip.To4() == nil {
-		b := make([]byte, sizeofSockaddrInet6)
 		switch runtime.GOOS {
 		case "android", "illumos", "linux", "solaris", "windows":
 			NativeEndian.PutUint16(b[:2], uint16(sysAF_INET6))
@@ -319,9 +325,9 @@ func marshalSockaddr(ip net.IP, port int, zone string) []byte {
 		if zone != "" {
 			NativeEndian.PutUint32(b[24:28], uint32(zoneCache.index(zone)))
 		}
-		return b
+		return sizeofSockaddrInet6
 	}
-	return nil
+	return 0
 }
 
 func parseInetAddr(b []byte, network string) (net.Addr, error) {
@@ -338,8 +344,14 @@ func parseInetAddr(b []byte, network string) (net.Addr, error) {
 	var ip net.IP
 	var zone string
 	if af == sysAF_INET {
+<<<<<<< HEAD
 		if len(b) < sizeofSockaddrInet {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		if len(b) < sizeofSockaddrInet {
+=======
+		if len(b) < sizeofSockaddrInet4 {
+>>>>>>> 4d7e5ad26 (update vendored files)
 			return nil, errors.New("short address")
 		}
 		ip = make(net.IP, net.IPv4len)

@@ -34,6 +34,7 @@ type cmsghdr struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const (
 	sizeofIovec  = 0x8
 	sizeofMsghdr = 0x1c
@@ -162,11 +163,38 @@ type sockaddrInet6 struct {
 	Scope_id uint32
 }
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+type sockaddrInet struct {
+	Len    uint8
+	Family uint8
+	Port   uint16
+	Addr   [4]byte /* in_addr */
+	Zero   [8]int8
+}
+
+type sockaddrInet6 struct {
+	Len      uint8
+	Family   uint8
+	Port     uint16
+	Flowinfo uint32
+	Addr     [16]byte /* in6_addr */
+	Scope_id uint32
+}
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 const (
 	sizeofIovec  = 0x8
 	sizeofMsghdr = 0x1c
+<<<<<<< HEAD
 
 	sizeofSockaddrInet  = 0x10
 	sizeofSockaddrInet6 = 0x1c
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x1c
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 )

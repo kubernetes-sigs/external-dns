@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -11,13 +12,23 @@ import (
 	"math/big"
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"crypto/ed25519"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"math/big"
+<<<<<<< HEAD
 
 	"golang.org/x/crypto/ed25519"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+	"golang.org/x/crypto/ed25519"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 // Generate generates a DNSKEY of the given bit size.

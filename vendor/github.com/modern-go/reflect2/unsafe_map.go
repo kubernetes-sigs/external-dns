@@ -112,6 +112,7 @@ func (type2 *UnsafeMapType) Iterate(obj interface{}) MapIterator {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (type2 *UnsafeMapType) UnsafeIterate(obj unsafe.Pointer) MapIterator {
@@ -167,6 +168,17 @@ func (type2 *UnsafeMapType) UnsafeIterate(obj unsafe.Pointer) MapIterator {
 }
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (type2 *UnsafeMapType) UnsafeIterate(obj unsafe.Pointer) MapIterator {
+	return &UnsafeMapIterator{
+		hiter:      mapiterinit(type2.rtype, *(*unsafe.Pointer)(obj)),
+		pKeyRType:  type2.pKeyRType,
+		pElemRType: type2.pElemRType,
+	}
+}
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 type UnsafeMapIterator struct {
 	*hiter
 	pKeyRType  unsafe.Pointer

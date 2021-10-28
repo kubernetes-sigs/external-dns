@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -525,6 +526,11 @@ func (c *FakeDeployments) ApplyStatus(ctx context.Context, deployment *appsv1bet
 		Invokes(testing.NewPatchSubresourceAction(deploymentsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta2.Deployment{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1beta2 "k8s.io/api/apps/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -532,6 +538,7 @@ func (c *FakeDeployments) ApplyStatus(ctx context.Context, deployment *appsv1bet
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	appsv1beta2 "k8s.io/client-go/applyconfigurations/apps/v1beta2"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -622,7 +629,7 @@ func (c *FakeDeployments) UpdateStatus(ctx context.Context, deployment *v1beta2.
 // Delete takes name of the deployment and deletes it. Returns an error if one occurs.
 func (c *FakeDeployments) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(deploymentsResource, c.ns, name), &v1beta2.Deployment{})
+		Invokes(testing.NewDeleteActionWithOptions(deploymentsResource, c.ns, name, opts), &v1beta2.Deployment{})
 
 	return err
 }
@@ -640,6 +647,51 @@ func (c *FakeDeployments) Patch(ctx context.Context, name string, pt types.Patch
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(deploymentsResource, c.ns, name, pt, data, subresources...), &v1beta2.Deployment{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta2.Deployment), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied deployment.
+func (c *FakeDeployments) Apply(ctx context.Context, deployment *appsv1beta2.DeploymentApplyConfiguration, opts v1.ApplyOptions) (result *v1beta2.Deployment, err error) {
+	if deployment == nil {
+		return nil, fmt.Errorf("deployment provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(deployment)
+	if err != nil {
+		return nil, err
+	}
+	name := deployment.Name
+	if name == nil {
+		return nil, fmt.Errorf("deployment.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(deploymentsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta2.Deployment{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta2.Deployment), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeDeployments) ApplyStatus(ctx context.Context, deployment *appsv1beta2.DeploymentApplyConfiguration, opts v1.ApplyOptions) (result *v1beta2.Deployment, err error) {
+	if deployment == nil {
+		return nil, fmt.Errorf("deployment provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(deployment)
+	if err != nil {
+		return nil, err
+	}
+	name := deployment.Name
+	if name == nil {
+		return nil, fmt.Errorf("deployment.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(deploymentsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta2.Deployment{})
 
 	if obj == nil {
 		return nil, err

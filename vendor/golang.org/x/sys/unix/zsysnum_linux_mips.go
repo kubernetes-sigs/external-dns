@@ -6,12 +6,16 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 //go:build mips && linux
 // +build mips,linux
 
@@ -439,6 +443,7 @@ const (
 	SYS_LANDLOCK_CREATE_RULESET      = 4444
 	SYS_LANDLOCK_ADD_RULE            = 4445
 	SYS_LANDLOCK_RESTRICT_SELF       = 4446
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -1716,4 +1721,10 @@ const (
 	SYS_PIDFD_GETFD                  = 4438
 	SYS_FACCESSAT2                   = 4439
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	SYS_PROCESS_MRELEASE             = 4448
+	SYS_FUTEX_WAITV                  = 4449
+	SYS_SET_MEMPOLICY_HOME_NODE      = 4450
+>>>>>>> 4d7e5ad26 (update vendored files)
 )

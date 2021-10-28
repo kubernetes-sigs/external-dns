@@ -22,6 +22,7 @@ import (
 
 // RollbackGtmRecoveryPlan invokes the alidns.RollbackGtmRecoveryPlan API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) RollbackGtmRecoveryPlan(request *RollbackGtmRecoveryPlanRequest) (response *RollbackGtmRecoveryPlanResponse, err error) {
 	response = CreateRollbackGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,10 @@ func CreateRollbackGtmRecoveryPlanRequest() (request *RollbackGtmRecoveryPlanReq
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) RollbackGtmRecoveryPlan(request *RollbackGtmRecoveryPlanRequest) (response *RollbackGtmRecoveryPlanResponse, err error) {
 	response = CreateRollbackGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -100,8 +105,6 @@ func (client *Client) RollbackGtmRecoveryPlan(request *RollbackGtmRecoveryPlanRe
 }
 
 // RollbackGtmRecoveryPlanWithChan invokes the alidns.RollbackGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RollbackGtmRecoveryPlanWithChan(request *RollbackGtmRecoveryPlanRequest) (<-chan *RollbackGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *RollbackGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -124,8 +127,6 @@ func (client *Client) RollbackGtmRecoveryPlanWithChan(request *RollbackGtmRecove
 }
 
 // RollbackGtmRecoveryPlanWithCallback invokes the alidns.RollbackGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RollbackGtmRecoveryPlanWithCallback(request *RollbackGtmRecoveryPlanRequest, callback func(response *RollbackGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -164,7 +165,12 @@ func CreateRollbackGtmRecoveryPlanRequest() (request *RollbackGtmRecoveryPlanReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "RollbackGtmRecoveryPlan", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

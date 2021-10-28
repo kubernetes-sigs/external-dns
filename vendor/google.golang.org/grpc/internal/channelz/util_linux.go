@@ -1,9 +1,15 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build linux,!appengine
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build linux,!appengine
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 /*
  *
  * Copyright 2018 gRPC authors.

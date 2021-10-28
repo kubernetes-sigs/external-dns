@@ -22,6 +22,7 @@ import (
 
 // SetDomainRecordStatus invokes the alidns.SetDomainRecordStatus API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetDomainRecordStatus(request *SetDomainRecordStatusRequest) (response *SetDomainRecordStatusResponse, err error) {
 	response = CreateSetDomainRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -96,6 +97,10 @@ func CreateSetDomainRecordStatusRequest() (request *SetDomainRecordStatusRequest
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/setdomainrecordstatus.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/setdomainrecordstatus.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) SetDomainRecordStatus(request *SetDomainRecordStatusRequest) (response *SetDomainRecordStatusResponse, err error) {
 	response = CreateSetDomainRecordStatusResponse()
 	err = client.DoAction(request, response)
@@ -103,8 +108,6 @@ func (client *Client) SetDomainRecordStatus(request *SetDomainRecordStatusReques
 }
 
 // SetDomainRecordStatusWithChan invokes the alidns.SetDomainRecordStatus API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setdomainrecordstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDomainRecordStatusWithChan(request *SetDomainRecordStatusRequest) (<-chan *SetDomainRecordStatusResponse, <-chan error) {
 	responseChan := make(chan *SetDomainRecordStatusResponse, 1)
 	errChan := make(chan error, 1)
@@ -127,8 +130,6 @@ func (client *Client) SetDomainRecordStatusWithChan(request *SetDomainRecordStat
 }
 
 // SetDomainRecordStatusWithCallback invokes the alidns.SetDomainRecordStatus API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setdomainrecordstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDomainRecordStatusWithCallback(request *SetDomainRecordStatusRequest, callback func(response *SetDomainRecordStatusResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -170,7 +171,12 @@ func CreateSetDomainRecordStatusRequest() (request *SetDomainRecordStatusRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "SetDomainRecordStatus", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

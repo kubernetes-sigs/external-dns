@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -595,6 +596,10 @@ func (r *Request) Send() error {
 		}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"io/ioutil"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"net/http"
 	"net/url"
 	"reflect"
@@ -720,10 +725,25 @@ func New(cfg aws.Config, clientInfo metadata.ClientInfo, handlers Handlers,
 	httpReq, _ := http.NewRequest(method, "", nil)
 
 	var err error
-	httpReq.URL, err = url.Parse(clientInfo.Endpoint + operation.HTTPPath)
+	httpReq.URL, err = url.Parse(clientInfo.Endpoint)
 	if err != nil {
 		httpReq.URL = &url.URL{}
 		err = awserr.New("InvalidEndpointURL", "invalid endpoint uri", err)
+	}
+
+	if len(operation.HTTPPath) != 0 {
+		opHTTPPath := operation.HTTPPath
+		var opQueryString string
+		if idx := strings.Index(opHTTPPath, "?"); idx >= 0 {
+			opQueryString = opHTTPPath[idx+1:]
+			opHTTPPath = opHTTPPath[:idx]
+		}
+
+		if strings.HasSuffix(httpReq.URL.Path, "/") && strings.HasPrefix(opHTTPPath, "/") {
+			opHTTPPath = opHTTPPath[1:]
+		}
+		httpReq.URL.Path += opHTTPPath
+		httpReq.URL.RawQuery = opQueryString
 	}
 
 	r := &Request{
@@ -1101,7 +1121,19 @@ func (r *Request) GetBody() io.ReadSeeker {
 // Send will not close the request.Request's body.
 func (r *Request) Send() error {
 	defer func() {
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		// Ensure a non-nil HTTPResponse parameter is set to ensure handlers
+		// checking for HTTPResponse values, don't fail.
+		if r.HTTPResponse == nil {
+			r.HTTPResponse = &http.Response{
+				Header: http.Header{},
+				Body:   ioutil.NopCloser(&bytes.Buffer{}),
+			}
+		}
+>>>>>>> 4d7e5ad26 (update vendored files)
 		// Regardless of success or failure of the request trigger the Complete
 		// request handlers.
 		r.Handlers.Complete.Run(r)

@@ -121,11 +121,16 @@ func (c *FakeIngresses) UpdateStatus(ctx context.Context, ingress *networkingv1.
 func (c *FakeIngresses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(ingressesResource, c.ns, name), &networkingv1.Ingress{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewDeleteActionWithOptions(ingressesResource, c.ns, name, opts), &networkingv1.Ingress{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(ingressesResource, c.ns, name, opts), &networkingv1.Ingress{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	return err
 }

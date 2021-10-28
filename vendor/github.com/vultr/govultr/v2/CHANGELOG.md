@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [v2.9.0](https://github.com/vultr/govultr/compare/v2.8.1..v2.9.0) (2021-09-27)
 ### Breaking Change
 * Kubernetes : PlanID is now Plan and Count is now NodeQuantity to follow API pattern [161](https://github.com/vultr/govultr/pull/161)
@@ -167,6 +168,89 @@
 * BareMetal : Add support for `persistent_pxe` [148](https://github.com/vultr/govultr/pull/148)
 
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+## [v2.14.1](https://github.com/vultr/govultr/compare/v2.14.0..v2.14.1) (2022-02-02)
+### Enhancement
+* Improved retry error response [204](https://github.com/vultr/govultr/pull/204)
+
+## [v2.14.0](https://github.com/vultr/govultr/compare/v2.13.0..v2.14.0) (2022-01-21)
+### Enhancement
+* ListOptions : [Added query param Region](https://www.vultr.com/api/#operation/list-instances) that can be used with `Instance.List`  [200](https://github.com/vultr/govultr/pull/200)
+* ListOptions : [Added query param Description](https://www.vultr.com/api/#operation/list-snapshots) that can be used with `Snapshot.List`  [202](https://github.com/vultr/govultr/pull/202)
+* Snapshot : `CreateFromURL` has new optional field called `description` which lets you set a custom description [202](https://github.com/vultr/govultr/pull/202)
+
+## [v2.13.0](https://github.com/vultr/govultr/compare/v2.12.0..v2.13.0) (2022-01-05)
+### Enhancement
+* ListOptions : [Added query params](https://www.vultr.com/api/#operation/list-instances) that can be used with `Instance.List`  [197](https://github.com/vultr/govultr/pull/197)
+
+## [v2.12.0](https://github.com/vultr/govultr/compare/v2.11.1..v2.12.0) (2021-12-01)
+### Breaking Changes
+* Plans : Changed `MonthlyCost` from `int` to `float32` [192](https://github.com/vultr/govultr/pull/192)
+
+## [v2.11.1](https://github.com/vultr/govultr/compare/v2.11.0..v2.11.1) (2021-11-26)
+### Bug fixes
+* LoadBalancers : Fixed SSL struct json params to the proper API fields [189](https://github.com/vultr/govultr/pull/189)
+
+## [v2.11.0](https://github.com/vultr/govultr/compare/v2.10.0..v2.11.0) (2021-11-18)
+### Breaking Changes
+* Instances : Update call will now return `*Instance` in addition to `error` [185](https://github.com/vultr/govultr/pull/185)
+* Instances : Reinstall call now allows changing of hostname and also returns `*Instance` in addition to `error` [181](https://github.com/vultr/govultr/pull/181)
+
+### Enhancement
+* Instances : The hostname of the instance is now returned in any call that returns Instance data [187](https://github.com/vultr/govultr/pull/187)
+* Domains : There is a new field called `dns_sec` which will return `enabled` or `disabled` depending on how your domain is configured [184](https://github.com/vultr/govultr/pull/184)
+
+## [v2.10.0](https://github.com/vultr/govultr/compare/v2.9.2..v2.10.0) (2021-11-03)
+### Enhancement
+* Billing : Added support for billing [178](https://github.com/vultr/govultr/pull/178)
+
+## [v2.9.2](https://github.com/vultr/govultr/compare/v2.9.1..v2.9.2) (2021-10-20)
+### Change
+* Iso : Changed `client` field to be unexported [168](https://github.com/vultr/govultr/pull/168)
+* Snapshot : Changed `client` field to be unexported  [168](https://github.com/vultr/govultr/pull/168)
+* Plans : Changed `client` field to be unexported  [168](https://github.com/vultr/govultr/pull/168)
+* Regions : Changed `client` field to be unexported  [168](https://github.com/vultr/govultr/pull/168)
+
+## [v2.9.1](https://github.com/vultr/govultr/compare/v2.9.0..v2.9.1) (2021-10-18)
+### Enhancement
+* Kubernetes : Added `Tag` support for nodepools [164](https://github.com/vultr/govultr/pull/164)
+
+## [v2.9.0](https://github.com/vultr/govultr/compare/v2.8.1..v2.9.0) (2021-09-27)
+### Breaking Change
+* Kubernetes : PlanID is now Plan and Count is now NodeQuantity to follow API pattern [161](https://github.com/vultr/govultr/pull/161)
+
+### Enhancement
+* Snapshots : Add compressed size field [162](https://github.com/vultr/govultr/pull/162)
+
+## [v2.8.1](https://github.com/vultr/govultr/compare/v2.8.0..v2.8.1) (2021-08-31)
+### Enhancement
+* Kubernetes : Add support for deletion with resources [159](https://github.com/vultr/govultr/pull/159)
+* Kubernetes : Add support for getting available versions[159](https://github.com/vultr/govultr/pull/159)
+
+### Dependency Update
+* Bump Go version to 1.16 [158](https://github.com/vultr/govultr/pull/158)
+
+## [v2.8.0](https://github.com/vultr/govultr/compare/v2.7.1..v2.8.0) (2021-08-18)
+### Enhancement
+* Added support for Vultr Kubernetes Engine [156](https://github.com/vultr/govultr/pull/156)
+
+## [v2.7.1](https://github.com/vultr/govultr/compare/v2.7.0..v2.7.1) (2021-07-15)
+### Enhancement
+* BareMetal : Add support for `image_id` on update [152](https://github.com/vultr/govultr/pull/152)
+* Instances : Add support for `image_id` on update [152](https://github.com/vultr/govultr/pull/152)
+
+## [v2.7.0](https://github.com/vultr/govultr/compare/v2.6.0..v2.7.0) (2021-07-14)
+### Enhancement
+* BareMetal : Add support for `image_id` [150](https://github.com/vultr/govultr/pull/150)
+* Instances : Add support for `image_id` [150](https://github.com/vultr/govultr/pull/150)
+* Applications : added support for marketplace applications [150](https://github.com/vultr/govultr/pull/150)
+
+## [v2.6.0](https://github.com/vultr/govultr/compare/v2.5.1..v2.6.0) (2021-07-02)
+### Enhancement
+* BareMetal : Add support for `persistent_pxe` [148](https://github.com/vultr/govultr/pull/148)
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 ## [v2.5.1](https://github.com/vultr/govultr/compare/v2.5.0..v2.5.1) (2021-05-10)
 ### Bug fix
 * Instances : BackupScheduleReq change DOW + Hour to pointers  [145](https://github.com/vultr/govultr/pull/145)
@@ -218,6 +302,7 @@
 ### Initial Release
 * GoVultr v2.0.0 Release - Uses Vultr API v2.
 * GoVultr v1.0.0 is now on [branch v1](https://github.com/vultr/govultr/tree/v1)
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ## [v2.5.1](https://github.com/vultr/govultr/compare/v2.5.0..v2.5.1) (2021-05-10)
@@ -272,3 +357,7 @@
 * GoVultr v2.0.0 Release - Uses Vultr API v2.
 * GoVultr v1.0.0 is now on [branch v1](https://github.com/vultr/govultr/tree/v1)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+* GoVultr v1.0.0 is now on [branch v1](https://github.com/vultr/govultr/tree/v1)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

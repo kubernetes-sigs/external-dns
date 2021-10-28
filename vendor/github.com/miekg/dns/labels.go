@@ -11,11 +11,17 @@ package dns
 // s must be a syntactically valid domain name, see IsDomainName.
 func SplitDomainName(s string) (labels []string) {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if s == "" {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if len(s) == 0 {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if len(s) == 0 {
+=======
+	if s == "" {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return nil
 	}
 	fqdnEnd := 0 // offset of the final '.' or the length of the name

@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Use Prettify instead.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -34,6 +35,11 @@ import (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// Deprecated: Use Prettify instead.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func StringValue(i interface{}) string {
 	var buf bytes.Buffer
 	stringValue(reflect.ValueOf(i), 0, &buf)

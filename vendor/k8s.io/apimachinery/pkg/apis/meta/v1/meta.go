@@ -161,6 +161,7 @@ func (meta *ObjectMeta) SetDeletionTimestamp(deletionTimestamp *Time) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
 	return meta.DeletionGracePeriodSeconds
 }
@@ -190,6 +191,13 @@ func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
 =======
 func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 { return meta.DeletionGracePeriodSeconds }
+=======
+func (meta *ObjectMeta) GetDeletionGracePeriodSeconds() *int64 {
+	return meta.DeletionGracePeriodSeconds
+}
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (meta *ObjectMeta) SetDeletionGracePeriodSeconds(deletionGracePeriodSeconds *int64) {
 	meta.DeletionGracePeriodSeconds = deletionGracePeriodSeconds
 }

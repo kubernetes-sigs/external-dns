@@ -100,6 +100,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Use this function to read MFA tokens from stdin. The function makes no attempt
 // to make atomic prompts from stdin across multiple gorouties.
 //
@@ -671,6 +672,11 @@ func NewCredentials(c client.ConfigProvider, roleARN string, options ...func(*As
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Use this function go read MFA tokens from stdin. The function makes no attempt
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Use this function go read MFA tokens from stdin. The function makes no attempt
+=======
+// Use this function to read MFA tokens from stdin. The function makes no attempt
+>>>>>>> 4d7e5ad26 (update vendored files)
 // to make atomic prompts from stdin across multiple gorouties.
 //
 // Using StdinTokenProvider with multiple AssumeRoleProviders, or Credentials will
@@ -819,9 +825,11 @@ type AssumeRoleProvider struct {
 	MaxJitterFrac float64
 }
 
-// NewCredentials returns a pointer to a new Credentials object wrapping the
+// NewCredentials returns a pointer to a new Credentials value wrapping the
 // AssumeRoleProvider. The credentials will expire every 15 minutes and the
-// role will be named after a nanosecond timestamp of this operation.
+// role will be named after a nanosecond timestamp of this operation. The
+// Credentials value will attempt to refresh the credentials using the provider
+// when Credentials.Get is called, if the cached credentials are expiring.
 //
 // Takes a Config provider to create the STS client. The ConfigProvider is
 // satisfied by the session.Session type.
@@ -843,10 +851,18 @@ func NewCredentials(c client.ConfigProvider, roleARN string, options ...func(*As
 	return credentials.NewCredentials(p)
 }
 
-// NewCredentialsWithClient returns a pointer to a new Credentials object wrapping the
+// NewCredentialsWithClient returns a pointer to a new Credentials value wrapping the
 // AssumeRoleProvider. The credentials will expire every 15 minutes and the
+<<<<<<< HEAD
 // role will be named after a nanosecond timestamp of this operation.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// role will be named after a nanosecond timestamp of this operation.
+=======
+// role will be named after a nanosecond timestamp of this operation. The
+// Credentials value will attempt to refresh the credentials using the provider
+// when Credentials.Get is called, if the cached credentials are expiring.
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // Takes an AssumeRoler which can be satisfied by the STS client.
 //

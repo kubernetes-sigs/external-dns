@@ -4,6 +4,7 @@ language: go
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 arch:
     - amd64
     - ppc64le
@@ -28,6 +29,12 @@ arch:
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+arch:
+    - amd64
+    - ppc64le
+>>>>>>> 4d7e5ad26 (update vendored files)
 install:
   - go get -t
   - go get golang.org/x/tools/cmd/cover

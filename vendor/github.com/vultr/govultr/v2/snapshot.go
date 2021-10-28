@@ -21,6 +21,7 @@ type SnapshotService interface {
 // SnapshotServiceHandler handles interaction with the snapshot methods for the Vultr API
 type SnapshotServiceHandler struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	client *Client
 }
 
@@ -200,17 +201,23 @@ func (s *SnapshotServiceHandler) List(ctx context.Context, options *ListOptions)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Client *Client
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Client *Client
+=======
+	client *Client
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // Snapshot represents a Vultr snapshot
 type Snapshot struct {
-	ID          string `json:"id"`
-	DateCreated string `json:"date_created"`
-	Description string `json:"description"`
-	Size        int    `json:"size"`
-	Status      string `json:"status"`
-	OsID        int    `json:"os_id"`
-	AppID       int    `json:"app_id"`
+	ID             string `json:"id"`
+	DateCreated    string `json:"date_created"`
+	Description    string `json:"description"`
+	Size           int    `json:"size"`
+	CompressedSize int    `json:"compressed_size"`
+	Status         string `json:"status"`
+	OsID           int    `json:"os_id"`
+	AppID          int    `json:"app_id"`
 }
 
 // SnapshotReq struct is used to create snapshots.
@@ -221,7 +228,8 @@ type SnapshotReq struct {
 
 // SnapshotURLReq struct is used to create snapshots from a URL.
 type SnapshotURLReq struct {
-	URL string `json:"url"`
+	URL         string `json:"url"`
+	Description string `json:"description,omitempty"`
 }
 
 type snapshotsBase struct {
@@ -237,13 +245,13 @@ type snapshotBase struct {
 func (s *SnapshotServiceHandler) Create(ctx context.Context, snapshotReq *SnapshotReq) (*Snapshot, error) {
 	uri := "/v2/snapshots"
 
-	req, err := s.Client.NewRequest(ctx, http.MethodPost, uri, snapshotReq)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, uri, snapshotReq)
 	if err != nil {
 		return nil, err
 	}
 
 	snapshot := new(snapshotBase)
-	if err = s.Client.DoWithContext(ctx, req, snapshot); err != nil {
+	if err = s.client.DoWithContext(ctx, req, snapshot); err != nil {
 		return nil, err
 	}
 
@@ -254,13 +262,13 @@ func (s *SnapshotServiceHandler) Create(ctx context.Context, snapshotReq *Snapsh
 func (s *SnapshotServiceHandler) CreateFromURL(ctx context.Context, snapshotURLReq *SnapshotURLReq) (*Snapshot, error) {
 	uri := "/v2/snapshots/create-from-url"
 
-	req, err := s.Client.NewRequest(ctx, http.MethodPost, uri, snapshotURLReq)
+	req, err := s.client.NewRequest(ctx, http.MethodPost, uri, snapshotURLReq)
 	if err != nil {
 		return nil, err
 	}
 
 	snapshot := new(snapshotBase)
-	if err = s.Client.DoWithContext(ctx, req, snapshot); err != nil {
+	if err = s.client.DoWithContext(ctx, req, snapshot); err != nil {
 		return nil, err
 	}
 
@@ -271,13 +279,13 @@ func (s *SnapshotServiceHandler) CreateFromURL(ctx context.Context, snapshotURLR
 func (s *SnapshotServiceHandler) Get(ctx context.Context, snapshotID string) (*Snapshot, error) {
 	uri := fmt.Sprintf("/v2/snapshots/%s", snapshotID)
 
-	req, err := s.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	snapshot := new(snapshotBase)
-	if err = s.Client.DoWithContext(ctx, req, snapshot); err != nil {
+	if err = s.client.DoWithContext(ctx, req, snapshot); err != nil {
 		return nil, err
 	}
 
@@ -288,19 +296,19 @@ func (s *SnapshotServiceHandler) Get(ctx context.Context, snapshotID string) (*S
 func (s *SnapshotServiceHandler) Delete(ctx context.Context, snapshotID string) error {
 	uri := fmt.Sprintf("/v2/snapshots/%s", snapshotID)
 
-	req, err := s.Client.NewRequest(ctx, http.MethodDelete, uri, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
 		return err
 	}
 
-	return s.Client.DoWithContext(ctx, req, nil)
+	return s.client.DoWithContext(ctx, req, nil)
 }
 
 // List all available snapshots.
 func (s *SnapshotServiceHandler) List(ctx context.Context, options *ListOptions) ([]Snapshot, *Meta, error) {
 	uri := "/v2/snapshots"
 
-	req, err := s.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := s.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -312,8 +320,14 @@ func (s *SnapshotServiceHandler) List(ctx context.Context, options *ListOptions)
 	req.URL.RawQuery = newValues.Encode()
 
 	snapshots := new(snapshotsBase)
+<<<<<<< HEAD
 	if err = s.Client.DoWithContext(ctx, req, snapshots); err != nil {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if err = s.Client.DoWithContext(ctx, req, snapshots); err != nil {
+=======
+	if err = s.client.DoWithContext(ctx, req, snapshots); err != nil {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return nil, nil, err
 	}
 

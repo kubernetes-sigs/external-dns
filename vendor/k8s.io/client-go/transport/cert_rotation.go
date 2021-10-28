@@ -34,6 +34,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -57,6 +58,11 @@ import (
 =======
 	"k8s.io/klog"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 const workItemKey = "key"

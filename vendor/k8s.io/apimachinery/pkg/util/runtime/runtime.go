@@ -28,6 +28,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -488,6 +489,11 @@ func RecoverFromPanic(err *error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 var (
@@ -543,7 +549,7 @@ func logPanic(r interface{}) {
 	}
 }
 
-// ErrorHandlers is a list of functions which will be invoked when an unreturnable
+// ErrorHandlers is a list of functions which will be invoked when a nonreturnable
 // error occurs.
 // TODO(lavalamp): for testability, this and the below HandleError function
 // should be packaged up into a testable and reusable object.
@@ -629,8 +635,14 @@ func RecoverFromPanic(err *error) {
 	}
 }
 
+<<<<<<< HEAD
 // Must panics on non-nil errors.  Useful to handling programmer level errors.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Must panics on non-nil errors.  Useful to handling programmer level errors.
+=======
+// Must panics on non-nil errors. Useful to handling programmer level errors.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func Must(err error) {
 	if err != nil {
 		panic(err)

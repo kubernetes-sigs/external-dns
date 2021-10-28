@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	exec "golang.org/x/sys/execabs"
 	"os"
 	"strings"
@@ -93,8 +94,11 @@ func findExternalDriver(cfg *Config) driver {
 			fmt.Fprintf(os.Stderr, "%s stderr: <<%s>>\n", cmdDebugStr(cmd), stderr)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	exec "golang.org/x/sys/execabs"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"os"
-	"os/exec"
 	"strings"
 )
 
@@ -170,8 +174,14 @@ func findExternalDriver(cfg *Config) driver {
 			return nil, fmt.Errorf("%v: %v: %s", tool, err, cmd.Stderr)
 		}
 		if len(stderr.Bytes()) != 0 && os.Getenv("GOPACKAGESPRINTDRIVERERRORS") != "" {
+<<<<<<< HEAD
 			fmt.Fprintf(os.Stderr, "%s stderr: <<%s>>\n", cmdDebugStr(cmd, words...), stderr)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			fmt.Fprintf(os.Stderr, "%s stderr: <<%s>>\n", cmdDebugStr(cmd, words...), stderr)
+=======
+			fmt.Fprintf(os.Stderr, "%s stderr: <<%s>>\n", cmdDebugStr(cmd), stderr)
+>>>>>>> 4d7e5ad26 (update vendored files)
 		}
 
 		var response driverResponse

@@ -114,11 +114,16 @@ func (c *FakeFlowSchemas) UpdateStatus(ctx context.Context, flowSchema *v1beta1.
 func (c *FakeFlowSchemas) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Invokes(testing.NewRootDeleteAction(flowschemasResource, name), &v1beta1.FlowSchema{})
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 		Invokes(testing.NewRootDeleteActionWithOptions(flowschemasResource, name, opts), &v1beta1.FlowSchema{})
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		Invokes(testing.NewRootDeleteActionWithOptions(flowschemasResource, name, opts), &v1beta1.FlowSchema{})
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return err
 }
 

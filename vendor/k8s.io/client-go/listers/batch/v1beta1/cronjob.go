@@ -31,6 +31,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type CronJobLister interface {
 	// List lists all CronJobs in the indexer.
@@ -176,8 +177,13 @@ type CronJobNamespaceLister interface {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type CronJobLister interface {
 	// List lists all CronJobs in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CronJob, err error)
 	// CronJobs returns an object that can list and get CronJobs.
 	CronJobs(namespace string) CronJobNamespaceLister
@@ -208,11 +214,18 @@ func (s *cronJobLister) CronJobs(namespace string) CronJobNamespaceLister {
 }
 
 // CronJobNamespaceLister helps list and get CronJobs.
+// All objects returned here must be treated as read-only.
 type CronJobNamespaceLister interface {
 	// List lists all CronJobs in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.CronJob, err error)
 	// Get retrieves the CronJob from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Get(name string) (*v1beta1.CronJob, error)
 	CronJobNamespaceListerExpansion
 }

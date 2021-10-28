@@ -33,6 +33,7 @@ type WriteScheduler interface {
 	// Pop dequeues the next frame to write. Returns false if no frames can
 	// be written. Frames with a given wr.StreamID() are Pop'd in the same
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// order they are Push'd, except RST_STREAM frames. No frames should be
 	// discarded except by CloseStream.
 	Pop() (wr FrameWriteRequest, ok bool)
@@ -58,6 +59,12 @@ type FrameWriteRequest struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// order they are Push'd. No frames should be discarded except by CloseStream.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// order they are Push'd. No frames should be discarded except by CloseStream.
+=======
+	// order they are Push'd, except RST_STREAM frames. No frames should be
+	// discarded except by CloseStream.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Pop() (wr FrameWriteRequest, ok bool)
 }
 
@@ -77,7 +84,12 @@ type FrameWriteRequest struct {
 
 	// stream is the stream on which this frame will be written.
 	// nil for non-stream frames like PING and SETTINGS.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// nil for RST_STREAM streams, which use the StreamError.StreamID field instead.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	stream *stream
 
 	// done, if non-nil, must be a buffered channel with space for

@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
@@ -74,10 +75,25 @@
   revision = "e0a39a4cb4216ea8db28e22a69f4ec25610d513a"
   version = "1.0.0"
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+[[projects]]
+  name = "github.com/modern-go/concurrent"
+  packages = ["."]
+  revision = "e0a39a4cb4216ea8db28e22a69f4ec25610d513a"
+  version = "1.0.0"
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
+<<<<<<< HEAD
   inputs-digest = "daee8a88b3498b61c5640056665b8b9eea062006f5e596bbb6a3ed9119a11ec7"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+  inputs-digest = "daee8a88b3498b61c5640056665b8b9eea062006f5e596bbb6a3ed9119a11ec7"
+=======
+  input-imports = []
+>>>>>>> 4d7e5ad26 (update vendored files)
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -31,6 +31,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type ClusterRoleLister interface {
 	// List lists all ClusterRoles in the indexer.
@@ -74,11 +75,21 @@ type ClusterRoleLister interface {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type ClusterRoleLister interface {
 	// List lists all ClusterRoles in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1beta1.ClusterRole, err error)
 	// Get retrieves the ClusterRole from the index for a given name.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	Get(name string) (*v1beta1.ClusterRole, error)
 	ClusterRoleListerExpansion
 }

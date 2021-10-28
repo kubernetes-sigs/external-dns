@@ -33,6 +33,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"path/filepath"
 	"strings"
 	"time"
@@ -341,10 +342,16 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"path"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"path"
+=======
+	"path/filepath"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"strings"
 	"time"
 
 	"k8s.io/client-go/util/keyutil"
+	netutils "k8s.io/utils/net"
 )
 
 const duration365d = time.Hour * 24 * 365
@@ -374,6 +381,7 @@ func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, erro
 			CommonName:   cfg.CommonName,
 			Organization: cfg.Organization,
 		},
+		DNSNames:              []string{cfg.CommonName},
 		NotBefore:             now.UTC(),
 		NotAfter:              now.Add(duration365d * 10).UTC(),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
@@ -408,8 +416,8 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 	maxAge := time.Hour * 24 * 365          // one year self-signed certs
 
 	baseName := fmt.Sprintf("%s_%s_%s", host, strings.Join(ipsToStrings(alternateIPs), "-"), strings.Join(alternateDNS, "-"))
-	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
-	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
+	certFixturePath := filepath.Join(fixtureDirectory, baseName+".crt")
+	keyFixturePath := filepath.Join(fixtureDirectory, baseName+".key")
 	if len(fixtureDirectory) > 0 {
 		cert, err := ioutil.ReadFile(certFixturePath)
 		if err == nil {
@@ -468,8 +476,14 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 		BasicConstraintsValid: true,
 	}
 
+<<<<<<< HEAD
 	if ip := net.ParseIP(host); ip != nil {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if ip := net.ParseIP(host); ip != nil {
+=======
+	if ip := netutils.ParseIPSloppy(host); ip != nil {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		template.IPAddresses = append(template.IPAddresses, ip)
 	} else {
 		template.DNSNames = append(template.DNSNames, host)

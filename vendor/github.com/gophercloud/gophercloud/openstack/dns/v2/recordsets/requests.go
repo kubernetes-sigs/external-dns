@@ -62,6 +62,7 @@ func Get(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r Ge
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	resp, err := client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
 	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
@@ -437,6 +438,12 @@ func Delete(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	_, r.Err = client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	_, r.Err = client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
+=======
+	resp, err := client.Get(rrsetURL(client, zoneID, rrsetID), &r.Body, nil)
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 
@@ -482,9 +489,10 @@ func Create(client *gophercloud.ServiceClient, zoneID string, opts CreateOptsBui
 		r.Err = err
 		return
 	}
-	_, r.Err = client.Post(baseURL(client, zoneID), &b, &r.Body, &gophercloud.RequestOpts{
+	resp, err := client.Post(baseURL(client, zoneID), &b, &r.Body, &gophercloud.RequestOpts{
 		OkCodes: []int{201, 202},
 	})
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
 }
 
@@ -537,17 +545,23 @@ func Update(client *gophercloud.ServiceClient, zoneID string, rrsetID string, op
 		r.Err = err
 		return
 	}
-	_, r.Err = client.Put(rrsetURL(client, zoneID, rrsetID), &b, &r.Body, &gophercloud.RequestOpts{
+	resp, err := client.Put(rrsetURL(client, zoneID, rrsetID), &b, &r.Body, &gophercloud.RequestOpts{
 		OkCodes: []int{200, 202},
 	})
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
 }
 
 // Delete removes an existing RecordSet.
 func Delete(client *gophercloud.ServiceClient, zoneID string, rrsetID string) (r DeleteResult) {
-	_, r.Err = client.Delete(rrsetURL(client, zoneID, rrsetID), &gophercloud.RequestOpts{
+	resp, err := client.Delete(rrsetURL(client, zoneID, rrsetID), &gophercloud.RequestOpts{
 		OkCodes: []int{202},
 	})
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }

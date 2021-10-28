@@ -58,6 +58,7 @@ func (e ErrCode) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
@@ -190,6 +191,16 @@ func (e headerFieldValueError) Error() string {
 	return fmt.Sprintf("invalid header field value for %q", string(e))
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+func (e ErrCode) stringToken() string {
+	if s, ok := errCodeName[e]; ok {
+		return s
+	}
+	return fmt.Sprintf("ERR_UNKNOWN_%d", uint32(e))
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // ConnectionError is an error that results in the termination of the
 // entire connection.
 type ConnectionError ErrCode
@@ -203,6 +214,11 @@ type StreamError struct {
 	Code     ErrCode
 	Cause    error // optional additional detail
 }
+
+// errFromPeer is a sentinel error value for StreamError.Cause to
+// indicate that the StreamError was sent from the peer over the wire
+// and wasn't locally generated in the Transport.
+var errFromPeer = errors.New("received from peer")
 
 func streamError(id uint32, code ErrCode) StreamError {
 	return StreamError{StreamID: id, Code: code}
@@ -261,8 +277,14 @@ func (e headerFieldNameError) Error() string {
 type headerFieldValueError string
 
 func (e headerFieldValueError) Error() string {
+<<<<<<< HEAD
 	return fmt.Sprintf("invalid header field value %q", string(e))
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return fmt.Sprintf("invalid header field value %q", string(e))
+=======
+	return fmt.Sprintf("invalid header field value for %q", string(e))
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 var (

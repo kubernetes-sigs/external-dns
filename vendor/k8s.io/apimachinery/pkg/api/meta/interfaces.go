@@ -133,6 +133,7 @@ type RESTMapper interface {
 	ResourceSingularizer(resource string) (singular string, err error)
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // ResettableRESTMapper is a RESTMapper which is capable of resetting itself
 // from discovery.
@@ -145,3 +146,15 @@ type ResettableRESTMapper interface {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+// ResettableRESTMapper is a RESTMapper which is capable of resetting itself
+// from discovery.
+// All rest mappers that delegate to other rest mappers must implement this interface and dynamically
+// check if the delegate mapper supports the Reset() operation.
+type ResettableRESTMapper interface {
+	RESTMapper
+	Reset()
+}
+>>>>>>> 4d7e5ad26 (update vendored files)

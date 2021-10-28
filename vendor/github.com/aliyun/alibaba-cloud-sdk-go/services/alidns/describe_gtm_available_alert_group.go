@@ -22,6 +22,7 @@ import (
 
 // DescribeGtmAvailableAlertGroup invokes the alidns.DescribeGtmAvailableAlertGroup API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmAvailableAlertGroup(request *DescribeGtmAvailableAlertGroupRequest) (response *DescribeGtmAvailableAlertGroupResponse, err error) {
 	response = CreateDescribeGtmAvailableAlertGroupResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,10 @@ func CreateDescribeGtmAvailableAlertGroupRequest() (request *DescribeGtmAvailabl
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeGtmAvailableAlertGroup(request *DescribeGtmAvailableAlertGroupRequest) (response *DescribeGtmAvailableAlertGroupResponse, err error) {
 	response = CreateDescribeGtmAvailableAlertGroupResponse()
 	err = client.DoAction(request, response)
@@ -100,8 +105,6 @@ func (client *Client) DescribeGtmAvailableAlertGroup(request *DescribeGtmAvailab
 }
 
 // DescribeGtmAvailableAlertGroupWithChan invokes the alidns.DescribeGtmAvailableAlertGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAvailableAlertGroupWithChan(request *DescribeGtmAvailableAlertGroupRequest) (<-chan *DescribeGtmAvailableAlertGroupResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmAvailableAlertGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -124,8 +127,6 @@ func (client *Client) DescribeGtmAvailableAlertGroupWithChan(request *DescribeGt
 }
 
 // DescribeGtmAvailableAlertGroupWithCallback invokes the alidns.DescribeGtmAvailableAlertGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAvailableAlertGroupWithCallback(request *DescribeGtmAvailableAlertGroupRequest, callback func(response *DescribeGtmAvailableAlertGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -164,7 +165,12 @@ func CreateDescribeGtmAvailableAlertGroupRequest() (request *DescribeGtmAvailabl
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAvailableAlertGroup", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

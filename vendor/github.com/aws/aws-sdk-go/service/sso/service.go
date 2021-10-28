@@ -53,6 +53,7 @@ func New(p client.ConfigProvider, cfgs ...*aws.Config) *SSO {
 		c.SigningName = "awsssoportal"
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName)
 }
 
@@ -89,6 +90,26 @@ func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint,
 				APIVersion:     "2019-06-10",
 				ResolvedRegion: resolvedRegion,
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	return newClient(*c.Config, c.Handlers, c.PartitionID, c.Endpoint, c.SigningRegion, c.SigningName, c.ResolvedRegion)
+}
+
+// newClient creates, initializes and returns a new service client instance.
+func newClient(cfg aws.Config, handlers request.Handlers, partitionID, endpoint, signingRegion, signingName, resolvedRegion string) *SSO {
+	svc := &SSO{
+		Client: client.New(
+			cfg,
+			metadata.ClientInfo{
+				ServiceName:    ServiceName,
+				ServiceID:      ServiceID,
+				SigningName:    signingName,
+				SigningRegion:  signingRegion,
+				PartitionID:    partitionID,
+				Endpoint:       endpoint,
+				APIVersion:     "2019-06-10",
+				ResolvedRegion: resolvedRegion,
+>>>>>>> 4d7e5ad26 (update vendored files)
 			},
 			handlers,
 		),

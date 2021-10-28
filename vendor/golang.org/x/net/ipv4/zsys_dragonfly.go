@@ -9,6 +9,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	sysIP_OPTIONS     = 0x1
@@ -114,6 +115,27 @@ const (
 	sysIP_DROP_MEMBERSHIP = 0xd
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	sysIP_OPTIONS     = 0x1
+	sysIP_HDRINCL     = 0x2
+	sysIP_TOS         = 0x3
+	sysIP_TTL         = 0x4
+	sysIP_RECVOPTS    = 0x5
+	sysIP_RECVRETOPTS = 0x6
+	sysIP_RECVDSTADDR = 0x7
+	sysIP_RETOPTS     = 0x8
+	sysIP_RECVIF      = 0x14
+	sysIP_RECVTTL     = 0x41
+
+	sysIP_MULTICAST_IF    = 0x9
+	sysIP_MULTICAST_TTL   = 0xa
+	sysIP_MULTICAST_LOOP  = 0xb
+	sysIP_MULTICAST_VIF   = 0xe
+	sysIP_ADD_MEMBERSHIP  = 0xc
+	sysIP_DROP_MEMBERSHIP = 0xd
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	sizeofIPMreq = 0x8
 )
 

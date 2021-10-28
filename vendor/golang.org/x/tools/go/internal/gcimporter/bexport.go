@@ -35,6 +35,7 @@ import (
 const debugFormat = false // default: false
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Current export format version. Increase with each format change.
 // Note: The latest binary (non-indexed) export format is at version 6.
 //       This exporter is still at level 4, but it doesn't matter since
@@ -107,6 +108,12 @@ func BExportData(fset *token.FileSet, pkg *types.Package) (b []byte, err error) 
 // If trace is set, debugging output is printed to std out.
 const trace = false // default: false
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+// If trace is set, debugging output is printed to std out.
+const trace = false // default: false
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 // Current export format version. Increase with each format change.
 // Note: The latest binary (non-indexed) export format is at version 6.
 //       This exporter is still at level 4, but it doesn't matter since
@@ -162,17 +169,31 @@ func internalErrorf(format string, args ...interface{}) error {
 // BExportData returns binary export data for pkg.
 // If no file set is provided, position info will be missing.
 func BExportData(fset *token.FileSet, pkg *types.Package) (b []byte, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			if ierr, ok := e.(internalError); ok {
-				err = ierr
-				return
+	if !debug {
+		defer func() {
+			if e := recover(); e != nil {
+				if ierr, ok := e.(internalError); ok {
+					err = ierr
+					return
+				}
+				// Not an internal error; panic again.
+				panic(e)
 			}
+<<<<<<< HEAD
 			// Not an internal error; panic again.
 			panic(e)
 		}
 	}()
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			// Not an internal error; panic again.
+			panic(e)
+		}
+	}()
+=======
+		}()
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	p := exporter{
 		fset:          fset,

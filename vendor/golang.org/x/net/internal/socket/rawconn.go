@@ -22,6 +22,7 @@ type Conn struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // tcpConn is an interface implemented by net.TCPConn.
 // It can be used for interface assertions to check if a net.Conn is a TCP connection.
 type tcpConn interface {
@@ -165,19 +166,55 @@ func NewConn(c net.Conn) (*Conn, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// tcpConn is an interface implemented by net.TCPConn.
+// It can be used for interface assertions to check if a net.Conn is a TCP connection.
+type tcpConn interface {
+	SyscallConn() (syscall.RawConn, error)
+	SetLinger(int) error
+}
+
+var _ tcpConn = (*net.TCPConn)(nil)
+
+// udpConn is an interface implemented by net.UDPConn.
+// It can be used for interface assertions to check if a net.Conn is a UDP connection.
+type udpConn interface {
+	SyscallConn() (syscall.RawConn, error)
+	ReadMsgUDP(b, oob []byte) (n, oobn, flags int, addr *net.UDPAddr, err error)
+}
+
+var _ udpConn = (*net.UDPConn)(nil)
+
+// ipConn is an interface implemented by net.IPConn.
+// It can be used for interface assertions to check if a net.Conn is an IP connection.
+type ipConn interface {
+	SyscallConn() (syscall.RawConn, error)
+	ReadMsgIP(b, oob []byte) (n, oobn, flags int, addr *net.IPAddr, err error)
+}
+
+var _ ipConn = (*net.IPConn)(nil)
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // NewConn returns a new raw connection.
 func NewConn(c net.Conn) (*Conn, error) {
 	var err error
 	var cc Conn
 	switch c := c.(type) {
-	case *net.TCPConn:
+	case tcpConn:
 		cc.network = "tcp"
 		cc.c, err = c.SyscallConn()
-	case *net.UDPConn:
+	case udpConn:
 		cc.network = "udp"
 		cc.c, err = c.SyscallConn()
+<<<<<<< HEAD
 	case *net.IPConn:
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	case *net.IPConn:
+=======
+	case ipConn:
+>>>>>>> 4d7e5ad26 (update vendored files)
 		cc.network = "ip"
 		cc.c, err = c.SyscallConn()
 	default:

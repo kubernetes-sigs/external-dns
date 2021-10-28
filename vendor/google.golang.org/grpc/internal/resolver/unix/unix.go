@@ -38,6 +38,7 @@ func (b *builder) Build(target resolver.Target, cc resolver.ClientConn, _ resolv
 		return nil, fmt.Errorf("invalid (non-empty) authority: %v", target.Authority)
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	addr := resolver.Address{Addr: target.Endpoint}
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -53,6 +54,20 @@ func (b *builder) Build(target resolver.Target, cc resolver.ClientConn, _ resolv
 	}
 	addr := resolver.Address{Addr: endpoint}
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+	// gRPC was parsing the dial target manually before PR #4817, and we
+	// switched to using url.Parse() in that PR. To avoid breaking existing
+	// resolver implementations we ended up stripping the leading "/" from the
+	// endpoint. This obviously does not work for the "unix" scheme. Hence we
+	// end up using the parsed URL instead.
+	endpoint := target.URL.Path
+	if endpoint == "" {
+		endpoint = target.URL.Opaque
+	}
+	addr := resolver.Address{Addr: endpoint}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if b.scheme == unixAbstractScheme {
 		// prepend "\x00" to address for unix-abstract
 		addr.Addr = "\x00" + addr.Addr

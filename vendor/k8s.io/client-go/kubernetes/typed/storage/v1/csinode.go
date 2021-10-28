@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -549,12 +550,18 @@ func (c *cSINodes) Apply(ctx context.Context, cSINode *storagev1.CSINodeApplyCon
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"time"
 
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1 "k8s.io/client-go/applyconfigurations/storage/v1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -575,6 +582,7 @@ type CSINodeInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.CSINodeList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.CSINode, err error)
+	Apply(ctx context.Context, cSINode *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *v1.CSINode, err error)
 	CSINodeExpansion
 }
 
@@ -691,6 +699,31 @@ func (c *cSINodes) Patch(ctx context.Context, name string, pt types.PatchType, d
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied cSINode.
+func (c *cSINodes) Apply(ctx context.Context, cSINode *storagev1.CSINodeApplyConfiguration, opts metav1.ApplyOptions) (result *v1.CSINode, err error) {
+	if cSINode == nil {
+		return nil, fmt.Errorf("cSINode provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(cSINode)
+	if err != nil {
+		return nil, err
+	}
+	name := cSINode.Name
+	if name == nil {
+		return nil, fmt.Errorf("cSINode.Name must be provided to Apply")
+	}
+	result = &v1.CSINode{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Resource("csinodes").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

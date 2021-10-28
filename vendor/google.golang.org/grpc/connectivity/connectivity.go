@@ -19,6 +19,7 @@
 // Package connectivity defines connectivity semantics.
 // For details, see https://github.com/grpc/grpc/blob/master/doc/connectivity-semantics-and-api.md.
 <<<<<<< HEAD
+<<<<<<< HEAD
 package connectivity
 
 import (
@@ -222,13 +223,17 @@ func (s ServingMode) String() string {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // All APIs in this package are experimental.
+||||||| parent of 4d7e5ad26 (update vendored files)
+// All APIs in this package are experimental.
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 package connectivity
 
 import (
-	"context"
-
 	"google.golang.org/grpc/grpclog"
 )
+
+var logger = grpclog.Component("core")
 
 // State indicates the state of connectivity.
 // It can be the state of a ClientConn or SubConn.
@@ -247,8 +252,8 @@ func (s State) String() string {
 	case Shutdown:
 		return "SHUTDOWN"
 	default:
-		grpclog.Errorf("unknown connectivity state: %d", s)
-		return "Invalid-State"
+		logger.Errorf("unknown connectivity state: %d", s)
+		return "INVALID_STATE"
 	}
 }
 
@@ -265,13 +270,35 @@ const (
 	Shutdown
 )
 
-// Reporter reports the connectivity states.
-type Reporter interface {
-	// CurrentState returns the current state of the reporter.
-	CurrentState() State
-	// WaitForStateChange blocks until the reporter's state is different from the given state,
-	// and returns true.
-	// It returns false if <-ctx.Done() can proceed (ctx got timeout or got canceled).
-	WaitForStateChange(context.Context, State) bool
+// ServingMode indicates the current mode of operation of the server.
+//
+// Only xDS enabled gRPC servers currently report their serving mode.
+type ServingMode int
+
+const (
+	// ServingModeStarting indicates that the server is starting up.
+	ServingModeStarting ServingMode = iota
+	// ServingModeServing indicates that the server contains all required
+	// configuration and is serving RPCs.
+	ServingModeServing
+	// ServingModeNotServing indicates that the server is not accepting new
+	// connections. Existing connections will be closed gracefully, allowing
+	// in-progress RPCs to complete. A server enters this mode when it does not
+	// contain the required configuration to serve RPCs.
+	ServingModeNotServing
+)
+
+func (s ServingMode) String() string {
+	switch s {
+	case ServingModeStarting:
+		return "STARTING"
+	case ServingModeServing:
+		return "SERVING"
+	case ServingModeNotServing:
+		return "NOT_SERVING"
+	default:
+		logger.Errorf("unknown serving mode: %d", s)
+		return "INVALID_MODE"
+	}
 }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

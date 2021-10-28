@@ -137,6 +137,7 @@ type inFlow struct {
 // newLimit updates the inflow window to a new value n.
 // It assumes that n is always greater than the old limit.
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (f *inFlow) newLimit(n uint32) {
 	f.mu.Lock()
 	f.limit = n
@@ -144,12 +145,21 @@ func (f *inFlow) newLimit(n uint32) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (f *inFlow) newLimit(n uint32) uint32 {
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (f *inFlow) newLimit(n uint32) uint32 {
+=======
+func (f *inFlow) newLimit(n uint32) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	f.mu.Lock()
-	d := n - f.limit
 	f.limit = n
 	f.mu.Unlock()
+<<<<<<< HEAD
 	return d
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return d
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (f *inFlow) maybeAdjust(n uint32) uint32 {

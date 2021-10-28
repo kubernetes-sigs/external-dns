@@ -22,6 +22,7 @@ import (
 
 // SetProxyPattern invokes the pvtz.SetProxyPattern API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response *SetProxyPatternResponse, err error) {
 	response = CreateSetProxyPatternResponse()
 	err = client.DoAction(request, response)
@@ -95,6 +96,10 @@ func CreateSetProxyPatternRequest() (request *SetProxyPatternRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response *SetProxyPatternResponse, err error) {
 	response = CreateSetProxyPatternResponse()
 	err = client.DoAction(request, response)
@@ -102,8 +107,6 @@ func (client *Client) SetProxyPattern(request *SetProxyPatternRequest) (response
 }
 
 // SetProxyPatternWithChan invokes the pvtz.SetProxyPattern API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetProxyPatternWithChan(request *SetProxyPatternRequest) (<-chan *SetProxyPatternResponse, <-chan error) {
 	responseChan := make(chan *SetProxyPatternResponse, 1)
 	errChan := make(chan error, 1)
@@ -126,8 +129,6 @@ func (client *Client) SetProxyPatternWithChan(request *SetProxyPatternRequest) (
 }
 
 // SetProxyPatternWithCallback invokes the pvtz.SetProxyPattern API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/setproxypattern.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetProxyPatternWithCallback(request *SetProxyPatternRequest, callback func(response *SetProxyPatternResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -168,7 +169,12 @@ func CreateSetProxyPatternRequest() (request *SetProxyPatternRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "SetProxyPattern", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

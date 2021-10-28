@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build arm64 && openbsd
 // +build arm64,openbsd
 
@@ -1462,6 +1463,10 @@ type Clockinfo struct {
 	Profhz int32
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build arm64 && openbsd
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build arm64,openbsd
 
 package unix
@@ -1692,6 +1697,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x20
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -1891,8 +1897,10 @@ type Winsize struct {
 
 const (
 	AT_FDCWD            = -0x64
-	AT_SYMLINK_FOLLOW   = 0x4
+	AT_EACCESS          = 0x1
 	AT_SYMLINK_NOFOLLOW = 0x2
+	AT_SYMLINK_FOLLOW   = 0x4
+	AT_REMOVEDIR        = 0x8
 )
 
 type PollFd struct {
@@ -2015,13 +2023,26 @@ type Uvmexp struct {
 	Kmapent            int32
 }
 
-const SizeofClockinfo = 0x14
+const SizeofClockinfo = 0x10
 
 type Clockinfo struct {
+<<<<<<< HEAD
 	Hz      int32
 	Tick    int32
 	Tickadj int32
 	Stathz  int32
 	Profhz  int32
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Hz      int32
+	Tick    int32
+	Tickadj int32
+	Stathz  int32
+	Profhz  int32
+=======
+	Hz     int32
+	Tick   int32
+	Stathz int32
+	Profhz int32
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

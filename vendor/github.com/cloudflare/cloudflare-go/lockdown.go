@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -147,9 +148,16 @@ func (api *API) ListZoneLockdowns(ctx context.Context, zoneID string, page int) 
 		return nil, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -163,6 +171,8 @@ type ZoneLockdown struct {
 	Configurations []ZoneLockdownConfig `json:"configurations"`
 	Paused         bool                 `json:"paused"`
 	Priority       int                  `json:"priority,omitempty"`
+	CreatedOn      *time.Time           `json:"created_on,omitempty"`
+	ModifiedOn     *time.Time           `json:"modified_on,omitempty"`
 }
 
 // ZoneLockdownConfig represents a Zone Lockdown config, which comprises
@@ -191,11 +201,11 @@ type ZoneLockdownListResponse struct {
 // CreateZoneLockdown creates a Zone ZoneLockdown rule for the given zone ID.
 //
 // API reference: https://api.cloudflare.com/#zone-ZoneLockdown-create-a-ZoneLockdown-rule
-func (api *API) CreateZoneLockdown(zoneID string, ld ZoneLockdown) (*ZoneLockdownResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/lockdowns"
-	res, err := api.makeRequest("POST", uri, ld)
+func (api *API) CreateZoneLockdown(ctx context.Context, zoneID string, ld ZoneLockdown) (*ZoneLockdownResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/lockdowns", zoneID)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, ld)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &ZoneLockdownResponse{}
@@ -211,11 +221,11 @@ func (api *API) CreateZoneLockdown(zoneID string, ld ZoneLockdown) (*ZoneLockdow
 // given zone ID.
 //
 // API reference: https://api.cloudflare.com/#zone-ZoneLockdown-update-ZoneLockdown-rule
-func (api *API) UpdateZoneLockdown(zoneID string, id string, ld ZoneLockdown) (*ZoneLockdownResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/lockdowns/" + id
-	res, err := api.makeRequest("PUT", uri, ld)
+func (api *API) UpdateZoneLockdown(ctx context.Context, zoneID string, id string, ld ZoneLockdown) (*ZoneLockdownResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/lockdowns/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, ld)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &ZoneLockdownResponse{}
@@ -231,11 +241,11 @@ func (api *API) UpdateZoneLockdown(zoneID string, id string, ld ZoneLockdown) (*
 // given zone ID.
 //
 // API reference: https://api.cloudflare.com/#zone-ZoneLockdown-delete-ZoneLockdown-rule
-func (api *API) DeleteZoneLockdown(zoneID string, id string) (*ZoneLockdownResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/lockdowns/" + id
-	res, err := api.makeRequest("DELETE", uri, nil)
+func (api *API) DeleteZoneLockdown(ctx context.Context, zoneID string, id string) (*ZoneLockdownResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/lockdowns/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &ZoneLockdownResponse{}
@@ -251,11 +261,11 @@ func (api *API) DeleteZoneLockdown(zoneID string, id string) (*ZoneLockdownRespo
 // given zone ID.
 //
 // API reference: https://api.cloudflare.com/#zone-ZoneLockdown-ZoneLockdown-rule-details
-func (api *API) ZoneLockdown(zoneID string, id string) (*ZoneLockdownResponse, error) {
-	uri := "/zones/" + zoneID + "/firewall/lockdowns/" + id
-	res, err := api.makeRequest("GET", uri, nil)
+func (api *API) ZoneLockdown(ctx context.Context, zoneID string, id string) (*ZoneLockdownResponse, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/lockdowns/%s", zoneID, id)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	response := &ZoneLockdownResponse{}
@@ -271,7 +281,7 @@ func (api *API) ZoneLockdown(zoneID string, id string) (*ZoneLockdownResponse, e
 // zone ID by page number.
 //
 // API reference: https://api.cloudflare.com/#zone-ZoneLockdown-list-ZoneLockdown-rules
-func (api *API) ListZoneLockdowns(zoneID string, page int) (*ZoneLockdownListResponse, error) {
+func (api *API) ListZoneLockdowns(ctx context.Context, zoneID string, page int) (*ZoneLockdownListResponse, error) {
 	v := url.Values{}
 	if page <= 0 {
 		page = 1
@@ -279,13 +289,18 @@ func (api *API) ListZoneLockdowns(zoneID string, page int) (*ZoneLockdownListRes
 
 	v.Set("page", strconv.Itoa(page))
 	v.Set("per_page", strconv.Itoa(100))
-	query := "?" + v.Encode()
 
-	uri := "/zones/" + zoneID + "/firewall/lockdowns" + query
-	res, err := api.makeRequest("GET", uri, nil)
+	uri := fmt.Sprintf("/zones/%s/firewall/lockdowns?%s", zoneID, v.Encode())
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return nil, errors.Wrap(err, errMakeRequestError)
+=======
+		return nil, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	response := &ZoneLockdownListResponse{}

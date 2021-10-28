@@ -22,6 +22,7 @@ import (
 
 // DescribeDomainStatisticsSummary invokes the alidns.DescribeDomainStatisticsSummary API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainStatisticsSummary(request *DescribeDomainStatisticsSummaryRequest) (response *DescribeDomainStatisticsSummaryResponse, err error) {
 	response = CreateDescribeDomainStatisticsSummaryResponse()
 	err = client.DoAction(request, response)
@@ -106,6 +107,10 @@ func CreateDescribeDomainStatisticsSummaryRequest() (request *DescribeDomainStat
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describedomainstatisticssummary.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describedomainstatisticssummary.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeDomainStatisticsSummary(request *DescribeDomainStatisticsSummaryRequest) (response *DescribeDomainStatisticsSummaryResponse, err error) {
 	response = CreateDescribeDomainStatisticsSummaryResponse()
 	err = client.DoAction(request, response)
@@ -113,8 +118,6 @@ func (client *Client) DescribeDomainStatisticsSummary(request *DescribeDomainSta
 }
 
 // DescribeDomainStatisticsSummaryWithChan invokes the alidns.DescribeDomainStatisticsSummary API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainstatisticssummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainStatisticsSummaryWithChan(request *DescribeDomainStatisticsSummaryRequest) (<-chan *DescribeDomainStatisticsSummaryResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainStatisticsSummaryResponse, 1)
 	errChan := make(chan error, 1)
@@ -137,8 +140,6 @@ func (client *Client) DescribeDomainStatisticsSummaryWithChan(request *DescribeD
 }
 
 // DescribeDomainStatisticsSummaryWithCallback invokes the alidns.DescribeDomainStatisticsSummary API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainstatisticssummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainStatisticsSummaryWithCallback(request *DescribeDomainStatisticsSummaryRequest, callback func(response *DescribeDomainStatisticsSummaryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -190,7 +191,12 @@ func CreateDescribeDomainStatisticsSummaryRequest() (request *DescribeDomainStat
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainStatisticsSummary", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

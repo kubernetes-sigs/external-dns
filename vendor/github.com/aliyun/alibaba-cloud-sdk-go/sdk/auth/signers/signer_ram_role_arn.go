@@ -115,6 +115,7 @@ func (signer *RamRoleArnSigner) Sign(stringToSign, secretSuffix string) string {
 func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRequest, err error) {
 	request = requests.NewCommonRequest()
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if signer.credential.StsRegion != "" {
 		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
 	} else {
@@ -123,6 +124,14 @@ func (signer *RamRoleArnSigner) buildCommonRequest() (request *requests.CommonRe
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if signer.credential.StsRegion != "" {
+		request.Domain = fmt.Sprintf("sts.%s.aliyuncs.com", signer.credential.StsRegion)
+	} else {
+		request.Domain = "sts.aliyuncs.com"
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	request.Product = "Sts"
 	request.Version = "2015-04-01"
 	request.ApiName = "AssumeRole"

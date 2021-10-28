@@ -304,6 +304,7 @@ func (p *TextParser) startLabelName() stateFn {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Check for duplicate label names.
 	labels := make(map[string]struct{})
 	for _, l := range p.currentMetric.Label {
@@ -352,6 +353,20 @@ func (p *TextParser) startLabelName() stateFn {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// Check for duplicate label names.
+	labels := make(map[string]struct{})
+	for _, l := range p.currentMetric.Label {
+		lName := l.GetName()
+		if _, exists := labels[lName]; !exists {
+			labels[lName] = struct{}{}
+		} else {
+			p.parseError(fmt.Sprintf("duplicate label names for metric %q", p.currentMF.GetName()))
+			return nil
+		}
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return p.startLabelValue
 }
 

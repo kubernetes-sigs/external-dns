@@ -22,6 +22,7 @@ import (
 
 // UpdateGtmMonitor invokes the alidns.UpdateGtmMonitor API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateGtmMonitor(request *UpdateGtmMonitorRequest) (response *UpdateGtmMonitorResponse, err error) {
 	response = CreateUpdateGtmMonitorResponse()
 	err = client.DoAction(request, response)
@@ -105,6 +106,10 @@ func CreateUpdateGtmMonitorRequest() (request *UpdateGtmMonitorRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) UpdateGtmMonitor(request *UpdateGtmMonitorRequest) (response *UpdateGtmMonitorResponse, err error) {
 	response = CreateUpdateGtmMonitorResponse()
 	err = client.DoAction(request, response)
@@ -112,8 +117,6 @@ func (client *Client) UpdateGtmMonitor(request *UpdateGtmMonitorRequest) (respon
 }
 
 // UpdateGtmMonitorWithChan invokes the alidns.UpdateGtmMonitor API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmMonitorWithChan(request *UpdateGtmMonitorRequest) (<-chan *UpdateGtmMonitorResponse, <-chan error) {
 	responseChan := make(chan *UpdateGtmMonitorResponse, 1)
 	errChan := make(chan error, 1)
@@ -136,8 +139,6 @@ func (client *Client) UpdateGtmMonitorWithChan(request *UpdateGtmMonitorRequest)
 }
 
 // UpdateGtmMonitorWithCallback invokes the alidns.UpdateGtmMonitor API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtmmonitor.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmMonitorWithCallback(request *UpdateGtmMonitorRequest, callback func(response *UpdateGtmMonitorResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -188,7 +189,12 @@ func CreateUpdateGtmMonitorRequest() (request *UpdateGtmMonitorRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmMonitor", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

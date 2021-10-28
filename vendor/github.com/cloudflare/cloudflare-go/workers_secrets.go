@@ -41,6 +41,7 @@ func (api *API) SetWorkersSecret(ctx context.Context, script string, req *Worker
 	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, req)
 	if err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return WorkersPutSecretResponse{}, errors.Wrap(err, errMakeRequestError)
 	}
 
@@ -114,6 +115,44 @@ func (api *API) ListWorkersSecrets(ctx context.Context, script string) (WorkersL
 	if err != nil {
 		return WorkersListSecretsResponse{}, err
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		return WorkersPutSecretResponse{}, err
+	}
+
+	result := WorkersPutSecretResponse{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return result, errors.Wrap(err, errUnmarshalError)
+	}
+
+	return result, err
+}
+
+// DeleteWorkersSecret deletes a secret
+// API reference: https://api.cloudflare.com/
+func (api *API) DeleteWorkersSecret(ctx context.Context, script, secretName string) (Response, error) {
+	uri := fmt.Sprintf("/accounts/%s/workers/scripts/%s/secrets/%s", api.AccountID, script, secretName)
+	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
+	if err != nil {
+		return Response{}, err
+	}
+
+	result := Response{}
+	if err := json.Unmarshal(res, &result); err != nil {
+		return result, errors.Wrap(err, errUnmarshalError)
+	}
+
+	return result, err
+}
+
+// ListWorkersSecrets lists secrets for a given worker
+// API reference: https://api.cloudflare.com/
+func (api *API) ListWorkersSecrets(ctx context.Context, script string) (WorkersListSecretsResponse, error) {
+	uri := fmt.Sprintf("/accounts/%s/workers/scripts/%s/secrets", api.AccountID, script)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return WorkersListSecretsResponse{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	result := WorkersListSecretsResponse{}

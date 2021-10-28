@@ -31,6 +31,7 @@ type pipeBuffer interface {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // setBuffer initializes the pipe buffer.
 // It has no effect if the pipe is already closed.
 func (p *pipe) setBuffer(b pipeBuffer) {
@@ -45,6 +46,20 @@ func (p *pipe) setBuffer(b pipeBuffer) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// setBuffer initializes the pipe buffer.
+// It has no effect if the pipe is already closed.
+func (p *pipe) setBuffer(b pipeBuffer) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.err != nil || p.breakErr != nil {
+		return
+	}
+	p.b = b
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (p *pipe) Len() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()

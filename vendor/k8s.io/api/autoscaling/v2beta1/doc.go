@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +k8s:prerelease-lifecycle-gen=true
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -40,5 +41,9 @@ limitations under the License.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// +k8s:prerelease-lifecycle-gen=true
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package v2beta1 // import "k8s.io/api/autoscaling/v2beta1"

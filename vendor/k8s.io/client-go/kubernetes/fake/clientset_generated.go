@@ -33,6 +33,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	internalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1"
 	fakeinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1/fake"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
@@ -1092,14 +1093,17 @@ func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interfac
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	internalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1"
+	fakeinternalv1alpha1 "k8s.io/client-go/kubernetes/typed/apiserverinternal/v1alpha1/fake"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	fakeappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1/fake"
 	appsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
 	fakeappsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1/fake"
 	appsv1beta2 "k8s.io/client-go/kubernetes/typed/apps/v1beta2"
 	fakeappsv1beta2 "k8s.io/client-go/kubernetes/typed/apps/v1beta2/fake"
-	auditregistrationv1alpha1 "k8s.io/client-go/kubernetes/typed/auditregistration/v1alpha1"
-	fakeauditregistrationv1alpha1 "k8s.io/client-go/kubernetes/typed/auditregistration/v1alpha1/fake"
 	authenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1"
 	fakeauthenticationv1 "k8s.io/client-go/kubernetes/typed/authentication/v1/fake"
 	authenticationv1beta1 "k8s.io/client-go/kubernetes/typed/authentication/v1beta1"
@@ -1110,6 +1114,8 @@ func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interfac
 	fakeauthorizationv1beta1 "k8s.io/client-go/kubernetes/typed/authorization/v1beta1/fake"
 	autoscalingv1 "k8s.io/client-go/kubernetes/typed/autoscaling/v1"
 	fakeautoscalingv1 "k8s.io/client-go/kubernetes/typed/autoscaling/v1/fake"
+	autoscalingv2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2"
+	fakeautoscalingv2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2/fake"
 	autoscalingv2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1"
 	fakeautoscalingv2beta1 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta1/fake"
 	autoscalingv2beta2 "k8s.io/client-go/kubernetes/typed/autoscaling/v2beta2"
@@ -1118,8 +1124,8 @@ func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interfac
 	fakebatchv1 "k8s.io/client-go/kubernetes/typed/batch/v1/fake"
 	batchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1"
 	fakebatchv1beta1 "k8s.io/client-go/kubernetes/typed/batch/v1beta1/fake"
-	batchv2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1"
-	fakebatchv2alpha1 "k8s.io/client-go/kubernetes/typed/batch/v2alpha1/fake"
+	certificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1"
+	fakecertificatesv1 "k8s.io/client-go/kubernetes/typed/certificates/v1/fake"
 	certificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1"
 	fakecertificatesv1beta1 "k8s.io/client-go/kubernetes/typed/certificates/v1beta1/fake"
 	coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
@@ -1128,24 +1134,34 @@ func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interfac
 	fakecoordinationv1beta1 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1/fake"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	fakecorev1 "k8s.io/client-go/kubernetes/typed/core/v1/fake"
-	discoveryv1alpha1 "k8s.io/client-go/kubernetes/typed/discovery/v1alpha1"
-	fakediscoveryv1alpha1 "k8s.io/client-go/kubernetes/typed/discovery/v1alpha1/fake"
+	discoveryv1 "k8s.io/client-go/kubernetes/typed/discovery/v1"
+	fakediscoveryv1 "k8s.io/client-go/kubernetes/typed/discovery/v1/fake"
 	discoveryv1beta1 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1"
 	fakediscoveryv1beta1 "k8s.io/client-go/kubernetes/typed/discovery/v1beta1/fake"
+	eventsv1 "k8s.io/client-go/kubernetes/typed/events/v1"
+	fakeeventsv1 "k8s.io/client-go/kubernetes/typed/events/v1/fake"
 	eventsv1beta1 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
 	fakeeventsv1beta1 "k8s.io/client-go/kubernetes/typed/events/v1beta1/fake"
 	extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	fakeextensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1/fake"
 	flowcontrolv1alpha1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1"
 	fakeflowcontrolv1alpha1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1alpha1/fake"
+	flowcontrolv1beta1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1"
+	fakeflowcontrolv1beta1 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta1/fake"
+	flowcontrolv1beta2 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2"
+	fakeflowcontrolv1beta2 "k8s.io/client-go/kubernetes/typed/flowcontrol/v1beta2/fake"
 	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
 	fakenetworkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1/fake"
 	networkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1"
 	fakenetworkingv1beta1 "k8s.io/client-go/kubernetes/typed/networking/v1beta1/fake"
+	nodev1 "k8s.io/client-go/kubernetes/typed/node/v1"
+	fakenodev1 "k8s.io/client-go/kubernetes/typed/node/v1/fake"
 	nodev1alpha1 "k8s.io/client-go/kubernetes/typed/node/v1alpha1"
 	fakenodev1alpha1 "k8s.io/client-go/kubernetes/typed/node/v1alpha1/fake"
 	nodev1beta1 "k8s.io/client-go/kubernetes/typed/node/v1beta1"
 	fakenodev1beta1 "k8s.io/client-go/kubernetes/typed/node/v1beta1/fake"
+	policyv1 "k8s.io/client-go/kubernetes/typed/policy/v1"
+	fakepolicyv1 "k8s.io/client-go/kubernetes/typed/policy/v1/fake"
 	policyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1"
 	fakepolicyv1beta1 "k8s.io/client-go/kubernetes/typed/policy/v1beta1/fake"
 	rbacv1 "k8s.io/client-go/kubernetes/typed/rbac/v1"
@@ -1160,8 +1176,6 @@ func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interfac
 	fakeschedulingv1alpha1 "k8s.io/client-go/kubernetes/typed/scheduling/v1alpha1/fake"
 	schedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1"
 	fakeschedulingv1beta1 "k8s.io/client-go/kubernetes/typed/scheduling/v1beta1/fake"
-	settingsv1alpha1 "k8s.io/client-go/kubernetes/typed/settings/v1alpha1"
-	fakesettingsv1alpha1 "k8s.io/client-go/kubernetes/typed/settings/v1alpha1/fake"
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
 	fakestoragev1 "k8s.io/client-go/kubernetes/typed/storage/v1/fake"
 	storagev1alpha1 "k8s.io/client-go/kubernetes/typed/storage/v1alpha1"
@@ -1216,7 +1230,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // AdmissionregistrationV1 retrieves the AdmissionregistrationV1Client
 func (c *Clientset) AdmissionregistrationV1() admissionregistrationv1.AdmissionregistrationV1Interface {
@@ -1226,6 +1243,11 @@ func (c *Clientset) AdmissionregistrationV1() admissionregistrationv1.Admissionr
 // AdmissionregistrationV1beta1 retrieves the AdmissionregistrationV1beta1Client
 func (c *Clientset) AdmissionregistrationV1beta1() admissionregistrationv1beta1.AdmissionregistrationV1beta1Interface {
 	return &fakeadmissionregistrationv1beta1.FakeAdmissionregistrationV1beta1{Fake: &c.Fake}
+}
+
+// InternalV1alpha1 retrieves the InternalV1alpha1Client
+func (c *Clientset) InternalV1alpha1() internalv1alpha1.InternalV1alpha1Interface {
+	return &fakeinternalv1alpha1.FakeInternalV1alpha1{Fake: &c.Fake}
 }
 
 // AppsV1 retrieves the AppsV1Client
@@ -1241,11 +1263,6 @@ func (c *Clientset) AppsV1beta1() appsv1beta1.AppsV1beta1Interface {
 // AppsV1beta2 retrieves the AppsV1beta2Client
 func (c *Clientset) AppsV1beta2() appsv1beta2.AppsV1beta2Interface {
 	return &fakeappsv1beta2.FakeAppsV1beta2{Fake: &c.Fake}
-}
-
-// AuditregistrationV1alpha1 retrieves the AuditregistrationV1alpha1Client
-func (c *Clientset) AuditregistrationV1alpha1() auditregistrationv1alpha1.AuditregistrationV1alpha1Interface {
-	return &fakeauditregistrationv1alpha1.FakeAuditregistrationV1alpha1{Fake: &c.Fake}
 }
 
 // AuthenticationV1 retrieves the AuthenticationV1Client
@@ -1273,6 +1290,11 @@ func (c *Clientset) AutoscalingV1() autoscalingv1.AutoscalingV1Interface {
 	return &fakeautoscalingv1.FakeAutoscalingV1{Fake: &c.Fake}
 }
 
+// AutoscalingV2 retrieves the AutoscalingV2Client
+func (c *Clientset) AutoscalingV2() autoscalingv2.AutoscalingV2Interface {
+	return &fakeautoscalingv2.FakeAutoscalingV2{Fake: &c.Fake}
+}
+
 // AutoscalingV2beta1 retrieves the AutoscalingV2beta1Client
 func (c *Clientset) AutoscalingV2beta1() autoscalingv2beta1.AutoscalingV2beta1Interface {
 	return &fakeautoscalingv2beta1.FakeAutoscalingV2beta1{Fake: &c.Fake}
@@ -1293,9 +1315,9 @@ func (c *Clientset) BatchV1beta1() batchv1beta1.BatchV1beta1Interface {
 	return &fakebatchv1beta1.FakeBatchV1beta1{Fake: &c.Fake}
 }
 
-// BatchV2alpha1 retrieves the BatchV2alpha1Client
-func (c *Clientset) BatchV2alpha1() batchv2alpha1.BatchV2alpha1Interface {
-	return &fakebatchv2alpha1.FakeBatchV2alpha1{Fake: &c.Fake}
+// CertificatesV1 retrieves the CertificatesV1Client
+func (c *Clientset) CertificatesV1() certificatesv1.CertificatesV1Interface {
+	return &fakecertificatesv1.FakeCertificatesV1{Fake: &c.Fake}
 }
 
 // CertificatesV1beta1 retrieves the CertificatesV1beta1Client
@@ -1318,14 +1340,19 @@ func (c *Clientset) CoreV1() corev1.CoreV1Interface {
 	return &fakecorev1.FakeCoreV1{Fake: &c.Fake}
 }
 
-// DiscoveryV1alpha1 retrieves the DiscoveryV1alpha1Client
-func (c *Clientset) DiscoveryV1alpha1() discoveryv1alpha1.DiscoveryV1alpha1Interface {
-	return &fakediscoveryv1alpha1.FakeDiscoveryV1alpha1{Fake: &c.Fake}
+// DiscoveryV1 retrieves the DiscoveryV1Client
+func (c *Clientset) DiscoveryV1() discoveryv1.DiscoveryV1Interface {
+	return &fakediscoveryv1.FakeDiscoveryV1{Fake: &c.Fake}
 }
 
 // DiscoveryV1beta1 retrieves the DiscoveryV1beta1Client
 func (c *Clientset) DiscoveryV1beta1() discoveryv1beta1.DiscoveryV1beta1Interface {
 	return &fakediscoveryv1beta1.FakeDiscoveryV1beta1{Fake: &c.Fake}
+}
+
+// EventsV1 retrieves the EventsV1Client
+func (c *Clientset) EventsV1() eventsv1.EventsV1Interface {
+	return &fakeeventsv1.FakeEventsV1{Fake: &c.Fake}
 }
 
 // EventsV1beta1 retrieves the EventsV1beta1Client
@@ -1343,6 +1370,16 @@ func (c *Clientset) FlowcontrolV1alpha1() flowcontrolv1alpha1.FlowcontrolV1alpha
 	return &fakeflowcontrolv1alpha1.FakeFlowcontrolV1alpha1{Fake: &c.Fake}
 }
 
+// FlowcontrolV1beta1 retrieves the FlowcontrolV1beta1Client
+func (c *Clientset) FlowcontrolV1beta1() flowcontrolv1beta1.FlowcontrolV1beta1Interface {
+	return &fakeflowcontrolv1beta1.FakeFlowcontrolV1beta1{Fake: &c.Fake}
+}
+
+// FlowcontrolV1beta2 retrieves the FlowcontrolV1beta2Client
+func (c *Clientset) FlowcontrolV1beta2() flowcontrolv1beta2.FlowcontrolV1beta2Interface {
+	return &fakeflowcontrolv1beta2.FakeFlowcontrolV1beta2{Fake: &c.Fake}
+}
+
 // NetworkingV1 retrieves the NetworkingV1Client
 func (c *Clientset) NetworkingV1() networkingv1.NetworkingV1Interface {
 	return &fakenetworkingv1.FakeNetworkingV1{Fake: &c.Fake}
@@ -1353,6 +1390,11 @@ func (c *Clientset) NetworkingV1beta1() networkingv1beta1.NetworkingV1beta1Inter
 	return &fakenetworkingv1beta1.FakeNetworkingV1beta1{Fake: &c.Fake}
 }
 
+// NodeV1 retrieves the NodeV1Client
+func (c *Clientset) NodeV1() nodev1.NodeV1Interface {
+	return &fakenodev1.FakeNodeV1{Fake: &c.Fake}
+}
+
 // NodeV1alpha1 retrieves the NodeV1alpha1Client
 func (c *Clientset) NodeV1alpha1() nodev1alpha1.NodeV1alpha1Interface {
 	return &fakenodev1alpha1.FakeNodeV1alpha1{Fake: &c.Fake}
@@ -1361,6 +1403,11 @@ func (c *Clientset) NodeV1alpha1() nodev1alpha1.NodeV1alpha1Interface {
 // NodeV1beta1 retrieves the NodeV1beta1Client
 func (c *Clientset) NodeV1beta1() nodev1beta1.NodeV1beta1Interface {
 	return &fakenodev1beta1.FakeNodeV1beta1{Fake: &c.Fake}
+}
+
+// PolicyV1 retrieves the PolicyV1Client
+func (c *Clientset) PolicyV1() policyv1.PolicyV1Interface {
+	return &fakepolicyv1.FakePolicyV1{Fake: &c.Fake}
 }
 
 // PolicyV1beta1 retrieves the PolicyV1beta1Client
@@ -1398,12 +1445,21 @@ func (c *Clientset) SchedulingV1() schedulingv1.SchedulingV1Interface {
 	return &fakeschedulingv1.FakeSchedulingV1{Fake: &c.Fake}
 }
 
+<<<<<<< HEAD
 // SettingsV1alpha1 retrieves the SettingsV1alpha1Client
 func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interface {
 	return &fakesettingsv1alpha1.FakeSettingsV1alpha1{Fake: &c.Fake}
 }
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// SettingsV1alpha1 retrieves the SettingsV1alpha1Client
+func (c *Clientset) SettingsV1alpha1() settingsv1alpha1.SettingsV1alpha1Interface {
+	return &fakesettingsv1alpha1.FakeSettingsV1alpha1{Fake: &c.Fake}
+}
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 // StorageV1beta1 retrieves the StorageV1beta1Client
 func (c *Clientset) StorageV1beta1() storagev1beta1.StorageV1beta1Interface {
 	return &fakestoragev1beta1.FakeStorageV1beta1{Fake: &c.Fake}

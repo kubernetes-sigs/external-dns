@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -396,6 +397,11 @@ func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *appl
 		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, *name, types.ApplyPatchType, data), &corev1.ComponentStatus{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,6 +409,7 @@ func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *appl
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -475,7 +482,7 @@ func (c *FakeComponentStatuses) Update(ctx context.Context, componentStatus *cor
 // Delete takes name of the componentStatus and deletes it. Returns an error if one occurs.
 func (c *FakeComponentStatuses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(componentstatusesResource, name), &corev1.ComponentStatus{})
+		Invokes(testing.NewRootDeleteActionWithOptions(componentstatusesResource, name, opts), &corev1.ComponentStatus{})
 	return err
 }
 
@@ -492,6 +499,27 @@ func (c *FakeComponentStatuses) Patch(ctx context.Context, name string, pt types
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, name, pt, data, subresources...), &corev1.ComponentStatus{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ComponentStatus), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied componentStatus.
+func (c *FakeComponentStatuses) Apply(ctx context.Context, componentStatus *applyconfigurationscorev1.ComponentStatusApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ComponentStatus, err error) {
+	if componentStatus == nil {
+		return nil, fmt.Errorf("componentStatus provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(componentStatus)
+	if err != nil {
+		return nil, err
+	}
+	name := componentStatus.Name
+	if name == nil {
+		return nil, fmt.Errorf("componentStatus.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(componentstatusesResource, *name, types.ApplyPatchType, data), &corev1.ComponentStatus{})
 	if obj == nil {
 		return nil, err
 	}

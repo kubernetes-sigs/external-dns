@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.scheduling.v1beta1;
@@ -179,6 +180,11 @@ message PriorityClass {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.api.scheduling.v1beta1;
 
@@ -219,8 +225,14 @@ message PriorityClass {
   // PreemptionPolicy is the Policy for preempting pods with lower priority.
   // One of Never, PreemptLowerPriority.
   // Defaults to PreemptLowerPriority if unset.
+<<<<<<< HEAD
   // This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+  // This field is alpha-level and is only honored by servers that enable the NonPreemptingPriority feature.
+=======
+  // This field is beta-level, gated by the NonPreemptingPriority feature-gate.
+>>>>>>> 4d7e5ad26 (update vendored files)
   // +optional
   optional string preemptionPolicy = 5;
 }

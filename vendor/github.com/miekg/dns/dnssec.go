@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -495,12 +496,16 @@ func (rr *RRSIG) ValidityPeriod(t time.Time) bool {
 // Return the signatures base64 encoding sigdata as a byte slice.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"crypto/ed25519"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
-	_ "crypto/sha1"
-	_ "crypto/sha256"
-	_ "crypto/sha512"
+	_ "crypto/sha1"   // need its init function
+	_ "crypto/sha256" // need its init function
+	_ "crypto/sha512" // need its init function
 	"encoding/asn1"
 	"encoding/binary"
 	"encoding/hex"
@@ -508,8 +513,6 @@ func (rr *RRSIG) ValidityPeriod(t time.Time) bool {
 	"sort"
 	"strings"
 	"time"
-
-	"golang.org/x/crypto/ed25519"
 )
 
 // DNSSEC encryption algorithm codes.
@@ -557,6 +560,9 @@ var AlgorithmToString = map[uint8]string{
 }
 
 // AlgorithmToHash is a map of algorithm crypto hash IDs to crypto.Hash's.
+// For newer algorithm that do their own hashing (i.e. ED25519) the returned value
+// is 0, implying no (external) hashing should occur. The non-exported identityHash is then
+// used.
 var AlgorithmToHash = map[uint8]crypto.Hash{
 	RSAMD5:           crypto.MD5, // Deprecated in RFC 6725
 	DSA:              crypto.SHA1,
@@ -566,7 +572,7 @@ var AlgorithmToHash = map[uint8]crypto.Hash{
 	ECDSAP256SHA256:  crypto.SHA256,
 	ECDSAP384SHA384:  crypto.SHA384,
 	RSASHA512:        crypto.SHA512,
-	ED25519:          crypto.Hash(0),
+	ED25519:          0,
 }
 
 // DNSSEC hashing algorithm codes.
@@ -629,12 +635,12 @@ func (k *DNSKEY) KeyTag() uint16 {
 	var keytag int
 	switch k.Algorithm {
 	case RSAMD5:
-		// Look at the bottom two bytes of the modules, which the last
-		// item in the pubkey.
 		// This algorithm has been deprecated, but keep this key-tag calculation.
+		// Look at the bottom two bytes of the modules, which the last item in the pubkey.
+		// See https://www.rfc-editor.org/errata/eid193 .
 		modulus, _ := fromBase64([]byte(k.PublicKey))
 		if len(modulus) > 1 {
-			x := binary.BigEndian.Uint16(modulus[len(modulus)-2:])
+			x := binary.BigEndian.Uint16(modulus[len(modulus)-3:])
 			keytag = int(x)
 		}
 	default:
@@ -788,35 +794,20 @@ func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
 		return err
 	}
 
-	hash, ok := AlgorithmToHash[rr.Algorithm]
-	if !ok {
-		return ErrAlg
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	if err != nil {
+		return err
 	}
 
 	switch rr.Algorithm {
-	case ED25519:
-		// ed25519 signs the raw message and performs hashing internally.
-		// All other supported signature schemes operate over the pre-hashed
-		// message, and thus ed25519 must be handled separately here.
-		//
-		// The raw message is passed directly into sign and crypto.Hash(0) is
-		// used to signal to the crypto.Signer that the data has not been hashed.
-		signature, err := sign(k, append(signdata, wire...), crypto.Hash(0), rr.Algorithm)
-		if err != nil {
-			return err
-		}
-
-		rr.Signature = toBase64(signature)
-		return nil
 	case RSAMD5, DSA, DSANSEC3SHA1:
 		// See RFC 6944.
 		return ErrAlg
 	default:
-		h := hash.New()
 		h.Write(signdata)
 		h.Write(wire)
 
-		signature, err := sign(k, h.Sum(nil), hash, rr.Algorithm)
+		signature, err := sign(k, h.Sum(nil), cryptohash, rr.Algorithm)
 		if err != nil {
 			return err
 		}
@@ -833,7 +824,7 @@ func sign(k crypto.Signer, hashed []byte, hash crypto.Hash, alg uint8) ([]byte, 
 	}
 
 	switch alg {
-	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512:
+	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512, ED25519:
 		return signature, nil
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		ecdsaSignature := &struct {
@@ -854,8 +845,6 @@ func sign(k crypto.Signer, hashed []byte, hash crypto.Hash, alg uint8) ([]byte, 
 		signature := intToBytes(ecdsaSignature.R, intlen)
 		signature = append(signature, intToBytes(ecdsaSignature.S, intlen)...)
 		return signature, nil
-	case ED25519:
-		return signature, nil
 	default:
 		return nil, ErrAlg
 	}
@@ -864,6 +853,8 @@ func sign(k crypto.Signer, hashed []byte, hash crypto.Hash, alg uint8) ([]byte, 
 // Verify validates an RRSet with the signature and key. This is only the
 // cryptographic test, the signature validity period must be checked separately.
 // This function copies the rdata of some RRs (to lowercase domain names) for the validation to work.
+// It also checks that the Zone Key bit (RFC 4034 2.1.1) is set on the DNSKEY
+// and that the Protocol field is set to 3 (RFC 4034 2.1.2).
 func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 	// First the easy checks
 	if !IsRRset(rrset) {
@@ -882,6 +873,12 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		return ErrKey
 	}
 	if k.Protocol != 3 {
+		return ErrKey
+	}
+	// RFC 4034 2.1.1 If bit 7 has value 0, then the DNSKEY record holds some
+	// other type of DNS public key and MUST NOT be used to verify RRSIGs that
+	// cover RRsets.
+	if k.Flags&ZONE == 0 {
 		return ErrKey
 	}
 
@@ -921,9 +918,9 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		// remove the domain name and assume its ours?
 	}
 
-	hash, ok := AlgorithmToHash[rr.Algorithm]
-	if !ok {
-		return ErrAlg
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	if err != nil {
+		return err
 	}
 
 	switch rr.Algorithm {
@@ -934,10 +931,9 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 			return ErrKey
 		}
 
-		h := hash.New()
 		h.Write(signeddata)
 		h.Write(wire)
-		return rsa.VerifyPKCS1v15(pubkey, hash, h.Sum(nil), sigbuf)
+		return rsa.VerifyPKCS1v15(pubkey, cryptohash, h.Sum(nil), sigbuf)
 
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pubkey := k.publicKeyECDSA()
@@ -949,7 +945,6 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		r := new(big.Int).SetBytes(sigbuf[:len(sigbuf)/2])
 		s := new(big.Int).SetBytes(sigbuf[len(sigbuf)/2:])
 
-		h := hash.New()
 		h.Write(signeddata)
 		h.Write(wire)
 		if ecdsa.Verify(pubkey, h.Sum(nil), r, s) {
@@ -991,8 +986,14 @@ func (rr *RRSIG) ValidityPeriod(t time.Time) bool {
 	return ti <= utc && utc <= te
 }
 
+<<<<<<< HEAD
 // Return the signatures base64 encodedig sigdata as a byte slice.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Return the signatures base64 encodedig sigdata as a byte slice.
+=======
+// Return the signatures base64 encoding sigdata as a byte slice.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (rr *RRSIG) sigBuf() []byte {
 	sigbuf, err := fromBase64([]byte(rr.Signature))
 	if err != nil {

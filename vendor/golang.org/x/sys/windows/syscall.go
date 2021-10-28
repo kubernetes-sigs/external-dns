@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build windows
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build windows
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build windows
 
 // Package windows contains an interface to the low-level operating system

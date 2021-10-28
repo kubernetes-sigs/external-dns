@@ -10,6 +10,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ParseState represents the current state of the parser.
 type ParseState uint
 
@@ -732,9 +733,15 @@ loop:
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// ParseState represents the current state of the parser.
+type ParseState uint
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // State enums for the parse table
 const (
-	InvalidState = iota
+	InvalidState ParseState = iota
 	// stmt -> value stmt'
 	StatementState
 	// stmt' -> MarkComplete | op stmt
@@ -763,8 +770,8 @@ const (
 )
 
 // parseTable is a state machine to dictate the grammar above.
-var parseTable = map[ASTKind]map[TokenType]int{
-	ASTKindStart: map[TokenType]int{
+var parseTable = map[ASTKind]map[TokenType]ParseState{
+	ASTKindStart: {
 		TokenLit:     StatementState,
 		TokenSep:     OpenScopeState,
 		TokenWS:      SkipTokenState,
@@ -772,7 +779,7 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenComment: CommentState,
 		TokenNone:    TerminalState,
 	},
-	ASTKindCommentStatement: map[TokenType]int{
+	ASTKindCommentStatement: {
 		TokenLit:     StatementState,
 		TokenSep:     OpenScopeState,
 		TokenWS:      SkipTokenState,
@@ -780,7 +787,7 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenComment: CommentState,
 		TokenNone:    MarkCompleteState,
 	},
-	ASTKindExpr: map[TokenType]int{
+	ASTKindExpr: {
 		TokenOp:      StatementPrimeState,
 		TokenLit:     ValueState,
 		TokenSep:     OpenScopeState,
@@ -789,12 +796,15 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenComment: CommentState,
 		TokenNone:    MarkCompleteState,
 	},
-	ASTKindEqualExpr: map[TokenType]int{
-		TokenLit: ValueState,
-		TokenWS:  SkipTokenState,
-		TokenNL:  SkipState,
+	ASTKindEqualExpr: {
+		TokenLit:  ValueState,
+		TokenSep:  ValueState,
+		TokenOp:   ValueState,
+		TokenWS:   SkipTokenState,
+		TokenNL:   SkipState,
+		TokenNone: SkipState,
 	},
-	ASTKindStatement: map[TokenType]int{
+	ASTKindStatement: {
 		TokenLit:     SectionState,
 		TokenSep:     CloseScopeState,
 		TokenWS:      SkipTokenState,
@@ -802,9 +812,9 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenComment: CommentState,
 		TokenNone:    MarkCompleteState,
 	},
-	ASTKindExprStatement: map[TokenType]int{
+	ASTKindExprStatement: {
 		TokenLit:     ValueState,
-		TokenSep:     OpenScopeState,
+		TokenSep:     ValueState,
 		TokenOp:      ValueState,
 		TokenWS:      ValueState,
 		TokenNL:      MarkCompleteState,
@@ -812,14 +822,14 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenNone:    TerminalState,
 		TokenComma:   SkipState,
 	},
-	ASTKindSectionStatement: map[TokenType]int{
+	ASTKindSectionStatement: {
 		TokenLit: SectionState,
 		TokenOp:  SectionState,
 		TokenSep: CloseScopeState,
 		TokenWS:  SectionState,
 		TokenNL:  SkipTokenState,
 	},
-	ASTKindCompletedSectionStatement: map[TokenType]int{
+	ASTKindCompletedSectionStatement: {
 		TokenWS:      SkipTokenState,
 		TokenNL:      SkipTokenState,
 		TokenLit:     StatementState,
@@ -827,7 +837,7 @@ var parseTable = map[ASTKind]map[TokenType]int{
 		TokenComment: CommentState,
 		TokenNone:    MarkCompleteState,
 	},
-	ASTKindSkipStatement: map[TokenType]int{
+	ASTKindSkipStatement: {
 		TokenLit:     StatementState,
 		TokenSep:     OpenScopeState,
 		TokenWS:      SkipTokenState,
@@ -931,18 +941,6 @@ loop:
 		case ValueState:
 			// ValueState requires the previous state to either be an equal expression
 			// or an expression statement.
-			//
-			// This grammar occurs when the RHS is a number, word, or quoted string.
-			// equal_expr -> lit op equal_expr'
-			// equal_expr' -> number | string | quoted_string
-			// quoted_string -> " quoted_string'
-			// quoted_string' -> string quoted_string_end
-			// quoted_string_end -> "
-			//
-			// otherwise
-			// expr_stmt -> equal_expr (expr_stmt')*
-			// expr_stmt' -> ws S | op S | MarkComplete
-			// S -> equal_expr' expr_stmt'
 			switch k.Kind {
 			case ASTKindEqualExpr:
 				// assigning a value to some key
@@ -969,8 +967,14 @@ loop:
 				}
 
 				children[len(children)-1] = rhs
+<<<<<<< HEAD
 				k.SetChildren(children)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+				k.SetChildren(children)
+=======
+				root.SetChildren(children)
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 				stack.Push(k)
 			}

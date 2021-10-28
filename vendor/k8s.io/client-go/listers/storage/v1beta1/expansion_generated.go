@@ -31,6 +31,7 @@ type CSINodeListerExpansion interface{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // CSIStorageCapacityListerExpansion allows custom methods to be added to
 // CSIStorageCapacityLister.
 type CSIStorageCapacityListerExpansion interface{}
@@ -70,6 +71,17 @@ type CSIStorageCapacityNamespaceListerExpansion interface{}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// CSIStorageCapacityListerExpansion allows custom methods to be added to
+// CSIStorageCapacityLister.
+type CSIStorageCapacityListerExpansion interface{}
+
+// CSIStorageCapacityNamespaceListerExpansion allows custom methods to be added to
+// CSIStorageCapacityNamespaceLister.
+type CSIStorageCapacityNamespaceListerExpansion interface{}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // StorageClassListerExpansion allows custom methods to be added to
 // StorageClassLister.
 type StorageClassListerExpansion interface{}

@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
 	"fmt"
 	"log"
@@ -1277,6 +1278,10 @@ func (client Client) WaitForImageStatus(ctx context.Context, imageID string, sta
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"encoding/base64"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"encoding/base64"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
 	"fmt"
 	"log"
@@ -1284,9 +1289,6 @@ func (client Client) WaitForImageStatus(ctx context.Context, imageID string, sta
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/linode/linodego/internal/kubernetes"
-	"github.com/linode/linodego/pkg/condition"
 )
 
 // WaitForInstanceStatus waits for the Linode instance to reach the desired state
@@ -1407,7 +1409,7 @@ func (client Client) WaitForSnapshotStatus(ctx context.Context, instanceID int, 
 }
 
 // WaitForVolumeLinodeID waits for the Volume to match the desired LinodeID
-// before returning. An active Instance will not immediately attach or detach a volume, so the
+// before returning. An active Instance will not immediately attach or detach a volume, so
 // the LinodeID must be polled to determine volume readiness from the API.
 // WaitForVolumeLinodeID will timeout with an error after timeoutSeconds.
 func (client Client) WaitForVolumeLinodeID(ctx context.Context, volumeID int, linodeID *int, timeoutSeconds int) (*Volume, error) {
@@ -1473,39 +1475,25 @@ type LKEClusterPollOptions struct {
 	TimeoutSeconds int
 
 	// TansportWrapper allows adding a transport middleware function that will
-	// wrap the LKE Cluster client's undelying http.RoundTripper.
+	// wrap the LKE Cluster client's underlying http.RoundTripper.
 	TransportWrapper func(http.RoundTripper) http.RoundTripper
 }
 
-func getLKEClusterClientset(
-	ctx context.Context,
-	client *Client,
-	clusterID int,
-	transportWrapper func(http.RoundTripper) http.RoundTripper,
-) (kubernetes.Clientset, error) {
-	resp, err := client.GetLKEClusterKubeconfig(ctx, clusterID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get Kubeconfig for LKE cluster %d: %s", clusterID, err)
-	}
-
-	kubeConfigBytes, err := base64.StdEncoding.DecodeString(resp.KubeConfig)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode kubeconfig: %s", err)
-	}
-
-	clientset, err := kubernetes.BuildClientsetFromConfig(kubeConfigBytes, transportWrapper)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build client for LKE cluster %d: %s", clusterID, err)
-	}
-	return clientset, nil
+type ClusterConditionOptions struct {
+	LKEClusterKubeconfig *LKEClusterKubeconfig
+	TransportWrapper     func(http.RoundTripper) http.RoundTripper
 }
+
+// ClusterConditionFunc represents a function that tests a condition against an LKE cluster,
+// returns true if the condition has been reached, false if it has not yet been reached.
+type ClusterConditionFunc func(context.Context, ClusterConditionOptions) (bool, error)
 
 // WaitForLKEClusterConditions waits for the given LKE conditions to be true
 func (client Client) WaitForLKEClusterConditions(
 	ctx context.Context,
 	clusterID int,
 	options LKEClusterPollOptions,
-	conditions ...condition.ClusterConditionFunc,
+	conditions ...ClusterConditionFunc,
 ) error {
 	ctx, cancel := context.WithCancel(ctx)
 	if options.TimeoutSeconds != 0 {
@@ -1513,28 +1501,24 @@ func (client Client) WaitForLKEClusterConditions(
 	}
 	defer cancel()
 
-	var prevLog string
-	var clientset kubernetes.Clientset
-
-	clientset, err := getLKEClusterClientset(ctx, &client, clusterID, options.TransportWrapper)
+	lkeKubeConfig, err := client.GetLKEClusterKubeconfig(ctx, clusterID)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get Kubeconfig for LKE cluster %d: %s", clusterID, err)
 	}
 
 	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
 	defer ticker.Stop()
+
+	conditionOptions := ClusterConditionOptions{LKEClusterKubeconfig: lkeKubeConfig, TransportWrapper: options.TransportWrapper}
 
 	for _, condition := range conditions {
 	ConditionSucceeded:
 		for {
 			select {
 			case <-ticker.C:
-				result, err := condition(ctx, clientset)
+				result, err := condition(ctx, conditionOptions)
 				if err != nil {
-					if err.Error() != prevLog {
-						prevLog = err.Error()
-						log.Printf("[ERROR] %s\n", err)
-					}
+					return err
 				}
 
 				if result {
@@ -1549,13 +1533,6 @@ func (client Client) WaitForLKEClusterConditions(
 	return nil
 }
 
-// WaitForLKEClusterReady polls with a given timeout for the LKE Cluster's api-server
-// to be healthy and for the cluster to have at least one node with the NodeReady
-// condition true.
-func (client Client) WaitForLKEClusterReady(ctx context.Context, clusterID int, options LKEClusterPollOptions) error {
-	return client.WaitForLKEClusterConditions(ctx, clusterID, options, condition.ClusterHasReadyNode)
-}
-
 // WaitForEventFinished waits for an entity action to reach the 'finished' state
 // before returning. It will timeout with an error after timeoutSeconds.
 // If the event indicates a failure both the failed event and the error will be returned.
@@ -1564,18 +1541,12 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 	titledEntityType := strings.Title(string(entityType))
 	filterStruct := map[string]interface{}{
 		// Nor is action
-		//"action": action,
+		"action": action,
 
-		// Created is not correctly filtered by the API
-		// We'll have to verify these values manually, for now.
-		//"created": map[string]interface{}{
-		//	"+gte": minStart.Format(time.RFC3339),
-		//},
-
-		// With potentially 1000+ events coming back, we should filter on something
-		// Warning: This optimization has the potential to break if users are clearing
-		// events before we see them.
-		"seen": false,
+		"created": map[string]interface{}{
+			// The API uses UTC time, so we need to ensure the time is converted
+			"+gte": minStart.UTC().Format("2006-01-02T15:04:05"),
+		},
 
 		// Float the latest events to page 1
 		"+order_by": "created",
@@ -1641,10 +1612,6 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 			for _, event := range events {
 				event := event
 
-				if event.Action != action {
-					// log.Println("action mismatch", event.Action, action)
-					continue
-				}
 				if event.Entity == nil || event.Entity.Type != entityType {
 					// log.Println("type mismatch", event.Entity.Type, entityType)
 					continue
@@ -1680,10 +1647,6 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 				// that the ListEvents method is not populating it correctly
 				if event.Created == nil {
 					log.Printf("[WARN] event.Created is nil when API returned: %#+v", event.Created)
-				} else if *event.Created != minStart && !event.Created.After(minStart) {
-					// Not the event we were looking for
-					// log.Println(event.Created, "is not >=", minStart)
-					continue
 				}
 
 				// This is the event we are looking for. Save our place.
@@ -1710,6 +1673,33 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 		case <-ctx.Done():
 			return nil, fmt.Errorf("Error waiting for Event Status '%s' of %s %v action '%s': %s", EventFinished, titledEntityType, id, action, ctx.Err())
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		}
+	}
+}
+
+// WaitForImageStatus waits for the Image to reach the desired state
+// before returning. It will timeout with an error after timeoutSeconds.
+func (client Client) WaitForImageStatus(ctx context.Context, imageID string, status ImageStatus, timeoutSeconds int) (*Image, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			image, err := client.GetImage(ctx, imageID)
+			if err != nil {
+				return image, err
+			}
+			complete := image.Status == status
+
+			if complete {
+				return image, nil
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for Image %s status %s: %s", imageID, status, ctx.Err())
 		}
 	}
 }

@@ -31,6 +31,7 @@ type AccessToken struct {
 	Token     string `json:"access_token"`
 	Type      string `json:"token_type"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AccountID int64  `json:"account_id"`
 }
 
@@ -89,6 +90,11 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	AccountID int    `json:"account_id"`
+||||||| parent of 4d7e5ad26 (update vendored files)
+	AccountID int    `json:"account_id"`
+=======
+	AccountID int64  `json:"account_id"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // ExchangeAuthorizationRequest represents a request to exchange
@@ -136,11 +142,20 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		errorResponse := &ExchangeAuthorizationError{}
+		err = json.NewDecoder(resp.Body).Decode(errorResponse)
+		if err != nil {
+			return nil, err
+		}
 		errorResponse.HTTPResponse = resp
+<<<<<<< HEAD
 		json.NewDecoder(resp.Body).Decode(errorResponse)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		json.NewDecoder(resp.Body).Decode(errorResponse)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return nil, errorResponse
 	}
 

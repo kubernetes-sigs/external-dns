@@ -15,6 +15,7 @@ const snapshotBasePath = "v2/snapshots"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Snapshots
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -102,6 +103,11 @@ func (s *SnapshotsServiceOp) ListVolume(ctx context.Context, opt *ListOptions) (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#snapshots
+||||||| parent of 4d7e5ad26 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#snapshots
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Snapshots
+>>>>>>> 4d7e5ad26 (update vendored files)
 type SnapshotsService interface {
 	List(context.Context, *ListOptions) ([]Snapshot, *Response, error)
 	ListVolume(context.Context, *ListOptions) ([]Snapshot, *Response, error)
@@ -166,8 +172,14 @@ func (s *SnapshotsServiceOp) ListVolume(ctx context.Context, opt *ListOptions) (
 	return s.list(ctx, opt, &listOpt)
 }
 
+<<<<<<< HEAD
 // Get retrieves an snapshot by id.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Get retrieves an snapshot by id.
+=======
+// Get retrieves a snapshot by id.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (s *SnapshotsServiceOp) Get(ctx context.Context, snapshotID string) (*Snapshot, *Response, error) {
 	return s.get(ctx, snapshotID)
 }

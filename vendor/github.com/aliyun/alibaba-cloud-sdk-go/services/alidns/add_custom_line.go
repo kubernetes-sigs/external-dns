@@ -22,6 +22,7 @@ import (
 
 // AddCustomLine invokes the alidns.AddCustomLine API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) AddCustomLine(request *AddCustomLineRequest) (response *AddCustomLineResponse, err error) {
 	response = CreateAddCustomLineResponse()
 	err = client.DoAction(request, response)
@@ -103,6 +104,10 @@ func CreateAddCustomLineRequest() (request *AddCustomLineRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/addcustomline.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/addcustomline.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) AddCustomLine(request *AddCustomLineRequest) (response *AddCustomLineResponse, err error) {
 	response = CreateAddCustomLineResponse()
 	err = client.DoAction(request, response)
@@ -110,8 +115,6 @@ func (client *Client) AddCustomLine(request *AddCustomLineRequest) (response *Ad
 }
 
 // AddCustomLineWithChan invokes the alidns.AddCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addcustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddCustomLineWithChan(request *AddCustomLineRequest) (<-chan *AddCustomLineResponse, <-chan error) {
 	responseChan := make(chan *AddCustomLineResponse, 1)
 	errChan := make(chan error, 1)
@@ -134,8 +137,6 @@ func (client *Client) AddCustomLineWithChan(request *AddCustomLineRequest) (<-ch
 }
 
 // AddCustomLineWithCallback invokes the alidns.AddCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/addcustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddCustomLineWithCallback(request *AddCustomLineRequest, callback func(response *AddCustomLineResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -184,7 +185,12 @@ func CreateAddCustomLineRequest() (request *AddCustomLineRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddCustomLine", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

@@ -13,11 +13,17 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Event holds the information about an event of note that occurred.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Event holds the information about an event of note that ocurred.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Event holds the information about an event of note that ocurred.
+=======
+// Event holds the information about an event of note that occurred.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type Event struct {
 	at time.Time
 

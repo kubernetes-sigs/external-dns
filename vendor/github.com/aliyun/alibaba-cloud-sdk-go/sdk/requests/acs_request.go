@@ -343,6 +343,7 @@ func flatRepeatedList(dataValue reflect.Value, request AcsRequest, position, pre
 					return
 				}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			} else if typeTag == "Map" {
 				err = handleMap(request, dataValue, prefix, name, fieldPosition, i)
 				if err != nil {
@@ -498,6 +499,24 @@ func handleStruct(request AcsRequest, dataValue reflect.Value, prefix, name, fie
 								}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+			} else if typeTag == "Map" {
+				err = handleMap(request, dataValue, prefix, name, fieldPosition, i)
+				if err != nil {
+					return err
+				}
+			} else if typeTag == "Json" {
+				byt, err := json.Marshal(dataValue.Field(i).Interface())
+				if err != nil {
+					return err
+				}
+				key := prefix + name
+				err = addParam(request, fieldPosition, key, string(byt))
+				if err != nil {
+					return err
+				}
+>>>>>>> 4d7e5ad26 (update vendored files)
 			}
 		}
 	}
@@ -524,6 +543,65 @@ func handleRepeatedParams(request AcsRequest, dataValue reflect.Value, prefix, n
 				err = flatRepeatedList(elementValue, request, fieldPosition, key+".")
 				if err != nil {
 					return
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func handleParam(request AcsRequest, dataValue reflect.Value, prefix, key, fieldPosition string) (err error) {
+	if dataValue.Type().String() == "[]string" {
+		if dataValue.IsNil() {
+			return
+		}
+		for j := 0; j < dataValue.Len(); j++ {
+			err = addParam(request, fieldPosition, key+"."+strconv.Itoa(j+1), dataValue.Index(j).String())
+			if err != nil {
+				return
+			}
+		}
+	} else {
+		if dataValue.Type().Kind().String() == "string" {
+			value := dataValue.String()
+			err = addParam(request, fieldPosition, key, value)
+			if err != nil {
+				return
+			}
+		} else if dataValue.Type().Kind().String() == "struct" {
+			err = flatRepeatedList(dataValue, request, fieldPosition, key+".")
+			if err != nil {
+				return
+			}
+		} else if dataValue.Type().Kind().String() == "int" {
+			value := dataValue.Int()
+			err = addParam(request, fieldPosition, key, strconv.Itoa(int(value)))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func handleMap(request AcsRequest, dataValue reflect.Value, prefix, name, fieldPosition string, index int) (err error) {
+	valueField := dataValue.Field(index)
+	if valueField.IsValid() && !valueField.IsNil() {
+		iter := valueField.MapRange()
+		for iter.Next() {
+			k := iter.Key()
+			v := iter.Value()
+			key := prefix + name + ".#" + strconv.Itoa(k.Len()) + "#" + k.String()
+			if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+				elementValue := v.Elem()
+				err = handleParam(request, elementValue, prefix, key, fieldPosition)
+				if err != nil {
+					return err
+				}
+			} else if v.IsValid() && v.IsNil() {
+				err = handleParam(request, v, prefix, key, fieldPosition)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -566,10 +644,28 @@ func handleStruct(request AcsRequest, dataValue reflect.Value, prefix, name, fie
 					if repeatedFieldValue.IsValid() && !repeatedFieldValue.IsNil() {
 						for m := 0; m < repeatedFieldValue.Len(); m++ {
 							elementValue := repeatedFieldValue.Index(m)
+<<<<<<< HEAD
 							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
 							if err != nil {
 								return
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+							err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
+							if err != nil {
+								return
+=======
+							if elementValue.Type().Kind().String() == "string" {
+								value := elementValue.String()
+								err := addParam(request, fieldPosition, key+"."+strconv.Itoa(m+1), value)
+								if err != nil {
+									return err
+								}
+							} else {
+								err = flatRepeatedList(elementValue, request, fieldPosition, key+"."+strconv.Itoa(m+1)+".")
+								if err != nil {
+									return
+								}
+>>>>>>> 4d7e5ad26 (update vendored files)
 							}
 						}
 					}

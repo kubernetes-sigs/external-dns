@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build linux && s390x && gc
 // +build linux
 // +build s390x
@@ -43,8 +44,18 @@
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build s390x
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build s390x
+=======
+//go:build linux && s390x && gc
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build linux
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// +build s390x
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build gc
 
 #include "textflag.h"

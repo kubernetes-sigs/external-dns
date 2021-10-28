@@ -24,6 +24,7 @@ type tdExpectedType struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (t *tdExpectedType) errorTypeMismatch(gotType reflect.Type) *ctxerr.Error {
 	expectedType := t.expectedType
 	if t.isPtr {
@@ -239,7 +240,20 @@ func (t *tdExpectedType) errorTypeMismatch(gotType types.RawString) *ctxerr.Erro
 		Message:  "type mismatch",
 		Got:      gotType,
 		Expected: types.RawString(t.expectedTypeStr()),
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (t *tdExpectedType) errorTypeMismatch(gotType types.RawString) *ctxerr.Error {
+	return &ctxerr.Error{
+		Message:  "type mismatch",
+		Got:      gotType,
+		Expected: types.RawString(t.expectedTypeStr()),
+=======
+func (t *tdExpectedType) errorTypeMismatch(gotType reflect.Type) *ctxerr.Error {
+	expectedType := t.expectedType
+	if t.isPtr {
+		expectedType = reflect.PtrTo(expectedType)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
+	return ctxerr.TypeMismatch(gotType, expectedType)
 }
 
 func (t *tdExpectedType) checkPtr(ctx ctxerr.Context, pGot *reflect.Value, nilAllowed bool) *ctxerr.Error {
@@ -249,7 +263,7 @@ func (t *tdExpectedType) checkPtr(ctx ctxerr.Context, pGot *reflect.Value, nilAl
 			if ctx.BooleanError {
 				return ctxerr.BooleanError
 			}
-			return t.errorTypeMismatch(types.RawString(got.Type().String()))
+			return t.errorTypeMismatch(got.Type())
 		}
 
 		if !nilAllowed && got.IsNil() {
@@ -277,18 +291,24 @@ func (t *tdExpectedType) checkType(ctx ctxerr.Context, got reflect.Value) *ctxer
 		if ctx.BooleanError {
 			return ctxerr.BooleanError
 		}
-		var gotType types.RawString
+		gt := got.Type()
 		if t.isPtr {
-			gotType = "*"
+			gt = reflect.PtrTo(gt)
 		}
-		gotType += types.RawString(got.Type().String())
-		return t.errorTypeMismatch(gotType)
+		return t.errorTypeMismatch(gt)
 	}
 	return nil
 }
 
 func (t *tdExpectedType) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if t.err != nil {
+		return nil
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if t.isPtr {
 		return reflect.New(t.expectedType).Type()
 	}

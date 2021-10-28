@@ -22,6 +22,7 @@ import (
 
 // DeleteDomain invokes the alidns.DeleteDomain API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteDomain(request *DeleteDomainRequest) (response *DeleteDomainResponse, err error) {
 	response = CreateDeleteDomainResponse()
 	err = client.DoAction(request, response)
@@ -94,6 +95,10 @@ func CreateDeleteDomainRequest() (request *DeleteDomainRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/deletedomain.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/deletedomain.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DeleteDomain(request *DeleteDomainRequest) (response *DeleteDomainResponse, err error) {
 	response = CreateDeleteDomainResponse()
 	err = client.DoAction(request, response)
@@ -101,8 +106,6 @@ func (client *Client) DeleteDomain(request *DeleteDomainRequest) (response *Dele
 }
 
 // DeleteDomainWithChan invokes the alidns.DeleteDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainWithChan(request *DeleteDomainRequest) (<-chan *DeleteDomainResponse, <-chan error) {
 	responseChan := make(chan *DeleteDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -125,8 +128,6 @@ func (client *Client) DeleteDomainWithChan(request *DeleteDomainRequest) (<-chan
 }
 
 // DeleteDomainWithCallback invokes the alidns.DeleteDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainWithCallback(request *DeleteDomainRequest, callback func(response *DeleteDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -166,7 +167,12 @@ func CreateDeleteDomainRequest() (request *DeleteDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteDomain", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

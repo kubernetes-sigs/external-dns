@@ -12,6 +12,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"strings"
 	"time"
 
@@ -294,6 +295,10 @@ func (ts *jwtAccessTokenSource) Token() (*oauth2.Token, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"strings"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"time"
 
 	"golang.org/x/oauth2"
@@ -311,6 +316,28 @@ func (ts *jwtAccessTokenSource) Token() (*oauth2.Token, error) {
 // optimization supported by a few Google services.
 // Unless you know otherwise, you should use JWTConfigFromJSON instead.
 func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.TokenSource, error) {
+	return newJWTSource(jsonKey, audience, nil)
+}
+
+// JWTAccessTokenSourceWithScope uses a Google Developers service account JSON
+// key file to read the credentials that authorize and authenticate the
+// requests, and returns a TokenSource that does not use any OAuth2 flow but
+// instead creates a JWT and sends that as the access token.
+// The scope is typically a list of URLs that specifies the scope of the
+// credentials.
+//
+// Note that this is not a standard OAuth flow, but rather an
+// optimization supported by a few Google services.
+// Unless you know otherwise, you should use JWTConfigFromJSON instead.
+func JWTAccessTokenSourceWithScope(jsonKey []byte, scope ...string) (oauth2.TokenSource, error) {
+	return newJWTSource(jsonKey, "", scope)
+}
+
+func newJWTSource(jsonKey []byte, audience string, scopes []string) (oauth2.TokenSource, error) {
+	if len(scopes) == 0 && audience == "" {
+		return nil, fmt.Errorf("google: missing scope/audience for JWT access token")
+	}
+
 	cfg, err := JWTConfigFromJSON(jsonKey)
 	if err != nil {
 		return nil, fmt.Errorf("google: could not parse JSON key: %v", err)
@@ -322,6 +349,7 @@ func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.Token
 	ts := &jwtAccessTokenSource{
 		email:    cfg.Email,
 		audience: audience,
+		scopes:   scopes,
 		pk:       pk,
 		pkID:     cfg.PrivateKeyID,
 	}
@@ -334,6 +362,7 @@ func JWTAccessTokenSourceFromJSON(jsonKey []byte, audience string) (oauth2.Token
 
 type jwtAccessTokenSource struct {
 	email, audience string
+	scopes          []string
 	pk              *rsa.PrivateKey
 	pkID            string
 }
@@ -341,13 +370,29 @@ type jwtAccessTokenSource struct {
 func (ts *jwtAccessTokenSource) Token() (*oauth2.Token, error) {
 	iat := time.Now()
 	exp := iat.Add(time.Hour)
+	scope := strings.Join(ts.scopes, " ")
 	cs := &jws.ClaimSet{
+<<<<<<< HEAD
 		Iss: ts.email,
 		Sub: ts.email,
 		Aud: ts.audience,
 		Iat: iat.Unix(),
 		Exp: exp.Unix(),
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		Iss: ts.email,
+		Sub: ts.email,
+		Aud: ts.audience,
+		Iat: iat.Unix(),
+		Exp: exp.Unix(),
+=======
+		Iss:   ts.email,
+		Sub:   ts.email,
+		Aud:   ts.audience,
+		Scope: scope,
+		Iat:   iat.Unix(),
+		Exp:   exp.Unix(),
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	hdr := &jws.Header{
 		Algorithm: "RS256",

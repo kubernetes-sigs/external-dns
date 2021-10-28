@@ -16,6 +16,7 @@ type User struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	TFAEnabled bool     `json:"tfa_enabled"`
 	SSHKeys    []string `json:"ssh_keys"`
 }
@@ -438,6 +439,10 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	TFAEnabled bool     `json:"tfa_enabled"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	SSHKeys    []string `json:"ssh_keys"`
 }
 
@@ -445,15 +450,13 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 type UserCreateOptions struct {
 	Username   string `json:"username"`
 	Email      string `json:"email"`
-	Restricted bool   `json:"restricted,omitempty"`
+	Restricted bool   `json:"restricted"`
 }
 
 // UserUpdateOptions fields are those accepted by UpdateUser
 type UserUpdateOptions struct {
-	Username   string    `json:"username,omitempty"`
-	Email      string    `json:"email,omitempty"`
-	Restricted *bool     `json:"restricted,omitempty"`
-	SSHKeys    *[]string `json:"ssh_keys,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Restricted *bool  `json:"restricted,omitempty"`
 }
 
 // GetCreateOptions converts a User to UserCreateOptions for use in CreateUser
@@ -468,7 +471,6 @@ func (i User) GetCreateOptions() (o UserCreateOptions) {
 // GetUpdateOptions converts a User to UserUpdateOptions for use in UpdateUser
 func (i User) GetUpdateOptions() (o UserUpdateOptions) {
 	o.Username = i.Username
-	o.Email = i.Email
 	o.Restricted = copyBool(&i.Restricted)
 
 	return
@@ -499,7 +501,6 @@ func (resp *UsersPagedResponse) appendData(r *UsersPagedResponse) {
 func (c *Client) ListUsers(ctx context.Context, opts *ListOptions) ([]User, error) {
 	response := UsersPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -516,7 +517,6 @@ func (c *Client) GetUser(ctx context.Context, id string) (*User, error) {
 
 	e = fmt.Sprintf("%s/%s", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&User{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -530,7 +530,6 @@ func (c *Client) CreateUser(ctx context.Context, createOpts UserCreateOptions) (
 	var body string
 
 	e, err := c.Users.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -546,7 +545,6 @@ func (c *Client) CreateUser(ctx context.Context, createOpts UserCreateOptions) (
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -559,7 +557,6 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 	var body string
 
 	e, err := c.Users.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -577,8 +574,13 @@ func (c *Client) UpdateUser(ctx context.Context, id string, updateOpts UserUpdat
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.batch.v1beta1;
@@ -334,6 +335,11 @@ message CronJobStatus {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.api.batch.v1beta1;
 
@@ -418,12 +424,21 @@ message CronJobSpec {
 message CronJobStatus {
   // A list of pointers to currently running jobs.
   // +optional
+  // +listType=atomic
   repeated k8s.io.api.core.v1.ObjectReference active = 1;
 
   // Information when was the last time the job was successfully scheduled.
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastScheduleTime = 4;
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+  // Information when was the last time the job successfully completed.
+  // +optional
+  optional k8s.io.apimachinery.pkg.apis.meta.v1.Time lastSuccessfulTime = 5;
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // JobTemplate describes a template for creating copies of a predefined pod.

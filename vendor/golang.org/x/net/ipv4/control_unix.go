@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
@@ -231,6 +232,10 @@ func marshalTTL(b []byte, cm *ControlMessage) []byte {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
 package ipv4
@@ -240,6 +245,8 @@ import (
 
 	"golang.org/x/net/internal/iana"
 	"golang.org/x/net/internal/socket"
+
+	"golang.org/x/sys/unix"
 )
 
 func setControlMessage(c *socket.Conn, opt *rawOpt, cf ControlFlags, on bool) error {
@@ -293,8 +300,14 @@ func setControlMessage(c *socket.Conn, opt *rawOpt, cf ControlFlags, on bool) er
 
 func marshalTTL(b []byte, cm *ControlMessage) []byte {
 	m := socket.ControlMessage(b)
+<<<<<<< HEAD
 	m.MarshalHeader(iana.ProtocolIP, sysIP_RECVTTL, 1)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	m.MarshalHeader(iana.ProtocolIP, sysIP_RECVTTL, 1)
+=======
+	m.MarshalHeader(iana.ProtocolIP, unix.IP_RECVTTL, 1)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return m.Next(1)
 }
 

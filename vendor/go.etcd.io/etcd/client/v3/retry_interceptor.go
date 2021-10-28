@@ -74,6 +74,7 @@ func (c *Client) unaryClientInterceptor(optFuncs ...retryOption) grpc.UnaryClien
 				continue
 			}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if callOpts.retryAuth && rpctypes.Error(lastErr) == rpctypes.ErrInvalidAuthToken {
 				// clear auth token before refreshing it.
 				// call c.Auth.Authenticate with an invalid token will always fail the auth check on the server-side,
@@ -436,6 +437,195 @@ func (s *serverStreamingRetryingStream) receiveMsgAndIndicateRetry(m interface{}
 	}
 	if s.client.shouldRefreshToken(err, s.callOpts) {
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+			if c.shouldRefreshToken(lastErr, callOpts) {
+				// clear auth token before refreshing it.
+				// call c.Auth.Authenticate with an invalid token will always fail the auth check on the server-side,
+				// if the server has not apply the patch of pr #12165 (https://github.com/etcd-io/etcd/pull/12165)
+				// and a rpctypes.ErrInvalidAuthToken will recursively call c.getToken until system run out of resource.
+				c.authTokenBundle.UpdateAuthToken("")
+
+				gterr := c.getToken(ctx)
+				if gterr != nil {
+					c.GetLogger().Warn(
+						"retrying of unary invoker failed to fetch new auth token",
+						zap.String("target", cc.Target()),
+						zap.Error(gterr),
+					)
+					return gterr // lastErr must be invalid auth token
+				}
+				continue
+			}
+			if !isSafeRetry(c.lg, lastErr, callOpts) {
+				return lastErr
+			}
+		}
+		return lastErr
+	}
+}
+
+// streamClientInterceptor returns a new retrying stream client interceptor for server side streaming calls.
+//
+// The default configuration of the interceptor is to not retry *at all*. This behaviour can be
+// changed through options (e.g. WithMax) on creation of the interceptor or on call (through grpc.CallOptions).
+//
+// Retry logic is available *only for ServerStreams*, i.e. 1:n streams, as the internal logic needs
+// to buffer the messages sent by the client. If retry is enabled on any other streams (ClientStreams,
+// BidiStreams), the retry interceptor will fail the call.
+func (c *Client) streamClientInterceptor(optFuncs ...retryOption) grpc.StreamClientInterceptor {
+	intOpts := reuseOrNewWithCallOptions(defaultOptions, optFuncs)
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		ctx = withVersion(ctx)
+		// getToken automatically
+		// TODO(cfc4n): keep this code block, remove codes about getToken in client.go after pr #12165 merged.
+		if c.authTokenBundle != nil {
+			// equal to c.Username != "" && c.Password != ""
+			err := c.getToken(ctx)
+			if err != nil && rpctypes.Error(err) != rpctypes.ErrAuthNotEnabled {
+				c.GetLogger().Error("clientv3/retry_interceptor: getToken failed", zap.Error(err))
+				return nil, err
+			}
+		}
+		grpcOpts, retryOpts := filterCallOptions(opts)
+		callOpts := reuseOrNewWithCallOptions(intOpts, retryOpts)
+		// short circuit for simplicity, and avoiding allocations.
+		if callOpts.max == 0 {
+			return streamer(ctx, desc, cc, method, grpcOpts...)
+		}
+		if desc.ClientStreams {
+			return nil, status.Errorf(codes.Unimplemented, "clientv3/retry_interceptor: cannot retry on ClientStreams, set Disable()")
+		}
+		newStreamer, err := streamer(ctx, desc, cc, method, grpcOpts...)
+		if err != nil {
+			c.GetLogger().Error("streamer failed to create ClientStream", zap.Error(err))
+			return nil, err // TODO(mwitkow): Maybe dial and transport errors should be retriable?
+		}
+		retryingStreamer := &serverStreamingRetryingStream{
+			client:       c,
+			ClientStream: newStreamer,
+			callOpts:     callOpts,
+			ctx:          ctx,
+			streamerCall: func(ctx context.Context) (grpc.ClientStream, error) {
+				return streamer(ctx, desc, cc, method, grpcOpts...)
+			},
+		}
+		return retryingStreamer, nil
+	}
+}
+
+// shouldRefreshToken checks whether there's a need to refresh the token based on the error and callOptions,
+// and returns a boolean value.
+func (c *Client) shouldRefreshToken(err error, callOpts *options) bool {
+	if rpctypes.Error(err) == rpctypes.ErrUserEmpty {
+		// refresh the token when username, password is present but the server returns ErrUserEmpty
+		// which is possible when the client token is cleared somehow
+		return c.authTokenBundle != nil // equal to c.Username != "" && c.Password != ""
+	}
+
+	return callOpts.retryAuth &&
+		(rpctypes.Error(err) == rpctypes.ErrInvalidAuthToken || rpctypes.Error(err) == rpctypes.ErrAuthOldRevision)
+}
+
+// type serverStreamingRetryingStream is the implementation of grpc.ClientStream that acts as a
+// proxy to the underlying call. If any of the RecvMsg() calls fail, it will try to reestablish
+// a new ClientStream according to the retry policy.
+type serverStreamingRetryingStream struct {
+	grpc.ClientStream
+	client        *Client
+	bufferedSends []interface{} // single message that the client can sen
+	receivedGood  bool          // indicates whether any prior receives were successful
+	wasClosedSend bool          // indicates that CloseSend was closed
+	ctx           context.Context
+	callOpts      *options
+	streamerCall  func(ctx context.Context) (grpc.ClientStream, error)
+	mu            sync.RWMutex
+}
+
+func (s *serverStreamingRetryingStream) setStream(clientStream grpc.ClientStream) {
+	s.mu.Lock()
+	s.ClientStream = clientStream
+	s.mu.Unlock()
+}
+
+func (s *serverStreamingRetryingStream) getStream() grpc.ClientStream {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.ClientStream
+}
+
+func (s *serverStreamingRetryingStream) SendMsg(m interface{}) error {
+	s.mu.Lock()
+	s.bufferedSends = append(s.bufferedSends, m)
+	s.mu.Unlock()
+	return s.getStream().SendMsg(m)
+}
+
+func (s *serverStreamingRetryingStream) CloseSend() error {
+	s.mu.Lock()
+	s.wasClosedSend = true
+	s.mu.Unlock()
+	return s.getStream().CloseSend()
+}
+
+func (s *serverStreamingRetryingStream) Header() (metadata.MD, error) {
+	return s.getStream().Header()
+}
+
+func (s *serverStreamingRetryingStream) Trailer() metadata.MD {
+	return s.getStream().Trailer()
+}
+
+func (s *serverStreamingRetryingStream) RecvMsg(m interface{}) error {
+	attemptRetry, lastErr := s.receiveMsgAndIndicateRetry(m)
+	if !attemptRetry {
+		return lastErr // success or hard failure
+	}
+
+	// We start off from attempt 1, because zeroth was already made on normal SendMsg().
+	for attempt := uint(1); attempt < s.callOpts.max; attempt++ {
+		if err := waitRetryBackoff(s.ctx, attempt, s.callOpts); err != nil {
+			return err
+		}
+		newStream, err := s.reestablishStreamAndResendBuffer(s.ctx)
+		if err != nil {
+			s.client.lg.Error("failed reestablishStreamAndResendBuffer", zap.Error(err))
+			return err // TODO(mwitkow): Maybe dial and transport errors should be retriable?
+		}
+		s.setStream(newStream)
+
+		s.client.lg.Warn("retrying RecvMsg", zap.Error(lastErr))
+		attemptRetry, lastErr = s.receiveMsgAndIndicateRetry(m)
+		if !attemptRetry {
+			return lastErr
+		}
+	}
+	return lastErr
+}
+
+func (s *serverStreamingRetryingStream) receiveMsgAndIndicateRetry(m interface{}) (bool, error) {
+	s.mu.RLock()
+	wasGood := s.receivedGood
+	s.mu.RUnlock()
+	err := s.getStream().RecvMsg(m)
+	if err == nil || err == io.EOF {
+		s.mu.Lock()
+		s.receivedGood = true
+		s.mu.Unlock()
+		return false, err
+	} else if wasGood {
+		// previous RecvMsg in the stream succeeded, no retry logic should interfere
+		return false, err
+	}
+	if isContextError(err) {
+		if s.ctx.Err() != nil {
+			return false, err
+		}
+		// its the callCtx deadline or cancellation, in which case try again.
+		return true, err
+	}
+	if s.client.shouldRefreshToken(err, s.callOpts) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		// clear auth token to avoid failure when call getToken
 		s.client.authTokenBundle.UpdateAuthToken("")
 

@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -73,8 +74,13 @@ func (api *API) AccountRole(ctx context.Context, accountID string, roleID string
 		return AccountRole{}, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 )
@@ -114,12 +120,12 @@ type AccountRoleDetailResponse struct {
 // AccountRoles returns all roles of an account.
 //
 // API reference: https://api.cloudflare.com/#account-roles-list-roles
-func (api *API) AccountRoles(accountID string) ([]AccountRole, error) {
-	uri := "/accounts/" + accountID + "/roles"
+func (api *API) AccountRoles(ctx context.Context, accountID string) ([]AccountRole, error) {
+	uri := fmt.Sprintf("/accounts/%s/roles", accountID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return []AccountRole{}, errors.Wrap(err, errMakeRequestError)
+		return []AccountRole{}, err
 	}
 
 	var accountRolesListResponse AccountRolesListResponse
@@ -134,13 +140,19 @@ func (api *API) AccountRoles(accountID string) ([]AccountRole, error) {
 // AccountRole returns the details of a single account role.
 //
 // API reference: https://api.cloudflare.com/#account-roles-role-details
-func (api *API) AccountRole(accountID string, roleID string) (AccountRole, error) {
+func (api *API) AccountRole(ctx context.Context, accountID string, roleID string) (AccountRole, error) {
 	uri := fmt.Sprintf("/accounts/%s/roles/%s", accountID, roleID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
+<<<<<<< HEAD
 		return AccountRole{}, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return AccountRole{}, errors.Wrap(err, errMakeRequestError)
+=======
+		return AccountRole{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	var accountRole AccountRoleDetailResponse

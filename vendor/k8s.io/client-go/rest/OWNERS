@@ -13,6 +13,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 - nikhiljindal
@@ -43,6 +44,12 @@ reviewers:
 - gmarek
 - erictune
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 - sttts
 - luxas
 - dims

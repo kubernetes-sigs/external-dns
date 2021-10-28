@@ -41,6 +41,7 @@ type serializerType struct {
 	Serializer       runtime.Serializer
 	PrettySerializer runtime.Serializer
 <<<<<<< HEAD
+<<<<<<< HEAD
 	StrictSerializer runtime.Serializer
 
 	AcceptStreamContentTypes []string
@@ -506,6 +507,10 @@ func newCodecFactory(scheme *runtime.Scheme, serializers []serializerType) Codec
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	StrictSerializer runtime.Serializer
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	AcceptStreamContentTypes []string
 	StreamContentType        string
@@ -536,9 +541,19 @@ func newSerializersForScheme(scheme *runtime.Scheme, mf json.MetaFactory, option
 		)
 	}
 
+	strictJSONSerializer := json.NewSerializerWithOptions(
+		mf, scheme, scheme,
+		json.SerializerOptions{Yaml: false, Pretty: false, Strict: true},
+	)
+	jsonSerializerType.StrictSerializer = strictJSONSerializer
+
 	yamlSerializer := json.NewSerializerWithOptions(
 		mf, scheme, scheme,
 		json.SerializerOptions{Yaml: true, Pretty: false, Strict: options.Strict},
+	)
+	strictYAMLSerializer := json.NewSerializerWithOptions(
+		mf, scheme, scheme,
+		json.SerializerOptions{Yaml: true, Pretty: false, Strict: true},
 	)
 	protoSerializer := protobuf.NewSerializer(scheme, scheme)
 	protoRawSerializer := protobuf.NewRawSerializer(scheme, scheme)
@@ -551,12 +566,16 @@ func newSerializersForScheme(scheme *runtime.Scheme, mf json.MetaFactory, option
 			FileExtensions:     []string{"yaml"},
 			EncodesAsText:      true,
 			Serializer:         yamlSerializer,
+			StrictSerializer:   strictYAMLSerializer,
 		},
 		{
 			AcceptContentTypes: []string{runtime.ContentTypeProtobuf},
 			ContentType:        runtime.ContentTypeProtobuf,
 			FileExtensions:     []string{"pb"},
 			Serializer:         protoSerializer,
+			// note, strict decoding is unsupported for protobuf,
+			// fall back to regular serializing
+			StrictSerializer: protoSerializer,
 
 			Framer:           protobuf.LengthDelimitedFramer,
 			StreamSerializer: protoRawSerializer,
@@ -574,10 +593,9 @@ func newSerializersForScheme(scheme *runtime.Scheme, mf json.MetaFactory, option
 // CodecFactory provides methods for retrieving codecs and serializers for specific
 // versions and content types.
 type CodecFactory struct {
-	scheme      *runtime.Scheme
-	serializers []serializerType
-	universal   runtime.Decoder
-	accepts     []runtime.SerializerInfo
+	scheme    *runtime.Scheme
+	universal runtime.Decoder
+	accepts   []runtime.SerializerInfo
 
 	legacySerializer runtime.Serializer
 }
@@ -654,6 +672,7 @@ func newCodecFactory(scheme *runtime.Scheme, serializers []serializerType) Codec
 				EncodesAsText:    d.EncodesAsText,
 				Serializer:       d.Serializer,
 				PrettySerializer: d.PrettySerializer,
+				StrictSerializer: d.StrictSerializer,
 			}
 
 			mediaType, _, err := mime.ParseMediaType(info.MediaType)
@@ -682,10 +701,19 @@ func newCodecFactory(scheme *runtime.Scheme, serializers []serializerType) Codec
 	}
 
 	return CodecFactory{
+<<<<<<< HEAD
 		scheme:      scheme,
 		serializers: serializers,
 		universal:   recognizer.NewDecoder(decoders...),
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		scheme:      scheme,
+		serializers: serializers,
+		universal:   recognizer.NewDecoder(decoders...),
+=======
+		scheme:    scheme,
+		universal: recognizer.NewDecoder(decoders...),
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 		accepts: accepts,
 

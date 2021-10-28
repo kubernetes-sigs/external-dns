@@ -18,6 +18,7 @@ package alidns
 // Domain is a nested struct in alidns response
 type Domain struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	AliDomain        bool                  `json:"AliDomain" xml:"AliDomain"`
 	CreateTimestamp  int64                 `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	ExpireTimestamp  int64                 `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
@@ -69,4 +70,55 @@ type Domain struct {
 	DnsServers      DnsServersInDescribeDomains `json:"DnsServers" xml:"DnsServers"`
 	Tags            TagsInDescribeDomains       `json:"Tags" xml:"Tags"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	DomainId        string                      `json:"DomainId" xml:"DomainId"`
+	DomainName      string                      `json:"DomainName" xml:"DomainName"`
+	PunyCode        string                      `json:"PunyCode" xml:"PunyCode"`
+	AliDomain       bool                        `json:"AliDomain" xml:"AliDomain"`
+	RecordCount     int64                       `json:"RecordCount" xml:"RecordCount"`
+	RegistrantEmail string                      `json:"RegistrantEmail" xml:"RegistrantEmail"`
+	Remark          string                      `json:"Remark" xml:"Remark"`
+	GroupId         string                      `json:"GroupId" xml:"GroupId"`
+	GroupName       string                      `json:"GroupName" xml:"GroupName"`
+	InstanceId      string                      `json:"InstanceId" xml:"InstanceId"`
+	VersionCode     string                      `json:"VersionCode" xml:"VersionCode"`
+	VersionName     string                      `json:"VersionName" xml:"VersionName"`
+	InstanceEndTime string                      `json:"InstanceEndTime" xml:"InstanceEndTime"`
+	InstanceExpired bool                        `json:"InstanceExpired" xml:"InstanceExpired"`
+	Starmark        bool                        `json:"Starmark" xml:"Starmark"`
+	CreateTime      string                      `json:"CreateTime" xml:"CreateTime"`
+	CreateTimestamp int64                       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	DnsServers      DnsServersInDescribeDomains `json:"DnsServers" xml:"DnsServers"`
+	Tags            TagsInDescribeDomains       `json:"Tags" xml:"Tags"`
+=======
+	AliDomain        bool                  `json:"AliDomain" xml:"AliDomain"`
+	CreateTimestamp  int64                 `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	ExpireTimestamp  int64                 `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	InstanceEndTime  string                `json:"InstanceEndTime" xml:"InstanceEndTime"`
+	CreateTime       string                `json:"CreateTime" xml:"CreateTime"`
+	SourceProtocol   string                `json:"SourceProtocol" xml:"SourceProtocol"`
+	GroupName        string                `json:"GroupName" xml:"GroupName"`
+	VersionCode      string                `json:"VersionCode" xml:"VersionCode"`
+	DomainId         string                `json:"DomainId" xml:"DomainId"`
+	UpdateTimestamp  int64                 `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	RecordCount      int64                 `json:"RecordCount" xml:"RecordCount"`
+	InstanceExpired  bool                  `json:"InstanceExpired" xml:"InstanceExpired"`
+	ResourceGroupId  string                `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	CacheTtlMin      int                   `json:"CacheTtlMin" xml:"CacheTtlMin"`
+	InstanceId       string                `json:"InstanceId" xml:"InstanceId"`
+	ExpireTime       string                `json:"ExpireTime" xml:"ExpireTime"`
+	GroupId          string                `json:"GroupId" xml:"GroupId"`
+	SourceEdns       string                `json:"SourceEdns" xml:"SourceEdns"`
+	RegistrantEmail  string                `json:"RegistrantEmail" xml:"RegistrantEmail"`
+	VersionName      string                `json:"VersionName" xml:"VersionName"`
+	UpdateTime       string                `json:"UpdateTime" xml:"UpdateTime"`
+	Remark           string                `json:"Remark" xml:"Remark"`
+	DomainName       string                `json:"DomainName" xml:"DomainName"`
+	CacheTtlMax      int                   `json:"CacheTtlMax" xml:"CacheTtlMax"`
+	PunyCode         string                `json:"PunyCode" xml:"PunyCode"`
+	Starmark         bool                  `json:"Starmark" xml:"Starmark"`
+	DnsServers       []string              `json:"DnsServers" xml:"DnsServers"`
+	Tags             TagsInDescribeDomains `json:"Tags" xml:"Tags"`
+	SourceDnsServers []SourceDnsServer     `json:"SourceDnsServers" xml:"SourceDnsServers"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

@@ -39,6 +39,7 @@ func (gr *GroupResource) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if gr == nil {
 		return "<nil>"
 	}
@@ -186,6 +187,12 @@ func (gk *GroupKind) String() string {
 // to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if gr == nil {
+		return "<nil>"
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if len(gr.Group) == 0 {
 		return gr.Resource
 	}
@@ -193,7 +200,7 @@ func (gk *GroupKind) String() string {
 }
 
 // GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion
-// to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
+// to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type GroupVersionResource struct {
@@ -203,6 +210,9 @@ type GroupVersionResource struct {
 }
 
 func (gvr *GroupVersionResource) String() string {
+	if gvr == nil {
+		return "<nil>"
+	}
 	return strings.Join([]string{gvr.Group, "/", gvr.Version, ", Resource=", gvr.Resource}, "")
 }
 
@@ -216,6 +226,9 @@ type GroupKind struct {
 }
 
 func (gk *GroupKind) String() string {
+	if gk == nil {
+		return "<nil>"
+	}
 	if len(gk.Group) == 0 {
 		return gk.Kind
 	}
@@ -223,8 +236,14 @@ func (gk *GroupKind) String() string {
 }
 
 // GroupVersionKind unambiguously identifies a kind.  It doesn't anonymously include GroupVersion
+<<<<<<< HEAD
 // to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
+=======
+// to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type GroupVersionKind struct {

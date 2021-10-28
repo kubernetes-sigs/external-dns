@@ -8,6 +8,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"log"
@@ -322,6 +323,10 @@ func (client *Client) GetRunstatusMaintenance(ctx context.Context, maintenance R
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"errors"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"fmt"
 	"log"
 	"net/url"
@@ -416,8 +421,14 @@ func (client *Client) GetRunstatusMaintenance(ctx context.Context, maintenance R
 		}
 	}
 
+<<<<<<< HEAD
 	return nil, fmt.Errorf("%#v not found", maintenance)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return nil, fmt.Errorf("%#v not found", maintenance)
+=======
+	return nil, errors.New("maintenance not found")
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (client *Client) getRunstatusMaintenance(ctx context.Context, maintenanceURL string) (*RunstatusMaintenance, error) {

@@ -13,6 +13,7 @@ type MsgAcceptFunc func(dh Header) MsgAcceptAction
 // * Zero bit isn't zero
 //
 <<<<<<< HEAD
+<<<<<<< HEAD
 // * does not have exactly 1 question in the question section
 //
 // * has more than 1 RR in the Answer section
@@ -30,6 +31,11 @@ type MsgAcceptAction int
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // * has more than 1 question in the question section
+||||||| parent of 4d7e5ad26 (update vendored files)
+// * has more than 1 question in the question section
+=======
+// * does not have exactly 1 question in the question section
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // * has more than 1 RR in the Answer section
 //
@@ -42,7 +48,12 @@ var DefaultMsgAcceptFunc MsgAcceptFunc = defaultMsgAcceptFunc
 // MsgAcceptAction represents the action to be taken.
 type MsgAcceptAction int
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// Allowed returned values from a MsgAcceptFunc.
+>>>>>>> 4d7e5ad26 (update vendored files)
 const (
 	MsgAccept               MsgAcceptAction = iota // Accept the message
 	MsgReject                                      // Reject the message with a RcodeFormatError

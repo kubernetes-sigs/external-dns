@@ -32,12 +32,16 @@ just the methods you use.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 ### Why are some of my logs missing?
 
 Logs are dropped intentionally by zap when sampling is enabled. The production
@@ -169,6 +173,7 @@ We're aware of the following extensions, but haven't used them ourselves:
 | `github.com/blendle/zapdriver` | Stackdriver |
 | `github.com/moul/zapgorm` | Gorm |
 | `github.com/moul/zapfilter` | Advanced filtering rules |
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -552,6 +557,9 @@ We're aware of the following extensions, but haven't used them ourselves:
 | `github.com/fgrosse/zaptest` | Ginkgo |
 | `github.com/blendle/zapdriver` | Stackdriver |
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 [go-proverbs]: https://go-proverbs.github.io/
 [import-path]: https://golang.org/cmd/go/#hdr-Remote_import_paths

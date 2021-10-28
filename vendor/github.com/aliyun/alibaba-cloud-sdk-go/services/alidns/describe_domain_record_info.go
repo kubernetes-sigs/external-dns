@@ -22,6 +22,7 @@ import (
 
 // DescribeDomainRecordInfo invokes the alidns.DescribeDomainRecordInfo API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeDomainRecordInfo(request *DescribeDomainRecordInfoRequest) (response *DescribeDomainRecordInfoResponse, err error) {
 	response = CreateDescribeDomainRecordInfoResponse()
 	err = client.DoAction(request, response)
@@ -107,6 +108,10 @@ func CreateDescribeDomainRecordInfoRequest() (request *DescribeDomainRecordInfoR
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describedomainrecordinfo.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describedomainrecordinfo.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeDomainRecordInfo(request *DescribeDomainRecordInfoRequest) (response *DescribeDomainRecordInfoResponse, err error) {
 	response = CreateDescribeDomainRecordInfoResponse()
 	err = client.DoAction(request, response)
@@ -114,8 +119,6 @@ func (client *Client) DescribeDomainRecordInfo(request *DescribeDomainRecordInfo
 }
 
 // DescribeDomainRecordInfoWithChan invokes the alidns.DescribeDomainRecordInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainrecordinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainRecordInfoWithChan(request *DescribeDomainRecordInfoRequest) (<-chan *DescribeDomainRecordInfoResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainRecordInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -138,8 +141,6 @@ func (client *Client) DescribeDomainRecordInfoWithChan(request *DescribeDomainRe
 }
 
 // DescribeDomainRecordInfoWithCallback invokes the alidns.DescribeDomainRecordInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainrecordinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainRecordInfoWithCallback(request *DescribeDomainRecordInfoRequest, callback func(response *DescribeDomainRecordInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -192,7 +193,12 @@ func CreateDescribeDomainRecordInfoRequest() (request *DescribeDomainRecordInfoR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainRecordInfo", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

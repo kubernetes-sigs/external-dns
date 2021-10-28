@@ -25,6 +25,7 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 var (
 	_ ResettableRESTMapper = MultiRESTMapper{}
 )
@@ -220,11 +221,18 @@ func (m MultiRESTMapper) Reset() {
 	}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+var (
+	_ ResettableRESTMapper = MultiRESTMapper{}
+)
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // MultiRESTMapper is a wrapper for multiple RESTMappers.
 type MultiRESTMapper []RESTMapper
 
 func (m MultiRESTMapper) String() string {
-	nested := []string{}
+	nested := make([]string, 0, len(m))
 	for _, t := range m {
 		currString := fmt.Sprintf("%v", t)
 		splitStrings := strings.Split(currString, "\n")
@@ -404,4 +412,10 @@ func (m MultiRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string) (
 	}
 	return allMappings, nil
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func (m MultiRESTMapper) Reset() {
+	for _, t := range m {
+		MaybeResetRESTMapper(t)
+	}
 }

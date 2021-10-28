@@ -13,6 +13,7 @@ type Scope struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	System      bool
 }
 
@@ -521,6 +522,10 @@ func Revoke(c *gophercloud.ServiceClient, token string) (r RevokeResult) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	System      bool
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // AuthOptionsBuilder provides the ability for extensions to add additional
@@ -529,6 +534,7 @@ type AuthOptionsBuilder interface {
 	// ToTokenV3CreateMap assembles the Create request body, returning an error
 	// if parameters are missing or inconsistent.
 	ToTokenV3CreateMap(map[string]interface{}) (map[string]interface{}, error)
+	ToTokenV3HeadersMap(map[string]interface{}) (map[string]string, error)
 	ToTokenV3ScopeMap() (map[string]interface{}, error)
 	CanReauth() bool
 }
@@ -548,6 +554,9 @@ type AuthOptions struct {
 	UserID   string `json:"id,omitempty"`
 
 	Password string `json:"password,omitempty"`
+
+	// Passcode is used in TOTP authentication method
+	Passcode string `json:"passcode,omitempty"`
 
 	// At most one of DomainID and DomainName must be provided if using Username
 	// with Identity V3. Otherwise, either are optional.
@@ -580,6 +589,7 @@ func (opts *AuthOptions) ToTokenV3CreateMap(scope map[string]interface{}) (map[s
 		Username:                    opts.Username,
 		UserID:                      opts.UserID,
 		Password:                    opts.Password,
+		Passcode:                    opts.Passcode,
 		DomainID:                    opts.DomainID,
 		DomainName:                  opts.DomainName,
 		AllowReauth:                 opts.AllowReauth,
@@ -592,7 +602,7 @@ func (opts *AuthOptions) ToTokenV3CreateMap(scope map[string]interface{}) (map[s
 	return gophercloudAuthOpts.ToTokenV3CreateMap(scope)
 }
 
-// ToTokenV3CreateMap builds a scope request body from AuthOptions.
+// ToTokenV3ScopeMap builds a scope request body from AuthOptions.
 func (opts *AuthOptions) ToTokenV3ScopeMap() (map[string]interface{}, error) {
 	scope := gophercloud.AuthScope(opts.Scope)
 
@@ -606,10 +616,21 @@ func (opts *AuthOptions) ToTokenV3ScopeMap() (map[string]interface{}, error) {
 }
 
 func (opts *AuthOptions) CanReauth() bool {
+	if opts.Passcode != "" {
+		// cannot reauth using TOTP passcode
+		return false
+	}
+
 	return opts.AllowReauth
 }
 
-func subjectTokenHeaders(c *gophercloud.ServiceClient, subjectToken string) map[string]string {
+// ToTokenV3HeadersMap allows AuthOptions to satisfy the AuthOptionsBuilder
+// interface in the v3 tokens package.
+func (opts *AuthOptions) ToTokenV3HeadersMap(map[string]interface{}) (map[string]string, error) {
+	return nil, nil
+}
+
+func subjectTokenHeaders(subjectToken string) map[string]string {
 	return map[string]string{
 		"X-Subject-Token": subjectToken,
 	}
@@ -633,30 +654,24 @@ func Create(c *gophercloud.ServiceClient, opts AuthOptionsBuilder) (r CreateResu
 	resp, err := c.Post(tokenURL(c), b, &r.Body, &gophercloud.RequestOpts{
 		MoreHeaders: map[string]string{"X-Auth-Token": ""},
 	})
-	r.Err = err
-	if resp != nil {
-		r.Header = resp.Header
-	}
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
 }
 
 // Get validates and retrieves information about another token.
 func Get(c *gophercloud.ServiceClient, token string) (r GetResult) {
 	resp, err := c.Get(tokenURL(c), &r.Body, &gophercloud.RequestOpts{
-		MoreHeaders: subjectTokenHeaders(c, token),
+		MoreHeaders: subjectTokenHeaders(token),
 		OkCodes:     []int{200, 203},
 	})
-	if resp != nil {
-		r.Header = resp.Header
-	}
-	r.Err = err
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
 	return
 }
 
 // Validate determines if a specified token is valid or not.
 func Validate(c *gophercloud.ServiceClient, token string) (bool, error) {
 	resp, err := c.Head(tokenURL(c), &gophercloud.RequestOpts{
-		MoreHeaders: subjectTokenHeaders(c, token),
+		MoreHeaders: subjectTokenHeaders(token),
 		OkCodes:     []int{200, 204, 404},
 	})
 	if err != nil {
@@ -668,9 +683,14 @@ func Validate(c *gophercloud.ServiceClient, token string) (bool, error) {
 
 // Revoke immediately makes specified token invalid.
 func Revoke(c *gophercloud.ServiceClient, token string) (r RevokeResult) {
-	_, r.Err = c.Delete(tokenURL(c), &gophercloud.RequestOpts{
-		MoreHeaders: subjectTokenHeaders(c, token),
+	resp, err := c.Delete(tokenURL(c), &gophercloud.RequestOpts{
+		MoreHeaders: subjectTokenHeaders(token),
 	})
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	_, r.Header, r.Err = gophercloud.ParseResponse(resp, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }

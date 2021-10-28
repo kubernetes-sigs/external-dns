@@ -22,6 +22,7 @@ import (
 
 // DeleteDomainGroup invokes the alidns.DeleteDomainGroup API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteDomainGroup(request *DeleteDomainGroupRequest) (response *DeleteDomainGroupResponse, err error) {
 	response = CreateDeleteDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -94,6 +95,10 @@ func CreateDeleteDomainGroupRequest() (request *DeleteDomainGroupRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DeleteDomainGroup(request *DeleteDomainGroupRequest) (response *DeleteDomainGroupResponse, err error) {
 	response = CreateDeleteDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -101,8 +106,6 @@ func (client *Client) DeleteDomainGroup(request *DeleteDomainGroupRequest) (resp
 }
 
 // DeleteDomainGroupWithChan invokes the alidns.DeleteDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainGroupWithChan(request *DeleteDomainGroupRequest) (<-chan *DeleteDomainGroupResponse, <-chan error) {
 	responseChan := make(chan *DeleteDomainGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -125,8 +128,6 @@ func (client *Client) DeleteDomainGroupWithChan(request *DeleteDomainGroupReques
 }
 
 // DeleteDomainGroupWithCallback invokes the alidns.DeleteDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainGroupWithCallback(request *DeleteDomainGroupRequest, callback func(response *DeleteDomainGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -166,7 +167,12 @@ func CreateDeleteDomainGroupRequest() (request *DeleteDomainGroupRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteDomainGroup", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

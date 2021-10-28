@@ -83,6 +83,7 @@ var TypeToRR = map[uint16]func() RR{
 	TypeURI:        func() RR { return new(URI) },
 	TypeX25:        func() RR { return new(X25) },
 <<<<<<< HEAD
+<<<<<<< HEAD
 	TypeZONEMD:     func() RR { return new(ZONEMD) },
 }
 
@@ -952,6 +953,10 @@ func (rr *ZONEMD) copy() RR {
 	return &ZONEMD{rr.Hdr, rr.Serial, rr.Scheme, rr.Hash, rr.Digest}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	TypeZONEMD:     func() RR { return new(ZONEMD) },
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // TypeToString is a map of strings for each RR type.
@@ -1038,6 +1043,7 @@ var TypeToString = map[uint16]string{
 	TypeUNSPEC:     "UNSPEC",
 	TypeURI:        "URI",
 	TypeX25:        "X25",
+	TypeZONEMD:     "ZONEMD",
 	TypeNSAPPTR:    "NSAP-PTR",
 }
 
@@ -1115,6 +1121,7 @@ func (rr *UID) Header() *RR_Header        { return &rr.Hdr }
 func (rr *UINFO) Header() *RR_Header      { return &rr.Hdr }
 func (rr *URI) Header() *RR_Header        { return &rr.Hdr }
 func (rr *X25) Header() *RR_Header        { return &rr.Hdr }
+func (rr *ZONEMD) Header() *RR_Header     { return &rr.Hdr }
 
 // len() functions
 func (rr *A) len(off int, compression map[string]struct{}) int {
@@ -1554,6 +1561,14 @@ func (rr *X25) len(off int, compression map[string]struct{}) int {
 	l += len(rr.PSDNAddress) + 1
 	return l
 }
+func (rr *ZONEMD) len(off int, compression map[string]struct{}) int {
+	l := rr.Hdr.len(off, compression)
+	l += 4 // Serial
+	l++    // Scheme
+	l++    // Hash
+	l += len(rr.Digest) / 2
+	return l
+}
 
 // copy() functions
 func (rr *A) copy() RR {
@@ -1806,4 +1821,7 @@ func (rr *URI) copy() RR {
 func (rr *X25) copy() RR {
 	return &X25{rr.Hdr, rr.PSDNAddress}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+func (rr *ZONEMD) copy() RR {
+	return &ZONEMD{rr.Hdr, rr.Serial, rr.Scheme, rr.Hash, rr.Digest}
 }

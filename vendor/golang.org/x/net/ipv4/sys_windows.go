@@ -12,6 +12,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"golang.org/x/sys/windows"
 )
@@ -155,33 +156,17 @@ func (pi *inetPktinfo) setIfindex(i int) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+	"golang.org/x/sys/windows"
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 const (
-	// See ws2tcpip.h.
-	sysIP_OPTIONS                = 0x1
-	sysIP_HDRINCL                = 0x2
-	sysIP_TOS                    = 0x3
-	sysIP_TTL                    = 0x4
-	sysIP_MULTICAST_IF           = 0x9
-	sysIP_MULTICAST_TTL          = 0xa
-	sysIP_MULTICAST_LOOP         = 0xb
-	sysIP_ADD_MEMBERSHIP         = 0xc
-	sysIP_DROP_MEMBERSHIP        = 0xd
-	sysIP_DONTFRAGMENT           = 0xe
-	sysIP_ADD_SOURCE_MEMBERSHIP  = 0xf
-	sysIP_DROP_SOURCE_MEMBERSHIP = 0x10
-	sysIP_PKTINFO                = 0x13
-
-	sizeofInetPktinfo  = 0x8
 	sizeofIPMreq       = 0x8
 	sizeofIPMreqSource = 0xc
 )
-
-type inetPktinfo struct {
-	Addr    [4]byte
-	Ifindex int32
-}
 
 type ipMreq struct {
 	Multiaddr [4]byte
@@ -199,18 +184,26 @@ var (
 	ctlOpts = [ctlMax]ctlOpt{}
 
 	sockOpts = map[int]*sockOpt{
-		ssoTOS:                {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_TOS, Len: 4}},
-		ssoTTL:                {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_TTL, Len: 4}},
-		ssoMulticastTTL:       {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_MULTICAST_TTL, Len: 4}},
-		ssoMulticastInterface: {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_MULTICAST_IF, Len: 4}},
-		ssoMulticastLoopback:  {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_MULTICAST_LOOP, Len: 4}},
-		ssoHeaderPrepend:      {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_HDRINCL, Len: 4}},
-		ssoJoinGroup:          {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_ADD_MEMBERSHIP, Len: sizeofIPMreq}, typ: ssoTypeIPMreq},
-		ssoLeaveGroup:         {Option: socket.Option{Level: iana.ProtocolIP, Name: sysIP_DROP_MEMBERSHIP, Len: sizeofIPMreq}, typ: ssoTypeIPMreq},
+		ssoTOS:                {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_TOS, Len: 4}},
+		ssoTTL:                {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_TTL, Len: 4}},
+		ssoMulticastTTL:       {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_MULTICAST_TTL, Len: 4}},
+		ssoMulticastInterface: {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_MULTICAST_IF, Len: 4}},
+		ssoMulticastLoopback:  {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_MULTICAST_LOOP, Len: 4}},
+		ssoHeaderPrepend:      {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_HDRINCL, Len: 4}},
+		ssoJoinGroup:          {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_ADD_MEMBERSHIP, Len: sizeofIPMreq}, typ: ssoTypeIPMreq},
+		ssoLeaveGroup:         {Option: socket.Option{Level: iana.ProtocolIP, Name: windows.IP_DROP_MEMBERSHIP, Len: sizeofIPMreq}, typ: ssoTypeIPMreq},
 	}
 )
+<<<<<<< HEAD
 
 func (pi *inetPktinfo) setIfindex(i int) {
 	pi.Ifindex = int32(i)
 }
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+func (pi *inetPktinfo) setIfindex(i int) {
+	pi.Ifindex = int32(i)
+}
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

@@ -14,11 +14,17 @@ type VanityNameServersService struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // VanityNameServer represents data for a single vanity name server.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // VanityNameServer represents data for a single vanity name server
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// VanityNameServer represents data for a single vanity name server
+=======
+// VanityNameServer represents data for a single vanity name server.
+>>>>>>> 4d7e5ad26 (update vendored files)
 type VanityNameServer struct {
 	ID        int64  `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`

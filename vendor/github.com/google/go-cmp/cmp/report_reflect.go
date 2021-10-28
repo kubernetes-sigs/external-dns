@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 package cmp
@@ -1092,6 +1093,11 @@ func formatMapKey(v reflect.Value, disambiguate bool, ptrs *pointerReferences) s
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 4d7e5ad26 (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package cmp
 
@@ -1298,9 +1304,10 @@ func (opts formatOptions) FormatValue(v reflect.Value, parentKind reflect.Kind, 
 		// Check whether this is a []byte of text data.
 		if t.Elem() == reflect.TypeOf(byte(0)) {
 			b := v.Bytes()
-			isPrintSpace := func(r rune) bool { return unicode.IsPrint(r) && unicode.IsSpace(r) }
+			isPrintSpace := func(r rune) bool { return unicode.IsPrint(r) || unicode.IsSpace(r) }
 			if len(b) > 0 && utf8.Valid(b) && len(bytes.TrimFunc(b, isPrintSpace)) == 0 {
 				out = opts.formatString("", string(b))
+				skipType = true
 				return opts.WithTypeMode(emitType).FormatType(t, out)
 			}
 		}
@@ -1442,7 +1449,13 @@ func formatMapKey(v reflect.Value, disambiguate bool, ptrs *pointerReferences) s
 	opts.PrintAddresses = disambiguate
 	opts.AvoidStringer = disambiguate
 	opts.QualifiedNames = disambiguate
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	opts.VerbosityLevel = maxVerbosityPreset
+	opts.LimitVerbosity = true
+>>>>>>> 4d7e5ad26 (update vendored files)
 	s := opts.FormatValue(v, reflect.Map, ptrs).String()
 	return strings.TrimSpace(s)
 }

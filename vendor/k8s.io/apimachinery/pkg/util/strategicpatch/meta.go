@@ -32,6 +32,7 @@ type PatchMeta struct {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (pm *PatchMeta) GetPatchStrategies() []string {
 	if pm.patchStrategies == nil {
 		return []string{}
@@ -51,22 +52,33 @@ func (pm *PatchMeta) SetPatchMergeKey(pmk string) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (pm PatchMeta) GetPatchStrategies() []string {
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (pm PatchMeta) GetPatchStrategies() []string {
+=======
+func (pm *PatchMeta) GetPatchStrategies() []string {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if pm.patchStrategies == nil {
 		return []string{}
 	}
 	return pm.patchStrategies
 }
 
-func (pm PatchMeta) SetPatchStrategies(ps []string) {
+func (pm *PatchMeta) SetPatchStrategies(ps []string) {
 	pm.patchStrategies = ps
 }
 
-func (pm PatchMeta) GetPatchMergeKey() string {
+func (pm *PatchMeta) GetPatchMergeKey() string {
 	return pm.patchMergeKey
 }
 
+<<<<<<< HEAD
 func (pm PatchMeta) SetPatchMergeKey(pmk string) {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (pm PatchMeta) SetPatchMergeKey(pmk string) {
+=======
+func (pm *PatchMeta) SetPatchMergeKey(pmk string) {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	pm.patchMergeKey = pmk
 }
 

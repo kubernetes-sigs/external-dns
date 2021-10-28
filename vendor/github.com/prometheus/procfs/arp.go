@@ -41,6 +41,7 @@ func (fs FS) GatherARPEntries() ([]ARPEntry, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
 	}
 
@@ -144,6 +145,11 @@ func parseARPEntries(data []byte) ([]ARPEntry, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return nil, fmt.Errorf("error reading arp %s: %s", fs.proc.Path("net/arp"), err)
+=======
+		return nil, fmt.Errorf("error reading arp %q: %w", fs.proc.Path("net/arp"), err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return parseARPEntries(data)
@@ -166,8 +172,14 @@ func parseARPEntries(data []byte) ([]ARPEntry, error) {
 		} else if width == expectedDataWidth {
 			entry, err := parseARPEntry(columns)
 			if err != nil {
+<<<<<<< HEAD
 				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %s", err)
+=======
+				return []ARPEntry{}, fmt.Errorf("failed to parse ARP entry: %w", err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 			}
 			entries = append(entries, entry)
 		} else {

@@ -39,6 +39,7 @@ func (m mapRule) IsValid(value string) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // allowList is a generic rule for allow listing
 type allowList struct {
 	rule
@@ -130,22 +131,37 @@ func (b excludeList) IsValid(value string) bool {
 =======
 // whitelist is a generic rule for whitelisting
 type whitelist struct {
+||||||| parent of 4d7e5ad26 (update vendored files)
+// whitelist is a generic rule for whitelisting
+type whitelist struct {
+=======
+// allowList is a generic rule for allow listing
+type allowList struct {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	rule
 }
 
-// IsValid for whitelist checks if the value is within the whitelist
-func (w whitelist) IsValid(value string) bool {
+// IsValid for allow list checks if the value is within the allow list
+func (w allowList) IsValid(value string) bool {
 	return w.rule.IsValid(value)
 }
 
-// blacklist is a generic rule for blacklisting
-type blacklist struct {
+// excludeList is a generic rule for exclude listing
+type excludeList struct {
 	rule
 }
 
+<<<<<<< HEAD
 // IsValid for whitelist checks if the value is within the whitelist
 func (b blacklist) IsValid(value string) bool {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// IsValid for whitelist checks if the value is within the whitelist
+func (b blacklist) IsValid(value string) bool {
+=======
+// IsValid for exclude list checks if the value is within the exclude list
+func (b excludeList) IsValid(value string) bool {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return !b.rule.IsValid(value)
 }
 

@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.authorization.v1;
@@ -571,6 +572,11 @@ message SubjectAccessReview {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.api.authorization.v1;
 
@@ -594,6 +600,8 @@ message ExtraValue {
 // Having a namespace scoped resource makes it much easier to grant namespace scoped policy that includes permissions
 // checking.
 message LocalSubjectAccessReview {
+  // Standard list metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -687,6 +695,8 @@ message ResourceRule {
 // spec.namespace means "in all namespaces".  Self is a special case, because users should always be able
 // to check whether they can perform an action
 message SelfSubjectAccessReview {
+  // Standard list metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -717,6 +727,8 @@ message SelfSubjectAccessReviewSpec {
 // drive authorization decisions as this raises confused deputy, cache lifetime/revocation, and correctness concerns.
 // SubjectAccessReview, and LocalAccessReview are the correct way to defer authorization decisions to the API server.
 message SelfSubjectRulesReview {
+  // Standard list metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 
@@ -728,6 +740,7 @@ message SelfSubjectRulesReview {
   optional SubjectRulesReviewStatus status = 3;
 }
 
+// SelfSubjectRulesReviewSpec defines the specification for SelfSubjectRulesReview.
 message SelfSubjectRulesReviewSpec {
   // Namespace to evaluate rules for. Required.
   optional string namespace = 1;
@@ -735,7 +748,13 @@ message SelfSubjectRulesReviewSpec {
 
 // SubjectAccessReview checks whether or not a user or group can perform an action.
 message SubjectAccessReview {
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+  // Standard list metadata.
+  // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+>>>>>>> 4d7e5ad26 (update vendored files)
   // +optional
   optional k8s.io.apimachinery.pkg.apis.meta.v1.ObjectMeta metadata = 1;
 

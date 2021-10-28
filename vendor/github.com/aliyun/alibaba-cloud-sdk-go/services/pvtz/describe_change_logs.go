@@ -22,6 +22,7 @@ import (
 
 // DescribeChangeLogs invokes the pvtz.DescribeChangeLogs API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeChangeLogs(request *DescribeChangeLogsRequest) (response *DescribeChangeLogsResponse, err error) {
 	response = CreateDescribeChangeLogsResponse()
 	err = client.DoAction(request, response)
@@ -104,6 +105,10 @@ func CreateDescribeChangeLogsRequest() (request *DescribeChangeLogsRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeChangeLogs(request *DescribeChangeLogsRequest) (response *DescribeChangeLogsResponse, err error) {
 	response = CreateDescribeChangeLogsResponse()
 	err = client.DoAction(request, response)
@@ -111,8 +116,6 @@ func (client *Client) DescribeChangeLogs(request *DescribeChangeLogsRequest) (re
 }
 
 // DescribeChangeLogsWithChan invokes the pvtz.DescribeChangeLogs API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeChangeLogsWithChan(request *DescribeChangeLogsRequest) (<-chan *DescribeChangeLogsResponse, <-chan error) {
 	responseChan := make(chan *DescribeChangeLogsResponse, 1)
 	errChan := make(chan error, 1)
@@ -135,8 +138,6 @@ func (client *Client) DescribeChangeLogsWithChan(request *DescribeChangeLogsRequ
 }
 
 // DescribeChangeLogsWithCallback invokes the pvtz.DescribeChangeLogs API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describechangelogs.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeChangeLogsWithCallback(request *DescribeChangeLogsRequest, callback func(response *DescribeChangeLogsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -186,7 +187,12 @@ func CreateDescribeChangeLogsRequest() (request *DescribeChangeLogsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeChangeLogs", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

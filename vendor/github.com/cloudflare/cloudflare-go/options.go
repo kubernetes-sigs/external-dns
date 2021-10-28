@@ -85,6 +85,7 @@ func UserAgent(userAgent string) Option {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // BaseURL allows you to override the default HTTP base URL used for API calls.
 func BaseURL(baseURL string) Option {
 	return func(api *API) error {
@@ -96,6 +97,17 @@ func BaseURL(baseURL string) Option {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// BaseURL allows you to override the default HTTP base URL used for API calls.
+func BaseURL(baseURL string) Option {
+	return func(api *API) error {
+		api.BaseURL = baseURL
+		return nil
+	}
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // parseOptions parses the supplied options functions and returns a configured
 // *API instance.
 func (api *API) parseOptions(opts ...Option) error {

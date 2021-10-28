@@ -34,11 +34,17 @@ const percentBangString = "%!"
 // operand that does not implement the error interface. The %w verb is otherwise
 // a synonym for %v.
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: As of Go 1.13, use fmt.Errorf instead.
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// Deprecated: As of Go 1.13, use fmt.Errorf instead.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func Errorf(format string, a ...interface{}) error {
 	format = formatPlusW(format)
 	// Support a ": %[wsv]" suffix, which works well with xerrors.Formatter.

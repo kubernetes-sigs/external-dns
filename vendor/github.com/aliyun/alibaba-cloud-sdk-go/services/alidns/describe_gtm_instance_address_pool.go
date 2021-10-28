@@ -22,6 +22,7 @@ import (
 
 // DescribeGtmInstanceAddressPool invokes the alidns.DescribeGtmInstanceAddressPool API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DescribeGtmInstanceAddressPool(request *DescribeGtmInstanceAddressPoolRequest) (response *DescribeGtmInstanceAddressPoolResponse, err error) {
 	response = CreateDescribeGtmInstanceAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -106,6 +107,10 @@ func CreateDescribeGtmInstanceAddressPoolRequest() (request *DescribeGtmInstance
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspool.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspool.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DescribeGtmInstanceAddressPool(request *DescribeGtmInstanceAddressPoolRequest) (response *DescribeGtmInstanceAddressPoolResponse, err error) {
 	response = CreateDescribeGtmInstanceAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -113,8 +118,6 @@ func (client *Client) DescribeGtmInstanceAddressPool(request *DescribeGtmInstanc
 }
 
 // DescribeGtmInstanceAddressPoolWithChan invokes the alidns.DescribeGtmInstanceAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolWithChan(request *DescribeGtmInstanceAddressPoolRequest) (<-chan *DescribeGtmInstanceAddressPoolResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceAddressPoolResponse, 1)
 	errChan := make(chan error, 1)
@@ -137,8 +140,6 @@ func (client *Client) DescribeGtmInstanceAddressPoolWithChan(request *DescribeGt
 }
 
 // DescribeGtmInstanceAddressPoolWithCallback invokes the alidns.DescribeGtmInstanceAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolWithCallback(request *DescribeGtmInstanceAddressPoolRequest, callback func(response *DescribeGtmInstanceAddressPoolResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -190,7 +191,12 @@ func CreateDescribeGtmInstanceAddressPoolRequest() (request *DescribeGtmInstance
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceAddressPool", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

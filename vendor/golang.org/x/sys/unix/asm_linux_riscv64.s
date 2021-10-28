@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build riscv64 && gc
 // +build riscv64
 // +build gc
@@ -36,6 +37,13 @@
 =======
 // +build riscv64,gc
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build riscv64,gc
+=======
+//go:build riscv64 && gc
+// +build riscv64
+// +build gc
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 #include "textflag.h"
 

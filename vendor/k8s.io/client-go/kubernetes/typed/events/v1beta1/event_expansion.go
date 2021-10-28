@@ -34,11 +34,17 @@ type EventExpansion interface {
 	// except that it sends the request to the event.Namespace.
 	UpdateWithEventNamespace(event *v1beta1.Event) (*v1beta1.Event, error)
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// PatchWithEventNamespace is the same as a Patch
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// PatchWithEventNamespace is the same as an Update
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	// PatchWithEventNamespace is the same as an Update
+=======
+	// PatchWithEventNamespace is the same as a Patch
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// except that it sends the request to the event.Namespace.
 	PatchWithEventNamespace(event *v1beta1.Event, data []byte) (*v1beta1.Event, error)
 }

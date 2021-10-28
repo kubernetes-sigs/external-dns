@@ -22,6 +22,7 @@ import (
 
 // UpdateRecordRemark invokes the pvtz.UpdateRecordRemark API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (response *UpdateRecordRemarkResponse, err error) {
 	response = CreateUpdateRecordRemarkResponse()
 	err = client.DoAction(request, response)
@@ -95,6 +96,10 @@ func CreateUpdateRecordRemarkRequest() (request *UpdateRecordRemarkRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (response *UpdateRecordRemarkResponse, err error) {
 	response = CreateUpdateRecordRemarkResponse()
 	err = client.DoAction(request, response)
@@ -102,8 +107,6 @@ func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (re
 }
 
 // UpdateRecordRemarkWithChan invokes the pvtz.UpdateRecordRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateRecordRemarkWithChan(request *UpdateRecordRemarkRequest) (<-chan *UpdateRecordRemarkResponse, <-chan error) {
 	responseChan := make(chan *UpdateRecordRemarkResponse, 1)
 	errChan := make(chan error, 1)
@@ -126,8 +129,6 @@ func (client *Client) UpdateRecordRemarkWithChan(request *UpdateRecordRemarkRequ
 }
 
 // UpdateRecordRemarkWithCallback invokes the pvtz.UpdateRecordRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateRecordRemarkWithCallback(request *UpdateRecordRemarkRequest, callback func(response *UpdateRecordRemarkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -168,7 +169,12 @@ func CreateUpdateRecordRemarkRequest() (request *UpdateRecordRemarkRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateRecordRemark", "pvtz", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

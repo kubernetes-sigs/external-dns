@@ -111,6 +111,7 @@ are the AuthOptions and EndpointOpts structs.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 An example retry backoff function, which respects the 429 HTTP response code and a "Retry-After" header:
 
@@ -243,5 +244,47 @@ An example retry backoff function, which respects the 429 HTTP response code and
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+An example retry backoff function, which respects the 429 HTTP response code and a "Retry-After" header:
+
+	endpoint := "http://localhost:5000"
+	provider, err := openstack.NewClient(endpoint)
+	if err != nil {
+		panic(err)
+	}
+	provider.MaxBackoffRetries = 3 // max three retries
+	provider.RetryBackoffFunc = func(ctx context.Context, respErr *ErrUnexpectedResponseCode, e error, retries uint) error {
+		retryAfter := respErr.ResponseHeader.Get("Retry-After")
+		if retryAfter == "" {
+			return e
+		}
+
+		var sleep time.Duration
+
+		// Parse delay seconds or HTTP date
+		if v, err := strconv.ParseUint(retryAfter, 10, 32); err == nil {
+			sleep = time.Duration(v) * time.Second
+		} else if v, err := time.Parse(http.TimeFormat, retryAfter); err == nil {
+			sleep = time.Until(v)
+		} else {
+			return e
+		}
+
+		if ctx != nil {
+			select {
+			case <-time.After(sleep):
+			case <-ctx.Done():
+				return e
+			}
+		} else {
+			time.Sleep(sleep)
+		}
+
+		return nil
+	}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 */
 package gophercloud

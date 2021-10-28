@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix && ppc64
 // +build aix,ppc64
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -38,6 +39,13 @@
 // +build aix
 // +build ppc64
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build aix
+// +build ppc64
+=======
+//go:build aix && ppc64
+// +build aix,ppc64
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 // Functions to access/create device major and minor numbers matching the
 // encoding used AIX.

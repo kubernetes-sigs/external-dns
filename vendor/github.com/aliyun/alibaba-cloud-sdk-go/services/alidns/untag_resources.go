@@ -22,6 +22,7 @@ import (
 
 // UntagResources invokes the alidns.UntagResources API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
 	response = CreateUntagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -96,6 +97,10 @@ func CreateUntagResourcesRequest() (request *UntagResourcesRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/untagresources.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/untagresources.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) UntagResources(request *UntagResourcesRequest) (response *UntagResourcesResponse, err error) {
 	response = CreateUntagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -103,8 +108,6 @@ func (client *Client) UntagResources(request *UntagResourcesRequest) (response *
 }
 
 // UntagResourcesWithChan invokes the alidns.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/alidns/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-chan *UntagResourcesResponse, <-chan error) {
 	responseChan := make(chan *UntagResourcesResponse, 1)
 	errChan := make(chan error, 1)
@@ -127,8 +130,6 @@ func (client *Client) UntagResourcesWithChan(request *UntagResourcesRequest) (<-
 }
 
 // UntagResourcesWithCallback invokes the alidns.UntagResources API asynchronously
-// api document: https://help.aliyun.com/api/alidns/untagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UntagResourcesWithCallback(request *UntagResourcesRequest, callback func(response *UntagResourcesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -170,7 +171,12 @@ func CreateUntagResourcesRequest() (request *UntagResourcesRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UntagResources", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

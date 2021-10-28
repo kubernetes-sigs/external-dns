@@ -55,6 +55,7 @@ How to get your contributions merged smoothly and quickly.
   early on.
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   - `make all` to test everything, OR
   - `make vet` to catch vet errors
   - `make test` to run the tests
@@ -93,5 +94,16 @@ How to get your contributions merged smoothly and quickly.
   - `make testrace` to run tests in race mode
   - optional `make testappengine` to run tests with appengine
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+  - `make all` to test everything, OR
+  - `make vet` to catch vet errors
+  - `make test` to run the tests
+  - `make testrace` to run tests in race mode
+  - optional `make testappengine` to run tests with appengine
+=======
+  - `VET_SKIP_PROTO=1 ./vet.sh` to catch vet errors
+  - `go test -cpu 1,4 -timeout 7m ./...` to run the tests
+  - `go test -race -cpu 1,4 -timeout 7m ./...` to run tests in race mode
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 - Exceptions to the rules can be made if there's a compelling reason for doing so.

@@ -28,6 +28,7 @@ type ListOptions struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	PageSize int
 	Filter   string
 }
@@ -1372,12 +1373,34 @@ func (c *Client) listHelperWithTwoIDs(ctx context.Context, i interface{}, firstI
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Filter string
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Filter string
+=======
+	PageSize int
+	Filter   string
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // NewListOptions simplified construction of ListOptions using only
 // the two writable properties, Page and Filter
 func NewListOptions(page int, filter string) *ListOptions {
 	return &ListOptions{PageOptions: &PageOptions{Page: page}, Filter: filter}
+}
+
+func applyListOptionsToRequest(opts *ListOptions, req *resty.Request) {
+	if opts != nil {
+		if opts.PageOptions != nil && opts.Page > 0 {
+			req.SetQueryParam("page", strconv.Itoa(opts.Page))
+		}
+
+		if opts.PageSize > 0 {
+			req.SetQueryParam("page_size", strconv.Itoa(opts.PageSize))
+		}
+
+		if len(opts.Filter) > 0 {
+			req.SetHeader("X-Filter", opts.Filter)
+		}
+	}
 }
 
 // listHelper abstracts fetching and pagination for GET endpoints that
@@ -1387,11 +1410,6 @@ func NewListOptions(page int, filter string) *ListOptions {
 // opts.results and opts.pages will be updated from the API response
 // nolint
 func (c *Client) listHelper(ctx context.Context, i interface{}, opts *ListOptions) error {
-	req := c.R(ctx)
-	if opts != nil && opts.PageOptions != nil && opts.Page > 0 {
-		req.SetQueryParam("page", strconv.Itoa(opts.Page))
-	}
-
 	var (
 		err     error
 		pages   int
@@ -1399,9 +1417,8 @@ func (c *Client) listHelper(ctx context.Context, i interface{}, opts *ListOption
 		r       *resty.Response
 	)
 
-	if opts != nil && len(opts.Filter) > 0 {
-		req.SetHeader("X-Filter", opts.Filter)
-	}
+	req := c.R(ctx)
+	applyListOptionsToRequest(opts, req)
 
 	switch v := i.(type) {
 	case *LinodeKernelsPagedResponse:
@@ -1593,6 +1610,12 @@ func (c *Client) listHelper(ctx context.Context, i interface{}, opts *ListOption
 			results = r.Result().(*ObjectStorageKeysPagedResponse).Results
 			v.appendData(r.Result().(*ObjectStorageKeysPagedResponse))
 		}
+	case *VLANsPagedResponse:
+		if r, err = coupleAPIErrors(req.SetResult(VLANsPagedResponse{}).Get(v.endpoint(c))); err == nil {
+			pages = r.Result().(*VLANsPagedResponse).Pages
+			results = r.Result().(*VLANsPagedResponse).Results
+			v.appendData(r.Result().(*VLANsPagedResponse))
+		}
 	/**
 	case ProfileAppsPagedResponse:
 	case ProfileWhitelistPagedResponse:
@@ -1643,11 +1666,6 @@ func (c *Client) listHelper(ctx context.Context, i interface{}, opts *ListOption
 // opts.results and opts.pages will be updated from the API response
 // nolint
 func (c *Client) listHelperWithID(ctx context.Context, i interface{}, idRaw interface{}, opts *ListOptions) error {
-	req := c.R(ctx)
-	if opts != nil && opts.Page > 0 {
-		req.SetQueryParam("page", strconv.Itoa(opts.Page))
-	}
-
 	var (
 		err     error
 		pages   int
@@ -1655,11 +1673,10 @@ func (c *Client) listHelperWithID(ctx context.Context, i interface{}, idRaw inte
 		r       *resty.Response
 	)
 
-	id, _ := idRaw.(int)
+	req := c.R(ctx)
+	applyListOptionsToRequest(opts, req)
 
-	if opts != nil && len(opts.Filter) > 0 {
-		req.SetHeader("X-Filter", opts.Filter)
-	}
+	id, _ := idRaw.(int)
 
 	switch v := i.(type) {
 	case *DomainRecordsPagedResponse:
@@ -1784,13 +1801,8 @@ func (c *Client) listHelperWithID(ctx context.Context, i interface{}, idRaw inte
 // When opts (or opts.Page) is nil, all pages will be fetched and
 // returned in a single (endpoint-specific)PagedResponse
 // opts.results and opts.pages will be updated from the API response
+// nolint
 func (c *Client) listHelperWithTwoIDs(ctx context.Context, i interface{}, firstID, secondID int, opts *ListOptions) error {
-	req := c.R(ctx)
-
-	if opts != nil && opts.Page > 0 {
-		req.SetQueryParam("page", strconv.Itoa(opts.Page))
-	}
-
 	var (
 		err     error
 		pages   int
@@ -1798,10 +1810,19 @@ func (c *Client) listHelperWithTwoIDs(ctx context.Context, i interface{}, firstI
 		r       *resty.Response
 	)
 
+<<<<<<< HEAD
 	if opts != nil && len(opts.Filter) > 0 {
 		req.SetHeader("X-Filter", opts.Filter)
 	}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if opts != nil && len(opts.Filter) > 0 {
+		req.SetHeader("X-Filter", opts.Filter)
+	}
+=======
+	req := c.R(ctx)
+	applyListOptionsToRequest(opts, req)
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	switch v := i.(type) {
 	case *NodeBalancerNodesPagedResponse:

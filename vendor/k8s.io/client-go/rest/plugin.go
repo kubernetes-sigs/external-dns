@@ -26,6 +26,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -216,6 +217,11 @@ func GetAuthProvider(clusterAddress string, apc *clientcmdapi.AuthProviderConfig
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -241,6 +247,13 @@ type AuthProviderConfigPersister interface {
 	Persist(map[string]string) error
 }
 
+type noopPersister struct{}
+
+func (n *noopPersister) Persist(_ map[string]string) error {
+	// no operation persister
+	return nil
+}
+
 // All registered auth provider plugins.
 var pluginsLock sync.Mutex
 var plugins = make(map[string]Factory)
@@ -263,6 +276,9 @@ func GetAuthProvider(clusterAddress string, apc *clientcmdapi.AuthProviderConfig
 	if !ok {
 		return nil, fmt.Errorf("no Auth Provider found for name %q", apc.Name)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+	if persister == nil {
+		persister = &noopPersister{}
 	}
 	return p(clusterAddress, apc.Config, persister)
 }

@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -306,8 +307,12 @@ func (d *decoder) Decode(data []byte, gvk *schema.GroupVersionKind, into runtime
 =======
 	"bufio"
 	"bytes"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"bufio"
+	"bytes"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"fmt"
-	"io"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -322,7 +327,7 @@ type RecognizingDecoder interface {
 	// provides) and may return unknown if the data provided is not sufficient to make a
 	// a determination. When peek returns EOF that may mean the end of the input or the
 	// end of buffered input - recognizers should return the best guess at that time.
-	RecognizesData(peek io.Reader) (ok, unknown bool, err error)
+	RecognizesData(peek []byte) (ok, unknown bool, err error)
 }
 
 // NewDecoder creates a decoder that will attempt multiple decoders in an order defined
@@ -344,16 +349,15 @@ type decoder struct {
 
 var _ RecognizingDecoder = &decoder{}
 
-func (d *decoder) RecognizesData(peek io.Reader) (bool, bool, error) {
+func (d *decoder) RecognizesData(data []byte) (bool, bool, error) {
 	var (
 		lastErr    error
 		anyUnknown bool
 	)
-	data, _ := bufio.NewReaderSize(peek, 1024).Peek(1024)
 	for _, r := range d.decoders {
 		switch t := r.(type) {
 		case RecognizingDecoder:
-			ok, unknown, err := t.RecognizesData(bytes.NewBuffer(data))
+			ok, unknown, err := t.RecognizesData(data)
 			if err != nil {
 				lastErr = err
 				continue
@@ -378,8 +382,7 @@ func (d *decoder) Decode(data []byte, gvk *schema.GroupVersionKind, into runtime
 	for _, r := range d.decoders {
 		switch t := r.(type) {
 		case RecognizingDecoder:
-			buf := bytes.NewBuffer(data)
-			ok, unknown, err := t.RecognizesData(buf)
+			ok, unknown, err := t.RecognizesData(data)
 			if err != nil {
 				lastErr = err
 				continue
@@ -401,11 +404,23 @@ func (d *decoder) Decode(data []byte, gvk *schema.GroupVersionKind, into runtime
 	for _, r := range skipped {
 		out, actual, err := r.Decode(data, gvk, into)
 		if err != nil {
-			lastErr = err
-			continue
+			// if we got an object back from the decoder, and the
+			// error was a strict decoding error (e.g. unknown or
+			// duplicate fields), we still consider the recognizer
+			// to have understood the object
+			if out == nil || !runtime.IsStrictDecodingError(err) {
+				lastErr = err
+				continue
+			}
 		}
+<<<<<<< HEAD
 		return out, actual, nil
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return out, actual, nil
+=======
+		return out, actual, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	if lastErr == nil {

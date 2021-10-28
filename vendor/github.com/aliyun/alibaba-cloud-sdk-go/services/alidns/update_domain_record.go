@@ -22,6 +22,7 @@ import (
 
 // UpdateDomainRecord invokes the alidns.UpdateDomainRecord API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) UpdateDomainRecord(request *UpdateDomainRecordRequest) (response *UpdateDomainRecordResponse, err error) {
 	response = CreateUpdateDomainRecordResponse()
 	err = client.DoAction(request, response)
@@ -100,6 +101,10 @@ func CreateUpdateDomainRecordRequest() (request *UpdateDomainRecordRequest) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) UpdateDomainRecord(request *UpdateDomainRecordRequest) (response *UpdateDomainRecordResponse, err error) {
 	response = CreateUpdateDomainRecordResponse()
 	err = client.DoAction(request, response)
@@ -107,8 +112,6 @@ func (client *Client) UpdateDomainRecord(request *UpdateDomainRecordRequest) (re
 }
 
 // UpdateDomainRecordWithChan invokes the alidns.UpdateDomainRecord API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRecordWithChan(request *UpdateDomainRecordRequest) (<-chan *UpdateDomainRecordResponse, <-chan error) {
 	responseChan := make(chan *UpdateDomainRecordResponse, 1)
 	errChan := make(chan error, 1)
@@ -131,8 +134,6 @@ func (client *Client) UpdateDomainRecordWithChan(request *UpdateDomainRecordRequ
 }
 
 // UpdateDomainRecordWithCallback invokes the alidns.UpdateDomainRecord API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainrecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRecordWithCallback(request *UpdateDomainRecordRequest, callback func(response *UpdateDomainRecordResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -178,7 +179,12 @@ func CreateUpdateDomainRecordRequest() (request *UpdateDomainRecordRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainRecord", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

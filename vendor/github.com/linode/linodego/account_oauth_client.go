@@ -112,6 +112,7 @@ func (c *Client) ListOAuthClients(ctx context.Context, opts *ListOptions) ([]OAu
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -359,6 +360,10 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +380,6 @@ func (c *Client) GetOAuthClient(ctx context.Context, id string) (*OAuthClient, e
 
 	e = fmt.Sprintf("%s/%s", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&OAuthClient{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +392,6 @@ func (c *Client) CreateOAuthClient(ctx context.Context, createOpts OAuthClientCr
 	var body string
 
 	e, err := c.OAuthClients.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -404,7 +407,6 @@ func (c *Client) CreateOAuthClient(ctx context.Context, createOpts OAuthClientCr
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +419,6 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 	var body string
 
 	e, err := c.OAuthClients.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -435,8 +436,13 @@ func (c *Client) UpdateOAuthClient(ctx context.Context, id string, updateOpts OA
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

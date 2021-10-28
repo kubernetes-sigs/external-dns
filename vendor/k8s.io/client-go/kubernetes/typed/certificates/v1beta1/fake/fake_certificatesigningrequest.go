@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -495,6 +496,11 @@ func (c *FakeCertificateSigningRequests) ApplyStatus(ctx context.Context, certif
 		Invokes(testing.NewRootPatchSubresourceAction(certificatesigningrequestsResource, *name, types.ApplyPatchType, data, "status"), &v1beta1.CertificateSigningRequest{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1beta1 "k8s.io/api/certificates/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -502,6 +508,7 @@ func (c *FakeCertificateSigningRequests) ApplyStatus(ctx context.Context, certif
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	certificatesv1beta1 "k8s.io/client-go/applyconfigurations/certificates/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -585,7 +592,7 @@ func (c *FakeCertificateSigningRequests) UpdateStatus(ctx context.Context, certi
 // Delete takes name of the certificateSigningRequest and deletes it. Returns an error if one occurs.
 func (c *FakeCertificateSigningRequests) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(certificatesigningrequestsResource, name), &v1beta1.CertificateSigningRequest{})
+		Invokes(testing.NewRootDeleteActionWithOptions(certificatesigningrequestsResource, name, opts), &v1beta1.CertificateSigningRequest{})
 	return err
 }
 
@@ -602,6 +609,49 @@ func (c *FakeCertificateSigningRequests) Patch(ctx context.Context, name string,
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(certificatesigningrequestsResource, name, pt, data, subresources...), &v1beta1.CertificateSigningRequest{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CertificateSigningRequest), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied certificateSigningRequest.
+func (c *FakeCertificateSigningRequests) Apply(ctx context.Context, certificateSigningRequest *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CertificateSigningRequest, err error) {
+	if certificateSigningRequest == nil {
+		return nil, fmt.Errorf("certificateSigningRequest provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificateSigningRequest)
+	if err != nil {
+		return nil, err
+	}
+	name := certificateSigningRequest.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificateSigningRequest.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(certificatesigningrequestsResource, *name, types.ApplyPatchType, data), &v1beta1.CertificateSigningRequest{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CertificateSigningRequest), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeCertificateSigningRequests) ApplyStatus(ctx context.Context, certificateSigningRequest *certificatesv1beta1.CertificateSigningRequestApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CertificateSigningRequest, err error) {
+	if certificateSigningRequest == nil {
+		return nil, fmt.Errorf("certificateSigningRequest provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(certificateSigningRequest)
+	if err != nil {
+		return nil, err
+	}
+	name := certificateSigningRequest.Name
+	if name == nil {
+		return nil, fmt.Errorf("certificateSigningRequest.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(certificatesigningrequestsResource, *name, types.ApplyPatchType, data, "status"), &v1beta1.CertificateSigningRequest{})
 	if obj == nil {
 		return nil, err
 	}

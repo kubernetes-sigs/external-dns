@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -420,6 +421,11 @@ func (c *FakeRoles) Apply(ctx context.Context, role *applyconfigurationsrbacv1.R
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &rbacv1.Role{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	rbacv1 "k8s.io/api/rbac/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -427,6 +433,7 @@ func (c *FakeRoles) Apply(ctx context.Context, role *applyconfigurationsrbacv1.R
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationsrbacv1 "k8s.io/client-go/applyconfigurations/rbac/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -505,7 +512,7 @@ func (c *FakeRoles) Update(ctx context.Context, role *rbacv1.Role, opts v1.Updat
 // Delete takes name of the role and deletes it. Returns an error if one occurs.
 func (c *FakeRoles) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(rolesResource, c.ns, name), &rbacv1.Role{})
+		Invokes(testing.NewDeleteActionWithOptions(rolesResource, c.ns, name, opts), &rbacv1.Role{})
 
 	return err
 }
@@ -523,6 +530,28 @@ func (c *FakeRoles) Patch(ctx context.Context, name string, pt types.PatchType, 
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, name, pt, data, subresources...), &rbacv1.Role{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*rbacv1.Role), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied role.
+func (c *FakeRoles) Apply(ctx context.Context, role *applyconfigurationsrbacv1.RoleApplyConfiguration, opts v1.ApplyOptions) (result *rbacv1.Role, err error) {
+	if role == nil {
+		return nil, fmt.Errorf("role provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(role)
+	if err != nil {
+		return nil, err
+	}
+	name := role.Name
+	if name == nil {
+		return nil, fmt.Errorf("role.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(rolesResource, c.ns, *name, types.ApplyPatchType, data), &rbacv1.Role{})
 
 	if obj == nil {
 		return nil, err

@@ -43,6 +43,7 @@ var map_FlowSchema = map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"spec":     "`spec` is the specification of the desired behavior of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
 	"status":   "`status` is the current status of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
@@ -703,6 +704,15 @@ var map_Subject = map[string]string{
 	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
 	"spec":     "`spec` is the specification of the desired behavior of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
 	"status":   "`status` is the current status of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
+	"spec":     "`spec` is the specification of the desired behavior of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
+	"status":   "`status` is the current status of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
+=======
+	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+	"spec":     "`spec` is the specification of the desired behavior of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
+	"status":   "`status` is the current status of a FlowSchema. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (FlowSchema) SwaggerDoc() map[string]string {
@@ -724,7 +734,7 @@ func (FlowSchemaCondition) SwaggerDoc() map[string]string {
 
 var map_FlowSchemaList = map[string]string{
 	"":         "FlowSchemaList is a list of FlowSchema objects.",
-	"metadata": "`metadata` is the standard list metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
+	"metadata": "`metadata` is the standard list metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"items":    "`items` is a list of FlowSchemas.",
 }
 
@@ -805,9 +815,9 @@ func (PolicyRulesWithSubjects) SwaggerDoc() map[string]string {
 
 var map_PriorityLevelConfiguration = map[string]string{
 	"":         "PriorityLevelConfiguration represents the configuration of a priority level.",
-	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
-	"spec":     "`spec` is the specification of the desired behavior of a \"request-priority\". More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
-	"status":   "`status` is the current status of a \"request-priority\". More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#spec-and-status",
+	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+	"spec":     "`spec` is the specification of the desired behavior of a \"request-priority\". More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
+	"status":   "`status` is the current status of a \"request-priority\". More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status",
 }
 
 func (PriorityLevelConfiguration) SwaggerDoc() map[string]string {
@@ -829,7 +839,7 @@ func (PriorityLevelConfigurationCondition) SwaggerDoc() map[string]string {
 
 var map_PriorityLevelConfigurationList = map[string]string{
 	"":         "PriorityLevelConfigurationList is a list of PriorityLevelConfiguration objects.",
-	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata",
+	"metadata": "`metadata` is the standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"items":    "`items` is a list of request-priorities.",
 }
 
@@ -877,7 +887,7 @@ func (QueuingConfiguration) SwaggerDoc() map[string]string {
 }
 
 var map_ResourcePolicyRule = map[string]string{
-	"":             "ResourcePolicyRule is a predicate that matches some resource requests, testing the request's verb and the target resource. A ResourcePolicyRule matches a resource request if and only if: (a) at least one member of verbs matches the request, (b) at least one member of apiGroups matches the request, (c) at least one member of resources matches the request, and (d) least one member of namespaces matches the request.",
+	"":             "ResourcePolicyRule is a predicate that matches some resource requests, testing the request's verb and the target resource. A ResourcePolicyRule matches a resource request if and only if: (a) at least one member of verbs matches the request, (b) at least one member of apiGroups matches the request, (c) at least one member of resources matches the request, and (d) either (d1) the request does not specify a namespace (i.e., `Namespace==\"\"`) and clusterScope is true or (d2) the request specifies a namespace and least one member of namespaces matches the request's namespace.",
 	"verbs":        "`verbs` is a list of matching verbs and may not be empty. \"*\" matches all verbs and, if present, must be the only entry. Required.",
 	"apiGroups":    "`apiGroups` is a list of matching API groups and may not be empty. \"*\" matches all API groups and, if present, must be the only entry. Required.",
 	"resources":    "`resources` is a list of matching resources (i.e., lowercase and plural) with, if desired, subresource.  For example, [ \"services\", \"nodes/status\" ].  This list may not be empty. \"*\" matches all resources and, if present, must be the only entry. Required.",
@@ -900,9 +910,20 @@ func (ServiceAccountSubject) SwaggerDoc() map[string]string {
 }
 
 var map_Subject = map[string]string{
+<<<<<<< HEAD
 	"":     "Subject matches the originator of a request, as identified by the request authentication system. There are three ways of matching an originator; by user, group, or service account.",
 	"kind": "Required",
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"":     "Subject matches the originator of a request, as identified by the request authentication system. There are three ways of matching an originator; by user, group, or service account.",
+	"kind": "Required",
+=======
+	"":               "Subject matches the originator of a request, as identified by the request authentication system. There are three ways of matching an originator; by user, group, or service account.",
+	"kind":           "`kind` indicates which one of the other fields is non-empty. Required",
+	"user":           "`user` matches based on username.",
+	"group":          "`group` matches based on user group name.",
+	"serviceAccount": "`serviceAccount` matches ServiceAccounts.",
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (Subject) SwaggerDoc() map[string]string {

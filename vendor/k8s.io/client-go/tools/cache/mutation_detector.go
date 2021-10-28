@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -288,6 +289,11 @@ func (d *defaultCacheMutationDetector) Run(stopCh <-chan struct{}) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/diff"
@@ -362,8 +368,14 @@ func (d *defaultCacheMutationDetector) Run(stopCh <-chan struct{}) {
 	for {
 		if d.lastRotated.IsZero() {
 			d.lastRotated = time.Now()
+<<<<<<< HEAD
 		} else if time.Now().Sub(d.lastRotated) > d.retainDuration {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		} else if time.Now().Sub(d.lastRotated) > d.retainDuration {
+=======
+		} else if time.Since(d.lastRotated) > d.retainDuration {
+>>>>>>> 4d7e5ad26 (update vendored files)
 			d.retainedCachedObjs = d.cachedObjs
 			d.cachedObjs = nil
 			d.lastRotated = time.Now()

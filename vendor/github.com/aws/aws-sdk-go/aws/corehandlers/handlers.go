@@ -183,6 +183,7 @@ var ValidateResponseHandler = request.NamedHandler{Name: "core.ValidateResponseH
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		r.Error = awserr.New("UnknownError", "unknown error", r.Error)
 	}
 }}
@@ -357,6 +358,11 @@ var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointH
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		r.Error = awserr.New("UnknownError", "unknown error", nil)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		r.Error = awserr.New("UnknownError", "unknown error", nil)
+=======
+		r.Error = awserr.New("UnknownError", "unknown error", r.Error)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 }}
 
@@ -403,7 +409,13 @@ var ValidateEndpointHandler = request.NamedHandler{Name: "core.ValidateEndpointH
 	if r.ClientInfo.SigningRegion == "" && aws.StringValue(r.Config.Region) == "" {
 		r.Error = aws.ErrMissingRegion
 	} else if r.ClientInfo.Endpoint == "" {
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		// Was any endpoint provided by the user, or one was derived by the
+		// SDK's endpoint resolver?
+>>>>>>> 4d7e5ad26 (update vendored files)
 		r.Error = aws.ErrMissingEndpoint
 	}
 }}

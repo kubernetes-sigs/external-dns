@@ -17,6 +17,7 @@ type PlanService interface {
 // PlanServiceHandler handles interaction with the Plans methods for the Vultr API
 type PlanServiceHandler struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	client *Client
 }
 
@@ -108,6 +109,11 @@ func (p *PlanServiceHandler) ListBareMetal(ctx context.Context, options *ListOpt
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Client *Client
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Client *Client
+=======
+	client *Client
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // BareMetalPlan represents bare metal plans
@@ -120,7 +126,7 @@ type BareMetalPlan struct {
 	Disk        int      `json:"disk"`
 	DiskCount   int      `json:"disk_count"`
 	Bandwidth   int      `json:"bandwidth"`
-	MonthlyCost int      `json:"monthly_cost"`
+	MonthlyCost float32  `json:"monthly_cost"`
 	Type        string   `json:"type"`
 	Locations   []string `json:"locations"`
 }
@@ -133,7 +139,7 @@ type Plan struct {
 	Disk        int      `json:"disk"`
 	DiskCount   int      `json:"disk_count"`
 	Bandwidth   int      `json:"bandwidth"`
-	MonthlyCost int      `json:"monthly_cost"`
+	MonthlyCost float32  `json:"monthly_cost"`
 	Type        string   `json:"type"`
 	Locations   []string `json:"locations"`
 }
@@ -153,7 +159,7 @@ type bareMetalPlansBase struct {
 func (p *PlanServiceHandler) List(ctx context.Context, planType string, options *ListOptions) ([]Plan, *Meta, error) {
 	uri := "/v2/plans"
 
-	req, err := p.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := p.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -170,7 +176,7 @@ func (p *PlanServiceHandler) List(ctx context.Context, planType string, options 
 	req.URL.RawQuery = newValues.Encode()
 
 	plans := new(plansBase)
-	if err = p.Client.DoWithContext(ctx, req, plans); err != nil {
+	if err = p.client.DoWithContext(ctx, req, plans); err != nil {
 		return nil, nil, err
 	}
 
@@ -181,7 +187,7 @@ func (p *PlanServiceHandler) List(ctx context.Context, planType string, options 
 func (p *PlanServiceHandler) ListBareMetal(ctx context.Context, options *ListOptions) ([]BareMetalPlan, *Meta, error) {
 	uri := "/v2/plans-metal"
 
-	req, err := p.Client.NewRequest(ctx, http.MethodGet, uri, nil)
+	req, err := p.client.NewRequest(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -194,8 +200,14 @@ func (p *PlanServiceHandler) ListBareMetal(ctx context.Context, options *ListOpt
 	req.URL.RawQuery = newValues.Encode()
 
 	bmPlans := new(bareMetalPlansBase)
+<<<<<<< HEAD
 	if err = p.Client.DoWithContext(ctx, req, bmPlans); err != nil {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	if err = p.Client.DoWithContext(ctx, req, bmPlans); err != nil {
+=======
+	if err = p.client.DoWithContext(ctx, req, bmPlans); err != nil {
+>>>>>>> 4d7e5ad26 (update vendored files)
 		return nil, nil, err
 	}
 

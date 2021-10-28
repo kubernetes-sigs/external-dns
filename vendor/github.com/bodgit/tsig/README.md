@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![GitHub release](https://img.shields.io/github/v/release/bodgit/tsig)](https://github.com/bodgit/tsig/releases)
 [![Build Status](https://img.shields.io/github/workflow/status/bodgit/tsig/build)](https://github.com/bodgit/tsig/actions?query=workflow%3Abuild)
 [![Coverage Status](https://coveralls.io/repos/github/bodgit/tsig/badge.svg?branch=master)](https://coveralls.io/github/bodgit/tsig?branch=master)
@@ -124,11 +125,17 @@ func main() {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Version](https://img.shields.io/github/v/tag/bodgit/tsig)](https://github.com/bodgit/tsig/tags)
+||||||| parent of 4d7e5ad26 (update vendored files)
+[![Version](https://img.shields.io/github/v/tag/bodgit/tsig)](https://github.com/bodgit/tsig/tags)
+=======
+[![GitHub release](https://img.shields.io/github/v/release/bodgit/tsig)](https://github.com/bodgit/tsig/releases)
+>>>>>>> 4d7e5ad26 (update vendored files)
 [![Build Status](https://img.shields.io/github/workflow/status/bodgit/tsig/build)](https://github.com/bodgit/tsig/actions?query=workflow%3Abuild)
+[![Coverage Status](https://coveralls.io/repos/github/bodgit/tsig/badge.svg?branch=master)](https://coveralls.io/github/bodgit/tsig?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bodgit/tsig)](https://goreportcard.com/report/github.com/bodgit/tsig)
 [![GoDoc](https://godoc.org/github.com/bodgit/tsig?status.svg)](https://godoc.org/github.com/bodgit/tsig)
-![Go version](https://img.shields.io/badge/Go-1.15-brightgreen.svg)
-![Go version](https://img.shields.io/badge/Go-1.14-brightgreen.svg)
+![Go version](https://img.shields.io/badge/Go-1.17-brightgreen.svg)
+![Go version](https://img.shields.io/badge/Go-1.16-brightgreen.svg)
 
 # Additional TSIG methods
 
@@ -142,6 +149,8 @@ This is most useful for allowing
 for dealing with Windows DNS servers that require 'Secure only' updates or
 BIND if it has been configured to use Kerberos.
 
+> :warning: Windows DNS servers don't accept wildcard resource names in dynamic updates.
+
 Here is an example client, it is necessary that your Kerberos or Active
 Directory environment is configured and functional:
 
@@ -150,41 +159,34 @@ package main
 
 import (
         "fmt"
-        "net"
         "time"
 
         "github.com/bodgit/tsig"
-        c "github.com/bodgit/tsig/client"
         "github.com/bodgit/tsig/gss"
         "github.com/miekg/dns"
 )
 
 func main() {
-        host := "ns.example.com"
+        dnsClient := new(dns.Client)
+        dnsClient.Net = "tcp"
 
-        g, err := gss.New()
+        gssClient, err := gss.NewClient(dnsClient)
         if err != nil {
                 panic(err)
         }
-        defer g.Close()
+        defer gssClient.Close()
+
+        host := "ns.example.com:53"
 
         // Negotiate a context with the chosen server using the
-        // current user. See also g.NegotiateContextWithCredentials()
-        // and g.NegotiateContextWithKeytab() for alternatives
-        keyname, _, err := g.NegotiateContext(host)
+        // current user. See also gssClient.NegotiateContextWithCredentials()
+        // and gssClient.NegotiateContextWithKeytab() for alternatives
+        keyname, _, err := gssClient.NegotiateContext(host)
         if err != nil {
                 panic(err)
         }
 
-        client := c.Client{}
-        client.Net = "tcp"
-        client.TsigAlgorithm = map[string]*c.TsigAlgorithm{
-                tsig.GSS: {
-                        Generate: g.GenerateGSS,
-                        Verify:   g.VerifyGSS,
-                },
-        }
-        client.TsigSecret = map[string]string{*keyname: ""}
+        dnsClient.TsigProvider = gssClient
 
         // Use the DNS client as normal
 
@@ -197,9 +199,9 @@ func main() {
         }
         msg.Insert([]dns.RR{insert})
 
-        msg.SetTsig(*keyname, tsig.GSS, 300, time.Now().Unix())
+        msg.SetTsig(keyname, tsig.GSS, 300, time.Now().Unix())
 
-        rr, _, err := client.Exchange(msg, net.JoinHostPort(host, "53"))
+        rr, _, err := dnsClient.Exchange(msg, host)
         if err != nil {
                 panic(err)
         }
@@ -209,16 +211,58 @@ func main() {
         }
 
         // Cleanup the context
-        err = g.DeleteContext(keyname)
+        err = gssClient.DeleteContext(keyname)
         if err != nil {
                 panic(err)
         }
 }
 ```
 
+<<<<<<< HEAD
 Note that it is necessary for the package to ship its own DNS client rather
 than use the one provided in the github/com/miekg/dns package as it needs to
 permit the additional TSIG algorithms however it behaves mostly the same and
 exports the same `Exchange()` method so they can be use interchangeably in
 code with a suitable interface, (see `tsig.Exchanger` for an example).
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+Note that it is necessary for the package to ship its own DNS client rather
+than use the one provided in the github/com/miekg/dns package as it needs to
+permit the additional TSIG algorithms however it behaves mostly the same and
+exports the same `Exchange()` method so they can be use interchangeably in
+code with a suitable interface, (see `tsig.Exchanger` for an example).
+=======
+If you need to deal with both regular TSIG and GSS-TSIG together then this
+package also exports an HMAC TSIG implementation. To use both together set
+your client up something like this:
+
+```golang
+package main
+
+import (
+        "github.com/bodgit/tsig"
+        "github.com/bodgit/tsig/gss"
+        "github.com/miekg/dns"
+)
+
+func main() {
+        dnsClient := new(dns.Client)
+        dnsClient.Net = "tcp"
+
+        // Create HMAC TSIG provider
+        hmac := tsig.HMAC{"axfr.": "so6ZGir4GPAqINNh9U5c3A=="}
+
+        // Create GSS-TSIG provider
+        gssClient, err := gss.NewClient(dnsClient)
+        if err != nil {
+                panic(err)
+        }
+        defer gssClient.Close()
+
+        // Configure DNS client with both providers
+        dnsClient.TsigProvider = tsig.MultiProvider(hmac, gssClient)
+
+        // Use the DNS client as normal
+}
+```
+>>>>>>> 4d7e5ad26 (update vendored files)

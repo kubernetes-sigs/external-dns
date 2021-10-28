@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"reflect"
 	"sync"
 )
@@ -253,6 +254,10 @@ type causer interface {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"reflect"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"sync"
 )
 
@@ -273,7 +278,23 @@ type causer interface {
 //      ...
 //    ],
 //  }
-func encodeError(key string, err error, enc ObjectEncoder) error {
+func encodeError(key string, err error, enc ObjectEncoder) (retErr error) {
+	// Try to capture panics (from nil references or otherwise) when calling
+	// the Error() method
+	defer func() {
+		if rerr := recover(); rerr != nil {
+			// If it's a nil pointer, just say "<nil>". The likeliest causes are a
+			// error that fails to guard against nil or a nil pointer for a
+			// value receiver, and in either case, "<nil>" is a nice result.
+			if v := reflect.ValueOf(err); v.Kind() == reflect.Ptr && v.IsNil() {
+				enc.AddString(key, "<nil>")
+				return
+			}
+
+			retErr = fmt.Errorf("PANIC=%v", rerr)
+		}
+	}()
+
 	basic := err.Error()
 	enc.AddString(key, basic)
 
@@ -297,6 +318,7 @@ type errorGroup interface {
 	Errors() []error
 }
 
+<<<<<<< HEAD
 type causer interface {
 	// Provides access to the error that caused this error.
 	Cause() error
@@ -304,6 +326,16 @@ type causer interface {
 
 // Note that errArry and errArrayElem are very similar to the version
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+type causer interface {
+	// Provides access to the error that caused this error.
+	Cause() error
+}
+
+// Note that errArry and errArrayElem are very similar to the version
+=======
+// Note that errArray and errArrayElem are very similar to the version
+>>>>>>> 4d7e5ad26 (update vendored files)
 // implemented in the top-level error.go file. We can't re-use this because
 // that would require exporting errArray as part of the zapcore API.
 

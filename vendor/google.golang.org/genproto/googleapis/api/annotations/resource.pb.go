@@ -164,6 +164,7 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 //       option (google.api.resource) = {
 //         type: "pubsub.googleapis.com/Topic"
 <<<<<<< HEAD
+<<<<<<< HEAD
 //         name_descriptor: {
 //           pattern: "projects/{project}/topics/{topic}"
 //           parent_type: "cloudresourcemanager.googleapis.com/Project"
@@ -294,6 +295,42 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 //       pattern: "organizations/{organization}/logs/{log}"
 //       pattern: "billingAccounts/{billing_account}/logs/{log}"
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//         pattern: "projects/{project}/topics/{topic}"
+//       };
+//     }
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//     resources:
+//     - type: "pubsub.googleapis.com/Topic"
+//       pattern: "projects/{project}/topics/{topic}"
+//
+// Sometimes, resources have multiple patterns, typically because they can
+// live under multiple parents.
+//
+// Example:
+//
+//     message LogEntry {
+//       option (google.api.resource) = {
+//         type: "logging.googleapis.com/LogEntry"
+//         pattern: "projects/{project}/logs/{log}"
+//         pattern: "folders/{folder}/logs/{log}"
+//         pattern: "organizations/{organization}/logs/{log}"
+//         pattern: "billingAccounts/{billing_account}/logs/{log}"
+//       };
+//     }
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//     resources:
+//     - type: 'logging.googleapis.com/LogEntry'
+//       pattern: "projects/{project}/logs/{log}"
+//       pattern: "folders/{folder}/logs/{log}"
+//       pattern: "organizations/{organization}/logs/{log}"
+//       pattern: "billingAccounts/{billing_account}/logs/{log}"
+>>>>>>> 4d7e5ad26 (update vendored files)
 type ResourceDescriptor struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

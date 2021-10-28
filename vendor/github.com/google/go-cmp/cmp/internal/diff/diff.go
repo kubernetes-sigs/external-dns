@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 // Package diff implements an algorithm for producing edit-scripts.
@@ -956,6 +957,11 @@ finishSearch:
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 4d7e5ad26 (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 // Package diff implements an algorithm for producing edit-scripts.
 // The edit-script is a sequence of operations needed to transform one list
@@ -1074,7 +1080,7 @@ func (r Result) Similar() bool {
 	return r.NumSame+1 >= r.NumDiff
 }
 
-var randInt = rand.New(rand.NewSource(time.Now().Unix())).Intn(2)
+var randBool = rand.New(rand.NewSource(time.Now().Unix())).Intn(2) == 0
 
 // Difference reports whether two lists of lengths nx and ny are equal
 // given the definition of equality provided as f.
@@ -1123,17 +1129,6 @@ func Difference(nx, ny int, f EqualFunc) (es EditScript) {
 	// A vertical edge is equivalent to inserting a symbol from list Y.
 	// A diagonal edge is equivalent to a matching symbol between both X and Y.
 
-	// To ensure flexibility in changing the algorithm in the future,
-	// introduce some degree of deliberate instability.
-	// This is achieved by fiddling the zigzag iterator to start searching
-	// the graph starting from the bottom-right versus than the top-left.
-	// The result may differ depending on the starting search location,
-	// but still produces a valid edit script.
-	zigzagInit := randInt // either 0 or 1
-	if flags.Deterministic {
-		zigzagInit = 0
-	}
-
 	// Invariants:
 	//	• 0 ≤ fwdPath.X ≤ (fwdFrontier.X, revFrontier.X) ≤ revPath.X ≤ nx
 	//	• 0 ≤ fwdPath.Y ≤ (fwdFrontier.Y, revFrontier.Y) ≤ revPath.Y ≤ ny
@@ -1152,6 +1147,11 @@ func Difference(nx, ny int, f EqualFunc) (es EditScript) {
 	// approximately the square-root of the search budget.
 	searchBudget := 4 * (nx + ny) // O(n)
 
+	// Running the tests with the "cmp_debug" build tag prints a visualization
+	// of the algorithm running in real-time. This is educational for
+	// understanding how the algorithm works. See debug_enable.go.
+	f = debug.Begin(nx, ny, f, &fwdPath.es, &revPath.es)
+
 	// The algorithm below is a greedy, meet-in-the-middle algorithm for
 	// computing sub-optimal edit-scripts between two lists.
 	//
@@ -1169,22 +1169,28 @@ func Difference(nx, ny int, f EqualFunc) (es EditScript) {
 	//	frontier towards the opposite corner.
 	//	• This algorithm terminates when either the X coordinates or the
 	//	Y coordinates of the forward and reverse frontier points ever intersect.
-	//
+
 	// This algorithm is correct even if searching only in the forward direction
 	// or in the reverse direction. We do both because it is commonly observed
 	// that two lists commonly differ because elements were added to the front
 	// or end of the other list.
 	//
-	// Running the tests with the "cmp_debug" build tag prints a visualization
-	// of the algorithm running in real-time. This is educational for
-	// understanding how the algorithm works. See debug_enable.go.
-	f = debug.Begin(nx, ny, f, &fwdPath.es, &revPath.es)
-	for {
+	// Non-deterministically start with either the forward or reverse direction
+	// to introduce some deliberate instability so that we have the flexibility
+	// to change this algorithm in the future.
+	if flags.Deterministic || randBool {
+		goto forwardSearch
+	} else {
+		goto reverseSearch
+	}
+
+forwardSearch:
+	{
 		// Forward search from the beginning.
 		if fwdFrontier.X >= revFrontier.X || fwdFrontier.Y >= revFrontier.Y || searchBudget == 0 {
-			break
+			goto finishSearch
 		}
-		for stop1, stop2, i := false, false, zigzagInit; !(stop1 && stop2) && searchBudget > 0; i++ {
+		for stop1, stop2, i := false, false, 0; !(stop1 && stop2) && searchBudget > 0; i++ {
 			// Search in a diagonal pattern for a match.
 			z := zigzag(i)
 			p := point{fwdFrontier.X + z, fwdFrontier.Y - z}
@@ -1217,10 +1223,14 @@ func Difference(nx, ny int, f EqualFunc) (es EditScript) {
 		} else {
 			fwdFrontier.Y++
 		}
+		goto reverseSearch
+	}
 
+reverseSearch:
+	{
 		// Reverse search from the end.
 		if fwdFrontier.X >= revFrontier.X || fwdFrontier.Y >= revFrontier.Y || searchBudget == 0 {
-			break
+			goto finishSearch
 		}
 		for stop1, stop2, i := false, false, 0; !(stop1 && stop2) && searchBudget > 0; i++ {
 			// Search in a diagonal pattern for a match.
@@ -1255,9 +1265,15 @@ func Difference(nx, ny int, f EqualFunc) (es EditScript) {
 		} else {
 			revFrontier.Y--
 		}
+		goto forwardSearch
 	}
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+finishSearch:
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// Join the forward and reverse paths and then append the reverse path.
 	fwdPath.connect(revPath.point, f)
 	for i := len(revPath.es) - 1; i >= 0; i-- {

@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -420,6 +421,11 @@ func (c *FakeEndpoints) Apply(ctx context.Context, endpoints *applyconfiguration
 		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Endpoints{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -427,6 +433,7 @@ func (c *FakeEndpoints) Apply(ctx context.Context, endpoints *applyconfiguration
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -505,7 +512,7 @@ func (c *FakeEndpoints) Update(ctx context.Context, endpoints *corev1.Endpoints,
 // Delete takes name of the endpoints and deletes it. Returns an error if one occurs.
 func (c *FakeEndpoints) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(endpointsResource, c.ns, name), &corev1.Endpoints{})
+		Invokes(testing.NewDeleteActionWithOptions(endpointsResource, c.ns, name, opts), &corev1.Endpoints{})
 
 	return err
 }
@@ -523,6 +530,28 @@ func (c *FakeEndpoints) Patch(ctx context.Context, name string, pt types.PatchTy
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, name, pt, data, subresources...), &corev1.Endpoints{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Endpoints), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied endpoints.
+func (c *FakeEndpoints) Apply(ctx context.Context, endpoints *applyconfigurationscorev1.EndpointsApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Endpoints, err error) {
+	if endpoints == nil {
+		return nil, fmt.Errorf("endpoints provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(endpoints)
+	if err != nil {
+		return nil, err
+	}
+	name := endpoints.Name
+	if name == nil {
+		return nil, fmt.Errorf("endpoints.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(endpointsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Endpoints{})
 
 	if obj == nil {
 		return nil, err

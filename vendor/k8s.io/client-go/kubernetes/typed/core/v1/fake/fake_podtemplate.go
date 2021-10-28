@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -420,6 +421,11 @@ func (c *FakePodTemplates) Apply(ctx context.Context, podTemplate *applyconfigur
 		Invokes(testing.NewPatchSubresourceAction(podtemplatesResource, c.ns, *name, types.ApplyPatchType, data), &corev1.PodTemplate{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -427,6 +433,7 @@ func (c *FakePodTemplates) Apply(ctx context.Context, podTemplate *applyconfigur
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -505,7 +512,7 @@ func (c *FakePodTemplates) Update(ctx context.Context, podTemplate *corev1.PodTe
 // Delete takes name of the podTemplate and deletes it. Returns an error if one occurs.
 func (c *FakePodTemplates) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(podtemplatesResource, c.ns, name), &corev1.PodTemplate{})
+		Invokes(testing.NewDeleteActionWithOptions(podtemplatesResource, c.ns, name, opts), &corev1.PodTemplate{})
 
 	return err
 }
@@ -523,6 +530,28 @@ func (c *FakePodTemplates) Patch(ctx context.Context, name string, pt types.Patc
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(podtemplatesResource, c.ns, name, pt, data, subresources...), &corev1.PodTemplate{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.PodTemplate), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied podTemplate.
+func (c *FakePodTemplates) Apply(ctx context.Context, podTemplate *applyconfigurationscorev1.PodTemplateApplyConfiguration, opts v1.ApplyOptions) (result *corev1.PodTemplate, err error) {
+	if podTemplate == nil {
+		return nil, fmt.Errorf("podTemplate provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(podTemplate)
+	if err != nil {
+		return nil, err
+	}
+	name := podTemplate.Name
+	if name == nil {
+		return nil, fmt.Errorf("podTemplate.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(podtemplatesResource, c.ns, *name, types.ApplyPatchType, data), &corev1.PodTemplate{})
 
 	if obj == nil {
 		return nil, err

@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 
@@ -1816,6 +1817,11 @@ func NewConstHistogram(
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 4d7e5ad26 (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"github.com/golang/protobuf/proto"
 
 	dto "github.com/prometheus/client_model/go"
@@ -1840,7 +1846,12 @@ type Histogram interface {
 	Metric
 	Collector
 
-	// Observe adds a single observation to the histogram.
+	// Observe adds a single observation to the histogram. Observations are
+	// usually positive or zero. Negative observations are accepted but
+	// prevent current versions of Prometheus from properly detecting
+	// counter resets in the sum of observations. See
+	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
+	// for details.
 	Observe(float64)
 }
 
@@ -1985,7 +1996,7 @@ func newHistogram(desc *Desc, opts HistogramOpts, labelValues ...string) Histogr
 	h := &histogram{
 		desc:        desc,
 		upperBounds: opts.Buckets,
-		labelPairs:  makeLabelPairs(desc, labelValues),
+		labelPairs:  MakeLabelPairs(desc, labelValues),
 		counts:      [2]*histogramCounts{{}, {}},
 		now:         time.Now,
 	}
@@ -2202,7 +2213,7 @@ func (h *histogram) updateExemplar(v float64, bucket int, l Labels) {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewHistogramVec.
 type HistogramVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewHistogramVec creates a new HistogramVec based on the provided HistogramOpts and
@@ -2215,14 +2226,14 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 		opts.ConstLabels,
 	)
 	return &HistogramVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			return newHistogram(desc, opts, lvs...)
 		}),
 	}
 }
 
 // GetMetricWithLabelValues returns the Histogram for the given slice of label
-// values (same order as the VariableLabels in Desc). If that combination of
+// values (same order as the variable labels in Desc). If that combination of
 // label values is accessed for the first time, a new Histogram is created.
 //
 // It is possible to call this method without using the returned Histogram to only
@@ -2237,7 +2248,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 // example.
 //
 // An error is returned if the number of label values is not the same as the
-// number of VariableLabels in Desc (minus any curried labels).
+// number of variable labels in Desc (minus any curried labels).
 //
 // Note that for more than one label value, this method is prone to mistakes
 // caused by an incorrect order of arguments. Consider GetMetricWith(Labels) as
@@ -2246,7 +2257,7 @@ func NewHistogramVec(opts HistogramOpts, labelNames []string) *HistogramVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.MetricVec.GetMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -2254,19 +2265,19 @@ func (v *HistogramVec) GetMetricWithLabelValues(lvs ...string) (Observer, error)
 }
 
 // GetMetricWith returns the Histogram for the given Labels map (the label names
-// must match those of the VariableLabels in Desc). If that label map is
+// must match those of the variable labels in Desc). If that label map is
 // accessed for the first time, a new Histogram is created. Implications of
 // creating a Histogram without using it and keeping the Histogram for later use
 // are the same as for GetMetricWithLabelValues.
 //
 // An error is returned if the number and names of the Labels are inconsistent
-// with those of the VariableLabels in Desc (minus any curried labels).
+// with those of the variable labels in Desc (minus any curried labels).
 //
 // This method is used for the same purpose as
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *HistogramVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.MetricVec.GetMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -2310,7 +2321,7 @@ func (v *HistogramVec) With(labels Labels) Observer {
 // registered with a given registry (usually the uncurried version). The Reset
 // method deletes all metrics, even if called on a curried vector.
 func (v *HistogramVec) CurryWith(labels Labels) (ObserverVec, error) {
-	vec, err := v.curryWith(labels)
+	vec, err := v.MetricVec.CurryWith(labels)
 	if vec != nil {
 		return &HistogramVec{vec}, err
 	}
@@ -2395,8 +2406,14 @@ func NewConstHistogram(
 		count:      count,
 		sum:        sum,
 		buckets:    buckets,
+<<<<<<< HEAD
 		labelPairs: makeLabelPairs(desc, labelValues),
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		labelPairs: makeLabelPairs(desc, labelValues),
+=======
+		labelPairs: MakeLabelPairs(desc, labelValues),
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}, nil
 }
 

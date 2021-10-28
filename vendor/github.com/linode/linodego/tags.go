@@ -149,6 +149,7 @@ func (c *Client) ListTaggedObjects(ctx context.Context, label string, opts *List
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -396,6 +397,10 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -468,8 +473,13 @@ func (c *Client) CreateTag(ctx context.Context, createOpts TagCreateOptions) (*T
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

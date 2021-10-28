@@ -6,6 +6,7 @@ CMD = jpgo
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 SRC_PKGS=./ ./cmd/... ./fuzz/...
 
 help:
@@ -172,6 +173,11 @@ test-internal-testify:
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+SRC_PKGS=./ ./cmd/... ./fuzz/...
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
 	@echo "  test                    to run all the tests"
@@ -180,21 +186,22 @@ help:
 
 
 generate:
-	go generate ./...
+	go generate ${SRC_PKGS}
 
 build:
 	rm -f $(CMD)
-	go build ./...
+	go build ${SRC_PKGS}
 	rm -f cmd/$(CMD)/$(CMD) && cd cmd/$(CMD)/ && go build ./...
 	mv cmd/$(CMD)/$(CMD) .
 
-test:
-	go test -v ./...
+test: test-internal-testify
+	echo "making tests ${SRC_PKGS}"
+	go test -v ${SRC_PKGS}
 
 check:
-	go vet ./...
-	@echo "golint ./..."
-	@lint=`golint ./...`; \
+	go vet ${SRC_PKGS}
+	@echo "golint ${SRC_PKGS}"
+	@lint=`golint ${SRC_PKGS}`; \
 	lint=`echo "$$lint" | grep -v "astnodetype_string.go" | grep -v "toktype_string.go"`; \
 	echo "$$lint"; \
 	if [ "$$lint" != "" ]; then exit 1; fi
@@ -213,4 +220,12 @@ bench:
 
 pprof-cpu:
 	go tool pprof ./go-jmespath.test ./cpu.out
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+test-internal-testify:
+	cd internal/testify && go test ./...
+
+>>>>>>> 4d7e5ad26 (update vendored files)

@@ -49,8 +49,13 @@ type DnsProduct struct {
 	BindDomainUsedCount   int64  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
 	DnsSecurity           string `json:"DnsSecurity" xml:"DnsSecurity"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

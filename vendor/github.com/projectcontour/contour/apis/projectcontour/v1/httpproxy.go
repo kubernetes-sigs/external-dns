@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Copyright Project Contour Authors
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -2775,6 +2776,11 @@ type HTTPProxy struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Copyright © 2019 VMware
+||||||| parent of 4d7e5ad26 (update vendored files)
+// Copyright © 2019 VMware
+=======
+// Copyright Project Contour Authors
+>>>>>>> 4d7e5ad26 (update vendored files)
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -2797,7 +2803,7 @@ import (
 // HTTPProxySpec defines the spec of the CRD.
 type HTTPProxySpec struct {
 	// Virtualhost appears at most once. If it is present, the object is considered
-	// to be a "root".
+	// to be a "root" HTTPProxy.
 	// +optional
 	VirtualHost *VirtualHost `json:"virtualhost,omitempty"`
 	// Routes are the ingress routes. If TCPProxy is present, Routes is ignored.
@@ -2806,9 +2812,16 @@ type HTTPProxySpec struct {
 	// TCPProxy holds TCP proxy information.
 	// +optional
 	TCPProxy *TCPProxy `json:"tcpproxy,omitempty"`
-	// Includes allow for specific routing configuration to be appended to another HTTPProxy in another namespace.
+	// Includes allow for specific routing configuration to be included from another HTTPProxy,
+	// possibly in another namespace.
 	// +optional
 	Includes []Include `json:"includes,omitempty"`
+	// IngressClassName optionally specifies the ingress class to use for this
+	// HTTPProxy. This replaces the deprecated `kubernetes.io/ingress.class`
+	// annotation. For backwards compatibility, when that annotation is set, it
+	// is given precedence over this field.
+	// +optional
+	IngressClassName string `json:"ingressClassName,omitempty"`
 }
 
 // Include describes a set of policies that can be applied to an HTTPProxy in a namespace.
@@ -2818,27 +2831,33 @@ type Include struct {
 	// Namespace of the HTTPProxy to include. Defaults to the current namespace if not supplied.
 	// +optional
 	Namespace string `json:"namespace,omitempty"`
-	// Conditions are a set of routing properties that is applied to an HTTPProxy in a namespace.
+	// Conditions are a set of rules that are applied to included HTTPProxies.
+	// In effect, they are added onto the Conditions of included HTTPProxy Route
+	// structs.
+	// When applied, they are merged using AND, with one exception:
+	// There can be only one Prefix MatchCondition per Conditions slice.
+	// More than one Prefix, or contradictory Conditions, will make the
+	// include invalid.
 	// +optional
-	Conditions []Condition `json:"conditions,omitempty"`
+	Conditions []MatchCondition `json:"conditions,omitempty"`
 }
 
-// Condition are policies that are applied on top of HTTPProxies.
+// MatchCondition are a general holder for matching rules for HTTPProxies.
 // One of Prefix or Header must be provided.
-type Condition struct {
+type MatchCondition struct {
 	// Prefix defines a prefix match for a request.
 	// +optional
 	Prefix string `json:"prefix,omitempty"`
 
 	// Header specifies the header condition to match.
 	// +optional
-	Header *HeaderCondition `json:"header,omitempty"`
+	Header *HeaderMatchCondition `json:"header,omitempty"`
 }
 
-// HeaderCondition specifies how to conditionally match against HTTP
+// HeaderMatchCondition specifies how to conditionally match against HTTP
 // headers. The Name field is required, but only one of the remaining
 // fields should be be provided.
-type HeaderCondition struct {
+type HeaderMatchCondition struct {
 	// Name is the name of the header to match against. Name is required.
 	// Header names are case insensitive.
 	Name string `json:"name"`
@@ -2849,6 +2868,12 @@ type HeaderCondition struct {
 	// is absent.
 	// +optional
 	Present bool `json:"present,omitempty"`
+
+	// NotPresent specifies that condition is true when the named header
+	// is not present. Note that setting NotPresent to false does not
+	// make the condition true if the named header is present.
+	// +optional
+	NotPresent bool `json:"notpresent,omitempty"`
 
 	// Contains specifies a substring that must be present in
 	// the header value.
@@ -2870,31 +2895,155 @@ type HeaderCondition struct {
 	NotExact string `json:"notexact,omitempty"`
 }
 
+// ExtensionServiceReference names an ExtensionService resource.
+type ExtensionServiceReference struct {
+	// API version of the referent.
+	// If this field is not specified, the default "projectcontour.io/v1alpha1" will be used
+	//
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	APIVersion string `json:"apiVersion,omitempty" protobuf:"bytes,5,opt,name=apiVersion"`
+
+	// Namespace of the referent.
+	// If this field is not specifies, the namespace of the resource that targets the referent will be used.
+	//
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+	//
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	Namespace string `json:"namespace,omitempty" protobuf:"bytes,2,opt,name=namespace"`
+
+	// Name of the referent.
+	//
+	// More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+	//
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
+}
+
+// AuthorizationServer configures an external server to authenticate
+// client requests. The external server must implement the v3 Envoy
+// external authorization GRPC protocol (https://www.envoyproxy.io/docs/envoy/latest/api-v3/service/auth/v3/external_auth.proto).
+type AuthorizationServer struct {
+	// ExtensionServiceRef specifies the extension resource that will authorize client requests.
+	//
+	// +required
+	ExtensionServiceRef ExtensionServiceReference `json:"extensionRef"`
+
+	// AuthPolicy sets a default authorization policy for client requests.
+	// This policy will be used unless overridden by individual routes.
+	//
+	// +optional
+	AuthPolicy *AuthorizationPolicy `json:"authPolicy,omitempty"`
+
+	// ResponseTimeout configures maximum time to wait for a check response from the authorization server.
+	// Timeout durations are expressed in the Go [Duration format](https://godoc.org/time#ParseDuration).
+	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	// The string "infinity" is also a valid input and specifies no timeout.
+	//
+	// +optional
+	// +kubebuilder:validation:Pattern=`^(((\d*(\.\d*)?h)|(\d*(\.\d*)?m)|(\d*(\.\d*)?s)|(\d*(\.\d*)?ms)|(\d*(\.\d*)?us)|(\d*(\.\d*)?µs)|(\d*(\.\d*)?ns))+|infinity|infinite)$`
+	ResponseTimeout string `json:"responseTimeout,omitempty"`
+
+	// If FailOpen is true, the client request is forwarded to the upstream service
+	// even if the authorization server fails to respond. This field should not be
+	// set in most cases. It is intended for use only while migrating applications
+	// from internal authorization to Contour external authorization.
+	//
+	// +optional
+	FailOpen bool `json:"failOpen,omitempty"`
+
+	// WithRequestBody specifies configuration for sending the client request's body to authorization server.
+	// +optional
+	WithRequestBody *AuthorizationServerBufferSettings `json:"withRequestBody,omitempty"`
+}
+
+// AuthorizationServerBufferSettings enables ExtAuthz filter to buffer client request data and send it as part of authorization request
+type AuthorizationServerBufferSettings struct {
+	// MaxRequestBytes sets the maximum size of message body ExtAuthz filter will hold in-memory.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:default=1024
+	MaxRequestBytes uint32 `json:"maxRequestBytes,omitempty"`
+
+	// If AllowPartialMessage is true, then Envoy will buffer the body until MaxRequestBytes are reached.
+	// +optional
+	AllowPartialMessage bool `json:"allowPartialMessage,omitempty"`
+
+	// If PackAsBytes is true, the body sent to Authorization Server is in raw bytes.
+	// +optional
+	PackAsBytes bool `json:"packAsBytes,omitempty"`
+}
+
+// AuthorizationPolicy modifies how client requests are authenticated.
+type AuthorizationPolicy struct {
+	// When true, this field disables client request authentication
+	// for the scope of the policy.
+	//
+	// +optional
+	Disabled bool `json:"disabled,omitempty"`
+
+	// Context is a set of key/value pairs that are sent to the
+	// authentication server in the check request. If a context
+	// is provided at an enclosing scope, the entries are merged
+	// such that the inner scope overrides matching keys from the
+	// outer scope.
+	//
+	// +optional
+	Context map[string]string `json:"context,omitempty"`
+}
+
 // VirtualHost appears at most once. If it is present, the object is considered
 // to be a "root".
 type VirtualHost struct {
 	// The fully qualified domain name of the root of the ingress tree
-	// all leaves of the DAG rooted at this object relate to the fqdn
+	// all leaves of the DAG rooted at this object relate to the fqdn.
+	//
+	// +kubebuilder:validation:Pattern="^(\\*\\.)?[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
 	Fqdn string `json:"fqdn"`
-	// If present describes tls properties. The SNI names that will be matched on
-	// are described in fqdn, the tls.secretName secret must contain a
-	// matching certificate
+
+	// If present the fields describes TLS properties of the virtual
+	// host. The SNI names that will be matched on are described in fqdn,
+	// the tls.secretName secret must contain a certificate that itself
+	// contains a name that matches the FQDN.
+	//
 	// +optional
 	TLS *TLS `json:"tls,omitempty"`
+
+	// This field configures an extension service to perform
+	// authorization for this virtual host. Authorization can
+	// only be configured on virtual hosts that have TLS enabled.
+	// If the TLS configuration requires client certificate
+	// validation, the client certificate is always included in the
+	// authentication check request.
+	//
+	// +optional
+	Authorization *AuthorizationServer `json:"authorization,omitempty"`
+	// Specifies the cross-origin policy to apply to the VirtualHost.
+	// +optional
+	CORSPolicy *CORSPolicy `json:"corsPolicy,omitempty"`
+	// The policy for rate limiting on the virtual host.
+	// +optional
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
 }
 
 // TLS describes tls properties. The SNI names that will be matched on
-// are described in fqdn, the tls.secretName secret must contain a
-// matching certificate unless tls.passthrough is set to true.
+// are described in the HTTPProxy's Spec.VirtualHost.Fqdn field.
 type TLS struct {
-	// required, the name of a secret in the current namespace
+	// SecretName is the name of a TLS secret in the current namespace.
+	// Either SecretName or Passthrough must be specified, but not both.
+	// If specified, the named secret must contain a matching certificate
+	// for the virtual host's FQDN.
 	SecretName string `json:"secretName,omitempty"`
-	// Minimum TLS version this vhost should negotiate
+	// MinimumProtocolVersion is the minimum TLS version this vhost should
+	// negotiate. Valid options are `1.2` (default) and `1.3`. Any other value
+	// defaults to TLS 1.2.
 	// +optional
 	MinimumProtocolVersion string `json:"minimumProtocolVersion,omitempty"`
-	// If Passthrough is set to true, the SecretName will be ignored
-	// and the encrypted handshake will be passed through to the
-	// backing cluster.
+	// Passthrough defines whether the encrypted TLS handshake will be
+	// passed through to the backing cluster. Either Passthrough or
+	// SecretName must be specified, but not both.
 	// +optional
 	Passthrough bool `json:"passthrough,omitempty"`
 	// ClientValidation defines how to verify the client certificate
@@ -2903,8 +3052,14 @@ type TLS struct {
 	// This setting:
 	//
 	// 1. Enables TLS client certificate validation.
-	// 2. Requires clients to present a TLS certificate (i.e. not optional validation).
-	// 3. Specifies how the client certificate will be validated.
+	// 2. Specifies how the client certificate will be validated (i.e.
+	//    validation required or skipped).
+	//
+	// Note: Setting client certificate validation to be skipped should
+	// be only used in conjunction with an external authorization server that
+	// performs client validation as Contour will ensure client certificates
+	// are passed along.
+	//
 	// +optional
 	ClientValidation *DownstreamValidation `json:"clientValidation,omitempty"`
 
@@ -2913,15 +3068,49 @@ type TLS struct {
 	EnableFallbackCertificate bool `json:"enableFallbackCertificate,omitempty"`
 }
 
+// CORSHeaderValue specifies the value of the string headers returned by a cross-domain request.
+// +kubebuilder:validation:Pattern="^[a-zA-Z0-9!#$%&'*+.^_`|~-]+$"
+type CORSHeaderValue string
+
+// CORSPolicy allows setting the CORS policy
+type CORSPolicy struct {
+	// Specifies whether the resource allows credentials.
+	//  +optional
+	AllowCredentials bool `json:"allowCredentials,omitempty"`
+	// AllowOrigin specifies the origins that will be allowed to do CORS requests. "*" means
+	// allow any origin.
+	// +kubebuilder:validation:Required
+	AllowOrigin []string `json:"allowOrigin"`
+	// AllowMethods specifies the content for the *access-control-allow-methods* header.
+	// +kubebuilder:validation:Required
+	AllowMethods []CORSHeaderValue `json:"allowMethods"`
+	// AllowHeaders specifies the content for the *access-control-allow-headers* header.
+	//  +optional
+	AllowHeaders []CORSHeaderValue `json:"allowHeaders,omitempty"`
+	// ExposeHeaders Specifies the content for the *access-control-expose-headers* header.
+	//  +optional
+	ExposeHeaders []CORSHeaderValue `json:"exposeHeaders,omitempty"`
+	// MaxAge indicates for how long the results of a preflight request can be cached.
+	// MaxAge durations are expressed in the Go [Duration format](https://godoc.org/time#ParseDuration).
+	// Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	// Only positive values are allowed while 0 disables the cache requiring a preflight OPTIONS
+	// check for all cross-origin requests.
+	//  +optional
+	MaxAge string `json:"maxAge,omitempty"`
+}
+
 // Route contains the set of routes for a virtual host.
 type Route struct {
-	// Conditions are a set of routing properties that is applied to an HTTPProxy in a namespace.
+	// Conditions are a set of rules that are applied to a Route.
+	// When applied, they are merged using AND, with one exception:
+	// There can be only one Prefix MatchCondition per Conditions slice.
+	// More than one Prefix, or contradictory Conditions, will make the
+	// route invalid.
 	// +optional
-	Conditions []Condition `json:"conditions,omitempty"`
+	Conditions []MatchCondition `json:"conditions,omitempty"`
 	// Services are the services to proxy traffic.
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
-	Services []Service `json:"services"`
+	// +optional
+	Services []Service `json:"services,omitempty"`
 	// Enables websocket support for the route.
 	// +optional
 	EnableWebsockets bool `json:"enableWebsockets,omitempty"`
@@ -2929,6 +3118,11 @@ type Route struct {
 	// not permitted when a `virtualhost.tls` block is present.
 	// +optional
 	PermitInsecure bool `json:"permitInsecure,omitempty"`
+	// AuthPolicy updates the authorization policy that was set
+	// on the root HTTPProxy object for client requests that
+	// match this route.
+	// +optional
+	AuthPolicy *AuthorizationPolicy `json:"authPolicy,omitempty"`
 	// The timeout policy for this route.
 	// +optional
 	TimeoutPolicy *TimeoutPolicy `json:"timeoutPolicy,omitempty"`
@@ -2946,29 +3140,287 @@ type Route struct {
 	//
 	// +optional
 	PathRewritePolicy *PathRewritePolicy `json:"pathRewritePolicy,omitempty"`
-	// The policy for managing request headers during proxying
+	// The policy for managing request headers during proxying.
 	// +optional
 	RequestHeadersPolicy *HeadersPolicy `json:"requestHeadersPolicy,omitempty"`
-	// The policy for managing response headers during proxying
+	// The policy for managing response headers during proxying.
+	// Rewriting the 'Host' header is not supported.
 	// +optional
 	ResponseHeadersPolicy *HeadersPolicy `json:"responseHeadersPolicy,omitempty"`
+	// The policies for rewriting Set-Cookie header attributes. Note that
+	// rewritten cookie names must be unique in this list. Order rewrite
+	// policies are specified in does not matter.
+	// +optional
+	CookieRewritePolicies []CookieRewritePolicy `json:"cookieRewritePolicies,omitempty"`
+	// The policy for rate limiting on the route.
+	// +optional
+	RateLimitPolicy *RateLimitPolicy `json:"rateLimitPolicy,omitempty"`
+
+	// RequestRedirectPolicy defines an HTTP redirection.
+	// +optional
+	RequestRedirectPolicy *HTTPRequestRedirectPolicy `json:"requestRedirectPolicy,omitempty"`
 }
 
-func (r *Route) GetPrefixReplacements() []ReplacePrefix {
-	if r.PathRewritePolicy != nil {
-		return r.PathRewritePolicy.ReplacePrefix
-	}
-	return nil
+// HTTPRequestRedirectPolicy defines configuration for redirecting a request.
+type HTTPRequestRedirectPolicy struct {
+	// Scheme is the scheme to be used in the value of the `Location`
+	// header in the response.
+	// When empty, the scheme of the request is used.
+	// +optional
+	// +kubebuilder:validation:Enum=http;https
+	Scheme *string `json:"scheme,omitempty"`
+
+	// Hostname is the precise hostname to be used in the value of the `Location`
+	// header in the response.
+	// When empty, the hostname of the request is used.
+	// No wildcards are allowed.
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=253
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$`
+	Hostname *string `json:"hostname,omitempty"`
+
+	// Port is the port to be used in the value of the `Location`
+	// header in the response.
+	// When empty, port (if specified) of the request is used.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
+	Port *int32 `json:"port,omitempty"`
+
+	// StatusCode is the HTTP status code to be used in response.
+	// +optional
+	// +kubebuilder:default=302
+	// +kubebuilder:validation:Enum=301;302
+	StatusCode *int `json:"statusCode,omitempty"`
+
+	// Path allows for redirection to a different path from the
+	// original on the request. The path must start with a
+	// leading slash.
+	//
+	// Note: Only one of Path or Prefix can be defined.
+	//
+	// +optional
+	// +kubebuilder:validation:Pattern=`^\/.*$`
+	Path *string `json:"path,omitempty"`
+
+	// Prefix defines the value to swap the matched prefix or path with.
+	// The prefix must start with a leading slash.
+	//
+	// Note: Only one of Path or Prefix can be defined.
+	//
+	// +optional
+	// +kubebuilder:validation:Pattern=`^\/.*$`
+	Prefix *string `json:"prefix,omitempty"`
 }
+
+type CookieRewritePolicy struct {
+	// Name is the name of the cookie for which attributes will be rewritten.
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
+	// +kubebuilder:validation:Pattern=`^[^()<>@,;:\\"\/[\]?={} \t\x7f\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]+$`
+	Name string `json:"name"`
+
+	// PathRewrite enables rewriting the Set-Cookie Path element.
+	// If not set, Path will not be rewritten.
+	// +optional
+	PathRewrite *CookiePathRewrite `json:"pathRewrite,omitempty"`
+
+	// DomainRewrite enables rewriting the Set-Cookie Domain element.
+	// If not set, Domain will not be rewritten.
+	// +optional
+	DomainRewrite *CookieDomainRewrite `json:"domainRewrite,omitempty"`
+
+	// Secure enables rewriting the Set-Cookie Secure element.
+	// If not set, Secure attribute will not be rewritten.
+	// +optional
+	Secure *bool `json:"secure,omitempty"`
+
+	// SameSite enables rewriting the Set-Cookie SameSite element.
+	// If not set, SameSite attribute will not be rewritten.
+	// +optional
+	// +kubebuilder:validation:Enum=Strict;Lax;None
+	SameSite *string `json:"sameSite,omitempty"`
+}
+
+type CookiePathRewrite struct {
+	// Value is the value to rewrite the Path attribute to.
+	// For now this is required.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
+	// +kubebuilder:validation:Pattern=`^[^;\x7f\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f]+$`
+	Value string `json:"value"`
+}
+
+type CookieDomainRewrite struct {
+	// Value is the value to rewrite the Domain attribute to.
+	// For now this is required.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=4096
+	// +kubebuilder:validation:Pattern="^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$"
+	Value string `json:"value"`
+}
+
+// RateLimitPolicy defines rate limiting parameters.
+type RateLimitPolicy struct {
+	// Local defines local rate limiting parameters, i.e. parameters
+	// for rate limiting that occurs within each Envoy pod as requests
+	// are handled.
+	// +optional
+	Local *LocalRateLimitPolicy `json:"local,omitempty"`
+
+	// Global defines global rate limiting parameters, i.e. parameters
+	// defining descriptors that are sent to an external rate limit
+	// service (RLS) for a rate limit decision on each request.
+	// +optional
+	Global *GlobalRateLimitPolicy `json:"global,omitempty"`
+}
+
+// LocalRateLimitPolicy defines local rate limiting parameters.
+type LocalRateLimitPolicy struct {
+	// Requests defines how many requests per unit of time should
+	// be allowed before rate limiting occurs.
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	Requests uint32 `json:"requests"`
+
+	// Unit defines the period of time within which requests
+	// over the limit will be rate limited. Valid values are
+	// "second", "minute" and "hour".
+	// +kubebuilder:validation:Enum=second;minute;hour
+	// +required
+	Unit string `json:"unit"`
+
+	// Burst defines the number of requests above the requests per
+	// unit that should be allowed within a short period of time.
+	// +optional
+	Burst uint32 `json:"burst,omitempty"`
+
+	// ResponseStatusCode is the HTTP status code to use for responses
+	// to rate-limited requests. Codes must be in the 400-599 range
+	// (inclusive). If not specified, the Envoy default of 429 (Too
+	// Many Requests) is used.
+	// +optional
+	// +kubebuilder:validation:Minimum=400
+	// +kubebuilder:validation:Maximum=599
+	ResponseStatusCode uint32 `json:"responseStatusCode,omitempty"`
+
+	// ResponseHeadersToAdd is an optional list of response headers to
+	// set when a request is rate-limited.
+	// +optional
+	ResponseHeadersToAdd []HeaderValue `json:"responseHeadersToAdd,omitempty"`
+}
+
+// GlobalRateLimitPolicy defines global rate limiting parameters.
+type GlobalRateLimitPolicy struct {
+	// Descriptors defines the list of descriptors that will
+	// be generated and sent to the rate limit service. Each
+	// descriptor contains 1+ key-value pair entries.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Descriptors []RateLimitDescriptor `json:"descriptors,omitempty"`
+}
+
+// RateLimitDescriptor defines a list of key-value pair generators.
+type RateLimitDescriptor struct {
+	// Entries is the list of key-value pair generators.
+	// +required
+	// +kubebuilder:validation:MinItems=1
+	Entries []RateLimitDescriptorEntry `json:"entries,omitempty"`
+}
+
+// RateLimitDescriptorEntry is a key-value pair generator. Exactly
+// one field on this struct must be non-nil.
+type RateLimitDescriptorEntry struct {
+	// GenericKey defines a descriptor entry with a static key and value.
+	// +optional
+	GenericKey *GenericKeyDescriptor `json:"genericKey,omitempty"`
+
+	// RequestHeader defines a descriptor entry that's populated only if
+	// a given header is present on the request. The descriptor key is static,
+	// and the descriptor value is equal to the value of the header.
+	// +optional
+	RequestHeader *RequestHeaderDescriptor `json:"requestHeader,omitempty"`
+
+	// RequestHeaderValueMatch defines a descriptor entry that's populated
+	// if the request's headers match a set of 1+ match criteria. The
+	// descriptor key is "header_match", and the descriptor value is static.
+	// +optional
+	RequestHeaderValueMatch *RequestHeaderValueMatchDescriptor `json:"requestHeaderValueMatch,omitempty"`
+
+	// RemoteAddress defines a descriptor entry with a key of "remote_address"
+	// and a value equal to the client's IP address (from x-forwarded-for).
+	// +optional
+	RemoteAddress *RemoteAddressDescriptor `json:"remoteAddress,omitempty"`
+}
+
+// GenericKeyDescriptor defines a descriptor entry with a static key and
+// value.
+type GenericKeyDescriptor struct {
+	// Key defines the key of the descriptor entry. If not set, the
+	// key is set to "generic_key".
+	// +optional
+	Key string `json:"key,omitempty"`
+
+	// Value defines the value of the descriptor entry.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Value string `json:"value,omitempty"`
+}
+
+// RequestHeaderDescriptor defines a descriptor entry that's populated only
+// if a given header is present on the request. The value of the descriptor
+// entry is equal to the value of the header (if present).
+type RequestHeaderDescriptor struct {
+	// HeaderName defines the name of the header to look for on the request.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	HeaderName string `json:"headerName,omitempty"`
+
+	// DescriptorKey defines the key to use on the descriptor entry.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	DescriptorKey string `json:"descriptorKey,omitempty"`
+}
+
+// RequestHeaderValueMatchDescriptor defines a descriptor entry that's populated
+// if the request's headers match a set of 1+ match criteria. The descriptor key
+// is "header_match", and the descriptor value is statically defined.
+type RequestHeaderValueMatchDescriptor struct {
+	// Headers is a list of 1+ match criteria to apply against the request
+	// to determine whether to populate the descriptor entry or not.
+	// +kubebuilder:validation:MinItems=1
+	Headers []HeaderMatchCondition `json:"headers,omitempty"`
+
+	// ExpectMatch defines whether the request must positively match the match
+	// criteria in order to generate a descriptor entry (i.e. true), or not
+	// match the match criteria in order to generate a descriptor entry (i.e. false).
+	// The default is true.
+	// +kubebuilder:default=true
+	ExpectMatch bool `json:"expectMatch,omitempty"`
+
+	// Value defines the value of the descriptor entry.
+	// +required
+	// +kubebuilder:validation:MinLength=1
+	Value string `json:"value,omitempty"`
+}
+
+// RemoteAddressDescriptor defines a descriptor entry with a key of
+// "remote_address" and a value equal to the client's IP address
+// (from x-forwarded-for).
+type RemoteAddressDescriptor struct{}
 
 // TCPProxy contains the set of services to proxy TCP connections.
 type TCPProxy struct {
-	// The load balancing policy for the backend services.
+	// The load balancing policy for the backend services. Note that the
+	// `Cookie` and `RequestHash` load balancing strategies cannot be used
+	// here.
 	// +optional
 	LoadBalancerPolicy *LoadBalancerPolicy `json:"loadBalancerPolicy,omitempty"`
 	// Services are the services to proxy traffic
-	// +kubebuilder:validation:MinItems=1
-	// +kubebuilder:validation:Required
+	// +optional
 	Services []Service `json:"services"`
 	// Include specifies that this tcpproxy should be delegated to another HTTPProxy.
 	// +optional
@@ -2999,6 +3451,12 @@ type Service struct {
 	// Names defined here will be used to look up corresponding endpoints which contain the ips to route.
 	Name string `json:"name"`
 	// Port (defined as Integer) to proxy traffic to since a service can have multiple defined.
+	//
+	// +required
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65536
+	// +kubebuilder:validation:ExclusiveMinimum=false
+	// +kubebuilder:validation:ExclusiveMaximum=true
 	Port int `json:"port"`
 	// Protocol may be used to specify (or override) the protocol used to reach this Service.
 	// Values may be tls, h2, h2c. If omitted, protocol-selection falls back on Service annotations.
@@ -3014,12 +3472,17 @@ type Service struct {
 	UpstreamValidation *UpstreamValidation `json:"validation,omitempty"`
 	// If Mirror is true the Service will receive a read only mirror of the traffic for this route.
 	Mirror bool `json:"mirror,omitempty"`
-	// The policy for managing request headers during proxying
+	// The policy for managing request headers during proxying.
+	// Rewriting the 'Host' header is not supported.
 	// +optional
 	RequestHeadersPolicy *HeadersPolicy `json:"requestHeadersPolicy,omitempty"`
-	// The policy for managing response headers during proxying
+	// The policy for managing response headers during proxying.
+	// Rewriting the 'Host' header is not supported.
 	// +optional
 	ResponseHeadersPolicy *HeadersPolicy `json:"responseHeadersPolicy,omitempty"`
+	// The policies for rewriting Set-Cookie header attributes.
+	// +optional
+	CookieRewritePolicies []CookieRewritePolicy `json:"cookieRewritePolicies,omitempty"`
 }
 
 // HTTPHealthCheckPolicy defines health checks on the upstream service.
@@ -3067,38 +3530,78 @@ type TCPHealthCheckPolicy struct {
 // TimeoutPolicy durations are expressed in the Go [Duration format](https://godoc.org/time#ParseDuration).
 // Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 // The string "infinity" is also a valid input and specifies no timeout.
+// A value of "0s" will be treated as if the field were not set, i.e. by using Envoy's default behavior.
 //
 // Example input values: "300ms", "5s", "1m".
 type TimeoutPolicy struct {
 	// Timeout for receiving a response from the server after processing a request from client.
-	// If not supplied, the timeout duration is undefined.
+	// If not supplied, Envoy's default value of 15s applies.
 	// +optional
+	// +kubebuilder:validation:Pattern=`^(((\d*(\.\d*)?h)|(\d*(\.\d*)?m)|(\d*(\.\d*)?s)|(\d*(\.\d*)?ms)|(\d*(\.\d*)?us)|(\d*(\.\d*)?µs)|(\d*(\.\d*)?ns))+|infinity|infinite)$`
 	Response string `json:"response,omitempty"`
 
-	// Timeout after which, if there are no active requests for this route, the connection between
-	// Envoy and the backend or Envoy and the external client will be closed.
-	// If not specified, there is no per-route idle timeout.
+	// Timeout for how long the proxy should wait while there is no activity during single request/response (for HTTP/1.1) or stream (for HTTP/2).
+	// Timeout will not trigger while HTTP/1.1 connection is idle between two consecutive requests.
+	// If not specified, there is no per-route idle timeout, though a connection manager-wide
+	// stream_idle_timeout default of 5m still applies.
 	// +optional
+	// +kubebuilder:validation:Pattern=`^(((\d*(\.\d*)?h)|(\d*(\.\d*)?m)|(\d*(\.\d*)?s)|(\d*(\.\d*)?ms)|(\d*(\.\d*)?us)|(\d*(\.\d*)?µs)|(\d*(\.\d*)?ns))+|infinity|infinite)$`
 	Idle string `json:"idle,omitempty"`
 }
+
+// RetryOn is a string type alias with validation to ensure that the value is valid.
+// +kubebuilder:validation:Enum="5xx";gateway-error;reset;connect-failure;retriable-4xx;refused-stream;retriable-status-codes;retriable-headers;cancelled;deadline-exceeded;internal;resource-exhausted;unavailable
+type RetryOn string
 
 // RetryPolicy defines the attributes associated with retrying policy.
 type RetryPolicy struct {
 	// NumRetries is maximum allowed number of retries.
-	// If not supplied, the number of retries is one.
+	// If set to -1, then retries are disabled.
+	// If set to 0 or not supplied, the value is set
+	// to the Envoy default of 1.
 	// +optional
-	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=-1
 	NumRetries int64 `json:"count"`
 	// PerTryTimeout specifies the timeout per retry attempt.
 	// Ignored if NumRetries is not supplied.
+	// +optional
+	// +kubebuilder:validation:Pattern=`^(((\d*(\.\d*)?h)|(\d*(\.\d*)?m)|(\d*(\.\d*)?s)|(\d*(\.\d*)?ms)|(\d*(\.\d*)?us)|(\d*(\.\d*)?µs)|(\d*(\.\d*)?ns))+|infinity|infinite)$`
 	PerTryTimeout string `json:"perTryTimeout,omitempty"`
+	// RetryOn specifies the conditions on which to retry a request.
+	//
+	// Supported [HTTP conditions](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-on):
+	//
+	// - `5xx`
+	// - `gateway-error`
+	// - `reset`
+	// - `connect-failure`
+	// - `retriable-4xx`
+	// - `refused-stream`
+	// - `retriable-status-codes`
+	// - `retriable-headers`
+	//
+	// Supported [gRPC conditions](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/router_filter#x-envoy-retry-grpc-on):
+	//
+	// - `cancelled`
+	// - `deadline-exceeded`
+	// - `internal`
+	// - `resource-exhausted`
+	// - `unavailable`
+	// +optional
+	RetryOn []RetryOn `json:"retryOn,omitempty"`
+	// RetriableStatusCodes specifies the HTTP status codes that should be retried.
+	//
+	// This field is only respected when you include `retriable-status-codes` in the `RetryOn` field.
+	// +optional
+	RetriableStatusCodes []uint32 `json:"retriableStatusCodes,omitempty"`
 }
 
 // ReplacePrefix describes a path prefix replacement.
 type ReplacePrefix struct {
 	// Prefix specifies the URL path prefix to be replaced.
 	//
-	// If Prefix is specified, it must exactly match the Condition
+	// If Prefix is specified, it must exactly match the MatchCondition
 	// prefix that is rendered by the chain of including HTTPProxies
 	// and only that path prefix will be replaced by Replacement.
 	// This allows HTTPProxies that are included through multiple
@@ -3132,15 +3635,55 @@ type PathRewritePolicy struct {
 	ReplacePrefix []ReplacePrefix `json:"replacePrefix,omitempty"`
 }
 
+// HeaderHashOptions contains options to configure a HTTP request header hash
+// policy, used in request attribute hash based load balancing.
+type HeaderHashOptions struct {
+	// HeaderName is the name of the HTTP request header that will be used to
+	// calculate the hash key. If the header specified is not present on a
+	// request, no hash will be produced.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MinLength=1
+	HeaderName string `json:"headerName,omitempty"`
+}
+
+// RequestHashPolicy contains configuration for an individual hash policy
+// on a request attribute.
+type RequestHashPolicy struct {
+	// Terminal is a flag that allows for short-circuiting computing of a hash
+	// for a given request. If set to true, and the request attribute specified
+	// in the attribute hash options is present, no further hash policies will
+	// be used to calculate a hash for the request.
+	Terminal bool `json:"terminal,omitempty"`
+
+	// HeaderHashOptions should be set when request header hash based load
+	// balancing is desired. It must be the only hash option field set,
+	// otherwise this request hash policy object will be ignored.
+	// +optional
+	HeaderHashOptions *HeaderHashOptions `json:"headerHashOptions,omitempty"`
+
+	// HashSourceIP should be set to true when request source IP hash based
+	// load balancing is desired. It must be the only hash option field set,
+	// otherwise this request hash policy object will be ignored.
+	// +optional
+	HashSourceIP bool `json:"hashSourceIP,omitempty"`
+}
+
 // LoadBalancerPolicy defines the load balancing policy.
 type LoadBalancerPolicy struct {
 	// Strategy specifies the policy used to balance requests
 	// across the pool of backend pods. Valid policy names are
-	// `Random`, `RoundRobin`, `WeightedLeastRequest`, `Random`
-	// and `Cookie`. If an unknown strategy name is specified
+	// `Random`, `RoundRobin`, `WeightedLeastRequest`, `Cookie`,
+	// and `RequestHash`. If an unknown strategy name is specified
 	// or no policy is supplied, the default `RoundRobin` policy
 	// is used.
 	Strategy string `json:"strategy,omitempty"`
+
+	// RequestHashPolicies contains a list of hash policies to apply when the
+	// `RequestHash` load balancing strategy is chosen. If an element of the
+	// supplied list of hash policies is invalid, it will be ignored. If the
+	// list of hash policies is empty after validation, the load balancing
+	// strategy will fall back the the default `RoundRobin`.
+	RequestHashPolicies []RequestHashPolicy `json:"requestHashPolicies,omitempty"`
 }
 
 // HeadersPolicy defines how headers are managed during forwarding.
@@ -3171,7 +3714,7 @@ type HeaderValue struct {
 
 // UpstreamValidation defines how to verify the backend service's certificate
 type UpstreamValidation struct {
-	// Name of the Kubernetes secret be used to validate the certificate presented by the backend
+	// Name or namespaced name of the Kubernetes secret used to validate the certificate presented by the backend
 	CACertificate string `json:"caSecret"`
 	// Key which is expected to be present in the 'subjectAltName' of the presented certificate
 	SubjectName string `json:"subjectName"`
@@ -3181,13 +3724,26 @@ type UpstreamValidation struct {
 type DownstreamValidation struct {
 	// Name of a Kubernetes secret that contains a CA certificate bundle.
 	// The client certificate must validate against the certificates in the bundle.
-	// +kubebuilder:validation:Required
+	// If specified and SkipClientCertValidation is true, client certificates will
+	// be required on requests.
+	// +optional
 	// +kubebuilder:validation:MinLength=1
-	CACertificate string `json:"caSecret"`
+	CACertificate string `json:"caSecret,omitempty"`
+
+	// SkipClientCertValidation disables downstream client certificate
+	// validation. Defaults to false. This field is intended to be used in
+	// conjunction with external authorization in order to enable the external
+	// authorization server to validate client certificates. When this field
+	// is set to true, client certificates are requested but not verified by
+	// Envoy. If CACertificate is specified, client certificates are required on
+	// requests, but not verified. If external authorization is in use, they are
+	// presented to the external authorization server.
+	// +optional
+	SkipClientCertValidation bool `json:"skipClientCertValidation"`
 }
 
-// Status reports the current state of the HTTPProxy.
-type Status struct {
+// HTTPProxyStatus reports the current state of the HTTPProxy.
+type HTTPProxyStatus struct {
 	// +optional
 	CurrentStatus string `json:"currentStatus,omitempty"`
 	// +optional
@@ -3195,12 +3751,30 @@ type Status struct {
 	// +optional
 	// LoadBalancer contains the current status of the load balancer.
 	LoadBalancer corev1.LoadBalancerStatus `json:"loadBalancer,omitempty"`
+	// +optional
+	// Conditions contains information about the current status of the HTTPProxy,
+	// in an upstream-friendly container.
+	//
+	// Contour will update a single condition, `Valid`, that is in normal-true polarity.
+	// That is, when `currentStatus` is `valid`, the `Valid` condition will be `status: true`,
+	// and vice versa.
+	//
+	// Contour will leave untouched any other Conditions set in this block,
+	// in case some other controller wants to add a Condition.
+	//
+	// If you are another controller owner and wish to add a condition, you *should*
+	// namespace your condition with a label, like `controller.domain.com/ConditionName`.
+	// +patchMergeKey=type
+	// +patchStrategy=merge
+	// +listType=map
+	// +listMapKey=type
+	Conditions []DetailedCondition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// HTTPProxy is an Ingress CRD specification
+// HTTPProxy is an Ingress CRD specification.
 // +k8s:openapi-gen=true
 // +kubebuilder:printcolumn:name="FQDN",type="string",JSONPath=".spec.virtualhost.fqdn",description="Fully qualified domain name"
 // +kubebuilder:printcolumn:name="TLS Secret",type="string",JSONPath=".spec.virtualhost.tls.secretName",description="Secret with TLS credentials"
@@ -3213,9 +3787,17 @@ type HTTPProxy struct {
 	metav1.ObjectMeta `json:"metadata"`
 
 	Spec HTTPProxySpec `json:"spec"`
+	// Status is a container for computed information about the HTTPProxy.
 	// +optional
+<<<<<<< HEAD
 	Status Status `json:"status,omitempty"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Status Status `json:"status,omitempty"`
+=======
+	// +kubebuilder:default={currentStatus: "NotReconciled", description:"Waiting for controller"}
+	Status HTTPProxyStatus `json:"status,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -16,6 +16,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - saad-ali
 - janetkuo
 - tallclair
@@ -78,13 +79,23 @@ reviewers:
 - nikhiljindal
 - gmarek
 - erictune
+||||||| parent of 4d7e5ad26 (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 - saad-ali
 - janetkuo
 - tallclair
-- eparis
 - dims
 - hongchaodeng
 - krousey
 - cjcullen
+<<<<<<< HEAD
 - david-mcmahon
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+- david-mcmahon
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)

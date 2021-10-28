@@ -116,6 +116,7 @@ type LoggerV2 interface {
 // later release.
 type DepthLoggerV2 interface {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// InfoDepth logs to INFO log at the specified depth. Arguments are handled in the manner of fmt.Print.
 	InfoDepth(depth int, args ...interface{})
 	// WarningDepth logs to WARNING log at the specified depth. Arguments are handled in the manner of fmt.Print.
@@ -133,5 +134,15 @@ type DepthLoggerV2 interface {
 	ErrorDepth(depth int, args ...interface{})
 	// FatalDepth logs to FATAL log at the specified depth. Arguments are handled in the manner of fmt.Println.
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// InfoDepth logs to INFO log at the specified depth. Arguments are handled in the manner of fmt.Println.
+	InfoDepth(depth int, args ...interface{})
+	// WarningDepth logs to WARNING log at the specified depth. Arguments are handled in the manner of fmt.Println.
+	WarningDepth(depth int, args ...interface{})
+	// ErrorDepth logs to ERROR log at the specified depth. Arguments are handled in the manner of fmt.Println.
+	ErrorDepth(depth int, args ...interface{})
+	// FatalDepth logs to FATAL log at the specified depth. Arguments are handled in the manner of fmt.Println.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	FatalDepth(depth int, args ...interface{})
 }

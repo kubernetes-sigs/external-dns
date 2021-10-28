@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -29,8 +30,18 @@
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 4d7e5ad26 (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 4d7e5ad26 (update vendored files)
 
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build !purego
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !purego
 
 package value

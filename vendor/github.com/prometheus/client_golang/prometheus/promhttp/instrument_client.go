@@ -50,6 +50,7 @@ func InstrumentRoundTripperInFlight(gauge prometheus.Gauge, next http.RoundTripp
 // The CounterVec must have zero, one, or two non-const non-curried labels. For
 // those, the only allowed label names are "code" and "method". The function
 <<<<<<< HEAD
+<<<<<<< HEAD
 // panics otherwise. For the "method" label a predefined default label value set
 // is used to filter given values. Values besides predefined values will count
 // as `unknown` method.`WithExtraMethods` can be used to add more
@@ -113,6 +114,14 @@ func InstrumentRoundTripperDuration(obs prometheus.ObserverVec, next http.RoundT
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // panics otherwise. Partitioning of the CounterVec happens by HTTP status code
+||||||| parent of 4d7e5ad26 (update vendored files)
+// panics otherwise. Partitioning of the CounterVec happens by HTTP status code
+=======
+// panics otherwise. For the "method" label a predefined default label value set
+// is used to filter given values. Values besides predefined values will count
+// as `unknown` method.`WithExtraMethods` can be used to add more
+// methods to the set. Partitioning of the CounterVec happens by HTTP status code
+>>>>>>> 4d7e5ad26 (update vendored files)
 // and/or HTTP method if the respective instance label names are present in the
 // CounterVec. For unpartitioned counting, use a CounterVec with zero labels.
 //
@@ -120,13 +129,18 @@ func InstrumentRoundTripperDuration(obs prometheus.ObserverVec, next http.RoundT
 // is not incremented.
 //
 // See the example for ExampleInstrumentRoundTripperDuration for example usage.
-func InstrumentRoundTripperCounter(counter *prometheus.CounterVec, next http.RoundTripper) RoundTripperFunc {
+func InstrumentRoundTripperCounter(counter *prometheus.CounterVec, next http.RoundTripper, opts ...Option) RoundTripperFunc {
+	rtOpts := &option{}
+	for _, o := range opts {
+		o(rtOpts)
+	}
+
 	code, method := checkLabels(counter)
 
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		resp, err := next.RoundTrip(r)
 		if err == nil {
-			counter.With(labels(code, method, r.Method, resp.StatusCode)).Inc()
+			counter.With(labels(code, method, r.Method, resp.StatusCode, rtOpts.extraMethods...)).Inc()
 		}
 		return resp, err
 	})
@@ -136,7 +150,10 @@ func InstrumentRoundTripperCounter(counter *prometheus.CounterVec, next http.Rou
 // http.RoundTripper to observe the request duration with the provided
 // ObserverVec.  The ObserverVec must have zero, one, or two non-const
 // non-curried labels. For those, the only allowed label names are "code" and
-// "method". The function panics otherwise. The Observe method of the Observer
+// "method". The function panics otherwise. For the "method" label a predefined
+// default label value set is used to filter given values. Values besides
+// predefined values will count as `unknown` method. `WithExtraMethods`
+// can be used to add more methods to the set. The Observe method of the Observer
 // in the ObserverVec is called with the request duration in
 // seconds. Partitioning happens by HTTP status code and/or HTTP method if the
 // respective instance label names are present in the ObserverVec. For
@@ -148,15 +165,26 @@ func InstrumentRoundTripperCounter(counter *prometheus.CounterVec, next http.Rou
 //
 // Note that this method is only guaranteed to never observe negative durations
 // if used with Go1.9+.
-func InstrumentRoundTripperDuration(obs prometheus.ObserverVec, next http.RoundTripper) RoundTripperFunc {
+func InstrumentRoundTripperDuration(obs prometheus.ObserverVec, next http.RoundTripper, opts ...Option) RoundTripperFunc {
+	rtOpts := &option{}
+	for _, o := range opts {
+		o(rtOpts)
+	}
+
 	code, method := checkLabels(obs)
 
 	return RoundTripperFunc(func(r *http.Request) (*http.Response, error) {
 		start := time.Now()
 		resp, err := next.RoundTrip(r)
 		if err == nil {
+<<<<<<< HEAD
 			obs.With(labels(code, method, r.Method, resp.StatusCode)).Observe(time.Since(start).Seconds())
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			obs.With(labels(code, method, r.Method, resp.StatusCode)).Observe(time.Since(start).Seconds())
+=======
+			obs.With(labels(code, method, r.Method, resp.StatusCode, rtOpts.extraMethods...)).Observe(time.Since(start).Seconds())
+>>>>>>> 4d7e5ad26 (update vendored files)
 		}
 		return resp, err
 	})

@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin || dragonfly || freebsd || netbsd || openbsd
 // +build darwin dragonfly freebsd netbsd openbsd
 
@@ -1872,6 +1873,10 @@ func Futimes(fd int, tv []Timeval) error {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build darwin || dragonfly || freebsd || netbsd || openbsd
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build darwin dragonfly freebsd netbsd openbsd
 
 // BSD system call wrappers shared by *BSD based systems
@@ -2032,9 +2037,7 @@ func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), _Socklen(sa.raw.Len), nil
 }
 
@@ -2048,9 +2051,7 @@ func (sa *SockaddrInet6) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
 	sa.raw.Scope_id = sa.ZoneId
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), _Socklen(sa.raw.Len), nil
 }
 
@@ -2079,9 +2080,7 @@ func (sa *SockaddrDatalink) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	sa.raw.Nlen = sa.Nlen
 	sa.raw.Alen = sa.Alen
 	sa.raw.Slen = sa.Slen
-	for i := 0; i < len(sa.raw.Data); i++ {
-		sa.raw.Data[i] = sa.Data[i]
-	}
+	sa.raw.Data = sa.Data
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrDatalink, nil
 }
 
@@ -2097,9 +2096,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa.Nlen = pp.Nlen
 		sa.Alen = pp.Alen
 		sa.Slen = pp.Slen
-		for i := 0; i < len(sa.Data); i++ {
-			sa.Data[i] = pp.Data[i]
-		}
+		sa.Data = pp.Data
 		return sa, nil
 
 	case AF_UNIX:
@@ -2131,9 +2128,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa := new(SockaddrInet4)
 		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 		sa.Port = int(p[0])<<8 + int(p[1])
-		for i := 0; i < len(sa.Addr); i++ {
-			sa.Addr[i] = pp.Addr[i]
-		}
+		sa.Addr = pp.Addr
 		return sa, nil
 
 	case AF_INET6:
@@ -2142,9 +2137,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 		sa.Port = int(p[0])<<8 + int(p[1])
 		sa.ZoneId = pp.Scope_id
-		for i := 0; i < len(sa.Addr); i++ {
-			sa.Addr[i] = pp.Addr[i]
-		}
+		sa.Addr = pp.Addr
 		return sa, nil
 	}
 	return anyToSockaddrGOOS(fd, rsa)
@@ -2188,7 +2181,7 @@ func Getsockname(fd int) (sa Sockaddr, err error) {
 	return anyToSockaddr(fd, &rsa)
 }
 
-//sysnb socketpair(domain int, typ int, proto int, fd *[2]int32) (err error)
+//sysnb	socketpair(domain int, typ int, proto int, fd *[2]int32) (err error)
 
 // GetsockoptString returns the string value of the socket option opt for the
 // socket associated with fd at the given socket level.
@@ -2202,14 +2195,13 @@ func GetsockoptString(fd, level, opt int) (string, error) {
 	return string(buf[:vallen-1]), nil
 }
 
-//sys   recvfrom(fd int, p []byte, flags int, from *RawSockaddrAny, fromlen *_Socklen) (n int, err error)
-//sys   sendto(s int, buf []byte, flags int, to unsafe.Pointer, addrlen _Socklen) (err error)
+//sys	recvfrom(fd int, p []byte, flags int, from *RawSockaddrAny, fromlen *_Socklen) (n int, err error)
+//sys	sendto(s int, buf []byte, flags int, to unsafe.Pointer, addrlen _Socklen) (err error)
 //sys	recvmsg(s int, msg *Msghdr, flags int) (n int, err error)
 
-func Recvmsg(fd int, p, oob []byte, flags int) (n, oobn int, recvflags int, from Sockaddr, err error) {
+func recvmsgRaw(fd int, p, oob []byte, flags int, rsa *RawSockaddrAny) (n, oobn int, recvflags int, err error) {
 	var msg Msghdr
-	var rsa RawSockaddrAny
-	msg.Name = (*byte)(unsafe.Pointer(&rsa))
+	msg.Name = (*byte)(unsafe.Pointer(rsa))
 	msg.Namelen = uint32(SizeofSockaddrAny)
 	var iov Iovec
 	if len(p) > 0 {
@@ -2233,29 +2225,12 @@ func Recvmsg(fd int, p, oob []byte, flags int) (n, oobn int, recvflags int, from
 	}
 	oobn = int(msg.Controllen)
 	recvflags = int(msg.Flags)
-	// source address is only specified if the socket is unconnected
-	if rsa.Addr.Family != AF_UNSPEC {
-		from, err = anyToSockaddr(fd, &rsa)
-	}
 	return
 }
 
 //sys	sendmsg(s int, msg *Msghdr, flags int) (n int, err error)
 
-func Sendmsg(fd int, p, oob []byte, to Sockaddr, flags int) (err error) {
-	_, err = SendmsgN(fd, p, oob, to, flags)
-	return
-}
-
-func SendmsgN(fd int, p, oob []byte, to Sockaddr, flags int) (n int, err error) {
-	var ptr unsafe.Pointer
-	var salen _Socklen
-	if to != nil {
-		ptr, salen, err = to.sockaddr()
-		if err != nil {
-			return 0, err
-		}
-	}
+func sendmsgN(fd int, p, oob []byte, ptr unsafe.Pointer, salen _Socklen, flags int) (n int, err error) {
 	var msg Msghdr
 	msg.Name = (*byte)(unsafe.Pointer(ptr))
 	msg.Namelen = uint32(salen)
@@ -2452,12 +2427,7 @@ func UtimesNano(path string, ts []Timespec) error {
 	if len(ts) != 2 {
 		return EINVAL
 	}
-	// Darwin setattrlist can set nanosecond timestamps
-	err := setattrlistTimes(path, ts, 0)
-	if err != ENOSYS {
-		return err
-	}
-	err = utimensat(AT_FDCWD, path, (*[2]Timespec)(unsafe.Pointer(&ts[0])), 0)
+	err := utimensat(AT_FDCWD, path, (*[2]Timespec)(unsafe.Pointer(&ts[0])), 0)
 	if err != ENOSYS {
 		return err
 	}
@@ -2477,10 +2447,6 @@ func UtimesNanoAt(dirfd int, path string, ts []Timespec, flags int) error {
 	if len(ts) != 2 {
 		return EINVAL
 	}
-	err := setattrlistTimes(path, ts, flags)
-	if err != ENOSYS {
-		return err
-	}
 	return utimensat(dirfd, path, (*[2]Timespec)(unsafe.Pointer(&ts[0])), flags)
 }
 
@@ -2496,8 +2462,14 @@ func Futimes(fd int, tv []Timeval) error {
 	return futimes(fd, (*[2]Timeval)(unsafe.Pointer(&tv[0])))
 }
 
+<<<<<<< HEAD
 //sys   poll(fds *PollFd, nfds int, timeout int) (n int, err error)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+//sys   poll(fds *PollFd, nfds int, timeout int) (n int, err error)
+=======
+//sys	poll(fds *PollFd, nfds int, timeout int) (n int, err error)
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 func Poll(fds []PollFd, timeout int) (n int, err error) {
 	if len(fds) == 0 {

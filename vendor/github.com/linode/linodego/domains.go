@@ -57,6 +57,7 @@ type Domain struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // DomainZoneFile represents the Zone File of a Domain
 type DomainZoneFile struct {
 	ZoneFile []string `json:"zone_file"`
@@ -875,6 +876,14 @@ func (c *Client) GetDomainZoneFile(ctx context.Context, domainID int) (*DomainZo
 	return resp.Result().(*DomainZoneFile), nil
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// DomainZoneFile represents the Zone File of a Domain
+type DomainZoneFile struct {
+	ZoneFile []string `json:"zone_file"`
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // DomainCreateOptions fields are those accepted by CreateDomain
 type DomainCreateOptions struct {
 	// The domain this Domain represents. These must be unique in our system; you cannot have two Domains representing the same domain.
@@ -902,10 +911,10 @@ type DomainCreateOptions struct {
 	RetrySec int `json:"retry_sec,omitempty"`
 
 	// The IP addresses representing the master DNS for this Domain.
-	MasterIPs []string `json:"master_ips,omitempty"`
+	MasterIPs []string `json:"master_ips"`
 
 	// The list of IPs that may perform a zone transfer for this Domain. This is potentially dangerous, and should be set to an empty list unless you intend to use it.
-	AXfrIPs []string `json:"axfr_ips,omitempty"`
+	AXfrIPs []string `json:"axfr_ips"`
 
 	// An array of tags applied to this object. Tags are for organizational purposes only.
 	Tags []string `json:"tags"`
@@ -947,10 +956,10 @@ type DomainUpdateOptions struct {
 	RetrySec int `json:"retry_sec,omitempty"`
 
 	// The IP addresses representing the master DNS for this Domain.
-	MasterIPs []string `json:"master_ips,omitempty"`
+	MasterIPs []string `json:"master_ips"`
 
 	// The list of IPs that may perform a zone transfer for this Domain. This is potentially dangerous, and should be set to an empty list unless you intend to use it.
-	AXfrIPs []string `json:"axfr_ips,omitempty"`
+	AXfrIPs []string `json:"axfr_ips"`
 
 	// An array of tags applied to this object. Tags are for organizational purposes only.
 	Tags []string `json:"tags"`
@@ -1029,7 +1038,6 @@ func (resp *DomainsPagedResponse) appendData(r *DomainsPagedResponse) {
 func (c *Client) ListDomains(ctx context.Context, opts *ListOptions) ([]Domain, error) {
 	response := DomainsPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -1046,7 +1054,6 @@ func (c *Client) GetDomain(ctx context.Context, id int) (*Domain, error) {
 
 	e = fmt.Sprintf("%s/%d", e, id)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Domain{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -1059,7 +1066,6 @@ func (c *Client) CreateDomain(ctx context.Context, domain DomainCreateOptions) (
 	var body string
 
 	e, err := c.Domains.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -1076,7 +1082,6 @@ func (c *Client) CreateDomain(ctx context.Context, domain DomainCreateOptions) (
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -1089,7 +1094,6 @@ func (c *Client) UpdateDomain(ctx context.Context, id int, domain DomainUpdateOp
 	var body string
 
 	e, err := c.Domains.Endpoint()
-
 	if err != nil {
 		return nil, err
 	}
@@ -1107,7 +1111,6 @@ func (c *Client) UpdateDomain(ctx context.Context, id int, domain DomainUpdateOp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -1128,4 +1131,21 @@ func (c *Client) DeleteDomain(ctx context.Context, id int) error {
 
 	return err
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// GetDomainZoneFile gets the zone file for the last rendered zone for the specified domain.
+func (c *Client) GetDomainZoneFile(ctx context.Context, domainID int) (*DomainZoneFile, error) {
+	e, err := c.Domains.Endpoint()
+	if err != nil {
+		return nil, err
+	}
+
+	e = fmt.Sprintf("%s/%d/zone-file", e, domainID)
+
+	resp, err := coupleAPIErrors(c.R(ctx).SetResult(&DomainZoneFile{}).Get(e))
+	if err != nil {
+		return nil, err
+	}
+
+	return resp.Result().(*DomainZoneFile), nil
 }

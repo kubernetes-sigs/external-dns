@@ -38,6 +38,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Call the ts.AsTime and ts.CheckValid methods instead.
 func Timestamp(ts *timestamppb.Timestamp) (time.Time, error) {
@@ -195,6 +196,11 @@ func TimestampProto(t time.Time) (*timestamppb.Timestamp, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// Deprecated: Call the ts.AsTime and ts.CheckValid methods instead.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func Timestamp(ts *timestamppb.Timestamp) (time.Time, error) {
 	// Don't return the zero value on error, because corresponds to a valid
 	// timestamp. Instead return whatever time.Unix gives us.
@@ -208,6 +214,8 @@ func Timestamp(ts *timestamppb.Timestamp) (time.Time, error) {
 }
 
 // TimestampNow returns a google.protobuf.Timestamp for the current time.
+//
+// Deprecated: Call the timestamppb.Now function instead.
 func TimestampNow() *timestamppb.Timestamp {
 	ts, err := TimestampProto(time.Now())
 	if err != nil {
@@ -218,6 +226,8 @@ func TimestampNow() *timestamppb.Timestamp {
 
 // TimestampProto converts the time.Time to a google.protobuf.Timestamp proto.
 // It returns an error if the resulting Timestamp is invalid.
+//
+// Deprecated: Call the timestamppb.New function instead.
 func TimestampProto(t time.Time) (*timestamppb.Timestamp, error) {
 	ts := &timestamppb.Timestamp{
 		Seconds: t.Unix(),
@@ -231,7 +241,14 @@ func TimestampProto(t time.Time) (*timestamppb.Timestamp, error) {
 
 // TimestampString returns the RFC 3339 string for valid Timestamps.
 // For invalid Timestamps, it returns an error message in parentheses.
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// Deprecated: Call the ts.AsTime method instead,
+// followed by a call to the Format method on the time.Time value.
+>>>>>>> 4d7e5ad26 (update vendored files)
 func TimestampString(ts *timestamppb.Timestamp) string {
 	t, err := Timestamp(ts)
 	if err != nil {

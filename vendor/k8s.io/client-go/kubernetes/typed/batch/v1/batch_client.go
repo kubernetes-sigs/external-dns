@@ -20,6 +20,7 @@ package v1
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 	v1 "k8s.io/api/batch/v1"
@@ -107,6 +108,11 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, erro
 	client, err := rest.RESTClientForConfigAndClient(&config, h)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"net/http"
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	v1 "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
@@ -114,6 +120,7 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, erro
 
 type BatchV1Interface interface {
 	RESTClient() rest.Interface
+	CronJobsGetter
 	JobsGetter
 }
 
@@ -122,18 +129,44 @@ type BatchV1Client struct {
 	restClient rest.Interface
 }
 
+func (c *BatchV1Client) CronJobs(namespace string) CronJobInterface {
+	return newCronJobs(c, namespace)
+}
+
 func (c *BatchV1Client) Jobs(namespace string) JobInterface {
 	return newJobs(c, namespace)
 }
 
 // NewForConfig creates a new BatchV1Client for the given config.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*BatchV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 	client, err := rest.RESTClientFor(&config)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	client, err := rest.RESTClientFor(&config)
+=======
+	httpClient, err := rest.HTTPClientFor(&config)
+	if err != nil {
+		return nil, err
+	}
+	return NewForConfigAndClient(&config, httpClient)
+}
+
+// NewForConfigAndClient creates a new BatchV1Client for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*BatchV1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientForConfigAndClient(&config, h)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return nil, err
 	}

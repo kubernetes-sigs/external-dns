@@ -38,6 +38,7 @@ const Name = "round_robin"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var logger = grpclog.Component("roundrobin")
 
 // newBuilder creates a new roundrobin balancer builder.
@@ -117,9 +118,14 @@ func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
 	scs := make([]balancer.SubConn, 0, len(info.ReadySCs))
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+var logger = grpclog.Component("roundrobin")
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // newBuilder creates a new roundrobin balancer builder.
 func newBuilder() balancer.Builder {
-	return base.NewBalancerBuilderV2(Name, &rrPickerBuilder{}, base.Config{HealthCheck: true})
+	return base.NewBalancerBuilder(Name, &rrPickerBuilder{}, base.Config{HealthCheck: true})
 }
 
 func init() {
@@ -128,13 +134,19 @@ func init() {
 
 type rrPickerBuilder struct{}
 
-func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.V2Picker {
-	grpclog.Infof("roundrobinPicker: newPicker called with info: %v", info)
+func (*rrPickerBuilder) Build(info base.PickerBuildInfo) balancer.Picker {
+	logger.Infof("roundrobinPicker: Build called with info: %v", info)
 	if len(info.ReadySCs) == 0 {
-		return base.NewErrPickerV2(balancer.ErrNoSubConnAvailable)
+		return base.NewErrPicker(balancer.ErrNoSubConnAvailable)
 	}
+<<<<<<< HEAD
 	var scs []balancer.SubConn
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	var scs []balancer.SubConn
+=======
+	scs := make([]balancer.SubConn, 0, len(info.ReadySCs))
+>>>>>>> 4d7e5ad26 (update vendored files)
 	for sc := range info.ReadySCs {
 		scs = append(scs, sc)
 	}

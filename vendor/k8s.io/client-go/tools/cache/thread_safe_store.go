@@ -91,6 +91,7 @@ func (c *threadSafeMap) Delete(key string) {
 	defer c.lock.Unlock()
 	if obj, exists := c.items[key]; exists {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		c.updateIndices(obj, nil, key)
 		delete(c.items, key)
 	}
@@ -325,6 +326,11 @@ func (c *threadSafeMap) deleteKeyFromIndex(key, indexValue string, index Index) 
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		c.deleteFromIndices(obj, key)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		c.deleteFromIndices(obj, key)
+=======
+		c.updateIndices(obj, nil, key)
+>>>>>>> 4d7e5ad26 (update vendored files)
 		delete(c.items, key)
 	}
 }
@@ -485,44 +491,66 @@ func (c *threadSafeMap) AddIndexers(newIndexers Indexers) error {
 	return nil
 }
 
-// updateIndices modifies the objects location in the managed indexes, if this is an update, you must provide an oldObj
+// updateIndices modifies the objects location in the managed indexes:
+// - for create you must provide only the newObj
+// - for update you must provide both the oldObj and the newObj
+// - for delete you must provide only the oldObj
 // updateIndices must be called from a function that already has a lock on the cache
 func (c *threadSafeMap) updateIndices(oldObj interface{}, newObj interface{}, key string) {
-	// if we got an old object, we need to remove it before we add it again
-	if oldObj != nil {
-		c.deleteFromIndices(oldObj, key)
-	}
+	var oldIndexValues, indexValues []string
+	var err error
 	for name, indexFunc := range c.indexers {
-		indexValues, err := indexFunc(newObj)
+		if oldObj != nil {
+			oldIndexValues, err = indexFunc(oldObj)
+		} else {
+			oldIndexValues = oldIndexValues[:0]
+		}
 		if err != nil {
 			panic(fmt.Errorf("unable to calculate an index entry for key %q on index %q: %v", key, name, err))
 		}
+
+		if newObj != nil {
+			indexValues, err = indexFunc(newObj)
+		} else {
+			indexValues = indexValues[:0]
+		}
+		if err != nil {
+			panic(fmt.Errorf("unable to calculate an index entry for key %q on index %q: %v", key, name, err))
+		}
+
 		index := c.indices[name]
 		if index == nil {
 			index = Index{}
 			c.indices[name] = index
 		}
 
-		for _, indexValue := range indexValues {
-			set := index[indexValue]
-			if set == nil {
-				set = sets.String{}
-				index[indexValue] = set
+		for _, value := range oldIndexValues {
+			// We optimize for the most common case where index returns a single value.
+			if len(indexValues) == 1 && value == indexValues[0] {
+				continue
 			}
-			set.Insert(key)
+			c.deleteKeyFromIndex(key, value, index)
+		}
+		for _, value := range indexValues {
+			// We optimize for the most common case where index returns a single value.
+			if len(oldIndexValues) == 1 && value == oldIndexValues[0] {
+				continue
+			}
+			c.addKeyToIndex(key, value, index)
 		}
 	}
 }
 
-// deleteFromIndices removes the object from each of the managed indexes
-// it is intended to be called from a function that already has a lock on the cache
-func (c *threadSafeMap) deleteFromIndices(obj interface{}, key string) {
-	for name, indexFunc := range c.indexers {
-		indexValues, err := indexFunc(obj)
-		if err != nil {
-			panic(fmt.Errorf("unable to calculate an index entry for key %q on index %q: %v", key, name, err))
-		}
+func (c *threadSafeMap) addKeyToIndex(key, indexValue string, index Index) {
+	set := index[indexValue]
+	if set == nil {
+		set = sets.String{}
+		index[indexValue] = set
+	}
+	set.Insert(key)
+}
 
+<<<<<<< HEAD
 		index := c.indices[name]
 		if index == nil {
 			continue
@@ -541,6 +569,37 @@ func (c *threadSafeMap) deleteFromIndices(obj interface{}, key string) {
 			}
 		}
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		index := c.indices[name]
+		if index == nil {
+			continue
+		}
+		for _, indexValue := range indexValues {
+			set := index[indexValue]
+			if set != nil {
+				set.Delete(key)
+
+				// If we don't delete the set when zero, indices with high cardinality
+				// short lived resources can cause memory to increase over time from
+				// unused empty sets. See `kubernetes/kubernetes/issues/84959`.
+				if len(set) == 0 {
+					delete(index, indexValue)
+				}
+			}
+		}
+=======
+func (c *threadSafeMap) deleteKeyFromIndex(key, indexValue string, index Index) {
+	set := index[indexValue]
+	if set == nil {
+		return
+	}
+	set.Delete(key)
+	// If we don't delete the set when zero, indices with high cardinality
+	// short lived resources can cause memory to increase over time from
+	// unused empty sets. See `kubernetes/kubernetes/issues/84959`.
+	if len(set) == 0 {
+		delete(index, indexValue)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 }
 

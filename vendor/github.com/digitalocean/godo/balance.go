@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#operation/get_customer_balance
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -36,6 +37,11 @@ import (
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#balance
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#balance
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#operation/get_customer_balance
+>>>>>>> 4d7e5ad26 (update vendored files)
 type BalanceService interface {
 	Get(context.Context) (*Balance, *Response, error)
 }

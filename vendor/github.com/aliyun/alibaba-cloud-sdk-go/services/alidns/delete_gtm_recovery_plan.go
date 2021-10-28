@@ -22,6 +22,7 @@ import (
 
 // DeleteGtmRecoveryPlan invokes the alidns.DeleteGtmRecoveryPlan API synchronously
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (client *Client) DeleteGtmRecoveryPlan(request *DeleteGtmRecoveryPlanRequest) (response *DeleteGtmRecoveryPlanResponse, err error) {
 	response = CreateDeleteGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -93,6 +94,10 @@ func CreateDeleteGtmRecoveryPlanRequest() (request *DeleteGtmRecoveryPlanRequest
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
+||||||| parent of 4d7e5ad26 (update vendored files)
+// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 func (client *Client) DeleteGtmRecoveryPlan(request *DeleteGtmRecoveryPlanRequest) (response *DeleteGtmRecoveryPlanResponse, err error) {
 	response = CreateDeleteGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -100,8 +105,6 @@ func (client *Client) DeleteGtmRecoveryPlan(request *DeleteGtmRecoveryPlanReques
 }
 
 // DeleteGtmRecoveryPlanWithChan invokes the alidns.DeleteGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmRecoveryPlanWithChan(request *DeleteGtmRecoveryPlanRequest) (<-chan *DeleteGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *DeleteGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -124,8 +127,6 @@ func (client *Client) DeleteGtmRecoveryPlanWithChan(request *DeleteGtmRecoveryPl
 }
 
 // DeleteGtmRecoveryPlanWithCallback invokes the alidns.DeleteGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmRecoveryPlanWithCallback(request *DeleteGtmRecoveryPlanRequest, callback func(response *DeleteGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -164,7 +165,12 @@ func CreateDeleteGtmRecoveryPlanRequest() (request *DeleteGtmRecoveryPlanRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteGtmRecoveryPlan", "alidns", "openAPI")
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	request.Method = requests.POST
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return
 }
 

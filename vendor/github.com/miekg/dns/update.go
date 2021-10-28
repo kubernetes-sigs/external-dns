@@ -33,6 +33,7 @@ func (u *Msg) Used(rr []RR) {
 	}
 	for _, r := range rr {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		hdr := r.Header()
 		hdr.Class = u.Question[0].Qclass
 		hdr.Ttl = 0
@@ -40,6 +41,13 @@ func (u *Msg) Used(rr []RR) {
 =======
 		r.Header().Class = u.Question[0].Qclass
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		r.Header().Class = u.Question[0].Qclass
+=======
+		hdr := r.Header()
+		hdr.Class = u.Question[0].Qclass
+		hdr.Ttl = 0
+>>>>>>> 4d7e5ad26 (update vendored files)
 		u.Answer = append(u.Answer, r)
 	}
 }

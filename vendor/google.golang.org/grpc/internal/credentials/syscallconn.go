@@ -1,9 +1,13 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 // +build !appengine
 
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 /*
  *
  * Copyright 2018 gRPC authors.

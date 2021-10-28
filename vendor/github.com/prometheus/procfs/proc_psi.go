@@ -64,6 +64,7 @@ func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -87,6 +88,11 @@ func (fs FS) PSIStatsForResource(resource string) (PSIStats, error) {
 =======
 		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %s", resource)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %s", resource)
+=======
+		return PSIStats{}, fmt.Errorf("psi_stats: unavailable for %q: %w", resource, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return parsePSIStats(resource, bytes.NewReader(data))

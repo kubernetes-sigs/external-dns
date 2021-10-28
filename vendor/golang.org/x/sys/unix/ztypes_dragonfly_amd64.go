@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && dragonfly
 // +build amd64,dragonfly
 
@@ -1327,6 +1328,10 @@ const (
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build amd64 && dragonfly
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build amd64,dragonfly
 
 package unix
@@ -1560,6 +1565,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x36
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -1755,7 +1761,14 @@ type Winsize struct {
 const (
 	AT_FDCWD            = 0xfffafdcd
 	AT_SYMLINK_NOFOLLOW = 0x1
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	AT_REMOVEDIR        = 0x2
+	AT_EACCESS          = 0x4
+	AT_SYMLINK_FOLLOW   = 0x8
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 type PollFd struct {

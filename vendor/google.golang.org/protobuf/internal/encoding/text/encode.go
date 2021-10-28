@@ -37,6 +37,7 @@ type Encoder struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	delims      [2]byte
 	outputASCII bool
 }
@@ -761,6 +762,10 @@ func AppendString(b []byte, s string) []byte {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	newline     string // set to "\n" if len(indent) > 0
+||||||| parent of 4d7e5ad26 (update vendored files)
+	newline     string // set to "\n" if len(indent) > 0
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	delims      [2]byte
 	outputASCII bool
 }
@@ -789,7 +794,6 @@ func NewEncoder(indent string, delims [2]byte, outputASCII bool) (*Encoder, erro
 			return nil, errors.New("indent may only be composed of space and tab characters")
 		}
 		e.indent = indent
-		e.newline = "\n"
 	}
 	switch delims {
 	case [2]byte{0, 0}:
@@ -854,7 +858,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 			// are used to represent both the proto string and bytes type.
 			r = rune(in[0])
 			fallthrough
-		case r < ' ' || r == '"' || r == '\\':
+		case r < ' ' || r == '"' || r == '\\' || r == 0x7f:
 			out = append(out, '\\')
 			switch r {
 			case '"', '\\':
@@ -871,7 +875,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 				out = strconv.AppendUint(out, uint64(r), 16)
 			}
 			in = in[n:]
-		case outputASCII && r >= utf8.RuneSelf:
+		case r >= utf8.RuneSelf && (outputASCII || r <= 0x009f):
 			out = append(out, '\\')
 			if r <= math.MaxUint16 {
 				out = append(out, 'u')
@@ -896,7 +900,7 @@ func appendString(out []byte, in string, outputASCII bool) []byte {
 // escaping. If no characters need escaping, this returns the input length.
 func indexNeedEscapeInString(s string) int {
 	for i := 0; i < len(s); i++ {
-		if c := s[i]; c < ' ' || c == '"' || c == '\'' || c == '\\' || c >= utf8.RuneSelf {
+		if c := s[i]; c < ' ' || c == '"' || c == '\'' || c == '\\' || c >= 0x7f {
 			return i
 		}
 	}
@@ -993,4 +997,9 @@ func (e *Encoder) Snapshot() encoderState {
 func (e *Encoder) Reset(es encoderState) {
 	e.encoderState = es
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// AppendString appends the escaped form of the input string to b.
+func AppendString(b []byte, s string) []byte {
+	return appendString(b, s, false)
 }

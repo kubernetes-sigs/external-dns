@@ -19,6 +19,7 @@ package fake
 import (
 	"fmt"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net/http"
 
 <<<<<<< HEAD
@@ -83,9 +84,14 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 		}}
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"net/http"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
-	"github.com/googleapis/gnostic/OpenAPIv2"
+	openapi_v2 "github.com/googleapis/gnostic/openapiv2"
 
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/version"
@@ -114,8 +120,20 @@ func (c *FakeDiscovery) ServerResourcesForGroupVersion(groupVersion string) (*me
 			return resourceList, nil
 		}
 	}
+<<<<<<< HEAD
 	return nil, fmt.Errorf("GroupVersion %q not found", groupVersion)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	return nil, fmt.Errorf("GroupVersion %q not found", groupVersion)
+=======
+	return nil, &errors.StatusError{
+		ErrStatus: metav1.Status{
+			Status:  metav1.StatusFailure,
+			Code:    http.StatusNotFound,
+			Reason:  metav1.StatusReasonNotFound,
+			Message: fmt.Sprintf("the server could not find the requested resource, GroupVersion %q not found", groupVersion),
+		}}
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // ServerResources returns the supported resources for all groups and versions.

@@ -8,6 +8,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"log"
@@ -454,6 +455,10 @@ func (client *Client) ListRunstatusPages(ctx context.Context) ([]RunstatusPage, 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"errors"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"fmt"
 	"log"
 	"time"
@@ -550,7 +555,7 @@ func (client *Client) GetRunstatusPage(ctx context.Context, page RunstatusPage) 
 		}
 	}
 
-	return nil, fmt.Errorf("%#v not found", page)
+	return nil, errors.New("page not found")
 }
 
 func (client *Client) getRunstatusPage(ctx context.Context, pageURL string) (*RunstatusPage, error) {

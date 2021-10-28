@@ -42,6 +42,7 @@ func IsStruct(t reflect.Type) bool {
 	}
 }
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 
@@ -79,3 +80,40 @@ func IsConvertible(v reflect.Value, target reflect.Type) bool {
 	return false
 }
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+// IsTypeOrConvertible returns (true, false) if "v" type == "target",
+// (true, true) if "v" if convertible to "target" type, (false, false)
+// otherwise.
+//
+// It handles go 1.17 slice to array pointer convertibility.
+func IsTypeOrConvertible(v reflect.Value, target reflect.Type) (bool, bool) {
+	if v.Type() == target {
+		return true, false
+	}
+	if IsConvertible(v, target) {
+		return true, true
+	}
+	return false, false
+}
+
+// IsConvertible returns true if "v" if convertible to "target" type,
+// false otherwise.
+//
+// It handles go 1.17 slice to array pointer convertibility.
+func IsConvertible(v reflect.Value, target reflect.Type) bool {
+	if v.Type().ConvertibleTo(target) {
+		// Since go 1.17, a slice can be convertible to a pointer of an
+		// array, but Convert() may still panic if the slice length is lesser
+		// than array pointed one
+		if v.Kind() != reflect.Slice ||
+			target.Kind() != reflect.Ptr ||
+			target.Elem().Kind() != reflect.Array ||
+			v.Len() >= target.Elem().Len() {
+			return true
+		}
+	}
+	return false
+}
+>>>>>>> 4d7e5ad26 (update vendored files)

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build go1.14 && !go1.16
 // +build go1.14,!go1.16
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -31,6 +32,12 @@
 =======
 // +build go1.14
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build go1.14
+=======
+//go:build go1.14 && !go1.16
+// +build go1.14,!go1.16
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package bidi
 

@@ -5,6 +5,7 @@ package socket
 
 type iovec struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Base	*byte
 	Len	uint32
 }
@@ -64,4 +65,35 @@ const (
 	sizeofIovec  = 0x8
 	sizeofMsghdr = 0x1c
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	Base *byte
+	Len  uint32
+}
+
+type msghdr struct {
+	Name       *byte
+	Namelen    uint32
+	Iov        *iovec
+	Iovlen     uint32
+	Control    *byte
+	Controllen uint32
+	Flags      int32
+}
+
+type mmsghdr struct {
+	Hdr msghdr
+	Len uint32
+}
+
+type cmsghdr struct {
+	Len   uint32
+	Level int32
+	Type  int32
+}
+
+const (
+	sizeofIovec  = 0x8
+	sizeofMsghdr = 0x1c
+>>>>>>> 4d7e5ad26 (update vendored files)
 )

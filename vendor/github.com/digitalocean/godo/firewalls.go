@@ -15,6 +15,7 @@ const firewallsBasePath = "/v2/firewalls"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Firewalls
 type FirewallsService interface {
 	Get(context.Context, string) (*Firewall, *Response, error)
@@ -330,6 +331,11 @@ type Destinations struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#firewalls
+||||||| parent of 4d7e5ad26 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#firewalls
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Firewalls
+>>>>>>> 4d7e5ad26 (update vendored files)
 type FirewallsService interface {
 	Get(context.Context, string) (*Firewall, *Response, error)
 	Create(context.Context, *FirewallRequest) (*Firewall, *Response, error)
@@ -368,6 +374,7 @@ func (fw Firewall) String() string {
 	return Stringify(fw)
 }
 
+// URN returns the firewall name in a valid DO API URN form.
 func (fw Firewall) URN() string {
 	return ToURN("Firewall", fw.ID)
 }
@@ -407,6 +414,7 @@ type Sources struct {
 	Tags             []string `json:"tags,omitempty"`
 	DropletIDs       []int    `json:"droplet_ids,omitempty"`
 	LoadBalancerUIDs []string `json:"load_balancer_uids,omitempty"`
+	KubernetesIDs    []string `json:"kubernetes_ids,omitempty"`
 }
 
 // PendingChange represents a DigitalOcean Firewall status details.
@@ -422,7 +430,12 @@ type Destinations struct {
 	Tags             []string `json:"tags,omitempty"`
 	DropletIDs       []int    `json:"droplet_ids,omitempty"`
 	LoadBalancerUIDs []string `json:"load_balancer_uids,omitempty"`
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	KubernetesIDs    []string `json:"kubernetes_ids,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 var _ FirewallsService = &FirewallsServiceOp{}

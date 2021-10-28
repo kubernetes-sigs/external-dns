@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -41,6 +42,11 @@ syntax = 'proto2';
 =======
 syntax = "proto2";
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.apimachinery.pkg.api.resource;
 
@@ -118,6 +124,7 @@ message Quantity {
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 // +k8s:deepcopy-gen=true
 message QuantityValue {
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
@@ -187,6 +194,9 @@ option go_package = "resource";
 // +k8s:openapi-gen=true
 message Quantity {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
   optional string string = 1;
 }
 

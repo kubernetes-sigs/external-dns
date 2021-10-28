@@ -27,12 +27,16 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +k8s:prerelease-lifecycle-gen:introduced=1.12
 // +k8s:prerelease-lifecycle-gen:deprecated=1.19
 // +k8s:prerelease-lifecycle-gen:replacement=coordination.k8s.io,v1,Lease
@@ -77,6 +81,7 @@ type LeaseSpec struct {
 // +k8s:prerelease-lifecycle-gen:introduced=1.12
 // +k8s:prerelease-lifecycle-gen:deprecated=1.19
 // +k8s:prerelease-lifecycle-gen:replacement=coordination.k8s.io,v1,LeaseList
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -208,6 +213,9 @@ type LeaseSpec struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 // LeaseList is a list of Lease objects.
 type LeaseList struct {

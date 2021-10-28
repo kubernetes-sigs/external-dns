@@ -83,6 +83,7 @@ func buildStruct(value reflect.Value, buf *bytes.Buffer, tag reflect.StructTag) 
 		tag = field.Tag
 		value = elemOf(value.FieldByName(payload))
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if !value.IsValid() && tag.Get("type") != "structure" {
 			return nil
 		}
@@ -152,11 +153,22 @@ func buildStruct(value reflect.Value, buf *bytes.Buffer, tag reflect.StructTag) 
 =======
 
 		if !value.IsValid() {
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+		if !value.IsValid() {
+=======
+		if !value.IsValid() && tag.Get("type") != "structure" {
+>>>>>>> 4d7e5ad26 (update vendored files)
 			return nil
 		}
 	}
 
 	buf.WriteByte('{')
+	defer buf.WriteString("}")
+
+	if !value.IsValid() {
+		return nil
+	}
 
 	t := value.Type()
 	first := true
@@ -212,9 +224,15 @@ func buildStruct(value reflect.Value, buf *bytes.Buffer, tag reflect.StructTag) 
 
 	}
 
+<<<<<<< HEAD
 	buf.WriteString("}")
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+	buf.WriteString("}")
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return nil
 }
 

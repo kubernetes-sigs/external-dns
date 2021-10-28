@@ -83,6 +83,7 @@ endif
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 PROMU_VERSION ?= 0.7.0
 PROMU_URL     := https://github.com/prometheus/promu/releases/download/v$(PROMU_VERSION)/promu-$(PROMU_VERSION).$(GO_BUILD_PLATFORM).tar.gz
 
@@ -629,6 +630,11 @@ $(TAG_DOCKER_ARCHS): common-docker-tag-latest-%:
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 PROMU_VERSION ?= 0.5.0
+||||||| parent of 4d7e5ad26 (update vendored files)
+PROMU_VERSION ?= 0.5.0
+=======
+PROMU_VERSION ?= 0.7.0
+>>>>>>> 4d7e5ad26 (update vendored files)
 PROMU_URL     := https://github.com/prometheus/promu/releases/download/v$(PROMU_VERSION)/promu-$(PROMU_VERSION).$(GO_BUILD_PLATFORM).tar.gz
 
 GOLANGCI_LINT :=
@@ -795,11 +801,17 @@ common-docker-publish: $(PUBLISH_DOCKER_ARCHS)
 $(PUBLISH_DOCKER_ARCHS): common-docker-publish-%:
 	docker push "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:$(DOCKER_IMAGE_TAG)"
 
+DOCKER_MAJOR_VERSION_TAG = $(firstword $(subst ., ,$(shell cat VERSION)))
 .PHONY: common-docker-tag-latest $(TAG_DOCKER_ARCHS)
 common-docker-tag-latest: $(TAG_DOCKER_ARCHS)
 $(TAG_DOCKER_ARCHS): common-docker-tag-latest-%:
 	docker tag "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:$(DOCKER_IMAGE_TAG)" "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:latest"
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	docker tag "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:$(DOCKER_IMAGE_TAG)" "$(DOCKER_REPO)/$(DOCKER_IMAGE_NAME)-linux-$*:v$(DOCKER_MAJOR_VERSION_TAG)"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 .PHONY: common-docker-manifest
 common-docker-manifest:

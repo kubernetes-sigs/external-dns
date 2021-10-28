@@ -5,6 +5,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"crypto/ed25519"
 	"crypto/rsa"
 	"io"
@@ -13,14 +14,24 @@ import (
 	"strings"
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"crypto/ed25519"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"crypto/rsa"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
+<<<<<<< HEAD
 
 	"golang.org/x/crypto/ed25519"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+
+	"golang.org/x/crypto/ed25519"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.

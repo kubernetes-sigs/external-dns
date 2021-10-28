@@ -23,6 +23,7 @@ type XMLNode struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // textEncoder is a string type alias that implemnts the TextMarshaler interface.
 // This alias type is used to ensure that the line feed (\n) (U+000A) is escaped.
 type textEncoder string
@@ -502,6 +503,17 @@ func StructToXML(e *xml.Encoder, node *XMLNode, sorted bool) error {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// textEncoder is a string type alias that implemnts the TextMarshaler interface.
+// This alias type is used to ensure that the line feed (\n) (U+000A) is escaped.
+type textEncoder string
+
+func (t textEncoder) MarshalText() ([]byte, error) {
+	return []byte(t), nil
+}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 // NewXMLElement returns a pointer to a new XMLNode initialized to default values.
 func NewXMLElement(name xml.Name) *XMLNode {
 	return &XMLNode{
@@ -614,11 +626,16 @@ func StructToXML(e *xml.Encoder, node *XMLNode, sorted bool) error {
 		attrs = sortedAttrs
 	}
 
-	e.EncodeToken(xml.StartElement{Name: node.Name, Attr: attrs})
+	startElement := xml.StartElement{Name: node.Name, Attr: attrs}
 
 	if node.Text != "" {
-		e.EncodeToken(xml.CharData([]byte(node.Text)))
-	} else if sorted {
+		e.EncodeElement(textEncoder(node.Text), startElement)
+		return e.Flush()
+	}
+
+	e.EncodeToken(startElement)
+
+	if sorted {
 		sortedNames := []string{}
 		for k := range node.Children {
 			sortedNames = append(sortedNames, k)
@@ -638,7 +655,14 @@ func StructToXML(e *xml.Encoder, node *XMLNode, sorted bool) error {
 		}
 	}
 
+<<<<<<< HEAD
 	e.EncodeToken(xml.EndElement{Name: node.Name})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	e.EncodeToken(xml.EndElement{Name: node.Name})
+=======
+	e.EncodeToken(startElement.End())
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	return e.Flush()
 }

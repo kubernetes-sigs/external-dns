@@ -137,6 +137,7 @@ type GaugeVec struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	*MetricVec
 }
 
@@ -507,6 +508,11 @@ func (v *GaugeVec) CurryWith(labels Labels) (*GaugeVec, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	*metricVec
+||||||| parent of 4d7e5ad26 (update vendored files)
+	*metricVec
+=======
+	*MetricVec
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // NewGaugeVec creates a new GaugeVec based on the provided GaugeOpts and
@@ -519,11 +525,11 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 		opts.ConstLabels,
 	)
 	return &GaugeVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			if len(lvs) != len(desc.variableLabels) {
 				panic(makeInconsistentCardinalityError(desc.fqName, desc.variableLabels, lvs))
 			}
-			result := &gauge{desc: desc, labelPairs: makeLabelPairs(desc, lvs)}
+			result := &gauge{desc: desc, labelPairs: MakeLabelPairs(desc, lvs)}
 			result.init(result) // Init self-collection.
 			return result
 		}),
@@ -531,7 +537,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 }
 
 // GetMetricWithLabelValues returns the Gauge for the given slice of label
-// values (same order as the VariableLabels in Desc). If that combination of
+// values (same order as the variable labels in Desc). If that combination of
 // label values is accessed for the first time, a new Gauge is created.
 //
 // It is possible to call this method without using the returned Gauge to only
@@ -546,7 +552,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 // example.
 //
 // An error is returned if the number of label values is not the same as the
-// number of VariableLabels in Desc (minus any curried labels).
+// number of variable labels in Desc (minus any curried labels).
 //
 // Note that for more than one label value, this method is prone to mistakes
 // caused by an incorrect order of arguments. Consider GetMetricWith(Labels) as
@@ -554,7 +560,7 @@ func NewGaugeVec(opts GaugeOpts, labelNames []string) *GaugeVec {
 // latter has a much more readable (albeit more verbose) syntax, but it comes
 // with a performance overhead (for creating and processing the Labels map).
 func (v *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.MetricVec.GetMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
@@ -562,19 +568,19 @@ func (v *GaugeVec) GetMetricWithLabelValues(lvs ...string) (Gauge, error) {
 }
 
 // GetMetricWith returns the Gauge for the given Labels map (the label names
-// must match those of the VariableLabels in Desc). If that label map is
+// must match those of the variable labels in Desc). If that label map is
 // accessed for the first time, a new Gauge is created. Implications of
 // creating a Gauge without using it and keeping the Gauge for later use are
 // the same as for GetMetricWithLabelValues.
 //
 // An error is returned if the number and names of the Labels are inconsistent
-// with those of the VariableLabels in Desc (minus any curried labels).
+// with those of the variable labels in Desc (minus any curried labels).
 //
 // This method is used for the same purpose as
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *GaugeVec) GetMetricWith(labels Labels) (Gauge, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.MetricVec.GetMetricWith(labels)
 	if metric != nil {
 		return metric.(Gauge), err
 	}
@@ -618,8 +624,14 @@ func (v *GaugeVec) With(labels Labels) Gauge {
 // registered with a given registry (usually the uncurried version). The Reset
 // method deletes all metrics, even if called on a curried vector.
 func (v *GaugeVec) CurryWith(labels Labels) (*GaugeVec, error) {
+<<<<<<< HEAD
 	vec, err := v.curryWith(labels)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	vec, err := v.curryWith(labels)
+=======
+	vec, err := v.MetricVec.CurryWith(labels)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if vec != nil {
 		return &GaugeVec{vec}, err
 	}

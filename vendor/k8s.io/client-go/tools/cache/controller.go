@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/utils/clock"
@@ -1019,8 +1020,13 @@ func newInformer(
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/apimachinery/pkg/util/clock"
+||||||| parent of 4d7e5ad26 (update vendored files)
+	"k8s.io/apimachinery/pkg/util/clock"
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/utils/clock"
 )
 
 // This file implements a low-level controller that is used in
@@ -1066,6 +1072,12 @@ type Config struct {
 	//       question to this interface as a parameter.  This is probably moot
 	//       now that this functionality appears at a higher level.
 	RetryOnError bool
+
+	// Called whenever the ListAndWatch drops the connection with an error.
+	WatchErrorHandler WatchErrorHandler
+
+	// WatchListPageSize is the requested chunk size of initial and relist watch lists.
+	WatchListPageSize int64
 }
 
 // ShouldResyncFunc is a type of function that indicates if a reflector should perform a
@@ -1128,18 +1140,22 @@ func (c *controller) Run(stopCh <-chan struct{}) {
 		c.config.FullResyncPeriod,
 	)
 	r.ShouldResync = c.config.ShouldResync
+	r.WatchListPageSize = c.config.WatchListPageSize
 	r.clock = c.clock
+	if c.config.WatchErrorHandler != nil {
+		r.watchErrorHandler = c.config.WatchErrorHandler
+	}
 
 	c.reflectorMutex.Lock()
 	c.reflector = r
 	c.reflectorMutex.Unlock()
 
 	var wg wait.Group
-	defer wg.Wait()
 
 	wg.StartWithChannel(stopCh, r.Run)
 
 	wait.Until(c.processLoop, time.Second, stopCh)
+	wg.Wait()
 }
 
 // Returns true once this controller has completed an initial resource listing
@@ -1180,9 +1196,11 @@ func (c *controller) processLoop() {
 	}
 }
 
-// ResourceEventHandler can handle notifications for events that happen to a
-// resource. The events are informational only, so you can't return an
-// error.
+// ResourceEventHandler can handle notifications for events that
+// happen to a resource. The events are informational only, so you
+// can't return an error.  The handlers MUST NOT modify the objects
+// received; this concerns not only the top level of structure but all
+// the data structures reachable from it.
 //  * OnAdd is called when an object is added.
 //  * OnUpdate is called when an object is modified. Note that oldObj is the
 //      last known state of the object-- it is possible that several changes
@@ -1202,7 +1220,8 @@ type ResourceEventHandler interface {
 
 // ResourceEventHandlerFuncs is an adaptor to let you easily specify as many or
 // as few of the notification functions as you want while still implementing
-// ResourceEventHandler.
+// ResourceEventHandler.  This adapter does not remove the prohibition against
+// modifying the objects.
 type ResourceEventHandlerFuncs struct {
 	AddFunc    func(obj interface{})
 	UpdateFunc func(oldObj, newObj interface{})
@@ -1234,6 +1253,7 @@ func (r ResourceEventHandlerFuncs) OnDelete(obj interface{}) {
 // in, ensuring the appropriate nested handler method is invoked. An object
 // that starts passing the filter after an update is considered an add, and an
 // object that stops passing the filter after an update is considered a delete.
+// Like the handlers, the filter MUST NOT modify the objects it is given.
 type FilteringResourceEventHandler struct {
 	FilterFunc func(obj interface{}) bool
 	Handler    ResourceEventHandler
@@ -1305,10 +1325,10 @@ func NewInformer(
 	// This will hold the client state, as we know it.
 	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
 
-	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState)
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, nil)
 }
 
-// NewIndexerInformer returns a Indexer and a controller for populating the index
+// NewIndexerInformer returns an Indexer and a Controller for populating the index
 // while also providing event notifications. You should only used the returned
 // Index for Get/List operations; Add/Modify/Deletes will cause the event
 // notifications to be faulty.
@@ -1334,7 +1354,59 @@ func NewIndexerInformer(
 	// This will hold the client state, as we know it.
 	clientState := NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers)
 
-	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState)
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, nil)
+}
+
+// TransformFunc allows for transforming an object before it will be processed
+// and put into the controller cache and before the corresponding handlers will
+// be called on it.
+// TransformFunc (similarly to ResourceEventHandler functions) should be able
+// to correctly handle the tombstone of type cache.DeletedFinalStateUnknown
+//
+// The most common usage pattern is to clean-up some parts of the object to
+// reduce component memory usage if a given component doesn't care about them.
+// given controller doesn't care for them
+type TransformFunc func(interface{}) (interface{}, error)
+
+// NewTransformingInformer returns a Store and a controller for populating
+// the store while also providing event notifications. You should only used
+// the returned Store for Get/List operations; Add/Modify/Deletes will cause
+// the event notifications to be faulty.
+// The given transform function will be called on all objects before they will
+// put put into the Store and corresponding Add/Modify/Delete handlers will
+// be invokved for them.
+func NewTransformingInformer(
+	lw ListerWatcher,
+	objType runtime.Object,
+	resyncPeriod time.Duration,
+	h ResourceEventHandler,
+	transformer TransformFunc,
+) (Store, Controller) {
+	// This will hold the client state, as we know it.
+	clientState := NewStore(DeletionHandlingMetaNamespaceKeyFunc)
+
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, transformer)
+}
+
+// NewTransformingIndexerInformer returns an Indexer and a controller for
+// populating the index while also providing event notifications. You should
+// only used the returned Index for Get/List operations; Add/Modify/Deletes
+// will cause the event notifications to be faulty.
+// The given transform function will be called on all objects before they will
+// be put into the Index and corresponding Add/Modify/Delete handlers will
+// be invoked for them.
+func NewTransformingIndexerInformer(
+	lw ListerWatcher,
+	objType runtime.Object,
+	resyncPeriod time.Duration,
+	h ResourceEventHandler,
+	indexers Indexers,
+	transformer TransformFunc,
+) (Indexer, Controller) {
+	// This will hold the client state, as we know it.
+	clientState := NewIndexer(DeletionHandlingMetaNamespaceKeyFunc, indexers)
+
+	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, transformer)
 }
 
 // newInformer returns a controller for populating the store while also
@@ -1357,6 +1429,7 @@ func newInformer(
 	resyncPeriod time.Duration,
 	h ResourceEventHandler,
 	clientState Store,
+	transformer TransformFunc,
 ) Controller {
 	// This will hold incoming changes. Note how we pass clientState in as a
 	// KeyLister, that way resync operations will result in the correct set
@@ -1376,25 +1449,40 @@ func newInformer(
 		Process: func(obj interface{}) error {
 			// from oldest to newest
 			for _, d := range obj.(Deltas) {
-				switch d.Type {
-				case Sync, Replaced, Added, Updated:
-					if old, exists, err := clientState.Get(d.Object); err == nil && exists {
-						if err := clientState.Update(d.Object); err != nil {
-							return err
-						}
-						h.OnUpdate(old, d.Object)
-					} else {
-						if err := clientState.Add(d.Object); err != nil {
-							return err
-						}
-						h.OnAdd(d.Object)
-					}
-				case Deleted:
-					if err := clientState.Delete(d.Object); err != nil {
+				obj := d.Object
+				if transformer != nil {
+					var err error
+					obj, err = transformer(obj)
+					if err != nil {
 						return err
 					}
+<<<<<<< HEAD
 					h.OnDelete(d.Object)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+					h.OnDelete(d.Object)
+=======
+				}
+
+				switch d.Type {
+				case Sync, Replaced, Added, Updated:
+					if old, exists, err := clientState.Get(obj); err == nil && exists {
+						if err := clientState.Update(obj); err != nil {
+							return err
+						}
+						h.OnUpdate(old, obj)
+					} else {
+						if err := clientState.Add(obj); err != nil {
+							return err
+						}
+						h.OnAdd(obj)
+					}
+				case Deleted:
+					if err := clientState.Delete(obj); err != nil {
+						return err
+					}
+					h.OnDelete(obj)
+>>>>>>> 4d7e5ad26 (update vendored files)
 				}
 			}
 			return nil

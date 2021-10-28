@@ -29,6 +29,7 @@ const (
 var now = time.Now
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // TokenFetcher should return WebIdentity token bytes or an error
 type TokenFetcher interface {
 	FetchToken(credentials.Context) ([]byte, error)
@@ -349,6 +350,11 @@ func (p *WebIdentityRoleProvider) RetrieveWithContext(ctx credentials.Context) (
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // TokenFetcher shuold return WebIdentity token bytes or an error
+||||||| parent of 4d7e5ad26 (update vendored files)
+// TokenFetcher shuold return WebIdentity token bytes or an error
+=======
+// TokenFetcher should return WebIdentity token bytes or an error
+>>>>>>> 4d7e5ad26 (update vendored files)
 type TokenFetcher interface {
 	FetchToken(credentials.Context) ([]byte, error)
 }
@@ -370,10 +376,24 @@ func (f FetchTokenPath) FetchToken(ctx credentials.Context) ([]byte, error) {
 // an OIDC token.
 type WebIdentityRoleProvider struct {
 	credentials.Expiry
+
+	// The policy ARNs to use with the web identity assumed role.
 	PolicyArns []*sts.PolicyDescriptorType
 
-	client       stsiface.STSAPI
+	// Duration the STS credentials will be valid for. Truncated to seconds.
+	// If unset, the assumed role will use AssumeRoleWithWebIdentity's default
+	// expiry duration. See
+	// https://docs.aws.amazon.com/sdk-for-go/api/service/sts/#STS.AssumeRoleWithWebIdentity
+	// for more information.
+	Duration time.Duration
+
+	// The amount of time the credentials will be refreshed before they expire.
+	// This is useful refresh credentials before they expire to reduce risk of
+	// using credentials as they expire. If unset, will default to no expiry
+	// window.
 	ExpiryWindow time.Duration
+
+	client stsiface.STSAPI
 
 	tokenFetcher    TokenFetcher
 	roleARN         string
@@ -382,6 +402,9 @@ type WebIdentityRoleProvider struct {
 
 // NewWebIdentityCredentials will return a new set of credentials with a given
 // configuration, role arn, and token file path.
+//
+// Deprecated: Use NewWebIdentityRoleProviderWithOptions for flexible
+// functional options, and wrap with credentials.NewCredentials helper.
 func NewWebIdentityCredentials(c client.ConfigProvider, roleARN, roleSessionName, path string) *credentials.Credentials {
 	svc := sts.New(c)
 	p := NewWebIdentityRoleProvider(svc, roleARN, roleSessionName, path)
@@ -390,19 +413,42 @@ func NewWebIdentityCredentials(c client.ConfigProvider, roleARN, roleSessionName
 
 // NewWebIdentityRoleProvider will return a new WebIdentityRoleProvider with the
 // provided stsiface.STSAPI
+//
+// Deprecated: Use NewWebIdentityRoleProviderWithOptions for flexible
+// functional options.
 func NewWebIdentityRoleProvider(svc stsiface.STSAPI, roleARN, roleSessionName, path string) *WebIdentityRoleProvider {
-	return NewWebIdentityRoleProviderWithToken(svc, roleARN, roleSessionName, FetchTokenPath(path))
+	return NewWebIdentityRoleProviderWithOptions(svc, roleARN, roleSessionName, FetchTokenPath(path))
 }
 
 // NewWebIdentityRoleProviderWithToken will return a new WebIdentityRoleProvider with the
 // provided stsiface.STSAPI and a TokenFetcher
+//
+// Deprecated: Use NewWebIdentityRoleProviderWithOptions for flexible
+// functional options.
 func NewWebIdentityRoleProviderWithToken(svc stsiface.STSAPI, roleARN, roleSessionName string, tokenFetcher TokenFetcher) *WebIdentityRoleProvider {
-	return &WebIdentityRoleProvider{
+	return NewWebIdentityRoleProviderWithOptions(svc, roleARN, roleSessionName, tokenFetcher)
+}
+
+// NewWebIdentityRoleProviderWithOptions will return an initialize
+// WebIdentityRoleProvider with the provided stsiface.STSAPI, role ARN, and a
+// TokenFetcher. Additional options can be provided as functional options.
+//
+// TokenFetcher is the implementation that will retrieve the JWT token from to
+// assume the role with. Use the provided FetchTokenPath implementation to
+// retrieve the JWT token using a file system path.
+func NewWebIdentityRoleProviderWithOptions(svc stsiface.STSAPI, roleARN, roleSessionName string, tokenFetcher TokenFetcher, optFns ...func(*WebIdentityRoleProvider)) *WebIdentityRoleProvider {
+	p := WebIdentityRoleProvider{
 		client:          svc,
 		tokenFetcher:    tokenFetcher,
 		roleARN:         roleARN,
 		roleSessionName: roleSessionName,
 	}
+
+	for _, fn := range optFns {
+		fn(&p)
+	}
+
+	return &p
 }
 
 // Retrieve will attempt to assume a role from a token which is located at
@@ -412,9 +458,9 @@ func (p *WebIdentityRoleProvider) Retrieve() (credentials.Value, error) {
 	return p.RetrieveWithContext(aws.BackgroundContext())
 }
 
-// RetrieveWithContext will attempt to assume a role from a token which is located at
-// 'WebIdentityTokenFilePath' specified destination and if that is empty an
-// error will be returned.
+// RetrieveWithContext will attempt to assume a role from a token which is
+// located at 'WebIdentityTokenFilePath' specified destination and if that is
+// empty an error will be returned.
 func (p *WebIdentityRoleProvider) RetrieveWithContext(ctx credentials.Context) (credentials.Value, error) {
 	b, err := p.tokenFetcher.FetchToken(ctx)
 	if err != nil {
@@ -427,12 +473,23 @@ func (p *WebIdentityRoleProvider) RetrieveWithContext(ctx credentials.Context) (
 		// uses unix time in nanoseconds to uniquely identify sessions.
 		sessionName = strconv.FormatInt(now().UnixNano(), 10)
 	}
+
+	var duration *int64
+	if p.Duration != 0 {
+		duration = aws.Int64(int64(p.Duration / time.Second))
+	}
+
 	req, resp := p.client.AssumeRoleWithWebIdentityRequest(&sts.AssumeRoleWithWebIdentityInput{
 		PolicyArns:       p.PolicyArns,
 		RoleArn:          &p.roleARN,
 		RoleSessionName:  &sessionName,
 		WebIdentityToken: aws.String(string(b)),
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		DurationSeconds:  duration,
+>>>>>>> 4d7e5ad26 (update vendored files)
 	})
 
 	req.SetContext(ctx)

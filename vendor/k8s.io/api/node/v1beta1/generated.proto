@@ -22,6 +22,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.node.v1beta1;
@@ -289,6 +290,11 @@ message Scheduling {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of 4d7e5ad26 (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package k8s.io.api.node.v1beta1;
 
@@ -314,7 +320,7 @@ message Overhead {
 // user or cluster provisioner, and referenced in the PodSpec. The Kubelet is
 // responsible for resolving the RuntimeClassName reference before running the
 // pod.  For more details, see
-// https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md
+// https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class
 message RuntimeClass {
   // More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
   // +optional
@@ -328,14 +334,14 @@ message RuntimeClass {
   // For example, a handler called "runc" might specify that the runc OCI
   // runtime (using native Linux containers) will be used to run the containers
   // in a pod.
-  // The Handler must conform to the DNS Label (RFC 1123) requirements, and is
-  // immutable.
+  // The Handler must be lowercase, conform to the DNS Label (RFC 1123) requirements,
+  // and is immutable.
   optional string handler = 2;
 
   // Overhead represents the resource overhead associated with running a pod for a
   // given RuntimeClass. For more details, see
-  // https://git.k8s.io/enhancements/keps/sig-node/20190226-pod-overhead.md
-  // This field is alpha-level as of Kubernetes v1.15, and is only honored by servers that enable the PodOverhead feature.
+  // https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README.md
+  // This field is beta-level as of Kubernetes v1.18, and is only honored by servers that enable the PodOverhead feature.
   // +optional
   optional Overhead overhead = 3;
 
@@ -367,7 +373,12 @@ message Scheduling {
   // with a pod's existing nodeSelector. Any conflicts will cause the pod to
   // be rejected in admission.
   // +optional
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+  // +mapType=atomic
+>>>>>>> 4d7e5ad26 (update vendored files)
   map<string, string> nodeSelector = 1;
 
   // tolerations are appended (excluding duplicates) to pods running with this

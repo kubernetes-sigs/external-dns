@@ -28,6 +28,7 @@ type JSONFormatter struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// The format to use is the same than for time.Format or time.Parse from the standard
 	// library.
 	// The standard Library already provides a set of predefined format.
@@ -351,6 +352,12 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	// The format to use is the same than for time.Format or time.Parse from the standard
+	// library.
+	// The standard Library already provides a set of predefined format.
+>>>>>>> 4d7e5ad26 (update vendored files)
 	TimestampFormat string
 
 	// DisableTimestamp allows disabling automatic timestamps in output
@@ -446,8 +453,14 @@ func (f *JSONFormatter) Format(entry *Entry) ([]byte, error) {
 		encoder.SetIndent("", "  ")
 	}
 	if err := encoder.Encode(data); err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("failed to marshal fields to JSON, %v", err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return nil, fmt.Errorf("failed to marshal fields to JSON, %v", err)
+=======
+		return nil, fmt.Errorf("failed to marshal fields to JSON, %w", err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return b.Bytes(), nil

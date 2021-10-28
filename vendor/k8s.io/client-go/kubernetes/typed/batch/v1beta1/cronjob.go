@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -726,12 +727,18 @@ func (c *cronJobs) ApplyStatus(ctx context.Context, cronJob *batchv1beta1.CronJo
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"time"
 
 	v1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	batchv1beta1 "k8s.io/client-go/applyconfigurations/batch/v1beta1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -753,6 +760,8 @@ type CronJobInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.CronJobList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.CronJob, err error)
+	Apply(ctx context.Context, cronJob *batchv1beta1.CronJobApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CronJob, err error)
+	ApplyStatus(ctx context.Context, cronJob *batchv1beta1.CronJobApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CronJob, err error)
 	CronJobExpansion
 }
 
@@ -895,6 +904,62 @@ func (c *cronJobs) Patch(ctx context.Context, name string, pt types.PatchType, d
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied cronJob.
+func (c *cronJobs) Apply(ctx context.Context, cronJob *batchv1beta1.CronJobApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CronJob, err error) {
+	if cronJob == nil {
+		return nil, fmt.Errorf("cronJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(cronJob)
+	if err != nil {
+		return nil, err
+	}
+	name := cronJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("cronJob.Name must be provided to Apply")
+	}
+	result = &v1beta1.CronJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("cronjobs").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *cronJobs) ApplyStatus(ctx context.Context, cronJob *batchv1beta1.CronJobApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CronJob, err error) {
+	if cronJob == nil {
+		return nil, fmt.Errorf("cronJob provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(cronJob)
+	if err != nil {
+		return nil, err
+	}
+
+	name := cronJob.Name
+	if name == nil {
+		return nil, fmt.Errorf("cronJob.Name must be provided to Apply")
+	}
+
+	result = &v1beta1.CronJob{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("cronjobs").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

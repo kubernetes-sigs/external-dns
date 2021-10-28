@@ -6,6 +6,7 @@ GOLINT = $(GOBIN)/golint
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 STATICCHECK = $(GOBIN)/staticcheck
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
@@ -238,12 +239,16 @@ tidy:
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+STATICCHECK = $(GOBIN)/staticcheck
+>>>>>>> 4d7e5ad26 (update vendored files)
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 
 # Directories containing independent Go modules.
 #
 # We track coverage only for the main module.
-MODULE_DIRS = . ./benchmarks
+MODULE_DIRS = . ./benchmarks ./zapgrpc/internal/test
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 GO_FILES := $(shell \
@@ -254,7 +259,7 @@ GO_FILES := $(shell \
 all: lint test
 
 .PHONY: lint
-lint: $(GOLINT)
+lint: $(GOLINT) $(STATICCHECK)
 	@rm -rf lint.log
 	@echo "Checking formatting..."
 	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
@@ -262,14 +267,25 @@ lint: $(GOLINT)
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go vet ./... 2>&1) &&) true | tee -a lint.log
 	@echo "Checking lint..."
 	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && $(GOLINT) ./... 2>&1) &&) true | tee -a lint.log
+	@echo "Checking staticcheck..."
+	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && $(STATICCHECK) ./... 2>&1) &&) true | tee -a lint.log
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e Makefile | tee -a lint.log
 	@echo "Checking for license headers..."
 	@./checklicense.sh | tee -a lint.log
 	@[ ! -s lint.log ]
+	@echo "Checking 'go mod tidy'..."
+	@make tidy
+	@if ! git diff --quiet; then \
+		echo "'go mod tidy' resulted in changes or working tree is dirty:"; \
+		git --no-pager diff; \
+	fi
 
 $(GOLINT):
-	go install golang.org/x/lint/golint
+	cd tools && go install golang.org/x/lint/golint
+
+$(STATICCHECK):
+	cd tools && go install honnef.co/go/tools/cmd/staticcheck
 
 .PHONY: test
 test:
@@ -292,4 +308,12 @@ bench:
 updatereadme:
 	rm -f README.md
 	cat .readme.tmpl | go run internal/readme/readme.go > README.md
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+.PHONY: tidy
+tidy:
+	@$(foreach dir,$(MODULE_DIRS),(cd $(dir) && go mod tidy) &&) true
+>>>>>>> 4d7e5ad26 (update vendored files)

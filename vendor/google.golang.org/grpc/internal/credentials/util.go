@@ -19,6 +19,7 @@
 package credentials
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import "crypto/tls"
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -26,6 +27,12 @@ import (
 	"crypto/tls"
 )
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+import (
+	"crypto/tls"
+)
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 const alpnProtoStrH2 = "h2"
 

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build !go1.13
 // +build !go1.13
 
@@ -239,6 +240,10 @@ func (mt *MultiTenantServicePrincipalToken) RefreshExchangeWithContext(ctx conte
 	return nil
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build !go1.13
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !go1.13
 
 // Copyright 2017 Microsoft Corporation
@@ -264,8 +269,6 @@ import (
 )
 
 func getMSIEndpoint(ctx context.Context, sender Sender) (*http.Response, error) {
-	// this cannot fail, the return sig is due to legacy reasons
-	msiEndpoint, _ := GetMSIVMEndpoint()
 	tempCtx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 	defer cancel()
 	req, _ := http.NewRequest(http.MethodGet, msiEndpoint, nil)
@@ -275,4 +278,44 @@ func getMSIEndpoint(ctx context.Context, sender Sender) (*http.Response, error) 
 	req.URL.RawQuery = q.Encode()
 	return sender.Do(req)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// EnsureFreshWithContext will refresh the token if it will expire within the refresh window (as set by
+// RefreshWithin) and autoRefresh flag is on.  This method is safe for concurrent use.
+func (mt *MultiTenantServicePrincipalToken) EnsureFreshWithContext(ctx context.Context) error {
+	if err := mt.PrimaryToken.EnsureFreshWithContext(ctx); err != nil {
+		return err
+	}
+	for _, aux := range mt.AuxiliaryTokens {
+		if err := aux.EnsureFreshWithContext(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RefreshWithContext obtains a fresh token for the Service Principal.
+func (mt *MultiTenantServicePrincipalToken) RefreshWithContext(ctx context.Context) error {
+	if err := mt.PrimaryToken.RefreshWithContext(ctx); err != nil {
+		return err
+	}
+	for _, aux := range mt.AuxiliaryTokens {
+		if err := aux.RefreshWithContext(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RefreshExchangeWithContext refreshes the token, but for a different resource.
+func (mt *MultiTenantServicePrincipalToken) RefreshExchangeWithContext(ctx context.Context, resource string) error {
+	if err := mt.PrimaryToken.RefreshExchangeWithContext(ctx, resource); err != nil {
+		return err
+	}
+	for _, aux := range mt.AuxiliaryTokens {
+		if err := aux.RefreshExchangeWithContext(ctx, resource); err != nil {
+			return err
+		}
+	}
+	return nil
 }

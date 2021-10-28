@@ -18,6 +18,7 @@ package alidns
 // SlbSubDomain is a nested struct in alidns response
 type SlbSubDomain struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
 	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
 	Open           bool           `json:"Open" xml:"Open"`
@@ -30,4 +31,16 @@ type SlbSubDomain struct {
 	Open        bool   `json:"Open" xml:"Open"`
 	Type        string `json:"Type" xml:"Type"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	SubDomain   string `json:"SubDomain" xml:"SubDomain"`
+	RecordCount int64  `json:"RecordCount" xml:"RecordCount"`
+	Open        bool   `json:"Open" xml:"Open"`
+	Type        string `json:"Type" xml:"Type"`
+=======
+	SubDomain      string         `json:"SubDomain" xml:"SubDomain"`
+	RecordCount    int64          `json:"RecordCount" xml:"RecordCount"`
+	Open           bool           `json:"Open" xml:"Open"`
+	Type           string         `json:"Type" xml:"Type"`
+	LineAlgorithms LineAlgorithms `json:"LineAlgorithms" xml:"LineAlgorithms"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

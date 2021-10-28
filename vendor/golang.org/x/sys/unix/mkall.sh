@@ -51,6 +51,7 @@ if [[ "$GOOS" = "linux" ]]; then
 	# Files generated through docker (use $cmd so you can Ctl-C the build or run)
 	$cmd docker build --tag generate:$GOOS $GOOS
 <<<<<<< HEAD
+<<<<<<< HEAD
 	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")/.." && /bin/pwd):/build generate:$GOOS
 	exit
 fi
@@ -480,6 +481,11 @@ illumos_amd64)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")" && /bin/pwd):/build generate:$GOOS
+||||||| parent of 4d7e5ad26 (update vendored files)
+	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")" && /bin/pwd):/build generate:$GOOS
+=======
+	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")/.." && /bin/pwd):/build generate:$GOOS
+>>>>>>> 4d7e5ad26 (update vendored files)
 	exit
 fi
 
@@ -499,20 +505,8 @@ aix_ppc64)
 	mksyscall="go run mksyscall_aix_ppc64.go -aix"
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	;;
-darwin_386)
-	mkerrors="$mkerrors -m32"
-	mksyscall="go run mksyscall.go -l32"
-	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
-	mkasm="go run mkasm_darwin.go"
-	;;
 darwin_amd64)
 	mkerrors="$mkerrors -m64"
-	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
-	mkasm="go run mkasm_darwin.go"
-	;;
-darwin_arm)
-	mkerrors="$mkerrors"
-	mksyscall="go run mksyscall.go -l32"
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
 	mkasm="go run mkasm_darwin.go"
 	;;
@@ -628,8 +622,14 @@ illumos_amd64)
         mksyscall="go run mksyscall_solaris.go"
 	mkerrors=
 	mksysnum=
+<<<<<<< HEAD
 	mktypes=
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	mktypes=
+=======
+	mktypes="GOARCH=$GOARCH go tool cgo -godefs"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	;;
 *)
 	echo 'unrecognized $GOOS_$GOARCH: ' "$GOOSARCH" 1>&2

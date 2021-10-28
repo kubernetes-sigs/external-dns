@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -648,6 +649,11 @@ func (c *FakeReplicaSets) ApplyScale(ctx context.Context, replicaSetName string,
 		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, replicaSetName, types.ApplyPatchType, data, "status"), &v1beta1.Scale{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -655,6 +661,7 @@ func (c *FakeReplicaSets) ApplyScale(ctx context.Context, replicaSetName string,
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	extensionsv1beta1 "k8s.io/client-go/applyconfigurations/extensions/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -745,7 +752,7 @@ func (c *FakeReplicaSets) UpdateStatus(ctx context.Context, replicaSet *v1beta1.
 // Delete takes name of the replicaSet and deletes it. Returns an error if one occurs.
 func (c *FakeReplicaSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(replicasetsResource, c.ns, name), &v1beta1.ReplicaSet{})
+		Invokes(testing.NewDeleteActionWithOptions(replicasetsResource, c.ns, name, opts), &v1beta1.ReplicaSet{})
 
 	return err
 }
@@ -769,6 +776,51 @@ func (c *FakeReplicaSets) Patch(ctx context.Context, name string, pt types.Patch
 	return obj.(*v1beta1.ReplicaSet), err
 }
 
+// Apply takes the given apply declarative configuration, applies it and returns the applied replicaSet.
+func (c *FakeReplicaSets) Apply(ctx context.Context, replicaSet *extensionsv1beta1.ReplicaSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ReplicaSet, err error) {
+	if replicaSet == nil {
+		return nil, fmt.Errorf("replicaSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicaSet)
+	if err != nil {
+		return nil, err
+	}
+	name := replicaSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicaSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.ReplicaSet{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.ReplicaSet), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeReplicaSets) ApplyStatus(ctx context.Context, replicaSet *extensionsv1beta1.ReplicaSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ReplicaSet, err error) {
+	if replicaSet == nil {
+		return nil, fmt.Errorf("replicaSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicaSet)
+	if err != nil {
+		return nil, err
+	}
+	name := replicaSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicaSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.ReplicaSet{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.ReplicaSet), err
+}
+
 // GetScale takes name of the replicaSet, and returns the corresponding scale object, and an error if there is any.
 func (c *FakeReplicaSets) GetScale(ctx context.Context, replicaSetName string, options v1.GetOptions) (result *v1beta1.Scale, err error) {
 	obj, err := c.Fake.
@@ -785,6 +837,25 @@ func (c *FakeReplicaSets) UpdateScale(ctx context.Context, replicaSetName string
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(replicasetsResource, "scale", c.ns, scale), &v1beta1.Scale{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.Scale), err
+}
+
+// ApplyScale takes top resource name and the apply declarative configuration for scale,
+// applies it and returns the applied scale, and an error, if there is any.
+func (c *FakeReplicaSets) ApplyScale(ctx context.Context, replicaSetName string, scale *extensionsv1beta1.ScaleApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Scale, err error) {
+	if scale == nil {
+		return nil, fmt.Errorf("scale provided to ApplyScale must not be nil")
+	}
+	data, err := json.Marshal(scale)
+	if err != nil {
+		return nil, err
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, replicaSetName, types.ApplyPatchType, data, "status"), &v1beta1.Scale{})
 
 	if obj == nil {
 		return nil, err

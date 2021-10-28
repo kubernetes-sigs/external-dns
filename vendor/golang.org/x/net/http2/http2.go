@@ -14,6 +14,7 @@
 //
 // See https://http2.golang.org/ for a test server running this code.
 <<<<<<< HEAD
+<<<<<<< HEAD
 package http2 // import "golang.org/x/net/http2"
 
 import (
@@ -371,6 +372,10 @@ func (s *sorter) SortStrings(ss []string) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 //
+||||||| parent of 4d7e5ad26 (update vendored files)
+//
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 package http2 // import "golang.org/x/net/http2"
 
 import (
@@ -533,10 +538,11 @@ func (s SettingID) String() string {
 // name (key). See httpguts.ValidHeaderName for the base rules.
 //
 // Further, http2 says:
-//   "Just as in HTTP/1.x, header field names are strings of ASCII
-//   characters that are compared in a case-insensitive
-//   fashion. However, header field names MUST be converted to
-//   lowercase prior to their encoding in HTTP/2. "
+//
+//	"Just as in HTTP/1.x, header field names are strings of ASCII
+//	characters that are compared in a case-insensitive
+//	fashion. However, header field names MUST be converted to
+//	lowercase prior to their encoding in HTTP/2. "
 func validWireHeaderFieldName(v string) bool {
 	if len(v) == 0 {
 		return false
@@ -722,9 +728,17 @@ func (s *sorter) SortStrings(ss []string) {
 // validPseudoPath reports whether v is a valid :path pseudo-header
 // value. It must be either:
 //
+<<<<<<< HEAD
 //     *) a non-empty string starting with '/'
 //     *) the string '*', for OPTIONS requests.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+//     *) a non-empty string starting with '/'
+//     *) the string '*', for OPTIONS requests.
+=======
+//   - a non-empty string starting with '/'
+//   - the string '*', for OPTIONS requests.
+>>>>>>> 4d7e5ad26 (update vendored files)
 //
 // For now this is only used a quick check for deciding when to clean
 // up Opaque URLs before sending requests from the Transport.

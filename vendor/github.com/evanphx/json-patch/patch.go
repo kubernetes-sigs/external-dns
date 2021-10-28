@@ -207,6 +207,7 @@ func (n *lazyNode) equal(o *lazyNode) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		if len(n.doc) != len(o.doc) {
 			return false
 		}
@@ -1861,10 +1862,21 @@ func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		if len(n.doc) != len(o.doc) {
+			return false
+		}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 		for k, v := range n.doc {
 			ov, ok := o.doc[k]
 
 			if !ok {
+				return false
+			}
+
+			if (v == nil) != (ov == nil) {
 				return false
 			}
 
@@ -2063,6 +2075,17 @@ func (d *partialArray) set(key string, val *lazyNode) error {
 	if err != nil {
 		return err
 	}
+
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
+		if idx < -len(*d) {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
+		idx += len(*d)
+	}
+
 	(*d)[idx] = val
 	return nil
 }
@@ -2088,14 +2111,14 @@ func (d *partialArray) add(key string, val *lazyNode) error {
 		return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 	}
 
-	if SupportNegativeIndices {
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
 		if idx < -len(ary) {
 			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 		}
-
-		if idx < 0 {
-			idx += len(ary)
-		}
+		idx += len(ary)
 	}
 
 	copy(ary[0:idx], cur[0:idx])
@@ -2111,6 +2134,16 @@ func (d *partialArray) get(key string) (*lazyNode, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return nil, errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
+		if idx < -len(*d) {
+			return nil, errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
+		idx += len(*d)
 	}
 
 	if idx >= len(*d) {
@@ -2132,14 +2165,14 @@ func (d *partialArray) remove(key string) error {
 		return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 	}
 
-	if SupportNegativeIndices {
+	if idx < 0 {
+		if !SupportNegativeIndices {
+			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
+		}
 		if idx < -len(cur) {
 			return errors.Wrapf(ErrInvalidIndex, "Unable to access invalid index: %d", idx)
 		}
-
-		if idx < 0 {
-			idx += len(cur)
-		}
+		idx += len(cur)
 	}
 
 	ary := make([]*lazyNode, len(cur)-1)
@@ -2196,6 +2229,29 @@ func (p Patch) replace(doc *container, op Operation) error {
 	path, err := op.Path()
 	if err != nil {
 		return errors.Wrapf(err, "replace operation failed to decode path")
+	}
+
+	if path == "" {
+		val := op.value()
+
+		if val.which == eRaw {
+			if !val.tryDoc() {
+				if !val.tryAry() {
+					return errors.Wrapf(err, "replace operation value must be object or array")
+				}
+			}
+		}
+
+		switch val.which {
+		case eAry:
+			*doc = &val.ary
+		case eDoc:
+			*doc = &val.doc
+		case eRaw:
+			return errors.Wrapf(err, "replace operation hit impossible case")
+		}
+
+		return nil
 	}
 
 	con, key := findObject(doc, path)
@@ -2262,6 +2318,25 @@ func (p Patch) test(doc *container, op Operation) error {
 	path, err := op.Path()
 	if err != nil {
 		return errors.Wrapf(err, "test operation failed to decode path")
+	}
+
+	if path == "" {
+		var self lazyNode
+
+		switch sv := (*doc).(type) {
+		case *partialDoc:
+			self.doc = *sv
+			self.which = eDoc
+		case *partialArray:
+			self.ary = *sv
+			self.which = eAry
+		}
+
+		if self.equal(op.value()) {
+			return nil
+		}
+
+		return errors.Wrapf(ErrTestFailed, "testing value %s failed", path)
 	}
 
 	con, key := findObject(doc, path)
@@ -2372,7 +2447,15 @@ func (p Patch) Apply(doc []byte) ([]byte, error) {
 // ApplyIndent mutates a JSON document according to the patch, and returns the new
 // document indented.
 func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if len(doc) == 0 {
+		return doc, nil
+	}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	var pd container
 	if doc[0] == '[' {
 		pd = &partialArray{}

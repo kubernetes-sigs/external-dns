@@ -166,11 +166,17 @@ func Convert_Map_string_To_runtime_Object_To_Slice_v1_NamedExtension(in *map[str
 		oldExtension := runtime.RawExtension{}
 		if err := runtime.Convert_runtime_Object_To_runtime_RawExtension(&newExtension, &oldExtension, s); err != nil {
 <<<<<<< HEAD
+<<<<<<< HEAD
 			return err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 			return nil
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			return nil
+=======
+			return err
+>>>>>>> 4d7e5ad26 (update vendored files)
 		}
 		namedExtension := NamedExtension{key, oldExtension}
 		*out = append(*out, namedExtension)

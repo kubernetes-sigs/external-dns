@@ -98,6 +98,7 @@ func parseCPUStat(line string) (CPUStat, int64, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu): %w", line, err)
 	}
 	if count == 0 {
@@ -564,9 +565,14 @@ func (fs FS) Stat() (Stat, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu): %s", line, err)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu): %s", line, err)
+=======
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu): %w", line, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	if count == 0 {
-		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu): 0 elements parsed", line)
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu): 0 elements parsed", line)
 	}
 
 	cpuStat.User /= userHZ
@@ -586,7 +592,7 @@ func (fs FS) Stat() (Stat, error) {
 
 	cpuID, err := strconv.ParseInt(cpu[3:], 10, 64)
 	if err != nil {
-		return CPUStat{}, -1, fmt.Errorf("couldn't parse %s (cpu/cpuid): %s", line, err)
+		return CPUStat{}, -1, fmt.Errorf("couldn't parse %q (cpu/cpuid): %w", line, err)
 	}
 
 	return cpuStat, cpuID, nil
@@ -606,7 +612,7 @@ func parseSoftIRQStat(line string) (SoftIRQStat, uint64, error) {
 		&softIRQStat.Hrtimer, &softIRQStat.Rcu)
 
 	if err != nil {
-		return SoftIRQStat{}, 0, fmt.Errorf("couldn't parse %s (softirq): %s", line, err)
+		return SoftIRQStat{}, 0, fmt.Errorf("couldn't parse %q (softirq): %w", line, err)
 	}
 
 	return softIRQStat, total, nil
@@ -654,34 +660,34 @@ func (fs FS) Stat() (Stat, error) {
 		switch {
 		case parts[0] == "btime":
 			if stat.BootTime, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (btime): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (btime): %w", parts[1], err)
 			}
 		case parts[0] == "intr":
 			if stat.IRQTotal, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (intr): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (intr): %w", parts[1], err)
 			}
 			numberedIRQs := parts[2:]
 			stat.IRQ = make([]uint64, len(numberedIRQs))
 			for i, count := range numberedIRQs {
 				if stat.IRQ[i], err = strconv.ParseUint(count, 10, 64); err != nil {
-					return Stat{}, fmt.Errorf("couldn't parse %s (intr%d): %s", count, i, err)
+					return Stat{}, fmt.Errorf("couldn't parse %q (intr%d): %w", count, i, err)
 				}
 			}
 		case parts[0] == "ctxt":
 			if stat.ContextSwitches, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (ctxt): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (ctxt): %w", parts[1], err)
 			}
 		case parts[0] == "processes":
 			if stat.ProcessCreated, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (processes): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (processes): %w", parts[1], err)
 			}
 		case parts[0] == "procs_running":
 			if stat.ProcessesRunning, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (procs_running): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (procs_running): %w", parts[1], err)
 			}
 		case parts[0] == "procs_blocked":
 			if stat.ProcessesBlocked, err = strconv.ParseUint(parts[1], 10, 64); err != nil {
-				return Stat{}, fmt.Errorf("couldn't parse %s (procs_blocked): %s", parts[1], err)
+				return Stat{}, fmt.Errorf("couldn't parse %q (procs_blocked): %w", parts[1], err)
 			}
 		case parts[0] == "softirq":
 			softIRQStats, total, err := parseSoftIRQStat(line)
@@ -707,8 +713,14 @@ func (fs FS) Stat() (Stat, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
+<<<<<<< HEAD
 		return Stat{}, fmt.Errorf("couldn't parse %s: %s", fileName, err)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return Stat{}, fmt.Errorf("couldn't parse %s: %s", fileName, err)
+=======
+		return Stat{}, fmt.Errorf("couldn't parse %q: %w", fileName, err)
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	return stat, nil

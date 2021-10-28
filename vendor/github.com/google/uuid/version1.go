@@ -22,6 +22,7 @@ func NewUUID() (UUID, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	var uuid UUID
 	now, seq, err := GetTime()
 	if err != nil {
@@ -140,6 +141,15 @@ func NewUUID() (UUID, error) {
 	}
 	nodeMu.Unlock()
 
+||||||| parent of 4d7e5ad26 (update vendored files)
+	nodeMu.Lock()
+	if nodeID == zeroID {
+		setNodeInterface("")
+	}
+	nodeMu.Unlock()
+
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	var uuid UUID
 	now, seq, err := GetTime()
 	if err != nil {
@@ -155,8 +165,18 @@ func NewUUID() (UUID, error) {
 	binary.BigEndian.PutUint16(uuid[4:], timeMid)
 	binary.BigEndian.PutUint16(uuid[6:], timeHi)
 	binary.BigEndian.PutUint16(uuid[8:], seq)
+
+	nodeMu.Lock()
+	if nodeID == zeroID {
+		setNodeInterface("")
+	}
 	copy(uuid[10:], nodeID[:])
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	nodeMu.Unlock()
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	return uuid, nil
 }

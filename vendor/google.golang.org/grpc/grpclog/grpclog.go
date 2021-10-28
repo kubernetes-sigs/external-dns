@@ -31,6 +31,7 @@ package grpclog // import "google.golang.org/grpc/grpclog"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"os"
 
@@ -371,63 +372,74 @@ func Println(args ...interface{}) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 import "os"
+||||||| parent of 4d7e5ad26 (update vendored files)
+import "os"
+=======
+import (
+	"os"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
-var logger = newLoggerV2()
+	"google.golang.org/grpc/internal/grpclog"
+)
+
+func init() {
+	SetLoggerV2(newLoggerV2())
+}
 
 // V reports whether verbosity level l is at least the requested verbose level.
 func V(l int) bool {
-	return logger.V(l)
+	return grpclog.Logger.V(l)
 }
 
 // Info logs to the INFO log.
 func Info(args ...interface{}) {
-	logger.Info(args...)
+	grpclog.Logger.Info(args...)
 }
 
 // Infof logs to the INFO log. Arguments are handled in the manner of fmt.Printf.
 func Infof(format string, args ...interface{}) {
-	logger.Infof(format, args...)
+	grpclog.Logger.Infof(format, args...)
 }
 
 // Infoln logs to the INFO log. Arguments are handled in the manner of fmt.Println.
 func Infoln(args ...interface{}) {
-	logger.Infoln(args...)
+	grpclog.Logger.Infoln(args...)
 }
 
 // Warning logs to the WARNING log.
 func Warning(args ...interface{}) {
-	logger.Warning(args...)
+	grpclog.Logger.Warning(args...)
 }
 
 // Warningf logs to the WARNING log. Arguments are handled in the manner of fmt.Printf.
 func Warningf(format string, args ...interface{}) {
-	logger.Warningf(format, args...)
+	grpclog.Logger.Warningf(format, args...)
 }
 
 // Warningln logs to the WARNING log. Arguments are handled in the manner of fmt.Println.
 func Warningln(args ...interface{}) {
-	logger.Warningln(args...)
+	grpclog.Logger.Warningln(args...)
 }
 
 // Error logs to the ERROR log.
 func Error(args ...interface{}) {
-	logger.Error(args...)
+	grpclog.Logger.Error(args...)
 }
 
 // Errorf logs to the ERROR log. Arguments are handled in the manner of fmt.Printf.
 func Errorf(format string, args ...interface{}) {
-	logger.Errorf(format, args...)
+	grpclog.Logger.Errorf(format, args...)
 }
 
 // Errorln logs to the ERROR log. Arguments are handled in the manner of fmt.Println.
 func Errorln(args ...interface{}) {
-	logger.Errorln(args...)
+	grpclog.Logger.Errorln(args...)
 }
 
 // Fatal logs to the FATAL log. Arguments are handled in the manner of fmt.Print.
 // It calls os.Exit() with exit code 1.
 func Fatal(args ...interface{}) {
-	logger.Fatal(args...)
+	grpclog.Logger.Fatal(args...)
 	// Make sure fatal logs will exit.
 	os.Exit(1)
 }
@@ -435,7 +447,7 @@ func Fatal(args ...interface{}) {
 // Fatalf logs to the FATAL log. Arguments are handled in the manner of fmt.Printf.
 // It calls os.Exit() with exit code 1.
 func Fatalf(format string, args ...interface{}) {
-	logger.Fatalf(format, args...)
+	grpclog.Logger.Fatalf(format, args...)
 	// Make sure fatal logs will exit.
 	os.Exit(1)
 }
@@ -443,7 +455,7 @@ func Fatalf(format string, args ...interface{}) {
 // Fatalln logs to the FATAL log. Arguments are handled in the manner of fmt.Println.
 // It calle os.Exit()) with exit code 1.
 func Fatalln(args ...interface{}) {
-	logger.Fatalln(args...)
+	grpclog.Logger.Fatalln(args...)
 	// Make sure fatal logs will exit.
 	os.Exit(1)
 }
@@ -452,20 +464,26 @@ func Fatalln(args ...interface{}) {
 //
 // Deprecated: use Info.
 func Print(args ...interface{}) {
-	logger.Info(args...)
+	grpclog.Logger.Info(args...)
 }
 
 // Printf prints to the logger. Arguments are handled in the manner of fmt.Printf.
 //
 // Deprecated: use Infof.
 func Printf(format string, args ...interface{}) {
-	logger.Infof(format, args...)
+	grpclog.Logger.Infof(format, args...)
 }
 
 // Println prints to the logger. Arguments are handled in the manner of fmt.Println.
 //
 // Deprecated: use Infoln.
 func Println(args ...interface{}) {
+<<<<<<< HEAD
 	logger.Infoln(args...)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	logger.Infoln(args...)
+=======
+	grpclog.Logger.Infoln(args...)
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

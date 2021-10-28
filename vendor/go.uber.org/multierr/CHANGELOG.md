@@ -6,6 +6,7 @@ Releases
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 v1.6.0 (2020-09-14)
 ===================
 
@@ -78,6 +79,28 @@ v1.4.0 (2019-11-04)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+v1.6.0 (2020-09-14)
+===================
+
+-   Actually drop library dependency on development-time tooling.
+
+
+v1.5.0 (2020-02-24)
+===================
+
+-   Drop library dependency on development-time tooling.
+
+
+v1.4.0 (2019-11-04)
+===================
+
+-   Add `AppendInto` function to more ergonomically build errors inside a
+    loop.
+
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 v1.3.0 (2019-10-29)
 ===================
 

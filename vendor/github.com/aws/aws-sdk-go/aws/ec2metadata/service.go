@@ -10,6 +10,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // The endpoint of the EC2 IMDS client can be configured via the environment
 // variable, AWS_EC2_METADATA_SERVICE_ENDPOINT when creating the client with a
@@ -726,13 +727,20 @@ func unmarshalError(r *request.Request) {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//
+// The endpoint of the EC2 IMDS client can be configured via the environment
+// variable, AWS_EC2_METADATA_SERVICE_ENDPOINT when creating the client with a
+// Session. See aws/session#Options.EC2IMDSEndpoint for more details.
+>>>>>>> 4d7e5ad26 (update vendored files)
 package ec2metadata
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -762,7 +770,7 @@ const (
 	enableTokenProviderHandlerName = "enableTokenProviderHandler"
 
 	// TTL constants
-	defaultTTL = 21600 * time.Second
+	defaultTTL          = 21600 * time.Second
 	ttlExpirationWindow = 30 * time.Second
 )
 
@@ -790,6 +798,9 @@ func New(p client.ConfigProvider, cfgs ...*aws.Config) *EC2Metadata {
 // a client when not using a session. Generally using just New with a session
 // is preferred.
 //
+// Will remove the URL path from the endpoint provided to ensure the EC2 IMDS
+// client is able to communicate with the EC2 IMDS API.
+//
 // If an unmodified HTTP client is provided from the stdlib default, or no client
 // the EC2RoleProvider's EC2Metadata HTTP client's timeout will be shortened.
 // To disable this set Config.EC2MetadataDisableTimeoutOverride to false. Enabled by default.
@@ -805,6 +816,15 @@ func NewClient(cfg aws.Config, handlers request.Handlers, endpoint, signingRegio
 		}
 		// max number of retries on the client operation
 		cfg.MaxRetries = aws.Int(2)
+	}
+
+	if u, err := url.Parse(endpoint); err == nil {
+		// Remove path from the endpoint since it will be added by requests.
+		// This is an artifact of the SDK adding `/latest` to the endpoint for
+		// EC2 IMDS, but this is now moved to the operation definition.
+		u.Path = ""
+		u.RawPath = ""
+		endpoint = u.String()
 	}
 
 	svc := &EC2Metadata{
@@ -938,8 +958,15 @@ func unmarshalError(r *request.Request) {
 
 	// Response body format is not consistent between metadata endpoints.
 	// Grab the error message as a string and include that as the source error
+<<<<<<< HEAD
 	r.Error = awserr.NewRequestFailure(awserr.New("EC2MetadataError", "failed to make EC2Metadata request", errors.New(b.String())),
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	r.Error = awserr.NewRequestFailure(awserr.New("EC2MetadataError", "failed to make EC2Metadata request", errors.New(b.String())),
+=======
+	r.Error = awserr.NewRequestFailure(
+		awserr.New("EC2MetadataError", "failed to make EC2Metadata request\n"+b.String(), nil),
+>>>>>>> 4d7e5ad26 (update vendored files)
 		r.HTTPResponse.StatusCode, r.RequestID)
 }
 

@@ -24,6 +24,10 @@ import (
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 var (
 	_ ResettableRESTMapper = &FirstHitRESTMapper{}
 )
@@ -82,6 +86,7 @@ func (m FirstHitRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string)
 
 func (m FirstHitRESTMapper) Reset() {
 	m.MultiRESTMapper.Reset()
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // FirstHitRESTMapper is a wrapper for multiple RESTMappers which returns the
@@ -135,6 +140,9 @@ func (m FirstHitRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string)
 
 	return nil, collapseAggregateErrors(errors)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // collapseAggregateErrors returns the minimal errors.  it handles empty as nil, handles one item in a list

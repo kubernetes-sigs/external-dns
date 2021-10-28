@@ -39,6 +39,7 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 	str, ok := args[0].(string)
 	if ok && len(args) > 1 && strings.ContainsRune(str, '%') {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		fmt.Fprintf(w, str, args[1:]...) //nolint: errcheck
 	} else {
 		// create a new slice to fool govet and avoid "call has possible
@@ -69,10 +70,21 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		fmt.Fprintf(w, str, args[1:]...) // nolint: errcheck
+||||||| parent of 4d7e5ad26 (update vendored files)
+		fmt.Fprintf(w, str, args[1:]...) // nolint: errcheck
+=======
+		fmt.Fprintf(w, str, args[1:]...) //nolint: errcheck
+>>>>>>> 4d7e5ad26 (update vendored files)
 	} else {
 		// create a new slice to fool govet and avoid "call has possible
 		// formatting directive" errors
+<<<<<<< HEAD
 		fmt.Fprint(w, args[:]...) // nolint: errcheck
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		fmt.Fprint(w, args[:]...) // nolint: errcheck
+=======
+		fmt.Fprint(w, args[:]...) //nolint: errcheck,gocritic
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 }

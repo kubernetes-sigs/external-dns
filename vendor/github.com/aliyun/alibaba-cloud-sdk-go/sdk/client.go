@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"os"
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"reflect"
 	"regexp"
 	"runtime"
@@ -843,11 +844,14 @@ func (client *Client) Shutdown() {
 	client.isOpenAsync = false
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"reflect"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth"
@@ -879,28 +883,26 @@ var hookDo = func(fn func(req *http.Request) (*http.Response, error)) func(req *
 
 // Client the type Client
 type Client struct {
-	isInsecure     bool
-	regionId       string
-	config         *Config
-	httpProxy      string
-	httpsProxy     string
-	noProxy        string
-	logger         *Logger
-	userAgent      map[string]string
-	signer         auth.Signer
-	httpClient     *http.Client
-	asyncTaskQueue chan func()
-	readTimeout    time.Duration
-	connectTimeout time.Duration
-	EndpointMap    map[string]string
-	EndpointType   string
-	Network        string
-	Domain         string
-
-	debug     bool
-	isRunning bool
-	// void "panic(write to close channel)" cause of addAsync() after Shutdown()
-	asyncChanLock *sync.RWMutex
+	SourceIp        string
+	SecureTransport string
+	isInsecure      bool
+	regionId        string
+	config          *Config
+	httpProxy       string
+	httpsProxy      string
+	noProxy         string
+	logger          *Logger
+	userAgent       map[string]string
+	signer          auth.Signer
+	httpClient      *http.Client
+	asyncTaskQueue  chan func()
+	readTimeout     time.Duration
+	connectTimeout  time.Duration
+	EndpointMap     map[string]string
+	EndpointType    string
+	Network         string
+	Domain          string
+	isOpenAsync     bool
 }
 
 func (client *Client) Init() (err error) {
@@ -973,8 +975,6 @@ func (client *Client) InitWithOptions(regionId string, config *Config, credentia
 		}
 	}
 
-	client.isRunning = true
-	client.asyncChanLock = new(sync.RWMutex)
 	client.regionId = regionId
 	client.config = config
 	client.httpClient = &http.Client{}
@@ -1051,15 +1051,20 @@ func (client *Client) getNoProxy(scheme string) []string {
 
 // EnableAsync enable the async task queue
 func (client *Client) EnableAsync(routinePoolSize, maxTaskQueueSize int) {
+	if client.isOpenAsync {
+		fmt.Println("warning: Please not call EnableAsync repeatedly")
+		return
+	}
+	client.isOpenAsync = true
 	client.asyncTaskQueue = make(chan func(), maxTaskQueueSize)
 	for i := 0; i < routinePoolSize; i++ {
 		go func() {
-			for client.isRunning {
-				select {
-				case task, notClosed := <-client.asyncTaskQueue:
-					if notClosed {
-						task()
-					}
+			for {
+				task, notClosed := <-client.asyncTaskQueue
+				if !notClosed {
+					return
+				} else {
+					task()
 				}
 			}
 		}()
@@ -1068,7 +1073,7 @@ func (client *Client) EnableAsync(routinePoolSize, maxTaskQueueSize int) {
 
 func (client *Client) InitWithAccessKey(regionId, accessKeyId, accessKeySecret string) (err error) {
 	config := client.InitClientConfig()
-	credential := &credentials.BaseCredential{
+	credential := &credentials.AccessKeyCredential{
 		AccessKeyId:     accessKeyId,
 		AccessKeySecret: accessKeySecret,
 	}
@@ -1143,9 +1148,28 @@ func (client *Client) InitClientConfig() (config *Config) {
 }
 
 func (client *Client) DoAction(request requests.AcsRequest, response responses.AcsResponse) (err error) {
+	if (client.SecureTransport == "false" || client.SecureTransport == "true") && client.SourceIp != "" {
+		t := reflect.TypeOf(request).Elem()
+		v := reflect.ValueOf(request).Elem()
+		for i := 0; i < t.NumField(); i++ {
+			value := v.FieldByName(t.Field(i).Name)
+			if t.Field(i).Name == "requests.RoaRequest" {
+				request.GetHeaders()["x-acs-proxy-source-ip"] = client.SourceIp
+				request.GetHeaders()["x-acs-proxy-secure-transport"] = client.SecureTransport
+				return client.DoActionWithSigner(request, response, nil)
+			} else if t.Field(i).Name == "PathPattern" && !value.IsZero() {
+				request.GetHeaders()["x-acs-proxy-source-ip"] = client.SourceIp
+				request.GetHeaders()["x-acs-proxy-secure-transport"] = client.SecureTransport
+				return client.DoActionWithSigner(request, response, nil)
+			} else if i == t.NumField()-1 {
+				request.GetQueryParams()["SourceIp"] = client.SourceIp
+				request.GetQueryParams()["SecureTransport"] = client.SecureTransport
+				return client.DoActionWithSigner(request, response, nil)
+			}
+		}
+	}
 	return client.DoActionWithSigner(request, response, nil)
 }
-
 func (client *Client) GetEndpointRules(regionId string, product string) (endpointRaw string, err error) {
 	if client.EndpointType == "regional" {
 		if regionId == "" {
@@ -1185,7 +1209,8 @@ func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer
 		endpoint = endpoints.GetEndpointFromMap(regionId, request.GetProduct())
 	}
 
-	if endpoint == "" && client.EndpointType != "" && request.GetProduct() != "Sts" {
+	if endpoint == "" && client.EndpointType != "" &&
+		(request.GetProduct() != "Sts" || len(request.GetQueryParams()) == 0) {
 		if client.EndpointMap != nil && client.Network == "" || client.Network == "public" {
 			endpoint = client.EndpointMap[regionId]
 		}
@@ -1242,7 +1267,7 @@ func (client *Client) buildRequestWithSigner(request requests.AcsRequest, signer
 func getSendUserAgent(configUserAgent string, clientUserAgent, requestUserAgent map[string]string) string {
 	realUserAgent := ""
 	for key1, value1 := range clientUserAgent {
-		for key2, _ := range requestUserAgent {
+		for key2 := range requestUserAgent {
 			if key1 == key2 {
 				key1 = ""
 			}
@@ -1268,7 +1293,7 @@ func (client *Client) AppendUserAgent(key, value string) {
 		client.userAgent = make(map[string]string)
 	}
 	if strings.ToLower(key) != "core" && strings.ToLower(key) != "go" {
-		for tag, _ := range client.userAgent {
+		for tag := range client.userAgent {
 			if tag == key {
 				client.userAgent[tag] = value
 				newkey = false
@@ -1419,7 +1444,7 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 		startTime := time.Now()
 		fieldMap["{start_time}"] = startTime.Format("2006-01-02 15:04:05")
 		httpResponse, err = hookDo(client.httpClient.Do)(httpRequest)
-		fieldMap["{cost}"] = time.Now().Sub(startTime).String()
+		fieldMap["{cost}"] = time.Since(startTime).String()
 		if err == nil {
 			fieldMap["{code}"] = strconv.Itoa(httpResponse.StatusCode)
 			fieldMap["{res_headers}"] = TransToString(httpResponse.Header)
@@ -1471,6 +1496,7 @@ func (client *Client) DoActionWithSigner(request requests.AcsRequest, response r
 	// wrap server errors
 	if serverErr, ok := err.(*errors.ServerError); ok {
 		var wrapInfo = map[string]string{}
+		serverErr.RespHeaders = response.GetHttpHeaders()
 		wrapInfo["StringToSign"] = request.GetStringToSign()
 		err = errors.WrapServerError(serverErr, wrapInfo)
 	}
@@ -1529,9 +1555,7 @@ only block when any one of the following occurs:
 **/
 func (client *Client) AddAsyncTask(task func()) (err error) {
 	if client.asyncTaskQueue != nil {
-		client.asyncChanLock.RLock()
-		defer client.asyncChanLock.RUnlock()
-		if client.isRunning {
+		if client.isOpenAsync {
 			client.asyncTaskQueue <- task
 		}
 	} else {
@@ -1636,14 +1660,18 @@ func (client *Client) ProcessCommonRequestWithSigner(request *requests.CommonReq
 }
 
 func (client *Client) Shutdown() {
-	// lock the addAsync()
-	client.asyncChanLock.Lock()
-	defer client.asyncChanLock.Unlock()
 	if client.asyncTaskQueue != nil {
 		close(client.asyncTaskQueue)
 	}
+<<<<<<< HEAD
 	client.isRunning = false
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	client.isRunning = false
+=======
+
+	client.isOpenAsync = false
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 // Deprecated: Use NewClientWithRamRoleArn in this package instead.

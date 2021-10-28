@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -420,6 +421,11 @@ func (c *FakeRoleBindings) Apply(ctx context.Context, roleBinding *rbacv1alpha1.
 		Invokes(testing.NewPatchSubresourceAction(rolebindingsResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.RoleBinding{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1alpha1 "k8s.io/api/rbac/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -427,6 +433,7 @@ func (c *FakeRoleBindings) Apply(ctx context.Context, roleBinding *rbacv1alpha1.
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1alpha1 "k8s.io/client-go/applyconfigurations/rbac/v1alpha1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -505,7 +512,7 @@ func (c *FakeRoleBindings) Update(ctx context.Context, roleBinding *v1alpha1.Rol
 // Delete takes name of the roleBinding and deletes it. Returns an error if one occurs.
 func (c *FakeRoleBindings) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(rolebindingsResource, c.ns, name), &v1alpha1.RoleBinding{})
+		Invokes(testing.NewDeleteActionWithOptions(rolebindingsResource, c.ns, name, opts), &v1alpha1.RoleBinding{})
 
 	return err
 }
@@ -523,6 +530,28 @@ func (c *FakeRoleBindings) Patch(ctx context.Context, name string, pt types.Patc
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(rolebindingsResource, c.ns, name, pt, data, subresources...), &v1alpha1.RoleBinding{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1alpha1.RoleBinding), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied roleBinding.
+func (c *FakeRoleBindings) Apply(ctx context.Context, roleBinding *rbacv1alpha1.RoleBindingApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.RoleBinding, err error) {
+	if roleBinding == nil {
+		return nil, fmt.Errorf("roleBinding provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(roleBinding)
+	if err != nil {
+		return nil, err
+	}
+	name := roleBinding.Name
+	if name == nil {
+		return nil, fmt.Errorf("roleBinding.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(rolebindingsResource, c.ns, *name, types.ApplyPatchType, data), &v1alpha1.RoleBinding{})
 
 	if obj == nil {
 		return nil, err

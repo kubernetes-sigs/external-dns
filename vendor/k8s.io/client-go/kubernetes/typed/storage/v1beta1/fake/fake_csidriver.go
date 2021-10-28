@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -396,6 +397,11 @@ func (c *FakeCSIDrivers) Apply(ctx context.Context, cSIDriver *storagev1beta1.CS
 		Invokes(testing.NewRootPatchSubresourceAction(csidriversResource, *name, types.ApplyPatchType, data), &v1beta1.CSIDriver{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1beta1 "k8s.io/api/storage/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,6 +409,7 @@ func (c *FakeCSIDrivers) Apply(ctx context.Context, cSIDriver *storagev1beta1.CS
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	storagev1beta1 "k8s.io/client-go/applyconfigurations/storage/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -475,7 +482,7 @@ func (c *FakeCSIDrivers) Update(ctx context.Context, cSIDriver *v1beta1.CSIDrive
 // Delete takes name of the cSIDriver and deletes it. Returns an error if one occurs.
 func (c *FakeCSIDrivers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(csidriversResource, name), &v1beta1.CSIDriver{})
+		Invokes(testing.NewRootDeleteActionWithOptions(csidriversResource, name, opts), &v1beta1.CSIDriver{})
 	return err
 }
 
@@ -492,6 +499,27 @@ func (c *FakeCSIDrivers) Patch(ctx context.Context, name string, pt types.PatchT
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(csidriversResource, name, pt, data, subresources...), &v1beta1.CSIDriver{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.CSIDriver), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied cSIDriver.
+func (c *FakeCSIDrivers) Apply(ctx context.Context, cSIDriver *storagev1beta1.CSIDriverApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.CSIDriver, err error) {
+	if cSIDriver == nil {
+		return nil, fmt.Errorf("cSIDriver provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(cSIDriver)
+	if err != nil {
+		return nil, err
+	}
+	name := cSIDriver.Name
+	if name == nil {
+		return nil, fmt.Errorf("cSIDriver.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(csidriversResource, *name, types.ApplyPatchType, data), &v1beta1.CSIDriver{})
 	if obj == nil {
 		return nil, err
 	}

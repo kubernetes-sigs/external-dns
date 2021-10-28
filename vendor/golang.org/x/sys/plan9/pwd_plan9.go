@@ -3,10 +3,15 @@
 // license that can be found in the LICENSE file.
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 //go:build !go1.5
 >>>>>>> 6b7ce455e (update vendored files)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+//go:build !go1.5
+>>>>>>> 4d7e5ad26 (update vendored files)
 // +build !go1.5
 
 package plan9

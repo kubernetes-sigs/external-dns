@@ -60,6 +60,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	// LogAuth is a special case of LogDebug, it tells a logger to also log the body of an authentication request and response.
 	// NOTE: this can disclose sensitive information, use with care.
@@ -262,6 +263,13 @@ func (lt LevelType) String() string {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+
+	// LogAuth is a special case of LogDebug, it tells a logger to also log the body of an authentication request and response.
+	// NOTE: this can disclose sensitive information, use with care.
+	LogAuth
+>>>>>>> 4d7e5ad26 (update vendored files)
 )
 
 const (
@@ -272,6 +280,7 @@ const (
 	logWarning = "WARNING"
 	logInfo    = "INFO"
 	logDebug   = "DEBUG"
+	logAuth    = "AUTH"
 	logUnknown = "UNKNOWN"
 )
 
@@ -290,6 +299,8 @@ func ParseLevel(s string) (lt LevelType, err error) {
 		lt = LogInfo
 	case logDebug:
 		lt = LogDebug
+	case logAuth:
+		lt = LogAuth
 	default:
 		err = fmt.Errorf("bad log level '%s'", s)
 	}
@@ -313,7 +324,13 @@ func (lt LevelType) String() string {
 		return logInfo
 	case LogDebug:
 		return logDebug
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	case LogAuth:
+		return logAuth
+>>>>>>> 4d7e5ad26 (update vendored files)
 	default:
 		return logUnknown
 	}

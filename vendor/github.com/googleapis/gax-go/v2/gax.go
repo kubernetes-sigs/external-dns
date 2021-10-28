@@ -41,6 +41,7 @@ package gax
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const Version = "2.1.1"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -64,3 +65,8 @@ const Version = "2.2.0"
 =======
 const Version = "2.0.4"
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+const Version = "2.0.4"
+=======
+const Version = "2.2.0"
+>>>>>>> 4d7e5ad26 (update vendored files)

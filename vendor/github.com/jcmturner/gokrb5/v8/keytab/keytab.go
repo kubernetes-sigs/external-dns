@@ -114,6 +114,7 @@ func newEntry() entry {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (kt Keytab) String() string {
 	var s string
 	s = `KVNO Timestamp         Principal                                                ET Key
@@ -527,18 +528,23 @@ func (kt *Keytab) JSON() (string, error) {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func (k Keytab) String() string {
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (k Keytab) String() string {
+=======
+func (kt Keytab) String() string {
+>>>>>>> 4d7e5ad26 (update vendored files)
 	var s string
 	s = `KVNO Timestamp         Principal                                                ET Key
 ---- ----------------- -------------------------------------------------------- -- ----------------------------------------------------------------
 `
-	for _, entry := range k.Entries {
+	for _, entry := range kt.Entries {
 		s += entry.String() + "\n"
 	}
 	return s
 }
 
 // AddEntry adds an entry to the keytab. The password should be provided in plain text and it will be converted using the defined enctype to be stored.
-func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
+func (kt *Keytab) AddEntry(principalName, realm, password string, ts time.Time, KVNO uint8, encType int32) error {
 	// Generate a key from the password
 	princ, _ := types.ParseSPNString(principalName)
 	key, _, err := crypto.GetKeyFromPassword(password, princ, realm, encType, types.PADataSequence{})
@@ -549,7 +555,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	// Populate the keytab entry principal
 	ktep := newPrincipal()
 	ktep.NumComponents = int16(len(princ.NameString))
-	if k.version == 1 {
+	if kt.version == 1 {
 		ktep.NumComponents += 1
 	}
 
@@ -565,7 +571,7 @@ func (k *Keytab) AddEntry(principalName, realm, password string, ts time.Time, K
 	e.KVNO = uint32(KVNO)
 	e.Key = key
 
-	k.Entries = append(k.Entries, e)
+	kt.Entries = append(kt.Entries, e)
 	return nil
 }
 
@@ -934,9 +940,17 @@ func isNativeEndianLittle() bool {
 }
 
 // JSON return information about the keys held in the keytab in a JSON format.
+<<<<<<< HEAD
 func (k *Keytab) JSON() (string, error) {
 	b, err := json.MarshalIndent(k, "", "  ")
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+func (k *Keytab) JSON() (string, error) {
+	b, err := json.MarshalIndent(k, "", "  ")
+=======
+func (kt *Keytab) JSON() (string, error) {
+	b, err := json.MarshalIndent(kt, "", "  ")
+>>>>>>> 4d7e5ad26 (update vendored files)
 	if err != nil {
 		return "", err
 	}

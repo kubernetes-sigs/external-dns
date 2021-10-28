@@ -25,11 +25,17 @@ type Domain struct {
 	AutoRenew    bool   `json:"auto_renew,omitempty"`
 	PrivateWhois bool   `json:"private_whois,omitempty"`
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ExpiresAt    string `json:"expires_at,omitempty"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	ExpiresOn    string `json:"expires_on,omitempty"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	ExpiresOn    string `json:"expires_on,omitempty"`
+=======
+	ExpiresAt    string `json:"expires_at,omitempty"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 	CreatedAt    string `json:"created_at,omitempty"`
 	UpdatedAt    string `json:"updated_at,omitempty"`
 }

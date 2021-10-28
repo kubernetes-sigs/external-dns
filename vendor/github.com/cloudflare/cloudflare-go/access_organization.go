@@ -2,6 +2,7 @@ package cloudflare
 
 import (
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"context"
 	"encoding/json"
 	"fmt"
@@ -128,7 +129,13 @@ func (api *API) updateAccessOrganization(ctx context.Context, id string, accessO
 		return AccessOrganization{}, err
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"context"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -170,12 +177,23 @@ type AccessOrganizationDetailResponse struct {
 // AccessOrganization returns the Access organisation details.
 //
 // API reference: https://api.cloudflare.com/#access-organizations-access-organization-details
-func (api *API) AccessOrganization(accountID string) (AccessOrganization, ResultInfo, error) {
-	uri := "/accounts/" + accountID + "/access/organizations"
+func (api *API) AccessOrganization(ctx context.Context, accountID string) (AccessOrganization, ResultInfo, error) {
+	return api.accessOrganization(ctx, accountID, AccountRouteRoot)
+}
 
-	res, err := api.makeRequest("GET", uri, nil)
+// ZoneLevelAccessOrganization returns the zone level Access organisation details.
+//
+// API reference: https://api.cloudflare.com/#zone-level-access-organizations-access-organization-details
+func (api *API) ZoneLevelAccessOrganization(ctx context.Context, zoneID string) (AccessOrganization, ResultInfo, error) {
+	return api.accessOrganization(ctx, zoneID, ZoneRouteRoot)
+}
+
+func (api *API) accessOrganization(ctx context.Context, id string, routeRoot RouteRoot) (AccessOrganization, ResultInfo, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
+
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return AccessOrganization{}, ResultInfo{}, errors.Wrap(err, errMakeRequestError)
+		return AccessOrganization{}, ResultInfo{}, err
 	}
 
 	var accessOrganizationListResponse AccessOrganizationListResponse
@@ -190,12 +208,23 @@ func (api *API) AccessOrganization(accountID string) (AccessOrganization, Result
 // CreateAccessOrganization creates the Access organisation details.
 //
 // API reference: https://api.cloudflare.com/#access-organizations-create-access-organization
-func (api *API) CreateAccessOrganization(accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	uri := "/accounts/" + accountID + "/access/organizations"
+func (api *API) CreateAccessOrganization(ctx context.Context, accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
+	return api.createAccessOrganization(ctx, accountID, accessOrganization, AccountRouteRoot)
+}
 
-	res, err := api.makeRequest("POST", uri, accessOrganization)
+// CreateZoneLevelAccessOrganization creates the zone level Access organisation details.
+//
+// API reference: https://api.cloudflare.com/#zone-level-access-organizations-create-access-organization
+func (api *API) CreateZoneLevelAccessOrganization(ctx context.Context, zoneID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
+	return api.createAccessOrganization(ctx, zoneID, accessOrganization, ZoneRouteRoot)
+}
+
+func (api *API) createAccessOrganization(ctx context.Context, id string, accessOrganization AccessOrganization, routeRoot RouteRoot) (AccessOrganization, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, accessOrganization)
 	if err != nil {
-		return AccessOrganization{}, errors.Wrap(err, errMakeRequestError)
+		return AccessOrganization{}, err
 	}
 
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse
@@ -207,16 +236,33 @@ func (api *API) CreateAccessOrganization(accountID string, accessOrganization Ac
 	return accessOrganizationDetailResponse.Result, nil
 }
 
-// UpdateAccessOrganization creates the Access organisation details.
+// UpdateAccessOrganization updates the Access organisation details.
 //
 // API reference: https://api.cloudflare.com/#access-organizations-update-access-organization
-func (api *API) UpdateAccessOrganization(accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
-	uri := "/accounts/" + accountID + "/access/organizations"
+func (api *API) UpdateAccessOrganization(ctx context.Context, accountID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
+	return api.updateAccessOrganization(ctx, accountID, accessOrganization, AccountRouteRoot)
+}
 
-	res, err := api.makeRequest("PUT", uri, accessOrganization)
+// UpdateZoneLevelAccessOrganization updates the zone level Access organisation details.
+//
+// API reference: https://api.cloudflare.com/#zone-level-access-organizations-update-access-organization
+func (api *API) UpdateZoneLevelAccessOrganization(ctx context.Context, zoneID string, accessOrganization AccessOrganization) (AccessOrganization, error) {
+	return api.updateAccessOrganization(ctx, zoneID, accessOrganization, ZoneRouteRoot)
+}
+
+func (api *API) updateAccessOrganization(ctx context.Context, id string, accessOrganization AccessOrganization, routeRoot RouteRoot) (AccessOrganization, error) {
+	uri := fmt.Sprintf("/%s/%s/access/organizations", routeRoot, id)
+
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, accessOrganization)
 	if err != nil {
+<<<<<<< HEAD
 		return AccessOrganization{}, errors.Wrap(err, errMakeRequestError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+		return AccessOrganization{}, errors.Wrap(err, errMakeRequestError)
+=======
+		return AccessOrganization{}, err
+>>>>>>> 4d7e5ad26 (update vendored files)
 	}
 
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse

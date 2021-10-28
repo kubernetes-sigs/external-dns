@@ -1,15 +1,27 @@
 # GoVultr
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![Automatic Releaser](https://github.com/vultr/govultr/actions/workflows/releaser.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/releaser.yml)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vultr/govultr/v2)](https://pkg.go.dev/github.com/vultr/govultr/v2)
 [![Unit/Coverage Tests](https://github.com/vultr/govultr/actions/workflows/coverage.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/coverage.yml)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Build Status](https://travis-ci.org/vultr/govultr.svg?branch=master)](https://travis-ci.org/vultr/govultr)
+||||||| parent of 4d7e5ad26 (update vendored files)
+[![Build Status](https://travis-ci.org/vultr/govultr.svg?branch=master)](https://travis-ci.org/vultr/govultr)
+=======
+[![Automatic Releaser](https://github.com/vultr/govultr/actions/workflows/releaser.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/releaser.yml)
+>>>>>>> 4d7e5ad26 (update vendored files)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/vultr/govultr/v2)](https://pkg.go.dev/github.com/vultr/govultr/v2)
+<<<<<<< HEAD
 [![codecov](https://codecov.io/gh/vultr/govultr/branch/master/graph/badge.svg?token=PDJXBc7Rci)](https://codecov.io/gh/vultr/govultr)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+[![codecov](https://codecov.io/gh/vultr/govultr/branch/master/graph/badge.svg?token=PDJXBc7Rci)](https://codecov.io/gh/vultr/govultr)
+=======
+[![Unit/Coverage Tests](https://github.com/vultr/govultr/actions/workflows/coverage.yml/badge.svg)](https://github.com/vultr/govultr/actions/workflows/coverage.yml)
+>>>>>>> 4d7e5ad26 (update vendored files)
 [![Go Report Card](https://goreportcard.com/badge/github.com/vultr/govultr)](https://goreportcard.com/report/github.com/vultr/govultr)
 
 The official Vultr Go client - GoVultr allows you to interact with the Vultr V2 API.

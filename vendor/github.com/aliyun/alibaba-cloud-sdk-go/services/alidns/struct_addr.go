@@ -18,6 +18,7 @@ package alidns
 // Addr is a nested struct in alidns response
 type Addr struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
@@ -34,14 +35,26 @@ type Addr struct {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Value           string `json:"Value" xml:"Value"`
+||||||| parent of 4d7e5ad26 (update vendored files)
+	Value           string `json:"Value" xml:"Value"`
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Remark          string `json:"Remark" xml:"Remark"`
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
-	AddrId          int64  `json:"AddrId" xml:"AddrId"`
 	Id              int64  `json:"Id" xml:"Id"`
 	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	LbaWeight       int    `json:"LbaWeight" xml:"LbaWeight"`
 	Mode            string `json:"Mode" xml:"Mode"`
+<<<<<<< HEAD
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	AttributeInfo   string `json:"AttributeInfo" xml:"AttributeInfo"`
+	Value           string `json:"Value" xml:"Value"`
+	Addr            string `json:"Addr" xml:"Addr"`
+	AddrId          int64  `json:"AddrId" xml:"AddrId"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

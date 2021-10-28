@@ -38,6 +38,7 @@ func (codec *jsonRawMessageCodec) Decode(ptr unsafe.Pointer, iter *Iterator) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if iter.ReadNil() {
 		*((*json.RawMessage)(ptr)) = nil
 	} else {
@@ -177,10 +178,23 @@ func (codec *jsoniterRawMessageCodec) Encode(ptr unsafe.Pointer, stream *Stream)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	*((*json.RawMessage)(ptr)) = json.RawMessage(iter.SkipAndReturnBytes())
+||||||| parent of 4d7e5ad26 (update vendored files)
+	*((*json.RawMessage)(ptr)) = json.RawMessage(iter.SkipAndReturnBytes())
+=======
+	if iter.ReadNil() {
+		*((*json.RawMessage)(ptr)) = nil
+	} else {
+		*((*json.RawMessage)(ptr)) = iter.SkipAndReturnBytes()
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (codec *jsonRawMessageCodec) Encode(ptr unsafe.Pointer, stream *Stream) {
-	stream.WriteRaw(string(*((*json.RawMessage)(ptr))))
+	if *((*json.RawMessage)(ptr)) == nil {
+		stream.WriteNil()
+	} else {
+		stream.WriteRaw(string(*((*json.RawMessage)(ptr))))
+	}
 }
 
 func (codec *jsonRawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {
@@ -191,12 +205,26 @@ type jsoniterRawMessageCodec struct {
 }
 
 func (codec *jsoniterRawMessageCodec) Decode(ptr unsafe.Pointer, iter *Iterator) {
-	*((*RawMessage)(ptr)) = RawMessage(iter.SkipAndReturnBytes())
+	if iter.ReadNil() {
+		*((*RawMessage)(ptr)) = nil
+	} else {
+		*((*RawMessage)(ptr)) = iter.SkipAndReturnBytes()
+	}
 }
 
 func (codec *jsoniterRawMessageCodec) Encode(ptr unsafe.Pointer, stream *Stream) {
+<<<<<<< HEAD
 	stream.WriteRaw(string(*((*RawMessage)(ptr))))
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	stream.WriteRaw(string(*((*RawMessage)(ptr))))
+=======
+	if *((*RawMessage)(ptr)) == nil {
+		stream.WriteNil()
+	} else {
+		stream.WriteRaw(string(*((*RawMessage)(ptr))))
+	}
+>>>>>>> 4d7e5ad26 (update vendored files)
 }
 
 func (codec *jsoniterRawMessageCodec) IsEmpty(ptr unsafe.Pointer) bool {

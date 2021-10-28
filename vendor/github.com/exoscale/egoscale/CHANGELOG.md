@@ -6,6 +6,7 @@ Changelog
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 0.73.2
 ------
 
@@ -1027,6 +1028,15 @@ Changelog
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+0.19.0
+------
+
+- feature: add field `Description` on type `IPAddress` (#413)
+- change: add Json tag `omitempty` on field  `TemplateFilter` in type `ListTemplates` (#412)
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 0.18.1
 ------
 

@@ -21,6 +21,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -277,9 +278,14 @@ func sender() Sender {
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	"net"
+>>>>>>> 4d7e5ad26 (update vendored files)
 	"net/http"
 	"net/http/cookiejar"
 	"sync"
+	"time"
 
 	"github.com/Azure/go-autorest/tracing"
 )
@@ -289,6 +295,7 @@ const (
 	mimeTypeFormPost = "application/x-www-form-urlencoded"
 )
 
+// DO NOT ACCESS THIS DIRECTLY.  go through sender()
 var defaultSender Sender
 var defaultSenderInit = &sync.Once{}
 
@@ -332,9 +339,9 @@ func sender() Sender {
 	// note that we can't init defaultSender in init() since it will
 	// execute before calling code has had a chance to enable tracing
 	defaultSenderInit.Do(func() {
-		// Use behaviour compatible with DefaultTransport, but require TLS minimum version.
-		defaultTransport := http.DefaultTransport.(*http.Transport)
+		// copied from http.DefaultTransport with a TLS minimum version.
 		transport := &http.Transport{
+<<<<<<< HEAD
 			Proxy:                 defaultTransport.Proxy,
 			DialContext:           defaultTransport.DialContext,
 			MaxIdleConns:          defaultTransport.MaxIdleConns,
@@ -342,6 +349,25 @@ func sender() Sender {
 			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
 			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+			Proxy:                 defaultTransport.Proxy,
+			DialContext:           defaultTransport.DialContext,
+			MaxIdleConns:          defaultTransport.MaxIdleConns,
+			IdleConnTimeout:       defaultTransport.IdleConnTimeout,
+			TLSHandshakeTimeout:   defaultTransport.TLSHandshakeTimeout,
+			ExpectContinueTimeout: defaultTransport.ExpectContinueTimeout,
+=======
+			Proxy: http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+>>>>>>> 4d7e5ad26 (update vendored files)
 			TLSClientConfig: &tls.Config{
 				MinVersion: tls.VersionTLS12,
 			},

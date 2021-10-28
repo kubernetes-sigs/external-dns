@@ -1080,6 +1080,7 @@ func (decoder *stringModeNumberDecoder) Decode(ptr unsafe.Pointer, iter *Iterato
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if iter.WhatIsNext() == NilValue {
 		decoder.elemDecoder.Decode(ptr, iter)
 		return
@@ -1110,6 +1111,14 @@ func (decoder *stringModeNumberDecoder) Decode(ptr unsafe.Pointer, iter *Iterato
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	if iter.WhatIsNext() == NilValue {
+		decoder.elemDecoder.Decode(ptr, iter)
+		return
+	}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 	c := iter.nextToken()
 	if c != '"' {
 		iter.ReportError("stringModeNumberDecoder", `expect ", but found `+string([]byte{c}))

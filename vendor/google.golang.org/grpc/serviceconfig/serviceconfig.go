@@ -24,6 +24,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
@@ -56,6 +57,14 @@
 =======
 // This package is EXPERIMENTAL.
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// This package is EXPERIMENTAL.
+=======
+// Experimental
+//
+// Notice: This package is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> 4d7e5ad26 (update vendored files)
 package serviceconfig
 
 // Config represents an opaque data structure holding a service config.

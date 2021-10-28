@@ -47,6 +47,7 @@ func formatListOpt(vs list, isRoot, allowMulti bool) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		default:
 			name = reflect.ValueOf(vs).Elem().Type().Name()
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -68,6 +69,11 @@ func formatListOpt(vs list, isRoot, allowMulti bool) string {
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+		default:
+			name = reflect.ValueOf(vs).Elem().Type().Name()
+>>>>>>> 4d7e5ad26 (update vendored files)
 		}
 		start, end = name+"{", "}"
 	}

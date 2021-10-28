@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // LogFunction For big messages, it can be more efficient to pass a function
 // and only call it if the log level is actually enables rather than
 // generating the log message and then checking if the level is enabled
@@ -853,6 +854,14 @@ func (logger *Logger) PanicFn(fn LogFunction) {
 	logger.LogFn(PanicLevel, fn)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+// LogFunction For big messages, it can be more efficient to pass a function
+// and only call it if the log level is actually enables rather than
+// generating the log message and then checking if the level is enabled
+type LogFunction func() []interface{}
+
+>>>>>>> 4d7e5ad26 (update vendored files)
 type Logger struct {
 	// The logs are `io.Copy`'d to this in a mutex. It's common to set this to a
 	// file, or leave it default which is `os.Stderr`. You can also set this to
@@ -914,7 +923,7 @@ func (mw *MutexWrap) Disable() {
 //
 //    var log = &logrus.Logger{
 //      Out: os.Stderr,
-//      Formatter: new(logrus.JSONFormatter),
+//      Formatter: new(logrus.TextFormatter),
 //      Hooks: make(logrus.LevelHooks),
 //      Level: logrus.DebugLevel,
 //    }
@@ -1039,6 +1048,14 @@ func (logger *Logger) Log(level Level, args ...interface{}) {
 	}
 }
 
+func (logger *Logger) LogFn(level Level, fn LogFunction) {
+	if logger.IsLevelEnabled(level) {
+		entry := logger.newEntry()
+		entry.Log(level, fn()...)
+		logger.releaseEntry(entry)
+	}
+}
+
 func (logger *Logger) Trace(args ...interface{}) {
 	logger.Log(TraceLevel, args...)
 }
@@ -1077,6 +1094,45 @@ func (logger *Logger) Fatal(args ...interface{}) {
 func (logger *Logger) Panic(args ...interface{}) {
 	logger.Log(PanicLevel, args...)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func (logger *Logger) TraceFn(fn LogFunction) {
+	logger.LogFn(TraceLevel, fn)
+}
+
+func (logger *Logger) DebugFn(fn LogFunction) {
+	logger.LogFn(DebugLevel, fn)
+}
+
+func (logger *Logger) InfoFn(fn LogFunction) {
+	logger.LogFn(InfoLevel, fn)
+}
+
+func (logger *Logger) PrintFn(fn LogFunction) {
+	entry := logger.newEntry()
+	entry.Print(fn()...)
+	logger.releaseEntry(entry)
+}
+
+func (logger *Logger) WarnFn(fn LogFunction) {
+	logger.LogFn(WarnLevel, fn)
+}
+
+func (logger *Logger) WarningFn(fn LogFunction) {
+	logger.WarnFn(fn)
+}
+
+func (logger *Logger) ErrorFn(fn LogFunction) {
+	logger.LogFn(ErrorLevel, fn)
+}
+
+func (logger *Logger) FatalFn(fn LogFunction) {
+	logger.LogFn(FatalLevel, fn)
+	logger.Exit(1)
+}
+
+func (logger *Logger) PanicFn(fn LogFunction) {
+	logger.LogFn(PanicLevel, fn)
 }
 
 func (logger *Logger) Logln(level Level, args ...interface{}) {

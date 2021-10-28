@@ -109,6 +109,7 @@ func Unmarshal(tag string, goType reflect.Type, evs pref.EnumValueDescriptors) p
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				f.L1.StringName.InitJSON(jsonName)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -132,6 +133,11 @@ func Unmarshal(tag string, goType reflect.Type, evs pref.EnumValueDescriptors) p
 =======
 				f.L1.JSONName.Init(jsonName)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+				f.L1.JSONName.Init(jsonName)
+=======
+				f.L1.StringName.InitJSON(jsonName)
+>>>>>>> 4d7e5ad26 (update vendored files)
 			}
 		case s == "packed":
 			f.L1.HasPacked = true

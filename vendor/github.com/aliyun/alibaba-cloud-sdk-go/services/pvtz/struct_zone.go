@@ -18,6 +18,7 @@ package pvtz
 // Zone is a nested struct in pvtz response
 type Zone struct {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
 	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
 	Remark          string       `json:"Remark" xml:"Remark"`
@@ -47,4 +48,33 @@ type Zone struct {
 	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
+	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
+	ProxyPattern    string `json:"ProxyPattern" xml:"ProxyPattern"`
+	Remark          string `json:"Remark" xml:"Remark"`
+	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	RecordCount     int    `json:"RecordCount" xml:"RecordCount"`
+	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+	ZoneName        string `json:"ZoneName" xml:"ZoneName"`
+	IsPtr           bool   `json:"IsPtr" xml:"IsPtr"`
+	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	Vpcs            Vpcs   `json:"Vpcs" xml:"Vpcs"`
+=======
+	UpdateTime      string       `json:"UpdateTime" xml:"UpdateTime"`
+	ProxyPattern    string       `json:"ProxyPattern" xml:"ProxyPattern"`
+	Remark          string       `json:"Remark" xml:"Remark"`
+	CreateTimestamp int64        `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	RecordCount     int          `json:"RecordCount" xml:"RecordCount"`
+	CreateTime      string       `json:"CreateTime" xml:"CreateTime"`
+	UpdateTimestamp int64        `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	ZoneId          string       `json:"ZoneId" xml:"ZoneId"`
+	ResourceGroupId string       `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	ZoneTag         string       `json:"ZoneTag" xml:"ZoneTag"`
+	ZoneName        string       `json:"ZoneName" xml:"ZoneName"`
+	IsPtr           bool         `json:"IsPtr" xml:"IsPtr"`
+	ZoneType        string       `json:"ZoneType" xml:"ZoneType"`
+	ResourceTags    ResourceTags `json:"ResourceTags" xml:"ResourceTags"`
+	Vpcs            Vpcs         `json:"Vpcs" xml:"Vpcs"`
+>>>>>>> 4d7e5ad26 (update vendored files)
 }

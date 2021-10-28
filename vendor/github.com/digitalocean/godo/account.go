@@ -12,6 +12,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Account
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -35,6 +36,11 @@ import (
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#account
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#account
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Account
+>>>>>>> 4d7e5ad26 (update vendored files)
 type AccountService interface {
 	Get(context.Context) (*Account, *Response, error)
 }

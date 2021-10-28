@@ -7,6 +7,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build gccgo && !aix
 // +build gccgo,!aix
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -38,6 +39,13 @@
 // +build gccgo
 // +build !aix
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+// +build gccgo
+// +build !aix
+=======
+//go:build gccgo && !aix
+// +build gccgo,!aix
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 package unix
 

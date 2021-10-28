@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -396,6 +397,11 @@ func (c *FakeClusterRoleBindings) Apply(ctx context.Context, clusterRoleBinding 
 		Invokes(testing.NewRootPatchSubresourceAction(clusterrolebindingsResource, *name, types.ApplyPatchType, data), &v1beta1.ClusterRoleBinding{})
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 4d7e5ad26 (update vendored files)
 
 	v1beta1 "k8s.io/api/rbac/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -403,6 +409,7 @@ func (c *FakeClusterRoleBindings) Apply(ctx context.Context, clusterRoleBinding 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1beta1 "k8s.io/client-go/applyconfigurations/rbac/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -475,7 +482,7 @@ func (c *FakeClusterRoleBindings) Update(ctx context.Context, clusterRoleBinding
 // Delete takes name of the clusterRoleBinding and deletes it. Returns an error if one occurs.
 func (c *FakeClusterRoleBindings) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(clusterrolebindingsResource, name), &v1beta1.ClusterRoleBinding{})
+		Invokes(testing.NewRootDeleteActionWithOptions(clusterrolebindingsResource, name, opts), &v1beta1.ClusterRoleBinding{})
 	return err
 }
 
@@ -492,6 +499,27 @@ func (c *FakeClusterRoleBindings) Patch(ctx context.Context, name string, pt typ
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(clusterrolebindingsResource, name, pt, data, subresources...), &v1beta1.ClusterRoleBinding{})
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.ClusterRoleBinding), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied clusterRoleBinding.
+func (c *FakeClusterRoleBindings) Apply(ctx context.Context, clusterRoleBinding *rbacv1beta1.ClusterRoleBindingApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ClusterRoleBinding, err error) {
+	if clusterRoleBinding == nil {
+		return nil, fmt.Errorf("clusterRoleBinding provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(clusterRoleBinding)
+	if err != nil {
+		return nil, err
+	}
+	name := clusterRoleBinding.Name
+	if name == nil {
+		return nil, fmt.Errorf("clusterRoleBinding.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(clusterrolebindingsResource, *name, types.ApplyPatchType, data), &v1beta1.ClusterRoleBinding{})
 	if obj == nil {
 		return nil, err
 	}

@@ -35,6 +35,10 @@ type EventExpansion interface {
 	// UpdateWithEventNamespace is the same as a Update, except that it sends the request to the event.Namespace.
 	UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error)
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	// PatchWithEventNamespace is the same as a Patch, except that it sends the request to the event.Namespace.
 	PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error)
 	// Search finds events about the specified object
@@ -71,6 +75,7 @@ func (e *events) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
 	if e.ns != "" && event.Namespace != e.ns {
 		return nil, fmt.Errorf("can't update an event with namespace '%v' in namespace '%v'", event.Namespace, e.ns)
 	}
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	PatchWithEventNamespace(event *v1.Event, data []byte) (*v1.Event, error)
@@ -106,6 +111,9 @@ func (e *events) CreateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
 // object.
 func (e *events) UpdateWithEventNamespace(event *v1.Event) (*v1.Event, error) {
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 4d7e5ad26 (update vendored files)
+=======
+>>>>>>> 4d7e5ad26 (update vendored files)
 	result := &v1.Event{}
 	err := e.client.Put().
 		NamespaceIfScoped(event.Namespace, len(event.Namespace) > 0).
