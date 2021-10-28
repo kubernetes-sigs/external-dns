@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -285,6 +286,11 @@ func (c *FakeEndpointSlices) Apply(ctx context.Context, endpointSlice *discovery
 		Invokes(testing.NewPatchSubresourceAction(endpointslicesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.EndpointSlice{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	v1beta1 "k8s.io/api/discovery/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -292,6 +298,7 @@ func (c *FakeEndpointSlices) Apply(ctx context.Context, endpointSlice *discovery
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	discoveryv1beta1 "k8s.io/client-go/applyconfigurations/discovery/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -370,7 +377,7 @@ func (c *FakeEndpointSlices) Update(ctx context.Context, endpointSlice *v1beta1.
 // Delete takes name of the endpointSlice and deletes it. Returns an error if one occurs.
 func (c *FakeEndpointSlices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(endpointslicesResource, c.ns, name), &v1beta1.EndpointSlice{})
+		Invokes(testing.NewDeleteActionWithOptions(endpointslicesResource, c.ns, name, opts), &v1beta1.EndpointSlice{})
 
 	return err
 }
@@ -388,6 +395,28 @@ func (c *FakeEndpointSlices) Patch(ctx context.Context, name string, pt types.Pa
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(endpointslicesResource, c.ns, name, pt, data, subresources...), &v1beta1.EndpointSlice{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.EndpointSlice), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied endpointSlice.
+func (c *FakeEndpointSlices) Apply(ctx context.Context, endpointSlice *discoveryv1beta1.EndpointSliceApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.EndpointSlice, err error) {
+	if endpointSlice == nil {
+		return nil, fmt.Errorf("endpointSlice provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(endpointSlice)
+	if err != nil {
+		return nil, err
+	}
+	name := endpointSlice.Name
+	if name == nil {
+		return nil, fmt.Errorf("endpointSlice.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(endpointslicesResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.EndpointSlice{})
 
 	if obj == nil {
 		return nil, err

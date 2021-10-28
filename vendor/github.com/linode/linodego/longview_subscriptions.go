@@ -42,6 +42,7 @@ func (c *Client) ListLongviewSubscriptions(ctx context.Context, opts *ListOption
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
@@ -54,6 +55,10 @@ func (c *Client) ListLongviewSubscriptions(ctx context.Context, opts *ListOption
 =======
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

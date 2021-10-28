@@ -21,6 +21,7 @@ package v1
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type CronJobExpansion interface{}
 
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -34,4 +35,9 @@ type CronJobExpansion interface{}
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+type CronJobExpansion interface{}
+
+>>>>>>> 6b7ce455e (update vendored files)
 type JobExpansion interface{}

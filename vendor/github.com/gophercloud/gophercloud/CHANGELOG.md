@@ -1,4 +1,40 @@
+<<<<<<< HEAD
 ## 0.22.0 (Unreleased)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+## 0.23.0 (Unreleased)
+
+## 0.22.0 (October 7, 2021)
+
+BREAKING CHANGES
+
+* The types of several Object Storage Update fields have been changed to pointers in order to allow the value to be unset via the HTTP headers:
+  * `objectstorage/v1/accounts.UpdateOpts.ContentType`
+  * `objectstorage/v1/accounts.UpdateOpts.DetectContentType`
+  * `objectstorage/v1/containers.UpdateOpts.ContainerRead`
+  * `objectstorage/v1/containers.UpdateOpts.ContainerSyncTo`
+  * `objectstorage/v1/containers.UpdateOpts.ContainerSyncKey`
+  * `objectstorage/v1/containers.UpdateOpts.ContainerWrite`
+  * `objectstorage/v1/containers.UpdateOpts.ContentType`
+  * `objectstorage/v1/containers.UpdateOpts.DetectContentType`
+  * `objectstorage/v1/objects.UpdateOpts.ContentDisposition`
+  * `objectstorage/v1/objects.UpdateOpts.ContentEncoding`
+  * `objectstorage/v1/objects.UpdateOpts.ContentType`
+  * `objectstorage/v1/objects.UpdateOpts.DeleteAfter`
+  * `objectstorage/v1/objects.UpdateOpts.DeleteAt`
+  * `objectstorage/v1/objects.UpdateOpts.DetectContentType`
+
+BUG FIXES
+
+* Fixed issue with not being able to unset Object Storage values via HTTP headers [GH-2218](https://github.com/gophercloud/gophercloud/pull/2218)
+
+IMPROVEMENTS
+
+* Added `compute/v2/servers.Server.ServerGroups` [GH-2217](https://github.com/gophercloud/gophercloud/pull/2217)
+* Added `imageservice/v2/images.ReplaceImageProtected` to allow the `protected` field to be updated [GH-2221](https://github.com/gophercloud/gophercloud/pull/2221)
+* More details added to the 404/Not Found error message [GH-2223](https://github.com/gophercloud/gophercloud/pull/2223)
+* Added `openstack/baremetal/v1/nodes.CreateSubscriptionOpts.HttpHeaders` [GH-2224](https://github.com/gophercloud/gophercloud/pull/2224)
+>>>>>>> 6b7ce455e (update vendored files)
 
 ## 0.21.0 (September 14, 2021)
 

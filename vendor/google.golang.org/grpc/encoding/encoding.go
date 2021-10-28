@@ -22,6 +22,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
@@ -115,6 +116,14 @@ type Compressor interface {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // This package is EXPERIMENTAL.
+||||||| parent of 6b7ce455e (update vendored files)
+// This package is EXPERIMENTAL.
+=======
+// Experimental
+//
+// Notice: This package is EXPERIMENTAL and may be changed or removed in a
+// later release.
+>>>>>>> 6b7ce455e (update vendored files)
 package encoding
 
 import (
@@ -141,11 +150,20 @@ type Compressor interface {
 	// coding header.  The result must be static; the result cannot change
 	// between calls.
 	Name() string
-	// EXPERIMENTAL: if a Compressor implements
+	// If a Compressor implements
 	// DecompressedSize(compressedBytes []byte) int, gRPC will call it
 	// to determine the size of the buffer allocated for the result of decompression.
 	// Return -1 to indicate unknown size.
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	//
+	// Experimental
+	//
+	// Notice: This API is EXPERIMENTAL and may be changed or removed in a
+	// later release.
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 var registeredCompressor = make(map[string]Compressor)

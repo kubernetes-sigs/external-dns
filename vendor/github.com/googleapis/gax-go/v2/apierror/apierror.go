@@ -28,7 +28,12 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Package apierror implements a wrapper error for parsing error details from
+<<<<<<< HEAD
 // API calls. Currently, only errors representing a gRPC status are supported.
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// API calls. Both HTTP & gRPC status errors are supported.
+>>>>>>> 6b7ce455e (update vendored files)
 package apierror
 
 import (

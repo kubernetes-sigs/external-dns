@@ -28,5 +28,11 @@ const Version = version.Version
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Version of the library
+<<<<<<< HEAD
 const Version = "0.18.1"
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+const Version = "0.18.1"
+=======
+const Version = "0.19.0"
+>>>>>>> 6b7ce455e (update vendored files)

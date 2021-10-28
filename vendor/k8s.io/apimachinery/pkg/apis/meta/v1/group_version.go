@@ -37,6 +37,7 @@ func (gr *GroupResource) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if gr == nil {
 		return "<nil>"
 	}
@@ -127,6 +128,12 @@ func (gk *GroupKind) String() string {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if gr == nil {
+		return "<nil>"
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	if len(gr.Group) == 0 {
 		return gr.Resource
 	}
@@ -134,7 +141,7 @@ func (gk *GroupKind) String() string {
 }
 
 // GroupVersionResource unambiguously identifies a resource.  It doesn't anonymously include GroupVersion
-// to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
+// to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type GroupVersionResource struct {
@@ -144,6 +151,9 @@ type GroupVersionResource struct {
 }
 
 func (gvr *GroupVersionResource) String() string {
+	if gvr == nil {
+		return "<nil>"
+	}
 	return strings.Join([]string{gvr.Group, "/", gvr.Version, ", Resource=", gvr.Resource}, "")
 }
 
@@ -157,7 +167,14 @@ type GroupKind struct {
 }
 
 func (gk *GroupKind) String() string {
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if gk == nil {
+		return "<nil>"
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	if len(gk.Group) == 0 {
 		return gk.Kind
 	}
@@ -165,7 +182,7 @@ func (gk *GroupKind) String() string {
 }
 
 // GroupVersionKind unambiguously identifies a kind.  It doesn't anonymously include GroupVersion
-// to avoid automatic coersion.  It doesn't use a GroupVersion to avoid custom marshalling
+// to avoid automatic coercion.  It doesn't use a GroupVersion to avoid custom marshalling
 //
 // +protobuf.options.(gogoproto.goproto_stringer)=false
 type GroupVersionKind struct {

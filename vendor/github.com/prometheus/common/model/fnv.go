@@ -23,6 +23,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // hashNew initializes a new fnv64a hash value.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -37,6 +38,11 @@ const (
 =======
 // hashNew initializies a new fnv64a hash value.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// hashNew initializies a new fnv64a hash value.
+=======
+// hashNew initializes a new fnv64a hash value.
+>>>>>>> 6b7ce455e (update vendored files)
 func hashNew() uint64 {
 	return offset64
 }

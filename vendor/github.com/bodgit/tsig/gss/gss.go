@@ -7,41 +7,35 @@ Example client:
 
         import (
                 "fmt"
-                "net"
                 "time"
 
                 "github.com/bodgit/tsig"
-                c "github.com/bodgit/tsig/client"
                 "github.com/bodgit/tsig/gss"
                 "github.com/miekg/dns"
         )
 
         func main() {
-                host := "ns.example.com"
+                dnsClient := new(dns.Client)
+                dnsClient.Net = "tcp"
 
-                g, err := gss.New()
+                gssClient, err := gss.NewClient(dnsClient)
                 if err != nil {
                         panic(err)
                 }
-                defer g.Close()
+                defer gssClient.Close()
+
+                host := "ns.example.com:53"
 
                 // Negotiate a context with the chosen server using the
-                // current user. See also g.NegotiateContextWithCredentials()
-                // and g.NegotiateContextWithKeytab() for alternatives
-                keyname, _, err := g.NegotiateContext(host)
+                // current user. See also
+                // gssClient.NegotiateContextWithCredentials() and
+                // gssClient.NegotiateContextWithKeytab() for alternatives
+                keyname, _, err := gssClient.NegotiateContext(host)
                 if err != nil {
                         panic(err)
                 }
 
-                client := c.Client{}
-                client.Net = "tcp"
-                client.TsigAlgorithm = map[string]*c.TsigAlgorithm{
-                        tsig.GSS: {
-                                Generate: g.GenerateGSS,
-                                Verify:   g.VerifyGSS,
-                        },
-                }
-                client.TsigSecret = map[string]string{*keyname: ""}
+                dnsClient.TsigProvider = gssClient
 
                 // Use the DNS client as normal
 
@@ -54,9 +48,9 @@ Example client:
                 }
                 msg.Insert([]dns.RR{insert})
 
-                msg.SetTsig(*keyname, tsig.GSS, 300, time.Now().Unix())
+                msg.SetTsig(keyname, tsig.GSS, 300, time.Now().Unix())
 
-                rr, _, err := client.Exchange(msg, net.JoinHostPort(host, "53"))
+                rr, _, err := dnsClient.Exchange(msg, host)
                 if err != nil {
                         panic(err)
                 }
@@ -66,7 +60,7 @@ Example client:
                 }
 
                 // Cleanup the context
-                err = g.DeleteContext(keyname)
+                err = gssClient.DeleteContext(keyname)
                 if err != nil {
                         panic(err)
                 }
@@ -78,13 +72,42 @@ uses native SSPI which has a similar API.
 package gss
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
 
+	"github.com/bodgit/tsig"
+	"github.com/go-logr/logr"
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/miekg/dns"
 )
+
+var (
+	errNotSupported = errors.New("not supported")
+)
+
+// gssNoVerify is a dns.TsigProvider that skips any GSS-TSIG verification.
+//
+// BIND doesn't sign TKEY responses but Windows does, using the key you're
+// currently negotiating so it creates a chicken & egg problem. According
+// to the RFC, verification isn't needed as the TKEY response should be
+// cryptographically secure anyway.
+type gssNoVerify struct{}
+
+func (*gssNoVerify) Generate(_ []byte, t *dns.TSIG) ([]byte, error) {
+	if dns.CanonicalName(t.Algorithm) != tsig.GSS {
+		return nil, dns.ErrKeyAlg
+	}
+	return nil, dns.ErrSecret
+}
+
+func (*gssNoVerify) Verify(_ []byte, t *dns.TSIG) error {
+	if dns.CanonicalName(t.Algorithm) != tsig.GSS {
+		return dns.ErrKeyAlg
+	}
+	return nil
+}
 
 func generateTKEYName(host string) string {
 
@@ -103,7 +126,7 @@ func generateSPN(host string) string {
 	return fmt.Sprintf("DNS/%s", host)
 }
 
-func (c *GSS) close() error {
+func (c *Client) close() error {
 
 	c.m.RLock()
 	keys := make([]string, 0, len(c.ctx))
@@ -114,8 +137,35 @@ func (c *GSS) close() error {
 
 	var errs error
 	for _, k := range keys {
-		errs = multierror.Append(errs, c.DeleteContext(&k))
+		errs = multierror.Append(errs, c.DeleteContext(k))
 	}
 
 	return errs
+}
+
+func (c *Client) setOption(options ...func(*Client) error) error {
+	for _, option := range options {
+		if err := option(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// SetConfig sets the Kerberos configuration used by c
+func (c *Client) SetConfig(config string) error {
+	return c.setOption(WithConfig(config))
+}
+
+// WithLogger sets the logger used
+func WithLogger(logger logr.Logger) func(*Client) error {
+	return func(c *Client) error {
+		c.logger = logger
+		return nil
+	}
+}
+
+// SetLogger sets the logger used by c
+func (c *Client) SetLogger(logger logr.Logger) error {
+	return c.setOption(WithLogger(logger))
 }

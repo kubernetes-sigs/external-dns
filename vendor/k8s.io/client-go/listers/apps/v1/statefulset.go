@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type StatefulSetLister interface {
 	// List lists all StatefulSets in the indexer.
@@ -123,8 +124,13 @@ type StatefulSetNamespaceLister interface {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 6b7ce455e (update vendored files)
 type StatefulSetLister interface {
 	// List lists all StatefulSets in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.StatefulSet, err error)
 	// StatefulSets returns an object that can list and get StatefulSets.
 	StatefulSets(namespace string) StatefulSetNamespaceLister
@@ -155,11 +161,18 @@ func (s *statefulSetLister) StatefulSets(namespace string) StatefulSetNamespaceL
 }
 
 // StatefulSetNamespaceLister helps list and get StatefulSets.
+// All objects returned here must be treated as read-only.
 type StatefulSetNamespaceLister interface {
 	// List lists all StatefulSets in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.StatefulSet, err error)
 	// Get retrieves the StatefulSet from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 6b7ce455e (update vendored files)
 	Get(name string) (*v1.StatefulSet, error)
 	StatefulSetNamespaceListerExpansion
 }

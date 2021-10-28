@@ -21,7 +21,6 @@ import (
 )
 
 // AddDomainRecord invokes the alidns.AddDomainRecord API synchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainrecord.html
 func (client *Client) AddDomainRecord(request *AddDomainRecordRequest) (response *AddDomainRecordResponse, err error) {
 	response = CreateAddDomainRecordResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AddDomainRecord(request *AddDomainRecordRequest) (response
 }
 
 // AddDomainRecordWithChan invokes the alidns.AddDomainRecord API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainrecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainRecordWithChan(request *AddDomainRecordRequest) (<-chan *AddDomainRecordResponse, <-chan error) {
 	responseChan := make(chan *AddDomainRecordResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AddDomainRecordWithChan(request *AddDomainRecordRequest) (
 }
 
 // AddDomainRecordWithCallback invokes the alidns.AddDomainRecord API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainrecord.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainRecordWithCallback(request *AddDomainRecordRequest, callback func(response *AddDomainRecordResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -100,6 +95,7 @@ func CreateAddDomainRecordRequest() (request *AddDomainRecordRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddDomainRecord", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

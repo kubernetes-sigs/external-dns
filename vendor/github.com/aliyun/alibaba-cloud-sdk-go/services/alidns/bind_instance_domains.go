@@ -21,7 +21,6 @@ import (
 )
 
 // BindInstanceDomains invokes the alidns.BindInstanceDomains API synchronously
-// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
 func (client *Client) BindInstanceDomains(request *BindInstanceDomainsRequest) (response *BindInstanceDomainsResponse, err error) {
 	response = CreateBindInstanceDomainsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) BindInstanceDomains(request *BindInstanceDomainsRequest) (
 }
 
 // BindInstanceDomainsWithChan invokes the alidns.BindInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) BindInstanceDomainsWithChan(request *BindInstanceDomainsRequest) (<-chan *BindInstanceDomainsResponse, <-chan error) {
 	responseChan := make(chan *BindInstanceDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) BindInstanceDomainsWithChan(request *BindInstanceDomainsRe
 }
 
 // BindInstanceDomainsWithCallback invokes the alidns.BindInstanceDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/bindinstancedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) BindInstanceDomainsWithCallback(request *BindInstanceDomainsRequest, callback func(response *BindInstanceDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateBindInstanceDomainsRequest() (request *BindInstanceDomainsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "BindInstanceDomains", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -371,12 +372,18 @@ func (c *clusterRoles) Apply(ctx context.Context, clusterRole *rbacv1beta1.Clust
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 	"time"
 
 	v1beta1 "k8s.io/api/rbac/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1beta1 "k8s.io/client-go/applyconfigurations/rbac/v1beta1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -397,6 +404,7 @@ type ClusterRoleInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.ClusterRoleList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.ClusterRole, err error)
+	Apply(ctx context.Context, clusterRole *rbacv1beta1.ClusterRoleApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ClusterRole, err error)
 	ClusterRoleExpansion
 }
 
@@ -513,6 +521,31 @@ func (c *clusterRoles) Patch(ctx context.Context, name string, pt types.PatchTyp
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied clusterRole.
+func (c *clusterRoles) Apply(ctx context.Context, clusterRole *rbacv1beta1.ClusterRoleApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ClusterRole, err error) {
+	if clusterRole == nil {
+		return nil, fmt.Errorf("clusterRole provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(clusterRole)
+	if err != nil {
+		return nil, err
+	}
+	name := clusterRole.Name
+	if name == nil {
+		return nil, fmt.Errorf("clusterRole.Name must be provided to Apply")
+	}
+	result = &v1beta1.ClusterRole{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Resource("clusterroles").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

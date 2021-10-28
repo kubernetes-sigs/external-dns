@@ -108,7 +108,12 @@ func (c *FakeCSIStorageCapacities) Update(ctx context.Context, cSIStorageCapacit
 // Delete takes name of the cSIStorageCapacity and deletes it. Returns an error if one occurs.
 func (c *FakeCSIStorageCapacities) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(csistoragecapacitiesResource, c.ns, name), &v1alpha1.CSIStorageCapacity{})
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(csistoragecapacitiesResource, c.ns, name, opts), &v1alpha1.CSIStorageCapacity{})
+>>>>>>> 6b7ce455e (update vendored files)
 
 	return err
 }

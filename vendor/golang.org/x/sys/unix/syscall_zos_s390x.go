@@ -67,6 +67,7 @@ func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
+<<<<<<< HEAD
 	for i := 0; i < len(sa.Addr); i++ {
 		sa.raw.Addr[i] = sa.Addr[i]
 	}
@@ -589,6 +590,525 @@ func Pipe(p []int) (err error) {
 	err = pipe(&pp)
 	p[0] = int(pp[0])
 	p[1] = int(pp[1])
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	sa.raw.Addr = sa.Addr
+	return unsafe.Pointer(&sa.raw), _Socklen(sa.raw.Len), nil
+}
+
+func (sa *SockaddrInet6) sockaddr() (unsafe.Pointer, _Socklen, error) {
+	if sa.Port < 0 || sa.Port > 0xFFFF {
+		return nil, 0, EINVAL
+	}
+	sa.raw.Len = SizeofSockaddrInet6
+	sa.raw.Family = AF_INET6
+	p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))
+	p[0] = byte(sa.Port >> 8)
+	p[1] = byte(sa.Port)
+	sa.raw.Scope_id = sa.ZoneId
+	sa.raw.Addr = sa.Addr
+	return unsafe.Pointer(&sa.raw), _Socklen(sa.raw.Len), nil
+}
+
+func (sa *SockaddrUnix) sockaddr() (unsafe.Pointer, _Socklen, error) {
+	name := sa.Name
+	n := len(name)
+	if n >= len(sa.raw.Path) || n == 0 {
+		return nil, 0, EINVAL
+	}
+	sa.raw.Len = byte(3 + n) // 2 for Family, Len; 1 for NUL
+	sa.raw.Family = AF_UNIX
+	for i := 0; i < n; i++ {
+		sa.raw.Path[i] = int8(name[i])
+	}
+	return unsafe.Pointer(&sa.raw), _Socklen(sa.raw.Len), nil
+}
+
+func anyToSockaddr(_ int, rsa *RawSockaddrAny) (Sockaddr, error) {
+	// TODO(neeilan): Implement use of first param (fd)
+	switch rsa.Addr.Family {
+	case AF_UNIX:
+		pp := (*RawSockaddrUnix)(unsafe.Pointer(rsa))
+		sa := new(SockaddrUnix)
+		// For z/OS, only replace NUL with @ when the
+		// length is not zero.
+		if pp.Len != 0 && pp.Path[0] == 0 {
+			// "Abstract" Unix domain socket.
+			// Rewrite leading NUL as @ for textual display.
+			// (This is the standard convention.)
+			// Not friendly to overwrite in place,
+			// but the callers below don't care.
+			pp.Path[0] = '@'
+		}
+
+		// Assume path ends at NUL.
+		//
+		// For z/OS, the length of the name is a field
+		// in the structure. To be on the safe side, we
+		// will still scan the name for a NUL but only
+		// to the length provided in the structure.
+		//
+		// This is not technically the Linux semantics for
+		// abstract Unix domain sockets--they are supposed
+		// to be uninterpreted fixed-size binary blobs--but
+		// everyone uses this convention.
+		n := 0
+		for n < int(pp.Len) && pp.Path[n] != 0 {
+			n++
+		}
+		bytes := (*[len(pp.Path)]byte)(unsafe.Pointer(&pp.Path[0]))[0:n]
+		sa.Name = string(bytes)
+		return sa, nil
+
+	case AF_INET:
+		pp := (*RawSockaddrInet4)(unsafe.Pointer(rsa))
+		sa := new(SockaddrInet4)
+		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
+		sa.Port = int(p[0])<<8 + int(p[1])
+		sa.Addr = pp.Addr
+		return sa, nil
+
+	case AF_INET6:
+		pp := (*RawSockaddrInet6)(unsafe.Pointer(rsa))
+		sa := new(SockaddrInet6)
+		p := (*[2]byte)(unsafe.Pointer(&pp.Port))
+		sa.Port = int(p[0])<<8 + int(p[1])
+		sa.ZoneId = pp.Scope_id
+		sa.Addr = pp.Addr
+		return sa, nil
+	}
+	return nil, EAFNOSUPPORT
+}
+
+func Accept(fd int) (nfd int, sa Sockaddr, err error) {
+	var rsa RawSockaddrAny
+	var len _Socklen = SizeofSockaddrAny
+	nfd, err = accept(fd, &rsa, &len)
+	if err != nil {
+		return
+	}
+	// TODO(neeilan): Remove 0 in call
+	sa, err = anyToSockaddr(0, &rsa)
+	if err != nil {
+		Close(nfd)
+		nfd = 0
+	}
+	return
+}
+
+func (iov *Iovec) SetLen(length int) {
+	iov.Len = uint64(length)
+}
+
+func (msghdr *Msghdr) SetControllen(length int) {
+	msghdr.Controllen = int32(length)
+}
+
+func (cmsg *Cmsghdr) SetLen(length int) {
+	cmsg.Len = int32(length)
+}
+
+//sys   fcntl(fd int, cmd int, arg int) (val int, err error)
+//sys	read(fd int, p []byte) (n int, err error)
+//sys   readlen(fd int, buf *byte, nbuf int) (n int, err error) = SYS_READ
+//sys	write(fd int, p []byte) (n int, err error)
+
+//sys	accept(s int, rsa *RawSockaddrAny, addrlen *_Socklen) (fd int, err error) = SYS___ACCEPT_A
+//sys	bind(s int, addr unsafe.Pointer, addrlen _Socklen) (err error) = SYS___BIND_A
+//sys	connect(s int, addr unsafe.Pointer, addrlen _Socklen) (err error) = SYS___CONNECT_A
+//sysnb	getgroups(n int, list *_Gid_t) (nn int, err error)
+//sysnb	setgroups(n int, list *_Gid_t) (err error)
+//sys	getsockopt(s int, level int, name int, val unsafe.Pointer, vallen *_Socklen) (err error)
+//sys	setsockopt(s int, level int, name int, val unsafe.Pointer, vallen uintptr) (err error)
+//sysnb	socket(domain int, typ int, proto int) (fd int, err error)
+//sysnb	socketpair(domain int, typ int, proto int, fd *[2]int32) (err error)
+//sysnb	getpeername(fd int, rsa *RawSockaddrAny, addrlen *_Socklen) (err error) = SYS___GETPEERNAME_A
+//sysnb	getsockname(fd int, rsa *RawSockaddrAny, addrlen *_Socklen) (err error) = SYS___GETSOCKNAME_A
+//sys	recvfrom(fd int, p []byte, flags int, from *RawSockaddrAny, fromlen *_Socklen) (n int, err error) = SYS___RECVFROM_A
+//sys	sendto(s int, buf []byte, flags int, to unsafe.Pointer, addrlen _Socklen) (err error) = SYS___SENDTO_A
+//sys	recvmsg(s int, msg *Msghdr, flags int) (n int, err error) = SYS___RECVMSG_A
+//sys	sendmsg(s int, msg *Msghdr, flags int) (n int, err error) = SYS___SENDMSG_A
+//sys   mmap(addr uintptr, length uintptr, prot int, flag int, fd int, pos int64) (ret uintptr, err error) = SYS_MMAP
+//sys   munmap(addr uintptr, length uintptr) (err error) = SYS_MUNMAP
+//sys   ioctl(fd int, req uint, arg uintptr) (err error) = SYS_IOCTL
+
+//sys   Access(path string, mode uint32) (err error) = SYS___ACCESS_A
+//sys   Chdir(path string) (err error) = SYS___CHDIR_A
+//sys	Chown(path string, uid int, gid int) (err error) = SYS___CHOWN_A
+//sys	Chmod(path string, mode uint32) (err error) = SYS___CHMOD_A
+//sys   Creat(path string, mode uint32) (fd int, err error) = SYS___CREAT_A
+//sys	Dup(oldfd int) (fd int, err error)
+//sys	Dup2(oldfd int, newfd int) (err error)
+//sys	Errno2() (er2 int) = SYS___ERRNO2
+//sys	Err2ad() (eadd *int) = SYS___ERR2AD
+//sys	Exit(code int)
+//sys	Fchdir(fd int) (err error)
+//sys	Fchmod(fd int, mode uint32) (err error)
+//sys	Fchown(fd int, uid int, gid int) (err error)
+//sys	FcntlInt(fd uintptr, cmd int, arg int) (retval int, err error) = SYS_FCNTL
+//sys	fstat(fd int, stat *Stat_LE_t) (err error)
+
+func Fstat(fd int, stat *Stat_t) (err error) {
+	var statLE Stat_LE_t
+	err = fstat(fd, &statLE)
+	copyStat(stat, &statLE)
+	return
+}
+
+//sys	Fstatvfs(fd int, stat *Statvfs_t) (err error) = SYS_FSTATVFS
+//sys	Fsync(fd int) (err error)
+//sys	Ftruncate(fd int, length int64) (err error)
+//sys   Getpagesize() (pgsize int) = SYS_GETPAGESIZE
+//sys   Mprotect(b []byte, prot int) (err error) = SYS_MPROTECT
+//sys   Msync(b []byte, flags int) (err error) = SYS_MSYNC
+//sys   Poll(fds []PollFd, timeout int) (n int, err error) = SYS_POLL
+//sys   Times(tms *Tms) (ticks uintptr, err error) = SYS_TIMES
+//sys   W_Getmntent(buff *byte, size int) (lastsys int, err error) = SYS_W_GETMNTENT
+//sys   W_Getmntent_A(buff *byte, size int) (lastsys int, err error) = SYS___W_GETMNTENT_A
+
+//sys   mount_LE(path string, filesystem string, fstype string, mtm uint32, parmlen int32, parm string) (err error) = SYS___MOUNT_A
+//sys   unmount(filesystem string, mtm int) (err error) = SYS___UMOUNT_A
+//sys   Chroot(path string) (err error) = SYS___CHROOT_A
+//sys   Select(nmsgsfds int, r *FdSet, w *FdSet, e *FdSet, timeout *Timeval) (ret int, err error) = SYS_SELECT
+//sysnb Uname(buf *Utsname) (err error) = SYS___UNAME_A
+
+func Ptsname(fd int) (name string, err error) {
+	r0, _, e1 := syscall_syscall(SYS___PTSNAME_A, uintptr(fd), 0, 0)
+	name = u2s(unsafe.Pointer(r0))
+	if e1 != 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func u2s(cstr unsafe.Pointer) string {
+	str := (*[1024]uint8)(cstr)
+	i := 0
+	for str[i] != 0 {
+		i++
+	}
+	return string(str[:i])
+}
+
+func Close(fd int) (err error) {
+	_, _, e1 := syscall_syscall(SYS_CLOSE, uintptr(fd), 0, 0)
+	for i := 0; e1 == EAGAIN && i < 10; i++ {
+		_, _, _ = syscall_syscall(SYS_USLEEP, uintptr(10), 0, 0)
+		_, _, e1 = syscall_syscall(SYS_CLOSE, uintptr(fd), 0, 0)
+	}
+	if e1 != 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+var mapper = &mmapper{
+	active: make(map[*byte][]byte),
+	mmap:   mmap,
+	munmap: munmap,
+}
+
+// Dummy function: there are no semantics for Madvise on z/OS
+func Madvise(b []byte, advice int) (err error) {
+	return
+}
+
+func Mmap(fd int, offset int64, length int, prot int, flags int) (data []byte, err error) {
+	return mapper.Mmap(fd, offset, length, prot, flags)
+}
+
+func Munmap(b []byte) (err error) {
+	return mapper.Munmap(b)
+}
+
+//sys   Gethostname(buf []byte) (err error) = SYS___GETHOSTNAME_A
+//sysnb	Getegid() (egid int)
+//sysnb	Geteuid() (uid int)
+//sysnb	Getgid() (gid int)
+//sysnb	Getpid() (pid int)
+//sysnb	Getpgid(pid int) (pgid int, err error) = SYS_GETPGID
+
+func Getpgrp() (pid int) {
+	pid, _ = Getpgid(0)
+	return
+}
+
+//sysnb	Getppid() (pid int)
+//sys	Getpriority(which int, who int) (prio int, err error)
+//sysnb	Getrlimit(resource int, rlim *Rlimit) (err error) = SYS_GETRLIMIT
+
+//sysnb getrusage(who int, rusage *rusage_zos) (err error) = SYS_GETRUSAGE
+
+func Getrusage(who int, rusage *Rusage) (err error) {
+	var ruz rusage_zos
+	err = getrusage(who, &ruz)
+	//Only the first two fields of Rusage are set
+	rusage.Utime.Sec = ruz.Utime.Sec
+	rusage.Utime.Usec = int64(ruz.Utime.Usec)
+	rusage.Stime.Sec = ruz.Stime.Sec
+	rusage.Stime.Usec = int64(ruz.Stime.Usec)
+	return
+}
+
+//sysnb Getsid(pid int) (sid int, err error) = SYS_GETSID
+//sysnb	Getuid() (uid int)
+//sysnb	Kill(pid int, sig Signal) (err error)
+//sys	Lchown(path string, uid int, gid int) (err error) = SYS___LCHOWN_A
+//sys	Link(path string, link string) (err error) = SYS___LINK_A
+//sys	Listen(s int, n int) (err error)
+//sys	lstat(path string, stat *Stat_LE_t) (err error) = SYS___LSTAT_A
+
+func Lstat(path string, stat *Stat_t) (err error) {
+	var statLE Stat_LE_t
+	err = lstat(path, &statLE)
+	copyStat(stat, &statLE)
+	return
+}
+
+//sys	Mkdir(path string, mode uint32) (err error) = SYS___MKDIR_A
+//sys   Mkfifo(path string, mode uint32) (err error) = SYS___MKFIFO_A
+//sys	Mknod(path string, mode uint32, dev int) (err error) = SYS___MKNOD_A
+//sys	Pread(fd int, p []byte, offset int64) (n int, err error)
+//sys	Pwrite(fd int, p []byte, offset int64) (n int, err error)
+//sys	Readlink(path string, buf []byte) (n int, err error) = SYS___READLINK_A
+//sys	Rename(from string, to string) (err error) = SYS___RENAME_A
+//sys	Rmdir(path string) (err error) = SYS___RMDIR_A
+//sys   Seek(fd int, offset int64, whence int) (off int64, err error) = SYS_LSEEK
+//sys	Setpriority(which int, who int, prio int) (err error)
+//sysnb	Setpgid(pid int, pgid int) (err error) = SYS_SETPGID
+//sysnb	Setrlimit(resource int, lim *Rlimit) (err error)
+//sysnb	Setregid(rgid int, egid int) (err error) = SYS_SETREGID
+//sysnb	Setreuid(ruid int, euid int) (err error) = SYS_SETREUID
+//sysnb	Setsid() (pid int, err error) = SYS_SETSID
+//sys	Setuid(uid int) (err error) = SYS_SETUID
+//sys	Setgid(uid int) (err error) = SYS_SETGID
+//sys	Shutdown(fd int, how int) (err error)
+//sys	stat(path string, statLE *Stat_LE_t) (err error) = SYS___STAT_A
+
+func Stat(path string, sta *Stat_t) (err error) {
+	var statLE Stat_LE_t
+	err = stat(path, &statLE)
+	copyStat(sta, &statLE)
+	return
+}
+
+//sys	Symlink(path string, link string) (err error) = SYS___SYMLINK_A
+//sys	Sync() = SYS_SYNC
+//sys	Truncate(path string, length int64) (err error) = SYS___TRUNCATE_A
+//sys	Tcgetattr(fildes int, termptr *Termios) (err error) = SYS_TCGETATTR
+//sys	Tcsetattr(fildes int, when int, termptr *Termios) (err error) = SYS_TCSETATTR
+//sys	Umask(mask int) (oldmask int)
+//sys	Unlink(path string) (err error) = SYS___UNLINK_A
+//sys	Utime(path string, utim *Utimbuf) (err error) = SYS___UTIME_A
+
+//sys	open(path string, mode int, perm uint32) (fd int, err error) = SYS___OPEN_A
+
+func Open(path string, mode int, perm uint32) (fd int, err error) {
+	return open(path, mode, perm)
+}
+
+func Mkfifoat(dirfd int, path string, mode uint32) (err error) {
+	wd, err := Getwd()
+	if err != nil {
+		return err
+	}
+
+	if err := Fchdir(dirfd); err != nil {
+		return err
+	}
+	defer Chdir(wd)
+
+	return Mkfifo(path, mode)
+}
+
+//sys	remove(path string) (err error)
+
+func Remove(path string) error {
+	return remove(path)
+}
+
+const ImplementsGetwd = true
+
+func Getcwd(buf []byte) (n int, err error) {
+	var p unsafe.Pointer
+	if len(buf) > 0 {
+		p = unsafe.Pointer(&buf[0])
+	} else {
+		p = unsafe.Pointer(&_zero)
+	}
+	_, _, e := syscall_syscall(SYS___GETCWD_A, uintptr(p), uintptr(len(buf)), 0)
+	n = clen(buf) + 1
+	if e != 0 {
+		err = errnoErr(e)
+	}
+	return
+}
+
+func Getwd() (wd string, err error) {
+	var buf [PathMax]byte
+	n, err := Getcwd(buf[0:])
+	if err != nil {
+		return "", err
+	}
+	// Getcwd returns the number of bytes written to buf, including the NUL.
+	if n < 1 || n > len(buf) || buf[n-1] != 0 {
+		return "", EINVAL
+	}
+	return string(buf[0 : n-1]), nil
+}
+
+func Getgroups() (gids []int, err error) {
+	n, err := getgroups(0, nil)
+	if err != nil {
+		return nil, err
+	}
+	if n == 0 {
+		return nil, nil
+	}
+
+	// Sanity check group count.  Max is 1<<16 on Linux.
+	if n < 0 || n > 1<<20 {
+		return nil, EINVAL
+	}
+
+	a := make([]_Gid_t, n)
+	n, err = getgroups(n, &a[0])
+	if err != nil {
+		return nil, err
+	}
+	gids = make([]int, n)
+	for i, v := range a[0:n] {
+		gids[i] = int(v)
+	}
+	return
+}
+
+func Setgroups(gids []int) (err error) {
+	if len(gids) == 0 {
+		return setgroups(0, nil)
+	}
+
+	a := make([]_Gid_t, len(gids))
+	for i, v := range gids {
+		a[i] = _Gid_t(v)
+	}
+	return setgroups(len(a), &a[0])
+}
+
+func gettid() uint64
+
+func Gettid() (tid int) {
+	return int(gettid())
+}
+
+type WaitStatus uint32
+
+// Wait status is 7 bits at bottom, either 0 (exited),
+// 0x7F (stopped), or a signal number that caused an exit.
+// The 0x80 bit is whether there was a core dump.
+// An extra number (exit code, signal causing a stop)
+// is in the high bits.  At least that's the idea.
+// There are various irregularities.  For example, the
+// "continued" status is 0xFFFF, distinguishing itself
+// from stopped via the core dump bit.
+
+const (
+	mask    = 0x7F
+	core    = 0x80
+	exited  = 0x00
+	stopped = 0x7F
+	shift   = 8
+)
+
+func (w WaitStatus) Exited() bool { return w&mask == exited }
+
+func (w WaitStatus) Signaled() bool { return w&mask != stopped && w&mask != exited }
+
+func (w WaitStatus) Stopped() bool { return w&0xFF == stopped }
+
+func (w WaitStatus) Continued() bool { return w == 0xFFFF }
+
+func (w WaitStatus) CoreDump() bool { return w.Signaled() && w&core != 0 }
+
+func (w WaitStatus) ExitStatus() int {
+	if !w.Exited() {
+		return -1
+	}
+	return int(w>>shift) & 0xFF
+}
+
+func (w WaitStatus) Signal() Signal {
+	if !w.Signaled() {
+		return -1
+	}
+	return Signal(w & mask)
+}
+
+func (w WaitStatus) StopSignal() Signal {
+	if !w.Stopped() {
+		return -1
+	}
+	return Signal(w>>shift) & 0xFF
+}
+
+func (w WaitStatus) TrapCause() int { return -1 }
+
+//sys	waitpid(pid int, wstatus *_C_int, options int) (wpid int, err error)
+
+func Wait4(pid int, wstatus *WaitStatus, options int, rusage *Rusage) (wpid int, err error) {
+	// TODO(mundaym): z/OS doesn't have wait4. I don't think getrusage does what we want.
+	// At the moment rusage will not be touched.
+	var status _C_int
+	wpid, err = waitpid(pid, &status, options)
+	if wstatus != nil {
+		*wstatus = WaitStatus(status)
+	}
+	return
+}
+
+//sysnb	gettimeofday(tv *timeval_zos) (err error)
+
+func Gettimeofday(tv *Timeval) (err error) {
+	var tvz timeval_zos
+	err = gettimeofday(&tvz)
+	tv.Sec = tvz.Sec
+	tv.Usec = int64(tvz.Usec)
+	return
+}
+
+func Time(t *Time_t) (tt Time_t, err error) {
+	var tv Timeval
+	err = Gettimeofday(&tv)
+	if err != nil {
+		return 0, err
+	}
+	if t != nil {
+		*t = Time_t(tv.Sec)
+	}
+	return Time_t(tv.Sec), nil
+}
+
+func setTimespec(sec, nsec int64) Timespec {
+	return Timespec{Sec: sec, Nsec: nsec}
+}
+
+func setTimeval(sec, usec int64) Timeval { //fix
+	return Timeval{Sec: sec, Usec: usec}
+}
+
+//sysnb pipe(p *[2]_C_int) (err error)
+
+func Pipe(p []int) (err error) {
+	if len(p) != 2 {
+		return EINVAL
+	}
+	var pp [2]_C_int
+	err = pipe(&pp)
+	if err == nil {
+		p[0] = int(pp[0])
+		p[1] = int(pp[1])
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	return
 }
 

@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 // Package cmp determines equality of values.
@@ -226,6 +227,11 @@ func Equal(x, y interface{}, opts ...Option) bool {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 6b7ce455e (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 6b7ce455e (update vendored files)
 
 // Package cmp determines equality of values.
 //
@@ -261,7 +267,6 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp/internal/diff"
-	"github.com/google/go-cmp/cmp/internal/flags"
 	"github.com/google/go-cmp/cmp/internal/function"
 	"github.com/google/go-cmp/cmp/internal/value"
 )
@@ -325,9 +330,17 @@ func Equal(x, y interface{}, opts ...Option) bool {
 // same input values and options.
 //
 // The output is displayed as a literal in pseudo-Go syntax.
+<<<<<<< HEAD
 // At the start of each line, a "-" prefix indicates an element removed from y,
 // a "+" prefix to indicates an element added to y, and the lack of a prefix
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// At the start of each line, a "-" prefix indicates an element removed from y,
+// a "+" prefix to indicates an element added to y, and the lack of a prefix
+=======
+// At the start of each line, a "-" prefix indicates an element removed from x,
+// a "+" prefix to indicates an element added from y, and the lack of a prefix
+>>>>>>> 6b7ce455e (update vendored files)
 // indicates an element common to both x and y. If possible, the output
 // uses fmt.Stringer.String or error.Error methods to produce more humanly
 // readable outputs. In such cases, the string is prefixed with either an
@@ -545,7 +558,6 @@ func (s *state) tryMethod(t reflect.Type, vx, vy reflect.Value) bool {
 }
 
 func (s *state) callTRFunc(f, v reflect.Value, step Transform) reflect.Value {
-	v = sanitizeValue(v, f.Type().In(0))
 	if !s.dynChecker.Next() {
 		return f.Call([]reflect.Value{v})[0]
 	}
@@ -569,8 +581,6 @@ func (s *state) callTRFunc(f, v reflect.Value, step Transform) reflect.Value {
 }
 
 func (s *state) callTTBFunc(f, x, y reflect.Value) bool {
-	x = sanitizeValue(x, f.Type().In(0))
-	y = sanitizeValue(y, f.Type().In(1))
 	if !s.dynChecker.Next() {
 		return f.Call([]reflect.Value{x, y})[0].Bool()
 	}
@@ -596,19 +606,6 @@ func detectRaces(c chan<- reflect.Value, f reflect.Value, vs ...reflect.Value) {
 		c <- ret
 	}()
 	ret = f.Call(vs)[0]
-}
-
-// sanitizeValue converts nil interfaces of type T to those of type R,
-// assuming that T is assignable to R.
-// Otherwise, it returns the input value as is.
-func sanitizeValue(v reflect.Value, t reflect.Type) reflect.Value {
-	// TODO(≥go1.10): Workaround for reflect bug (https://golang.org/issue/22143).
-	if !flags.AtLeastGo110 {
-		if v.Kind() == reflect.Interface && v.IsNil() && v.Type() != t {
-			return reflect.New(t).Elem()
-		}
-	}
-	return v
 }
 
 func (s *state) compareStruct(t reflect.Type, vx, vy reflect.Value) {

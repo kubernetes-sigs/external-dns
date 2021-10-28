@@ -166,6 +166,7 @@ type CounterVec struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	*MetricVec
 }
 
@@ -409,6 +410,11 @@ func (v *CounterVec) CurryWith(labels Labels) (*CounterVec, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	*metricVec
+||||||| parent of 6b7ce455e (update vendored files)
+	*metricVec
+=======
+	*MetricVec
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // NewCounterVec creates a new CounterVec based on the provided CounterOpts and
@@ -421,11 +427,11 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 		opts.ConstLabels,
 	)
 	return &CounterVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			if len(lvs) != len(desc.variableLabels) {
 				panic(makeInconsistentCardinalityError(desc.fqName, desc.variableLabels, lvs))
 			}
-			result := &counter{desc: desc, labelPairs: makeLabelPairs(desc, lvs), now: time.Now}
+			result := &counter{desc: desc, labelPairs: MakeLabelPairs(desc, lvs), now: time.Now}
 			result.init(result) // Init self-collection.
 			return result
 		}),
@@ -433,7 +439,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 }
 
 // GetMetricWithLabelValues returns the Counter for the given slice of label
-// values (same order as the VariableLabels in Desc). If that combination of
+// values (same order as the variable labels in Desc). If that combination of
 // label values is accessed for the first time, a new Counter is created.
 //
 // It is possible to call this method without using the returned Counter to only
@@ -447,7 +453,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 // Counter with the same label values is created later.
 //
 // An error is returned if the number of label values is not the same as the
-// number of VariableLabels in Desc (minus any curried labels).
+// number of variable labels in Desc (minus any curried labels).
 //
 // Note that for more than one label value, this method is prone to mistakes
 // caused by an incorrect order of arguments. Consider GetMetricWith(Labels) as
@@ -456,7 +462,7 @@ func NewCounterVec(opts CounterOpts, labelNames []string) *CounterVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.MetricVec.GetMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Counter), err
 	}
@@ -464,19 +470,19 @@ func (v *CounterVec) GetMetricWithLabelValues(lvs ...string) (Counter, error) {
 }
 
 // GetMetricWith returns the Counter for the given Labels map (the label names
-// must match those of the VariableLabels in Desc). If that label map is
+// must match those of the variable labels in Desc). If that label map is
 // accessed for the first time, a new Counter is created. Implications of
 // creating a Counter without using it and keeping the Counter for later use are
 // the same as for GetMetricWithLabelValues.
 //
 // An error is returned if the number and names of the Labels are inconsistent
-// with those of the VariableLabels in Desc (minus any curried labels).
+// with those of the variable labels in Desc (minus any curried labels).
 //
 // This method is used for the same purpose as
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *CounterVec) GetMetricWith(labels Labels) (Counter, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.MetricVec.GetMetricWith(labels)
 	if metric != nil {
 		return metric.(Counter), err
 	}
@@ -520,8 +526,14 @@ func (v *CounterVec) With(labels Labels) Counter {
 // registered with a given registry (usually the uncurried version). The Reset
 // method deletes all metrics, even if called on a curried vector.
 func (v *CounterVec) CurryWith(labels Labels) (*CounterVec, error) {
+<<<<<<< HEAD
 	vec, err := v.curryWith(labels)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	vec, err := v.curryWith(labels)
+=======
+	vec, err := v.MetricVec.CurryWith(labels)
+>>>>>>> 6b7ce455e (update vendored files)
 	if vec != nil {
 		return &CounterVec{vec}, err
 	}

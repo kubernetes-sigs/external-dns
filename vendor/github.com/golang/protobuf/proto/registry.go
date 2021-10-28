@@ -16,6 +16,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -146,6 +147,10 @@ func FileDescriptor(s filePath) fileDescGZIP {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"google.golang.org/protobuf/reflect/protodesc"
+>>>>>>> 6b7ce455e (update vendored files)
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/runtime/protoimpl"
@@ -195,6 +200,7 @@ func FileDescriptor(s filePath) fileDescGZIP {
 	// Find the descriptor in the v2 registry.
 	var b []byte
 	if fd, _ := protoregistry.GlobalFiles.FindFileByPath(s); fd != nil {
+<<<<<<< HEAD
 		if fd, ok := fd.(interface{ ProtoLegacyRawDesc() []byte }); ok {
 			b = fd.ProtoLegacyRawDesc()
 		} else {
@@ -204,6 +210,18 @@ func FileDescriptor(s filePath) fileDescGZIP {
 			// on descriptorpb, leading to cyclic dependency issues.
 		}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		if fd, ok := fd.(interface{ ProtoLegacyRawDesc() []byte }); ok {
+			b = fd.ProtoLegacyRawDesc()
+		} else {
+			// TODO: Use protodesc.ToFileDescriptorProto to construct
+			// a descriptorpb.FileDescriptorProto and marshal it.
+			// However, doing so causes the proto package to have a dependency
+			// on descriptorpb, leading to cyclic dependency issues.
+		}
+=======
+		b, _ = Marshal(protodesc.ToFileDescriptorProto(fd))
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	// Locally cache the raw descriptor form for the file.

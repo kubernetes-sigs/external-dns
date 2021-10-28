@@ -30,6 +30,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -567,6 +568,11 @@ func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 6b7ce455e (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // NestedFieldCopy returns a deep copy of the value of a nested field.
@@ -821,6 +827,7 @@ func getNestedString(obj map[string]interface{}, fields ...string) string {
 	return val
 }
 
+<<<<<<< HEAD
 func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
 	val, found, err := NestedInt64(obj, fields...)
 	if !found || err != nil {
@@ -830,6 +837,17 @@ func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
 }
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+func getNestedInt64(obj map[string]interface{}, fields ...string) int64 {
+	val, found, err := NestedInt64(obj, fields...)
+	if !found || err != nil {
+		return 0
+	}
+	return val
+}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 func getNestedInt64Pointer(obj map[string]interface{}, fields ...string) *int64 {
 	val, found, err := NestedInt64(obj, fields...)
 	if !found || err != nil {
@@ -930,7 +948,7 @@ func (unstructuredJSONScheme) Identifier() runtime.Identifier {
 
 func (s unstructuredJSONScheme) decode(data []byte) (runtime.Object, error) {
 	type detector struct {
-		Items gojson.RawMessage
+		Items gojson.RawMessage `json:"items"`
 	}
 	var det detector
 	if err := json.Unmarshal(data, &det); err != nil {
@@ -973,7 +991,7 @@ func (unstructuredJSONScheme) decodeToUnstructured(data []byte, unstruct *Unstru
 
 func (s unstructuredJSONScheme) decodeToList(data []byte, list *UnstructuredList) error {
 	type decodeList struct {
-		Items []gojson.RawMessage
+		Items []gojson.RawMessage `json:"items"`
 	}
 
 	var dList decodeList

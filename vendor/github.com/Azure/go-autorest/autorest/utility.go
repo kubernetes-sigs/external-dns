@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // EncodedAs is a series of constants specifying various data encodings
@@ -427,6 +428,11 @@ func IsTokenRefreshError(err error) bool {
 =======
 
 	"github.com/Azure/go-autorest/autorest/adal"
+||||||| parent of 6b7ce455e (update vendored files)
+
+	"github.com/Azure/go-autorest/autorest/adal"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // EncodedAs is a series of constants specifying various data encodings
@@ -606,6 +612,7 @@ func ChangeToGet(req *http.Request) *http.Request {
 	return req
 }
 
+<<<<<<< HEAD
 // IsTokenRefreshError returns true if the specified error implements the TokenRefreshError
 // interface.  If err is a DetailedError it will walk the chain of Original errors.
 func IsTokenRefreshError(err error) bool {
@@ -619,6 +626,21 @@ func IsTokenRefreshError(err error) bool {
 }
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// IsTokenRefreshError returns true if the specified error implements the TokenRefreshError
+// interface.  If err is a DetailedError it will walk the chain of Original errors.
+func IsTokenRefreshError(err error) bool {
+	if _, ok := err.(adal.TokenRefreshError); ok {
+		return true
+	}
+	if de, ok := err.(DetailedError); ok {
+		return IsTokenRefreshError(de.Original)
+	}
+	return false
+}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 // IsTemporaryNetworkError returns true if the specified error is a temporary network error or false
 // if it's not.  If the error doesn't implement the net.Error interface the return value is true.
 func IsTemporaryNetworkError(err error) bool {

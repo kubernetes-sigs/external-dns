@@ -17,21 +17,25 @@ package alidns
 
 // Strategy is a nested struct in alidns response
 type Strategy struct {
-	StrategyId                    string                             `json:"StrategyId" xml:"StrategyId"`
-	StrategyName                  string                             `json:"StrategyName" xml:"StrategyName"`
-	CreateTime                    string                             `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp               int64                              `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	DefaultAddrPoolId             string                             `json:"DefaultAddrPoolId" xml:"DefaultAddrPoolId"`
-	DefaultAddrPoolName           string                             `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
-	FailoverAddrPoolId            string                             `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
-	FailoverAddrPoolName          string                             `json:"FailoverAddrPoolName" xml:"FailoverAddrPoolName"`
-	AccessMode                    string                             `json:"AccessMode" xml:"AccessMode"`
-	AccessStatus                  string                             `json:"AccessStatus" xml:"AccessStatus"`
-	StrategyMode                  string                             `json:"StrategyMode" xml:"StrategyMode"`
-	InstanceId                    string                             `json:"InstanceId" xml:"InstanceId"`
-	DefaultAddrPoolStatus         string                             `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
-	FailoverAddrPoolStatus        string                             `json:"FailoverAddrPoolStatus" xml:"FailoverAddrPoolStatus"`
-	DefaultAddrPoolMonitorStatus  string                             `json:"DefaultAddrPoolMonitorStatus" xml:"DefaultAddrPoolMonitorStatus"`
-	FailoverAddrPoolMonitorStatus string                             `json:"FailoverAddrPoolMonitorStatus" xml:"FailoverAddrPoolMonitorStatus"`
-	Lines                         LinesInDescribeGtmAccessStrategies `json:"Lines" xml:"Lines"`
+	StrategyName                  string                                `json:"StrategyName" xml:"StrategyName"`
+	FailoverAddrPoolMonitorStatus string                                `json:"FailoverAddrPoolMonitorStatus" xml:"FailoverAddrPoolMonitorStatus"`
+	FailoverAddrPoolId            string                                `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
+	CreateTimestamp               int64                                 `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	CreateTime                    string                                `json:"CreateTime" xml:"CreateTime"`
+	StrategyId                    string                                `json:"StrategyId" xml:"StrategyId"`
+	FailoverAddrPoolStatus        string                                `json:"FailoverAddrPoolStatus" xml:"FailoverAddrPoolStatus"`
+	DefaultAddrPoolMonitorStatus  string                                `json:"DefaultAddrPoolMonitorStatus" xml:"DefaultAddrPoolMonitorStatus"`
+	StrategyMode                  string                                `json:"StrategyMode" xml:"StrategyMode"`
+	FailoverAddrPoolName          string                                `json:"FailoverAddrPoolName" xml:"FailoverAddrPoolName"`
+	EffectiveLbaStrategy          string                                `json:"EffectiveLbaStrategy" xml:"EffectiveLbaStrategy"`
+	AccessMode                    string                                `json:"AccessMode" xml:"AccessMode"`
+	AccessStatus                  string                                `json:"AccessStatus" xml:"AccessStatus"`
+	InstanceId                    string                                `json:"InstanceId" xml:"InstanceId"`
+	EffectiveAddrPoolType         string                                `json:"EffectiveAddrPoolType" xml:"EffectiveAddrPoolType"`
+	EffectiveAddrPoolGroupType    string                                `json:"EffectiveAddrPoolGroupType" xml:"EffectiveAddrPoolGroupType"`
+	DefaultAddrPoolId             string                                `json:"DefaultAddrPoolId" xml:"DefaultAddrPoolId"`
+	DefaultAddrPoolName           string                                `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
+	DefaultAddrPoolStatus         string                                `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
+	EffectiveAddrPools            EffectiveAddrPools                    `json:"EffectiveAddrPools" xml:"EffectiveAddrPools"`
+	Lines                         LinesInDescribeDnsGtmAccessStrategies `json:"Lines" xml:"Lines"`
 }

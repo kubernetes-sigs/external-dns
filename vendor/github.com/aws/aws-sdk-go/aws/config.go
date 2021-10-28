@@ -46,6 +46,7 @@ type Config struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// to `nil` or the value to `""` to use the default generated endpoint.
 	//
 	// Note: You must still provide a `Region` value when specifying an
@@ -1147,6 +1148,11 @@ func mergeInConfig(dst *Config, other *Config) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// to `""` to use the default generated endpoint.
+||||||| parent of 6b7ce455e (update vendored files)
+	// to `""` to use the default generated endpoint.
+=======
+	// to `nil` or the value to `""` to use the default generated endpoint.
+>>>>>>> 6b7ce455e (update vendored files)
 	//
 	// Note: You must still provide a `Region` value when specifying an
 	// endpoint for a client.
@@ -1241,7 +1247,7 @@ func mergeInConfig(dst *Config, other *Config) {
 	// `ExpectContinueTimeout` for information on adjusting the continue wait
 	// timeout. https://golang.org/pkg/net/http/#Transport
 	//
-	// You should use this flag to disble 100-Continue if you experience issues
+	// You should use this flag to disable 100-Continue if you experience issues
 	// with proxies or third party S3 compatible services.
 	S3Disable100Continue *bool
 
@@ -1286,7 +1292,7 @@ func mergeInConfig(dst *Config, other *Config) {
 	//
 	// Example:
 	//    sess := session.Must(session.NewSession(aws.NewConfig()
-	//       .WithEC2MetadataDiableTimeoutOverride(true)))
+	//       .WithEC2MetadataDisableTimeoutOverride(true)))
 	//
 	//    svc := s3.New(sess)
 	//
@@ -1297,7 +1303,7 @@ func mergeInConfig(dst *Config, other *Config) {
 	// both IPv4 and IPv6 addressing.
 	//
 	// Setting this for a service which does not support dual stack will fail
-	// to make requets. It is not recommended to set this value on the session
+	// to make requests. It is not recommended to set this value on the session
 	// as it will apply to all service clients created with the session. Even
 	// services which don't support dual stack endpoints.
 	//
@@ -1311,7 +1317,18 @@ func mergeInConfig(dst *Config, other *Config) {
 	//     svc := s3.New(sess, &aws.Config{
 	//         UseDualStack: aws.Bool(true),
 	//     })
+	//
+	// Deprecated: This option will continue to function for S3 and S3 Control for backwards compatibility.
+	// UseDualStackEndpoint should be used to enable usage of a service's dual-stack endpoint for all service clients
+	// moving forward. For S3 and S3 Control, when UseDualStackEndpoint is set to a non-zero value it takes higher
+	// precedence then this option.
 	UseDualStack *bool
+
+	// Sets the resolver to resolve a dual-stack endpoint for the service.
+	UseDualStackEndpoint endpoints.DualStackEndpointState
+
+	// UseFIPSEndpoint specifies the resolver must resolve a FIPS endpoint.
+	UseFIPSEndpoint endpoints.FIPSEndpointState
 
 	// SleepDelay is an override for the func the SDK will call when sleeping
 	// during the lifecycle of a request. Specifically this will be used for
@@ -1341,6 +1358,7 @@ func mergeInConfig(dst *Config, other *Config) {
 
 	// EnableEndpointDiscovery will allow for endpoint discovery on operations that
 	// have the definition in its model. By default, endpoint discovery is off.
+	// To use EndpointDiscovery, Endpoint should be unset or set to an empty string.
 	//
 	// Example:
 	//    sess := session.Must(session.NewSession(&aws.Config{
@@ -1540,13 +1558,6 @@ func (c *Config) WithDisableEndpointHostPrefix(t bool) *Config {
 	return c
 }
 
-// MergeIn merges the passed in configs into the existing config object.
-func (c *Config) MergeIn(cfgs ...*Config) {
-	for _, other := range cfgs {
-		mergeInConfig(c, other)
-	}
-}
-
 // WithSTSRegionalEndpoint will set whether or not to use regional endpoint flag
 // when resolving the endpoint for a service
 func (c *Config) WithSTSRegionalEndpoint(sre endpoints.STSRegionalEndpoint) *Config {
@@ -1559,6 +1570,27 @@ func (c *Config) WithSTSRegionalEndpoint(sre endpoints.STSRegionalEndpoint) *Con
 func (c *Config) WithS3UsEast1RegionalEndpoint(sre endpoints.S3UsEast1RegionalEndpoint) *Config {
 	c.S3UsEast1RegionalEndpoint = sre
 	return c
+}
+
+// WithLowerCaseHeaderMaps sets a config LowerCaseHeaderMaps value
+// returning a Config pointer for chaining.
+func (c *Config) WithLowerCaseHeaderMaps(t bool) *Config {
+	c.LowerCaseHeaderMaps = &t
+	return c
+}
+
+// WithDisableRestProtocolURICleaning sets a config DisableRestProtocolURICleaning value
+// returning a Config pointer for chaining.
+func (c *Config) WithDisableRestProtocolURICleaning(t bool) *Config {
+	c.DisableRestProtocolURICleaning = &t
+	return c
+}
+
+// MergeIn merges the passed in configs into the existing config object.
+func (c *Config) MergeIn(cfgs ...*Config) {
+	for _, other := range cfgs {
+		mergeInConfig(c, other)
+	}
 }
 
 func mergeInConfig(dst *Config, other *Config) {
@@ -1642,6 +1674,10 @@ func mergeInConfig(dst *Config, other *Config) {
 		dst.UseDualStack = other.UseDualStack
 	}
 
+	if other.UseDualStackEndpoint != endpoints.DualStackEndpointStateUnset {
+		dst.UseDualStackEndpoint = other.UseDualStackEndpoint
+	}
+
 	if other.EC2MetadataDisableTimeoutOverride != nil {
 		dst.EC2MetadataDisableTimeoutOverride = other.EC2MetadataDisableTimeoutOverride
 	}
@@ -1673,6 +1709,18 @@ func mergeInConfig(dst *Config, other *Config) {
 	if other.S3UsEast1RegionalEndpoint != endpoints.UnsetS3UsEast1Endpoint {
 		dst.S3UsEast1RegionalEndpoint = other.S3UsEast1RegionalEndpoint
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+
+	if other.LowerCaseHeaderMaps != nil {
+		dst.LowerCaseHeaderMaps = other.LowerCaseHeaderMaps
+	}
+
+	if other.UseDualStackEndpoint != endpoints.DualStackEndpointStateUnset {
+		dst.UseDualStackEndpoint = other.UseDualStackEndpoint
+	}
+
+	if other.UseFIPSEndpoint != endpoints.FIPSEndpointStateUnset {
+		dst.UseFIPSEndpoint = other.UseFIPSEndpoint
 	}
 }
 

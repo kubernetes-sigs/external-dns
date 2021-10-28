@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -355,6 +356,11 @@ func (c *FakeReplicaSets) ApplyStatus(ctx context.Context, replicaSet *appsv1bet
 		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta2.ReplicaSet{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	v1beta2 "k8s.io/api/apps/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -362,6 +368,7 @@ func (c *FakeReplicaSets) ApplyStatus(ctx context.Context, replicaSet *appsv1bet
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	appsv1beta2 "k8s.io/client-go/applyconfigurations/apps/v1beta2"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -452,7 +459,7 @@ func (c *FakeReplicaSets) UpdateStatus(ctx context.Context, replicaSet *v1beta2.
 // Delete takes name of the replicaSet and deletes it. Returns an error if one occurs.
 func (c *FakeReplicaSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(replicasetsResource, c.ns, name), &v1beta2.ReplicaSet{})
+		Invokes(testing.NewDeleteActionWithOptions(replicasetsResource, c.ns, name, opts), &v1beta2.ReplicaSet{})
 
 	return err
 }
@@ -470,6 +477,51 @@ func (c *FakeReplicaSets) Patch(ctx context.Context, name string, pt types.Patch
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, name, pt, data, subresources...), &v1beta2.ReplicaSet{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta2.ReplicaSet), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied replicaSet.
+func (c *FakeReplicaSets) Apply(ctx context.Context, replicaSet *appsv1beta2.ReplicaSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta2.ReplicaSet, err error) {
+	if replicaSet == nil {
+		return nil, fmt.Errorf("replicaSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicaSet)
+	if err != nil {
+		return nil, err
+	}
+	name := replicaSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicaSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta2.ReplicaSet{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta2.ReplicaSet), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeReplicaSets) ApplyStatus(ctx context.Context, replicaSet *appsv1beta2.ReplicaSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta2.ReplicaSet, err error) {
+	if replicaSet == nil {
+		return nil, fmt.Errorf("replicaSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(replicaSet)
+	if err != nil {
+		return nil, err
+	}
+	name := replicaSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("replicaSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(replicasetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta2.ReplicaSet{})
 
 	if obj == nil {
 		return nil, err

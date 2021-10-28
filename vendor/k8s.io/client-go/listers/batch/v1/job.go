@@ -29,6 +29,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // All objects returned here must be treated as read-only.
 type JobLister interface {
 	// List lists all Jobs in the indexer.
@@ -123,8 +124,13 @@ type JobNamespaceLister interface {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// All objects returned here must be treated as read-only.
+>>>>>>> 6b7ce455e (update vendored files)
 type JobLister interface {
 	// List lists all Jobs in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Job, err error)
 	// Jobs returns an object that can list and get Jobs.
 	Jobs(namespace string) JobNamespaceLister
@@ -155,11 +161,18 @@ func (s *jobLister) Jobs(namespace string) JobNamespaceLister {
 }
 
 // JobNamespaceLister helps list and get Jobs.
+// All objects returned here must be treated as read-only.
 type JobNamespaceLister interface {
 	// List lists all Jobs in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Job, err error)
 	// Get retrieves the Job from the indexer for a given namespace and name.
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	// Objects returned here must be treated as read-only.
+>>>>>>> 6b7ce455e (update vendored files)
 	Get(name string) (*v1.Job, error)
 	JobNamespaceListerExpansion
 }

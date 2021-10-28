@@ -13,6 +13,7 @@ const floatingBasePath = "v2/floating_ips"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IPs
 type FloatingIPsService interface {
 	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
@@ -126,6 +127,11 @@ type FloatingIPCreateRequest struct {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#floating-ips
+||||||| parent of 6b7ce455e (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#floating-ips
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Floating-IPs
+>>>>>>> 6b7ce455e (update vendored files)
 type FloatingIPsService interface {
 	List(context.Context, *ListOptions) ([]FloatingIP, *Response, error)
 	Get(context.Context, string) (*FloatingIP, *Response, error)
@@ -152,6 +158,7 @@ func (f FloatingIP) String() string {
 	return Stringify(f)
 }
 
+// URN returns the floating IP in a valid DO API URN form.
 func (f FloatingIP) URN() string {
 	return ToURN("FloatingIP", f.IP)
 }
@@ -168,11 +175,17 @@ type floatingIPRoot struct {
 }
 
 // FloatingIPCreateRequest represents a request to create a floating IP.
-// If DropletID is not empty, the floating IP will be assigned to the
-// droplet.
+// Specify DropletID to assign the floating IP to a Droplet or Region
+// to reserve it to the region.
 type FloatingIPCreateRequest struct {
+<<<<<<< HEAD
 	Region    string `json:"region"`
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	Region    string `json:"region"`
+=======
+	Region    string `json:"region,omitempty"`
+>>>>>>> 6b7ce455e (update vendored files)
 	DropletID int    `json:"droplet_id,omitempty"`
 }
 

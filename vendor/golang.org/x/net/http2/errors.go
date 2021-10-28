@@ -56,9 +56,13 @@ func (e ErrCode) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 func (e ErrCode) stringToken() string {
 	if s, ok := errCodeName[e]; ok {
 		return s
@@ -84,6 +88,7 @@ type StreamError struct {
 // indicate that the StreamError was sent from the peer over the wire
 // and wasn't locally generated in the Transport.
 var errFromPeer = errors.New("received from peer")
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -120,6 +125,9 @@ type StreamError struct {
 	Cause    error // optional additional detail
 }
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 
 func streamError(id uint32, code ErrCode) StreamError {
 	return StreamError{StreamID: id, Code: code}
@@ -178,7 +186,7 @@ func (e headerFieldNameError) Error() string {
 type headerFieldValueError string
 
 func (e headerFieldValueError) Error() string {
-	return fmt.Sprintf("invalid header field value %q", string(e))
+	return fmt.Sprintf("invalid header field value for %q", string(e))
 }
 
 var (

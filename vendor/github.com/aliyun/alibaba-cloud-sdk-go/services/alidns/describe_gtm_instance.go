@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmInstance invokes the alidns.DescribeGtmInstance API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
 func (client *Client) DescribeGtmInstance(request *DescribeGtmInstanceRequest) (response *DescribeGtmInstanceResponse, err error) {
 	response = CreateDescribeGtmInstanceResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmInstance(request *DescribeGtmInstanceRequest) (
 }
 
 // DescribeGtmInstanceWithChan invokes the alidns.DescribeGtmInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceWithChan(request *DescribeGtmInstanceRequest) (<-chan *DescribeGtmInstanceResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmInstanceWithChan(request *DescribeGtmInstanceRe
 }
 
 // DescribeGtmInstanceWithCallback invokes the alidns.DescribeGtmInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceWithCallback(request *DescribeGtmInstanceRequest, callback func(response *DescribeGtmInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -85,22 +80,23 @@ type DescribeGtmInstanceRequest struct {
 // DescribeGtmInstanceResponse is the response struct for api DescribeGtmInstance
 type DescribeGtmInstanceResponse struct {
 	*responses.BaseResponse
+	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
 	RequestId         string `json:"RequestId" xml:"RequestId"`
+	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
 	InstanceId        string `json:"InstanceId" xml:"InstanceId"`
+	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
+	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
+	Ttl               int    `json:"Ttl" xml:"Ttl"`
+	Cname             string `json:"Cname" xml:"Cname"`
 	InstanceName      string `json:"InstanceName" xml:"InstanceName"`
 	VersionCode       string `json:"VersionCode" xml:"VersionCode"`
-	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
-	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
-	Cname             string `json:"Cname" xml:"Cname"`
-	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
-	Ttl               int    `json:"Ttl" xml:"Ttl"`
-	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
-	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	AlertGroup        string `json:"AlertGroup" xml:"AlertGroup"`
-	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
-	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
 	AddressPoolNum    int    `json:"AddressPoolNum" xml:"AddressPoolNum"`
+	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
+	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
+	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	ResourceGroupId   string `json:"ResourceGroupId" xml:"ResourceGroupId"`
 }
 
 // CreateDescribeGtmInstanceRequest creates a request to invoke DescribeGtmInstance API
@@ -109,6 +105,7 @@ func CreateDescribeGtmInstanceRequest() (request *DescribeGtmInstanceRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstance", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

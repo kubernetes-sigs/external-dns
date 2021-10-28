@@ -41,6 +41,7 @@ func LabelSelectorAsSelector(ps *LabelSelector) (labels.Selector, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	requirements := make([]labels.Requirement, 0, len(ps.MatchLabels)+len(ps.MatchExpressions))
 	for k, v := range ps.MatchLabels {
 		r, err := labels.NewRequirement(k, selection.Equals, []string{v})
@@ -406,12 +407,17 @@ func SetMetaDataLabel(obj *ObjectMeta, label string, value string) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	selector := labels.NewSelector()
+||||||| parent of 6b7ce455e (update vendored files)
+	selector := labels.NewSelector()
+=======
+	requirements := make([]labels.Requirement, 0, len(ps.MatchLabels)+len(ps.MatchExpressions))
+>>>>>>> 6b7ce455e (update vendored files)
 	for k, v := range ps.MatchLabels {
 		r, err := labels.NewRequirement(k, selection.Equals, []string{v})
 		if err != nil {
 			return nil, err
 		}
-		selector = selector.Add(*r)
+		requirements = append(requirements, *r)
 	}
 	for _, expr := range ps.MatchExpressions {
 		var op selection.Operator
@@ -431,8 +437,10 @@ func SetMetaDataLabel(obj *ObjectMeta, label string, value string) {
 		if err != nil {
 			return nil, err
 		}
-		selector = selector.Add(*r)
+		requirements = append(requirements, *r)
 	}
+	selector := labels.NewSelector()
+	selector = selector.Add(requirements...)
 	return selector, nil
 }
 
@@ -521,7 +529,7 @@ func SetAsLabelSelector(ls labels.Set) *LabelSelector {
 	}
 
 	selector := &LabelSelector{
-		MatchLabels: make(map[string]string),
+		MatchLabels: make(map[string]string, len(ls)),
 	}
 	for label, value := range ls {
 		selector.MatchLabels[label] = value
@@ -567,6 +575,20 @@ func SetMetaDataAnnotation(obj *ObjectMeta, ann string, value string) {
 	}
 	obj.Annotations[ann] = value
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// HasLabel returns a bool if passed in label exists
+func HasLabel(obj ObjectMeta, label string) bool {
+	_, found := obj.Labels[label]
+	return found
+}
+
+// SetMetaDataLabel sets the label and value
+func SetMetaDataLabel(obj *ObjectMeta, label string, value string) {
+	if obj.Labels == nil {
+		obj.Labels = make(map[string]string)
+	}
+	obj.Labels[label] = value
 }
 
 // SingleObject returns a ListOptions for watching a single object.

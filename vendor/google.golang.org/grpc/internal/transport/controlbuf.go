@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"runtime"
@@ -1945,13 +1946,20 @@ func min(a, b int) int {
 	return b
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"errors"
+>>>>>>> 6b7ce455e (update vendored files)
 	"fmt"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc/internal/grpcutil"
+	"google.golang.org/grpc/status"
 )
 
 var updateHeaderTblSize = func(e *hpack.Encoder, v uint32) {
@@ -2052,6 +2060,15 @@ type cleanupStream struct {
 }
 
 func (c *cleanupStream) isTransportResponseFrame() bool { return c.rst } // Results in a RST_STREAM
+
+type earlyAbortStream struct {
+	httpStatus     uint32
+	streamID       uint32
+	contentSubtype string
+	status         *status.Status
+}
+
+func (*earlyAbortStream) isTransportResponseFrame() bool { return false }
 
 type dataFrame struct {
 	streamID  uint32
@@ -2209,7 +2226,7 @@ type controlBuffer struct {
 	// closed and nilled when transportResponseFrames drops below the
 	// threshold.  Both fields are protected by mu.
 	transportResponseFrames int
-	trfChan                 atomic.Value // *chan struct{}
+	trfChan                 atomic.Value // chan struct{}
 }
 
 func newControlBuffer(done <-chan struct{}) *controlBuffer {
@@ -2223,10 +2240,10 @@ func newControlBuffer(done <-chan struct{}) *controlBuffer {
 // throttle blocks if there are too many incomingSettings/cleanupStreams in the
 // controlbuf.
 func (c *controlBuffer) throttle() {
-	ch, _ := c.trfChan.Load().(*chan struct{})
+	ch, _ := c.trfChan.Load().(chan struct{})
 	if ch != nil {
 		select {
-		case <-*ch:
+		case <-ch:
 		case <-c.done:
 		}
 	}
@@ -2260,8 +2277,7 @@ func (c *controlBuffer) executeAndPut(f func(it interface{}) bool, it cbItem) (b
 		if c.transportResponseFrames == maxQueuedTransportResponseFrames {
 			// We are adding the frame that puts us over the threshold; create
 			// a throttling channel.
-			ch := make(chan struct{})
-			c.trfChan.Store(&ch)
+			c.trfChan.Store(make(chan struct{}))
 		}
 	}
 	c.mu.Unlock()
@@ -2302,9 +2318,9 @@ func (c *controlBuffer) get(block bool) (interface{}, error) {
 				if c.transportResponseFrames == maxQueuedTransportResponseFrames {
 					// We are removing the frame that put us over the
 					// threshold; close and clear the throttling channel.
-					ch := c.trfChan.Load().(*chan struct{})
-					close(*ch)
-					c.trfChan.Store((*chan struct{})(nil))
+					ch := c.trfChan.Load().(chan struct{})
+					close(ch)
+					c.trfChan.Store((chan struct{})(nil))
 				}
 				c.transportResponseFrames--
 			}
@@ -2320,7 +2336,6 @@ func (c *controlBuffer) get(block bool) (interface{}, error) {
 		select {
 		case <-c.ch:
 		case <-c.done:
-			c.finish()
 			return nil, ErrConnClosing
 		}
 	}
@@ -2345,6 +2360,14 @@ func (c *controlBuffer) finish() {
 			hdr.onOrphaned(ErrConnClosing)
 		}
 	}
+	// In case throttle() is currently in flight, it needs to be unblocked.
+	// Otherwise, the transport may not close, since the transport is closed by
+	// the reader encountering the connection error.
+	ch, _ := c.trfChan.Load().(chan struct{})
+	if ch != nil {
+		close(ch)
+	}
+	c.trfChan.Store((chan struct{})(nil))
 	c.mu.Unlock()
 }
 
@@ -2430,7 +2453,9 @@ func (l *loopyWriter) run() (err error) {
 			// 1. When the connection is closed by some other known issue.
 			// 2. User closed the connection.
 			// 3. A graceful close of connection.
-			infof("transport: loopyWriter.run returning. %v", err)
+			if logger.V(logLevel) {
+				logger.Infof("transport: loopyWriter.run returning. %v", err)
+			}
 			err = nil
 		}
 	}()
@@ -2530,7 +2555,9 @@ func (l *loopyWriter) headerHandler(h *headerFrame) error {
 	if l.side == serverSide {
 		str, ok := l.estdStreams[h.streamID]
 		if !ok {
-			warningf("transport: loopy doesn't recognize the stream: %d", h.streamID)
+			if logger.V(logLevel) {
+				logger.Warningf("transport: loopy doesn't recognize the stream: %d", h.streamID)
+			}
 			return nil
 		}
 		// Case 1.A: Server is responding back with headers.
@@ -2583,7 +2610,9 @@ func (l *loopyWriter) writeHeader(streamID uint32, endStream bool, hf []hpack.He
 	l.hBuf.Reset()
 	for _, f := range hf {
 		if err := l.hEnc.WriteField(f); err != nil {
-			warningf("transport: loopyWriter.writeHeader encountered error while encoding headers:", err)
+			if logger.V(logLevel) {
+				logger.Warningf("transport: loopyWriter.writeHeader encountered error while encoding headers: %v", err)
+			}
 		}
 	}
 	var (
@@ -2668,6 +2697,27 @@ func (l *loopyWriter) cleanupStreamHandler(c *cleanupStream) error {
 	return nil
 }
 
+func (l *loopyWriter) earlyAbortStreamHandler(eas *earlyAbortStream) error {
+	if l.side == clientSide {
+		return errors.New("earlyAbortStream not handled on client")
+	}
+	// In case the caller forgets to set the http status, default to 200.
+	if eas.httpStatus == 0 {
+		eas.httpStatus = 200
+	}
+	headerFields := []hpack.HeaderField{
+		{Name: ":status", Value: strconv.Itoa(int(eas.httpStatus))},
+		{Name: "content-type", Value: grpcutil.ContentType(eas.contentSubtype)},
+		{Name: "grpc-status", Value: strconv.Itoa(int(eas.status.Code()))},
+		{Name: "grpc-message", Value: encodeGrpcMessage(eas.status.Message())},
+	}
+
+	if err := l.writeHeader(eas.streamID, true, headerFields, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (l *loopyWriter) incomingGoAwayHandler(*incomingGoAway) error {
 	if l.side == clientSide {
 		l.draining = true
@@ -2706,6 +2756,8 @@ func (l *loopyWriter) handle(i interface{}) error {
 		return l.registerStreamHandler(i)
 	case *cleanupStream:
 		return l.cleanupStreamHandler(i)
+	case *earlyAbortStream:
+		return l.earlyAbortStreamHandler(i)
 	case *incomingGoAway:
 		return l.incomingGoAwayHandler(i)
 	case *dataFrame:
@@ -2782,38 +2834,45 @@ func (l *loopyWriter) processData() (bool, error) {
 		return false, nil
 	}
 	var (
-		idx int
 		buf []byte
 	)
-	if len(dataItem.h) != 0 { // data header has not been written out yet.
-		buf = dataItem.h
-	} else {
-		idx = 1
-		buf = dataItem.d
-	}
-	size := http2MaxFrameLen
-	if len(buf) < size {
-		size = len(buf)
-	}
+	// Figure out the maximum size we can send
+	maxSize := http2MaxFrameLen
 	if strQuota := int(l.oiws) - str.bytesOutStanding; strQuota <= 0 { // stream-level flow control.
 		str.state = waitingOnStreamQuota
 		return false, nil
-	} else if strQuota < size {
-		size = strQuota
+	} else if maxSize > strQuota {
+		maxSize = strQuota
+	}
+	if maxSize > int(l.sendQuota) { // connection-level flow control.
+		maxSize = int(l.sendQuota)
+	}
+	// Compute how much of the header and data we can send within quota and max frame length
+	hSize := min(maxSize, len(dataItem.h))
+	dSize := min(maxSize-hSize, len(dataItem.d))
+	if hSize != 0 {
+		if dSize == 0 {
+			buf = dataItem.h
+		} else {
+			// We can add some data to grpc message header to distribute bytes more equally across frames.
+			// Copy on the stack to avoid generating garbage
+			var localBuf [http2MaxFrameLen]byte
+			copy(localBuf[:hSize], dataItem.h)
+			copy(localBuf[hSize:], dataItem.d[:dSize])
+			buf = localBuf[:hSize+dSize]
+		}
+	} else {
+		buf = dataItem.d
 	}
 
-	if l.sendQuota < uint32(size) { // connection-level flow control.
-		size = int(l.sendQuota)
-	}
+	size := hSize + dSize
+
 	// Now that outgoing flow controls are checked we can replenish str's write quota
 	str.wq.replenish(size)
 	var endStream bool
 	// If this is the last data message on this stream and all of it can be written in this iteration.
-	if dataItem.endStream && size == len(buf) {
-		// buf contains either data or it contains header but data is empty.
-		if idx == 1 || len(dataItem.d) == 0 {
-			endStream = true
-		}
+	if dataItem.endStream && len(dataItem.h)+len(dataItem.d) <= size {
+		endStream = true
 	}
 	if dataItem.onEachWrite != nil {
 		dataItem.onEachWrite()
@@ -2821,14 +2880,10 @@ func (l *loopyWriter) processData() (bool, error) {
 	if err := l.framer.fr.WriteData(dataItem.streamID, endStream, buf[:size]); err != nil {
 		return false, err
 	}
-	buf = buf[size:]
 	str.bytesOutStanding += size
 	l.sendQuota -= uint32(size)
-	if idx == 0 {
-		dataItem.h = buf
-	} else {
-		dataItem.d = buf
-	}
+	dataItem.h = dataItem.h[hSize:]
+	dataItem.d = dataItem.d[dSize:]
 
 	if len(dataItem.h) == 0 && len(dataItem.d) == 0 { // All the data from that message was written out.
 		str.itl.dequeue()
@@ -2849,4 +2904,11 @@ func (l *loopyWriter) processData() (bool, error) {
 	}
 	return false, nil
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

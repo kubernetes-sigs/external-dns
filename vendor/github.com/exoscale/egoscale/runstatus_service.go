@@ -6,6 +6,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"fmt"
 	"log"
@@ -262,6 +263,10 @@ func (client *Client) GetRunstatusService(ctx context.Context, service Runstatus
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"errors"
+>>>>>>> 6b7ce455e (update vendored files)
 	"fmt"
 	"log"
 	"net/url"
@@ -381,8 +386,14 @@ func (client *Client) GetRunstatusService(ctx context.Context, service Runstatus
 		}
 	}
 
+<<<<<<< HEAD
 	return nil, fmt.Errorf("%#v not found", service)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return nil, fmt.Errorf("%#v not found", service)
+=======
+	return nil, errors.New("service not found")
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func (client *Client) getRunstatusService(ctx context.Context, serviceURL string) (*RunstatusService, error) {

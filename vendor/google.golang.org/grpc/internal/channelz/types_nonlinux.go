@@ -1,4 +1,5 @@
-// +build !linux appengine
+//go:build !linux
+// +build !linux
 
 /*
  *
@@ -22,6 +23,7 @@ package channelz
 
 import (
 	"sync"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -77,6 +79,11 @@ func (s *SocketOptionData) Getsockopt(fd uintptr) {
 =======
 
 	"google.golang.org/grpc/grpclog"
+||||||| parent of 6b7ce455e (update vendored files)
+
+	"google.golang.org/grpc/grpclog"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 var once sync.Once
@@ -92,7 +99,13 @@ type SocketOptionData struct {
 // Windows OS doesn't support Socket Option
 func (s *SocketOptionData) Getsockopt(fd uintptr) {
 	once.Do(func() {
+<<<<<<< HEAD
 		grpclog.Warningln("Channelz: socket options are not supported on non-linux os and appengine.")
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		grpclog.Warningln("Channelz: socket options are not supported on non-linux os and appengine.")
+=======
+		logger.Warning("Channelz: socket options are not supported on non-linux environments")
+>>>>>>> 6b7ce455e (update vendored files)
 	})
 }

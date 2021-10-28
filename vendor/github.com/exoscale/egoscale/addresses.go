@@ -390,6 +390,7 @@ type IPAddress struct {
 	Associated                string        `json:"associated,omitempty" doc:"date the public IP address was associated"`
 	AssociatedNetworkID       *UUID         `json:"associatednetworkid,omitempty" doc:"the ID of the Network associated with the IP address"`
 	AssociatedNetworkName     string        `json:"associatednetworkname,omitempty" doc:"the name of the Network associated with the IP address"`
+	Description               string        `json:"description,omitempty" doc:"The IP address description."`
 	ForVirtualNetwork         bool          `json:"forvirtualnetwork,omitempty" doc:"the virtual network for the IP address"`
 	Healthcheck               *Healthcheck  `json:"healthcheck,omitempty" doc:"The IP healthcheck configuration"`
 	ID                        *UUID         `json:"id,omitempty" doc:"public IP address id"`
@@ -456,6 +457,7 @@ func (ipaddress IPAddress) Delete(ctx context.Context, client *Client) error {
 
 // AssociateIPAddress (Async) represents the IP creation
 type AssociateIPAddress struct {
+	Description            string `json:"description,omitempty" doc:"The IP address description."`
 	HealthcheckInterval    int64  `json:"interval,omitempty" doc:"healthcheck definition: time in seconds to wait for each check. Default: 10, minimum: 5"`
 	HealthcheckMode        string `json:"mode,omitempty" doc:"healthcheck definition: healthcheck mode can be either 'tcp' or 'http'"`
 	HealthcheckPath        string `json:"path,omitempty" doc:"healthcheck definition: the path against which the 'http' healthcheck will be performed. Required if mode is 'http', ignored otherwise."`
@@ -495,6 +497,7 @@ func (DisassociateIPAddress) AsyncResponse() interface{} {
 
 // UpdateIPAddress (Async) represents the IP modification
 type UpdateIPAddress struct {
+	Description            string `json:"description,omitempty" doc:"The IP address description."`
 	HealthcheckInterval    int64  `json:"interval,omitempty" doc:"healthcheck definition: time in seconds to wait for each check. Default: 10, minimum: 5"`
 	HealthcheckMode        string `json:"mode,omitempty" doc:"healthcheck definition: healthcheck mode can be either 'tcp' or 'http'"`
 	HealthcheckPath        string `json:"path,omitempty" doc:"healthcheck definition: the path against which the 'http' healthcheck will be performed. Required if mode is 'http', ignored otherwise."`

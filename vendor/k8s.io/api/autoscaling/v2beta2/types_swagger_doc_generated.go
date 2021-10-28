@@ -30,6 +30,7 @@ package v2beta2
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var map_ContainerResourceMetricSource = map[string]string{
 	"":          "ContainerResourceMetricSource indicates how to scale on a resource metric known to Kubernetes, as specified in requests and limits, describing each pod in the current scale target (e.g. CPU or memory).  The values will be averaged together before being compared to the target.  Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.  Only one \"target\" type should be set.",
 	"name":      "name is the name of the resource in question.",
@@ -410,6 +411,31 @@ var map_MetricStatus = map[string]string{
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+var map_ContainerResourceMetricSource = map[string]string{
+	"":          "ContainerResourceMetricSource indicates how to scale on a resource metric known to Kubernetes, as specified in requests and limits, describing each pod in the current scale target (e.g. CPU or memory).  The values will be averaged together before being compared to the target.  Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.  Only one \"target\" type should be set.",
+	"name":      "name is the name of the resource in question.",
+	"target":    "target specifies the target value for the given metric",
+	"container": "container is the name of the container in the pods of the scaling target",
+}
+
+func (ContainerResourceMetricSource) SwaggerDoc() map[string]string {
+	return map_ContainerResourceMetricSource
+}
+
+var map_ContainerResourceMetricStatus = map[string]string{
+	"":          "ContainerResourceMetricStatus indicates the current value of a resource metric known to Kubernetes, as specified in requests and limits, describing a single container in each pod in the current scale target (e.g. CPU or memory).  Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
+	"name":      "Name is the name of the resource in question.",
+	"current":   "current contains the current value for the given metric",
+	"container": "Container is the name of the container in the pods of the scaling target",
+}
+
+func (ContainerResourceMetricStatus) SwaggerDoc() map[string]string {
+	return map_ContainerResourceMetricStatus
+}
+
+>>>>>>> 6b7ce455e (update vendored files)
 var map_CrossVersionObjectReference = map[string]string{
 	"":           "CrossVersionObjectReference contains enough information to let you identify the referred resource.",
 	"kind":       "Kind of the referent; More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds\"",
@@ -545,12 +571,13 @@ func (MetricIdentifier) SwaggerDoc() map[string]string {
 }
 
 var map_MetricSpec = map[string]string{
-	"":         "MetricSpec specifies how to scale based on a single metric (only `type` and one other matching field should be set at once).",
-	"type":     "type is the type of metric source.  It should be one of \"Object\", \"Pods\" or \"Resource\", each mapping to a matching field in the object.",
-	"object":   "object refers to a metric describing a single kubernetes object (for example, hits-per-second on an Ingress object).",
-	"pods":     "pods refers to a metric describing each pod in the current scale target (for example, transactions-processed-per-second).  The values will be averaged together before being compared to the target value.",
-	"resource": "resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
-	"external": "external refers to a global metric that is not associated with any Kubernetes object. It allows autoscaling based on information coming from components running outside of cluster (for example length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).",
+	"":                  "MetricSpec specifies how to scale based on a single metric (only `type` and one other matching field should be set at once).",
+	"type":              "type is the type of metric source.  It should be one of \"ContainerResource\", \"External\", \"Object\", \"Pods\" or \"Resource\", each mapping to a matching field in the object. Note: \"ContainerResource\" type is available on when the feature-gate HPAContainerMetrics is enabled",
+	"object":            "object refers to a metric describing a single kubernetes object (for example, hits-per-second on an Ingress object).",
+	"pods":              "pods refers to a metric describing each pod in the current scale target (for example, transactions-processed-per-second).  The values will be averaged together before being compared to the target value.",
+	"resource":          "resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
+	"containerResource": "container resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing a single container in each pod of the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source. This is an alpha feature and can be enabled by the HPAContainerMetrics feature flag.",
+	"external":          "external refers to a global metric that is not associated with any Kubernetes object. It allows autoscaling based on information coming from components running outside of cluster (for example length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).",
 }
 
 func (MetricSpec) SwaggerDoc() map[string]string {
@@ -558,6 +585,7 @@ func (MetricSpec) SwaggerDoc() map[string]string {
 }
 
 var map_MetricStatus = map[string]string{
+<<<<<<< HEAD
 	"":         "MetricStatus describes the last-read state of a single metric.",
 	"type":     "type is the type of metric source.  It will be one of \"Object\", \"Pods\" or \"Resource\", each corresponds to a matching field in the object.",
 	"object":   "object refers to a metric describing a single kubernetes object (for example, hits-per-second on an Ingress object).",
@@ -565,6 +593,22 @@ var map_MetricStatus = map[string]string{
 	"resource": "resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
 	"external": "external refers to a global metric that is not associated with any Kubernetes object. It allows autoscaling based on information coming from components running outside of cluster (for example length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).",
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	"":         "MetricStatus describes the last-read state of a single metric.",
+	"type":     "type is the type of metric source.  It will be one of \"Object\", \"Pods\" or \"Resource\", each corresponds to a matching field in the object.",
+	"object":   "object refers to a metric describing a single kubernetes object (for example, hits-per-second on an Ingress object).",
+	"pods":     "pods refers to a metric describing each pod in the current scale target (for example, transactions-processed-per-second).  The values will be averaged together before being compared to the target value.",
+	"resource": "resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
+	"external": "external refers to a global metric that is not associated with any Kubernetes object. It allows autoscaling based on information coming from components running outside of cluster (for example length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).",
+=======
+	"":                  "MetricStatus describes the last-read state of a single metric.",
+	"type":              "type is the type of metric source.  It will be one of \"ContainerResource\", \"External\", \"Object\", \"Pods\" or \"Resource\", each corresponds to a matching field in the object. Note: \"ContainerResource\" type is available on when the feature-gate HPAContainerMetrics is enabled",
+	"object":            "object refers to a metric describing a single kubernetes object (for example, hits-per-second on an Ingress object).",
+	"pods":              "pods refers to a metric describing each pod in the current scale target (for example, transactions-processed-per-second).  The values will be averaged together before being compared to the target value.",
+	"resource":          "resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
+	"containerResource": "container resource refers to a resource metric (such as those specified in requests and limits) known to Kubernetes describing a single container in each pod in the current scale target (e.g. CPU or memory). Such metrics are built in to Kubernetes, and have special scaling options on top of those available to normal per-pod metrics using the \"pods\" source.",
+	"external":          "external refers to a global metric that is not associated with any Kubernetes object. It allows autoscaling based on information coming from components running outside of cluster (for example length of queue in cloud messaging service, or QPS from loadbalancer running outside of cluster).",
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func (MetricStatus) SwaggerDoc() map[string]string {

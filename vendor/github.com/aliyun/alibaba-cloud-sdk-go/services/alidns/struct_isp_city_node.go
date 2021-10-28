@@ -21,8 +21,8 @@ type IspCityNode struct {
 	CityCode        string `json:"CityCode" xml:"CityCode"`
 	DefaultSelected bool   `json:"DefaultSelected" xml:"DefaultSelected"`
 	IspName         string `json:"IspName" xml:"IspName"`
-	GroupName       string `json:"GroupName" xml:"GroupName"`
 	CountryName     string `json:"CountryName" xml:"CountryName"`
+	GroupName       string `json:"GroupName" xml:"GroupName"`
 	CityName        string `json:"CityName" xml:"CityName"`
 	Mainland        bool   `json:"Mainland" xml:"Mainland"`
 	CountryCode     string `json:"CountryCode" xml:"CountryCode"`

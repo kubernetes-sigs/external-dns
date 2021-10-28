@@ -107,6 +107,7 @@ func (c *Client) ListFirewalls(ctx context.Context, opts *ListOptions) ([]Firewa
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +177,10 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -202,8 +207,13 @@ func (c *Client) CreateFirewall(ctx context.Context, createOpts FirewallCreateOp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

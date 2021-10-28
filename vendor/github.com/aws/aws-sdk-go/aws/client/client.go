@@ -10,12 +10,13 @@ import (
 
 // A Config provides configuration to a service client instance.
 type Config struct {
-	Config        *aws.Config
-	Handlers      request.Handlers
-	PartitionID   string
-	Endpoint      string
-	SigningRegion string
-	SigningName   string
+	Config         *aws.Config
+	Handlers       request.Handlers
+	PartitionID    string
+	Endpoint       string
+	SigningRegion  string
+	SigningName    string
+	ResolvedRegion string
 
 	// States that the signing name did not come from a modeled source but
 	// was derived based on other data. Used by service client constructors
@@ -91,6 +92,7 @@ func (c *Client) AddDebugHandlers() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
@@ -112,6 +114,13 @@ func (c *Client) AddDebugHandlers() {
 	}
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	if !c.Config.LogLevel.AtLeast(aws.LogDebug) {
+		return
+	}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	c.Handlers.Send.PushFrontNamed(LogHTTPRequestHandler)
 	c.Handlers.Send.PushBackNamed(LogHTTPResponseHandler)
 }

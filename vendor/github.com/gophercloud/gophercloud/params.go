@@ -445,11 +445,15 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 
 				// if the field is set, add it to the slice of query pieces
 				if !isZero(v) {
+					if v.Kind() == reflect.Ptr {
+						v = v.Elem()
+					}
 					switch v.Kind() {
 					case reflect.String:
 						optsMap[tags[0]] = v.String()
 					case reflect.Int:
 						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -466,6 +470,11 @@ func BuildHeaders(opts interface{}) (map[string]string, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+					case reflect.Int64:
+						optsMap[tags[0]] = strconv.FormatInt(v.Int(), 10)
+>>>>>>> 6b7ce455e (update vendored files)
 					case reflect.Bool:
 						optsMap[tags[0]] = strconv.FormatBool(v.Bool())
 					}

@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build go1.13
 // +build go1.13
 
@@ -60,13 +61,33 @@ DATA	·libc_readdir_r_trampoline_addr(SB)/8, $libc_readdir_r_trampoline<>(SB)
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build go1.13
+>>>>>>> 6b7ce455e (update vendored files)
 // +build go1.13
 
 #include "textflag.h"
-TEXT ·libc_fdopendir_trampoline(SB),NOSPLIT,$0-0
+
+TEXT libc_fdopendir_trampoline<>(SB),NOSPLIT,$0-0
 	JMP	libc_fdopendir(SB)
-TEXT ·libc_closedir_trampoline(SB),NOSPLIT,$0-0
+
+GLOBL	·libc_fdopendir_trampoline_addr(SB), RODATA, $8
+DATA	·libc_fdopendir_trampoline_addr(SB)/8, $libc_fdopendir_trampoline<>(SB)
+
+TEXT libc_closedir_trampoline<>(SB),NOSPLIT,$0-0
 	JMP	libc_closedir(SB)
-TEXT ·libc_readdir_r_trampoline(SB),NOSPLIT,$0-0
+
+GLOBL	·libc_closedir_trampoline_addr(SB), RODATA, $8
+DATA	·libc_closedir_trampoline_addr(SB)/8, $libc_closedir_trampoline<>(SB)
+
+TEXT libc_readdir_r_trampoline<>(SB),NOSPLIT,$0-0
 	JMP	libc_readdir_r(SB)
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+
+GLOBL	·libc_readdir_r_trampoline_addr(SB), RODATA, $8
+DATA	·libc_readdir_r_trampoline_addr(SB)/8, $libc_readdir_r_trampoline<>(SB)
+>>>>>>> 6b7ce455e (update vendored files)

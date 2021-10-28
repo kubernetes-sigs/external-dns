@@ -112,6 +112,7 @@ func (p pointer) Bytes() *[]byte                        { return (*[]byte)(p.p) 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (p pointer) BytesPtr() **[]byte                    { return (**[]byte)(p.p) }
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -123,6 +124,10 @@ func (p pointer) BytesPtr() **[]byte                    { return (**[]byte)(p.p)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+func (p pointer) BytesPtr() **[]byte                    { return (**[]byte)(p.p) }
+>>>>>>> 6b7ce455e (update vendored files)
 func (p pointer) BytesSlice() *[][]byte                 { return (*[][]byte)(p.p) }
 func (p pointer) WeakFields() *weakFields               { return (*weakFields)(p.p) }
 func (p pointer) Extensions() *map[int32]ExtensionField { return (*map[int32]ExtensionField)(p.p) }

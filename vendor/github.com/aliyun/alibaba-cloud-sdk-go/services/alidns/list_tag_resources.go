@@ -21,7 +21,6 @@ import (
 )
 
 // ListTagResources invokes the alidns.ListTagResources API synchronously
-// api document: https://help.aliyun.com/api/alidns/listtagresources.html
 func (client *Client) ListTagResources(request *ListTagResourcesRequest) (response *ListTagResourcesResponse, err error) {
 	response = CreateListTagResourcesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ListTagResources(request *ListTagResourcesRequest) (respon
 }
 
 // ListTagResourcesWithChan invokes the alidns.ListTagResources API asynchronously
-// api document: https://help.aliyun.com/api/alidns/listtagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListTagResourcesWithChan(request *ListTagResourcesRequest) (<-chan *ListTagResourcesResponse, <-chan error) {
 	responseChan := make(chan *ListTagResourcesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ListTagResourcesWithChan(request *ListTagResourcesRequest)
 }
 
 // ListTagResourcesWithCallback invokes the alidns.ListTagResources API asynchronously
-// api document: https://help.aliyun.com/api/alidns/listtagresources.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ListTagResourcesWithCallback(request *ListTagResourcesRequest, callback func(response *ListTagResourcesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -105,6 +100,7 @@ func CreateListTagResourcesRequest() (request *ListTagResourcesRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ListTagResources", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

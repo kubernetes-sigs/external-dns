@@ -21,7 +21,6 @@ import (
 )
 
 // TransferDomain invokes the alidns.TransferDomain API synchronously
-// api document: https://help.aliyun.com/api/alidns/transferdomain.html
 func (client *Client) TransferDomain(request *TransferDomainRequest) (response *TransferDomainResponse, err error) {
 	response = CreateTransferDomainResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) TransferDomain(request *TransferDomainRequest) (response *
 }
 
 // TransferDomainWithChan invokes the alidns.TransferDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/transferdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TransferDomainWithChan(request *TransferDomainRequest) (<-chan *TransferDomainResponse, <-chan error) {
 	responseChan := make(chan *TransferDomainResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) TransferDomainWithChan(request *TransferDomainRequest) (<-
 }
 
 // TransferDomainWithCallback invokes the alidns.TransferDomain API asynchronously
-// api document: https://help.aliyun.com/api/alidns/transferdomain.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) TransferDomainWithCallback(request *TransferDomainRequest, callback func(response *TransferDomainResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateTransferDomainRequest() (request *TransferDomainRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "TransferDomain", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

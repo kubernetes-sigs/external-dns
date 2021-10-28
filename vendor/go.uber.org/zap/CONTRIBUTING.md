@@ -28,6 +28,7 @@ git fetch upstream
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 Install zap's dependencies:
@@ -55,6 +56,15 @@ make dependencies
 ```
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+Install zap's dependencies:
+
+```
+make dependencies
+```
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 Make sure that the tests and the linters pass:
 
 ```

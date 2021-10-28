@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/go-ini/ini/Go?logo=github&style=for-the-badge)](https://github.com/go-ini/ini/actions?query=workflow%3AGo)
 [![codecov](https://img.shields.io/codecov/c/github/go-ini/ini/master?logo=codecov&style=for-the-badge)](https://codecov.io/gh/go-ini/ini)
 [![GoDoc](https://img.shields.io/badge/GoDoc-Reference-blue?style=for-the-badge&logo=go)](https://pkg.go.dev/github.com/go-ini/ini?tab=doc)
@@ -92,6 +93,14 @@ Please add `-u` flag to update in the future.
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Build Status](https://img.shields.io/travis/go-ini/ini/master.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/go-ini/ini) [![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?style=for-the-badge&logo=sourcegraph)](https://sourcegraph.com/github.com/go-ini/ini)
+||||||| parent of 6b7ce455e (update vendored files)
+[![Build Status](https://img.shields.io/travis/go-ini/ini/master.svg?style=for-the-badge&logo=travis)](https://travis-ci.org/go-ini/ini) [![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?style=for-the-badge&logo=sourcegraph)](https://sourcegraph.com/github.com/go-ini/ini)
+=======
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/go-ini/ini/Go?logo=github&style=for-the-badge)](https://github.com/go-ini/ini/actions?query=workflow%3AGo)
+[![codecov](https://img.shields.io/codecov/c/github/go-ini/ini/master?logo=codecov&style=for-the-badge)](https://codecov.io/gh/go-ini/ini)
+[![GoDoc](https://img.shields.io/badge/GoDoc-Reference-blue?style=for-the-badge&logo=go)](https://pkg.go.dev/github.com/go-ini/ini?tab=doc)
+[![Sourcegraph](https://img.shields.io/badge/view%20on-Sourcegraph-brightgreen.svg?style=for-the-badge&logo=sourcegraph)](https://sourcegraph.com/github.com/go-ini/ini)
+>>>>>>> 6b7ce455e (update vendored files)
 
 ![](https://avatars0.githubusercontent.com/u/10216035?v=3&s=200)
 
@@ -99,7 +108,7 @@ Package ini provides INI file read and write functionality in Go.
 
 ## Features
 
-- Load from multiple data sources(`[]byte`, file and `io.ReadCloser`) with overwrites.
+- Load from multiple data sources(file, `[]byte`, `io.Reader` and `io.ReadCloser`) with overwrites.
 - Read with recursion values.
 - Read with parent-child sections.
 - Read with auto-increment key names.
@@ -112,7 +121,7 @@ Package ini provides INI file read and write functionality in Go.
 
 ## Installation
 
-The minimum requirement of Go is **1.6**.
+The minimum requirement of Go is **1.12**.
 
 ```sh
 $ go get gopkg.in/ini.v1
@@ -124,7 +133,12 @@ Please add `-u` flag to update in the future.
 
 - [Getting Started](https://ini.unknwon.io/docs/intro/getting_started)
 - [API Documentation](https://gowalker.org/gopkg.in/ini.v1)
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+- 中国大陆镜像：https://ini.unknwon.cn
+>>>>>>> 6b7ce455e (update vendored files)
 
 ## License
 

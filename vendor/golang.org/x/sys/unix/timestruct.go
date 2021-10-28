@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
 
@@ -162,17 +163,21 @@ func (ts *Timespec) Nano() int64 {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+||||||| parent of 6b7ce455e (update vendored files)
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+>>>>>>> 6b7ce455e (update vendored files)
 
 package unix
 
 import "time"
 
-// TimespecToNsec converts a Timespec value into a number of
-// nanoseconds since the Unix epoch.
-func TimespecToNsec(ts Timespec) int64 { return int64(ts.Sec)*1e9 + int64(ts.Nsec) }
+// TimespecToNSec returns the time stored in ts as nanoseconds.
+func TimespecToNsec(ts Timespec) int64 { return ts.Nano() }
 
-// NsecToTimespec takes a number of nanoseconds since the Unix epoch
-// and returns the corresponding Timespec value.
+// NsecToTimespec converts a number of nanoseconds into a Timespec.
 func NsecToTimespec(nsec int64) Timespec {
 	sec := nsec / 1e9
 	nsec = nsec % 1e9
@@ -201,12 +206,10 @@ func TimeToTimespec(t time.Time) (Timespec, error) {
 	return ts, nil
 }
 
-// TimevalToNsec converts a Timeval value into a number of nanoseconds
-// since the Unix epoch.
-func TimevalToNsec(tv Timeval) int64 { return int64(tv.Sec)*1e9 + int64(tv.Usec)*1e3 }
+// TimevalToNsec returns the time stored in tv as nanoseconds.
+func TimevalToNsec(tv Timeval) int64 { return tv.Nano() }
 
-// NsecToTimeval takes a number of nanoseconds since the Unix epoch
-// and returns the corresponding Timeval value.
+// NsecToTimeval converts a number of nanoseconds into a Timeval.
 func NsecToTimeval(nsec int64) Timeval {
 	nsec += 999 // round up to microsecond
 	usec := nsec % 1e9 / 1e3
@@ -218,25 +221,29 @@ func NsecToTimeval(nsec int64) Timeval {
 	return setTimeval(sec, usec)
 }
 
-// Unix returns ts as the number of seconds and nanoseconds elapsed since the
-// Unix epoch.
+// Unix returns the time stored in ts as seconds plus nanoseconds.
 func (ts *Timespec) Unix() (sec int64, nsec int64) {
 	return int64(ts.Sec), int64(ts.Nsec)
 }
 
-// Unix returns tv as the number of seconds and nanoseconds elapsed since the
-// Unix epoch.
+// Unix returns the time stored in tv as seconds plus nanoseconds.
 func (tv *Timeval) Unix() (sec int64, nsec int64) {
 	return int64(tv.Sec), int64(tv.Usec) * 1000
 }
 
-// Nano returns ts as the number of nanoseconds elapsed since the Unix epoch.
+// Nano returns the time stored in ts as nanoseconds.
 func (ts *Timespec) Nano() int64 {
 	return int64(ts.Sec)*1e9 + int64(ts.Nsec)
 }
 
+<<<<<<< HEAD
 // Nano returns tv as the number of nanoseconds elapsed since the Unix epoch.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// Nano returns tv as the number of nanoseconds elapsed since the Unix epoch.
+=======
+// Nano returns the time stored in tv as nanoseconds.
+>>>>>>> 6b7ce455e (update vendored files)
 func (tv *Timeval) Nano() int64 {
 	return int64(tv.Sec)*1e9 + int64(tv.Usec)*1000
 }

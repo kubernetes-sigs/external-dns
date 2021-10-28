@@ -113,7 +113,12 @@ func (c *FakeStorageVersions) UpdateStatus(ctx context.Context, storageVersion *
 // Delete takes name of the storageVersion and deletes it. Returns an error if one occurs.
 func (c *FakeStorageVersions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewRootDeleteAction(storageversionsResource, name), &v1alpha1.StorageVersion{})
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		Invokes(testing.NewRootDeleteActionWithOptions(storageversionsResource, name, opts), &v1alpha1.StorageVersion{})
+>>>>>>> 6b7ce455e (update vendored files)
 	return err
 }
 

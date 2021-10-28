@@ -122,6 +122,7 @@ func (e *encoder) marshal(tag string, in reflect.Value) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case Node:
 		if !in.CanAddr() {
 			var n = reflect.New(in.Type()).Elem()
@@ -1042,6 +1043,17 @@ func (e *encoder) node(node *Node, tail string) {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	case Node:
+		if !in.CanAddr() {
+			var n = reflect.New(in.Type()).Elem()
+			n.Set(in)
+			in = n
+		}
+		e.nodev(in.Addr())
+		return
+>>>>>>> 6b7ce455e (update vendored files)
 	case time.Time:
 		e.timev(tag, in)
 		return
@@ -1345,18 +1357,23 @@ func (e *encoder) nodev(in reflect.Value) {
 }
 
 func (e *encoder) node(node *Node, tail string) {
+	// Zero nodes behave as nil.
+	if node.Kind == 0 && node.IsZero() {
+		e.nilv()
+		return
+	}
+
 	// If the tag was not explicitly requested, and dropping it won't change the
 	// implicit tag of the value, don't include it in the presentation.
 	var tag = node.Tag
 	var stag = shortTag(tag)
-	var rtag string
 	var forceQuoting bool
 	if tag != "" && node.Style&TaggedStyle == 0 {
 		if node.Kind == ScalarNode {
 			if stag == strTag && node.Style&(SingleQuotedStyle|DoubleQuotedStyle|LiteralStyle|FoldedStyle) != 0 {
 				tag = ""
 			} else {
-				rtag, _ = resolve("", node.Value)
+				rtag, _ := resolve("", node.Value)
 				if rtag == stag {
 					tag = ""
 				} else if stag == strTag {
@@ -1365,6 +1382,7 @@ func (e *encoder) node(node *Node, tail string) {
 				}
 			}
 		} else {
+			var rtag string
 			switch node.Kind {
 			case MappingNode:
 				rtag = mapTag
@@ -1394,7 +1412,7 @@ func (e *encoder) node(node *Node, tail string) {
 		if node.Style&FlowStyle != 0 {
 			style = yaml_FLOW_SEQUENCE_STYLE
 		}
-		e.must(yaml_sequence_start_event_initialize(&e.event, []byte(node.Anchor), []byte(tag), tag == "", style))
+		e.must(yaml_sequence_start_event_initialize(&e.event, []byte(node.Anchor), []byte(longTag(tag)), tag == "", style))
 		e.event.head_comment = []byte(node.HeadComment)
 		e.emit()
 		for _, node := range node.Content {
@@ -1410,7 +1428,7 @@ func (e *encoder) node(node *Node, tail string) {
 		if node.Style&FlowStyle != 0 {
 			style = yaml_FLOW_MAPPING_STYLE
 		}
-		yaml_mapping_start_event_initialize(&e.event, []byte(node.Anchor), []byte(tag), tag == "", style)
+		yaml_mapping_start_event_initialize(&e.event, []byte(node.Anchor), []byte(longTag(tag)), tag == "", style)
 		e.event.tail_comment = []byte(tail)
 		e.event.head_comment = []byte(node.HeadComment)
 		e.emit()
@@ -1451,11 +1469,11 @@ func (e *encoder) node(node *Node, tail string) {
 	case ScalarNode:
 		value := node.Value
 		if !utf8.ValidString(value) {
-			if tag == binaryTag {
+			if stag == binaryTag {
 				failf("explicitly tagged !!binary data must be base64-encoded")
 			}
-			if tag != "" {
-				failf("cannot marshal invalid UTF-8 data as %s", shortTag(tag))
+			if stag != "" {
+				failf("cannot marshal invalid UTF-8 data as %s", stag)
 			}
 			// It can't be encoded directly as YAML so use a binary tag
 			// and encode it as base64.
@@ -1480,6 +1498,12 @@ func (e *encoder) node(node *Node, tail string) {
 		}
 
 		e.emitScalar(value, node.Anchor, tag, style, []byte(node.HeadComment), []byte(node.LineComment), []byte(node.FootComment), []byte(tail))
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	default:
+		failf("cannot encode node with unknown kind %d", node.Kind)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 }

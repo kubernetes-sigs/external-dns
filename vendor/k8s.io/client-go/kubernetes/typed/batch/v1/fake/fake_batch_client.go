@@ -31,6 +31,7 @@ type FakeBatchV1 struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
 	return &FakeCronJobs{c, namespace}
 }
@@ -48,6 +49,13 @@ func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+func (c *FakeBatchV1) CronJobs(namespace string) v1.CronJobInterface {
+	return &FakeCronJobs{c, namespace}
+}
+
+>>>>>>> 6b7ce455e (update vendored files)
 func (c *FakeBatchV1) Jobs(namespace string) v1.JobInterface {
 	return &FakeJobs{c, namespace}
 }

@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateDomainRemark invokes the alidns.UpdateDomainRemark API synchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
 func (client *Client) UpdateDomainRemark(request *UpdateDomainRemarkRequest) (response *UpdateDomainRemarkResponse, err error) {
 	response = CreateUpdateDomainRemarkResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateDomainRemark(request *UpdateDomainRemarkRequest) (re
 }
 
 // UpdateDomainRemarkWithChan invokes the alidns.UpdateDomainRemark API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRemarkWithChan(request *UpdateDomainRemarkRequest) (<-chan *UpdateDomainRemarkResponse, <-chan error) {
 	responseChan := make(chan *UpdateDomainRemarkResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateDomainRemarkWithChan(request *UpdateDomainRemarkRequ
 }
 
 // UpdateDomainRemarkWithCallback invokes the alidns.UpdateDomainRemark API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomainremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainRemarkWithCallback(request *UpdateDomainRemarkRequest, callback func(response *UpdateDomainRemarkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -94,6 +89,7 @@ func CreateUpdateDomainRemarkRequest() (request *UpdateDomainRemarkRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainRemark", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

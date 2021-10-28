@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -489,12 +490,18 @@ func (c *resourceQuotas) ApplyStatus(ctx context.Context, resourceQuota *corev1.
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -516,6 +523,8 @@ type ResourceQuotaInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*v1.ResourceQuotaList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.ResourceQuota, err error)
+	Apply(ctx context.Context, resourceQuota *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ResourceQuota, err error)
+	ApplyStatus(ctx context.Context, resourceQuota *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ResourceQuota, err error)
 	ResourceQuotaExpansion
 }
 
@@ -658,6 +667,62 @@ func (c *resourceQuotas) Patch(ctx context.Context, name string, pt types.PatchT
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied resourceQuota.
+func (c *resourceQuotas) Apply(ctx context.Context, resourceQuota *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ResourceQuota, err error) {
+	if resourceQuota == nil {
+		return nil, fmt.Errorf("resourceQuota provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(resourceQuota)
+	if err != nil {
+		return nil, err
+	}
+	name := resourceQuota.Name
+	if name == nil {
+		return nil, fmt.Errorf("resourceQuota.Name must be provided to Apply")
+	}
+	result = &v1.ResourceQuota{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("resourcequotas").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *resourceQuotas) ApplyStatus(ctx context.Context, resourceQuota *corev1.ResourceQuotaApplyConfiguration, opts metav1.ApplyOptions) (result *v1.ResourceQuota, err error) {
+	if resourceQuota == nil {
+		return nil, fmt.Errorf("resourceQuota provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(resourceQuota)
+	if err != nil {
+		return nil, err
+	}
+
+	name := resourceQuota.Name
+	if name == nil {
+		return nil, fmt.Errorf("resourceQuota.Name must be provided to Apply")
+	}
+
+	result = &v1.ResourceQuota{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("resourcequotas").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

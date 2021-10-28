@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -285,6 +286,11 @@ func (c *FakeConfigMaps) Apply(ctx context.Context, configMap *applyconfiguratio
 		Invokes(testing.NewPatchSubresourceAction(configmapsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ConfigMap{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -292,6 +298,7 @@ func (c *FakeConfigMaps) Apply(ctx context.Context, configMap *applyconfiguratio
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -370,7 +377,7 @@ func (c *FakeConfigMaps) Update(ctx context.Context, configMap *corev1.ConfigMap
 // Delete takes name of the configMap and deletes it. Returns an error if one occurs.
 func (c *FakeConfigMaps) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(configmapsResource, c.ns, name), &corev1.ConfigMap{})
+		Invokes(testing.NewDeleteActionWithOptions(configmapsResource, c.ns, name, opts), &corev1.ConfigMap{})
 
 	return err
 }
@@ -388,6 +395,28 @@ func (c *FakeConfigMaps) Patch(ctx context.Context, name string, pt types.PatchT
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(configmapsResource, c.ns, name, pt, data, subresources...), &corev1.ConfigMap{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.ConfigMap), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied configMap.
+func (c *FakeConfigMaps) Apply(ctx context.Context, configMap *applyconfigurationscorev1.ConfigMapApplyConfiguration, opts v1.ApplyOptions) (result *corev1.ConfigMap, err error) {
+	if configMap == nil {
+		return nil, fmt.Errorf("configMap provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(configMap)
+	if err != nil {
+		return nil, err
+	}
+	name := configMap.Name
+	if name == nil {
+		return nil, fmt.Errorf("configMap.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(configmapsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.ConfigMap{})
 
 	if obj == nil {
 		return nil, err

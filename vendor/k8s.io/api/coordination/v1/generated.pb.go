@@ -557,6 +557,7 @@ func (m *Lease) Unmarshal(dAtA []byte) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
@@ -1215,6 +1216,14 @@ func (m *LeaseSpec) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) < 0 {
+||||||| parent of 6b7ce455e (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 6b7ce455e (update vendored files)
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -1331,10 +1340,7 @@ func (m *LeaseList) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthGenerated
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {
@@ -1529,11 +1535,20 @@ func (m *LeaseSpec) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
+<<<<<<< HEAD
 			if skippy < 0 {
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) < 0 {
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthGenerated
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 6b7ce455e (update vendored files)
 				return ErrInvalidLengthGenerated
 			}
 			if (iNdEx + skippy) > l {

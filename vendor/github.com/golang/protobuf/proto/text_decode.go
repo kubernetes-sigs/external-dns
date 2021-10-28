@@ -768,6 +768,7 @@ func unescape(s string) (ch string, tail string, err error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return string(rune(i)), s, nil
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -782,6 +783,11 @@ func unescape(s string) (ch string, tail string, err error) {
 =======
 		return string(i), s, nil
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		return string(i), s, nil
+=======
+		return string(rune(i)), s, nil
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	return "", "", fmt.Errorf(`unknown escape \%c`, r)
 }

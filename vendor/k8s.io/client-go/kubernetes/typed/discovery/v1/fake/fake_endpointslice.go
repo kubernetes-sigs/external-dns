@@ -108,7 +108,12 @@ func (c *FakeEndpointSlices) Update(ctx context.Context, endpointSlice *discover
 // Delete takes name of the endpointSlice and deletes it. Returns an error if one occurs.
 func (c *FakeEndpointSlices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(endpointslicesResource, c.ns, name), &discoveryv1.EndpointSlice{})
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(endpointslicesResource, c.ns, name, opts), &discoveryv1.EndpointSlice{})
+>>>>>>> 6b7ce455e (update vendored files)
 
 	return err
 }

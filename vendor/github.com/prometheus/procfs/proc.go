@@ -108,6 +108,7 @@ func (fs FS) AllProcs() (Procs, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Procs{}, fmt.Errorf("could not read %q: %w", d.Name(), err)
 	}
 
@@ -473,6 +474,11 @@ func (p Proc) fileDescriptors() ([]string, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return Procs{}, fmt.Errorf("could not read %s: %s", d.Name(), err)
+||||||| parent of 6b7ce455e (update vendored files)
+		return Procs{}, fmt.Errorf("could not read %s: %s", d.Name(), err)
+=======
+		return Procs{}, fmt.Errorf("could not read %q: %w", d.Name(), err)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	p := Procs{}
@@ -573,7 +579,7 @@ func (p Proc) FileDescriptors() ([]uintptr, error) {
 	for i, n := range names {
 		fd, err := strconv.ParseInt(n, 10, 32)
 		if err != nil {
-			return nil, fmt.Errorf("could not parse fd %s: %s", n, err)
+			return nil, fmt.Errorf("could not parse fd %q: %w", n, err)
 		}
 		fds[i] = uintptr(fd)
 	}
@@ -645,8 +651,14 @@ func (p Proc) fileDescriptors() ([]string, error) {
 
 	names, err := d.Readdirnames(-1)
 	if err != nil {
+<<<<<<< HEAD
 		return nil, fmt.Errorf("could not read %s: %s", d.Name(), err)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		return nil, fmt.Errorf("could not read %s: %s", d.Name(), err)
+=======
+		return nil, fmt.Errorf("could not read %q: %w", d.Name(), err)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	return names, nil

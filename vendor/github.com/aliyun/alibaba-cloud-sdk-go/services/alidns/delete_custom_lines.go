@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteCustomLines invokes the alidns.DeleteCustomLines API synchronously
-// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
 func (client *Client) DeleteCustomLines(request *DeleteCustomLinesRequest) (response *DeleteCustomLinesResponse, err error) {
 	response = CreateDeleteCustomLinesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteCustomLines(request *DeleteCustomLinesRequest) (resp
 }
 
 // DeleteCustomLinesWithChan invokes the alidns.DeleteCustomLines API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteCustomLinesWithChan(request *DeleteCustomLinesRequest) (<-chan *DeleteCustomLinesResponse, <-chan error) {
 	responseChan := make(chan *DeleteCustomLinesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteCustomLinesWithChan(request *DeleteCustomLinesReques
 }
 
 // DeleteCustomLinesWithCallback invokes the alidns.DeleteCustomLines API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletecustomlines.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteCustomLinesWithCallback(request *DeleteCustomLinesRequest, callback func(response *DeleteCustomLinesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDeleteCustomLinesRequest() (request *DeleteCustomLinesRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteCustomLines", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

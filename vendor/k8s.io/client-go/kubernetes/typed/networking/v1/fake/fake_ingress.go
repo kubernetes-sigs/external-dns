@@ -120,7 +120,12 @@ func (c *FakeIngresses) UpdateStatus(ctx context.Context, ingress *networkingv1.
 // Delete takes name of the ingress and deletes it. Returns an error if one occurs.
 func (c *FakeIngresses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
+<<<<<<< HEAD
 		Invokes(testing.NewDeleteAction(ingressesResource, c.ns, name), &networkingv1.Ingress{})
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		Invokes(testing.NewDeleteActionWithOptions(ingressesResource, c.ns, name, opts), &networkingv1.Ingress{})
+>>>>>>> 6b7ce455e (update vendored files)
 
 	return err
 }

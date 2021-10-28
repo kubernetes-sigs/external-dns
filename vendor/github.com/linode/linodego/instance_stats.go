@@ -38,6 +38,7 @@ func endpointWithIDAndDate(c *Client, id int, year int, month int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.InstanceStats.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -79,6 +80,11 @@ func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceS
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	endpoint, err := c.InstanceStats.endpointWithID(id)
+||||||| parent of 6b7ce455e (update vendored files)
+	endpoint, err := c.InstanceStats.endpointWithID(id)
+=======
+	endpoint, err := c.InstanceStats.endpointWithParams(id)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		panic(err)
 	}
@@ -89,8 +95,14 @@ func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceS
 
 // GetInstanceStats gets the template with the provided ID
 func (c *Client) GetInstanceStats(ctx context.Context, linodeID int) (*InstanceStats, error) {
+<<<<<<< HEAD
 	e, err := c.InstanceStats.endpointWithID(linodeID)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	e, err := c.InstanceStats.endpointWithID(linodeID)
+=======
+	e, err := c.InstanceStats.endpointWithParams(linodeID)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

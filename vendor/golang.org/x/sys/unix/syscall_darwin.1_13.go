@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build darwin && go1.13
 // +build darwin,go1.13
 
@@ -69,6 +70,10 @@ var libc_fdopendir_trampoline_addr uintptr
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build darwin && go1.13
+>>>>>>> 6b7ce455e (update vendored files)
 // +build darwin,go1.13
 
 package unix
@@ -83,7 +88,7 @@ import (
 //sys	readdir_r(dir uintptr, entry *Dirent, result **Dirent) (res Errno)
 
 func fdopendir(fd int) (dir uintptr, err error) {
-	r0, _, e1 := syscall_syscallPtr(funcPC(libc_fdopendir_trampoline), uintptr(fd), 0, 0)
+	r0, _, e1 := syscall_syscallPtr(libc_fdopendir_trampoline_addr, uintptr(fd), 0, 0)
 	dir = uintptr(r0)
 	if e1 != 0 {
 		err = errnoErr(e1)
@@ -91,10 +96,15 @@ func fdopendir(fd int) (dir uintptr, err error) {
 	return
 }
 
-func libc_fdopendir_trampoline()
+var libc_fdopendir_trampoline_addr uintptr
 
+<<<<<<< HEAD
 //go:linkname libc_fdopendir libc_fdopendir
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+//go:linkname libc_fdopendir libc_fdopendir
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 //go:cgo_import_dynamic libc_fdopendir fdopendir "/usr/lib/libSystem.B.dylib"
 
 func Getdirentries(fd int, buf []byte, basep *uintptr) (n int, err error) {

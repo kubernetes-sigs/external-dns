@@ -21,7 +21,6 @@ import (
 )
 
 // SetDNSSLBStatus invokes the alidns.SetDNSSLBStatus API synchronously
-// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
 func (client *Client) SetDNSSLBStatus(request *SetDNSSLBStatusRequest) (response *SetDNSSLBStatusResponse, err error) {
 	response = CreateSetDNSSLBStatusResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) SetDNSSLBStatus(request *SetDNSSLBStatusRequest) (response
 }
 
 // SetDNSSLBStatusWithChan invokes the alidns.SetDNSSLBStatus API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDNSSLBStatusWithChan(request *SetDNSSLBStatusRequest) (<-chan *SetDNSSLBStatusResponse, <-chan error) {
 	responseChan := make(chan *SetDNSSLBStatusResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) SetDNSSLBStatusWithChan(request *SetDNSSLBStatusRequest) (
 }
 
 // SetDNSSLBStatusWithCallback invokes the alidns.SetDNSSLBStatus API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setdnsslbstatus.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetDNSSLBStatusWithCallback(request *SetDNSSLBStatusRequest, callback func(response *SetDNSSLBStatusResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -76,6 +71,7 @@ func (client *Client) SetDNSSLBStatusWithCallback(request *SetDNSSLBStatusReques
 // SetDNSSLBStatusRequest is the request struct for api SetDNSSLBStatus
 type SetDNSSLBStatusRequest struct {
 	*requests.RpcRequest
+	Line         string           `position:"Query" name:"Line"`
 	DomainName   string           `position:"Query" name:"DomainName"`
 	Type         string           `position:"Query" name:"Type"`
 	UserClientIp string           `position:"Query" name:"UserClientIp"`
@@ -98,6 +94,7 @@ func CreateSetDNSSLBStatusRequest() (request *SetDNSSLBStatusRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "SetDNSSLBStatus", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

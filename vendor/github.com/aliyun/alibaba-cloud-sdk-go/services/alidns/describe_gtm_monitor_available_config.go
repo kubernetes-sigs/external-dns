@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmMonitorAvailableConfig invokes the alidns.DescribeGtmMonitorAvailableConfig API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
 func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMonitorAvailableConfigRequest) (response *DescribeGtmMonitorAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmMonitorAvailableConfig(request *DescribeGtmMoni
 }
 
 // DescribeGtmMonitorAvailableConfigWithChan invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorAvailableConfigWithChan(request *DescribeGtmMonitorAvailableConfigRequest) (<-chan *DescribeGtmMonitorAvailableConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmMonitorAvailableConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmMonitorAvailableConfigWithChan(request *Describ
 }
 
 // DescribeGtmMonitorAvailableConfigWithCallback invokes the alidns.DescribeGtmMonitorAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitoravailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorAvailableConfigWithCallback(request *DescribeGtmMonitorAvailableConfigRequest, callback func(response *DescribeGtmMonitorAvailableConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDescribeGtmMonitorAvailableConfigRequest() (request *DescribeGtmMonit
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorAvailableConfig", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

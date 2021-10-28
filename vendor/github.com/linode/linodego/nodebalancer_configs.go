@@ -14,6 +14,7 @@ type NodeBalancerConfig struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ProxyProtocol  ConfigProxyProtocol     `json:"proxy_protocol"`
 	Algorithm      ConfigAlgorithm         `json:"algorithm"`
 	Stickiness     ConfigStickiness        `json:"stickiness"`
@@ -668,6 +669,10 @@ func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID i
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	ProxyProtocol  ConfigProxyProtocol     `json:"proxy_protocol"`
+>>>>>>> 6b7ce455e (update vendored files)
 	Algorithm      ConfigAlgorithm         `json:"algorithm"`
 	Stickiness     ConfigStickiness        `json:"stickiness"`
 	Check          ConfigCheck             `json:"check"`
@@ -727,6 +732,16 @@ const (
 	ProtocolTCP   ConfigProtocol = "tcp"
 )
 
+// ConfigProxyProtocol constants start with ProxyProtocol and include Linode API NodeBalancer Config proxy protocol versions
+type ConfigProxyProtocol string
+
+// ConfigProxyProtocol constatns reflect the proxy protocol version used by a NodeBalancer Config
+const (
+	ProxyProtocolNone ConfigProxyProtocol = "none"
+	ProxyProtocolV1   ConfigProxyProtocol = "v1"
+	ProxyProtocolV2   ConfigProxyProtocol = "v2"
+)
+
 // ConfigCipher constants start with Cipher and include Linode API NodeBalancer Config Cipher values
 type ConfigCipher string
 
@@ -746,6 +761,7 @@ type NodeBalancerNodeStatus struct {
 type NodeBalancerConfigCreateOptions struct {
 	Port          int                             `json:"port"`
 	Protocol      ConfigProtocol                  `json:"protocol,omitempty"`
+	ProxyProtocol ConfigProxyProtocol             `json:"proxy_protocol,omitempty"`
 	Algorithm     ConfigAlgorithm                 `json:"algorithm,omitempty"`
 	Stickiness    ConfigStickiness                `json:"stickiness,omitempty"`
 	Check         ConfigCheck                     `json:"check,omitempty"`
@@ -765,6 +781,7 @@ type NodeBalancerConfigCreateOptions struct {
 type NodeBalancerConfigRebuildOptions struct {
 	Port          int                             `json:"port"`
 	Protocol      ConfigProtocol                  `json:"protocol,omitempty"`
+	ProxyProtocol ConfigProxyProtocol             `json:"proxy_protocol,omitempty"`
 	Algorithm     ConfigAlgorithm                 `json:"algorithm,omitempty"`
 	Stickiness    ConfigStickiness                `json:"stickiness,omitempty"`
 	Check         ConfigCheck                     `json:"check,omitempty"`
@@ -788,6 +805,7 @@ func (i NodeBalancerConfig) GetCreateOptions() NodeBalancerConfigCreateOptions {
 	return NodeBalancerConfigCreateOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -808,6 +826,7 @@ func (i NodeBalancerConfig) GetUpdateOptions() NodeBalancerConfigUpdateOptions {
 	return NodeBalancerConfigUpdateOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -828,6 +847,7 @@ func (i NodeBalancerConfig) GetRebuildOptions() NodeBalancerConfigRebuildOptions
 	return NodeBalancerConfigRebuildOptions{
 		Port:          i.Port,
 		Protocol:      i.Protocol,
+		ProxyProtocol: i.ProxyProtocol,
 		Algorithm:     i.Algorithm,
 		Stickiness:    i.Stickiness,
 		Check:         i.Check,
@@ -852,7 +872,7 @@ type NodeBalancerConfigsPagedResponse struct {
 
 // endpointWithID gets the endpoint URL for NodeBalancerConfig
 func (NodeBalancerConfigsPagedResponse) endpointWithID(c *Client, id int) string {
-	endpoint, err := c.NodeBalancerConfigs.endpointWithID(id)
+	endpoint, err := c.NodeBalancerConfigs.endpointWithParams(id)
 	if err != nil {
 		panic(err)
 	}
@@ -868,7 +888,6 @@ func (resp *NodeBalancerConfigsPagedResponse) appendData(r *NodeBalancerConfigsP
 func (c *Client) ListNodeBalancerConfigs(ctx context.Context, nodebalancerID int, opts *ListOptions) ([]NodeBalancerConfig, error) {
 	response := NodeBalancerConfigsPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, nodebalancerID, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -877,7 +896,7 @@ func (c *Client) ListNodeBalancerConfigs(ctx context.Context, nodebalancerID int
 
 // GetNodeBalancerConfig gets the template with the provided ID
 func (c *Client) GetNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int) (*NodeBalancerConfig, error) {
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
+	e, err := c.NodeBalancerConfigs.endpointWithParams(nodebalancerID)
 	if err != nil {
 		return nil, err
 	}
@@ -892,8 +911,7 @@ func (c *Client) GetNodeBalancerConfig(ctx context.Context, nodebalancerID int, 
 // CreateNodeBalancerConfig creates a NodeBalancerConfig
 func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID int, nodebalancerConfig NodeBalancerConfigCreateOptions) (*NodeBalancerConfig, error) {
 	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
-
+	e, err := c.NodeBalancerConfigs.endpointWithParams(nodebalancerID)
 	if err != nil {
 		return nil, err
 	}
@@ -910,7 +928,6 @@ func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 		SetHeader("Content-Type", "application/json").
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -920,7 +937,7 @@ func (c *Client) CreateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 // UpdateNodeBalancerConfig updates the NodeBalancerConfig with the specified id
 func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int, updateOpts NodeBalancerConfigUpdateOptions) (*NodeBalancerConfig, error) {
 	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
+	e, err := c.NodeBalancerConfigs.endpointWithParams(nodebalancerID)
 	if err != nil {
 		return nil, err
 	}
@@ -937,7 +954,6 @@ func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -946,7 +962,7 @@ func (c *Client) UpdateNodeBalancerConfig(ctx context.Context, nodebalancerID in
 
 // DeleteNodeBalancerConfig deletes the NodeBalancerConfig with the specified id
 func (c *Client) DeleteNodeBalancerConfig(ctx context.Context, nodebalancerID int, configID int) error {
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodebalancerID)
+	e, err := c.NodeBalancerConfigs.endpointWithParams(nodebalancerID)
 	if err != nil {
 		return err
 	}
@@ -959,7 +975,7 @@ func (c *Client) DeleteNodeBalancerConfig(ctx context.Context, nodebalancerID in
 // RebuildNodeBalancerConfig updates the NodeBalancer with the specified id
 func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID int, configID int, rebuildOpts NodeBalancerConfigRebuildOptions) (*NodeBalancerConfig, error) {
 	var body string
-	e, err := c.NodeBalancerConfigs.endpointWithID(nodeBalancerID)
+	e, err := c.NodeBalancerConfigs.endpointWithParams(nodeBalancerID)
 	if err != nil {
 		return nil, err
 	}
@@ -976,8 +992,13 @@ func (c *Client) RebuildNodeBalancerConfig(ctx context.Context, nodeBalancerID i
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

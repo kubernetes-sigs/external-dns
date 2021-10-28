@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -393,12 +394,18 @@ func (c *roles) Apply(ctx context.Context, role *rbacv1alpha1.RoleApplyConfigura
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 	"time"
 
 	v1alpha1 "k8s.io/api/rbac/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	rbacv1alpha1 "k8s.io/client-go/applyconfigurations/rbac/v1alpha1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -419,6 +426,7 @@ type RoleInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1alpha1.RoleList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Role, err error)
+	Apply(ctx context.Context, role *rbacv1alpha1.RoleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.Role, err error)
 	RoleExpansion
 }
 
@@ -545,6 +553,32 @@ func (c *roles) Patch(ctx context.Context, name string, pt types.PatchType, data
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied role.
+func (c *roles) Apply(ctx context.Context, role *rbacv1alpha1.RoleApplyConfiguration, opts v1.ApplyOptions) (result *v1alpha1.Role, err error) {
+	if role == nil {
+		return nil, fmt.Errorf("role provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(role)
+	if err != nil {
+		return nil, err
+	}
+	name := role.Name
+	if name == nil {
+		return nil, fmt.Errorf("role.Name must be provided to Apply")
+	}
+	result = &v1alpha1.Role{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("roles").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

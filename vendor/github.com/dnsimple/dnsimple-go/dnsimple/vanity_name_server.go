@@ -13,7 +13,7 @@ type VanityNameServersService struct {
 	client *Client
 }
 
-// VanityNameServer represents data for a single vanity name server
+// VanityNameServer represents data for a single vanity name server.
 type VanityNameServer struct {
 	ID        int64  `json:"id,omitempty"`
 	Name      string `json:"name,omitempty"`

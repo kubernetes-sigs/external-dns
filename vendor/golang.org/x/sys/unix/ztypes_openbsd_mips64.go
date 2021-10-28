@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build mips64 && openbsd
 // +build mips64,openbsd
 
@@ -886,6 +887,10 @@ const (
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build mips64 && openbsd
+>>>>>>> 6b7ce455e (update vendored files)
 // +build mips64,openbsd
 
 package unix
@@ -1116,6 +1121,7 @@ const (
 	SizeofSockaddrUnix     = 0x6a
 	SizeofSockaddrDatalink = 0x20
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -1315,9 +1321,15 @@ type Winsize struct {
 
 const (
 	AT_FDCWD            = -0x64
-	AT_SYMLINK_FOLLOW   = 0x4
+	AT_EACCESS          = 0x1
 	AT_SYMLINK_NOFOLLOW = 0x2
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	AT_SYMLINK_FOLLOW   = 0x4
+	AT_REMOVEDIR        = 0x8
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 type PollFd struct {
@@ -1440,12 +1452,11 @@ type Uvmexp struct {
 	Kmapent            int32
 }
 
-const SizeofClockinfo = 0x14
+const SizeofClockinfo = 0x10
 
 type Clockinfo struct {
-	Hz      int32
-	Tick    int32
-	Tickadj int32
-	Stathz  int32
-	Profhz  int32
+	Hz     int32
+	Tick   int32
+	Stathz int32
+	Profhz int32
 }

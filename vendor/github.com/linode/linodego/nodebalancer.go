@@ -169,6 +169,7 @@ func (c *Client) CreateNodeBalancer(ctx context.Context, nodebalancer NodeBalanc
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +239,10 @@ func (c *Client) UpdateNodeBalancer(ctx context.Context, id int, updateOpts Node
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -264,8 +269,13 @@ func (c *Client) UpdateNodeBalancer(ctx context.Context, id int, updateOpts Node
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,6 @@ import (
 )
 
 // RollbackGtmRecoveryPlan invokes the alidns.RollbackGtmRecoveryPlan API synchronously
-// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
 func (client *Client) RollbackGtmRecoveryPlan(request *RollbackGtmRecoveryPlanRequest) (response *RollbackGtmRecoveryPlanResponse, err error) {
 	response = CreateRollbackGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) RollbackGtmRecoveryPlan(request *RollbackGtmRecoveryPlanRe
 }
 
 // RollbackGtmRecoveryPlanWithChan invokes the alidns.RollbackGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RollbackGtmRecoveryPlanWithChan(request *RollbackGtmRecoveryPlanRequest) (<-chan *RollbackGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *RollbackGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) RollbackGtmRecoveryPlanWithChan(request *RollbackGtmRecove
 }
 
 // RollbackGtmRecoveryPlanWithCallback invokes the alidns.RollbackGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/rollbackgtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) RollbackGtmRecoveryPlanWithCallback(request *RollbackGtmRecoveryPlanRequest, callback func(response *RollbackGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateRollbackGtmRecoveryPlanRequest() (request *RollbackGtmRecoveryPlanReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "RollbackGtmRecoveryPlan", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

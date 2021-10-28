@@ -550,6 +550,7 @@ func (s *AccountInfo) SetEmailAddress(v string) *AccountInfo {
 }
 
 type GetRoleCredentialsInput struct {
+<<<<<<< HEAD
 	_ struct{} `type:"structure"`
 
 	// The token issued by the CreateToken API call. For more information, see CreateToken
@@ -971,6 +972,430 @@ func (s *ListAccountsOutput) SetNextToken(v string) *ListAccountsOutput {
 
 type LogoutInput struct {
 	_ struct{} `type:"structure"`
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	_ struct{} `type:"structure" nopayload:"true"`
+
+	// The token issued by the CreateToken API call. For more information, see CreateToken
+	// (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)
+	// in the AWS SSO OIDC API Reference Guide.
+	//
+	// AccessToken is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by GetRoleCredentialsInput's
+	// String and GoString methods.
+	//
+	// AccessToken is a required field
+	AccessToken *string `location:"header" locationName:"x-amz-sso_bearer_token" type:"string" required:"true" sensitive:"true"`
+
+	// The identifier for the AWS account that is assigned to the user.
+	//
+	// AccountId is a required field
+	AccountId *string `location:"querystring" locationName:"account_id" type:"string" required:"true"`
+
+	// The friendly name of the role that is assigned to the user.
+	//
+	// RoleName is a required field
+	RoleName *string `location:"querystring" locationName:"role_name" type:"string" required:"true"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s GetRoleCredentialsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s GetRoleCredentialsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *GetRoleCredentialsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "GetRoleCredentialsInput"}
+	if s.AccessToken == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccessToken"))
+	}
+	if s.AccountId == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccountId"))
+	}
+	if s.RoleName == nil {
+		invalidParams.Add(request.NewErrParamRequired("RoleName"))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAccessToken sets the AccessToken field's value.
+func (s *GetRoleCredentialsInput) SetAccessToken(v string) *GetRoleCredentialsInput {
+	s.AccessToken = &v
+	return s
+}
+
+// SetAccountId sets the AccountId field's value.
+func (s *GetRoleCredentialsInput) SetAccountId(v string) *GetRoleCredentialsInput {
+	s.AccountId = &v
+	return s
+}
+
+// SetRoleName sets the RoleName field's value.
+func (s *GetRoleCredentialsInput) SetRoleName(v string) *GetRoleCredentialsInput {
+	s.RoleName = &v
+	return s
+}
+
+type GetRoleCredentialsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The credentials for the role that is assigned to the user.
+	RoleCredentials *RoleCredentials `locationName:"roleCredentials" type:"structure"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s GetRoleCredentialsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s GetRoleCredentialsOutput) GoString() string {
+	return s.String()
+}
+
+// SetRoleCredentials sets the RoleCredentials field's value.
+func (s *GetRoleCredentialsOutput) SetRoleCredentials(v *RoleCredentials) *GetRoleCredentialsOutput {
+	s.RoleCredentials = v
+	return s
+}
+
+// Indicates that a problem occurred with the input to the request. For example,
+// a required parameter might be missing or out of range.
+type InvalidRequestException struct {
+	_            struct{}                  `type:"structure"`
+	RespMetadata protocol.ResponseMetadata `json:"-" xml:"-"`
+
+	Message_ *string `locationName:"message" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s InvalidRequestException) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s InvalidRequestException) GoString() string {
+	return s.String()
+}
+
+func newErrorInvalidRequestException(v protocol.ResponseMetadata) error {
+	return &InvalidRequestException{
+		RespMetadata: v,
+	}
+}
+
+// Code returns the exception type name.
+func (s *InvalidRequestException) Code() string {
+	return "InvalidRequestException"
+}
+
+// Message returns the exception's message.
+func (s *InvalidRequestException) Message() string {
+	if s.Message_ != nil {
+		return *s.Message_
+	}
+	return ""
+}
+
+// OrigErr always returns nil, satisfies awserr.Error interface.
+func (s *InvalidRequestException) OrigErr() error {
+	return nil
+}
+
+func (s *InvalidRequestException) Error() string {
+	return fmt.Sprintf("%s: %s", s.Code(), s.Message())
+}
+
+// Status code returns the HTTP status code for the request's response error.
+func (s *InvalidRequestException) StatusCode() int {
+	return s.RespMetadata.StatusCode
+}
+
+// RequestID returns the service's response RequestID for request.
+func (s *InvalidRequestException) RequestID() string {
+	return s.RespMetadata.RequestID
+}
+
+type ListAccountRolesInput struct {
+	_ struct{} `type:"structure" nopayload:"true"`
+
+	// The token issued by the CreateToken API call. For more information, see CreateToken
+	// (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)
+	// in the AWS SSO OIDC API Reference Guide.
+	//
+	// AccessToken is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by ListAccountRolesInput's
+	// String and GoString methods.
+	//
+	// AccessToken is a required field
+	AccessToken *string `location:"header" locationName:"x-amz-sso_bearer_token" type:"string" required:"true" sensitive:"true"`
+
+	// The identifier for the AWS account that is assigned to the user.
+	//
+	// AccountId is a required field
+	AccountId *string `location:"querystring" locationName:"account_id" type:"string" required:"true"`
+
+	// The number of items that clients can request per page.
+	MaxResults *int64 `location:"querystring" locationName:"max_result" min:"1" type:"integer"`
+
+	// The page token from the previous response output when you request subsequent
+	// pages.
+	NextToken *string `location:"querystring" locationName:"next_token" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountRolesInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountRolesInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListAccountRolesInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListAccountRolesInput"}
+	if s.AccessToken == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccessToken"))
+	}
+	if s.AccountId == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccountId"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAccessToken sets the AccessToken field's value.
+func (s *ListAccountRolesInput) SetAccessToken(v string) *ListAccountRolesInput {
+	s.AccessToken = &v
+	return s
+}
+
+// SetAccountId sets the AccountId field's value.
+func (s *ListAccountRolesInput) SetAccountId(v string) *ListAccountRolesInput {
+	s.AccountId = &v
+	return s
+}
+
+// SetMaxResults sets the MaxResults field's value.
+func (s *ListAccountRolesInput) SetMaxResults(v int64) *ListAccountRolesInput {
+	s.MaxResults = &v
+	return s
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListAccountRolesInput) SetNextToken(v string) *ListAccountRolesInput {
+	s.NextToken = &v
+	return s
+}
+
+type ListAccountRolesOutput struct {
+	_ struct{} `type:"structure"`
+
+	// The page token client that is used to retrieve the list of accounts.
+	NextToken *string `locationName:"nextToken" type:"string"`
+
+	// A paginated response with the list of roles and the next token if more results
+	// are available.
+	RoleList []*RoleInfo `locationName:"roleList" type:"list"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountRolesOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountRolesOutput) GoString() string {
+	return s.String()
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListAccountRolesOutput) SetNextToken(v string) *ListAccountRolesOutput {
+	s.NextToken = &v
+	return s
+}
+
+// SetRoleList sets the RoleList field's value.
+func (s *ListAccountRolesOutput) SetRoleList(v []*RoleInfo) *ListAccountRolesOutput {
+	s.RoleList = v
+	return s
+}
+
+type ListAccountsInput struct {
+	_ struct{} `type:"structure" nopayload:"true"`
+
+	// The token issued by the CreateToken API call. For more information, see CreateToken
+	// (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)
+	// in the AWS SSO OIDC API Reference Guide.
+	//
+	// AccessToken is a sensitive parameter and its value will be
+	// replaced with "sensitive" in string returned by ListAccountsInput's
+	// String and GoString methods.
+	//
+	// AccessToken is a required field
+	AccessToken *string `location:"header" locationName:"x-amz-sso_bearer_token" type:"string" required:"true" sensitive:"true"`
+
+	// This is the number of items clients can request per page.
+	MaxResults *int64 `location:"querystring" locationName:"max_result" min:"1" type:"integer"`
+
+	// (Optional) When requesting subsequent pages, this is the page token from
+	// the previous response output.
+	NextToken *string `location:"querystring" locationName:"next_token" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountsInput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountsInput) GoString() string {
+	return s.String()
+}
+
+// Validate inspects the fields of the type to determine if they are valid.
+func (s *ListAccountsInput) Validate() error {
+	invalidParams := request.ErrInvalidParams{Context: "ListAccountsInput"}
+	if s.AccessToken == nil {
+		invalidParams.Add(request.NewErrParamRequired("AccessToken"))
+	}
+	if s.MaxResults != nil && *s.MaxResults < 1 {
+		invalidParams.Add(request.NewErrParamMinValue("MaxResults", 1))
+	}
+
+	if invalidParams.Len() > 0 {
+		return invalidParams
+	}
+	return nil
+}
+
+// SetAccessToken sets the AccessToken field's value.
+func (s *ListAccountsInput) SetAccessToken(v string) *ListAccountsInput {
+	s.AccessToken = &v
+	return s
+}
+
+// SetMaxResults sets the MaxResults field's value.
+func (s *ListAccountsInput) SetMaxResults(v int64) *ListAccountsInput {
+	s.MaxResults = &v
+	return s
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListAccountsInput) SetNextToken(v string) *ListAccountsInput {
+	s.NextToken = &v
+	return s
+}
+
+type ListAccountsOutput struct {
+	_ struct{} `type:"structure"`
+
+	// A paginated response with the list of account information and the next token
+	// if more results are available.
+	AccountList []*AccountInfo `locationName:"accountList" type:"list"`
+
+	// The page token client that is used to retrieve the list of accounts.
+	NextToken *string `locationName:"nextToken" type:"string"`
+}
+
+// String returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountsOutput) String() string {
+	return awsutil.Prettify(s)
+}
+
+// GoString returns the string representation.
+//
+// API parameter values that are decorated as "sensitive" in the API will not
+// be included in the string output. The member name will be present, but the
+// value will be replaced with "sensitive".
+func (s ListAccountsOutput) GoString() string {
+	return s.String()
+}
+
+// SetAccountList sets the AccountList field's value.
+func (s *ListAccountsOutput) SetAccountList(v []*AccountInfo) *ListAccountsOutput {
+	s.AccountList = v
+	return s
+}
+
+// SetNextToken sets the NextToken field's value.
+func (s *ListAccountsOutput) SetNextToken(v string) *ListAccountsOutput {
+	s.NextToken = &v
+	return s
+}
+
+type LogoutInput struct {
+	_ struct{} `type:"structure" nopayload:"true"`
+>>>>>>> 6b7ce455e (update vendored files)
 
 	// The token issued by the CreateToken API call. For more information, see CreateToken
 	// (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)

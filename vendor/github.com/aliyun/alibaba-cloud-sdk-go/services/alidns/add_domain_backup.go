@@ -21,7 +21,6 @@ import (
 )
 
 // AddDomainBackup invokes the alidns.AddDomainBackup API synchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
 func (client *Client) AddDomainBackup(request *AddDomainBackupRequest) (response *AddDomainBackupResponse, err error) {
 	response = CreateAddDomainBackupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) AddDomainBackup(request *AddDomainBackupRequest) (response
 }
 
 // AddDomainBackupWithChan invokes the alidns.AddDomainBackup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainBackupWithChan(request *AddDomainBackupRequest) (<-chan *AddDomainBackupResponse, <-chan error) {
 	responseChan := make(chan *AddDomainBackupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) AddDomainBackupWithChan(request *AddDomainBackupRequest) (
 }
 
 // AddDomainBackupWithCallback invokes the alidns.AddDomainBackup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/adddomainbackup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) AddDomainBackupWithCallback(request *AddDomainBackupRequest, callback func(response *AddDomainBackupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateAddDomainBackupRequest() (request *AddDomainBackupRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "AddDomainBackup", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -155,6 +155,7 @@ func (client *ServiceClient) Request(method, url string, options *RequestOpts) (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // ParseResponse is a helper function to parse http.Response to constituents.
 func ParseResponse(resp *http.Response, err error) (io.ReadCloser, http.Header, error) {
@@ -180,3 +181,14 @@ func ParseResponse(resp *http.Response, err error) (io.ReadCloser, http.Header, 
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+
+// ParseResponse is a helper function to parse http.Response to constituents.
+func ParseResponse(resp *http.Response, err error) (io.ReadCloser, http.Header, error) {
+	if resp != nil {
+		return resp.Body, resp.Header, err
+	}
+	return nil, nil, err
+}
+>>>>>>> 6b7ce455e (update vendored files)

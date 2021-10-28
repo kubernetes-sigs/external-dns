@@ -29,6 +29,7 @@ type impersonateTokenResponse struct {
 	ExpireTime  string `json:"expireTime"`
 }
 
+<<<<<<< HEAD
 type impersonateTokenSource struct {
 	ctx context.Context
 	ts  oauth2.TokenSource
@@ -53,6 +54,47 @@ func (its impersonateTokenSource) Token() (*oauth2.Token, error) {
 		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
 	}
 	req = req.WithContext(its.ctx)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// ImpersonateTokenSource uses a source credential, stored in Ts, to request an access token to the provided URL.
+// Scopes can be defined when the access token is requested.
+type ImpersonateTokenSource struct {
+	// Ctx is the execution context of the impersonation process
+	// used to perform http call to the URL. Required
+	Ctx context.Context
+	// Ts is the source credential used to generate a token on the
+	// impersonated service account. Required.
+	Ts oauth2.TokenSource
+
+	// URL is the endpoint to call to generate a token
+	// on behalf the service account. Required.
+	URL string
+	// Scopes that the impersonated credential should have. Required.
+	Scopes []string
+	// Delegates are the service account email addresses in a delegation chain.
+	// Each service account must be granted roles/iam.serviceAccountTokenCreator
+	// on the next service account in the chain. Optional.
+	Delegates []string
+}
+
+// Token performs the exchange to get a temporary service account token to allow access to GCP.
+func (its ImpersonateTokenSource) Token() (*oauth2.Token, error) {
+	reqBody := generateAccessTokenReq{
+		Lifetime:  "3600s",
+		Scope:     its.Scopes,
+		Delegates: its.Delegates,
+	}
+	b, err := json.Marshal(reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("oauth2/google: unable to marshal request: %v", err)
+	}
+	client := oauth2.NewClient(its.Ctx, its.Ts)
+	req, err := http.NewRequest("POST", its.URL, bytes.NewReader(b))
+	if err != nil {
+		return nil, fmt.Errorf("oauth2/google: unable to create impersonation request: %v", err)
+	}
+	req = req.WithContext(its.Ctx)
+>>>>>>> 6b7ce455e (update vendored files)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)

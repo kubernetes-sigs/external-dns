@@ -1,0 +1,25 @@
+before:
+  hooks:
+    - go mod download
+    - go generate ./...
+builds:
+ - skip: true
+
+checksum:
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ .ProjectName }}_v{{ .Version }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+
+release:
+  github:
+    owner: Vultr
+    name: govultr

@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -285,6 +286,11 @@ func (c *FakeControllerRevisions) Apply(ctx context.Context, controllerRevision 
 		Invokes(testing.NewPatchSubresourceAction(controllerrevisionsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.ControllerRevision{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	v1beta1 "k8s.io/api/apps/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -292,6 +298,7 @@ func (c *FakeControllerRevisions) Apply(ctx context.Context, controllerRevision 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	appsv1beta1 "k8s.io/client-go/applyconfigurations/apps/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -370,7 +377,7 @@ func (c *FakeControllerRevisions) Update(ctx context.Context, controllerRevision
 // Delete takes name of the controllerRevision and deletes it. Returns an error if one occurs.
 func (c *FakeControllerRevisions) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(controllerrevisionsResource, c.ns, name), &v1beta1.ControllerRevision{})
+		Invokes(testing.NewDeleteActionWithOptions(controllerrevisionsResource, c.ns, name, opts), &v1beta1.ControllerRevision{})
 
 	return err
 }
@@ -388,6 +395,28 @@ func (c *FakeControllerRevisions) Patch(ctx context.Context, name string, pt typ
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(controllerrevisionsResource, c.ns, name, pt, data, subresources...), &v1beta1.ControllerRevision{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.ControllerRevision), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied controllerRevision.
+func (c *FakeControllerRevisions) Apply(ctx context.Context, controllerRevision *appsv1beta1.ControllerRevisionApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.ControllerRevision, err error) {
+	if controllerRevision == nil {
+		return nil, fmt.Errorf("controllerRevision provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(controllerRevision)
+	if err != nil {
+		return nil, err
+	}
+	name := controllerRevision.Name
+	if name == nil {
+		return nil, fmt.Errorf("controllerRevision.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(controllerrevisionsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.ControllerRevision{})
 
 	if obj == nil {
 		return nil, err

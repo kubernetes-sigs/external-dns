@@ -7,6 +7,7 @@ env:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     - GO111MODULE=on
 
 go:
@@ -46,9 +47,14 @@ cache:
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
     - GO15VENDOREXPERIMENT=1
+||||||| parent of 6b7ce455e (update vendored files)
+    - GO15VENDOREXPERIMENT=1
+=======
+>>>>>>> 6b7ce455e (update vendored files)
     - GO111MODULE=on
 
 go:
+<<<<<<< HEAD
   - 1.11.x
   - 1.12.x
   - 1.13.x
@@ -57,6 +63,18 @@ cache:
   directories:
     - vendor
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+  - 1.11.x
+  - 1.12.x
+  - 1.13.x
+
+cache:
+  directories:
+    - vendor
+=======
+  - oldstable
+  - stable
+>>>>>>> 6b7ce455e (update vendored files)
 
 before_install:
 - go version

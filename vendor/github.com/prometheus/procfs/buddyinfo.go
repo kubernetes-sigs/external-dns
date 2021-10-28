@@ -77,6 +77,7 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -91,6 +92,11 @@ func parseBuddyInfo(r io.Reader) ([]BuddyInfo, error) {
 =======
 				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+				return nil, fmt.Errorf("invalid value in buddyinfo: %s", err)
+=======
+				return nil, fmt.Errorf("invalid value in buddyinfo: %w", err)
+>>>>>>> 6b7ce455e (update vendored files)
 			}
 		}
 

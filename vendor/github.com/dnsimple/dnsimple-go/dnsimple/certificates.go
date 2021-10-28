@@ -26,7 +26,7 @@ type Certificate struct {
 	AutoRenew           bool     `json:"auto_renew"`
 	CreatedAt           string   `json:"created_at,omitempty"`
 	UpdatedAt           string   `json:"updated_at,omitempty"`
-	ExpiresOn           string   `json:"expires_on,omitempty"`
+	ExpiresAt           string   `json:"expires_at,omitempty"`
 	CertificateRequest  string   `json:"csr,omitempty"`
 }
 
@@ -43,7 +43,7 @@ type CertificateBundle struct {
 // CertificatePurchase represents a Certificate Purchase in DNSimple.
 type CertificatePurchase struct {
 	ID            int64  `json:"id,omitempty"`
-	CertificateID int64  `json:"new_certificate_id,omitempty"`
+	CertificateID int64  `json:"certificate_id,omitempty"`
 	State         string `json:"state,omitempty"`
 	AutoRenew     bool   `json:"auto_renew,omitempty"`
 	CreatedAt     string `json:"created_at,omitempty"`

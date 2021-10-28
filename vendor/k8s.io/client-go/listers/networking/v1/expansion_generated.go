@@ -21,6 +21,7 @@ package v1
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // IngressListerExpansion allows custom methods to be added to
 // IngressLister.
 type IngressListerExpansion interface{}
@@ -54,6 +55,21 @@ type IngressClassListerExpansion interface{}
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// IngressListerExpansion allows custom methods to be added to
+// IngressLister.
+type IngressListerExpansion interface{}
+
+// IngressNamespaceListerExpansion allows custom methods to be added to
+// IngressNamespaceLister.
+type IngressNamespaceListerExpansion interface{}
+
+// IngressClassListerExpansion allows custom methods to be added to
+// IngressClassLister.
+type IngressClassListerExpansion interface{}
+
+>>>>>>> 6b7ce455e (update vendored files)
 // NetworkPolicyListerExpansion allows custom methods to be added to
 // NetworkPolicyLister.
 type NetworkPolicyListerExpansion interface{}

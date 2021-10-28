@@ -114,6 +114,7 @@ func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	switch fd.Kind() {
 	case pref.BoolKind:
 		return x.Bool() == y.Bool()
@@ -194,13 +195,45 @@ func equalValue(fd pref.FieldDescriptor, x, y pref.Value) bool {
 	case fd.Kind() == pref.BytesKind:
 		return bytes.Equal(x.Bytes(), y.Bytes())
 	case fd.Kind() == pref.FloatKind, fd.Kind() == pref.DoubleKind:
+||||||| parent of 6b7ce455e (update vendored files)
+	switch {
+	case fd.Message() != nil:
+		return equalMessage(x.Message(), y.Message())
+	case fd.Kind() == pref.BytesKind:
+		return bytes.Equal(x.Bytes(), y.Bytes())
+	case fd.Kind() == pref.FloatKind, fd.Kind() == pref.DoubleKind:
+=======
+	switch fd.Kind() {
+	case pref.BoolKind:
+		return x.Bool() == y.Bool()
+	case pref.EnumKind:
+		return x.Enum() == y.Enum()
+	case pref.Int32Kind, pref.Sint32Kind,
+		pref.Int64Kind, pref.Sint64Kind,
+		pref.Sfixed32Kind, pref.Sfixed64Kind:
+		return x.Int() == y.Int()
+	case pref.Uint32Kind, pref.Uint64Kind,
+		pref.Fixed32Kind, pref.Fixed64Kind:
+		return x.Uint() == y.Uint()
+	case pref.FloatKind, pref.DoubleKind:
+>>>>>>> 6b7ce455e (update vendored files)
 		fx := x.Float()
 		fy := y.Float()
 		if math.IsNaN(fx) || math.IsNaN(fy) {
 			return math.IsNaN(fx) && math.IsNaN(fy)
 		}
 		return fx == fy
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	case pref.StringKind:
+		return x.String() == y.String()
+	case pref.BytesKind:
+		return bytes.Equal(x.Bytes(), y.Bytes())
+	case pref.MessageKind, pref.GroupKind:
+		return equalMessage(x.Message(), y.Message())
+>>>>>>> 6b7ce455e (update vendored files)
 	default:
 		return x.Interface() == y.Interface()
 	}

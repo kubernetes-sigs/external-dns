@@ -19,6 +19,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"net/http"
+
 	v1alpha1 "k8s.io/api/storage/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
@@ -29,9 +31,13 @@ type StorageV1alpha1Interface interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	CSIStorageCapacitiesGetter
 	VolumeAttachmentsGetter
 }
@@ -43,6 +49,7 @@ type StorageV1alpha1Client struct {
 
 func (c *StorageV1alpha1Client) CSIStorageCapacities(namespace string) CSIStorageCapacityInterface {
 	return newCSIStorageCapacities(c, namespace)
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -65,6 +72,9 @@ type StorageV1alpha1Client struct {
 type StorageV1alpha1Client struct {
 	restClient rest.Interface
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func (c *StorageV1alpha1Client) VolumeAttachments() VolumeAttachmentInterface {
@@ -72,12 +82,28 @@ func (c *StorageV1alpha1Client) VolumeAttachments() VolumeAttachmentInterface {
 }
 
 // NewForConfig creates a new StorageV1alpha1Client for the given config.
+// NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
+// where httpClient was generated with rest.HTTPClientFor(c).
 func NewForConfig(c *rest.Config) (*StorageV1alpha1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
 	}
-	client, err := rest.RESTClientFor(&config)
+	httpClient, err := rest.HTTPClientFor(&config)
+	if err != nil {
+		return nil, err
+	}
+	return NewForConfigAndClient(&config, httpClient)
+}
+
+// NewForConfigAndClient creates a new StorageV1alpha1Client for the given config and http client.
+// Note the http client provided takes precedence over the configured transport values.
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*StorageV1alpha1Client, error) {
+	config := *c
+	if err := setConfigDefaults(&config); err != nil {
+		return nil, err
+	}
+	client, err := rest.RESTClientForConfigAndClient(&config, h)
 	if err != nil {
 		return nil, err
 	}

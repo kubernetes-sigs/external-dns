@@ -35,6 +35,7 @@ type Field = zapcore.Field
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var (
 	_minTimeInt64 = time.Unix(0, math.MinInt64)
 	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
@@ -795,6 +796,14 @@ func Inline(val zapcore.ObjectMarshaler) Field {
 	}
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+var (
+	_minTimeInt64 = time.Unix(0, math.MinInt64)
+	_maxTimeInt64 = time.Unix(0, math.MaxInt64)
+)
+
+>>>>>>> 6b7ce455e (update vendored files)
 // Skip constructs a no-op field, which is often useful when handling invalid
 // inputs in other Field constructors.
 func Skip() Field {
@@ -1102,6 +1111,9 @@ func Stringer(key string, val fmt.Stringer) Field {
 // Time constructs a Field with the given key and value. The encoder
 // controls how the time is serialized.
 func Time(key string, val time.Time) Field {
+	if val.Before(_minTimeInt64) || val.After(_maxTimeInt64) {
+		return Field{Key: key, Type: zapcore.TimeFullType, Interface: val}
+	}
 	return Field{Key: key, Type: zapcore.TimeType, Integer: val.UnixNano(), Interface: val.Location()}
 }
 
@@ -1119,11 +1131,17 @@ func Timep(key string, val *time.Time) Field {
 // expensive (relatively speaking); this function both makes an allocation and
 // takes about two microseconds.
 func Stack(key string) Field {
+	return StackSkip(key, 1) // skip Stack
+}
+
+// StackSkip constructs a field similarly to Stack, but also skips the given
+// number of frames from the top of the stacktrace.
+func StackSkip(key string, skip int) Field {
 	// Returning the stacktrace as a string costs an allocation, but saves us
 	// from expanding the zapcore.Field union struct to include a byte slice. Since
 	// taking a stacktrace is already so expensive (~10us), the extra allocation
 	// is okay.
-	return String(key, takeStacktrace())
+	return String(key, takeStacktrace(skip+1)) // skip StackSkip
 }
 
 // Duration constructs a field with the given key and value. The encoder
@@ -1148,6 +1166,16 @@ func Durationp(key string, val *time.Duration) Field {
 func Object(key string, val zapcore.ObjectMarshaler) Field {
 	return Field{Key: key, Type: zapcore.ObjectMarshalerType, Interface: val}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// Inline constructs a Field that is similar to Object, but it
+// will add the elements of the provided ObjectMarshaler to the
+// current namespace.
+func Inline(val zapcore.ObjectMarshaler) Field {
+	return zapcore.Field{
+		Type:      zapcore.InlineMarshalerType,
+		Interface: val,
+	}
 }
 
 // Any takes a key and an arbitrary value and chooses the best way to represent

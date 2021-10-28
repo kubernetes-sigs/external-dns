@@ -21,7 +21,6 @@ import (
 )
 
 // CopyGtmConfig invokes the alidns.CopyGtmConfig API synchronously
-// api document: https://help.aliyun.com/api/alidns/copygtmconfig.html
 func (client *Client) CopyGtmConfig(request *CopyGtmConfigRequest) (response *CopyGtmConfigResponse, err error) {
 	response = CreateCopyGtmConfigResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) CopyGtmConfig(request *CopyGtmConfigRequest) (response *Co
 }
 
 // CopyGtmConfigWithChan invokes the alidns.CopyGtmConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/copygtmconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CopyGtmConfigWithChan(request *CopyGtmConfigRequest) (<-chan *CopyGtmConfigResponse, <-chan error) {
 	responseChan := make(chan *CopyGtmConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) CopyGtmConfigWithChan(request *CopyGtmConfigRequest) (<-ch
 }
 
 // CopyGtmConfigWithCallback invokes the alidns.CopyGtmConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/copygtmconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) CopyGtmConfigWithCallback(request *CopyGtmConfigRequest, callback func(response *CopyGtmConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -95,6 +90,7 @@ func CreateCopyGtmConfigRequest() (request *CopyGtmConfigRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "CopyGtmConfig", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

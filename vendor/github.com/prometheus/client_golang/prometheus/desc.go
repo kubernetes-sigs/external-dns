@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
@@ -104,6 +105,11 @@ type Desc struct {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 6b7ce455e (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 6b7ce455e (update vendored files)
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
 
@@ -134,8 +140,14 @@ type Desc struct {
 	// constLabelPairs contains precalculated DTO label pairs based on
 	// the constant labels.
 	constLabelPairs []*dto.LabelPair
+<<<<<<< HEAD
 	// VariableLabels contains names of labels for which the metric
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	// VariableLabels contains names of labels for which the metric
+=======
+	// variableLabels contains names of labels for which the metric
+>>>>>>> 6b7ce455e (update vendored files)
 	// maintains variable values.
 	variableLabels []string
 	// id is a hash of the values of the ConstLabels and fqName. This

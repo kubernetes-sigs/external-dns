@@ -2,6 +2,11 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+<<<<<<< HEAD
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build !go1.5
+>>>>>>> 6b7ce455e (update vendored files)
 // +build !go1.5
 
 package plan9

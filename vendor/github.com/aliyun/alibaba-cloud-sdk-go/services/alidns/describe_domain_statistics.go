@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDomainStatistics invokes the alidns.DescribeDomainStatistics API synchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
 func (client *Client) DescribeDomainStatistics(request *DescribeDomainStatisticsRequest) (response *DescribeDomainStatisticsResponse, err error) {
 	response = CreateDescribeDomainStatisticsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDomainStatistics(request *DescribeDomainStatistics
 }
 
 // DescribeDomainStatisticsWithChan invokes the alidns.DescribeDomainStatistics API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainStatisticsWithChan(request *DescribeDomainStatisticsRequest) (<-chan *DescribeDomainStatisticsResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainStatisticsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDomainStatisticsWithChan(request *DescribeDomainSt
 }
 
 // DescribeDomainStatisticsWithCallback invokes the alidns.DescribeDomainStatistics API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomainstatistics.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainStatisticsWithCallback(request *DescribeDomainStatisticsRequest, callback func(response *DescribeDomainStatisticsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -79,6 +74,7 @@ type DescribeDomainStatisticsRequest struct {
 	DomainName   string `position:"Query" name:"DomainName"`
 	StartDate    string `position:"Query" name:"StartDate"`
 	EndDate      string `position:"Query" name:"EndDate"`
+	DomainType   string `position:"Query" name:"DomainType"`
 	UserClientIp string `position:"Query" name:"UserClientIp"`
 	Lang         string `position:"Query" name:"Lang"`
 }
@@ -96,6 +92,7 @@ func CreateDescribeDomainStatisticsRequest() (request *DescribeDomainStatisticsR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainStatistics", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

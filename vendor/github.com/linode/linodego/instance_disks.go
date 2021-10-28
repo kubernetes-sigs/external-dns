@@ -76,6 +76,7 @@ func (InstanceDisksPagedResponse) endpointWithID(c *Client, id int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.InstanceDisks.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -441,6 +442,11 @@ func (c *Client) DeleteInstanceDisk(ctx context.Context, linodeID int, diskID in
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	endpoint, err := c.InstanceDisks.endpointWithID(id)
+||||||| parent of 6b7ce455e (update vendored files)
+	endpoint, err := c.InstanceDisks.endpointWithID(id)
+=======
+	endpoint, err := c.InstanceDisks.endpointWithParams(id)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		panic(err)
 	}
@@ -456,7 +462,6 @@ func (resp *InstanceDisksPagedResponse) appendData(r *InstanceDisksPagedResponse
 func (c *Client) ListInstanceDisks(ctx context.Context, linodeID int, opts *ListOptions) ([]InstanceDisk, error) {
 	response := InstanceDisksPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, linodeID, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -487,14 +492,13 @@ func (i *InstanceDisk) UnmarshalJSON(b []byte) error {
 
 // GetInstanceDisk gets the template with the provided ID
 func (c *Client) GetInstanceDisk(ctx context.Context, linodeID int, configID int) (*InstanceDisk, error) {
-	e, err := c.InstanceDisks.endpointWithID(linodeID)
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
 
 	e = fmt.Sprintf("%s/%d", e, configID)
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&InstanceDisk{}).Get(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -504,8 +508,7 @@ func (c *Client) GetInstanceDisk(ctx context.Context, linodeID int, configID int
 // CreateInstanceDisk creates a new InstanceDisk for the given Instance
 func (c *Client) CreateInstanceDisk(ctx context.Context, linodeID int, createOpts InstanceDiskCreateOptions) (*InstanceDisk, error) {
 	var body string
-	e, err := c.InstanceDisks.endpointWithID(linodeID)
-
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -521,7 +524,6 @@ func (c *Client) CreateInstanceDisk(ctx context.Context, linodeID int, createOpt
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -532,8 +534,7 @@ func (c *Client) CreateInstanceDisk(ctx context.Context, linodeID int, createOpt
 // UpdateInstanceDisk creates a new InstanceDisk for the given Instance
 func (c *Client) UpdateInstanceDisk(ctx context.Context, linodeID int, diskID int, updateOpts InstanceDiskUpdateOptions) (*InstanceDisk, error) {
 	var body string
-	e, err := c.InstanceDisks.endpointWithID(linodeID)
-
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
 	if err != nil {
 		return nil, err
 	}
@@ -550,7 +551,6 @@ func (c *Client) UpdateInstanceDisk(ctx context.Context, linodeID int, diskID in
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -566,8 +566,7 @@ func (c *Client) RenameInstanceDisk(ctx context.Context, linodeID int, diskID in
 // ResizeInstanceDisk resizes the size of the Instance disk
 func (c *Client) ResizeInstanceDisk(ctx context.Context, linodeID int, diskID int, size int) error {
 	var body string
-	e, err := c.InstanceDisks.endpointWithID(linodeID)
-
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
 	if err != nil {
 		return err
 	}
@@ -594,8 +593,7 @@ func (c *Client) ResizeInstanceDisk(ctx context.Context, linodeID int, diskID in
 // PasswordResetInstanceDisk resets the "root" account password on the Instance disk
 func (c *Client) PasswordResetInstanceDisk(ctx context.Context, linodeID int, diskID int, password string) error {
 	var body string
-	e, err := c.InstanceDisks.endpointWithID(linodeID)
-
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
 	if err != nil {
 		return err
 	}
@@ -621,8 +619,14 @@ func (c *Client) PasswordResetInstanceDisk(ctx context.Context, linodeID int, di
 
 // DeleteInstanceDisk deletes a Linode Instance Disk
 func (c *Client) DeleteInstanceDisk(ctx context.Context, linodeID int, diskID int) error {
+<<<<<<< HEAD
 	e, err := c.InstanceDisks.endpointWithID(linodeID)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	e, err := c.InstanceDisks.endpointWithID(linodeID)
+=======
+	e, err := c.InstanceDisks.endpointWithParams(linodeID)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return err
 	}

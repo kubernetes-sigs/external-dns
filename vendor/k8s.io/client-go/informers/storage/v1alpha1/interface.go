@@ -27,9 +27,13 @@ type Interface interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	// CSIStorageCapacities returns a CSIStorageCapacityInformer.
 	CSIStorageCapacities() CSIStorageCapacityInformer
 	// VolumeAttachments returns a VolumeAttachmentInformer.
@@ -50,6 +54,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // CSIStorageCapacities returns a CSIStorageCapacityInformer.
 func (v *version) CSIStorageCapacities() CSIStorageCapacityInformer {
 	return &cSIStorageCapacityInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -86,6 +91,9 @@ type version struct {
 func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakListOptions internalinterfaces.TweakListOptionsFunc) Interface {
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // VolumeAttachments returns a VolumeAttachmentInformer.

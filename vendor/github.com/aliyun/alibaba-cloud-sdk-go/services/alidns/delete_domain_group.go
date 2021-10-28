@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteDomainGroup invokes the alidns.DeleteDomainGroup API synchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
 func (client *Client) DeleteDomainGroup(request *DeleteDomainGroupRequest) (response *DeleteDomainGroupResponse, err error) {
 	response = CreateDeleteDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteDomainGroup(request *DeleteDomainGroupRequest) (resp
 }
 
 // DeleteDomainGroupWithChan invokes the alidns.DeleteDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainGroupWithChan(request *DeleteDomainGroupRequest) (<-chan *DeleteDomainGroupResponse, <-chan error) {
 	responseChan := make(chan *DeleteDomainGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteDomainGroupWithChan(request *DeleteDomainGroupReques
 }
 
 // DeleteDomainGroupWithCallback invokes the alidns.DeleteDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteDomainGroupWithCallback(request *DeleteDomainGroupRequest, callback func(response *DeleteDomainGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -94,6 +89,7 @@ func CreateDeleteDomainGroupRequest() (request *DeleteDomainGroupRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteDomainGroup", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

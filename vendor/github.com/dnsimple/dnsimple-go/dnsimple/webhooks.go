@@ -41,7 +41,7 @@ type WebhooksResponse struct {
 
 // ListWebhooks lists the webhooks for an account.
 //
-// See https://developer.dnsimple.com/v2/webhooks#list
+// See https://developer.dnsimple.com/v2/webhooks/#listWebhooks
 func (s *WebhooksService) ListWebhooks(ctx context.Context, accountID string, _ *ListOptions) (*WebhooksResponse, error) {
 	path := versioned(webhookPath(accountID, 0))
 	webhooksResponse := &WebhooksResponse{}
@@ -57,7 +57,7 @@ func (s *WebhooksService) ListWebhooks(ctx context.Context, accountID string, _ 
 
 // CreateWebhook creates a new webhook.
 //
-// See https://developer.dnsimple.com/v2/webhooks#create
+// See https://developer.dnsimple.com/v2/webhooks/#createWebhook
 func (s *WebhooksService) CreateWebhook(ctx context.Context, accountID string, webhookAttributes Webhook) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, 0))
 	webhookResponse := &WebhookResponse{}
@@ -73,7 +73,7 @@ func (s *WebhooksService) CreateWebhook(ctx context.Context, accountID string, w
 
 // GetWebhook fetches a webhook.
 //
-// See https://developer.dnsimple.com/v2/webhooks#get
+// See https://developer.dnsimple.com/v2/webhooks/#getWebhook
 func (s *WebhooksService) GetWebhook(ctx context.Context, accountID string, webhookID int64) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, webhookID))
 	webhookResponse := &WebhookResponse{}
@@ -87,9 +87,9 @@ func (s *WebhooksService) GetWebhook(ctx context.Context, accountID string, webh
 	return webhookResponse, nil
 }
 
-// DeleteWebhook PERMANENTLY deletes a webhook from the account.
+// DeleteWebhook PERMANENTLY deletes the webhook.
 //
-// See https://developer.dnsimple.com/v2/webhooks#delete
+// See https://developer.dnsimple.com/v2/webhooks/#deleteWebhook
 func (s *WebhooksService) DeleteWebhook(ctx context.Context, accountID string, webhookID int64) (*WebhookResponse, error) {
 	path := versioned(webhookPath(accountID, webhookID))
 	webhookResponse := &WebhookResponse{}

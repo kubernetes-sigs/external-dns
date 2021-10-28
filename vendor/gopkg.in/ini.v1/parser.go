@@ -87,6 +87,7 @@ func (p *parser) BOM() error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		_, err = p.buf.Read(mask)
 		if err != nil {
 			return err
@@ -876,6 +877,14 @@ func (f *File) parse(reader io.Reader) (err error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		p.buf.Read(mask)
+||||||| parent of 6b7ce455e (update vendored files)
+		p.buf.Read(mask)
+=======
+		_, err = p.buf.Read(mask)
+		if err != nil {
+			return err
+		}
+>>>>>>> 6b7ce455e (update vendored files)
 	case mask[0] == 239 && mask[1] == 187:
 		mask, err := p.buf.Peek(3)
 		if err != nil && err != io.EOF {
@@ -884,7 +893,10 @@ func (f *File) parse(reader io.Reader) (err error) {
 			return nil
 		}
 		if mask[2] == 191 {
-			p.buf.Read(mask)
+			_, err = p.buf.Read(mask)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -916,7 +928,7 @@ func readKeyName(delimiters string, in []byte) (string, int, error) {
 	// Check if key name surrounded by quotes.
 	var keyQuote string
 	if line[0] == '"' {
-		if len(line) > 6 && string(line[0:3]) == `"""` {
+		if len(line) > 6 && line[0:3] == `"""` {
 			keyQuote = `"""`
 		} else {
 			keyQuote = `"`
@@ -926,7 +938,7 @@ func readKeyName(delimiters string, in []byte) (string, int, error) {
 	}
 
 	// Get out key name
-	endIdx := -1
+	var endIdx int
 	if len(keyQuote) > 0 {
 		startIdx := len(keyQuote)
 		// FIXME: fail case -> """"""name"""=value
@@ -972,7 +984,7 @@ func (p *parser) readMultilines(line, val, valQuote string) (string, error) {
 		}
 		val += next
 		if p.isEOF {
-			return "", fmt.Errorf("missing closing key quote from '%s' to '%s'", line, next)
+			return "", fmt.Errorf("missing closing key quote from %q to %q", line, next)
 		}
 	}
 	return val, nil
@@ -1017,7 +1029,7 @@ func (p *parser) readValue(in []byte, bufferSize int) (string, error) {
 	}
 
 	var valQuote string
-	if len(line) > 3 && string(line[0:3]) == `"""` {
+	if len(line) > 3 && line[0:3] == `"""` {
 		valQuote = `"""`
 	} else if line[0] == '`' {
 		valQuote = "`"
@@ -1074,12 +1086,8 @@ func (p *parser) readValue(in []byte, bufferSize int) (string, error) {
 		hasSurroundedQuote(line, '"')) && !p.options.PreserveSurroundedQuote {
 		line = line[1 : len(line)-1]
 	} else if len(valQuote) == 0 && p.options.UnescapeValueCommentSymbols {
-		if strings.Contains(line, `\;`) {
-			line = strings.Replace(line, `\;`, ";", -1)
-		}
-		if strings.Contains(line, `\#`) {
-			line = strings.Replace(line, `\#`, "#", -1)
-		}
+		line = strings.ReplaceAll(line, `\;`, ";")
+		line = strings.ReplaceAll(line, `\#`, "#")
 	} else if p.options.AllowPythonMultilineValues && lastChar == '\n' {
 		return p.readPythonMultilines(line, bufferSize)
 	}
@@ -1091,15 +1099,9 @@ func (p *parser) readPythonMultilines(line string, bufferSize int) (string, erro
 	parserBufferPeekResult, _ := p.buf.Peek(bufferSize)
 	peekBuffer := bytes.NewBuffer(parserBufferPeekResult)
 
-	indentSize := 0
 	for {
 		peekData, peekErr := peekBuffer.ReadBytes('\n')
-		if peekErr != nil {
-			if peekErr == io.EOF {
-				p.debug("readPythonMultilines: io.EOF, peekData: %q, line: %q", string(peekData), line)
-				return line, nil
-			}
-
+		if peekErr != nil && peekErr != io.EOF {
 			p.debug("readPythonMultilines: failed to peek with error: %v", peekErr)
 			return "", peekErr
 		}
@@ -1118,19 +1120,6 @@ func (p *parser) readPythonMultilines(line string, bufferSize int) (string, erro
 			return line, nil
 		}
 
-		// Determine indent size and line prefix.
-		currentIndentSize := len(peekMatches[1])
-		if indentSize < 1 {
-			indentSize = currentIndentSize
-			p.debug("readPythonMultilines: indent size is %d", indentSize)
-		}
-
-		// Make sure each line is indented at least as far as first line.
-		if currentIndentSize < indentSize {
-			p.debug("readPythonMultilines: end of value, current indent: %d, expected indent: %d, line: %q", currentIndentSize, indentSize, line)
-			return line, nil
-		}
-
 		// Advance the parser reader (buffer) in-sync with the peek buffer.
 		_, err := p.buf.Discard(len(peekData))
 		if err != nil {
@@ -1138,8 +1127,7 @@ func (p *parser) readPythonMultilines(line string, bufferSize int) (string, erro
 			return "", err
 		}
 
-		// Handle indented empty line.
-		line += "\n" + peekMatches[1][indentSize:] + peekMatches[2]
+		line += "\n" + peekMatches[0]
 	}
 }
 
@@ -1162,7 +1150,7 @@ func (f *File) parse(reader io.Reader) (err error) {
 
 	// Ignore error because default section name is never empty string.
 	name := DefaultSection
-	if f.options.Insensitive {
+	if f.options.Insensitive || f.options.InsensitiveSections {
 		name = strings.ToLower(DefaultSection)
 	}
 	section, _ := f.NewSection(name)
@@ -1204,7 +1192,10 @@ func (f *File) parse(reader io.Reader) (err error) {
 		if f.options.AllowNestedValues &&
 			isLastValueEmpty && len(line) > 0 {
 			if line[0] == ' ' || line[0] == '\t' {
-				lastRegularKey.addNestedValue(string(bytes.TrimSpace(line)))
+				err = lastRegularKey.addNestedValue(string(bytes.TrimSpace(line)))
+				if err != nil {
+					return err
+				}
 				continue
 			}
 		}
@@ -1244,15 +1235,23 @@ func (f *File) parse(reader io.Reader) (err error) {
 
 			section.Comment = strings.TrimSpace(p.comment.String())
 
-			// Reset aotu-counter and comments
+			// Reset auto-counter and comments
 			p.comment.Reset()
 			p.count = 1
+			// Nested values can't span sections
+			isLastValueEmpty = false
 
 			inUnparseableSection = false
 			for i := range f.options.UnparseableSections {
 				if f.options.UnparseableSections[i] == name ||
+<<<<<<< HEAD
 					(f.options.Insensitive && strings.ToLower(f.options.UnparseableSections[i]) == strings.ToLower(name)) {
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+					(f.options.Insensitive && strings.ToLower(f.options.UnparseableSections[i]) == strings.ToLower(name)) {
+=======
+					((f.options.Insensitive || f.options.InsensitiveSections) && strings.EqualFold(f.options.UnparseableSections[i], name)) {
+>>>>>>> 6b7ce455e (update vendored files)
 					inUnparseableSection = true
 					continue
 				}

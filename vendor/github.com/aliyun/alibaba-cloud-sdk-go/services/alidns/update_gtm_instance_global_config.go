@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateGtmInstanceGlobalConfig invokes the alidns.UpdateGtmInstanceGlobalConfig API synchronously
-// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
 func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGlobalConfigRequest) (response *UpdateGtmInstanceGlobalConfigResponse, err error) {
 	response = CreateUpdateGtmInstanceGlobalConfigResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateGtmInstanceGlobalConfig(request *UpdateGtmInstanceGl
 }
 
 // UpdateGtmInstanceGlobalConfigWithChan invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmInstanceGlobalConfigWithChan(request *UpdateGtmInstanceGlobalConfigRequest) (<-chan *UpdateGtmInstanceGlobalConfigResponse, <-chan error) {
 	responseChan := make(chan *UpdateGtmInstanceGlobalConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateGtmInstanceGlobalConfigWithChan(request *UpdateGtmIn
 }
 
 // UpdateGtmInstanceGlobalConfigWithCallback invokes the alidns.UpdateGtmInstanceGlobalConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtminstanceglobalconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmInstanceGlobalConfigWithCallback(request *UpdateGtmInstanceGlobalConfigRequest, callback func(response *UpdateGtmInstanceGlobalConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -100,6 +95,7 @@ func CreateUpdateGtmInstanceGlobalConfigRequest() (request *UpdateGtmInstanceGlo
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmInstanceGlobalConfig", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

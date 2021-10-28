@@ -21,7 +21,6 @@ import (
 )
 
 // ModifyHichinaDomainDNS invokes the alidns.ModifyHichinaDomainDNS API synchronously
-// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
 func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequest) (response *ModifyHichinaDomainDNSResponse, err error) {
 	response = CreateModifyHichinaDomainDNSResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ModifyHichinaDomainDNS(request *ModifyHichinaDomainDNSRequ
 }
 
 // ModifyHichinaDomainDNSWithChan invokes the alidns.ModifyHichinaDomainDNS API asynchronously
-// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyHichinaDomainDNSWithChan(request *ModifyHichinaDomainDNSRequest) (<-chan *ModifyHichinaDomainDNSResponse, <-chan error) {
 	responseChan := make(chan *ModifyHichinaDomainDNSResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ModifyHichinaDomainDNSWithChan(request *ModifyHichinaDomai
 }
 
 // ModifyHichinaDomainDNSWithCallback invokes the alidns.ModifyHichinaDomainDNS API asynchronously
-// api document: https://help.aliyun.com/api/alidns/modifyhichinadomaindns.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ModifyHichinaDomainDNSWithCallback(request *ModifyHichinaDomainDNSRequest, callback func(response *ModifyHichinaDomainDNSResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -95,6 +90,7 @@ func CreateModifyHichinaDomainDNSRequest() (request *ModifyHichinaDomainDNSReque
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ModifyHichinaDomainDNS", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build riscv64
 // +build riscv64
 
@@ -94,6 +95,10 @@ const (
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build riscv64
+>>>>>>> 6b7ce455e (update vendored files)
 // +build riscv64
 
 package socket
@@ -126,26 +131,18 @@ type cmsghdr struct {
 	Type  int32
 }
 
-type sockaddrInet struct {
-	Family uint16
-	Port   uint16
-	Addr   [4]byte /* in_addr */
-	X__pad [8]uint8
-}
-
-type sockaddrInet6 struct {
-	Family   uint16
-	Port     uint16
-	Flowinfo uint32
-	Addr     [16]byte /* in6_addr */
-	Scope_id uint32
-}
-
 const (
 	sizeofIovec  = 0x10
 	sizeofMsghdr = 0x38
+<<<<<<< HEAD
 
 	sizeofSockaddrInet  = 0x10
 	sizeofSockaddrInet6 = 0x1c
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+	sizeofSockaddrInet  = 0x10
+	sizeofSockaddrInet6 = 0x1c
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )

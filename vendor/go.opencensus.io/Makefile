@@ -11,6 +11,7 @@ GOTEST=go test
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 GOIMPORTS=goimports
 GOLINT=golint
 GOVET=go vet
@@ -198,6 +199,11 @@ install-tools:
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 GOFMT=gofmt
+||||||| parent of 6b7ce455e (update vendored files)
+GOFMT=gofmt
+=======
+GOIMPORTS=goimports
+>>>>>>> 6b7ce455e (update vendored files)
 GOLINT=golint
 GOVET=go vet
 EMBEDMD=embedmd
@@ -206,14 +212,14 @@ TRACE_ID_LINT_EXCEPTION="type name will be used as trace.TraceID by other packag
 TRACE_OPTION_LINT_EXCEPTION="type name will be used as trace.TraceOptions by other packages"
 README_FILES := $(shell find . -name '*README.md' | sort | tr '\n' ' ')
 
-.DEFAULT_GOAL := fmt-lint-vet-embedmd-test
+.DEFAULT_GOAL := imports-lint-vet-embedmd-test
 
-.PHONY: fmt-lint-vet-embedmd-test
-fmt-lint-vet-embedmd-test: fmt lint vet embedmd test
+.PHONY: imports-lint-vet-embedmd-test
+imports-lint-vet-embedmd-test: imports lint vet embedmd test
 
 # TODO enable test-with-coverage in tavis
 .PHONY: travis-ci
-travis-ci: fmt lint vet embedmd test test-386
+travis-ci: imports lint vet embedmd test test-386
 
 all-pkgs:
 	@echo $(ALL_PKGS) | tr ' ' '\n' | sort
@@ -233,15 +239,15 @@ test-386:
 test-with-coverage:
 	$(GOTEST) $(GOTEST_OPT_WITH_COVERAGE) $(ALL_PKGS)
 
-.PHONY: fmt
-fmt:
-	@FMTOUT=`$(GOFMT) -s -l $(ALL_SRC) 2>&1`; \
-	if [ "$$FMTOUT" ]; then \
-		echo "$(GOFMT) FAILED => gofmt the following files:\n"; \
-		echo "$$FMTOUT\n"; \
+.PHONY: imports
+imports:
+	@IMPORTSOUT=`$(GOIMPORTS) -l $(ALL_SRC) 2>&1`; \
+	if [ "$$IMPORTSOUT" ]; then \
+		echo "$(GOIMPORTS) FAILED => goimports the following files:\n"; \
+		echo "$$IMPORTSOUT\n"; \
 		exit 1; \
 	else \
-	    echo "Fmt finished successfully"; \
+	    echo "Imports finished successfully"; \
 	fi
 
 .PHONY: lint
@@ -280,7 +286,12 @@ embedmd:
 
 .PHONY: install-tools
 install-tools:
-	go get -u golang.org/x/tools/cmd/cover
 	go get -u golang.org/x/lint/golint
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	go get -u golang.org/x/tools/cmd/cover
+	go get -u golang.org/x/tools/cmd/goimports
+>>>>>>> 6b7ce455e (update vendored files)
 	go get -u github.com/rakyll/embedmd

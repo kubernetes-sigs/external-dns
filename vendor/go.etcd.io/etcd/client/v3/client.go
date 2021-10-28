@@ -296,6 +296,7 @@ func (c *Client) dial(creds grpccredentials.TransportCredentials, dopts ...grpc.
 		dctx, cancel = context.WithTimeout(c.ctx, c.cfg.DialTimeout)
 		defer cancel() // TODO: Is this right for cases where grpc.WithBlock() is not set on the dial options?
 	}
+<<<<<<< HEAD
 
 	initialEndpoints := strings.Join(c.cfg.Endpoints, ";")
 	target := fmt.Sprintf("%s://%p/#initially=[%s]", resolver.Schema, c, initialEndpoints)
@@ -304,6 +305,29 @@ func (c *Client) dial(creds grpccredentials.TransportCredentials, dopts ...grpc.
 		return nil, err
 	}
 	return conn, nil
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	target := fmt.Sprintf("%s://%p/%s", resolver.Schema, c, authority(c.Endpoints()[0]))
+	conn, err := grpc.DialContext(dctx, target, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func authority(endpoint string) string {
+	spl := strings.SplitN(endpoint, "://", 2)
+	if len(spl) < 2 {
+		if strings.HasPrefix(endpoint, "unix:") {
+			return endpoint[len("unix:"):]
+		}
+		if strings.HasPrefix(endpoint, "unixs:") {
+			return endpoint[len("unixs:"):]
+		}
+		return endpoint
+	}
+	return spl[1]
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func (c *Client) credentialsForEndpoint(ep string) grpccredentials.TransportCredentials {

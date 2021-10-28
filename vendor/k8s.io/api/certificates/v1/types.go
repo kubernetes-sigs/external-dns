@@ -214,6 +214,7 @@ type CertificateSigningRequestStatus struct {
 }
 
 // RequestConditionType is the type of a CertificateSigningRequestCondition
+<<<<<<< HEAD
 type RequestConditionType string
 
 // Well-known condition types for certificate requests.
@@ -278,6 +279,75 @@ type CertificateSigningRequestList struct {
 // KeyUsage specifies valid usage contexts for keys.
 // See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
 //      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// +enum
+type RequestConditionType string
+
+// Well-known condition types for certificate requests.
+const (
+	// Approved indicates the request was approved and should be issued by the signer.
+	CertificateApproved RequestConditionType = "Approved"
+	// Denied indicates the request was denied and should not be issued by the signer.
+	CertificateDenied RequestConditionType = "Denied"
+	// Failed indicates the signer failed to issue the certificate.
+	CertificateFailed RequestConditionType = "Failed"
+)
+
+// CertificateSigningRequestCondition describes a condition of a CertificateSigningRequest object
+type CertificateSigningRequestCondition struct {
+	// type of the condition. Known conditions are "Approved", "Denied", and "Failed".
+	//
+	// An "Approved" condition is added via the /approval subresource,
+	// indicating the request was approved and should be issued by the signer.
+	//
+	// A "Denied" condition is added via the /approval subresource,
+	// indicating the request was denied and should not be issued by the signer.
+	//
+	// A "Failed" condition is added via the /status subresource,
+	// indicating the signer failed to issue the certificate.
+	//
+	// Approved and Denied conditions are mutually exclusive.
+	// Approved, Denied, and Failed conditions cannot be removed once added.
+	//
+	// Only one condition of a given type is allowed.
+	Type RequestConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=RequestConditionType"`
+	// status of the condition, one of True, False, Unknown.
+	// Approved, Denied, and Failed conditions may not be "False" or "Unknown".
+	Status v1.ConditionStatus `json:"status" protobuf:"bytes,6,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	// reason indicates a brief reason for the request state
+	// +optional
+	Reason string `json:"reason,omitempty" protobuf:"bytes,2,opt,name=reason"`
+	// message contains a human readable message with details about the request state
+	// +optional
+	Message string `json:"message,omitempty" protobuf:"bytes,3,opt,name=message"`
+	// lastUpdateTime is the time of the last update to this condition
+	// +optional
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,4,opt,name=lastUpdateTime"`
+	// lastTransitionTime is the time the condition last transitioned from one status to another.
+	// If unset, when a new condition type is added or an existing condition's status is changed,
+	// the server defaults this to the current time.
+	// +optional
+	LastTransitionTime metav1.Time `json:"lastTransitionTime,omitempty" protobuf:"bytes,5,opt,name=lastTransitionTime"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// CertificateSigningRequestList is a collection of CertificateSigningRequest objects
+type CertificateSigningRequestList struct {
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
+
+	// items is a collection of CertificateSigningRequest objects
+	Items []CertificateSigningRequest `json:"items" protobuf:"bytes,2,rep,name=items"`
+}
+
+// KeyUsage specifies valid usage contexts for keys.
+// See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
+//      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+// +enum
+>>>>>>> 6b7ce455e (update vendored files)
 type KeyUsage string
 
 // Valid key usages

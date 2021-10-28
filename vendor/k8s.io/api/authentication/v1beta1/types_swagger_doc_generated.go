@@ -31,6 +31,7 @@ var map_TokenReview = map[string]string{
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"":         "TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.",
 	"metadata": "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
 	"spec":     "Spec holds information about the request being evaluated",
@@ -57,6 +58,16 @@ var map_TokenReview = map[string]string{
 	"spec":   "Spec holds information about the request being evaluated",
 	"status": "Status is filled in by the server and indicates whether the request can be authenticated.",
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	"":       "TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.",
+	"spec":   "Spec holds information about the request being evaluated",
+	"status": "Status is filled in by the server and indicates whether the request can be authenticated.",
+=======
+	"":         "TokenReview attempts to authenticate a token to a known user. Note: TokenReview requests may be cached by the webhook token authenticator plugin in the kube-apiserver.",
+	"metadata": "Standard object's metadata. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata",
+	"spec":     "Spec holds information about the request being evaluated",
+	"status":   "Status is filled in by the server and indicates whether the token can be authenticated.",
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func (TokenReview) SwaggerDoc() map[string]string {

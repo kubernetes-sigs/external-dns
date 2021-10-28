@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeBatchResultCount invokes the alidns.DescribeBatchResultCount API synchronously
-// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
 func (client *Client) DescribeBatchResultCount(request *DescribeBatchResultCountRequest) (response *DescribeBatchResultCountResponse, err error) {
 	response = CreateDescribeBatchResultCountResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeBatchResultCount(request *DescribeBatchResultCount
 }
 
 // DescribeBatchResultCountWithChan invokes the alidns.DescribeBatchResultCount API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBatchResultCountWithChan(request *DescribeBatchResultCountRequest) (<-chan *DescribeBatchResultCountResponse, <-chan error) {
 	responseChan := make(chan *DescribeBatchResultCountResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeBatchResultCountWithChan(request *DescribeBatchRes
 }
 
 // DescribeBatchResultCountWithCallback invokes the alidns.DescribeBatchResultCount API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describebatchresultcount.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeBatchResultCountWithCallback(request *DescribeBatchResultCountRequest, callback func(response *DescribeBatchResultCountResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -101,6 +96,7 @@ func CreateDescribeBatchResultCountRequest() (request *DescribeBatchResultCountR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeBatchResultCount", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

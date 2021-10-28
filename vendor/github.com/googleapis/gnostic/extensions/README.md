@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 **Extension Support is experimental.**
 
 This directory contains support code for building Gnostic extensio handlers and
@@ -42,6 +43,25 @@ ExtensionHandlerRequests.
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 This directory contains support code for building Gnostic extensions and associated examples.
+||||||| parent of 6b7ce455e (update vendored files)
+This directory contains support code for building Gnostic extensions and associated examples.
+=======
+**Extension Support is experimental.**
+>>>>>>> 6b7ce455e (update vendored files)
 
+<<<<<<< HEAD
 Extensions are used to compile vendor or specification extensions into protocol buffer structures.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+Extensions are used to compile vendor or specification extensions into protocol buffer structures.
+=======
+This directory contains support code for building Gnostic extensio handlers and
+associated examples.
+
+Extension handlers can be used to compile vendor or specification extensions
+into protocol buffer structures.
+
+Like plugins, extension handlers are built as separate executables. Extension
+bodies are written to extension handlers as serialized
+ExtensionHandlerRequests.
+>>>>>>> 6b7ce455e (update vendored files)

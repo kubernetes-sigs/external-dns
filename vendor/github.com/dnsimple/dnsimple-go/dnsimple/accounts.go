@@ -27,6 +27,18 @@ type AccountsResponse struct {
 	Data []Account `json:"data"`
 }
 
+// AccountInvitation represents an invitation to a DNSimple account.
+type AccountInvitation struct {
+	ID                   int64  `json:"id,omitempty"`
+	Email                string `json:"email,omitempty"`
+	Token                string `json:"token,omitempty"`
+	AccountID            int64  `json:"account_id,omitempty"`
+	CreatedAt            string `json:"created_at,omitempty"`
+	UpdatedAt            string `json:"updated_at,omitempty"`
+	InvitationSentAt     string `json:"invitation_sent_at,omitempty"`
+	InvitationAcceptedAt string `json:"invitation_accepted_at,omitempty"`
+}
+
 // ListAccounts list the accounts for an user.
 //
 // See https://developer.dnsimple.com/v2/accounts/#list

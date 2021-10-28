@@ -48,6 +48,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
 	// used to scrape a target.
 	ScrapeIntervalLabel = "__scrape_interval__"
@@ -73,6 +74,17 @@ const (
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	// ScrapeIntervalLabel is the name of the label that holds the scrape interval
+	// used to scrape a target.
+	ScrapeIntervalLabel = "__scrape_interval__"
+
+	// ScrapeTimeoutLabel is the name of the label that holds the scrape
+	// timeout used to scrape a target.
+	ScrapeTimeoutLabel = "__scrape_timeout__"
+
+>>>>>>> 6b7ce455e (update vendored files)
 	// ReservedLabelPrefix is a prefix which is not legal in user-supplied
 	// label names.
 	ReservedLabelPrefix = "__"

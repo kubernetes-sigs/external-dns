@@ -43,6 +43,7 @@ func Tag(tag string, expectedValue interface{}) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	t := tdTag{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 		tag:            tag,
@@ -146,10 +147,22 @@ func (t *tdTag) TypeBehind() reflect.Type {
 	if err := util.CheckTag(tag); err != nil {
 		panic(err.Error())
 	}
+||||||| parent of 6b7ce455e (update vendored files)
+	if err := util.CheckTag(tag); err != nil {
+		panic(err.Error())
+	}
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	t := tdTag{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 		tag:            tag,
 	}
+
+	if err := util.CheckTag(tag); err != nil {
+		t.err = ctxerr.OpBad("Tag", err.Error())
+		return &t
+	}
+
 	if !t.isTestDeeper {
 		t.expectedValue = reflect.ValueOf(expectedValue)
 	}
@@ -157,6 +170,9 @@ func (t *tdTag) TypeBehind() reflect.Type {
 }
 
 func (t *tdTag) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if t.err != nil {
+		return ctx.CollectError(t.err)
+	}
 	return deepValueEqual(ctx, got, t.expectedValue)
 }
 
@@ -165,6 +181,9 @@ func (t *tdTag) HandleInvalid() bool {
 }
 
 func (t *tdTag) String() string {
+	if t.err != nil {
+		return t.stringError()
+	}
 	if t.isTestDeeper {
 		return t.expectedValue.Interface().(TestDeep).String()
 	}
@@ -172,7 +191,14 @@ func (t *tdTag) String() string {
 }
 
 func (t *tdTag) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if t.err != nil {
+		return nil
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	if t.isTestDeeper {
 		return t.expectedValue.Interface().(TestDeep).TypeBehind()
 	}

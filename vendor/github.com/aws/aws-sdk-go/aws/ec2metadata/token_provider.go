@@ -90,6 +90,7 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		t.token.Store(ec2Token{})
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -101,6 +102,10 @@ func (t *tokenProvider) enableTokenProviderHandler(r *request.Request) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		t.token.Store(ec2Token{})
+>>>>>>> 6b7ce455e (update vendored files)
 		atomic.StoreUint32(&t.disabled, 0)
 	}
 }

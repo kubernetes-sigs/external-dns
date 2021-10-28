@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -355,6 +356,11 @@ func (c *FakeStatefulSets) ApplyStatus(ctx context.Context, statefulSet *appsv1b
 		Invokes(testing.NewPatchSubresourceAction(statefulsetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.StatefulSet{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	v1beta1 "k8s.io/api/apps/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -362,6 +368,7 @@ func (c *FakeStatefulSets) ApplyStatus(ctx context.Context, statefulSet *appsv1b
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	appsv1beta1 "k8s.io/client-go/applyconfigurations/apps/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -452,7 +459,7 @@ func (c *FakeStatefulSets) UpdateStatus(ctx context.Context, statefulSet *v1beta
 // Delete takes name of the statefulSet and deletes it. Returns an error if one occurs.
 func (c *FakeStatefulSets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(statefulsetsResource, c.ns, name), &v1beta1.StatefulSet{})
+		Invokes(testing.NewDeleteActionWithOptions(statefulsetsResource, c.ns, name, opts), &v1beta1.StatefulSet{})
 
 	return err
 }
@@ -470,6 +477,51 @@ func (c *FakeStatefulSets) Patch(ctx context.Context, name string, pt types.Patc
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(statefulsetsResource, c.ns, name, pt, data, subresources...), &v1beta1.StatefulSet{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.StatefulSet), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied statefulSet.
+func (c *FakeStatefulSets) Apply(ctx context.Context, statefulSet *appsv1beta1.StatefulSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.StatefulSet, err error) {
+	if statefulSet == nil {
+		return nil, fmt.Errorf("statefulSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(statefulSet)
+	if err != nil {
+		return nil, err
+	}
+	name := statefulSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("statefulSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(statefulsetsResource, c.ns, *name, types.ApplyPatchType, data), &v1beta1.StatefulSet{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.StatefulSet), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeStatefulSets) ApplyStatus(ctx context.Context, statefulSet *appsv1beta1.StatefulSetApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.StatefulSet, err error) {
+	if statefulSet == nil {
+		return nil, fmt.Errorf("statefulSet provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(statefulSet)
+	if err != nil {
+		return nil, err
+	}
+	name := statefulSet.Name
+	if name == nil {
+		return nil, fmt.Errorf("statefulSet.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(statefulsetsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &v1beta1.StatefulSet{})
 
 	if obj == nil {
 		return nil, err

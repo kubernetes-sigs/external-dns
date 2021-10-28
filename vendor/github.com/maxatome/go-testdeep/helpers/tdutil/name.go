@@ -38,10 +38,11 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 
 	str, ok := args[0].(string)
 	if ok && len(args) > 1 && strings.ContainsRune(str, '%') {
-		fmt.Fprintf(w, str, args[1:]...) // nolint: errcheck
+		fmt.Fprintf(w, str, args[1:]...) //nolint: errcheck
 	} else {
 		// create a new slice to fool govet and avoid "call has possible
 		// formatting directive" errors
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -59,5 +60,10 @@ func FbuildTestName(w io.Writer, args ...interface{}) {
 =======
 		fmt.Fprint(w, args[:]...) // nolint: errcheck
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		fmt.Fprint(w, args[:]...) // nolint: errcheck
+=======
+		fmt.Fprint(w, args[:]...) //nolint: errcheck,gocritic
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 }

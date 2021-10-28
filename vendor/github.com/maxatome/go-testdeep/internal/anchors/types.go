@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	"github.com/maxatome/go-testdeep/internal/types"
 )
@@ -136,8 +137,13 @@ func AddAnchorableStructType(fn interface{}) error {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 )
+||||||| parent of 6b7ce455e (update vendored files)
+)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 
-var intType = reflect.TypeOf(42)
+	"github.com/maxatome/go-testdeep/internal/types"
+)
 
 type anchorableType struct {
 	typ     reflect.Type
@@ -186,8 +192,14 @@ func AddAnchorableStructType(fn interface{}) error {
 
 		if !fnType.IsVariadic() &&
 			fnType.NumIn() == 1 && fnType.NumOut() == 1 &&
+<<<<<<< HEAD
 			fnType.In(0) == intType &&
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			fnType.In(0) == intType &&
+=======
+			fnType.In(0) == types.Int &&
+>>>>>>> 6b7ce455e (update vendored files)
 			fnType.Out(0).Kind() == reflect.Struct {
 			typ := fnType.Out(0)
 			if !typ.Comparable() {

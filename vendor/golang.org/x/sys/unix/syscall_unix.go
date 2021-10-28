@@ -5,9 +5,13 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
 
@@ -183,6 +187,30 @@ func Write(fd int, p []byte) (n int, err error) {
 	return
 }
 
+func Pread(fd int, p []byte, offset int64) (n int, err error) {
+	n, err = pread(fd, p, offset)
+	if raceenabled {
+		if n > 0 {
+			raceWriteRange(unsafe.Pointer(&p[0]), n)
+		}
+		if err == nil {
+			raceAcquire(unsafe.Pointer(&ioSync))
+		}
+	}
+	return
+}
+
+func Pwrite(fd int, p []byte, offset int64) (n int, err error) {
+	if raceenabled {
+		raceReleaseMerge(unsafe.Pointer(&ioSync))
+	}
+	n, err = pwrite(fd, p, offset)
+	if raceenabled && n > 0 {
+		raceReadRange(unsafe.Pointer(&p[0]), n)
+	}
+	return
+}
+
 // For testing: clients can set this flag to force
 // creation of IPv6 sockets to return EAFNOSUPPORT.
 var SocketDisableIPv6 bool
@@ -319,6 +347,7 @@ func Recvfrom(fd int, p []byte, flags int) (n int, from Sockaddr, err error) {
 	return
 }
 
+<<<<<<< HEAD
 func Send(s int, buf []byte, flags int) (err error) {
 	return sendto(s, buf, flags, nil, 0)
 <<<<<<< HEAD
@@ -947,6 +976,38 @@ func Recvfrom(fd int, p []byte, flags int) (n int, from Sockaddr, err error) {
 	}
 	return
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+func Recvmsg(fd int, p, oob []byte, flags int) (n, oobn int, recvflags int, from Sockaddr, err error) {
+	var rsa RawSockaddrAny
+	n, oobn, recvflags, err = recvmsgRaw(fd, p, oob, flags, &rsa)
+	// source address is only specified if the socket is unconnected
+	if rsa.Addr.Family != AF_UNSPEC {
+		from, err = anyToSockaddr(fd, &rsa)
+	}
+	return
+}
+
+func Sendmsg(fd int, p, oob []byte, to Sockaddr, flags int) (err error) {
+	_, err = SendmsgN(fd, p, oob, to, flags)
+	return
+}
+
+func SendmsgN(fd int, p, oob []byte, to Sockaddr, flags int) (n int, err error) {
+	var ptr unsafe.Pointer
+	var salen _Socklen
+	if to != nil {
+		ptr, salen, err = to.sockaddr()
+		if err != nil {
+			return 0, err
+		}
+	}
+	return sendmsgN(fd, p, oob, ptr, salen, flags)
+}
+
+func Send(s int, buf []byte, flags int) (err error) {
+	return sendto(s, buf, flags, nil, 0)
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func Sendto(fd int, p []byte, flags int, to Sockaddr) (err error) {

@@ -242,6 +242,7 @@ func (es errors) Error() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 // CopySeekableBody copies the seekable body to an io.Writer
 func CopySeekableBody(dst io.Writer, src io.ReadSeeker) (int64, error) {
@@ -297,3 +298,29 @@ func CopySeekableBody(dst io.Writer, src io.ReadSeeker) (int64, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+
+// CopySeekableBody copies the seekable body to an io.Writer
+func CopySeekableBody(dst io.Writer, src io.ReadSeeker) (int64, error) {
+	curPos, err := src.Seek(0, sdkio.SeekCurrent)
+	if err != nil {
+		return 0, err
+	}
+
+	// copy errors may be assumed to be from the body.
+	n, err := io.Copy(dst, src)
+	if err != nil {
+		return n, err
+	}
+
+	// seek back to the first position after reading to reset
+	// the body for transmission.
+	_, err = src.Seek(curPos, sdkio.SeekStart)
+	if err != nil {
+		return n, err
+	}
+
+	return n, nil
+}
+>>>>>>> 6b7ce455e (update vendored files)

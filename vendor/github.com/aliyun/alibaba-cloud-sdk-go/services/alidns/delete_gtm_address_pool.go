@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteGtmAddressPool invokes the alidns.DeleteGtmAddressPool API synchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
 func (client *Client) DeleteGtmAddressPool(request *DeleteGtmAddressPoolRequest) (response *DeleteGtmAddressPoolResponse, err error) {
 	response = CreateDeleteGtmAddressPoolResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteGtmAddressPool(request *DeleteGtmAddressPoolRequest)
 }
 
 // DeleteGtmAddressPoolWithChan invokes the alidns.DeleteGtmAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmAddressPoolWithChan(request *DeleteGtmAddressPoolRequest) (<-chan *DeleteGtmAddressPoolResponse, <-chan error) {
 	responseChan := make(chan *DeleteGtmAddressPoolResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteGtmAddressPoolWithChan(request *DeleteGtmAddressPool
 }
 
 // DeleteGtmAddressPoolWithCallback invokes the alidns.DeleteGtmAddressPool API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmaddresspool.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmAddressPoolWithCallback(request *DeleteGtmAddressPoolRequest, callback func(response *DeleteGtmAddressPoolResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDeleteGtmAddressPoolRequest() (request *DeleteGtmAddressPoolRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteGtmAddressPool", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

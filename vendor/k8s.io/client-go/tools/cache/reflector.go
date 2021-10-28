@@ -32,13 +32,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/naming"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/pager"
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -1205,6 +1205,12 @@ func isTooLargeResourceVersionError(err error) bool {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 6b7ce455e (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
+>>>>>>> 6b7ce455e (update vendored files)
 	"k8s.io/utils/trace"
 )
 
@@ -1234,6 +1240,8 @@ type Reflector struct {
 
 	// backoff manages backoff of ListWatch
 	backoffManager wait.BackoffManager
+	// initConnBackoffManager manages backoff the initial connection with the Watch call of ListAndWatch.
+	initConnBackoffManager wait.BackoffManager
 
 	resyncPeriod time.Duration
 	// ShouldResync is invoked periodically and whenever it returns `true` the Store's Resync operation is invoked
@@ -1260,6 +1268,46 @@ type Reflector struct {
 	// etcd, which is significantly less efficient and may lead to serious performance and
 	// scalability problems.
 	WatchListPageSize int64
+	// Called whenever the ListAndWatch drops the connection with an error.
+	watchErrorHandler WatchErrorHandler
+}
+
+// ResourceVersionUpdater is an interface that allows store implementation to
+// track the current resource version of the reflector. This is especially
+// important if storage bookmarks are enabled.
+type ResourceVersionUpdater interface {
+	// UpdateResourceVersion is called each time current resource version of the reflector
+	// is updated.
+	UpdateResourceVersion(resourceVersion string)
+}
+
+// The WatchErrorHandler is called whenever ListAndWatch drops the
+// connection with an error. After calling this handler, the informer
+// will backoff and retry.
+//
+// The default implementation looks at the error type and tries to log
+// the error message at an appropriate level.
+//
+// Implementations of this handler may display the error message in other
+// ways. Implementations should return quickly - any expensive processing
+// should be offloaded.
+type WatchErrorHandler func(r *Reflector, err error)
+
+// DefaultWatchErrorHandler is the default implementation of WatchErrorHandler
+func DefaultWatchErrorHandler(r *Reflector, err error) {
+	switch {
+	case isExpiredError(err):
+		// Don't set LastSyncResourceVersionUnavailable - LIST call with ResourceVersion=RV already
+		// has a semantic that it returns data at least as fresh as provided RV.
+		// So first try to LIST with setting RV to resource version of last observed object.
+		klog.V(4).Infof("%s: watch of %v closed with: %v", r.name, r.expectedTypeName, err)
+	case err == io.EOF:
+		// watch closed normally
+	case err == io.ErrUnexpectedEOF:
+		klog.V(1).Infof("%s: Watch for %v closed with unexpected EOF: %v", r.name, r.expectedTypeName, err)
+	default:
+		utilruntime.HandleError(fmt.Errorf("%s: Failed to watch %v: %v", r.name, r.expectedTypeName, err))
+	}
 }
 
 var (
@@ -1300,9 +1348,11 @@ func NewNamedReflector(name string, lw ListerWatcher, expectedType interface{}, 
 		// We used to make the call every 1sec (1 QPS), the goal here is to achieve ~98% traffic reduction when
 		// API server is not healthy. With these parameters, backoff will stop at [30,60) sec interval which is
 		// 0.22 QPS. If we don't backoff for 2min, assume API server is healthy and we reset the backoff.
-		backoffManager: wait.NewExponentialBackoffManager(800*time.Millisecond, 30*time.Second, 2*time.Minute, 2.0, 1.0, realClock),
-		resyncPeriod:   resyncPeriod,
-		clock:          realClock,
+		backoffManager:         wait.NewExponentialBackoffManager(800*time.Millisecond, 30*time.Second, 2*time.Minute, 2.0, 1.0, realClock),
+		initConnBackoffManager: wait.NewExponentialBackoffManager(800*time.Millisecond, 30*time.Second, 2*time.Minute, 2.0, 1.0, realClock),
+		resyncPeriod:           resyncPeriod,
+		clock:                  realClock,
+		watchErrorHandler:      WatchErrorHandler(DefaultWatchErrorHandler),
 	}
 	r.setExpectedType(expectedType)
 	return r
@@ -1337,13 +1387,13 @@ var internalPackages = []string{"client-go/tools/cache/"}
 // objects and subsequent deltas.
 // Run will exit when stopCh is closed.
 func (r *Reflector) Run(stopCh <-chan struct{}) {
-	klog.V(2).Infof("Starting reflector %s (%s) from %s", r.expectedTypeName, r.resyncPeriod, r.name)
+	klog.V(3).Infof("Starting reflector %s (%s) from %s", r.expectedTypeName, r.resyncPeriod, r.name)
 	wait.BackoffUntil(func() {
 		if err := r.ListAndWatch(stopCh); err != nil {
-			utilruntime.HandleError(err)
+			r.watchErrorHandler(r, err)
 		}
 	}, r.backoffManager, true, stopCh)
-	klog.V(2).Infof("Stopping reflector %s (%s) from %s", r.expectedTypeName, r.resyncPeriod, r.name)
+	klog.V(3).Infof("Stopping reflector %s (%s) from %s", r.expectedTypeName, r.resyncPeriod, r.name)
 }
 
 var (
@@ -1440,8 +1490,10 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 			panic(r)
 		case <-listCh:
 		}
+		initTrace.Step("Objects listed", trace.Field{"error", err})
 		if err != nil {
-			return fmt.Errorf("%s: Failed to list %v: %v", r.name, r.expectedTypeName, err)
+			klog.Warningf("%s: failed to list %v: %v", r.name, r.expectedTypeName, err)
+			return fmt.Errorf("failed to list %v: %v", r.expectedTypeName, err)
 		}
 
 		// We check if the list was paginated and if so set the paginatedResult based on that.
@@ -1459,20 +1511,19 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 		}
 
 		r.setIsLastSyncResourceVersionUnavailable(false) // list was successful
-		initTrace.Step("Objects listed")
 		listMetaInterface, err := meta.ListAccessor(list)
 		if err != nil {
-			return fmt.Errorf("%s: Unable to understand list result %#v: %v", r.name, list, err)
+			return fmt.Errorf("unable to understand list result %#v: %v", list, err)
 		}
 		resourceVersion = listMetaInterface.GetResourceVersion()
 		initTrace.Step("Resource version extracted")
 		items, err := meta.ExtractList(list)
 		if err != nil {
-			return fmt.Errorf("%s: Unable to understand list result %#v (%v)", r.name, list, err)
+			return fmt.Errorf("unable to understand list result %#v (%v)", list, err)
 		}
 		initTrace.Step("Objects extracted")
 		if err := r.syncWith(items, resourceVersion); err != nil {
-			return fmt.Errorf("%s: Unable to sync list result: %v", r.name, err)
+			return fmt.Errorf("unable to sync list result: %v", err)
 		}
 		initTrace.Step("SyncWith done")
 		r.setLastSyncResourceVersion(resourceVersion)
@@ -1534,28 +1585,16 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 		start := r.clock.Now()
 		w, err := r.listerWatcher.Watch(options)
 		if err != nil {
-			switch {
-			case isExpiredError(err):
-				// Don't set LastSyncResourceVersionExpired - LIST call with ResourceVersion=RV already
-				// has a semantic that it returns data at least as fresh as provided RV.
-				// So first try to LIST with setting RV to resource version of last observed object.
-				klog.V(4).Infof("%s: watch of %v closed with: %v", r.name, r.expectedTypeName, err)
-			case err == io.EOF:
-				// watch closed normally
-			case err == io.ErrUnexpectedEOF:
-				klog.V(1).Infof("%s: Watch for %v closed with unexpected EOF: %v", r.name, r.expectedTypeName, err)
-			default:
-				utilruntime.HandleError(fmt.Errorf("%s: Failed to watch %v: %v", r.name, r.expectedTypeName, err))
-			}
 			// If this is "connection refused" error, it means that most likely apiserver is not responsive.
 			// It doesn't make sense to re-list all objects because most likely we will be able to restart
 			// watch where we ended.
-			// If that's the case wait and resend watch request.
-			if utilnet.IsConnectionRefused(err) {
-				time.Sleep(time.Second)
+			// If that's the case begin exponentially backing off and resend watch request.
+			// Do the same for "429" errors.
+			if utilnet.IsConnectionRefused(err) || apierrors.IsTooManyRequests(err) {
+				<-r.initConnBackoffManager.Backoff().C()
 				continue
 			}
-			return nil
+			return err
 		}
 
 		if err := r.watchHandler(start, w, &resourceVersion, resyncerrc, stopCh); err != nil {
@@ -1566,6 +1605,10 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 					// has a semantic that it returns data at least as fresh as provided RV.
 					// So first try to LIST with setting RV to resource version of last observed object.
 					klog.V(4).Infof("%s: watch of %v closed with: %v", r.name, r.expectedTypeName, err)
+				case apierrors.IsTooManyRequests(err):
+					klog.V(2).Infof("%s: watch of %v returned 429 - backing off", r.name, r.expectedTypeName)
+					<-r.initConnBackoffManager.Backoff().C()
+					continue
 				default:
 					klog.Warningf("%s: watch of %v ended with: %v", r.name, r.expectedTypeName, err)
 				}
@@ -1650,6 +1693,9 @@ loop:
 			}
 			*resourceVersion = newResourceVersion
 			r.setLastSyncResourceVersion(newResourceVersion)
+			if rvu, ok := r.store.(ResourceVersionUpdater); ok {
+				rvu.UpdateResourceVersion(newResourceVersion)
+			}
 			eventCount++
 		}
 	}
@@ -1716,6 +1762,33 @@ func isExpiredError(err error) bool {
 }
 
 func isTooLargeResourceVersionError(err error) bool {
+<<<<<<< HEAD
 	return apierrors.HasStatusCause(err, metav1.CauseTypeResourceVersionTooLarge)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return apierrors.HasStatusCause(err, metav1.CauseTypeResourceVersionTooLarge)
+=======
+	if apierrors.HasStatusCause(err, metav1.CauseTypeResourceVersionTooLarge) {
+		return true
+	}
+	// In Kubernetes 1.17.0-1.18.5, the api server doesn't set the error status cause to
+	// metav1.CauseTypeResourceVersionTooLarge to indicate that the requested minimum resource
+	// version is larger than the largest currently available resource version. To ensure backward
+	// compatibility with these server versions we also need to detect the error based on the content
+	// of the error message field.
+	if !apierrors.IsTimeout(err) {
+		return false
+	}
+	apierr, ok := err.(apierrors.APIStatus)
+	if !ok || apierr == nil || apierr.Status().Details == nil {
+		return false
+	}
+	for _, cause := range apierr.Status().Details.Causes {
+		// Matches the message returned by api server 1.17.0-1.18.5 for this error condition
+		if cause.Message == "Too large resource version" {
+			return true
+		}
+	}
+	return false
+>>>>>>> 6b7ce455e (update vendored files)
 }

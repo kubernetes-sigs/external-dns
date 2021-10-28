@@ -5,9 +5,13 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 //go:build !aix && !darwin && !dragonfly && !freebsd && !linux && !netbsd && !openbsd && !solaris && !windows && !zos
 // +build !aix,!darwin,!dragonfly,!freebsd,!linux,!netbsd,!openbsd,!solaris,!windows,!zos
 
@@ -24,6 +28,7 @@ const (
 
 	sizeofSockaddrInet4 = 0x10
 	sizeofSockaddrInet6 = 0x1c
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -58,6 +63,9 @@ const (
 
 	sysSOCK_RAW = 0x3
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 func marshalInetAddr(ip net.IP, port int, zone string) []byte {

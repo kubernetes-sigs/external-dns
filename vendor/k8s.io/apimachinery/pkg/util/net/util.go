@@ -20,6 +20,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"errors"
 	"net"
 	"reflect"
@@ -122,9 +123,11 @@ func IsConnectionRefused(err error) bool {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"errors"
+>>>>>>> 6b7ce455e (update vendored files)
 	"net"
-	"net/url"
-	"os"
 	"reflect"
 	"syscall"
 )
@@ -145,23 +148,16 @@ func IPNetEqual(ipnet1, ipnet2 *net.IPNet) bool {
 
 // Returns if the given err is "connection reset by peer" error.
 func IsConnectionReset(err error) bool {
-	if urlErr, ok := err.(*url.Error); ok {
-		err = urlErr.Err
-	}
-	if opErr, ok := err.(*net.OpError); ok {
-		err = opErr.Err
-	}
-	if osErr, ok := err.(*os.SyscallError); ok {
-		err = osErr.Err
-	}
-	if errno, ok := err.(syscall.Errno); ok && errno == syscall.ECONNRESET {
-		return true
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		return errno == syscall.ECONNRESET
 	}
 	return false
 }
 
 // Returns if the given err is "connection refused" error
 func IsConnectionRefused(err error) bool {
+<<<<<<< HEAD
 	if urlErr, ok := err.(*url.Error); ok {
 		err = urlErr.Err
 	}
@@ -174,6 +170,23 @@ func IsConnectionRefused(err error) bool {
 	if errno, ok := err.(syscall.Errno); ok && errno == syscall.ECONNREFUSED {
 		return true
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	if urlErr, ok := err.(*url.Error); ok {
+		err = urlErr.Err
+	}
+	if opErr, ok := err.(*net.OpError); ok {
+		err = opErr.Err
+	}
+	if osErr, ok := err.(*os.SyscallError); ok {
+		err = osErr.Err
+	}
+	if errno, ok := err.(syscall.Errno); ok && errno == syscall.ECONNREFUSED {
+		return true
+=======
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		return errno == syscall.ECONNREFUSED
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	return false
 }

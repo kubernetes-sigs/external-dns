@@ -86,6 +86,7 @@ func Init() {
 func SaveState(on ...bool) func() {
 	colorState, set := os.LookupEnv(EnvColor)
 	if len(on) == 0 || !on[0] {
+<<<<<<< HEAD
 		os.Setenv(EnvColor, "off") // nolint: errcheck
 	} else {
 		os.Setenv(EnvColor, "on") // nolint: errcheck
@@ -96,6 +97,19 @@ func SaveState(on ...bool) func() {
 			os.Setenv(EnvColor, colorState) // nolint: errcheck
 		} else {
 			os.Unsetenv(EnvColor) // nolint: errcheck
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+		os.Setenv(EnvColor, "off") //nolint: errcheck
+	} else {
+		os.Setenv(EnvColor, "on") //nolint: errcheck
+	}
+	initOnce = sync.Once{}
+	return func() {
+		if set {
+			os.Setenv(EnvColor, colorState) //nolint: errcheck
+		} else {
+			os.Unsetenv(EnvColor) //nolint: errcheck
+>>>>>>> 6b7ce455e (update vendored files)
 		}
 		initOnce = sync.Once{}
 	}

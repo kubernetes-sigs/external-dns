@@ -11,6 +11,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/hooks"
 	"github.com/maxatome/go-testdeep/internal/location"
 	"github.com/maxatome/go-testdeep/internal/visited"
@@ -89,6 +90,10 @@ type Context struct {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"github.com/maxatome/go-testdeep/internal/hooks"
+>>>>>>> 6b7ce455e (update vendored files)
 	"github.com/maxatome/go-testdeep/internal/location"
 	"github.com/maxatome/go-testdeep/internal/visited"
 )
@@ -108,6 +113,7 @@ type Context struct {
 	MaxErrors int
 	Errors    *[]*Error
 	Anchors   *anchors.Info
+	Hooks     *hooks.Info
 	// If true, the contents of the returned *Error will not be
 	// checked. Can be used to avoid filling Error{} with expensive
 	// computations.
@@ -118,7 +124,13 @@ type Context struct {
 	UseEqual bool
 	// See ContextConfig.BeLax for details.
 	BeLax bool
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	// See ContextConfig.IgnoreUnexported for details.
+	IgnoreUnexported bool
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // InitErrors initializes Context *Errors slice, if MaxErrors < 0 or

@@ -13,6 +13,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - janetkuo
 - ncdc
 - dims
@@ -45,13 +46,21 @@ reviewers:
 =======
 - nikhiljindal
 - gmarek
+||||||| parent of 6b7ce455e (update vendored files)
+- nikhiljindal
+- gmarek
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 - janetkuo
 - ncdc
-- eparis
 - dims
 - krousey
 - resouer
-- david-mcmahon
 - mfojtik
+<<<<<<< HEAD
 - jianhuiz
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+- jianhuiz
+=======
+>>>>>>> 6b7ce455e (update vendored files)

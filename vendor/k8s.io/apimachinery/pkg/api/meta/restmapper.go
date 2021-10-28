@@ -68,6 +68,7 @@ func (m *DefaultRESTMapper) String() string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if m == nil {
 		return "<nil>"
 	}
@@ -83,6 +84,12 @@ func (m *DefaultRESTMapper) String() string {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if m == nil {
+		return "<nil>"
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	return fmt.Sprintf("DefaultRESTMapper{kindToPluralResource=%v}", m.kindToPluralResource)
 }
 
@@ -533,4 +540,13 @@ func (m *DefaultRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string
 		return nil, &NoResourceMatchError{PartialResource: schema.GroupVersionResource{Group: gk.Group, Resource: gk.Kind}}
 	}
 	return mappings, nil
+}
+
+// MaybeResetRESTMapper calls Reset() on the mapper if it is a ResettableRESTMapper.
+func MaybeResetRESTMapper(mapper RESTMapper) bool {
+	m, ok := mapper.(ResettableRESTMapper)
+	if ok {
+		m.Reset()
+	}
+	return ok
 }

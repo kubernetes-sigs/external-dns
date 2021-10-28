@@ -20,6 +20,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var errDecode = errors.New("cannot parse invalid wire-format data")
 
 type unmarshalOptions struct {
@@ -448,6 +449,11 @@ func (mi *MessageInfo) unmarshalExtension(b []byte, num protowire.Number, wtyp p
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+var errDecode = errors.New("cannot parse invalid wire-format data")
+
+>>>>>>> 6b7ce455e (update vendored files)
 type unmarshalOptions struct {
 	flags    protoiface.UnmarshalInputFlags
 	resolver interface {
@@ -531,13 +537,13 @@ func (mi *MessageInfo) unmarshalPointer(b []byte, p pointer, groupTag protowire.
 			var n int
 			tag, n = protowire.ConsumeVarint(b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 			b = b[n:]
 		}
 		var num protowire.Number
 		if n := tag >> 3; n < uint64(protowire.MinValidNumber) || n > uint64(protowire.MaxValidNumber) {
-			return out, errors.New("invalid field number")
+			return out, errDecode
 		} else {
 			num = protowire.Number(n)
 		}
@@ -545,7 +551,7 @@ func (mi *MessageInfo) unmarshalPointer(b []byte, p pointer, groupTag protowire.
 
 		if wtyp == protowire.EndGroupType {
 			if num != groupTag {
-				return out, errors.New("mismatching end group marker")
+				return out, errDecode
 			}
 			groupTag = 0
 			break
@@ -601,10 +607,10 @@ func (mi *MessageInfo) unmarshalPointer(b []byte, p pointer, groupTag protowire.
 			}
 			n = protowire.ConsumeFieldValue(num, wtyp, b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 			if !opts.DiscardUnknown() && mi.unknownOffset.IsValid() {
-				u := p.Apply(mi.unknownOffset).Bytes()
+				u := mi.mutableUnknownBytes(p)
 				*u = protowire.AppendTag(*u, num, wtyp)
 				*u = append(*u, b[:n]...)
 			}
@@ -612,7 +618,7 @@ func (mi *MessageInfo) unmarshalPointer(b []byte, p pointer, groupTag protowire.
 		b = b[n:]
 	}
 	if groupTag != 0 {
-		return out, errors.New("missing end group marker")
+		return out, errDecode
 	}
 	if mi.numRequiredFields > 0 && bits.OnesCount64(requiredMask) != int(mi.numRequiredFields) {
 		initialized = false
@@ -652,8 +658,14 @@ func (mi *MessageInfo) unmarshalExtension(b []byte, num protowire.Number, wtyp p
 					return out, nil
 				}
 			case ValidationInvalid:
+<<<<<<< HEAD
 				return out, errors.New("invalid wire format")
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+				return out, errors.New("invalid wire format")
+=======
+				return out, errDecode
+>>>>>>> 6b7ce455e (update vendored files)
 			case ValidationUnknown:
 			}
 		}

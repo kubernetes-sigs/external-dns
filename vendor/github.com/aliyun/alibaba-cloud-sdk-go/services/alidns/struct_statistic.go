@@ -17,8 +17,17 @@ package alidns
 
 // Statistic is a nested struct in alidns response
 type Statistic struct {
-	Timestamp  int64  `json:"Timestamp" xml:"Timestamp"`
-	Count      int64  `json:"Count" xml:"Count"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
-	SubDomain  string `json:"SubDomain" xml:"SubDomain"`
+	HttpCount    int64  `json:"HttpCount" xml:"HttpCount"`
+	TotalCount   int64  `json:"TotalCount" xml:"TotalCount"`
+	Timestamp    int64  `json:"Timestamp" xml:"Timestamp"`
+	DomainType   string `json:"DomainType" xml:"DomainType"`
+	DomainName   string `json:"DomainName" xml:"DomainName"`
+	V6HttpCount  int64  `json:"V6HttpCount" xml:"V6HttpCount"`
+	SubDomain    string `json:"SubDomain" xml:"SubDomain"`
+	V4HttpCount  int64  `json:"V4HttpCount" xml:"V4HttpCount"`
+	V6HttpsCount int64  `json:"V6HttpsCount" xml:"V6HttpsCount"`
+	IpCount      int64  `json:"IpCount" xml:"IpCount"`
+	HttpsCount   int64  `json:"HttpsCount" xml:"HttpsCount"`
+	Count        int64  `json:"Count" xml:"Count"`
+	V4HttpsCount int64  `json:"V4HttpsCount" xml:"V4HttpsCount"`
 }

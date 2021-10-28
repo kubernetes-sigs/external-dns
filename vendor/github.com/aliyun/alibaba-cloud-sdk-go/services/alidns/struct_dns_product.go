@@ -48,4 +48,5 @@ type DnsProduct struct {
 	BindDomainCount       int64  `json:"BindDomainCount" xml:"BindDomainCount"`
 	BindDomainUsedCount   int64  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
 	DnsSecurity           string `json:"DnsSecurity" xml:"DnsSecurity"`
+	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
 }

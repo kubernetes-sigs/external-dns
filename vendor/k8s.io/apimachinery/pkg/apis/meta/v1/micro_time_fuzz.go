@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build !notest
+>>>>>>> 6b7ce455e (update vendored files)
 // +build !notest
 
 /*

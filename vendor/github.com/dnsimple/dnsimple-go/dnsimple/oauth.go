@@ -30,7 +30,7 @@ type OauthService struct {
 type AccessToken struct {
 	Token     string `json:"access_token"`
 	Type      string `json:"token_type"`
-	AccountID int    `json:"account_id"`
+	AccountID int64  `json:"account_id"`
 }
 
 // ExchangeAuthorizationRequest represents a request to exchange
@@ -78,10 +78,13 @@ func (s *OauthService) ExchangeAuthorizationForToken(authorization *ExchangeAuth
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		errorResponse := &ExchangeAuthorizationError{}
+		err = json.NewDecoder(resp.Body).Decode(errorResponse)
+		if err != nil {
+			return nil, err
+		}
 		errorResponse.HTTPResponse = resp
-		json.NewDecoder(resp.Body).Decode(errorResponse)
 		return nil, errorResponse
 	}
 

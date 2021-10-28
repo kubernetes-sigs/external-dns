@@ -20,6 +20,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -34,6 +35,11 @@ syntax = "proto2";
 =======
 syntax = 'proto2';
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 6b7ce455e (update vendored files)
 
 package k8s.io.apimachinery.pkg.api.resource;
 
@@ -99,6 +105,18 @@ option go_package = "resource";
 // +k8s:deepcopy-gen=true
 // +k8s:openapi-gen=true
 message Quantity {
+  optional string string = 1;
+}
+
+// QuantityValue makes it possible to use a Quantity as value for a command
+// line parameter.
+//
+// +protobuf=true
+// +protobuf.embed=string
+// +protobuf.options.marshal=false
+// +protobuf.options.(gogoproto.goproto_stringer)=false
+// +k8s:deepcopy-gen=true
+message QuantityValue {
   optional string string = 1;
 }
 

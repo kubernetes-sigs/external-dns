@@ -21,7 +21,6 @@ import (
 )
 
 // ChangeDomainOfDnsProduct invokes the alidns.ChangeDomainOfDnsProduct API synchronously
-// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
 func (client *Client) ChangeDomainOfDnsProduct(request *ChangeDomainOfDnsProductRequest) (response *ChangeDomainOfDnsProductResponse, err error) {
 	response = CreateChangeDomainOfDnsProductResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) ChangeDomainOfDnsProduct(request *ChangeDomainOfDnsProduct
 }
 
 // ChangeDomainOfDnsProductWithChan invokes the alidns.ChangeDomainOfDnsProduct API asynchronously
-// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ChangeDomainOfDnsProductWithChan(request *ChangeDomainOfDnsProductRequest) (<-chan *ChangeDomainOfDnsProductResponse, <-chan error) {
 	responseChan := make(chan *ChangeDomainOfDnsProductResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) ChangeDomainOfDnsProductWithChan(request *ChangeDomainOfDn
 }
 
 // ChangeDomainOfDnsProductWithCallback invokes the alidns.ChangeDomainOfDnsProduct API asynchronously
-// api document: https://help.aliyun.com/api/alidns/changedomainofdnsproduct.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) ChangeDomainOfDnsProductWithCallback(request *ChangeDomainOfDnsProductRequest, callback func(response *ChangeDomainOfDnsProductResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateChangeDomainOfDnsProductRequest() (request *ChangeDomainOfDnsProductR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "ChangeDomainOfDnsProduct", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

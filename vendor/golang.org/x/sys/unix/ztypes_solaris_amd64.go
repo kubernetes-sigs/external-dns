@@ -4,6 +4,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build amd64 && solaris
 // +build amd64,solaris
 
@@ -968,6 +969,10 @@ const (
 	FILE_EXCEPTION     = 0x60000070
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build amd64 && solaris
+>>>>>>> 6b7ce455e (update vendored files)
 // +build amd64,solaris
 
 package unix
@@ -1201,6 +1206,7 @@ const (
 	SizeofSockaddrUnix     = 0x6e
 	SizeofSockaddrDatalink = 0xfc
 	SizeofLinger           = 0x8
+	SizeofIovec            = 0x10
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofMsghdr           = 0x30
@@ -1405,4 +1411,44 @@ const (
 	POLLWRBAND = 0x100
 	POLLWRNORM = 0x4
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+)
+
+type fileObj struct {
+	Atim Timespec
+	Mtim Timespec
+	Ctim Timespec
+	Pad  [3]uint64
+	Name *int8
+}
+
+type portEvent struct {
+	Events int32
+	Source uint16
+	Pad    uint16
+	Object uint64
+	User   *byte
+}
+
+const (
+	PORT_SOURCE_AIO    = 0x1
+	PORT_SOURCE_TIMER  = 0x2
+	PORT_SOURCE_USER   = 0x3
+	PORT_SOURCE_FD     = 0x4
+	PORT_SOURCE_ALERT  = 0x5
+	PORT_SOURCE_MQ     = 0x6
+	PORT_SOURCE_FILE   = 0x7
+	PORT_ALERT_SET     = 0x1
+	PORT_ALERT_UPDATE  = 0x2
+	PORT_ALERT_INVALID = 0x3
+	FILE_ACCESS        = 0x1
+	FILE_MODIFIED      = 0x2
+	FILE_ATTRIB        = 0x4
+	FILE_TRUNC         = 0x100000
+	FILE_NOFOLLOW      = 0x10000000
+	FILE_DELETE        = 0x10
+	FILE_RENAME_TO     = 0x20
+	FILE_RENAME_FROM   = 0x40
+	UNMOUNTED          = 0x20000000
+	MOUNTEDOVER        = 0x40000000
+	FILE_EXCEPTION     = 0x60000070
 )

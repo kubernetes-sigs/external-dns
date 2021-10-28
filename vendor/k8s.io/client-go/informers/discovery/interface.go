@@ -22,6 +22,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	v1 "k8s.io/client-go/informers/discovery/v1"
 	v1beta1 "k8s.io/client-go/informers/discovery/v1beta1"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
@@ -97,14 +98,19 @@ func (g *group) V1() v1.Interface {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	v1alpha1 "k8s.io/client-go/informers/discovery/v1alpha1"
+||||||| parent of 6b7ce455e (update vendored files)
+	v1alpha1 "k8s.io/client-go/informers/discovery/v1alpha1"
+=======
+	v1 "k8s.io/client-go/informers/discovery/v1"
+>>>>>>> 6b7ce455e (update vendored files)
 	v1beta1 "k8s.io/client-go/informers/discovery/v1beta1"
 	internalinterfaces "k8s.io/client-go/informers/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.
 type Interface interface {
-	// V1alpha1 provides access to shared informers for resources in V1alpha1.
-	V1alpha1() v1alpha1.Interface
+	// V1 provides access to shared informers for resources in V1.
+	V1() v1.Interface
 	// V1beta1 provides access to shared informers for resources in V1beta1.
 	V1beta1() v1beta1.Interface
 }
@@ -120,10 +126,20 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &group{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+<<<<<<< HEAD
 // V1alpha1 returns a new v1alpha1.Interface.
 func (g *group) V1alpha1() v1alpha1.Interface {
 	return v1alpha1.New(g.factory, g.namespace, g.tweakListOptions)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// V1alpha1 returns a new v1alpha1.Interface.
+func (g *group) V1alpha1() v1alpha1.Interface {
+	return v1alpha1.New(g.factory, g.namespace, g.tweakListOptions)
+=======
+// V1 returns a new v1.Interface.
+func (g *group) V1() v1.Interface {
+	return v1.New(g.factory, g.namespace, g.tweakListOptions)
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // V1beta1 returns a new v1beta1.Interface.

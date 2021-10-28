@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDomains invokes the alidns.DescribeDomains API synchronously
-// api document: https://help.aliyun.com/api/alidns/describedomains.html
 func (client *Client) DescribeDomains(request *DescribeDomainsRequest) (response *DescribeDomainsResponse, err error) {
 	response = CreateDescribeDomainsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDomains(request *DescribeDomainsRequest) (response
 }
 
 // DescribeDomainsWithChan invokes the alidns.DescribeDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainsWithChan(request *DescribeDomainsRequest) (<-chan *DescribeDomainsResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDomainsWithChan(request *DescribeDomainsRequest) (
 }
 
 // DescribeDomainsWithCallback invokes the alidns.DescribeDomains API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomains.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainsWithCallback(request *DescribeDomainsRequest, callback func(response *DescribeDomainsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -101,11 +96,11 @@ type DescribeDomainsTag struct {
 // DescribeDomainsResponse is the response struct for api DescribeDomains
 type DescribeDomainsResponse struct {
 	*responses.BaseResponse
-	RequestId  string  `json:"RequestId" xml:"RequestId"`
-	TotalCount int64   `json:"TotalCount" xml:"TotalCount"`
-	PageNumber int64   `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int64   `json:"PageSize" xml:"PageSize"`
-	Domains    Domains `json:"Domains" xml:"Domains"`
+	RequestId  string                   `json:"RequestId" xml:"RequestId"`
+	TotalCount int64                    `json:"TotalCount" xml:"TotalCount"`
+	PageNumber int64                    `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int64                    `json:"PageSize" xml:"PageSize"`
+	Domains    DomainsInDescribeDomains `json:"Domains" xml:"Domains"`
 }
 
 // CreateDescribeDomainsRequest creates a request to invoke DescribeDomains API
@@ -114,6 +109,7 @@ func CreateDescribeDomainsRequest() (request *DescribeDomainsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomains", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

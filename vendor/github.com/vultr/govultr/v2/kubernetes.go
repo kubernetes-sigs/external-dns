@@ -62,6 +62,7 @@ type NodePool struct {
 	Plan         string `json:"plan"`
 	Status       string `json:"status"`
 	NodeQuantity int    `json:"node_quantity"`
+<<<<<<< HEAD
 	Nodes        []Node `json:"nodes"`
 }
 
@@ -101,6 +102,51 @@ type NodePoolReq struct {
 // NodePoolReqUpdate struct used to update a node pool
 type NodePoolReqUpdate struct {
 	NodeQuantity int `json:"node_quantity"`
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	Tag          string `json:"tag"`
+	Nodes        []Node `json:"nodes"`
+}
+
+// Node represents a node that will live within a nodepool
+type Node struct {
+	ID          string `json:"id"`
+	DateCreated string `json:"date_created"`
+	Label       string `json:"label"`
+	Status      string `json:"status"`
+}
+
+// KubeConfig will contain the kubeconfig b64 encoded
+type KubeConfig struct {
+	KubeConfig string `json:"kube_config"`
+}
+
+// ClusterReq struct used to create a cluster
+type ClusterReq struct {
+	Label     string        `json:"label"`
+	Region    string        `json:"region"`
+	Version   string        `json:"version"`
+	NodePools []NodePoolReq `json:"node_pools"`
+}
+
+// ClusterReqUpdate struct used to update update a cluster
+type ClusterReqUpdate struct {
+	Label string `json:"label"`
+}
+
+// NodePoolReq struct used to create a node pool
+type NodePoolReq struct {
+	NodeQuantity int    `json:"node_quantity"`
+	Label        string `json:"label"`
+	Plan         string `json:"plan"`
+	Tag          string `json:"tag"`
+}
+
+// NodePoolReqUpdate struct used to update a node pool
+type NodePoolReqUpdate struct {
+	NodeQuantity int    `json:"node_quantity,omitempty"`
+	Tag          string `json:"tag,omitempty"`
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 type vkeClustersBase struct {

@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -17,6 +18,12 @@
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+||||||| parent of 6b7ce455e (update vendored files)
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || zos
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris zos
+>>>>>>> 6b7ce455e (update vendored files)
 
 package socket
 

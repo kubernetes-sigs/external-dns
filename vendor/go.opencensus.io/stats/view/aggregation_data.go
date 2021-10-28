@@ -34,6 +34,7 @@ type AggregationData interface {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	StartTime() time.Time
 }
 
@@ -644,6 +645,10 @@ func ClearStart(data AggregationData) {
 		data.Start = time.Time{}
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	StartTime() time.Time
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 const epsilon = 1e-9
@@ -653,6 +658,7 @@ const epsilon = 1e-9
 //
 // Most users won't directly access count data.
 type CountData struct {
+	Start time.Time
 	Value int64
 }
 
@@ -663,7 +669,7 @@ func (a *CountData) addSample(_ float64, _ map[string]interface{}, _ time.Time) 
 }
 
 func (a *CountData) clone() AggregationData {
-	return &CountData{Value: a.Value}
+	return &CountData{Value: a.Value, Start: a.Start}
 }
 
 func (a *CountData) equal(other AggregationData) bool {
@@ -672,7 +678,7 @@ func (a *CountData) equal(other AggregationData) bool {
 		return false
 	}
 
-	return a.Value == a2.Value
+	return a.Start.Equal(a2.Start) && a.Value == a2.Value
 }
 
 func (a *CountData) toPoint(metricType metricdata.Type, t time.Time) metricdata.Point {
@@ -684,11 +690,17 @@ func (a *CountData) toPoint(metricType metricdata.Type, t time.Time) metricdata.
 	}
 }
 
+// StartTime returns the start time of the data being aggregated by CountData.
+func (a *CountData) StartTime() time.Time {
+	return a.Start
+}
+
 // SumData is the aggregated data for the Sum aggregation.
 // A sum aggregation processes data and sums up the recordings.
 //
 // Most users won't directly access sum data.
 type SumData struct {
+	Start time.Time
 	Value float64
 }
 
@@ -699,7 +711,7 @@ func (a *SumData) addSample(v float64, _ map[string]interface{}, _ time.Time) {
 }
 
 func (a *SumData) clone() AggregationData {
-	return &SumData{Value: a.Value}
+	return &SumData{Value: a.Value, Start: a.Start}
 }
 
 func (a *SumData) equal(other AggregationData) bool {
@@ -707,7 +719,7 @@ func (a *SumData) equal(other AggregationData) bool {
 	if !ok {
 		return false
 	}
-	return math.Pow(a.Value-a2.Value, 2) < epsilon
+	return a.Start.Equal(a2.Start) && math.Pow(a.Value-a2.Value, 2) < epsilon
 }
 
 func (a *SumData) toPoint(metricType metricdata.Type, t time.Time) metricdata.Point {
@@ -719,6 +731,11 @@ func (a *SumData) toPoint(metricType metricdata.Type, t time.Time) metricdata.Po
 	default:
 		panic("unsupported metricdata.Type")
 	}
+}
+
+// StartTime returns the start time of the data being aggregated by SumData.
+func (a *SumData) StartTime() time.Time {
+	return a.Start
 }
 
 // DistributionData is the aggregated data for the
@@ -739,9 +756,10 @@ type DistributionData struct {
 	// an exemplar for the associated bucket, or nil.
 	ExemplarsPerBucket []*metricdata.Exemplar
 	bounds             []float64 // histogram distribution of the values
+	Start              time.Time
 }
 
-func newDistributionData(agg *Aggregation) *DistributionData {
+func newDistributionData(agg *Aggregation, t time.Time) *DistributionData {
 	bucketCount := len(agg.Buckets) + 1
 	return &DistributionData{
 		CountPerBucket:     make([]int64, bucketCount),
@@ -749,6 +767,7 @@ func newDistributionData(agg *Aggregation) *DistributionData {
 		bounds:             agg.Buckets,
 		Min:                math.MaxFloat64,
 		Max:                math.SmallestNonzeroFloat64,
+		Start:              t,
 	}
 }
 
@@ -839,7 +858,11 @@ func (a *DistributionData) equal(other AggregationData) bool {
 			return false
 		}
 	}
-	return a.Count == a2.Count && a.Min == a2.Min && a.Max == a2.Max && math.Pow(a.Mean-a2.Mean, 2) < epsilon && math.Pow(a.variance()-a2.variance(), 2) < epsilon
+	return a.Start.Equal(a2.Start) &&
+		a.Count == a2.Count &&
+		a.Min == a2.Min &&
+		a.Max == a2.Max &&
+		math.Pow(a.Mean-a2.Mean, 2) < epsilon && math.Pow(a.variance()-a2.variance(), 2) < epsilon
 }
 
 func (a *DistributionData) toPoint(metricType metricdata.Type, t time.Time) metricdata.Point {
@@ -867,6 +890,11 @@ func (a *DistributionData) toPoint(metricType metricdata.Type, t time.Time) metr
 		// TODO: [rghetia] when we have a use case for TypeGaugeDistribution.
 		panic("unsupported metricdata.Type")
 	}
+}
+
+// StartTime returns the start time of the data being aggregated by DistributionData.
+func (a *DistributionData) StartTime() time.Time {
+	return a.Start
 }
 
 // LastValueData returns the last value recorded for LastValue aggregation.
@@ -903,5 +931,24 @@ func (l *LastValueData) toPoint(metricType metricdata.Type, t time.Time) metricd
 	default:
 		panic("unsupported metricdata.Type")
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	}
+}
+
+// StartTime returns an empty time value as start time is not recorded when using last value
+// aggregation.
+func (l *LastValueData) StartTime() time.Time {
+	return time.Time{}
+}
+
+// ClearStart clears the Start field from data if present. Useful for testing in cases where the
+// start time will be nondeterministic.
+func ClearStart(data AggregationData) {
+	switch data := data.(type) {
+	case *CountData:
+		data.Start = time.Time{}
+	case *SumData:
+		data.Start = time.Time{}
+	case *DistributionData:
+		data.Start = time.Time{}
 	}
 }

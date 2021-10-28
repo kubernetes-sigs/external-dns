@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDnsProductInstance invokes the alidns.DescribeDnsProductInstance API synchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
 func (client *Client) DescribeDnsProductInstance(request *DescribeDnsProductInstanceRequest) (response *DescribeDnsProductInstanceResponse, err error) {
 	response = CreateDescribeDnsProductInstanceResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDnsProductInstance(request *DescribeDnsProductInst
 }
 
 // DescribeDnsProductInstanceWithChan invokes the alidns.DescribeDnsProductInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstanceWithChan(request *DescribeDnsProductInstanceRequest) (<-chan *DescribeDnsProductInstanceResponse, <-chan error) {
 	responseChan := make(chan *DescribeDnsProductInstanceResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDnsProductInstanceWithChan(request *DescribeDnsPro
 }
 
 // DescribeDnsProductInstanceWithCallback invokes the alidns.DescribeDnsProductInstance API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describednsproductinstance.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDnsProductInstanceWithCallback(request *DescribeDnsProductInstanceRequest, callback func(response *DescribeDnsProductInstanceResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -116,6 +111,8 @@ type DescribeDnsProductInstanceResponse struct {
 	BindDomainCount       int64                                  `json:"BindDomainCount" xml:"BindDomainCount"`
 	BindDomainUsedCount   int64                                  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
 	DnsSecurity           string                                 `json:"DnsSecurity" xml:"DnsSecurity"`
+	PaymentType           string                                 `json:"PaymentType" xml:"PaymentType"`
+	DomainType            string                                 `json:"DomainType" xml:"DomainType"`
 	DnsServers            DnsServersInDescribeDnsProductInstance `json:"DnsServers" xml:"DnsServers"`
 }
 
@@ -125,6 +122,7 @@ func CreateDescribeDnsProductInstanceRequest() (request *DescribeDnsProductInsta
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDnsProductInstance", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

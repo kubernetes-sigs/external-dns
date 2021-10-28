@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -393,6 +394,11 @@ func (c *FakePods) UpdateEphemeralContainers(ctx context.Context, podName string
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -400,6 +406,7 @@ func (c *FakePods) UpdateEphemeralContainers(ctx context.Context, podName string
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -490,7 +497,7 @@ func (c *FakePods) UpdateStatus(ctx context.Context, pod *corev1.Pod, opts v1.Up
 // Delete takes name of the pod and deletes it. Returns an error if one occurs.
 func (c *FakePods) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(podsResource, c.ns, name), &corev1.Pod{})
+		Invokes(testing.NewDeleteActionWithOptions(podsResource, c.ns, name, opts), &corev1.Pod{})
 
 	return err
 }
@@ -514,25 +521,65 @@ func (c *FakePods) Patch(ctx context.Context, name string, pt types.PatchType, d
 	return obj.(*corev1.Pod), err
 }
 
-// GetEphemeralContainers takes name of the pod, and returns the corresponding ephemeralContainers object, and an error if there is any.
-func (c *FakePods) GetEphemeralContainers(ctx context.Context, podName string, options v1.GetOptions) (result *corev1.EphemeralContainers, err error) {
+// Apply takes the given apply declarative configuration, applies it and returns the applied pod.
+func (c *FakePods) Apply(ctx context.Context, pod *applyconfigurationscorev1.PodApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Pod, err error) {
+	if pod == nil {
+		return nil, fmt.Errorf("pod provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(pod)
+	if err != nil {
+		return nil, err
+	}
+	name := pod.Name
+	if name == nil {
+		return nil, fmt.Errorf("pod.Name must be provided to Apply")
+	}
 	obj, err := c.Fake.
-		Invokes(testing.NewGetSubresourceAction(podsResource, c.ns, "ephemeralcontainers", podName), &corev1.EphemeralContainers{})
+		Invokes(testing.NewPatchSubresourceAction(podsResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Pod{})
 
 	if obj == nil {
 		return nil, err
 	}
-	return obj.(*corev1.EphemeralContainers), err
+	return obj.(*corev1.Pod), err
 }
 
-// UpdateEphemeralContainers takes the representation of a ephemeralContainers and updates it. Returns the server's representation of the ephemeralContainers, and an error, if there is any.
-func (c *FakePods) UpdateEphemeralContainers(ctx context.Context, podName string, ephemeralContainers *corev1.EphemeralContainers, opts v1.UpdateOptions) (result *corev1.EphemeralContainers, err error) {
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakePods) ApplyStatus(ctx context.Context, pod *applyconfigurationscorev1.PodApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Pod, err error) {
+	if pod == nil {
+		return nil, fmt.Errorf("pod provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(pod)
+	if err != nil {
+		return nil, err
+	}
+	name := pod.Name
+	if name == nil {
+		return nil, fmt.Errorf("pod.Name must be provided to Apply")
+	}
 	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(podsResource, "ephemeralcontainers", c.ns, ephemeralContainers), &corev1.EphemeralContainers{})
+		Invokes(testing.NewPatchSubresourceAction(podsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.Pod{})
 
 	if obj == nil {
 		return nil, err
 	}
+<<<<<<< HEAD
 	return obj.(*corev1.EphemeralContainers), err
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return obj.(*corev1.EphemeralContainers), err
+=======
+	return obj.(*corev1.Pod), err
+}
+
+// UpdateEphemeralContainers takes the representation of a pod and updates it. Returns the server's representation of the pod, and an error, if there is any.
+func (c *FakePods) UpdateEphemeralContainers(ctx context.Context, podName string, pod *corev1.Pod, opts v1.UpdateOptions) (result *corev1.Pod, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(podsResource, "ephemeralcontainers", c.ns, pod), &corev1.Pod{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Pod), err
+>>>>>>> 6b7ce455e (update vendored files)
 }

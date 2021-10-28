@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateRecordRemark invokes the pvtz.UpdateRecordRemark API synchronously
-// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
 func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (response *UpdateRecordRemarkResponse, err error) {
 	response = CreateUpdateRecordRemarkResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateRecordRemark(request *UpdateRecordRemarkRequest) (re
 }
 
 // UpdateRecordRemarkWithChan invokes the pvtz.UpdateRecordRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateRecordRemarkWithChan(request *UpdateRecordRemarkRequest) (<-chan *UpdateRecordRemarkResponse, <-chan error) {
 	responseChan := make(chan *UpdateRecordRemarkResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateRecordRemarkWithChan(request *UpdateRecordRemarkRequ
 }
 
 // UpdateRecordRemarkWithCallback invokes the pvtz.UpdateRecordRemark API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/updaterecordremark.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateRecordRemarkWithCallback(request *UpdateRecordRemarkRequest, callback func(response *UpdateRecordRemarkResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -95,6 +90,7 @@ func CreateUpdateRecordRemarkRequest() (request *UpdateRecordRemarkRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "UpdateRecordRemark", "pvtz", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

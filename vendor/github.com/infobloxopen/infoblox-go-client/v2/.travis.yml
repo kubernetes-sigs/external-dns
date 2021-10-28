@@ -1,0 +1,11 @@
+language: go
+
+go:
+  - 1.15
+
+env:
+  - GO111MODULE=auto
+
+install: true
+
+script: go test -v ./...

@@ -42,6 +42,7 @@ func NewFS(mountPoint string) (FS, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return "", fmt.Errorf("could not read %q: %w", mountPoint, err)
 	}
 	if !info.IsDir() {
@@ -67,10 +68,21 @@ func NewFS(mountPoint string) (FS, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return "", fmt.Errorf("could not read %s: %s", mountPoint, err)
+||||||| parent of 6b7ce455e (update vendored files)
+		return "", fmt.Errorf("could not read %s: %s", mountPoint, err)
+=======
+		return "", fmt.Errorf("could not read %q: %w", mountPoint, err)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	if !info.IsDir() {
+<<<<<<< HEAD
 		return "", fmt.Errorf("mount point %s is not a directory", mountPoint)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		return "", fmt.Errorf("mount point %s is not a directory", mountPoint)
+=======
+		return "", fmt.Errorf("mount point %q is not a directory", mountPoint)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	return FS(mountPoint), nil

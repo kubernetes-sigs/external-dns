@@ -22,6 +22,11 @@ import (
 const apiURL = "https://api.cloudflare.com/client/v4"
 
 const (
+	originCARootCertEccURL = "https://developers.cloudflare.com/ssl/0d2cd0f374da0fb6dbf53128b60bbbf7/origin_ca_ecc_root.pem"
+	originCARootCertRsaURL = "https://developers.cloudflare.com/ssl/e2b9968022bf23b071d95229b5678452/origin_ca_rsa_root.pem"
+)
+
+const (
 	// AuthKeyEmail specifies that we should authenticate with API key and email address
 	AuthKeyEmail = 1 << iota
 	// AuthUserService specifies that we should authenticate with a User-Service key
@@ -137,6 +142,7 @@ func (api *API) SetAuthType(authType int) {
 
 // ZoneIDByName retrieves a zone's ID from the name.
 func (api *API) ZoneIDByName(zoneName string) (string, error) {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -811,41 +817,42 @@ func errorFromResponse(statusCode int, respBody []byte) error {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	res, err := api.ListZonesContext(context.TODO(), WithZoneFilter(zoneName))
+||||||| parent of 6b7ce455e (update vendored files)
+	res, err := api.ListZonesContext(context.TODO(), WithZoneFilter(zoneName))
+=======
+	zoneName = normalizeZoneName(zoneName)
+	res, err := api.ListZonesContext(context.Background(), WithZoneFilters(zoneName, api.AccountID, ""))
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return "", errors.Wrap(err, "ListZonesContext command failed")
 	}
 
-	if len(res.Result) > 1 && api.AccountID == "" {
-		return "", errors.New("ambiguous zone name used without an account ID")
+	switch len(res.Result) {
+	case 0:
+		return "", errors.New("zone could not be found")
+	case 1:
+		return res.Result[0].ID, nil
+	default:
+		return "", errors.New("ambiguous zone name; an account ID might help")
 	}
-
-	for _, zone := range res.Result {
-		if api.AccountID != "" {
-			if zone.Name == zoneName && api.AccountID == zone.Account.ID {
-				return zone.ID, nil
-			}
-		} else {
-			if zone.Name == zoneName {
-				return zone.ID, nil
-			}
-		}
-	}
-
-	return "", errors.New("Zone could not be found")
 }
 
 // makeRequest makes a HTTP request and returns the body as a byte slice,
 // closing it before returning. params will be serialized to JSON.
 func (api *API) makeRequest(method, uri string, params interface{}) ([]byte, error) {
-	return api.makeRequestWithAuthType(context.TODO(), method, uri, params, api.authType)
+	return api.makeRequestWithAuthType(context.Background(), method, uri, params, api.authType)
 }
 
 func (api *API) makeRequestContext(ctx context.Context, method, uri string, params interface{}) ([]byte, error) {
 	return api.makeRequestWithAuthType(ctx, method, uri, params, api.authType)
 }
 
+func (api *API) makeRequestContextWithHeaders(ctx context.Context, method, uri string, params interface{}, headers http.Header) ([]byte, error) {
+	return api.makeRequestWithAuthTypeAndHeaders(ctx, method, uri, params, api.authType, headers)
+}
+
 func (api *API) makeRequestWithHeaders(method, uri string, params interface{}, headers http.Header) ([]byte, error) {
-	return api.makeRequestWithAuthTypeAndHeaders(context.TODO(), method, uri, params, api.authType, headers)
+	return api.makeRequestWithAuthTypeAndHeaders(context.Background(), method, uri, params, api.authType, headers)
 }
 
 func (api *API) makeRequestWithAuthType(ctx context.Context, method, uri string, params interface{}, authType int) ([]byte, error) {
@@ -889,10 +896,15 @@ func (api *API) makeRequestWithAuthTypeAndHeaders(ctx context.Context, method, u
 			}
 			// useful to do some simple logging here, maybe introduce levels later
 			api.logger.Printf("Sleeping %s before retry attempt number %d for request %s %s", sleepDuration.String(), i, method, uri)
-			time.Sleep(sleepDuration)
+
+			select {
+			case <-time.After(sleepDuration):
+			case <-ctx.Done():
+				return nil, errors.Wrap(ctx.Err(), "operation aborted during backoff")
+			}
 
 		}
-		err = api.rateLimiter.Wait(context.TODO())
+		err = api.rateLimiter.Wait(context.Background())
 		if err != nil {
 			return nil, errors.Wrap(err, "Error caused by request rate limiting")
 		}
@@ -928,30 +940,25 @@ func (api *API) makeRequestWithAuthTypeAndHeaders(ctx context.Context, method, u
 		return nil, respErr
 	}
 
-	switch {
-	case resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices:
-	case resp.StatusCode == http.StatusUnauthorized:
-		return nil, errors.Errorf("HTTP status %d: invalid credentials", resp.StatusCode)
-	case resp.StatusCode == http.StatusForbidden:
-		return nil, errors.Errorf("HTTP status %d: insufficient permissions", resp.StatusCode)
-	case resp.StatusCode == http.StatusServiceUnavailable,
-		resp.StatusCode == http.StatusBadGateway,
-		resp.StatusCode == http.StatusGatewayTimeout,
-		resp.StatusCode == 522,
-		resp.StatusCode == 523,
-		resp.StatusCode == 524:
-		return nil, errors.Errorf("HTTP status %d: service failure", resp.StatusCode)
-	// This isn't a great solution due to the way the `default` case is
-	// a catch all and that the `filters/validate-expr` returns a HTTP 400
-	// yet the clients need to use the HTTP body as a JSON string.
-	case resp.StatusCode == 400 && strings.HasSuffix(resp.Request.URL.Path, "/filters/validate-expr"):
-		return nil, errors.Errorf("%s", respBody)
-	default:
-		var s string
-		if respBody != nil {
-			s = string(respBody)
+	if resp.StatusCode >= http.StatusBadRequest {
+		if strings.HasSuffix(resp.Request.URL.Path, "/filters/validate-expr") {
+			return nil, errors.Errorf("%s", respBody)
 		}
-		return nil, errors.Errorf("HTTP status %d: content %q", resp.StatusCode, s)
+
+		if resp.StatusCode > http.StatusInternalServerError {
+			return nil, errors.Errorf("HTTP status %d: service failure", resp.StatusCode)
+		}
+
+		errBody := &Response{}
+		err = json.Unmarshal(respBody, &errBody)
+		if err != nil {
+			return nil, errors.Wrap(err, errUnmarshalErrorBody)
+		}
+
+		return nil, &APIRequestError{
+			StatusCode: resp.StatusCode,
+			Errors:     errBody.Errors,
+		}
 	}
 
 	return respBody, nil
@@ -961,11 +968,10 @@ func (api *API) makeRequestWithAuthTypeAndHeaders(ctx context.Context, method, u
 // *http.Response, or an error if one occurred. The caller is responsible for
 // closing the response body.
 func (api *API) request(ctx context.Context, method, uri string, reqBody io.Reader, authType int, headers http.Header) (*http.Response, error) {
-	req, err := http.NewRequest(method, api.BaseURL+uri, reqBody)
+	req, err := http.NewRequestWithContext(ctx, method, api.BaseURL+uri, reqBody)
 	if err != nil {
 		return nil, errors.Wrap(err, "HTTP request creation failed")
 	}
-	req.WithContext(ctx)
 
 	combinedHeaders := make(http.Header)
 	copyHeader(combinedHeaders, api.headers)
@@ -1035,13 +1041,21 @@ type Response struct {
 	Messages []ResponseInfo `json:"messages"`
 }
 
+// ResultInfoCursors contains information about cursors.
+type ResultInfoCursors struct {
+	Before string `json:"before"`
+	After  string `json:"after"`
+}
+
 // ResultInfo contains metadata about the Response.
 type ResultInfo struct {
-	Page       int `json:"page"`
-	PerPage    int `json:"per_page"`
-	TotalPages int `json:"total_pages"`
-	Count      int `json:"count"`
-	Total      int `json:"total_count"`
+	Page       int               `json:"page"`
+	PerPage    int               `json:"per_page"`
+	TotalPages int               `json:"total_pages"`
+	Count      int               `json:"count"`
+	Total      int               `json:"total_count"`
+	Cursor     string            `json:"cursor"`
+	Cursors    ResultInfoCursors `json:"cursors"`
 }
 
 // RawResponse keeps the result as JSON form
@@ -1055,7 +1069,7 @@ type RawResponse struct {
 func (api *API) Raw(method, endpoint string, data interface{}) (json.RawMessage, error) {
 	res, err := api.makeRequest(method, endpoint, data)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	var r RawResponse
@@ -1092,18 +1106,82 @@ type reqOption struct {
 	params url.Values
 }
 
-// WithZoneFilter applies a filter based on zone name.
-func WithZoneFilter(zone string) ReqOption {
+// WithZoneFilters applies a filter based on zone properties.
+func WithZoneFilters(zoneName, accountID, status string) ReqOption {
 	return func(opt *reqOption) {
-		opt.params.Set("name", zone)
+		if zoneName != "" {
+			opt.params.Set("name", normalizeZoneName(zoneName))
+		}
+
+		if accountID != "" {
+			opt.params.Set("account.id", accountID)
+		}
+
+		if status != "" {
+			opt.params.Set("status", status)
+		}
 	}
 }
 
 // WithPagination configures the pagination for a response.
 func WithPagination(opts PaginationOptions) ReqOption {
 	return func(opt *reqOption) {
-		opt.params.Set("page", strconv.Itoa(opts.Page))
-		opt.params.Set("per_page", strconv.Itoa(opts.PerPage))
+		if opts.Page > 0 {
+			opt.params.Set("page", strconv.Itoa(opts.Page))
+		}
+
+		if opts.PerPage > 0 {
+			opt.params.Set("per_page", strconv.Itoa(opts.PerPage))
+		}
+	}
+}
+
+// checkResultInfo checks whether ResultInfo is reasonable except that it currently
+// ignores the cursor information. perPage, page, and count are the requested #items
+// per page, the requested page number, and the actual length of the Result array.
+//
+// Responses from the actual Cloudflare servers should pass all these checks (or we
+// discover a serious bug in the Cloudflare servers). However, the unit tests can
+// easily violate these constraints and this utility function can help debugging.
+// Correct pagination information is crucial for more advanced List* functions that
+// handle pagination automatically and fetch different pages in parallel.
+//
+// TODO: check cursors as well.
+func checkResultInfo(perPage, page, count int, info *ResultInfo) bool {
+	if info.Cursor != "" || info.Cursors.Before != "" || info.Cursors.After != "" {
+		panic("checkResultInfo could not handle cursors yet.")
+	}
+
+	switch {
+	case info.PerPage != perPage || info.Page != page || info.Count != count:
+		return false
+
+	case info.PerPage <= 0:
+		return false
+
+	case info.Total == 0 && info.TotalPages == 0 && info.Page == 1 && info.Count == 0:
+		return true
+
+	case info.Total <= 0 || info.TotalPages <= 0:
+		return false
+
+	case info.Total > info.PerPage*info.TotalPages || info.Total <= info.PerPage*(info.TotalPages-1):
+		return false
+	}
+
+	switch {
+	case info.Page > info.TotalPages || info.Page <= 0:
+		return false
+
+	case info.Page < info.TotalPages:
+		return info.Count == info.PerPage
+
+	case info.Page == info.TotalPages:
+		return info.Count == info.Total-info.PerPage*(info.TotalPages-1)
+
+	default:
+		// This is actually impossible, but Go compiler does not know trichotomy
+		panic("checkResultInfo: impossible")
 	}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 }

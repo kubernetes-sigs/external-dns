@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeStatisticSummary invokes the pvtz.DescribeStatisticSummary API synchronously
-// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
 func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummaryRequest) (response *DescribeStatisticSummaryResponse, err error) {
 	response = CreateDescribeStatisticSummaryResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeStatisticSummary(request *DescribeStatisticSummary
 }
 
 // DescribeStatisticSummaryWithChan invokes the pvtz.DescribeStatisticSummary API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeStatisticSummaryWithChan(request *DescribeStatisticSummaryRequest) (<-chan *DescribeStatisticSummaryResponse, <-chan error) {
 	responseChan := make(chan *DescribeStatisticSummaryResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeStatisticSummaryWithChan(request *DescribeStatisti
 }
 
 // DescribeStatisticSummaryWithCallback invokes the pvtz.DescribeStatisticSummary API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describestatisticsummary.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeStatisticSummaryWithCallback(request *DescribeStatisticSummaryRequest, callback func(response *DescribeStatisticSummaryResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -95,6 +90,7 @@ func CreateDescribeStatisticSummaryRequest() (request *DescribeStatisticSummaryR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeStatisticSummary", "pvtz", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

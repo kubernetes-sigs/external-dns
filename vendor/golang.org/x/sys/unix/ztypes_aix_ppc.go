@@ -4,9 +4,13 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 //go:build ppc && aix
 // +build ppc,aix
 
@@ -227,6 +231,7 @@ const (
 	SizeofSockaddrDatalink = 0x80
 	SizeofLinger           = 0x8
 	SizeofIovec            = 0x8
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -673,6 +678,9 @@ const (
 	SizeofSockaddrDatalink = 0x80
 	SizeofLinger           = 0x8
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	SizeofIPMreq           = 0x8
 	SizeofIPv6Mreq         = 0x14
 	SizeofIPv6MTUInfo      = 0x20

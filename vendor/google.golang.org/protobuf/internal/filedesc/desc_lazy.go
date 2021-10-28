@@ -13,6 +13,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/strs"
 	"google.golang.org/protobuf/proto"
@@ -1324,6 +1325,11 @@ func (md *Method) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref.De
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"google.golang.org/protobuf/internal/fieldnum"
+||||||| parent of 6b7ce455e (update vendored files)
+	"google.golang.org/protobuf/internal/fieldnum"
+=======
+	"google.golang.org/protobuf/internal/genid"
+>>>>>>> 6b7ce455e (update vendored files)
 	"google.golang.org/protobuf/internal/strs"
 	"google.golang.org/protobuf/proto"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
@@ -1456,35 +1462,35 @@ func (fd *File) unmarshalFull(b []byte) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FileDescriptorProto_PublicDependency:
+			case genid.FileDescriptorProto_PublicDependency_field_number:
 				fd.L2.Imports[v].IsPublic = true
-			case fieldnum.FileDescriptorProto_WeakDependency:
+			case genid.FileDescriptorProto_WeakDependency_field_number:
 				fd.L2.Imports[v].IsWeak = true
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FileDescriptorProto_Dependency:
+			case genid.FileDescriptorProto_Dependency_field_number:
 				path := sb.MakeString(v)
 				imp, _ := fd.builder.FileRegistry.FindFileByPath(path)
 				if imp == nil {
 					imp = PlaceholderFile(path)
 				}
 				fd.L2.Imports = append(fd.L2.Imports, pref.FileImport{FileDescriptor: imp})
-			case fieldnum.FileDescriptorProto_EnumType:
+			case genid.FileDescriptorProto_EnumType_field_number:
 				fd.L1.Enums.List[enumIdx].unmarshalFull(v, sb)
 				enumIdx++
-			case fieldnum.FileDescriptorProto_MessageType:
+			case genid.FileDescriptorProto_MessageType_field_number:
 				fd.L1.Messages.List[messageIdx].unmarshalFull(v, sb)
 				messageIdx++
-			case fieldnum.FileDescriptorProto_Extension:
+			case genid.FileDescriptorProto_Extension_field_number:
 				fd.L1.Extensions.List[extensionIdx].unmarshalFull(v, sb)
 				extensionIdx++
-			case fieldnum.FileDescriptorProto_Service:
+			case genid.FileDescriptorProto_Service_field_number:
 				fd.L1.Services.List[serviceIdx].unmarshalFull(v, sb)
 				serviceIdx++
-			case fieldnum.FileDescriptorProto_Options:
+			case genid.FileDescriptorProto_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1509,13 +1515,13 @@ func (ed *Enum) unmarshalFull(b []byte, sb *strs.Builder) {
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.EnumDescriptorProto_Value:
+			case genid.EnumDescriptorProto_Value_field_number:
 				rawValues = append(rawValues, v)
-			case fieldnum.EnumDescriptorProto_ReservedName:
+			case genid.EnumDescriptorProto_ReservedName_field_number:
 				ed.L2.ReservedNames.List = append(ed.L2.ReservedNames.List, pref.Name(sb.MakeString(v)))
-			case fieldnum.EnumDescriptorProto_ReservedRange:
+			case genid.EnumDescriptorProto_ReservedRange_field_number:
 				ed.L2.ReservedRanges.List = append(ed.L2.ReservedRanges.List, unmarshalEnumReservedRange(v))
-			case fieldnum.EnumDescriptorProto_Options:
+			case genid.EnumDescriptorProto_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1541,9 +1547,9 @@ func unmarshalEnumReservedRange(b []byte) (r [2]pref.EnumNumber) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.EnumDescriptorProto_EnumReservedRange_Start:
+			case genid.EnumDescriptorProto_EnumReservedRange_Start_field_number:
 				r[0] = pref.EnumNumber(v)
-			case fieldnum.EnumDescriptorProto_EnumReservedRange_End:
+			case genid.EnumDescriptorProto_EnumReservedRange_End_field_number:
 				r[1] = pref.EnumNumber(v)
 			}
 		default:
@@ -1568,17 +1574,17 @@ func (vd *EnumValue) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.EnumValueDescriptorProto_Number:
+			case genid.EnumValueDescriptorProto_Number_field_number:
 				vd.L1.Number = pref.EnumNumber(v)
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.EnumValueDescriptorProto_Name:
+			case genid.EnumValueDescriptorProto_Name_field_number:
 				// NOTE: Enum values are in the same scope as the enum parent.
 				vd.L0.FullName = appendFullName(sb, pd.Parent().FullName(), v)
-			case fieldnum.EnumValueDescriptorProto_Options:
+			case genid.EnumValueDescriptorProto_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1602,29 +1608,29 @@ func (md *Message) unmarshalFull(b []byte, sb *strs.Builder) {
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.DescriptorProto_Field:
+			case genid.DescriptorProto_Field_field_number:
 				rawFields = append(rawFields, v)
-			case fieldnum.DescriptorProto_OneofDecl:
+			case genid.DescriptorProto_OneofDecl_field_number:
 				rawOneofs = append(rawOneofs, v)
-			case fieldnum.DescriptorProto_ReservedName:
+			case genid.DescriptorProto_ReservedName_field_number:
 				md.L2.ReservedNames.List = append(md.L2.ReservedNames.List, pref.Name(sb.MakeString(v)))
-			case fieldnum.DescriptorProto_ReservedRange:
+			case genid.DescriptorProto_ReservedRange_field_number:
 				md.L2.ReservedRanges.List = append(md.L2.ReservedRanges.List, unmarshalMessageReservedRange(v))
-			case fieldnum.DescriptorProto_ExtensionRange:
+			case genid.DescriptorProto_ExtensionRange_field_number:
 				r, rawOptions := unmarshalMessageExtensionRange(v)
 				opts := md.L0.ParentFile.builder.optionsUnmarshaler(&descopts.ExtensionRange, rawOptions)
 				md.L2.ExtensionRanges.List = append(md.L2.ExtensionRanges.List, r)
 				md.L2.ExtensionRangeOptions = append(md.L2.ExtensionRangeOptions, opts)
-			case fieldnum.DescriptorProto_EnumType:
+			case genid.DescriptorProto_EnumType_field_number:
 				md.L1.Enums.List[enumIdx].unmarshalFull(v, sb)
 				enumIdx++
-			case fieldnum.DescriptorProto_NestedType:
+			case genid.DescriptorProto_NestedType_field_number:
 				md.L1.Messages.List[messageIdx].unmarshalFull(v, sb)
 				messageIdx++
-			case fieldnum.DescriptorProto_Extension:
+			case genid.DescriptorProto_Extension_field_number:
 				md.L1.Extensions.List[extensionIdx].unmarshalFull(v, sb)
 				extensionIdx++
-			case fieldnum.DescriptorProto_Options:
+			case genid.DescriptorProto_Options_field_number:
 				md.unmarshalOptions(v)
 				rawOptions = appendOptions(rawOptions, v)
 			}
@@ -1660,9 +1666,9 @@ func (md *Message) unmarshalOptions(b []byte) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.MessageOptions_MapEntry:
+			case genid.MessageOptions_MapEntry_field_number:
 				md.L1.IsMapEntry = protowire.DecodeBool(v)
-			case fieldnum.MessageOptions_MessageSetWireFormat:
+			case genid.MessageOptions_MessageSetWireFormat_field_number:
 				md.L1.IsMessageSet = protowire.DecodeBool(v)
 			}
 		default:
@@ -1681,9 +1687,9 @@ func unmarshalMessageReservedRange(b []byte) (r [2]pref.FieldNumber) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.DescriptorProto_ReservedRange_Start:
+			case genid.DescriptorProto_ReservedRange_Start_field_number:
 				r[0] = pref.FieldNumber(v)
-			case fieldnum.DescriptorProto_ReservedRange_End:
+			case genid.DescriptorProto_ReservedRange_End_field_number:
 				r[1] = pref.FieldNumber(v)
 			}
 		default:
@@ -1703,16 +1709,16 @@ func unmarshalMessageExtensionRange(b []byte) (r [2]pref.FieldNumber, rawOptions
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.DescriptorProto_ExtensionRange_Start:
+			case genid.DescriptorProto_ExtensionRange_Start_field_number:
 				r[0] = pref.FieldNumber(v)
-			case fieldnum.DescriptorProto_ExtensionRange_End:
+			case genid.DescriptorProto_ExtensionRange_End_field_number:
 				r[1] = pref.FieldNumber(v)
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.DescriptorProto_ExtensionRange_Options:
+			case genid.DescriptorProto_ExtensionRange_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1738,13 +1744,13 @@ func (fd *Field) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref.Des
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldDescriptorProto_Number:
+			case genid.FieldDescriptorProto_Number_field_number:
 				fd.L1.Number = pref.FieldNumber(v)
-			case fieldnum.FieldDescriptorProto_Label:
+			case genid.FieldDescriptorProto_Label_field_number:
 				fd.L1.Cardinality = pref.Cardinality(v)
-			case fieldnum.FieldDescriptorProto_Type:
+			case genid.FieldDescriptorProto_Type_field_number:
 				fd.L1.Kind = pref.Kind(v)
-			case fieldnum.FieldDescriptorProto_OneofIndex:
+			case genid.FieldDescriptorProto_OneofIndex_field_number:
 				// In Message.unmarshalFull, we allocate slices for both
 				// the field and oneof descriptors before unmarshaling either
 				// of them. This ensures pointers to slice elements are stable.
@@ -1754,22 +1760,22 @@ func (fd *Field) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref.Des
 					panic("oneof type already set")
 				}
 				fd.L1.ContainingOneof = od
-			case fieldnum.FieldDescriptorProto_Proto3Optional:
+			case genid.FieldDescriptorProto_Proto3Optional_field_number:
 				fd.L1.IsProto3Optional = protowire.DecodeBool(v)
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldDescriptorProto_Name:
+			case genid.FieldDescriptorProto_Name_field_number:
 				fd.L0.FullName = appendFullName(sb, pd.FullName(), v)
-			case fieldnum.FieldDescriptorProto_JsonName:
-				fd.L1.JSONName.Init(sb.MakeString(v))
-			case fieldnum.FieldDescriptorProto_DefaultValue:
+			case genid.FieldDescriptorProto_JsonName_field_number:
+				fd.L1.StringName.InitJSON(sb.MakeString(v))
+			case genid.FieldDescriptorProto_DefaultValue_field_number:
 				fd.L1.Default.val = pref.ValueOfBytes(v) // temporarily store as bytes; later resolved in resolveMessages
-			case fieldnum.FieldDescriptorProto_TypeName:
+			case genid.FieldDescriptorProto_TypeName_field_number:
 				rawTypeName = v
-			case fieldnum.FieldDescriptorProto_Options:
+			case genid.FieldDescriptorProto_Options_field_number:
 				fd.unmarshalOptions(v)
 				rawOptions = appendOptions(rawOptions, v)
 			}
@@ -1801,10 +1807,10 @@ func (fd *Field) unmarshalOptions(b []byte) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldOptions_Packed:
+			case genid.FieldOptions_Packed_field_number:
 				fd.L1.HasPacked = true
 				fd.L1.IsPacked = protowire.DecodeBool(v)
-			case fieldnum.FieldOptions_Weak:
+			case genid.FieldOptions_Weak_field_number:
 				fd.L1.IsWeak = protowire.DecodeBool(v)
 			case FieldOptions_EnforceUTF8:
 				fd.L1.HasEnforceUTF8 = true
@@ -1831,9 +1837,9 @@ func (od *Oneof) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref.Des
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.OneofDescriptorProto_Name:
+			case genid.OneofDescriptorProto_Name_field_number:
 				od.L0.FullName = appendFullName(sb, pd.FullName(), v)
-			case fieldnum.OneofDescriptorProto_Options:
+			case genid.OneofDescriptorProto_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1856,20 +1862,20 @@ func (xd *Extension) unmarshalFull(b []byte, sb *strs.Builder) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldDescriptorProto_Proto3Optional:
+			case genid.FieldDescriptorProto_Proto3Optional_field_number:
 				xd.L2.IsProto3Optional = protowire.DecodeBool(v)
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldDescriptorProto_JsonName:
-				xd.L2.JSONName.Init(sb.MakeString(v))
-			case fieldnum.FieldDescriptorProto_DefaultValue:
+			case genid.FieldDescriptorProto_JsonName_field_number:
+				xd.L2.StringName.InitJSON(sb.MakeString(v))
+			case genid.FieldDescriptorProto_DefaultValue_field_number:
 				xd.L2.Default.val = pref.ValueOfBytes(v) // temporarily store as bytes; later resolved in resolveExtensions
-			case fieldnum.FieldDescriptorProto_TypeName:
+			case genid.FieldDescriptorProto_TypeName_field_number:
 				rawTypeName = v
-			case fieldnum.FieldDescriptorProto_Options:
+			case genid.FieldDescriptorProto_Options_field_number:
 				xd.unmarshalOptions(v)
 				rawOptions = appendOptions(rawOptions, v)
 			}
@@ -1899,7 +1905,7 @@ func (xd *Extension) unmarshalOptions(b []byte) {
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.FieldOptions_Packed:
+			case genid.FieldOptions_Packed_field_number:
 				xd.L2.IsPacked = protowire.DecodeBool(v)
 			}
 		default:
@@ -1921,9 +1927,9 @@ func (sd *Service) unmarshalFull(b []byte, sb *strs.Builder) {
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.ServiceDescriptorProto_Method:
+			case genid.ServiceDescriptorProto_Method_field_number:
 				rawMethods = append(rawMethods, v)
-			case fieldnum.ServiceDescriptorProto_Options:
+			case genid.ServiceDescriptorProto_Options_field_number:
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:
@@ -1954,23 +1960,29 @@ func (md *Method) unmarshalFull(b []byte, sb *strs.Builder, pf *File, pd pref.De
 			v, m := protowire.ConsumeVarint(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.MethodDescriptorProto_ClientStreaming:
+			case genid.MethodDescriptorProto_ClientStreaming_field_number:
 				md.L1.IsStreamingClient = protowire.DecodeBool(v)
-			case fieldnum.MethodDescriptorProto_ServerStreaming:
+			case genid.MethodDescriptorProto_ServerStreaming_field_number:
 				md.L1.IsStreamingServer = protowire.DecodeBool(v)
 			}
 		case protowire.BytesType:
 			v, m := protowire.ConsumeBytes(b)
 			b = b[m:]
 			switch num {
-			case fieldnum.MethodDescriptorProto_Name:
+			case genid.MethodDescriptorProto_Name_field_number:
 				md.L0.FullName = appendFullName(sb, pd.FullName(), v)
-			case fieldnum.MethodDescriptorProto_InputType:
+			case genid.MethodDescriptorProto_InputType_field_number:
 				md.L1.Input = PlaceholderMessage(makeFullName(sb, v))
-			case fieldnum.MethodDescriptorProto_OutputType:
+			case genid.MethodDescriptorProto_OutputType_field_number:
 				md.L1.Output = PlaceholderMessage(makeFullName(sb, v))
+<<<<<<< HEAD
 			case fieldnum.MethodDescriptorProto_Options:
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			case fieldnum.MethodDescriptorProto_Options:
+=======
+			case genid.MethodDescriptorProto_Options_field_number:
+>>>>>>> 6b7ce455e (update vendored files)
 				rawOptions = appendOptions(rawOptions, v)
 			}
 		default:

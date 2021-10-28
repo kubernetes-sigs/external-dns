@@ -30,6 +30,7 @@ var (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // However "kB", which is the correct SI spelling of 1000 Bytes, is rejected.
 func ParseBase2Bytes(s string) (Base2Bytes, error) {
 	n, err := ParseUnit(s, bytesUnitMap)
@@ -142,6 +143,10 @@ func (m MetricBytes) String() string {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// However "kB", which is the correct SI spelling of 1000 Bytes, is rejected.
+>>>>>>> 6b7ce455e (update vendored files)
 func ParseBase2Bytes(s string) (Base2Bytes, error) {
 	n, err := ParseUnit(s, bytesUnitMap)
 	if err != nil {
@@ -183,13 +188,20 @@ func ParseMetricBytes(s string) (MetricBytes, error) {
 	return MetricBytes(n), err
 }
 
+// TODO: represents 1000B as uppercase "KB", while SI standard requires "kB".
 func (m MetricBytes) String() string {
 	return ToString(int64(m), 1000, "B", "B")
 }
 
 // ParseStrictBytes supports both iB and B suffixes for base 2 and metric,
+<<<<<<< HEAD
 // respectively. That is, KiB represents 1024 and KB represents 1000.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// respectively. That is, KiB represents 1024 and KB represents 1000.
+=======
+// respectively. That is, KiB represents 1024 and kB, KB represent 1000.
+>>>>>>> 6b7ce455e (update vendored files)
 func ParseStrictBytes(s string) (int64, error) {
 	n, err := ParseUnit(s, bytesUnitMap)
 	if err != nil {

@@ -17,7 +17,12 @@ package alidns
 
 // IpSegment is a nested struct in alidns response
 type IpSegment struct {
-	Name    string `json:"Name" xml:"Name"`
-	EndIp   string `json:"EndIp" xml:"EndIp"`
-	StartIp string `json:"StartIp" xml:"StartIp"`
+	Name       string `json:"Name" xml:"Name"`
+	EndIp      string `json:"EndIp" xml:"EndIp"`
+	CreateDate string `json:"CreateDate" xml:"CreateDate"`
+	State      string `json:"State" xml:"State"`
+	Ip         string `json:"Ip" xml:"Ip"`
+	UpdateDate string `json:"UpdateDate" xml:"UpdateDate"`
+	Mask       int64  `json:"Mask" xml:"Mask"`
+	StartIp    string `json:"StartIp" xml:"StartIp"`
 }

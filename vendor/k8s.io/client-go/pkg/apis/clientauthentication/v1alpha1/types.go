@@ -40,6 +40,7 @@ type ExecCredential struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ExecCredentialSpec holds request and runtime specific information provided by
 // the transport.
 type ExecCredentialSpec struct {
@@ -115,6 +116,11 @@ type ExecCredentialStatus struct {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // ExecCredenitalSpec holds request and runtime specific information provided by
+||||||| parent of 6b7ce455e (update vendored files)
+// ExecCredenitalSpec holds request and runtime specific information provided by
+=======
+// ExecCredentialSpec holds request and runtime specific information provided by
+>>>>>>> 6b7ce455e (update vendored files)
 // the transport.
 type ExecCredentialSpec struct {
 	// Response is populated when the transport encounters HTTP status codes, such as 401,
@@ -138,12 +144,18 @@ type ExecCredentialStatus struct {
 	// +optional
 	ExpirationTimestamp *metav1.Time `json:"expirationTimestamp,omitempty"`
 	// Token is a bearer token used by the client for request authentication.
-	Token string `json:"token,omitempty"`
+	Token string `json:"token,omitempty" datapolicy:"token"`
 	// PEM-encoded client TLS certificates (including intermediates, if any).
 	ClientCertificateData string `json:"clientCertificateData,omitempty"`
 	// PEM-encoded private key for the above certificate.
+<<<<<<< HEAD
 	ClientKeyData string `json:"clientKeyData,omitempty"`
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	ClientKeyData string `json:"clientKeyData,omitempty"`
+=======
+	ClientKeyData string `json:"clientKeyData,omitempty" datapolicy:"security-key"`
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // Response defines metadata about a failed request, including HTTP status code and

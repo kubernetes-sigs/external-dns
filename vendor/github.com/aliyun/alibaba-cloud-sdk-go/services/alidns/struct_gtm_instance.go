@@ -17,19 +17,25 @@ package alidns
 
 // GtmInstance is a nested struct in alidns response
 type GtmInstance struct {
-	InstanceId        string `json:"InstanceId" xml:"InstanceId"`
-	InstanceName      string `json:"InstanceName" xml:"InstanceName"`
-	Cname             string `json:"Cname" xml:"Cname"`
-	UserDomainName    string `json:"UserDomainName" xml:"UserDomainName"`
-	VersionCode       string `json:"VersionCode" xml:"VersionCode"`
-	Ttl               int    `json:"Ttl" xml:"Ttl"`
-	LbaStrategy       string `json:"LbaStrategy" xml:"LbaStrategy"`
-	CreateTime        string `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp   int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	ExpireTime        string `json:"ExpireTime" xml:"ExpireTime"`
-	ExpireTimestamp   int64  `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
-	AlertGroup        string `json:"AlertGroup" xml:"AlertGroup"`
-	CnameMode         string `json:"CnameMode" xml:"CnameMode"`
-	AccessStrategyNum int    `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
-	AddressPoolNum    int    `json:"AddressPoolNum" xml:"AddressPoolNum"`
+	AddressPoolNum    int       `json:"AddressPoolNum" xml:"AddressPoolNum"`
+	Cname             string    `json:"Cname" xml:"Cname"`
+	UserDomainName    string    `json:"UserDomainName" xml:"UserDomainName"`
+	CreateTimestamp   int64     `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	AccessStrategyNum int       `json:"AccessStrategyNum" xml:"AccessStrategyNum"`
+	ExpireTimestamp   int64     `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
+	AlertGroup        string    `json:"AlertGroup" xml:"AlertGroup"`
+	InstanceName      string    `json:"InstanceName" xml:"InstanceName"`
+	CreateTime        string    `json:"CreateTime" xml:"CreateTime"`
+	VersionCode       string    `json:"VersionCode" xml:"VersionCode"`
+	CnameMode         string    `json:"CnameMode" xml:"CnameMode"`
+	ResourceGroupId   string    `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	SmsQuota          int       `json:"SmsQuota" xml:"SmsQuota"`
+	InstanceId        string    `json:"InstanceId" xml:"InstanceId"`
+	ExpireTime        string    `json:"ExpireTime" xml:"ExpireTime"`
+	PaymentType       string    `json:"PaymentType" xml:"PaymentType"`
+	Ttl               int       `json:"Ttl" xml:"Ttl"`
+	LbaStrategy       string    `json:"LbaStrategy" xml:"LbaStrategy"`
+	TaskQuota         int       `json:"TaskQuota" xml:"TaskQuota"`
+	Config            Config    `json:"Config" xml:"Config"`
+	UsedQuota         UsedQuota `json:"UsedQuota" xml:"UsedQuota"`
 }

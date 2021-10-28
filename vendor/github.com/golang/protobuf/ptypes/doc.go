@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //
 // Deprecated: Well-known types have specialized functionality directly
 // injected into the generated packages for each message type.
@@ -23,4 +24,11 @@
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//
+// Deprecated: Well-known types have specialized functionality directly
+// injected into the generated packages for each message type.
+// See the deprecation notice for each function for the suggested alternative.
+>>>>>>> 6b7ce455e (update vendored files)
 package ptypes

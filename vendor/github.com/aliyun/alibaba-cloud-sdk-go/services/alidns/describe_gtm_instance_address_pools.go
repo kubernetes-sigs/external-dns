@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmInstanceAddressPools invokes the alidns.DescribeGtmInstanceAddressPools API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
 func (client *Client) DescribeGtmInstanceAddressPools(request *DescribeGtmInstanceAddressPoolsRequest) (response *DescribeGtmInstanceAddressPoolsResponse, err error) {
 	response = CreateDescribeGtmInstanceAddressPoolsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmInstanceAddressPools(request *DescribeGtmInstan
 }
 
 // DescribeGtmInstanceAddressPoolsWithChan invokes the alidns.DescribeGtmInstanceAddressPools API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolsWithChan(request *DescribeGtmInstanceAddressPoolsRequest) (<-chan *DescribeGtmInstanceAddressPoolsResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceAddressPoolsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmInstanceAddressPoolsWithChan(request *DescribeG
 }
 
 // DescribeGtmInstanceAddressPoolsWithCallback invokes the alidns.DescribeGtmInstanceAddressPools API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstanceaddresspools.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceAddressPoolsWithCallback(request *DescribeGtmInstanceAddressPoolsRequest, callback func(response *DescribeGtmInstanceAddressPoolsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -100,6 +95,7 @@ func CreateDescribeGtmInstanceAddressPoolsRequest() (request *DescribeGtmInstanc
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceAddressPools", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

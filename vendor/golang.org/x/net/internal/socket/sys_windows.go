@@ -25,6 +25,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	sizeofSockaddrInet4 = 0x10
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -78,7 +79,12 @@ const (
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 )
+||||||| parent of 6b7ce455e (update vendored files)
+)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 
+<<<<<<< HEAD
 type sockaddrInet struct {
 	Family uint16
 	Port   uint16
@@ -97,6 +103,27 @@ type sockaddrInet6 struct {
 const (
 	sizeofSockaddrInet  = 0x10
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+type sockaddrInet struct {
+	Family uint16
+	Port   uint16
+	Addr   [4]byte /* in_addr */
+	Zero   [8]uint8
+}
+
+type sockaddrInet6 struct {
+	Family   uint16
+	Port     uint16
+	Flowinfo uint32
+	Addr     [16]byte /* in6_addr */
+	Scope_id uint32
+}
+
+const (
+	sizeofSockaddrInet  = 0x10
+=======
+	sizeofSockaddrInet4 = 0x10
+>>>>>>> 6b7ce455e (update vendored files)
 	sizeofSockaddrInet6 = 0x1c
 )
 

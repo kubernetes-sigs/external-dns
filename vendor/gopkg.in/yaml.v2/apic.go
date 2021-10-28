@@ -82,6 +82,7 @@ func yaml_parser_set_encoding(parser *yaml_parser_t, encoding yaml_encoding_t) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 var disableLineWrapping = false
 
 // Create a new emitter object.
@@ -120,6 +121,11 @@ func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+var disableLineWrapping = false
+
+>>>>>>> 6b7ce455e (update vendored files)
 // Create a new emitter object.
 func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 	*emitter = yaml_emitter_t{
@@ -127,8 +133,16 @@ func yaml_emitter_initialize(emitter *yaml_emitter_t) {
 		raw_buffer: make([]byte, 0, output_raw_buffer_size),
 		states:     make([]yaml_emitter_state_t, 0, initial_stack_size),
 		events:     make([]yaml_event_t, 0, initial_queue_size),
+<<<<<<< HEAD
 		best_width: -1,
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		best_width: -1,
+=======
+	}
+	if disableLineWrapping {
+		emitter.best_width = -1
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 }
 

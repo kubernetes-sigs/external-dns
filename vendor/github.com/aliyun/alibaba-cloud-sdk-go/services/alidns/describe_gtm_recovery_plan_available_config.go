@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmRecoveryPlanAvailableConfig invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfig(request *DescribeGtmRecoveryPlanAvailableConfigRequest) (response *DescribeGtmRecoveryPlanAvailableConfigResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanAvailableConfigResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmRecoveryPlanAvailableConfig(request *DescribeGt
 }
 
 // DescribeGtmRecoveryPlanAvailableConfigWithChan invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithChan(request *DescribeGtmRecoveryPlanAvailableConfigRequest) (<-chan *DescribeGtmRecoveryPlanAvailableConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmRecoveryPlanAvailableConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithChan(request *De
 }
 
 // DescribeGtmRecoveryPlanAvailableConfigWithCallback invokes the alidns.DescribeGtmRecoveryPlanAvailableConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplanavailableconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanAvailableConfigWithCallback(request *DescribeGtmRecoveryPlanAvailableConfigRequest, callback func(response *DescribeGtmRecoveryPlanAvailableConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDescribeGtmRecoveryPlanAvailableConfigRequest() (request *DescribeGtm
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmRecoveryPlanAvailableConfig", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

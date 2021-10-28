@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -335,6 +336,11 @@ func (c *FakeNodes) ApplyStatus(ctx context.Context, node *applyconfigurationsco
 		Invokes(testing.NewRootPatchSubresourceAction(nodesResource, *name, types.ApplyPatchType, data, "status"), &corev1.Node{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -342,6 +348,7 @@ func (c *FakeNodes) ApplyStatus(ctx context.Context, node *applyconfigurationsco
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -425,7 +432,7 @@ func (c *FakeNodes) UpdateStatus(ctx context.Context, node *corev1.Node, opts v1
 // Delete takes name of the node and deletes it. Returns an error if one occurs.
 func (c *FakeNodes) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(nodesResource, name), &corev1.Node{})
+		Invokes(testing.NewRootDeleteActionWithOptions(nodesResource, name, opts), &corev1.Node{})
 	return err
 }
 
@@ -442,6 +449,49 @@ func (c *FakeNodes) Patch(ctx context.Context, name string, pt types.PatchType, 
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(nodesResource, name, pt, data, subresources...), &corev1.Node{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Node), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied node.
+func (c *FakeNodes) Apply(ctx context.Context, node *applyconfigurationscorev1.NodeApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Node, err error) {
+	if node == nil {
+		return nil, fmt.Errorf("node provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(node)
+	if err != nil {
+		return nil, err
+	}
+	name := node.Name
+	if name == nil {
+		return nil, fmt.Errorf("node.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(nodesResource, *name, types.ApplyPatchType, data), &corev1.Node{})
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Node), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeNodes) ApplyStatus(ctx context.Context, node *applyconfigurationscorev1.NodeApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Node, err error) {
+	if node == nil {
+		return nil, fmt.Errorf("node provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(node)
+	if err != nil {
+		return nil, err
+	}
+	name := node.Name
+	if name == nil {
+		return nil, fmt.Errorf("node.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(nodesResource, *name, types.ApplyPatchType, data, "status"), &corev1.Node{})
 	if obj == nil {
 		return nil, err
 	}

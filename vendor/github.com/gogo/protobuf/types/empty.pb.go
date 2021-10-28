@@ -363,6 +363,7 @@ func (m *Empty) Unmarshal(dAtA []byte) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if (skippy < 0) || (iNdEx+skippy) < 0 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -386,6 +387,14 @@ func (m *Empty) Unmarshal(dAtA []byte) error {
 			}
 			if (iNdEx + skippy) < 0 {
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			if skippy < 0 {
+				return ErrInvalidLengthEmpty
+			}
+			if (iNdEx + skippy) < 0 {
+=======
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+>>>>>>> 6b7ce455e (update vendored files)
 				return ErrInvalidLengthEmpty
 			}
 			if (iNdEx + skippy) > l {

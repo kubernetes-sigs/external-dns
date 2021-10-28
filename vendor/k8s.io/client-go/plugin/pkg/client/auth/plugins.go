@@ -20,6 +20,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// Initialize common client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -47,7 +48,19 @@ import (
 	// Initialize all known client auth plugins.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+||||||| parent of 6b7ce455e (update vendored files)
+	// Initialize all known client auth plugins.
+	_ "k8s.io/client-go/plugin/pkg/client/auth/azure"
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+=======
+	// Initialize common client auth plugins.
+>>>>>>> 6b7ce455e (update vendored files)
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+<<<<<<< HEAD
 	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	_ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )

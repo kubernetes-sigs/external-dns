@@ -88,6 +88,7 @@ func (c *Client) ListSSHKeys(ctx context.Context, opts *ListOptions) ([]SSHKey, 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if err != nil {
 		return nil, err
 	}
@@ -235,6 +236,10 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +279,6 @@ func (c *Client) CreateSSHKey(ctx context.Context, createOpts SSHKeyCreateOption
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -301,8 +305,13 @@ func (c *Client) UpdateSSHKey(ctx context.Context, id int, updateOpts SSHKeyUpda
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

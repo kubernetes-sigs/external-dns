@@ -134,6 +134,7 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 				// jtopjian: This was put into place to resolve the issue
 				// described at
@@ -167,6 +168,21 @@ func (r Result) extractIntoPtr(to interface{}, label string) error {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+
+				// jtopjian: This was put into place to resolve the issue
+				// described at
+				// https://github.com/gophercloud/gophercloud/issues/1963
+				//
+				// This probably isn't the best fix, but it appears to
+				// be resolving the issue, so I'm going to implement it
+				// for now.
+				//
+				// For future readers, this entire case statement could
+				// use a review.
+				return nil
+>>>>>>> 6b7ce455e (update vendored files)
 			}
 		}
 	case reflect.Struct:

@@ -5,6 +5,7 @@ import "context"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Account associated with the token in use.
 type Account struct {
 	FirstName         string      `json:"first_name"`
@@ -88,6 +89,11 @@ func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // Account associated with the token in use
+||||||| parent of 6b7ce455e (update vendored files)
+// Account associated with the token in use
+=======
+// Account associated with the token in use.
+>>>>>>> 6b7ce455e (update vendored files)
 type Account struct {
 	FirstName         string      `json:"first_name"`
 	LastName          string      `json:"last_name"`
@@ -112,7 +118,7 @@ type CreditCard struct {
 	Expiry   string `json:"expiry"`
 }
 
-// GetAccount gets the contact and billing information related to the Account
+// GetAccount gets the contact and billing information related to the Account.
 func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	e, err := c.Account.Endpoint()
 	if err != nil {
@@ -120,8 +126,13 @@ func (c *Client) GetAccount(ctx context.Context) (*Account, error) {
 	}
 
 	r, err := coupleAPIErrors(c.R(ctx).SetResult(&Account{}).Get(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeZoneVpcTree invokes the pvtz.DescribeZoneVpcTree API synchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
 func (client *Client) DescribeZoneVpcTree(request *DescribeZoneVpcTreeRequest) (response *DescribeZoneVpcTreeResponse, err error) {
 	response = CreateDescribeZoneVpcTreeResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeZoneVpcTree(request *DescribeZoneVpcTreeRequest) (
 }
 
 // DescribeZoneVpcTreeWithChan invokes the pvtz.DescribeZoneVpcTree API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneVpcTreeWithChan(request *DescribeZoneVpcTreeRequest) (<-chan *DescribeZoneVpcTreeResponse, <-chan error) {
 	responseChan := make(chan *DescribeZoneVpcTreeResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeZoneVpcTreeWithChan(request *DescribeZoneVpcTreeRe
 }
 
 // DescribeZoneVpcTreeWithCallback invokes the pvtz.DescribeZoneVpcTree API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonevpctree.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneVpcTreeWithCallback(request *DescribeZoneVpcTreeRequest, callback func(response *DescribeZoneVpcTreeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDescribeZoneVpcTreeRequest() (request *DescribeZoneVpcTreeRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneVpcTree", "pvtz", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

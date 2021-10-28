@@ -23,6 +23,7 @@ type Tld struct {
 	RegistrationEnabled bool   `json:"registration_enabled"`
 	RenewalEnabled      bool   `json:"renewal_enabled"`
 	TransferEnabled     bool   `json:"transfer_enabled"`
+	DnssecInterfaceType string `json:"dnssec_interface_type"`
 }
 
 // TldExtendedAttribute represents an extended attributes supported or required

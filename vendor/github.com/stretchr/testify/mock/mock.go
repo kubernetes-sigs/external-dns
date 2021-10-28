@@ -300,6 +300,7 @@ func (m *Mock) findExpectedCall(method string, arguments ...interface{}) (int, *
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type matchCandidate struct {
 	call      *Call
 	mismatch  string
@@ -406,26 +407,62 @@ func (m *Mock) findClosestCall(method string, arguments ...interface{}) (*Call, 
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+type matchCandidate struct {
+	call      *Call
+	mismatch  string
+	diffCount int
+}
+
+func (c matchCandidate) isBetterMatchThan(other matchCandidate) bool {
+	if c.call == nil {
+		return false
+	}
+	if other.call == nil {
+		return true
+	}
+
+	if c.diffCount > other.diffCount {
+		return false
+	}
+	if c.diffCount < other.diffCount {
+		return true
+	}
+
+	if c.call.Repeatability > 0 && other.call.Repeatability <= 0 {
+		return true
+	}
+	return false
+}
+
+>>>>>>> 6b7ce455e (update vendored files)
 func (m *Mock) findClosestCall(method string, arguments ...interface{}) (*Call, string) {
-	var diffCount int
-	var closestCall *Call
-	var err string
+	var bestMatch matchCandidate
 
 	for _, call := range m.expectedCalls() {
 		if call.Method == method {
 
 			errInfo, tempDiffCount := call.Arguments.Diff(arguments)
-			if tempDiffCount < diffCount || diffCount == 0 {
-				diffCount = tempDiffCount
-				closestCall = call
-				err = errInfo
+			tempCandidate := matchCandidate{
+				call:      call,
+				mismatch:  errInfo,
+				diffCount: tempDiffCount,
 			}
-
+			if tempCandidate.isBetterMatchThan(bestMatch) {
+				bestMatch = tempCandidate
+			}
 		}
 	}
 
+<<<<<<< HEAD
 	return closestCall, err
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return closestCall, err
+=======
+	return bestMatch.call, bestMatch.mismatch
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func callString(method string, arguments Arguments, includeArgumentValues bool) string {

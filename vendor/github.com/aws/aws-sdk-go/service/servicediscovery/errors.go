@@ -14,6 +14,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// The health check for the instance that's specified by ServiceId and InstanceId
 	// isn't a custom health check.
 	ErrCodeCustomHealthNotFound = "CustomHealthNotFound"
@@ -270,6 +271,13 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 =======
 	// The health check for the instance that is specified by ServiceId and InstanceId
 	// is not a custom health check.
+||||||| parent of 6b7ce455e (update vendored files)
+	// The health check for the instance that is specified by ServiceId and InstanceId
+	// is not a custom health check.
+=======
+	// The health check for the instance that's specified by ServiceId and InstanceId
+	// isn't a custom health check.
+>>>>>>> 6b7ce455e (update vendored files)
 	ErrCodeCustomHealthNotFound = "CustomHealthNotFound"
 
 	// ErrCodeDuplicateRequest for service response error code
@@ -311,6 +319,15 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 	// No operation exists with the specified ID.
 	ErrCodeOperationNotFound = "OperationNotFound"
 
+	// ErrCodeRequestLimitExceeded for service response error code
+	// "RequestLimitExceeded".
+	//
+	// The operation can't be completed because you've reached the quota for the
+	// number of requests. For more information, see Cloud Map API request throttling
+	// quota (https://docs.aws.amazon.com/cloud-map/latest/dg/throttling.html) in
+	// the Cloud Map Developer Guide.
+	ErrCodeRequestLimitExceeded = "RequestLimitExceeded"
+
 	// ErrCodeResourceInUse for service response error code
 	// "ResourceInUse".
 	//
@@ -321,9 +338,15 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 	// ErrCodeResourceLimitExceeded for service response error code
 	// "ResourceLimitExceeded".
 	//
-	// The resource can't be created because you've reached the limit on the number
+	// The resource can't be created because you've reached the quota on the number
 	// of resources.
 	ErrCodeResourceLimitExceeded = "ResourceLimitExceeded"
+
+	// ErrCodeResourceNotFoundException for service response error code
+	// "ResourceNotFoundException".
+	//
+	// The operation can't be completed because the resource was not found.
+	ErrCodeResourceNotFoundException = "ResourceNotFoundException"
 
 	// ErrCodeServiceAlreadyExists for service response error code
 	// "ServiceAlreadyExists".
@@ -337,9 +360,17 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 	//
 	// No service exists with the specified ID.
 	ErrCodeServiceNotFound = "ServiceNotFound"
+
+	// ErrCodeTooManyTagsException for service response error code
+	// "TooManyTagsException".
+	//
+	// The list of tags on the resource is over the quota. The maximum number of
+	// tags that can be applied to a resource is 50.
+	ErrCodeTooManyTagsException = "TooManyTagsException"
 )
 
 var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
+<<<<<<< HEAD
 	"CustomHealthNotFound":   newErrorCustomHealthNotFound,
 	"DuplicateRequest":       newErrorDuplicateRequest,
 	"InstanceNotFound":       newErrorInstanceNotFound,
@@ -352,4 +383,32 @@ var exceptionFromCode = map[string]func(protocol.ResponseMetadata) error{
 	"ServiceAlreadyExists":   newErrorServiceAlreadyExists,
 	"ServiceNotFound":        newErrorServiceNotFound,
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	"CustomHealthNotFound":   newErrorCustomHealthNotFound,
+	"DuplicateRequest":       newErrorDuplicateRequest,
+	"InstanceNotFound":       newErrorInstanceNotFound,
+	"InvalidInput":           newErrorInvalidInput,
+	"NamespaceAlreadyExists": newErrorNamespaceAlreadyExists,
+	"NamespaceNotFound":      newErrorNamespaceNotFound,
+	"OperationNotFound":      newErrorOperationNotFound,
+	"ResourceInUse":          newErrorResourceInUse,
+	"ResourceLimitExceeded":  newErrorResourceLimitExceeded,
+	"ServiceAlreadyExists":   newErrorServiceAlreadyExists,
+	"ServiceNotFound":        newErrorServiceNotFound,
+=======
+	"CustomHealthNotFound":      newErrorCustomHealthNotFound,
+	"DuplicateRequest":          newErrorDuplicateRequest,
+	"InstanceNotFound":          newErrorInstanceNotFound,
+	"InvalidInput":              newErrorInvalidInput,
+	"NamespaceAlreadyExists":    newErrorNamespaceAlreadyExists,
+	"NamespaceNotFound":         newErrorNamespaceNotFound,
+	"OperationNotFound":         newErrorOperationNotFound,
+	"RequestLimitExceeded":      newErrorRequestLimitExceeded,
+	"ResourceInUse":             newErrorResourceInUse,
+	"ResourceLimitExceeded":     newErrorResourceLimitExceeded,
+	"ResourceNotFoundException": newErrorResourceNotFoundException,
+	"ServiceAlreadyExists":      newErrorServiceAlreadyExists,
+	"ServiceNotFound":           newErrorServiceNotFound,
+	"TooManyTagsException":      newErrorTooManyTagsException,
+>>>>>>> 6b7ce455e (update vendored files)
 }

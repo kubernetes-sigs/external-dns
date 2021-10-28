@@ -17,6 +17,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"google.golang.org/protobuf/internal/genid"
 	"google.golang.org/protobuf/internal/strs"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
@@ -575,6 +576,10 @@ State:
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"google.golang.org/protobuf/internal/genid"
+>>>>>>> 6b7ce455e (update vendored files)
 	"google.golang.org/protobuf/internal/strs"
 	pref "google.golang.org/protobuf/reflect/protoreflect"
 	preg "google.golang.org/protobuf/reflect/protoregistry"
@@ -843,10 +848,16 @@ State:
 			switch {
 			case st.typ == validationTypeMap:
 				switch num {
-				case 1:
+				case genid.MapEntry_Key_field_number:
 					vi.typ = st.keyType
+<<<<<<< HEAD
 				case 2:
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+				case 2:
+=======
+				case genid.MapEntry_Value_field_number:
+>>>>>>> 6b7ce455e (update vendored files)
 					vi.typ = st.valType
 					vi.mi = st.mi
 					vi.requiredBit = 1

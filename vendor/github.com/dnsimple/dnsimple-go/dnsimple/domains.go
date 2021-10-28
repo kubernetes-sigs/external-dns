@@ -24,7 +24,7 @@ type Domain struct {
 	State        string `json:"state,omitempty"`
 	AutoRenew    bool   `json:"auto_renew,omitempty"`
 	PrivateWhois bool   `json:"private_whois,omitempty"`
-	ExpiresOn    string `json:"expires_on,omitempty"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
 	UpdatedAt    string `json:"updated_at,omitempty"`
 }

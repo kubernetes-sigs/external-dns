@@ -26,6 +26,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 )
 
@@ -82,6 +83,11 @@ func (s *podDisruptionBudgetLister) GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 6b7ce455e (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // PodDisruptionBudgetListerExpansion allows custom methods to be added to
@@ -98,11 +104,19 @@ type PodDisruptionBudgetNamespaceListerExpansion interface{}
 func (s *podDisruptionBudgetLister) GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*policy.PodDisruptionBudget, error) {
 	var selector labels.Selector
 
+<<<<<<< HEAD
 	if len(pod.Labels) == 0 {
 		return nil, fmt.Errorf("no PodDisruptionBudgets found for pod %v because it has no labels", pod.Name)
 	}
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	if len(pod.Labels) == 0 {
+		return nil, fmt.Errorf("no PodDisruptionBudgets found for pod %v because it has no labels", pod.Name)
+	}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	list, err := s.PodDisruptionBudgets(pod.Namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err

@@ -75,6 +75,7 @@ type ProcStatus struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
 	UIDs [4]string
 	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
@@ -192,7 +193,14 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
+||||||| parent of 6b7ce455e (update vendored files)
+	// UIDs of the process (Real, effective, saved set, and filesystem UIDs (GIDs))
+=======
+	// UIDs of the process (Real, effective, saved set, and filesystem UIDs)
+>>>>>>> 6b7ce455e (update vendored files)
 	UIDs [4]string
+	// GIDs of the process (Real, effective, saved set, and filesystem GIDs)
+	GIDs [4]string
 }
 
 // NewStatus returns the current status information of the process.
@@ -238,7 +246,13 @@ func (s *ProcStatus) fillStatus(k string, vString string, vUint uint64, vUintByt
 		s.Name = vString
 	case "Uid":
 		copy(s.UIDs[:], strings.Split(vString, "\t"))
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	case "Gid":
+		copy(s.GIDs[:], strings.Split(vString, "\t"))
+>>>>>>> 6b7ce455e (update vendored files)
 	case "VmPeak":
 		s.VmPeak = vUintBytes
 	case "VmSize":

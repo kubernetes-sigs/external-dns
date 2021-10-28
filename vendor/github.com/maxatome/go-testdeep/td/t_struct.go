@@ -10,6 +10,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"reflect"
 	"sync"
 	"testing"
@@ -1456,20 +1457,31 @@ func (t *T) RunT(name string, f func(t *T)) bool {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"bytes"
+	"reflect"
+	"sync"
+>>>>>>> 6b7ce455e (update vendored files)
 	"testing"
+
+	"github.com/maxatome/go-testdeep/helpers/tdutil"
+	"github.com/maxatome/go-testdeep/internal/color"
+	"github.com/maxatome/go-testdeep/internal/trace"
+	"github.com/maxatome/go-testdeep/internal/types"
 )
 
-// T is a type that encapsulates *testing.T (in fact TestingFT
-// interface which is implemented by *testing.T) allowing to easily
-// use *testing.T methods as well as T ones.
+// T is a type that encapsulates testing.TB interface (which is
+// implemented by *testing.T and *testing.B) allowing to easily use
+// *testing.T methods as well as T ones.
 type T struct {
-	TestingFT
+	testing.TB
 	Config ContextConfig // defaults to DefaultContextConfig
 }
 
-var _ TestingFT = T{}
+var _ testing.TB = T{}
 
-// NewT returns a new T instance. Typically used as:
+// NewT returns a new *T instance. Typically used as:
 //
 //   import (
 //     "testing"
@@ -1573,24 +1585,29 @@ var _ TestingFT = T{}
 //
 // Of course "t" can already be a *T, in this special case if "config"
 // is omitted, the Config of the new instance is a copy of the "t"
-// Config.
-func NewT(t TestingFT, config ...ContextConfig) *T {
+// Config, including hooks.
+func NewT(t testing.TB, config ...ContextConfig) *T {
 	var newT T
 
-	if len(config) > 1 || t == nil {
-		panic("usage: NewT(TestingFT[, ContextConfig]")
+	const usage = "NewT(testing.TB[, ContextConfig])"
+	if t == nil {
+		panic(color.BadUsage(usage, nil, 1, false))
+	}
+	if len(config) > 1 {
+		t.Helper()
+		t.Fatal(color.TooManyParams(usage))
 	}
 
-	// Already a *T, so steal its TestingFT and its Config if needed
+	// Already a *T, so steal its testing.TB and its Config if needed
 	if tdT, ok := t.(*T); ok {
-		newT.TestingFT = tdT.TestingFT
+		newT.TB = tdT.TB
 		if len(config) == 0 {
 			newT.Config = tdT.Config
 		} else {
 			newT.Config = config[0]
 		}
 	} else {
-		newT.TestingFT = t
+		newT.TB = t
 		if len(config) == 0 {
 			newT.Config = DefaultContextConfig
 		} else {
@@ -1604,7 +1621,7 @@ func NewT(t TestingFT, config ...ContextConfig) *T {
 	return &newT
 }
 
-// Assert return a new T instance with FailureIsFatal flag set to
+// Assert return a new *T instance with FailureIsFatal flag set to
 // false.
 //
 //   assert := Assert(t)
@@ -1614,11 +1631,11 @@ func NewT(t TestingFT, config ...ContextConfig) *T {
 //   assert := NewT(t).FailureIsFatal(false)
 //
 // See NewT documentation for usefulness of "config" optional parameter.
-func Assert(t TestingFT, config ...ContextConfig) *T {
+func Assert(t testing.TB, config ...ContextConfig) *T {
 	return NewT(t, config...).FailureIsFatal(false)
 }
 
-// Require return a new T instance with FailureIsFatal flag set to
+// Require return a new *T instance with FailureIsFatal flag set to
 // true.
 //
 //   require := Require(t)
@@ -1628,11 +1645,11 @@ func Assert(t TestingFT, config ...ContextConfig) *T {
 //   require := NewT(t).FailureIsFatal(true)
 //
 // See NewT documentation for usefulness of "config" optional parameter.
-func Require(t TestingFT, config ...ContextConfig) *T {
+func Require(t testing.TB, config ...ContextConfig) *T {
 	return NewT(t, config...).FailureIsFatal()
 }
 
-// AssertRequire returns 2 instances of T. The first one called
+// AssertRequire returns 2 instances of *T. The first one called
 // "assert" with FailureIsFatal flag set to false, and the second
 // called "require" with FailureIsFatal flag set to true.
 //
@@ -1643,7 +1660,7 @@ func Require(t TestingFT, config ...ContextConfig) *T {
 //   assert, require := Assert(t), Require(t)
 //
 // See NewT documentation for usefulness of "config" optional parameter.
-func AssertRequire(t TestingFT, config ...ContextConfig) (*T, *T) {
+func AssertRequire(t testing.TB, config ...ContextConfig) (*T, *T) {
 	assert := Assert(t, config...)
 	return assert, assert.FailureIsFatal()
 }
@@ -1684,11 +1701,11 @@ func (t *T) RootName(rootName string) *T {
 	return &new
 }
 
-// FailureIsFatal allows to choose whether t.TestingFT.Fatal() or
-// t.TestingFT.Error() will be used to print the next failure
+// FailureIsFatal allows to choose whether t.TB.Fatal() or
+// t.TB.Error() will be used to print the next failure
 // reports. When "enable" is true (or missing) testing.Fatal() will be
-// called, else testing.Error(). Using *testing.T instance as
-// t.TestingFT value, FailNow() is called behind the scenes when
+// called, else testing.Error(). Using *testing.T or *testing.B instance as
+// t.TB value, FailNow() is called behind the scenes when
 // Fatal() is called. See testing documentation for details.
 //
 // It returns a new instance of *T so does not alter the original t
@@ -1717,25 +1734,61 @@ func (t *T) FailureIsFatal(enable ...bool) *T {
 	return &new
 }
 
-// UseEqual allows to use the Equal method on got (if it exists) or
-// on any of its component to compare got and expected values.
+// UseEqual tells go-testdeep to delegate the comparison of items
+// whose type is one of "types" to their Equal() method.
 //
-// The signature should be:
+// The signature this method should be:
 //   (A) Equal(B) bool
 // with B assignable to A.
 //
 // See time.Time as an example of accepted Equal() method.
 //
-// It returns a new instance of *T so does not alter the original t.
+// It always returns a new instance of *T so does not alter the
+// original t.
 //
-// Note that t.UseEqual() acts as t.UseEqual(true).
-func (t *T) UseEqual(enable ...bool) *T {
-	new := *t
-	new.Config.UseEqual = len(enable) == 0 || enable[0]
-	return &new
+//   t = t.UseEqual(time.Time{}, net.IP{})
+//
+// "types" items can also be reflect.Type items. In this case, the
+// target type is the one reflected by the reflect.Type.
+//
+//   t = t.UseEqual(reflect.TypeOf(time.Time{}), reflect.typeOf(net.IP{}))
+//
+// As a special case, calling t.UseEqual() or t.UseEqual(true) returns
+// an instance using the Equal() method globally, for all types owning
+// an Equal() method. Other types fall back to the default comparison
+// mechanism. t.UseEqual(false) returns an instance not using Equal()
+// method anymore, except for types already recorded using a previous
+// UseEqual call.
+func (t *T) UseEqual(types ...interface{}) *T {
+	// special case: UseEqual()
+	if len(types) == 0 {
+		new := *t
+		new.Config.UseEqual = true
+		return &new
+	}
+
+	// special cases: UseEqual(true) or UseEqual(false)
+	if len(types) == 1 {
+		if ignore, ok := types[0].(bool); ok {
+			new := *t
+			new.Config.UseEqual = ignore
+			return &new
+		}
+	}
+
+	// Enable UseEqual only for "types" types
+	t = t.copyWithHooks()
+
+	err := t.Config.hooks.AddUseEqual(types)
+	if err != nil {
+		t.Helper()
+		t.Fatal(color.Bad("UseEqual " + err.Error()))
+	}
+
+	return t
 }
 
-// BeLax allows to to compare different but convertible types. If
+// BeLax allows to compare different but convertible types. If
 // set to false, got and expected types must be the same. If set to
 // true and expected type is convertible to got one, expected is
 // first converted to go type before its comparison. See CmpLax
@@ -1751,9 +1804,55 @@ func (t *T) BeLax(enable ...bool) *T {
 	return &new
 }
 
+// IgnoreUnexported tells go-testdeep to ignore unexported fields of
+// structs whose type is one of "types".
+//
+// It always returns a new instance of *T so does not alter the original t.
+//
+//   t = t.IgnoreUnexported(MyStruct1{}, MyStruct2{})
+//
+// "types" items can also be reflect.Type items. In this case, the
+// target type is the one reflected by the reflect.Type.
+//
+//   t = t.IgnoreUnexported(reflect.TypeOf(MyStruct1{}))
+//
+// As a special case, calling t.IgnoreUnexported() or
+// t.IgnoreUnexported(true) returns an instance ignoring unexported
+// fields globally, for all struct types. t.IgnoreUnexported(false)
+// returns an instance not ignoring unexported fields anymore, except
+// for types already recorded using a previous IgnoreUnexported call.
+func (t *T) IgnoreUnexported(types ...interface{}) *T {
+	// special case: IgnoreUnexported()
+	if len(types) == 0 {
+		new := *t
+		new.Config.IgnoreUnexported = true
+		return &new
+	}
+
+	// special cases: IgnoreUnexported(true) or IgnoreUnexported(false)
+	if len(types) == 1 {
+		if ignore, ok := types[0].(bool); ok {
+			new := *t
+			new.Config.IgnoreUnexported = ignore
+			return &new
+		}
+	}
+
+	// Enable IgnoreUnexported only for "types" types
+	t = t.copyWithHooks()
+
+	err := t.Config.hooks.AddIgnoreUnexported(types)
+	if err != nil {
+		t.Helper()
+		t.Fatal(color.Bad("IgnoreUnexported " + err.Error()))
+	}
+
+	return t
+}
+
 // Cmp is mostly a shortcut for:
 //
-//   Cmp(t.TestingFT, got, expected, args...)
+//   Cmp(t.TB, got, expected, args...)
 //
 // with the exception that t.Config is used to configure the test
 // Context.
@@ -1768,7 +1867,7 @@ func (t *T) Cmp(got, expected interface{}, args ...interface{}) bool {
 	t.Helper()
 	defer t.resetNonPersistentAnchors()
 	return cmpDeeply(newContextWithConfig(t.Config),
-		t.TestingFT, got, expected, args...)
+		t.TB, got, expected, args...)
 }
 
 // CmpDeeply works the same as Cmp and is still available for
@@ -1777,7 +1876,7 @@ func (t *T) CmpDeeply(got, expected interface{}, args ...interface{}) bool {
 	t.Helper()
 	defer t.resetNonPersistentAnchors()
 	return cmpDeeply(newContextWithConfig(t.Config),
-		t.TestingFT, got, expected, args...)
+		t.TB, got, expected, args...)
 }
 
 // True is shortcut for:
@@ -1823,7 +1922,7 @@ func (t *T) False(got interface{}, args ...interface{}) bool {
 //   _, err := MyFunction(1, 2, 3)
 //   t.CmpError(err, "MyFunction(1, 2, 3) should return an error")
 //
-// CmpError and not Error to avoid collision with t.TestingFT.Error method.
+// CmpError and not Error to avoid collision with t.TB.Error method.
 //
 // "args..." are optional and allow to name the test. This name is
 // used in case of failure to qualify the test. If len(args) > 1 and
@@ -1833,7 +1932,7 @@ func (t *T) False(got interface{}, args ...interface{}) bool {
 // reason of a potential failure.
 func (t *T) CmpError(got error, args ...interface{}) bool {
 	t.Helper()
-	return cmpError(newContextWithConfig(t.Config), t.TestingFT, got, args...)
+	return cmpError(newContextWithConfig(t.Config), t.TB, got, args...)
 }
 
 // CmpNoError checks that "got" is nil error.
@@ -1853,7 +1952,7 @@ func (t *T) CmpError(got error, args ...interface{}) bool {
 // reason of a potential failure.
 func (t *T) CmpNoError(got error, args ...interface{}) bool {
 	t.Helper()
-	return cmpNoError(newContextWithConfig(t.Config), t.TestingFT, got, args...)
+	return cmpNoError(newContextWithConfig(t.Config), t.TB, got, args...)
 }
 
 // CmpPanic calls "fn" and checks a panic() occurred with the
@@ -1907,24 +2006,240 @@ func (t *T) CmpNotPanic(fn func(), args ...interface{}) bool {
 	return cmpNotPanic(newContextWithConfig(t.Config), t, fn, args...)
 }
 
-// RunT runs "f" as a subtest of t called "name". It runs "f" in a
-// separate goroutine and blocks until "f" returns or calls t.Parallel
-// to become a parallel test. RunT reports whether "f" succeeded (or at
-// least did not fail before calling t.Parallel).
+// Parallel marks this test as runnable in parallel with other parallel tests.
+// If t.TB implements Parallel(), as *testing.T does, it is usually used to
+// mark top-level tests and/or subtests as safe for parallel execution:
 //
-// RunT may be called simultaneously from multiple goroutines, but all
-// such calls must return before the outer test function for t
-// returns.
+//   func TestCreateRecord(tt *testing.T) {
+//     t := td.NewT(tt)
+//     t.Parallel()
 //
-// Under the hood, RunT delegates all this stuff to testing.Run. That
-// is why this documentation is a copy/paste of testing.Run one.
+//     t.Run("no error", func(t *td.T) {
+//       t.Parallel()
 //
-// In versions up to v1.0.8, the name of this function was Run. As *T
-// now implements TestingFT interface, the original
-// (*testing.T).Run(string, func(t *testing.T)) is callable directly
-// on *T.
+//       // ...
+//     })
+//
+// If t.TB does not implement Parallel(), this method is a no-op.
+func (t *T) Parallel() {
+	p, ok := t.TB.(interface{ Parallel() })
+	if ok {
+		p.Parallel()
+	}
+}
+
+type runtFuncs struct {
+	run reflect.Value
+	fnt reflect.Type
+}
+
+var (
+	runtMu sync.Mutex
+	runt   = map[reflect.Type]runtFuncs{}
+)
+
+func (t *T) getRunFunc() (runtFuncs, bool) {
+	ttb := reflect.TypeOf(t.TB)
+
+	runtMu.Lock()
+	defer runtMu.Unlock()
+
+	vfuncs, ok := runt[ttb]
+	if !ok {
+		run, ok := ttb.MethodByName("Run")
+		if ok {
+			mt := run.Type
+			if mt.NumIn() == 3 && mt.NumOut() == 1 && !mt.IsVariadic() &&
+				mt.In(1) == types.String && mt.Out(0) == types.Bool {
+				fnt := mt.In(2)
+				if fnt.Kind() == reflect.Func &&
+					fnt.NumIn() == 1 && fnt.NumOut() == 0 &&
+					fnt.In(0) == mt.In(0) {
+					vfuncs = runtFuncs{
+						run: run.Func,
+						fnt: fnt,
+					}
+					runt[ttb] = vfuncs
+					ok = true
+				}
+			}
+		}
+		if !ok {
+			runt[ttb] = vfuncs
+		}
+	}
+
+	return vfuncs, vfuncs != (runtFuncs{})
+}
+
+// Run runs "f" as a subtest of t called "name".
+//
+// If t.TB implement a method with the following signature:
+//
+//   (X) Run(string, func(X)) bool
+//
+// it calls it with a function of its own in which it creates a new
+// instance of *T on the fly before calling "f" with it.
+//
+// So if t.TB is a *testing.T or a *testing.B (which is in normal
+// cases), let's quote the testing.T.Run() & testing.B.Run()
+// documentation: "f" is called in a separate goroutine and blocks
+// until "f" returns or calls t.Parallel to become a parallel
+// test. Run reports whether "f" succeeded (or at least did not fail
+// before calling t.Parallel). Run may be called simultaneously from
+// multiple goroutines, but all such calls must return before the
+// outer test function for t returns.
+//
+// If this Run() method is not found, it simply logs "name" then
+// executes "f" using a new *T instance in the current goroutine. Note
+// that it is only done for convenience.
+//
+// The "t" param of "f" inherits the configuration of the self-reference.
+func (t *T) Run(name string, f func(t *T)) bool {
+	t.Helper()
+
+	vfuncs, ok := t.getRunFunc()
+	if !ok {
+		t = NewT(t)
+		t.Logf("++++ %s", name)
+		f(t)
+		return !t.Failed()
+	}
+
+	conf := t.Config
+	ret := vfuncs.run.Call([]reflect.Value{
+		reflect.ValueOf(t.TB),
+		reflect.ValueOf(name),
+		reflect.MakeFunc(vfuncs.fnt,
+			func(args []reflect.Value) (results []reflect.Value) {
+				f(NewT(args[0].Interface().(testing.TB), conf))
+				return nil
+			}),
+	})
+
+	return ret[0].Bool()
+}
+
+// RunAssertRequire runs "f" as a subtest of t called "name".
+//
+// If t.TB implement a method with the following signature:
+//
+//   (X) Run(string, func(X)) bool
+//
+// it calls it with a function of its own in which it creates two new
+// instances of *T using AssertRequire() on the fly before calling "f"
+// with them.
+//
+// So if t.TB is a *testing.T or a *testing.B (which is in normal
+// cases), let's quote the testing.T.Run() & testing.B.Run()
+// documentation: "f" is called in a separate goroutine and blocks
+// until "f" returns or calls t.Parallel to become a parallel
+// test. Run reports whether "f" succeeded (or at least did not fail
+// before calling t.Parallel). Run may be called simultaneously from
+// multiple goroutines, but all such calls must return before the
+// outer test function for t returns.
+//
+// If this Run() method is not found, it simply logs "name" then
+// executes "f" using two new instances of *T (built with
+// AssertRequire()) in the current goroutine. Note that it is only
+// done for convenience.
+//
+// The "assert" and "require" params of "f" inherit the configuration
+// of the self-reference, except that a failure is never fatal using
+// "assert" and always fatal using "require".
+func (t *T) RunAssertRequire(name string, f func(assert, require *T)) bool {
+	t.Helper()
+
+	vfuncs, ok := t.getRunFunc()
+	if !ok {
+		assert, require := AssertRequire(t)
+		t.Logf("++++ %s", name)
+		f(assert, require)
+		return !t.Failed()
+	}
+
+	conf := t.Config
+	ret := vfuncs.run.Call([]reflect.Value{
+		reflect.ValueOf(t.TB),
+		reflect.ValueOf(name),
+		reflect.MakeFunc(vfuncs.fnt,
+			func(args []reflect.Value) (results []reflect.Value) {
+				f(AssertRequire(NewT(args[0].Interface().(testing.TB), conf)))
+				return nil
+			}),
+	})
+
+	return ret[0].Bool()
+}
+
+// RunT runs "f" as a subtest of t called "name".
+//
+// Deprecated: RunT has been superseded by Run() method. It is kept
+// for compatibility.
 func (t *T) RunT(name string, f func(t *T)) bool {
 	t.Helper()
+<<<<<<< HEAD
 	return t.TestingFT.Run(name, func(tt *testing.T) { f(NewT(tt, t.Config)) })
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return t.TestingFT.Run(name, func(tt *testing.T) { f(NewT(tt, t.Config)) })
+=======
+	return t.Run(name, f)
+}
+
+func getTrace(args ...interface{}) string {
+	var b bytes.Buffer
+	tdutil.FbuildTestName(&b, args...)
+
+	if b.Len() == 0 {
+		b.WriteString("Stack trace:\n")
+	} else if !bytes.HasSuffix(b.Bytes(), []byte{'\n'}) {
+		b.WriteByte('\n')
+	}
+
+	s := stripTrace(trace.Retrieve(1, "testing.tRunner"))
+	if len(s) == 0 {
+		b.WriteString("\tEmpty stack trace")
+		return b.String()
+	}
+
+	s.Dump(&b)
+	return b.String()
+}
+
+// LogTrace uses t.TB.Log() to log a stack trace.
+//
+// "args..." are optional and allow to prefix the trace by a
+// message. If empty, this message defaults to "Stack trace:\n". If
+// this message does not end with a "\n", one is automatically
+// added. If len(args) > 1 and the first item of "args" is a string
+// and contains a '%' rune then fmt.Fprintf is used to compose the
+// name, else "args" are passed to fmt.Fprint.
+func (t *T) LogTrace(args ...interface{}) {
+	t.Log(getTrace(args...))
+}
+
+// ErrorTrace uses t.TB.Error() to log a stack trace.
+//
+// "args..." are optional and allow to prefix the trace by a
+// message. If empty, this message defaults to "Stack trace:\n". If
+// this message does not end with a "\n", one is automatically
+// added. If len(args) > 1 and the first item of "args" is a string
+// and contains a '%' rune then fmt.Fprintf is used to compose the
+// name, else "args" are passed to fmt.Fprint.
+func (t *T) ErrorTrace(args ...interface{}) {
+	t.Error(getTrace(args...))
+}
+
+// FatalTrace uses t.TB.Fatal() to log a stack trace.
+//
+// "args..." are optional and allow to prefix the trace by a
+// message. If empty, this message defaults to "Stack trace:\n". If
+// this message does not end with a "\n", one is automatically
+// added. If len(args) > 1 and the first item of "args" is a string
+// and contains a '%' rune then fmt.Fprintf is used to compose the
+// name, else "args" are passed to fmt.Fprint.
+func (t *T) FatalTrace(args ...interface{}) {
+	t.Fatal(getTrace(args...))
+>>>>>>> 6b7ce455e (update vendored files)
 }

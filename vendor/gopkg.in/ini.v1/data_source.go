@@ -71,6 +71,7 @@ func parseDataSource(source interface{}) (dataSource, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	case io.Reader:
 		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -84,6 +85,11 @@ func parseDataSource(source interface{}) (dataSource, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	case io.Reader:
+		return &sourceReadCloser{ioutil.NopCloser(s)}, nil
+>>>>>>> 6b7ce455e (update vendored files)
 	default:
 		return nil, fmt.Errorf("error parsing data source: unknown type %q", s)
 	}

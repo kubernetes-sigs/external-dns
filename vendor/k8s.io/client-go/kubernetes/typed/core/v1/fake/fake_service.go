@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -339,6 +340,11 @@ func (c *FakeServices) ApplyStatus(ctx context.Context, service *applyconfigurat
 		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.Service{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -346,6 +352,7 @@ func (c *FakeServices) ApplyStatus(ctx context.Context, service *applyconfigurat
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationscorev1 "k8s.io/client-go/applyconfigurations/core/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -436,7 +443,7 @@ func (c *FakeServices) UpdateStatus(ctx context.Context, service *corev1.Service
 // Delete takes name of the service and deletes it. Returns an error if one occurs.
 func (c *FakeServices) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(servicesResource, c.ns, name), &corev1.Service{})
+		Invokes(testing.NewDeleteActionWithOptions(servicesResource, c.ns, name, opts), &corev1.Service{})
 
 	return err
 }
@@ -446,6 +453,51 @@ func (c *FakeServices) Patch(ctx context.Context, name string, pt types.PatchTyp
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, name, pt, data, subresources...), &corev1.Service{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Service), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied service.
+func (c *FakeServices) Apply(ctx context.Context, service *applyconfigurationscorev1.ServiceApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Service, err error) {
+	if service == nil {
+		return nil, fmt.Errorf("service provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(service)
+	if err != nil {
+		return nil, err
+	}
+	name := service.Name
+	if name == nil {
+		return nil, fmt.Errorf("service.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, *name, types.ApplyPatchType, data), &corev1.Service{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.Service), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeServices) ApplyStatus(ctx context.Context, service *applyconfigurationscorev1.ServiceApplyConfiguration, opts v1.ApplyOptions) (result *corev1.Service, err error) {
+	if service == nil {
+		return nil, fmt.Errorf("service provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(service)
+	if err != nil {
+		return nil, err
+	}
+	name := service.Name
+	if name == nil {
+		return nil, fmt.Errorf("service.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(servicesResource, c.ns, *name, types.ApplyPatchType, data, "status"), &corev1.Service{})
 
 	if obj == nil {
 		return nil, err

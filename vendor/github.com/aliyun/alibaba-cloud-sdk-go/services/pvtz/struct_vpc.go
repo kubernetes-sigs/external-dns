@@ -19,6 +19,7 @@ package pvtz
 type Vpc struct {
 	RegionId   string `json:"RegionId" xml:"RegionId"`
 	VpcName    string `json:"VpcName" xml:"VpcName"`
+	VpcUserId  int64  `json:"VpcUserId" xml:"VpcUserId"`
 	VpcId      string `json:"VpcId" xml:"VpcId"`
 	RegionName string `json:"RegionName" xml:"RegionName"`
 }

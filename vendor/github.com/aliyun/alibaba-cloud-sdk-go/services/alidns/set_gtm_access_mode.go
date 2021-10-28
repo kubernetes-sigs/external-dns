@@ -21,7 +21,6 @@ import (
 )
 
 // SetGtmAccessMode invokes the alidns.SetGtmAccessMode API synchronously
-// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
 func (client *Client) SetGtmAccessMode(request *SetGtmAccessModeRequest) (response *SetGtmAccessModeResponse, err error) {
 	response = CreateSetGtmAccessModeResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) SetGtmAccessMode(request *SetGtmAccessModeRequest) (respon
 }
 
 // SetGtmAccessModeWithChan invokes the alidns.SetGtmAccessMode API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetGtmAccessModeWithChan(request *SetGtmAccessModeRequest) (<-chan *SetGtmAccessModeResponse, <-chan error) {
 	responseChan := make(chan *SetGtmAccessModeResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) SetGtmAccessModeWithChan(request *SetGtmAccessModeRequest)
 }
 
 // SetGtmAccessModeWithCallback invokes the alidns.SetGtmAccessMode API asynchronously
-// api document: https://help.aliyun.com/api/alidns/setgtmaccessmode.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) SetGtmAccessModeWithCallback(request *SetGtmAccessModeRequest, callback func(response *SetGtmAccessModeResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -94,6 +89,7 @@ func CreateSetGtmAccessModeRequest() (request *SetGtmAccessModeRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "SetGtmAccessMode", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

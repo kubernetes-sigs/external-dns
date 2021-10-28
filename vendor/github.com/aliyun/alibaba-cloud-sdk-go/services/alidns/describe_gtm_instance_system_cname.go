@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmInstanceSystemCname invokes the alidns.DescribeGtmInstanceSystemCname API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
 func (client *Client) DescribeGtmInstanceSystemCname(request *DescribeGtmInstanceSystemCnameRequest) (response *DescribeGtmInstanceSystemCnameResponse, err error) {
 	response = CreateDescribeGtmInstanceSystemCnameResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmInstanceSystemCname(request *DescribeGtmInstanc
 }
 
 // DescribeGtmInstanceSystemCnameWithChan invokes the alidns.DescribeGtmInstanceSystemCname API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceSystemCnameWithChan(request *DescribeGtmInstanceSystemCnameRequest) (<-chan *DescribeGtmInstanceSystemCnameResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmInstanceSystemCnameResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmInstanceSystemCnameWithChan(request *DescribeGt
 }
 
 // DescribeGtmInstanceSystemCnameWithCallback invokes the alidns.DescribeGtmInstanceSystemCname API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtminstancesystemcname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmInstanceSystemCnameWithCallback(request *DescribeGtmInstanceSystemCnameRequest, callback func(response *DescribeGtmInstanceSystemCnameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -94,6 +89,7 @@ func CreateDescribeGtmInstanceSystemCnameRequest() (request *DescribeGtmInstance
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmInstanceSystemCname", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

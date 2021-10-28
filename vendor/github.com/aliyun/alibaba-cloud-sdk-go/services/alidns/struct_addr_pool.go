@@ -29,5 +29,6 @@ type AddrPool struct {
 	UpdateTimestamp     int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	Status              string `json:"Status" xml:"Status"`
 	MonitorStatus       string `json:"MonitorStatus" xml:"MonitorStatus"`
+	LbaStrategy         string `json:"LbaStrategy" xml:"LbaStrategy"`
 	Type                string `json:"Type" xml:"Type"`
 }

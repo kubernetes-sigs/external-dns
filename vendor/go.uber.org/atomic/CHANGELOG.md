@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 ## [1.7.0] - 2020-09-14
 ### Added
 - Support JSON serialization and deserialization of primitive atomic types.
@@ -70,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.6.0]: https://github.com/uber-go/atomic/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/uber-go/atomic/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/uber-go/atomic/compare/v1.4.0...v1.5.0
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 ||||||| parent of 5ce8c7613 (update vendored files)
@@ -189,6 +194,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 [1.4.0]: https://github.com/uber-go/atomic/compare/v1.4.0...v1.5.0
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+[1.4.0]: https://github.com/uber-go/atomic/compare/v1.4.0...v1.5.0
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 [1.4.0]: https://github.com/uber-go/atomic/compare/v1.3.2...v1.4.0
 [1.3.2]: https://github.com/uber-go/atomic/compare/v1.3.1...v1.3.2
 [1.3.1]: https://github.com/uber-go/atomic/compare/v1.3.0...v1.3.1

@@ -21,7 +21,6 @@ import (
 )
 
 // DeleteGtmRecoveryPlan invokes the alidns.DeleteGtmRecoveryPlan API synchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
 func (client *Client) DeleteGtmRecoveryPlan(request *DeleteGtmRecoveryPlanRequest) (response *DeleteGtmRecoveryPlanResponse, err error) {
 	response = CreateDeleteGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DeleteGtmRecoveryPlan(request *DeleteGtmRecoveryPlanReques
 }
 
 // DeleteGtmRecoveryPlanWithChan invokes the alidns.DeleteGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmRecoveryPlanWithChan(request *DeleteGtmRecoveryPlanRequest) (<-chan *DeleteGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *DeleteGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DeleteGtmRecoveryPlanWithChan(request *DeleteGtmRecoveryPl
 }
 
 // DeleteGtmRecoveryPlanWithCallback invokes the alidns.DeleteGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/deletegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DeleteGtmRecoveryPlanWithCallback(request *DeleteGtmRecoveryPlanRequest, callback func(response *DeleteGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDeleteGtmRecoveryPlanRequest() (request *DeleteGtmRecoveryPlanRequest
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DeleteGtmRecoveryPlan", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -269,6 +270,11 @@ func (c *FakeMutatingWebhookConfigurations) Apply(ctx context.Context, mutatingW
 		Invokes(testing.NewRootPatchSubresourceAction(mutatingwebhookconfigurationsResource, *name, types.ApplyPatchType, data), &v1beta1.MutatingWebhookConfiguration{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	v1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -276,6 +282,7 @@ func (c *FakeMutatingWebhookConfigurations) Apply(ctx context.Context, mutatingW
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	admissionregistrationv1beta1 "k8s.io/client-go/applyconfigurations/admissionregistration/v1beta1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -348,7 +355,7 @@ func (c *FakeMutatingWebhookConfigurations) Update(ctx context.Context, mutating
 // Delete takes name of the mutatingWebhookConfiguration and deletes it. Returns an error if one occurs.
 func (c *FakeMutatingWebhookConfigurations) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(mutatingwebhookconfigurationsResource, name), &v1beta1.MutatingWebhookConfiguration{})
+		Invokes(testing.NewRootDeleteActionWithOptions(mutatingwebhookconfigurationsResource, name, opts), &v1beta1.MutatingWebhookConfiguration{})
 	return err
 }
 
@@ -365,6 +372,27 @@ func (c *FakeMutatingWebhookConfigurations) Patch(ctx context.Context, name stri
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(mutatingwebhookconfigurationsResource, name, pt, data, subresources...), &v1beta1.MutatingWebhookConfiguration{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*v1beta1.MutatingWebhookConfiguration), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied mutatingWebhookConfiguration.
+func (c *FakeMutatingWebhookConfigurations) Apply(ctx context.Context, mutatingWebhookConfiguration *admissionregistrationv1beta1.MutatingWebhookConfigurationApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.MutatingWebhookConfiguration, err error) {
+	if mutatingWebhookConfiguration == nil {
+		return nil, fmt.Errorf("mutatingWebhookConfiguration provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(mutatingWebhookConfiguration)
+	if err != nil {
+		return nil, err
+	}
+	name := mutatingWebhookConfiguration.Name
+	if name == nil {
+		return nil, fmt.Errorf("mutatingWebhookConfiguration.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(mutatingwebhookconfigurationsResource, *name, types.ApplyPatchType, data), &v1beta1.MutatingWebhookConfiguration{})
 	if obj == nil {
 		return nil, err
 	}

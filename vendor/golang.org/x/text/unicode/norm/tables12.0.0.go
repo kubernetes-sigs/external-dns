@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build go1.14 && !go1.16
 // +build go1.14,!go1.16
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -19,6 +20,12 @@
 =======
 // +build go1.14
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// +build go1.14
+=======
+//go:build go1.14 && !go1.16
+// +build go1.14,!go1.16
+>>>>>>> 6b7ce455e (update vendored files)
 
 package norm
 

@@ -33,6 +33,7 @@ var (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ErrEmptyConfig = NewEmptyConfigError("no configuration has been provided, try setting KUBERNETES_MASTER environment variable")
 	// message is for consistency with old behavior
 	ErrEmptyCluster = errors.New("cluster has no server defined")
@@ -614,9 +615,27 @@ func validateAuthInfo(authInfoName string, authInfo clientcmdapi.AuthInfo) []err
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	ErrEmptyConfig = errors.New("no configuration has been provided, try setting KUBERNETES_MASTER environment variable")
+||||||| parent of 6b7ce455e (update vendored files)
+	ErrEmptyConfig = errors.New("no configuration has been provided, try setting KUBERNETES_MASTER environment variable")
+=======
+	ErrEmptyConfig = NewEmptyConfigError("no configuration has been provided, try setting KUBERNETES_MASTER environment variable")
+>>>>>>> 6b7ce455e (update vendored files)
 	// message is for consistency with old behavior
 	ErrEmptyCluster = errors.New("cluster has no server defined")
 )
+
+// NewEmptyConfigError returns an error wrapping the given message which IsEmptyConfig() will recognize as an empty config error
+func NewEmptyConfigError(message string) error {
+	return &errEmptyConfig{message}
+}
+
+type errEmptyConfig struct {
+	message string
+}
+
+func (e *errEmptyConfig) Error() string {
+	return e.message
+}
 
 type errContextNotFound struct {
 	ContextName string
@@ -643,9 +662,14 @@ func IsContextNotFound(err error) bool {
 func IsEmptyConfig(err error) bool {
 	switch t := err.(type) {
 	case errConfigurationInvalid:
-		return len(t) == 1 && t[0] == ErrEmptyConfig
+		if len(t) != 1 {
+			return false
+		}
+		_, ok := t[0].(*errEmptyConfig)
+		return ok
 	}
-	return err == ErrEmptyConfig
+	_, ok := err.(*errEmptyConfig)
+	return ok
 }
 
 // errConfigurationInvalid is a set of errors indicating the configuration is invalid.
@@ -792,6 +816,11 @@ func validateClusterInfo(clusterName string, clusterInfo clientcmdapi.Cluster) [
 			validationErrors = append(validationErrors, fmt.Errorf("no server found for cluster %q", clusterName))
 		}
 	}
+	if proxyURL := clusterInfo.ProxyURL; proxyURL != "" {
+		if _, err := parseProxyURL(proxyURL); err != nil {
+			validationErrors = append(validationErrors, fmt.Errorf("invalid 'proxy-url' %q for cluster %q: %w", proxyURL, clusterName, err))
+		}
+	}
 	// Make sure CA data and CA file aren't both specified
 	if len(clusterInfo.CertificateAuthority) != 0 && len(clusterInfo.CertificateAuthorityData) != 0 {
 		validationErrors = append(validationErrors, fmt.Errorf("certificate-authority-data and certificate-authority are both specified for %v. certificate-authority-data will override.", clusterName))
@@ -799,7 +828,7 @@ func validateClusterInfo(clusterName string, clusterInfo clientcmdapi.Cluster) [
 	if len(clusterInfo.CertificateAuthority) != 0 {
 		clientCertCA, err := os.Open(clusterInfo.CertificateAuthority)
 		if err != nil {
-			validationErrors = append(validationErrors, fmt.Errorf("unable to read certificate-authority %v for %v due to %v", clusterInfo.CertificateAuthority, clusterName, err))
+			validationErrors = append(validationErrors, fmt.Errorf("unable to read certificate-authority %v for %v due to %w", clusterInfo.CertificateAuthority, clusterName, err))
 		} else {
 			defer clientCertCA.Close()
 		}
@@ -838,7 +867,7 @@ func validateAuthInfo(authInfoName string, authInfo clientcmdapi.AuthInfo) []err
 		if len(authInfo.ClientCertificate) != 0 {
 			clientCertFile, err := os.Open(authInfo.ClientCertificate)
 			if err != nil {
-				validationErrors = append(validationErrors, fmt.Errorf("unable to read client-cert %v for %v due to %v", authInfo.ClientCertificate, authInfoName, err))
+				validationErrors = append(validationErrors, fmt.Errorf("unable to read client-cert %v for %v due to %w", authInfo.ClientCertificate, authInfoName, err))
 			} else {
 				defer clientCertFile.Close()
 			}
@@ -846,7 +875,7 @@ func validateAuthInfo(authInfoName string, authInfo clientcmdapi.AuthInfo) []err
 		if len(authInfo.ClientKey) != 0 {
 			clientKeyFile, err := os.Open(authInfo.ClientKey)
 			if err != nil {
-				validationErrors = append(validationErrors, fmt.Errorf("unable to read client-key %v for %v due to %v", authInfo.ClientKey, authInfoName, err))
+				validationErrors = append(validationErrors, fmt.Errorf("unable to read client-key %v for %v due to %w", authInfo.ClientKey, authInfoName, err))
 			} else {
 				defer clientKeyFile.Close()
 			}
@@ -869,6 +898,14 @@ func validateAuthInfo(authInfoName string, authInfo clientcmdapi.AuthInfo) []err
 			}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 		}
+		switch authInfo.Exec.InteractiveMode {
+		case "":
+			validationErrors = append(validationErrors, fmt.Errorf("interactiveMode must be specified for %v to use exec authentication plugin", authInfoName))
+		case clientcmdapi.NeverExecInteractiveMode, clientcmdapi.IfAvailableExecInteractiveMode, clientcmdapi.AlwaysExecInteractiveMode:
+			// These are valid
+		default:
+			validationErrors = append(validationErrors, fmt.Errorf("invalid interactiveMode for %v: %q", authInfoName, authInfo.Exec.InteractiveMode))
+		}
 	}
 
 	// authPath also provides information for the client to identify the server, so allow multiple auth methods in that case
@@ -876,9 +913,9 @@ func validateAuthInfo(authInfoName string, authInfo clientcmdapi.AuthInfo) []err
 		validationErrors = append(validationErrors, fmt.Errorf("more than one authentication method found for %v; found %v, only one is allowed", authInfoName, methods))
 	}
 
-	// ImpersonateGroups or ImpersonateUserExtra should be requested with a user
-	if (len(authInfo.ImpersonateGroups) > 0 || len(authInfo.ImpersonateUserExtra) > 0) && (len(authInfo.Impersonate) == 0) {
-		validationErrors = append(validationErrors, fmt.Errorf("requesting groups or user-extra for %v without impersonating a user", authInfoName))
+	// ImpersonateUID, ImpersonateGroups or ImpersonateUserExtra should be requested with a user
+	if (len(authInfo.ImpersonateUID) > 0 || len(authInfo.ImpersonateGroups) > 0 || len(authInfo.ImpersonateUserExtra) > 0) && (len(authInfo.Impersonate) == 0) {
+		validationErrors = append(validationErrors, fmt.Errorf("requesting uid, groups or user-extra for %v without impersonating a user", authInfoName))
 	}
 	return validationErrors
 }

@@ -239,6 +239,7 @@ func (fs FS) Fscacheinfo() (Fscacheinfo, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -253,6 +254,11 @@ func (fs FS) Fscacheinfo() (Fscacheinfo, error) {
 =======
 		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %v", err)
+=======
+		return Fscacheinfo{}, fmt.Errorf("failed to parse Fscacheinfo: %w", err)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	return *m, nil

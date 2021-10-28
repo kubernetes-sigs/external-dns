@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmRecoveryPlan invokes the alidns.DescribeGtmRecoveryPlan API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
 func (client *Client) DescribeGtmRecoveryPlan(request *DescribeGtmRecoveryPlanRequest) (response *DescribeGtmRecoveryPlanResponse, err error) {
 	response = CreateDescribeGtmRecoveryPlanResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmRecoveryPlan(request *DescribeGtmRecoveryPlanRe
 }
 
 // DescribeGtmRecoveryPlanWithChan invokes the alidns.DescribeGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanWithChan(request *DescribeGtmRecoveryPlanRequest) (<-chan *DescribeGtmRecoveryPlanResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmRecoveryPlanResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmRecoveryPlanWithChan(request *DescribeGtmRecove
 }
 
 // DescribeGtmRecoveryPlanWithCallback invokes the alidns.DescribeGtmRecoveryPlan API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmrecoveryplan.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmRecoveryPlanWithCallback(request *DescribeGtmRecoveryPlanRequest, callback func(response *DescribeGtmRecoveryPlanResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -107,6 +102,7 @@ func CreateDescribeGtmRecoveryPlanRequest() (request *DescribeGtmRecoveryPlanReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmRecoveryPlan", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

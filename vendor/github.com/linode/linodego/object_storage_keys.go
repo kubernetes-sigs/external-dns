@@ -11,6 +11,7 @@ type ObjectStorageKey struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ID           int                             `json:"id"`
 	Label        string                          `json:"label"`
 	AccessKey    string                          `json:"access_key"`
@@ -267,11 +268,32 @@ func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts 
 	Label     string `json:"label"`
 	AccessKey string `json:"access_key"`
 	SecretKey string `json:"secret_key"`
+||||||| parent of 6b7ce455e (update vendored files)
+	ID        int    `json:"id"`
+	Label     string `json:"label"`
+	AccessKey string `json:"access_key"`
+	SecretKey string `json:"secret_key"`
+=======
+	ID           int                             `json:"id"`
+	Label        string                          `json:"label"`
+	AccessKey    string                          `json:"access_key"`
+	SecretKey    string                          `json:"secret_key"`
+	Limited      bool                            `json:"limited"`
+	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
+}
+
+// ObjectStorageKeyBucketAccess represents a linode limited object storage key's bucket access
+type ObjectStorageKeyBucketAccess struct {
+	Cluster     string `json:"cluster"`
+	BucketName  string `json:"bucket_name"`
+	Permissions string `json:"permissions"`
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // ObjectStorageKeyCreateOptions fields are those accepted by CreateObjectStorageKey
 type ObjectStorageKeyCreateOptions struct {
-	Label string `json:"label"`
+	Label        string                          `json:"label"`
+	BucketAccess *[]ObjectStorageKeyBucketAccess `json:"bucket_access"`
 }
 
 // ObjectStorageKeyUpdateOptions fields are those accepted by UpdateObjectStorageKey
@@ -328,7 +350,6 @@ func (c *Client) CreateObjectStorageKey(ctx context.Context, createOpts ObjectSt
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -369,8 +390,13 @@ func (c *Client) UpdateObjectStorageKey(ctx context.Context, id int, updateOpts 
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

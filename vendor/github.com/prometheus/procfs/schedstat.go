@@ -98,6 +98,7 @@ func (fs FS) Schedstat() (*Schedstat, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func parseProcSchedstat(contents string) (ProcSchedstat, error) {
 	var (
 		stats ProcSchedstat
@@ -163,24 +164,40 @@ func parseProcSchedstat(contents string) (ProcSchedstat, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 func parseProcSchedstat(contents string) (stats ProcSchedstat, err error) {
+||||||| parent of 6b7ce455e (update vendored files)
+func parseProcSchedstat(contents string) (stats ProcSchedstat, err error) {
+=======
+func parseProcSchedstat(contents string) (ProcSchedstat, error) {
+	var (
+		stats ProcSchedstat
+		err   error
+	)
+>>>>>>> 6b7ce455e (update vendored files)
 	match := procLineRE.FindStringSubmatch(contents)
 
 	if match != nil {
 		stats.RunningNanoseconds, err = strconv.ParseUint(match[1], 10, 64)
 		if err != nil {
-			return
+			return stats, err
 		}
 
 		stats.WaitingNanoseconds, err = strconv.ParseUint(match[2], 10, 64)
 		if err != nil {
-			return
+			return stats, err
 		}
 
 		stats.RunTimeslices, err = strconv.ParseUint(match[3], 10, 64)
-		return
+		return stats, err
 	}
 
+<<<<<<< HEAD
 	err = errors.New("could not parse schedstat")
 	return
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	err = errors.New("could not parse schedstat")
+	return
+=======
+	return stats, errors.New("could not parse schedstat")
+>>>>>>> 6b7ce455e (update vendored files)
 }

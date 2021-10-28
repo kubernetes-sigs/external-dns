@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	netutils "k8s.io/utils/net"
 )
 
 const qnameCharFmt string = "[A-Za-z0-9]"
@@ -106,6 +107,7 @@ func IsFullyQualifiedDomainName(fldPath *field.Path, name string) field.ErrorLis
 	if len(strings.Split(name, ".")) < 2 {
 		return append(allErrors, field.Invalid(fldPath, name, "should be a domain with at least two segments separated by dots"))
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -607,6 +609,14 @@ func IsValidIP(value string) []string {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	for _, label := range strings.Split(name, ".") {
+		if errs := IsDNS1123Label(label); len(errs) > 0 {
+			return append(allErrors, field.Invalid(fldPath, label, strings.Join(errs, ",")))
+		}
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	return allErrors
 }
 
@@ -671,7 +681,7 @@ func IsValidLabelValue(value string) []string {
 }
 
 const dns1123LabelFmt string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
-const dns1123LabelErrMsg string = "a DNS-1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character"
+const dns1123LabelErrMsg string = "a lowercase RFC 1123 label must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character"
 
 // DNS1123LabelMaxLength is a label's max length in DNS (RFC 1123)
 const DNS1123LabelMaxLength int = 63
@@ -692,7 +702,7 @@ func IsDNS1123Label(value string) []string {
 }
 
 const dns1123SubdomainFmt string = dns1123LabelFmt + "(\\." + dns1123LabelFmt + ")*"
-const dns1123SubdomainErrorMsg string = "a DNS-1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
+const dns1123SubdomainErrorMsg string = "a lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character"
 
 // DNS1123SubdomainMaxLength is a subdomain's max length in DNS (RFC 1123)
 const DNS1123SubdomainMaxLength int = 253
@@ -842,9 +852,17 @@ func IsValidPortName(port string) []string {
 
 // IsValidIP tests that the argument is a valid IP address.
 func IsValidIP(value string) []string {
+<<<<<<< HEAD
 	if net.ParseIP(value) == nil {
 		return []string{"must be a valid IP address, (e.g. 10.9.8.7)"}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	if net.ParseIP(value) == nil {
+		return []string{"must be a valid IP address, (e.g. 10.9.8.7)"}
+=======
+	if netutils.ParseIPSloppy(value) == nil {
+		return []string{"must be a valid IP address, (e.g. 10.9.8.7 or 2001:db8::ffff)"}
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	return nil
 }
@@ -852,7 +870,7 @@ func IsValidIP(value string) []string {
 // IsValidIPv4Address tests that the argument is a valid IPv4 address.
 func IsValidIPv4Address(fldPath *field.Path, value string) field.ErrorList {
 	var allErrors field.ErrorList
-	ip := net.ParseIP(value)
+	ip := netutils.ParseIPSloppy(value)
 	if ip == nil || ip.To4() == nil {
 		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv4 address"))
 	}
@@ -862,7 +880,7 @@ func IsValidIPv4Address(fldPath *field.Path, value string) field.ErrorList {
 // IsValidIPv6Address tests that the argument is a valid IPv6 address.
 func IsValidIPv6Address(fldPath *field.Path, value string) field.ErrorList {
 	var allErrors field.ErrorList
-	ip := net.ParseIP(value)
+	ip := netutils.ParseIPSloppy(value)
 	if ip == nil || ip.To4() != nil {
 		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv6 address"))
 	}

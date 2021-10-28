@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDomainDnssecInfo invokes the alidns.DescribeDomainDnssecInfo API synchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
 func (client *Client) DescribeDomainDnssecInfo(request *DescribeDomainDnssecInfoRequest) (response *DescribeDomainDnssecInfoResponse, err error) {
 	response = CreateDescribeDomainDnssecInfoResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDomainDnssecInfo(request *DescribeDomainDnssecInfo
 }
 
 // DescribeDomainDnssecInfoWithChan invokes the alidns.DescribeDomainDnssecInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainDnssecInfoWithChan(request *DescribeDomainDnssecInfoRequest) (<-chan *DescribeDomainDnssecInfoResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainDnssecInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDomainDnssecInfoWithChan(request *DescribeDomainDn
 }
 
 // DescribeDomainDnssecInfoWithCallback invokes the alidns.DescribeDomainDnssecInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaindnssecinfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainDnssecInfoWithCallback(request *DescribeDomainDnssecInfoRequest, callback func(response *DescribeDomainDnssecInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -102,6 +97,7 @@ func CreateDescribeDomainDnssecInfoRequest() (request *DescribeDomainDnssecInfoR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainDnssecInfo", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

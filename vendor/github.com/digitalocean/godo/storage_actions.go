@@ -11,6 +11,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage-Actions
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -25,6 +26,11 @@ import (
 =======
 // See: https://developers.digitalocean.com/documentation/v2#storage-actions
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#storage-actions
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Block-Storage-Actions
+>>>>>>> 6b7ce455e (update vendored files)
 type StorageActionsService interface {
 	Attach(ctx context.Context, volumeID string, dropletID int) (*Action, *Response, error)
 	DetachByDropletID(ctx context.Context, volumeID string, dropletID int) (*Action, *Response, error)
@@ -39,7 +45,7 @@ type StorageActionsServiceOp struct {
 	client *Client
 }
 
-// StorageAttachment represents the attachement of a block storage
+// StorageAttachment represents the attachment of a block storage
 // volume to a specific Droplet under the device name.
 type StorageAttachment struct {
 	DropletID int `json:"droplet_id"`

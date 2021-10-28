@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -269,6 +270,11 @@ func (c *FakePriorityClasses) Apply(ctx context.Context, priorityClass *applycon
 		Invokes(testing.NewRootPatchSubresourceAction(priorityclassesResource, *name, types.ApplyPatchType, data), &schedulingv1.PriorityClass{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -276,6 +282,7 @@ func (c *FakePriorityClasses) Apply(ctx context.Context, priorityClass *applycon
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationsschedulingv1 "k8s.io/client-go/applyconfigurations/scheduling/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -348,7 +355,7 @@ func (c *FakePriorityClasses) Update(ctx context.Context, priorityClass *schedul
 // Delete takes name of the priorityClass and deletes it. Returns an error if one occurs.
 func (c *FakePriorityClasses) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewRootDeleteAction(priorityclassesResource, name), &schedulingv1.PriorityClass{})
+		Invokes(testing.NewRootDeleteActionWithOptions(priorityclassesResource, name, opts), &schedulingv1.PriorityClass{})
 	return err
 }
 
@@ -365,6 +372,27 @@ func (c *FakePriorityClasses) Patch(ctx context.Context, name string, pt types.P
 	obj, err := c.Fake.
 		Invokes(testing.NewRootPatchSubresourceAction(priorityclassesResource, name, pt, data, subresources...), &schedulingv1.PriorityClass{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*schedulingv1.PriorityClass), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied priorityClass.
+func (c *FakePriorityClasses) Apply(ctx context.Context, priorityClass *applyconfigurationsschedulingv1.PriorityClassApplyConfiguration, opts v1.ApplyOptions) (result *schedulingv1.PriorityClass, err error) {
+	if priorityClass == nil {
+		return nil, fmt.Errorf("priorityClass provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(priorityClass)
+	if err != nil {
+		return nil, err
+	}
+	name := priorityClass.Name
+	if name == nil {
+		return nil, fmt.Errorf("priorityClass.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewRootPatchSubresourceAction(priorityclassesResource, *name, types.ApplyPatchType, data), &schedulingv1.PriorityClass{})
 	if obj == nil {
 		return nil, err
 	}

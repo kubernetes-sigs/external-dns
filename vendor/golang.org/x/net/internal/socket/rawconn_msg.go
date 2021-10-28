@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
 
@@ -143,14 +144,16 @@ func (c *Conn) sendMsg(m *Message, flags int) error {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build aix || darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris || windows || zos
+>>>>>>> 6b7ce455e (update vendored files)
 // +build aix darwin dragonfly freebsd linux netbsd openbsd solaris windows zos
 
 package socket
 
 import (
 	"os"
-	"runtime"
-	"syscall"
 )
 
 func (c *Conn) recvMsg(m *Message, flags int) error {
@@ -166,10 +169,7 @@ func (c *Conn) recvMsg(m *Message, flags int) error {
 	var n int
 	fn := func(s uintptr) bool {
 		n, operr = recvmsg(s, &h, flags)
-		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
-			return false
-		}
-		return true
+		return ioComplete(flags, operr)
 	}
 	if err := c.c.Read(fn); err != nil {
 		return err
@@ -196,18 +196,29 @@ func (c *Conn) sendMsg(m *Message, flags int) error {
 	vs := make([]iovec, len(m.Buffers))
 	var sa []byte
 	if m.Addr != nil {
-		sa = marshalInetAddr(m.Addr)
+		var a [sizeofSockaddrInet6]byte
+		n := marshalInetAddr(m.Addr, a[:])
+		sa = a[:n]
 	}
 	h.pack(vs, m.Buffers, m.OOB, sa)
 	var operr error
 	var n int
 	fn := func(s uintptr) bool {
 		n, operr = sendmsg(s, &h, flags)
+<<<<<<< HEAD
 		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
 			return false
 		}
 		return true
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		if operr == syscall.EAGAIN || (runtime.GOOS == "zos" && operr == syscall.EWOULDBLOCK) {
+			return false
+		}
+		return true
+=======
+		return ioComplete(flags, operr)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	if err := c.c.Write(fn); err != nil {
 		return err

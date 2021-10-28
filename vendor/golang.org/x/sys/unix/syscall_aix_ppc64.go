@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build aix && ppc64
 // +build aix,ppc64
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -24,6 +25,13 @@
 // +build aix
 // +build ppc64
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// +build aix
+// +build ppc64
+=======
+//go:build aix && ppc64
+// +build aix,ppc64
+>>>>>>> 6b7ce455e (update vendored files)
 
 package unix
 

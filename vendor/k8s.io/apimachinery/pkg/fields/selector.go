@@ -60,6 +60,7 @@ type nothingSelector struct{}
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (n nothingSelector) Matches(_ Fields) bool      { return false }
 func (n nothingSelector) Empty() bool                { return false }
 func (n nothingSelector) String() string             { return "" }
@@ -108,6 +109,25 @@ func (n nothingSelector) DeepCopySelector() Selector                            
 func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
 func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+func (n nothingSelector) Matches(_ Fields) bool                                      { return false }
+func (n nothingSelector) Empty() bool                                                { return false }
+func (n nothingSelector) String() string                                             { return "" }
+func (n nothingSelector) Requirements() Requirements                                 { return nil }
+func (n nothingSelector) DeepCopySelector() Selector                                 { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) { return "", false }
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error)               { return n, nil }
+=======
+func (n nothingSelector) Matches(_ Fields) bool      { return false }
+func (n nothingSelector) Empty() bool                { return false }
+func (n nothingSelector) String() string             { return "" }
+func (n nothingSelector) Requirements() Requirements { return nil }
+func (n nothingSelector) DeepCopySelector() Selector { return n }
+func (n nothingSelector) RequiresExactMatch(field string) (value string, found bool) {
+	return "", false
+}
+func (n nothingSelector) Transform(fn TransformFunc) (Selector, error) { return n, nil }
+>>>>>>> 6b7ce455e (update vendored files)
 
 // Nothing returns a selector that matches no fields
 func Nothing() Selector {

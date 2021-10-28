@@ -184,6 +184,7 @@ func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if len(validValues) > 0 {
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -198,6 +199,11 @@ func NotSupported(field *Path, value interface{}, validValues []string) *Error {
 =======
 	if validValues != nil && len(validValues) > 0 {
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	if validValues != nil && len(validValues) > 0 {
+=======
+	if len(validValues) > 0 {
+>>>>>>> 6b7ce455e (update vendored files)
 		quotedValues := make([]string, len(validValues))
 		for i, v := range validValues {
 			quotedValues[i] = strconv.Quote(v)
@@ -255,6 +261,9 @@ func NewErrorTypeMatcher(t ErrorType) utilerrors.Matcher {
 
 // ToAggregate converts the ErrorList into an errors.Aggregate.
 func (list ErrorList) ToAggregate() utilerrors.Aggregate {
+	if len(list) == 0 {
+		return nil
+	}
 	errs := make([]error, 0, len(list))
 	errorMsgs := sets.NewString()
 	for _, err := range list {

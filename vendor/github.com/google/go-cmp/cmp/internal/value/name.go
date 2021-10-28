@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -17,6 +18,11 @@
 =======
 // license that can be found in the LICENSE.md file.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 6b7ce455e (update vendored files)
 
 package value
 
@@ -24,6 +30,8 @@ import (
 	"reflect"
 	"strconv"
 )
+
+var anyType = reflect.TypeOf((*interface{})(nil)).Elem()
 
 // TypeString is nearly identical to reflect.Type.String,
 // but has an additional option to specify that full type names be used.
@@ -35,6 +43,11 @@ func appendTypeName(b []byte, t reflect.Type, qualified, elideFunc bool) []byte 
 	// BUG: Go reflection provides no way to disambiguate two named types
 	// of the same name and within the same package,
 	// but declared within the namespace of different functions.
+
+	// Use the "any" alias instead of "interface{}" for better readability.
+	if t == anyType {
+		return append(b, "any"...)
+	}
 
 	// Named type.
 	if t.Name() != "" {

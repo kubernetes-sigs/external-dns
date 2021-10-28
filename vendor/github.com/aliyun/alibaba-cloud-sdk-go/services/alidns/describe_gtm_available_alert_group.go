@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmAvailableAlertGroup invokes the alidns.DescribeGtmAvailableAlertGroup API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
 func (client *Client) DescribeGtmAvailableAlertGroup(request *DescribeGtmAvailableAlertGroupRequest) (response *DescribeGtmAvailableAlertGroupResponse, err error) {
 	response = CreateDescribeGtmAvailableAlertGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmAvailableAlertGroup(request *DescribeGtmAvailab
 }
 
 // DescribeGtmAvailableAlertGroupWithChan invokes the alidns.DescribeGtmAvailableAlertGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAvailableAlertGroupWithChan(request *DescribeGtmAvailableAlertGroupRequest) (<-chan *DescribeGtmAvailableAlertGroupResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmAvailableAlertGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmAvailableAlertGroupWithChan(request *DescribeGt
 }
 
 // DescribeGtmAvailableAlertGroupWithCallback invokes the alidns.DescribeGtmAvailableAlertGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmavailablealertgroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAvailableAlertGroupWithCallback(request *DescribeGtmAvailableAlertGroupRequest, callback func(response *DescribeGtmAvailableAlertGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -93,6 +88,7 @@ func CreateDescribeGtmAvailableAlertGroupRequest() (request *DescribeGtmAvailabl
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAvailableAlertGroup", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

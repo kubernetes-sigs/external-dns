@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateDomainGroup invokes the alidns.UpdateDomainGroup API synchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
 func (client *Client) UpdateDomainGroup(request *UpdateDomainGroupRequest) (response *UpdateDomainGroupResponse, err error) {
 	response = CreateUpdateDomainGroupResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateDomainGroup(request *UpdateDomainGroupRequest) (resp
 }
 
 // UpdateDomainGroupWithChan invokes the alidns.UpdateDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainGroupWithChan(request *UpdateDomainGroupRequest) (<-chan *UpdateDomainGroupResponse, <-chan error) {
 	responseChan := make(chan *UpdateDomainGroupResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateDomainGroupWithChan(request *UpdateDomainGroupReques
 }
 
 // UpdateDomainGroupWithCallback invokes the alidns.UpdateDomainGroup API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatedomaingroup.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateDomainGroupWithCallback(request *UpdateDomainGroupRequest, callback func(response *UpdateDomainGroupResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateUpdateDomainGroupRequest() (request *UpdateDomainGroupRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateDomainGroup", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

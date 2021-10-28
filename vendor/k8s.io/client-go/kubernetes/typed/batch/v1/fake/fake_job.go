@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 
@@ -355,6 +356,11 @@ func (c *FakeJobs) ApplyStatus(ctx context.Context, job *applyconfigurationsbatc
 		Invokes(testing.NewPatchSubresourceAction(jobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &batchv1.Job{})
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -362,6 +368,7 @@ func (c *FakeJobs) ApplyStatus(ctx context.Context, job *applyconfigurationsbatc
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	applyconfigurationsbatchv1 "k8s.io/client-go/applyconfigurations/batch/v1"
 	testing "k8s.io/client-go/testing"
 )
 
@@ -452,7 +459,7 @@ func (c *FakeJobs) UpdateStatus(ctx context.Context, job *batchv1.Job, opts v1.U
 // Delete takes name of the job and deletes it. Returns an error if one occurs.
 func (c *FakeJobs) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(jobsResource, c.ns, name), &batchv1.Job{})
+		Invokes(testing.NewDeleteActionWithOptions(jobsResource, c.ns, name, opts), &batchv1.Job{})
 
 	return err
 }
@@ -470,6 +477,51 @@ func (c *FakeJobs) Patch(ctx context.Context, name string, pt types.PatchType, d
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(jobsResource, c.ns, name, pt, data, subresources...), &batchv1.Job{})
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*batchv1.Job), err
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied job.
+func (c *FakeJobs) Apply(ctx context.Context, job *applyconfigurationsbatchv1.JobApplyConfiguration, opts v1.ApplyOptions) (result *batchv1.Job, err error) {
+	if job == nil {
+		return nil, fmt.Errorf("job provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(job)
+	if err != nil {
+		return nil, err
+	}
+	name := job.Name
+	if name == nil {
+		return nil, fmt.Errorf("job.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(jobsResource, c.ns, *name, types.ApplyPatchType, data), &batchv1.Job{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*batchv1.Job), err
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *FakeJobs) ApplyStatus(ctx context.Context, job *applyconfigurationsbatchv1.JobApplyConfiguration, opts v1.ApplyOptions) (result *batchv1.Job, err error) {
+	if job == nil {
+		return nil, fmt.Errorf("job provided to Apply must not be nil")
+	}
+	data, err := json.Marshal(job)
+	if err != nil {
+		return nil, err
+	}
+	name := job.Name
+	if name == nil {
+		return nil, fmt.Errorf("job.Name must be provided to Apply")
+	}
+	obj, err := c.Fake.
+		Invokes(testing.NewPatchSubresourceAction(jobsResource, c.ns, *name, types.ApplyPatchType, data, "status"), &batchv1.Job{})
 
 	if obj == nil {
 		return nil, err

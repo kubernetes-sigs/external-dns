@@ -24,6 +24,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (rn ResourceName) String() string {
 	return string(rn)
 }
@@ -114,43 +115,51 @@ func (rl *ResourceList) Name(name ResourceName, defaultFormat resource.Format) *
 =======
 func (self ResourceName) String() string {
 	return string(self)
+||||||| parent of 6b7ce455e (update vendored files)
+func (self ResourceName) String() string {
+	return string(self)
+=======
+func (rn ResourceName) String() string {
+	return string(rn)
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
-// Returns the CPU limit if specified.
-func (self *ResourceList) Cpu() *resource.Quantity {
-	if val, ok := (*self)[ResourceCPU]; ok {
-		return &val
-	}
-	return &resource.Quantity{Format: resource.DecimalSI}
+// Cpu returns the Cpu limit if specified.
+func (rl *ResourceList) Cpu() *resource.Quantity {
+	return rl.Name(ResourceCPU, resource.DecimalSI)
 }
 
-// Returns the Memory limit if specified.
-func (self *ResourceList) Memory() *resource.Quantity {
-	if val, ok := (*self)[ResourceMemory]; ok {
-		return &val
-	}
-	return &resource.Quantity{Format: resource.BinarySI}
+// Memory returns the Memory limit if specified.
+func (rl *ResourceList) Memory() *resource.Quantity {
+	return rl.Name(ResourceMemory, resource.BinarySI)
 }
 
-// Returns the Storage limit if specified.
-func (self *ResourceList) Storage() *resource.Quantity {
-	if val, ok := (*self)[ResourceStorage]; ok {
-		return &val
-	}
-	return &resource.Quantity{Format: resource.BinarySI}
+// Storage returns the Storage limit if specified.
+func (rl *ResourceList) Storage() *resource.Quantity {
+	return rl.Name(ResourceStorage, resource.BinarySI)
 }
 
-func (self *ResourceList) Pods() *resource.Quantity {
-	if val, ok := (*self)[ResourcePods]; ok {
-		return &val
-	}
-	return &resource.Quantity{}
+// Pods returns the list of pods
+func (rl *ResourceList) Pods() *resource.Quantity {
+	return rl.Name(ResourcePods, resource.DecimalSI)
 }
 
-func (self *ResourceList) StorageEphemeral() *resource.Quantity {
-	if val, ok := (*self)[ResourceEphemeralStorage]; ok {
+// StorageEphemeral returns the list of ephemeral storage volumes, if any
+func (rl *ResourceList) StorageEphemeral() *resource.Quantity {
+	return rl.Name(ResourceEphemeralStorage, resource.BinarySI)
+}
+
+// Name returns the resource with name if specified, otherwise it returns a nil quantity with default format.
+func (rl *ResourceList) Name(name ResourceName, defaultFormat resource.Format) *resource.Quantity {
+	if val, ok := (*rl)[name]; ok {
 		return &val
 	}
+<<<<<<< HEAD
 	return &resource.Quantity{}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return &resource.Quantity{}
+=======
+	return &resource.Quantity{Format: defaultFormat}
+>>>>>>> 6b7ce455e (update vendored files)
 }

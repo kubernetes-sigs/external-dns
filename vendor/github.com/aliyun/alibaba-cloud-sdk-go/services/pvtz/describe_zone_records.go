@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeZoneRecords invokes the pvtz.DescribeZoneRecords API synchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
 func (client *Client) DescribeZoneRecords(request *DescribeZoneRecordsRequest) (response *DescribeZoneRecordsResponse, err error) {
 	response = CreateDescribeZoneRecordsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeZoneRecords(request *DescribeZoneRecordsRequest) (
 }
 
 // DescribeZoneRecordsWithChan invokes the pvtz.DescribeZoneRecords API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneRecordsWithChan(request *DescribeZoneRecordsRequest) (<-chan *DescribeZoneRecordsResponse, <-chan error) {
 	responseChan := make(chan *DescribeZoneRecordsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeZoneRecordsWithChan(request *DescribeZoneRecordsRe
 }
 
 // DescribeZoneRecordsWithCallback invokes the pvtz.DescribeZoneRecords API asynchronously
-// api document: https://help.aliyun.com/api/pvtz/describezonerecords.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeZoneRecordsWithCallback(request *DescribeZoneRecordsRequest, callback func(response *DescribeZoneRecordsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -105,6 +100,7 @@ func CreateDescribeZoneRecordsRequest() (request *DescribeZoneRecordsRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("pvtz", "2018-01-01", "DescribeZoneRecords", "pvtz", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

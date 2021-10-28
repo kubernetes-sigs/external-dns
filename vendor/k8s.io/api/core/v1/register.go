@@ -91,6 +91,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		&EphemeralContainers{},
@@ -103,6 +104,10 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 =======
 		&EphemeralContainers{},
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		&EphemeralContainers{},
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	)
 
 	// Add common types

@@ -26,6 +26,7 @@ package buffer // import "go.uber.org/zap/buffer"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import (
 	"strconv"
 	"time"
@@ -101,6 +102,14 @@ func (b *Buffer) AppendTime(t time.Time, layout string) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 import "strconv"
+||||||| parent of 6b7ce455e (update vendored files)
+import "strconv"
+=======
+import (
+	"strconv"
+	"time"
+)
+>>>>>>> 6b7ce455e (update vendored files)
 
 const _size = 1024 // by default, create 1 KiB buffers
 
@@ -125,6 +134,11 @@ func (b *Buffer) AppendString(s string) {
 func (b *Buffer) AppendInt(i int64) {
 	b.bs = strconv.AppendInt(b.bs, i, 10)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+// AppendTime appends the time formatted using the specified layout.
+func (b *Buffer) AppendTime(t time.Time, layout string) {
+	b.bs = t.AppendFormat(b.bs, layout)
 }
 
 // AppendUint appends an unsigned integer to the underlying buffer (assuming
@@ -174,6 +188,24 @@ func (b *Buffer) Reset() {
 func (b *Buffer) Write(bs []byte) (int, error) {
 	b.bs = append(b.bs, bs...)
 	return len(bs), nil
+}
+
+// WriteByte writes a single byte to the Buffer.
+//
+// Error returned is always nil, function signature is compatible
+// with bytes.Buffer and bufio.Writer
+func (b *Buffer) WriteByte(v byte) error {
+	b.AppendByte(v)
+	return nil
+}
+
+// WriteString writes a string to the Buffer.
+//
+// Error returned is always nil, function signature is compatible
+// with bytes.Buffer and bufio.Writer
+func (b *Buffer) WriteString(s string) (int, error) {
+	b.AppendString(s)
+	return len(s), nil
 }
 
 // TrimNewline trims any final "\n" byte from the end of the buffer.

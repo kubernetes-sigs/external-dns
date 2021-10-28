@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmAccessStrategies invokes the alidns.DescribeGtmAccessStrategies API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
 func (client *Client) DescribeGtmAccessStrategies(request *DescribeGtmAccessStrategiesRequest) (response *DescribeGtmAccessStrategiesResponse, err error) {
 	response = CreateDescribeGtmAccessStrategiesResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmAccessStrategies(request *DescribeGtmAccessStra
 }
 
 // DescribeGtmAccessStrategiesWithChan invokes the alidns.DescribeGtmAccessStrategies API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategiesWithChan(request *DescribeGtmAccessStrategiesRequest) (<-chan *DescribeGtmAccessStrategiesResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmAccessStrategiesResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmAccessStrategiesWithChan(request *DescribeGtmAc
 }
 
 // DescribeGtmAccessStrategiesWithCallback invokes the alidns.DescribeGtmAccessStrategies API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmaccessstrategies.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmAccessStrategiesWithCallback(request *DescribeGtmAccessStrategiesRequest, callback func(response *DescribeGtmAccessStrategiesResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -86,12 +81,12 @@ type DescribeGtmAccessStrategiesRequest struct {
 // DescribeGtmAccessStrategiesResponse is the response struct for api DescribeGtmAccessStrategies
 type DescribeGtmAccessStrategiesResponse struct {
 	*responses.BaseResponse
-	RequestId  string     `json:"RequestId" xml:"RequestId"`
-	TotalItems int        `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int        `json:"TotalPages" xml:"TotalPages"`
-	PageNumber int        `json:"PageNumber" xml:"PageNumber"`
-	PageSize   int        `json:"PageSize" xml:"PageSize"`
-	Strategies Strategies `json:"Strategies" xml:"Strategies"`
+	RequestId  string                                  `json:"RequestId" xml:"RequestId"`
+	TotalItems int                                     `json:"TotalItems" xml:"TotalItems"`
+	TotalPages int                                     `json:"TotalPages" xml:"TotalPages"`
+	PageNumber int                                     `json:"PageNumber" xml:"PageNumber"`
+	PageSize   int                                     `json:"PageSize" xml:"PageSize"`
+	Strategies StrategiesInDescribeGtmAccessStrategies `json:"Strategies" xml:"Strategies"`
 }
 
 // CreateDescribeGtmAccessStrategiesRequest creates a request to invoke DescribeGtmAccessStrategies API
@@ -100,6 +95,7 @@ func CreateDescribeGtmAccessStrategiesRequest() (request *DescribeGtmAccessStrat
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmAccessStrategies", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

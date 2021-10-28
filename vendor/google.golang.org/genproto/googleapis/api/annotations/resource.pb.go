@@ -163,6 +163,7 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 //       // For Kubernetes resources, the format is {api group}/{kind}.
 //       option (google.api.resource) = {
 //         type: "pubsub.googleapis.com/Topic"
+<<<<<<< HEAD
 //         name_descriptor: {
 //           pattern: "projects/{project}/topics/{topic}"
 //           parent_type: "cloudresourcemanager.googleapis.com/Project"
@@ -257,6 +258,42 @@ func (ResourceDescriptor_Style) EnumDescriptor() ([]byte, []int) {
 //           parent_type: "cloudresourcemanager.googleapis.com/Project"
 //         - pattern: "shelves/{shelf}"
 //           parent_type: "cloudresourcemanager.googleapis.com/Folder"
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//         pattern: "projects/{project}/topics/{topic}"
+//       };
+//     }
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//     resources:
+//     - type: "pubsub.googleapis.com/Topic"
+//       pattern: "projects/{project}/topics/{topic}"
+//
+// Sometimes, resources have multiple patterns, typically because they can
+// live under multiple parents.
+//
+// Example:
+//
+//     message LogEntry {
+//       option (google.api.resource) = {
+//         type: "logging.googleapis.com/LogEntry"
+//         pattern: "projects/{project}/logs/{log}"
+//         pattern: "folders/{folder}/logs/{log}"
+//         pattern: "organizations/{organization}/logs/{log}"
+//         pattern: "billingAccounts/{billing_account}/logs/{log}"
+//       };
+//     }
+//
+// The ResourceDescriptor Yaml config will look like:
+//
+//     resources:
+//     - type: 'logging.googleapis.com/LogEntry'
+//       pattern: "projects/{project}/logs/{log}"
+//       pattern: "folders/{folder}/logs/{log}"
+//       pattern: "organizations/{organization}/logs/{log}"
+//       pattern: "billingAccounts/{billing_account}/logs/{log}"
+>>>>>>> 6b7ce455e (update vendored files)
 type ResourceDescriptor struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

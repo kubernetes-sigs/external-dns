@@ -33,6 +33,7 @@ func consumeEnum(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInfo, _ 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		return out, errDecode
 	}
 	p.v.Elem().SetInt(int64(v))
@@ -292,6 +293,11 @@ func consumeEnumSlice(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInf
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		return out, protowire.ParseError(n)
+||||||| parent of 6b7ce455e (update vendored files)
+		return out, protowire.ParseError(n)
+=======
+		return out, errDecode
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	p.v.Elem().SetInt(int64(v))
 	out.n = n
@@ -391,12 +397,12 @@ func consumeEnumSlice(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInf
 	if wtyp == protowire.BytesType {
 		b, n := protowire.ConsumeBytes(b)
 		if n < 0 {
-			return out, protowire.ParseError(n)
+			return out, errDecode
 		}
 		for len(b) > 0 {
 			v, n := protowire.ConsumeVarint(b)
 			if n < 0 {
-				return out, protowire.ParseError(n)
+				return out, errDecode
 			}
 			rv := reflect.New(s.Type().Elem()).Elem()
 			rv.SetInt(int64(v))
@@ -411,8 +417,14 @@ func consumeEnumSlice(b []byte, p pointer, wtyp protowire.Type, f *coderFieldInf
 	}
 	v, n := protowire.ConsumeVarint(b)
 	if n < 0 {
+<<<<<<< HEAD
 		return out, protowire.ParseError(n)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		return out, protowire.ParseError(n)
+=======
+		return out, errDecode
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	rv := reflect.New(s.Type().Elem()).Elem()
 	rv.SetInt(int64(v))

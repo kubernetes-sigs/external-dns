@@ -95,6 +95,7 @@ func NewClientNegotiator(serializer NegotiatedSerializer, gv schema.GroupVersion
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // NewInternalClientNegotiator applies the default client rules for connecting to a Kubernetes apiserver
@@ -203,6 +204,42 @@ func NewSimpleClientNegotiator(info SerializerInfo, gv schema.GroupVersion) Clie
 }
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// NewInternalClientNegotiator applies the default client rules for connecting to a Kubernetes apiserver
+// where objects are converted to gv prior to sending and decoded to their internal representation prior
+// to retrieval.
+//
+// DEPRECATED: Internal clients are deprecated and will be removed in a future Kubernetes release.
+func NewInternalClientNegotiator(serializer NegotiatedSerializer, gv schema.GroupVersion) ClientNegotiator {
+	decode := schema.GroupVersions{
+		{
+			Group:   gv.Group,
+			Version: APIVersionInternal,
+		},
+		// always include the legacy group as a decoding target to handle non-error `Status` return types
+		{
+			Group:   "",
+			Version: APIVersionInternal,
+		},
+	}
+	return &clientNegotiator{
+		encode:     gv,
+		decode:     decode,
+		serializer: serializer,
+	}
+}
+
+// NewSimpleClientNegotiator will negotiate for a single serializer. This should only be used
+// for testing or when the caller is taking responsibility for setting the GVK on encoded objects.
+func NewSimpleClientNegotiator(info SerializerInfo, gv schema.GroupVersion) ClientNegotiator {
+	return &clientNegotiator{
+		serializer: &simpleNegotiatedSerializer{info: info},
+		encode:     gv,
+	}
+}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 type simpleNegotiatedSerializer struct {
 	info SerializerInfo
 }

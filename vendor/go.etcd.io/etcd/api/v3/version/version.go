@@ -26,7 +26,12 @@ import (
 var (
 	// MinClusterVersion is the min cluster version this etcd binary is compatible with.
 	MinClusterVersion = "3.0.0"
+<<<<<<< HEAD
 	Version           = "3.5.0"
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	Version           = "3.5.2"
+>>>>>>> 6b7ce455e (update vendored files)
 	APIVersion        = "unknown"
 
 	// Git SHA Value will be set during build

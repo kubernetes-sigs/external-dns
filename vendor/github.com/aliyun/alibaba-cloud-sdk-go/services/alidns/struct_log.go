@@ -17,13 +17,21 @@ package alidns
 
 // Log is a nested struct in alidns response
 type Log struct {
-	OperTime      string `json:"OperTime" xml:"OperTime"`
-	OperAction    string `json:"OperAction" xml:"OperAction"`
-	EntityType    string `json:"EntityType" xml:"EntityType"`
-	EntityId      string `json:"EntityId" xml:"EntityId"`
-	EntityName    string `json:"EntityName" xml:"EntityName"`
-	OperIp        string `json:"OperIp" xml:"OperIp"`
 	OperTimestamp int64  `json:"OperTimestamp" xml:"OperTimestamp"`
+	Content       string `json:"content" xml:"content"`
+	OperTime      string `json:"OperTime" xml:"OperTime"`
+	Action        string `json:"Action" xml:"Action"`
 	Id            int64  `json:"Id" xml:"Id"`
-	Content       string `json:"Content" xml:"Content"`
+	ThreatTime    string `json:"ThreatTime" xml:"ThreatTime"`
+	EntityName    string `json:"EntityName" xml:"EntityName"`
+	SubDomain     string `json:"SubDomain" xml:"SubDomain"`
+	EntityId      string `json:"EntityId" xml:"EntityId"`
+	OperateTime   string `json:"OperateTime" xml:"OperateTime"`
+	EntityType    string `json:"EntityType" xml:"EntityType"`
+	OperAction    string `json:"OperAction" xml:"OperAction"`
+	SourceIp      string `json:"SourceIp" xml:"SourceIp"`
+	OperIp        string `json:"OperIp" xml:"OperIp"`
+	ThreatLevel   string `json:"ThreatLevel" xml:"ThreatLevel"`
+	ThreatType    string `json:"ThreatType" xml:"ThreatType"`
+	Type          string `json:"Type" xml:"Type"`
 }

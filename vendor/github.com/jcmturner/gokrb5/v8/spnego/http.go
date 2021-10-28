@@ -116,6 +116,8 @@ func (c *Client) Do(req *http.Request) (resp *http.Response, err error) {
 			// Refresh the body reader so the body can be sent again
 			req.Body = ioutil.NopCloser(&body)
 		}
+		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
 		return c.Do(req)
 	}
 	return resp, err

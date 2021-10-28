@@ -16,6 +16,7 @@ const (
 	ActionCompleted = "completed"
 )
 
+<<<<<<< HEAD
 // ActionsService handles communction with action related methods of the
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -34,12 +35,19 @@ const (
 =======
 // DigitalOcean API: https://developers.digitalocean.com/documentation/v2#actions
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// ActionsService handles communction with action related methods of the
+// DigitalOcean API: https://developers.digitalocean.com/documentation/v2#actions
+=======
+// ActionsService handles communication with action related methods of the
+// DigitalOcean API: https://docs.digitalocean.com/reference/api/api-reference/#tag/Actions
+>>>>>>> 6b7ce455e (update vendored files)
 type ActionsService interface {
 	List(context.Context, *ListOptions) ([]Action, *Response, error)
 	Get(context.Context, int) (*Action, *Response, error)
 }
 
-// ActionsServiceOp handles communition with the image action related methods of the
+// ActionsServiceOp handles communication with the image action related methods of the
 // DigitalOcean API.
 type ActionsServiceOp struct {
 	client *Client

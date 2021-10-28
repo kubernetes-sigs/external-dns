@@ -118,8 +118,8 @@ type LBFirewallRule struct {
 
 // SSL represents valid SSL config
 type SSL struct {
-	PrivateKey  string `json:"ssl_private_key,omitempty"`
-	Certificate string `json:"ssl_certificate,omitempty"`
+	PrivateKey  string `json:"private_key,omitempty"`
+	Certificate string `json:"certificate,omitempty"`
 	Chain       string `json:"chain,omitempty"`
 }
 

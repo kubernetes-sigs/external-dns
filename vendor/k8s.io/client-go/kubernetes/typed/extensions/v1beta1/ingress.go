@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	json "encoding/json"
 	"fmt"
 	"time"
@@ -489,12 +490,18 @@ func (c *ingresses) ApplyStatus(ctx context.Context, ingress *extensionsv1beta1.
 		VersionedParams(&patchOpts, scheme.ParameterCodec).
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	json "encoding/json"
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 	"time"
 
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
+	extensionsv1beta1 "k8s.io/client-go/applyconfigurations/extensions/v1beta1"
 	scheme "k8s.io/client-go/kubernetes/scheme"
 	rest "k8s.io/client-go/rest"
 )
@@ -516,6 +523,8 @@ type IngressInterface interface {
 	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.IngressList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Ingress, err error)
+	Apply(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error)
+	ApplyStatus(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error)
 	IngressExpansion
 }
 
@@ -658,6 +667,62 @@ func (c *ingresses) Patch(ctx context.Context, name string, pt types.PatchType, 
 		SubResource(subresources...).
 		VersionedParams(&opts, scheme.ParameterCodec).
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// Apply takes the given apply declarative configuration, applies it and returns the applied ingress.
+func (c *ingresses) Apply(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error) {
+	if ingress == nil {
+		return nil, fmt.Errorf("ingress provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(ingress)
+	if err != nil {
+		return nil, err
+	}
+	name := ingress.Name
+	if name == nil {
+		return nil, fmt.Errorf("ingress.Name must be provided to Apply")
+	}
+	result = &v1beta1.Ingress{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("ingresses").
+		Name(*name).
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
+		Body(data).
+		Do(ctx).
+		Into(result)
+	return
+}
+
+// ApplyStatus was generated because the type contains a Status member.
+// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+func (c *ingresses) ApplyStatus(ctx context.Context, ingress *extensionsv1beta1.IngressApplyConfiguration, opts v1.ApplyOptions) (result *v1beta1.Ingress, err error) {
+	if ingress == nil {
+		return nil, fmt.Errorf("ingress provided to Apply must not be nil")
+	}
+	patchOpts := opts.ToPatchOptions()
+	data, err := json.Marshal(ingress)
+	if err != nil {
+		return nil, err
+	}
+
+	name := ingress.Name
+	if name == nil {
+		return nil, fmt.Errorf("ingress.Name must be provided to Apply")
+	}
+
+	result = &v1beta1.Ingress{}
+	err = c.client.Patch(types.ApplyPatchType).
+		Namespace(c.ns).
+		Resource("ingresses").
+		Name(*name).
+		SubResource("status").
+		VersionedParams(&patchOpts, scheme.ParameterCodec).
 		Body(data).
 		Do(ctx).
 		Into(result)

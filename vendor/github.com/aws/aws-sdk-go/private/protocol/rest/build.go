@@ -101,6 +101,7 @@ func buildLocationElements(r *request.Request, v reflect.Value, buildGETQuery bo
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 			// API operations like SSECustomerKey is modeled as string but
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -115,6 +116,11 @@ func buildLocationElements(r *request.Request, v reflect.Value, buildGETQuery bo
 =======
 			// API operations like SSECustomerKey is modeled as stirng but
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			// API operations like SSECustomerKey is modeled as stirng but
+=======
+			// API operations like SSECustomerKey is modeled as string but
+>>>>>>> 6b7ce455e (update vendored files)
 			// required to be base64 encoded in request.
 			if field.Tag.Get("marshal-as") == "blob" {
 				m = m.Convert(byteSliceType)

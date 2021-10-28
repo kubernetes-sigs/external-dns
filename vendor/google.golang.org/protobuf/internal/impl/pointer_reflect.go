@@ -124,6 +124,7 @@ func (p pointer) Bytes() *[]byte           { return p.v.Interface().(*[]byte) }
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 func (p pointer) BytesPtr() **[]byte       { return p.v.Interface().(**[]byte) }
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -135,6 +136,10 @@ func (p pointer) BytesPtr() **[]byte       { return p.v.Interface().(**[]byte) }
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+func (p pointer) BytesPtr() **[]byte       { return p.v.Interface().(**[]byte) }
+>>>>>>> 6b7ce455e (update vendored files)
 func (p pointer) BytesSlice() *[][]byte    { return p.v.Interface().(*[][]byte) }
 func (p pointer) WeakFields() *weakFields  { return (*weakFields)(p.v.Interface().(*WeakFields)) }
 func (p pointer) Extensions() *map[int32]ExtensionField {

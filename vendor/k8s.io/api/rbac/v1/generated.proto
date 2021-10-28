@@ -20,6 +20,7 @@ limitations under the License.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 syntax = "proto2";
 
 package k8s.io.api.rbac.v1;
@@ -359,6 +360,11 @@ message RoleRef {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 syntax = 'proto2';
+||||||| parent of 6b7ce455e (update vendored files)
+syntax = 'proto2';
+=======
+syntax = "proto2";
+>>>>>>> 6b7ce455e (update vendored files)
 
 package k8s.io.api.rbac.v1;
 
@@ -433,7 +439,7 @@ message ClusterRoleList {
 // PolicyRule holds information that describes a policy rule, but does not contain information
 // about who the rule applies to or which namespace the rule applies to.
 message PolicyRule {
-  // Verbs is a list of Verbs that apply to ALL the ResourceKinds and AttributeRestrictions contained in this rule.  VerbAll represents all kinds.
+  // Verbs is a list of Verbs that apply to ALL the ResourceKinds contained in this rule. '*' represents all verbs.
   repeated string verbs = 1;
 
   // APIGroups is the name of the APIGroup that contains the resources.  If multiple API groups are specified, any action requested against one of
@@ -441,7 +447,7 @@ message PolicyRule {
   // +optional
   repeated string apiGroups = 2;
 
-  // Resources is a list of resources this rule applies to.  ResourceAll represents all resources.
+  // Resources is a list of resources this rule applies to. '*' represents all resources.
   // +optional
   repeated string resources = 3;
 
@@ -505,6 +511,7 @@ message RoleList {
 }
 
 // RoleRef contains information that points to the role being used
+// +structType=atomic
 message RoleRef {
   // APIGroup is the group for the resource being referenced
   optional string apiGroup = 1;
@@ -518,7 +525,12 @@ message RoleRef {
 
 // Subject contains a reference to the object or user identities a role binding applies to.  This can either hold a direct API object reference,
 // or a value for non-objects such as user and group names.
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// +structType=atomic
+>>>>>>> 6b7ce455e (update vendored files)
 message Subject {
   // Kind of object being referenced. Values defined by this API group are "User", "Group", and "ServiceAccount".
   // If the Authorizer does not recognized the kind value, the Authorizer should report an error.

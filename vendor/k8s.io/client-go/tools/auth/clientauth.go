@@ -78,6 +78,7 @@ type Info struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Password    string `datapolicy:"password"`
 	CAFile      string
 	CertFile    string
@@ -105,11 +106,22 @@ type Info struct {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	Password    string
+||||||| parent of 6b7ce455e (update vendored files)
+	Password    string
+=======
+	Password    string `datapolicy:"password"`
+>>>>>>> 6b7ce455e (update vendored files)
 	CAFile      string
 	CertFile    string
 	KeyFile     string
+<<<<<<< HEAD
 	BearerToken string
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	BearerToken string
+=======
+	BearerToken string `datapolicy:"token"`
+>>>>>>> 6b7ce455e (update vendored files)
 	Insecure    *bool
 }
 

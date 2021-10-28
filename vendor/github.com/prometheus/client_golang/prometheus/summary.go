@@ -26,6 +26,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
 
@@ -1445,6 +1446,11 @@ func NewConstSummary(
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+||||||| parent of 6b7ce455e (update vendored files)
+	//lint:ignore SA1019 Need to keep deprecated package for compatibility.
+=======
+	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
+>>>>>>> 6b7ce455e (update vendored files)
 	"github.com/golang/protobuf/proto"
 
 	dto "github.com/prometheus/client_model/go"
@@ -1476,7 +1482,12 @@ type Summary interface {
 	Metric
 	Collector
 
-	// Observe adds a single observation to the summary.
+	// Observe adds a single observation to the summary. Observations are
+	// usually positive or zero. Negative observations are accepted but
+	// prevent current versions of Prometheus from properly detecting
+	// counter resets in the sum of observations. See
+	// https://prometheus.io/docs/practices/histograms/#count-and-sum-of-observations
+	// for details.
 	Observe(float64)
 }
 
@@ -1531,7 +1542,7 @@ type SummaryOpts struct {
 	// better covered by target labels set by the scraping Prometheus
 	// server, or by one specific metric (e.g. a build_info or a
 	// machine_role metric). See also
-	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels,-not-static-scraped-labels
+	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
 	ConstLabels Labels
 
 	// Objectives defines the quantile rank estimates with their respective
@@ -1542,7 +1553,9 @@ type SummaryOpts struct {
 	Objectives map[float64]float64
 
 	// MaxAge defines the duration for which an observation stays relevant
-	// for the summary. Must be positive. The default value is DefMaxAge.
+	// for the summary. Only applies to pre-calculated quantiles, does not
+	// apply to _sum and _count. Must be positive. The default value is
+	// DefMaxAge.
 	MaxAge time.Duration
 
 	// AgeBuckets is the number of buckets used to exclude observations that
@@ -1629,7 +1642,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 		// Use the lock-free implementation of a Summary without objectives.
 		s := &noObjectivesSummary{
 			desc:       desc,
-			labelPairs: makeLabelPairs(desc, labelValues),
+			labelPairs: MakeLabelPairs(desc, labelValues),
 			counts:     [2]*summaryCounts{{}, {}},
 		}
 		s.init(s) // Init self-collection.
@@ -1642,7 +1655,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 		objectives:       opts.Objectives,
 		sortedObjectives: make([]float64, 0, len(opts.Objectives)),
 
-		labelPairs: makeLabelPairs(desc, labelValues),
+		labelPairs: MakeLabelPairs(desc, labelValues),
 
 		hotBuf:         make([]float64, 0, opts.BufCap),
 		coldBuf:        make([]float64, 0, opts.BufCap),
@@ -1934,7 +1947,7 @@ func (s quantSort) Less(i, j int) bool {
 // (e.g. HTTP request latencies, partitioned by status code and method). Create
 // instances with NewSummaryVec.
 type SummaryVec struct {
-	*metricVec
+	*MetricVec
 }
 
 // NewSummaryVec creates a new SummaryVec based on the provided SummaryOpts and
@@ -1956,14 +1969,14 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 		opts.ConstLabels,
 	)
 	return &SummaryVec{
-		metricVec: newMetricVec(desc, func(lvs ...string) Metric {
+		MetricVec: NewMetricVec(desc, func(lvs ...string) Metric {
 			return newSummary(desc, opts, lvs...)
 		}),
 	}
 }
 
 // GetMetricWithLabelValues returns the Summary for the given slice of label
-// values (same order as the VariableLabels in Desc). If that combination of
+// values (same order as the variable labels in Desc). If that combination of
 // label values is accessed for the first time, a new Summary is created.
 //
 // It is possible to call this method without using the returned Summary to only
@@ -1978,7 +1991,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 // example.
 //
 // An error is returned if the number of label values is not the same as the
-// number of VariableLabels in Desc (minus any curried labels).
+// number of variable labels in Desc (minus any curried labels).
 //
 // Note that for more than one label value, this method is prone to mistakes
 // caused by an incorrect order of arguments. Consider GetMetricWith(Labels) as
@@ -1987,7 +2000,7 @@ func NewSummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 // with a performance overhead (for creating and processing the Labels map).
 // See also the GaugeVec example.
 func (v *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
-	metric, err := v.metricVec.getMetricWithLabelValues(lvs...)
+	metric, err := v.MetricVec.GetMetricWithLabelValues(lvs...)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -1995,19 +2008,19 @@ func (v *SummaryVec) GetMetricWithLabelValues(lvs ...string) (Observer, error) {
 }
 
 // GetMetricWith returns the Summary for the given Labels map (the label names
-// must match those of the VariableLabels in Desc). If that label map is
+// must match those of the variable labels in Desc). If that label map is
 // accessed for the first time, a new Summary is created. Implications of
 // creating a Summary without using it and keeping the Summary for later use are
 // the same as for GetMetricWithLabelValues.
 //
 // An error is returned if the number and names of the Labels are inconsistent
-// with those of the VariableLabels in Desc (minus any curried labels).
+// with those of the variable labels in Desc (minus any curried labels).
 //
 // This method is used for the same purpose as
 // GetMetricWithLabelValues(...string). See there for pros and cons of the two
 // methods.
 func (v *SummaryVec) GetMetricWith(labels Labels) (Observer, error) {
-	metric, err := v.metricVec.getMetricWith(labels)
+	metric, err := v.MetricVec.GetMetricWith(labels)
 	if metric != nil {
 		return metric.(Observer), err
 	}
@@ -2051,7 +2064,7 @@ func (v *SummaryVec) With(labels Labels) Observer {
 // registered with a given registry (usually the uncurried version). The Reset
 // method deletes all metrics, even if called on a curried vector.
 func (v *SummaryVec) CurryWith(labels Labels) (ObserverVec, error) {
-	vec, err := v.curryWith(labels)
+	vec, err := v.MetricVec.CurryWith(labels)
 	if vec != nil {
 		return &SummaryVec{vec}, err
 	}
@@ -2137,8 +2150,14 @@ func NewConstSummary(
 		count:      count,
 		sum:        sum,
 		quantiles:  quantiles,
+<<<<<<< HEAD
 		labelPairs: makeLabelPairs(desc, labelValues),
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		labelPairs: makeLabelPairs(desc, labelValues),
+=======
+		labelPairs: MakeLabelPairs(desc, labelValues),
+>>>>>>> 6b7ce455e (update vendored files)
 	}, nil
 }
 

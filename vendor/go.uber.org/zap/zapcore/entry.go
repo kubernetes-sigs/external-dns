@@ -25,6 +25,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"runtime"
 	"strings"
 	"sync"
@@ -465,6 +466,10 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"runtime"
+>>>>>>> 6b7ce455e (update vendored files)
 	"strings"
 	"sync"
 	"time"
@@ -513,10 +518,11 @@ func NewEntryCaller(pc uintptr, file string, line int, ok bool) EntryCaller {
 
 // EntryCaller represents the caller of a logging function.
 type EntryCaller struct {
-	Defined bool
-	PC      uintptr
-	File    string
-	Line    int
+	Defined  bool
+	PC       uintptr
+	File     string
+	Line     int
+	Function string
 }
 
 // String returns the full path and line number of the caller.
@@ -601,6 +607,8 @@ const (
 	// WriteThenNoop indicates that nothing special needs to be done. It's the
 	// default behavior.
 	WriteThenNoop CheckWriteAction = iota
+	// WriteThenGoexit runs runtime.Goexit after Write.
+	WriteThenGoexit
 	// WriteThenPanic causes a panic after Write.
 	WriteThenPanic
 	// WriteThenFatal causes a fatal os.Exit after Write.
@@ -647,7 +655,7 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 			// If the entry is dirty, log an internal error; because the
 			// CheckedEntry is being used after it was returned to the pool,
 			// the message may be an amalgamation from multiple call sites.
-			fmt.Fprintf(ce.ErrorOutput, "%v Unsafe CheckedEntry re-use near Entry %+v.\n", time.Now(), ce.Entry)
+			fmt.Fprintf(ce.ErrorOutput, "%v Unsafe CheckedEntry re-use near Entry %+v.\n", ce.Time, ce.Entry)
 			ce.ErrorOutput.Sync()
 		}
 		return
@@ -658,11 +666,9 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 	for i := range ce.cores {
 		err = multierr.Append(err, ce.cores[i].Write(ce.Entry, fields))
 	}
-	if ce.ErrorOutput != nil {
-		if err != nil {
-			fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", time.Now(), err)
-			ce.ErrorOutput.Sync()
-		}
+	if err != nil && ce.ErrorOutput != nil {
+		fmt.Fprintf(ce.ErrorOutput, "%v write error: %v\n", ce.Time, err)
+		ce.ErrorOutput.Sync()
 	}
 
 	should, msg := ce.should, ce.Message
@@ -673,7 +679,13 @@ func (ce *CheckedEntry) Write(fields ...Field) {
 		panic(msg)
 	case WriteThenFatal:
 		exit.Exit()
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	case WriteThenGoexit:
+		runtime.Goexit()
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 }
 

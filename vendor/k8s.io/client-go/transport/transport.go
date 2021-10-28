@@ -23,6 +23,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
@@ -593,6 +594,10 @@ func (c *certificateCacheEntry) isStale() bool {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"encoding/pem"
+>>>>>>> 6b7ce455e (update vendored files)
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -600,7 +605,7 @@ func (c *certificateCacheEntry) isStale() bool {
 	"time"
 
 	utilnet "k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 // New returns an http.RoundTripper that will provide the authentication
@@ -652,7 +657,11 @@ func TLSConfigFor(c *Config) (*tls.Config, error) {
 	}
 
 	if c.HasCA() {
-		tlsConfig.RootCAs = rootCertPool(c.TLS.CAData)
+		rootCAs, err := rootCertPool(c.TLS.CAData)
+		if err != nil {
+			return nil, fmt.Errorf("unable to load root certificates: %w", err)
+		}
+		tlsConfig.RootCAs = rootCAs
 	}
 
 	var staticCert *tls.Certificate
@@ -749,18 +758,41 @@ func dataFromSliceOrFile(data []byte, file string) ([]byte, error) {
 
 // rootCertPool returns nil if caData is empty.  When passed along, this will mean "use system CAs".
 // When caData is not empty, it will be the ONLY information used in the CertPool.
-func rootCertPool(caData []byte) *x509.CertPool {
+func rootCertPool(caData []byte) (*x509.CertPool, error) {
 	// What we really want is a copy of x509.systemRootsPool, but that isn't exposed.  It's difficult to build (see the go
 	// code for a look at the platform specific insanity), so we'll use the fact that RootCAs == nil gives us the system values
 	// It doesn't allow trusting either/or, but hopefully that won't be an issue
 	if len(caData) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// if we have caData, use it
 	certPool := x509.NewCertPool()
-	certPool.AppendCertsFromPEM(caData)
-	return certPool
+	if ok := certPool.AppendCertsFromPEM(caData); !ok {
+		return nil, createErrorParsingCAData(caData)
+	}
+	return certPool, nil
+}
+
+// createErrorParsingCAData ALWAYS returns an error.  We call it because know we failed to AppendCertsFromPEM
+// but we don't know the specific error because that API is just true/false
+func createErrorParsingCAData(pemCerts []byte) error {
+	for len(pemCerts) > 0 {
+		var block *pem.Block
+		block, pemCerts = pem.Decode(pemCerts)
+		if block == nil {
+			return fmt.Errorf("unable to parse bytes as PEM block")
+		}
+
+		if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			continue
+		}
+
+		if _, err := x509.ParseCertificate(block.Bytes); err != nil {
+			return fmt.Errorf("failed to parse certificate: %w", err)
+		}
+	}
+	return fmt.Errorf("no valid certificate authority data seen")
 }
 
 // WrapperFunc wraps an http.RoundTripper when a new transport
@@ -842,8 +874,14 @@ type certificateCacheEntry struct {
 
 // isStale returns true when this cache entry is too old to be usable
 func (c *certificateCacheEntry) isStale() bool {
+<<<<<<< HEAD
 	return time.Now().Sub(c.birth) > time.Second
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return time.Now().Sub(c.birth) > time.Second
+=======
+	return time.Since(c.birth) > time.Second
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 func newCertificateCacheEntry(certFile, keyFile string) certificateCacheEntry {

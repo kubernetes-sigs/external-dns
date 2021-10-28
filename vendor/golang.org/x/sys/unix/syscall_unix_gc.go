@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
 // +build gc
@@ -29,9 +30,21 @@
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
+>>>>>>> 6b7ce455e (update vendored files)
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
+<<<<<<< HEAD
 // +build gc,!ppc64le,!ppc64
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// +build gc,!ppc64le,!ppc64
+=======
+// +build gc
+// +build !ppc64le
+// +build !ppc64
+>>>>>>> 6b7ce455e (update vendored files)
 
 package unix
 

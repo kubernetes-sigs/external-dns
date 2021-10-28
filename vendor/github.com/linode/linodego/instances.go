@@ -97,6 +97,7 @@ type InstanceCreateOptions struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Region          string                    `json:"region"`
 	Type            string                    `json:"type"`
 	Label           string                    `json:"label,omitempty"`
@@ -681,6 +682,38 @@ func (c *Client) CloneInstance(ctx context.Context, id int, options InstanceClon
 	BackupsEnabled  bool              `json:"backups_enabled,omitempty"`
 	PrivateIP       bool              `json:"private_ip,omitempty"`
 	Tags            []string          `json:"tags,omitempty"`
+||||||| parent of 6b7ce455e (update vendored files)
+	Region          string            `json:"region"`
+	Type            string            `json:"type"`
+	Label           string            `json:"label,omitempty"`
+	Group           string            `json:"group,omitempty"`
+	RootPass        string            `json:"root_pass,omitempty"`
+	AuthorizedKeys  []string          `json:"authorized_keys,omitempty"`
+	AuthorizedUsers []string          `json:"authorized_users,omitempty"`
+	StackScriptID   int               `json:"stackscript_id,omitempty"`
+	StackScriptData map[string]string `json:"stackscript_data,omitempty"`
+	BackupID        int               `json:"backup_id,omitempty"`
+	Image           string            `json:"image,omitempty"`
+	BackupsEnabled  bool              `json:"backups_enabled,omitempty"`
+	PrivateIP       bool              `json:"private_ip,omitempty"`
+	Tags            []string          `json:"tags,omitempty"`
+=======
+	Region          string                    `json:"region"`
+	Type            string                    `json:"type"`
+	Label           string                    `json:"label,omitempty"`
+	Group           string                    `json:"group,omitempty"`
+	RootPass        string                    `json:"root_pass,omitempty"`
+	AuthorizedKeys  []string                  `json:"authorized_keys,omitempty"`
+	AuthorizedUsers []string                  `json:"authorized_users,omitempty"`
+	StackScriptID   int                       `json:"stackscript_id,omitempty"`
+	StackScriptData map[string]string         `json:"stackscript_data,omitempty"`
+	BackupID        int                       `json:"backup_id,omitempty"`
+	Image           string                    `json:"image,omitempty"`
+	Interfaces      []InstanceConfigInterface `json:"interfaces,omitempty"`
+	BackupsEnabled  bool                      `json:"backups_enabled,omitempty"`
+	PrivateIP       bool                      `json:"private_ip,omitempty"`
+	Tags            []string                  `json:"tags,omitempty"`
+>>>>>>> 6b7ce455e (update vendored files)
 
 	// Creation fields that need to be set explicitly false, "", or 0 use pointers
 	SwapSize *int  `json:"swap_size,omitempty"`
@@ -777,7 +810,6 @@ func (resp *InstancesPagedResponse) appendData(r *InstancesPagedResponse) {
 func (c *Client) ListInstances(ctx context.Context, opts *ListOptions) ([]Instance, error) {
 	response := InstancesPagedResponse{}
 	err := c.listHelper(ctx, &response, opts)
-
 	if err != nil {
 		return nil, err
 	}
@@ -835,7 +867,6 @@ func (c *Client) CreateInstance(ctx context.Context, instance InstanceCreateOpti
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -862,7 +893,6 @@ func (c *Client) UpdateInstance(ctx context.Context, id int, instance InstanceUp
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Put(e))
-
 	if err != nil {
 		return nil, err
 	}
@@ -933,8 +963,13 @@ func (c *Client) CloneInstance(ctx context.Context, id int, options InstanceClon
 	r, err := coupleAPIErrors(req.
 		SetBody(body).
 		Post(e))
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

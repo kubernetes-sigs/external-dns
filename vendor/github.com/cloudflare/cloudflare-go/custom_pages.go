@@ -1,8 +1,10 @@
 package cloudflare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/pkg/errors"
@@ -53,7 +55,7 @@ type CustomPageParameters struct {
 //
 // Zone API reference: https://api.cloudflare.com/#custom-pages-for-a-zone-list-available-custom-pages
 // Account API reference: https://api.cloudflare.com/#custom-pages-account--list-custom-pages
-func (api *API) CustomPages(options *CustomPageOptions) ([]CustomPage, error) {
+func (api *API) CustomPages(ctx context.Context, options *CustomPageOptions) ([]CustomPage, error) {
 	var (
 		pageType, identifier string
 	)
@@ -77,9 +79,9 @@ func (api *API) CustomPages(options *CustomPageOptions) ([]CustomPage, error) {
 
 	uri := fmt.Sprintf("/%s/%s/custom_pages", pageType, identifier)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, errMakeRequestError)
+		return nil, err
 	}
 
 	var customPageResponse CustomPageResponse
@@ -95,7 +97,7 @@ func (api *API) CustomPages(options *CustomPageOptions) ([]CustomPage, error) {
 //
 // Zone API reference: https://api.cloudflare.com/#custom-pages-for-a-zone-custom-page-details
 // Account API reference: https://api.cloudflare.com/#custom-pages-account--custom-page-details
-func (api *API) CustomPage(options *CustomPageOptions, customPageID string) (CustomPage, error) {
+func (api *API) CustomPage(ctx context.Context, options *CustomPageOptions, customPageID string) (CustomPage, error) {
 	var (
 		pageType, identifier string
 	)
@@ -119,9 +121,9 @@ func (api *API) CustomPage(options *CustomPageOptions, customPageID string) (Cus
 
 	uri := fmt.Sprintf("/%s/%s/custom_pages/%s", pageType, identifier, customPageID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return CustomPage{}, errors.Wrap(err, errMakeRequestError)
+		return CustomPage{}, err
 	}
 
 	var customPageResponse CustomPageDetailResponse
@@ -137,7 +139,7 @@ func (api *API) CustomPage(options *CustomPageOptions, customPageID string) (Cus
 //
 // Zone API reference: https://api.cloudflare.com/#custom-pages-for-a-zone-update-custom-page-url
 // Account API reference: https://api.cloudflare.com/#custom-pages-account--update-custom-page
-func (api *API) UpdateCustomPage(options *CustomPageOptions, customPageID string, pageParameters CustomPageParameters) (CustomPage, error) {
+func (api *API) UpdateCustomPage(ctx context.Context, options *CustomPageOptions, customPageID string, pageParameters CustomPageParameters) (CustomPage, error) {
 	var (
 		pageType, identifier string
 	)
@@ -161,9 +163,9 @@ func (api *API) UpdateCustomPage(options *CustomPageOptions, customPageID string
 
 	uri := fmt.Sprintf("/%s/%s/custom_pages/%s", pageType, identifier, customPageID)
 
-	res, err := api.makeRequest("PUT", uri, pageParameters)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, pageParameters)
 	if err != nil {
-		return CustomPage{}, errors.Wrap(err, errMakeRequestError)
+		return CustomPage{}, err
 	}
 
 	var customPageResponse CustomPageDetailResponse

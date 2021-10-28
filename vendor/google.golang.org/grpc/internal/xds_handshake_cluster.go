@@ -28,7 +28,12 @@ type handshakeClusterNameKey struct{}
 // SetXDSHandshakeClusterName returns a copy of addr in which the Attributes field
 // is updated with the cluster name.
 func SetXDSHandshakeClusterName(addr resolver.Address, clusterName string) resolver.Address {
+<<<<<<< HEAD
 	addr.Attributes = addr.Attributes.WithValues(handshakeClusterNameKey{}, clusterName)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	addr.Attributes = addr.Attributes.WithValue(handshakeClusterNameKey{}, clusterName)
+>>>>>>> 6b7ce455e (update vendored files)
 	return addr
 }
 

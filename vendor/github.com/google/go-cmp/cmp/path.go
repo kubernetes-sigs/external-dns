@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // license that can be found in the LICENSE file.
 
 package cmp
@@ -652,6 +653,11 @@ func (tf Transform) Option() Option { return tf.trans }
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // license that can be found in the LICENSE.md file.
+||||||| parent of 6b7ce455e (update vendored files)
+// license that can be found in the LICENSE.md file.
+=======
+// license that can be found in the LICENSE file.
+>>>>>>> 6b7ce455e (update vendored files)
 
 package cmp
 
@@ -829,7 +835,7 @@ type structField struct {
 	unexported bool
 	mayForce   bool                // Forcibly allow visibility
 	paddr      bool                // Was parent addressable?
-	pvx, pvy   reflect.Value       // Parent values (always addressible)
+	pvx, pvy   reflect.Value       // Parent values (always addressable)
 	field      reflect.StructField // Field information
 }
 
@@ -966,8 +972,14 @@ func (tf Transform) Option() Option { return tf.trans }
 // pops the address from the stack. Thus, when traversing into a pointer from
 // reflect.Ptr, reflect.Slice element, or reflect.Map, we can detect cycles
 // by checking whether the pointer has already been visited. The cycle detection
+<<<<<<< HEAD
 // uses a seperate stack for the x and y values.
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// uses a seperate stack for the x and y values.
+=======
+// uses a separate stack for the x and y values.
+>>>>>>> 6b7ce455e (update vendored files)
 //
 // If a cycle is detected we need to determine whether the two pointers
 // should be considered equal. The definition of equality chosen by Equal

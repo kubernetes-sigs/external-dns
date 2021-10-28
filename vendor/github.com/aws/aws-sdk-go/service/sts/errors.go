@@ -45,6 +45,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// The web identity token that was passed could not be validated by Amazon Web
 	// Services. Get a new identity token from the identity provider and then retry
 	// the request.
@@ -139,6 +140,14 @@ const (
 =======
 	// The web identity token that was passed could not be validated by AWS. Get
 	// a new identity token from the identity provider and then retry the request.
+||||||| parent of 6b7ce455e (update vendored files)
+	// The web identity token that was passed could not be validated by AWS. Get
+	// a new identity token from the identity provider and then retry the request.
+=======
+	// The web identity token that was passed could not be validated by Amazon Web
+	// Services. Get a new identity token from the identity provider and then retry
+	// the request.
+>>>>>>> 6b7ce455e (update vendored files)
 	ErrCodeInvalidIdentityTokenException = "InvalidIdentityToken"
 
 	// ErrCodeMalformedPolicyDocumentException for service response error code
@@ -152,16 +161,16 @@ const (
 	// "PackedPolicyTooLarge".
 	//
 	// The request was rejected because the total packed size of the session policies
-	// and session tags combined was too large. An AWS conversion compresses the
-	// session policy document, session policy ARNs, and session tags into a packed
-	// binary format that has a separate limit. The error message indicates by percentage
-	// how close the policies and tags are to the upper size limit. For more information,
-	// see Passing Session Tags in STS (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)
+	// and session tags combined was too large. An Amazon Web Services conversion
+	// compresses the session policy document, session policy ARNs, and session
+	// tags into a packed binary format that has a separate limit. The error message
+	// indicates by percentage how close the policies and tags are to the upper
+	// size limit. For more information, see Passing Session Tags in STS (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_session-tags.html)
 	// in the IAM User Guide.
 	//
 	// You could receive this error even though you meet other defined session policy
 	// and session tag limits. For more information, see IAM and STS Entity Character
-	// Limits (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html)
+	// Limits (https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_iam-quotas.html#reference_iam-limits-entity-length)
 	// in the IAM User Guide.
 	ErrCodePackedPolicyTooLargeException = "PackedPolicyTooLarge"
 
@@ -171,8 +180,15 @@ const (
 	// STS is not activated in the requested region for the account that is being
 	// asked to generate credentials. The account administrator must use the IAM
 	// console to activate STS in that region. For more information, see Activating
+<<<<<<< HEAD
 	// and Deactivating AWS STS in an AWS Region (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	// and Deactivating AWS STS in an AWS Region (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html)
+=======
+	// and Deactivating Amazon Web Services STS in an Amazon Web Services Region
+	// (https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html)
+>>>>>>> 6b7ce455e (update vendored files)
 	// in the IAM User Guide.
 	ErrCodeRegionDisabledException = "RegionDisabledException"
 )

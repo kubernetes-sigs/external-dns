@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDomainInfo invokes the alidns.DescribeDomainInfo API synchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaininfo.html
 func (client *Client) DescribeDomainInfo(request *DescribeDomainInfoRequest) (response *DescribeDomainInfoResponse, err error) {
 	response = CreateDescribeDomainInfoResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDomainInfo(request *DescribeDomainInfoRequest) (re
 }
 
 // DescribeDomainInfoWithChan invokes the alidns.DescribeDomainInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaininfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainInfoWithChan(request *DescribeDomainInfoRequest) (<-chan *DescribeDomainInfoResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainInfoResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDomainInfoWithChan(request *DescribeDomainInfoRequ
 }
 
 // DescribeDomainInfoWithCallback invokes the alidns.DescribeDomainInfo API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaininfo.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainInfoWithCallback(request *DescribeDomainInfoRequest, callback func(response *DescribeDomainInfoResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -103,6 +98,8 @@ type DescribeDomainInfoResponse struct {
 	InBlackHole        bool                            `json:"InBlackHole" xml:"InBlackHole"`
 	InClean            bool                            `json:"InClean" xml:"InClean"`
 	SlaveDns           bool                            `json:"SlaveDns" xml:"SlaveDns"`
+	ResourceGroupId    string                          `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	CreateTime         string                          `json:"CreateTime" xml:"CreateTime"`
 	DnsServers         DnsServersInDescribeDomainInfo  `json:"DnsServers" xml:"DnsServers"`
 	AvailableTtls      AvailableTtls                   `json:"AvailableTtls" xml:"AvailableTtls"`
 	RecordLines        RecordLinesInDescribeDomainInfo `json:"RecordLines" xml:"RecordLines"`
@@ -114,6 +111,7 @@ func CreateDescribeDomainInfoRequest() (request *DescribeDomainInfoRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainInfo", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

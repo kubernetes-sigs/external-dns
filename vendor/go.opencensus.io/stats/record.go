@@ -34,6 +34,7 @@ func init() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Recorder provides an interface for exporting measurement information from
 // the static Record method by using the WithRecorder option.
 type Recorder interface {
@@ -210,10 +211,22 @@ func RecordWithOptions(ctx context.Context, ros ...Options) error {
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+// Recorder provides an interface for exporting measurement information from
+// the static Record method by using the WithRecorder option.
+type Recorder interface {
+	// Record records a set of measurements associated with the given tags and attachments.
+	// The second argument is a `[]Measurement`.
+	Record(*tag.Map, interface{}, map[string]interface{})
+}
+
+>>>>>>> 6b7ce455e (update vendored files)
 type recordOptions struct {
 	attachments  metricdata.Attachments
 	mutators     []tag.Mutator
 	measurements []Measurement
+	recorder     Recorder
 }
 
 // WithAttachments applies provided exemplar attachments.
@@ -234,6 +247,14 @@ func WithTags(mutators ...tag.Mutator) Options {
 func WithMeasurements(measurements ...Measurement) Options {
 	return func(ro *recordOptions) {
 		ro.measurements = measurements
+	}
+}
+
+// WithRecorder records the measurements to the specified `Recorder`, rather
+// than to the global metrics recorder.
+func WithRecorder(meter Recorder) Options {
+	return func(ro *recordOptions) {
+		ro.recorder = meter
 	}
 }
 
@@ -272,7 +293,14 @@ func RecordWithOptions(ctx context.Context, ros ...Options) error {
 		return nil
 	}
 	recorder := internal.DefaultRecorder
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if o.recorder != nil {
+		recorder = o.recorder.Record
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	if recorder == nil {
 		return nil
 	}

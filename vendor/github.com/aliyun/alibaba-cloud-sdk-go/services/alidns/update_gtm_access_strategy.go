@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateGtmAccessStrategy invokes the alidns.UpdateGtmAccessStrategy API synchronously
-// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
 func (client *Client) UpdateGtmAccessStrategy(request *UpdateGtmAccessStrategyRequest) (response *UpdateGtmAccessStrategyResponse, err error) {
 	response = CreateUpdateGtmAccessStrategyResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateGtmAccessStrategy(request *UpdateGtmAccessStrategyRe
 }
 
 // UpdateGtmAccessStrategyWithChan invokes the alidns.UpdateGtmAccessStrategy API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmAccessStrategyWithChan(request *UpdateGtmAccessStrategyRequest) (<-chan *UpdateGtmAccessStrategyResponse, <-chan error) {
 	responseChan := make(chan *UpdateGtmAccessStrategyResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateGtmAccessStrategyWithChan(request *UpdateGtmAccessSt
 }
 
 // UpdateGtmAccessStrategyWithCallback invokes the alidns.UpdateGtmAccessStrategy API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updategtmaccessstrategy.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateGtmAccessStrategyWithCallback(request *UpdateGtmAccessStrategyRequest, callback func(response *UpdateGtmAccessStrategyResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -97,6 +92,7 @@ func CreateUpdateGtmAccessStrategyRequest() (request *UpdateGtmAccessStrategyReq
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateGtmAccessStrategy", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

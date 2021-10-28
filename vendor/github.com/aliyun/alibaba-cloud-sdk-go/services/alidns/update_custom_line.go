@@ -21,7 +21,6 @@ import (
 )
 
 // UpdateCustomLine invokes the alidns.UpdateCustomLine API synchronously
-// api document: https://help.aliyun.com/api/alidns/updatecustomline.html
 func (client *Client) UpdateCustomLine(request *UpdateCustomLineRequest) (response *UpdateCustomLineResponse, err error) {
 	response = CreateUpdateCustomLineResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) UpdateCustomLine(request *UpdateCustomLineRequest) (respon
 }
 
 // UpdateCustomLineWithChan invokes the alidns.UpdateCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatecustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateCustomLineWithChan(request *UpdateCustomLineRequest) (<-chan *UpdateCustomLineResponse, <-chan error) {
 	responseChan := make(chan *UpdateCustomLineResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) UpdateCustomLineWithChan(request *UpdateCustomLineRequest)
 }
 
 // UpdateCustomLineWithCallback invokes the alidns.UpdateCustomLine API asynchronously
-// api document: https://help.aliyun.com/api/alidns/updatecustomline.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) UpdateCustomLineWithCallback(request *UpdateCustomLineRequest, callback func(response *UpdateCustomLineResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -101,6 +96,7 @@ func CreateUpdateCustomLineRequest() (request *UpdateCustomLineRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "UpdateCustomLine", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

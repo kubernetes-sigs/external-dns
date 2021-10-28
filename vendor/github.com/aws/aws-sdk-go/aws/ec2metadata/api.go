@@ -23,6 +23,7 @@ func (c *EC2Metadata) getToken(ctx aws.Context, duration time.Duration) (tokenOu
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 		HTTPPath:   "/latest/api/token",
 	}
 
@@ -228,6 +229,11 @@ func (c *EC2Metadata) GetDynamicDataWithContext(ctx aws.Context, p string) (stri
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 		HTTPPath:   "/api/token",
+||||||| parent of 6b7ce455e (update vendored files)
+		HTTPPath:   "/api/token",
+=======
+		HTTPPath:   "/latest/api/token",
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	var output tokenOutput
@@ -269,7 +275,7 @@ func (c *EC2Metadata) GetMetadataWithContext(ctx aws.Context, p string) (string,
 	op := &request.Operation{
 		Name:       "GetMetadata",
 		HTTPMethod: "GET",
-		HTTPPath:   sdkuri.PathJoin("/meta-data", p),
+		HTTPPath:   sdkuri.PathJoin("/latest/meta-data", p),
 	}
 	output := &metadataOutput{}
 
@@ -295,7 +301,7 @@ func (c *EC2Metadata) GetUserDataWithContext(ctx aws.Context) (string, error) {
 	op := &request.Operation{
 		Name:       "GetUserData",
 		HTTPMethod: "GET",
-		HTTPPath:   "/user-data",
+		HTTPPath:   "/latest/user-data",
 	}
 
 	output := &metadataOutput{}
@@ -320,8 +326,14 @@ func (c *EC2Metadata) GetDynamicDataWithContext(ctx aws.Context, p string) (stri
 	op := &request.Operation{
 		Name:       "GetDynamicData",
 		HTTPMethod: "GET",
+<<<<<<< HEAD
 		HTTPPath:   sdkuri.PathJoin("/dynamic", p),
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		HTTPPath:   sdkuri.PathJoin("/dynamic", p),
+=======
+		HTTPPath:   sdkuri.PathJoin("/latest/dynamic", p),
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 
 	output := &metadataOutput{}

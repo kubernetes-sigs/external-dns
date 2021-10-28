@@ -19,6 +19,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"fmt"
 	"regexp"
 
@@ -230,6 +231,11 @@ func parseInotifyInfo(line string) (*InotifyInfo, error) {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"errors"
+||||||| parent of 6b7ce455e (update vendored files)
+	"errors"
+=======
+	"fmt"
+>>>>>>> 6b7ce455e (update vendored files)
 	"regexp"
 
 	"github.com/prometheus/procfs/internal/util"
@@ -325,8 +331,14 @@ func parseInotifyInfo(line string) (*InotifyInfo, error) {
 		}
 		return i, nil
 	}
+<<<<<<< HEAD
 	return nil, errors.New("invalid inode entry: " + line)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+	return nil, errors.New("invalid inode entry: " + line)
+=======
+	return nil, fmt.Errorf("invalid inode entry: %q", line)
+>>>>>>> 6b7ce455e (update vendored files)
 }
 
 // ProcFDInfos represents a list of ProcFDInfo structs.

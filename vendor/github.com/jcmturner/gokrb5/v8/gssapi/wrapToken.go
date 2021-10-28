@@ -16,7 +16,9 @@ import (
 // RFC 4121, section 4.2.6.2
 
 const (
-	HdrLen          = 16 // Length of the Wrap Token's header
+	// HdrLen is the length of the Wrap Token's header
+	HdrLen = 16
+	// FillerByte is a filler in the WrapToken structure
 	FillerByte byte = 0xFF
 )
 

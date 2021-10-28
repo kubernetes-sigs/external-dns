@@ -1,8 +1,10 @@
 package cloudflare
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 )
@@ -42,12 +44,12 @@ type AccountRoleDetailResponse struct {
 // AccountRoles returns all roles of an account.
 //
 // API reference: https://api.cloudflare.com/#account-roles-list-roles
-func (api *API) AccountRoles(accountID string) ([]AccountRole, error) {
-	uri := "/accounts/" + accountID + "/roles"
+func (api *API) AccountRoles(ctx context.Context, accountID string) ([]AccountRole, error) {
+	uri := fmt.Sprintf("/accounts/%s/roles", accountID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return []AccountRole{}, errors.Wrap(err, errMakeRequestError)
+		return []AccountRole{}, err
 	}
 
 	var accountRolesListResponse AccountRolesListResponse
@@ -62,12 +64,12 @@ func (api *API) AccountRoles(accountID string) ([]AccountRole, error) {
 // AccountRole returns the details of a single account role.
 //
 // API reference: https://api.cloudflare.com/#account-roles-role-details
-func (api *API) AccountRole(accountID string, roleID string) (AccountRole, error) {
+func (api *API) AccountRole(ctx context.Context, accountID string, roleID string) (AccountRole, error) {
 	uri := fmt.Sprintf("/accounts/%s/roles/%s", accountID, roleID)
 
-	res, err := api.makeRequest("GET", uri, nil)
+	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
-		return AccountRole{}, errors.Wrap(err, errMakeRequestError)
+		return AccountRole{}, err
 	}
 
 	var accountRole AccountRoleDetailResponse

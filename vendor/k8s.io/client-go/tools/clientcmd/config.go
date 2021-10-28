@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
 
 	restclient "k8s.io/client-go/rest"
@@ -738,6 +739,11 @@ func (p *persister) Persist(config map[string]string) error {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	"k8s.io/klog"
+||||||| parent of 6b7ce455e (update vendored files)
+	"k8s.io/klog"
+=======
+	"k8s.io/klog/v2"
+>>>>>>> 6b7ce455e (update vendored files)
 
 	restclient "k8s.io/client-go/rest"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -771,6 +777,15 @@ type PathOptions struct {
 	LoadingRules *ClientConfigLoadingRules
 }
 
+var (
+	// UseModifyConfigLock ensures that access to kubeconfig file using ModifyConfig method
+	// is being guarded by a lock file.
+	// This variable is intentionaly made public so other consumers of this library
+	// can modify its default behavior, but be caution when disabling it since
+	// this will make your code not threadsafe.
+	UseModifyConfigLock = true
+)
+
 func (o *PathOptions) GetEnvVarFiles() []string {
 	if len(o.EnvVar) == 0 {
 		return []string{}
@@ -787,10 +802,13 @@ func (o *PathOptions) GetEnvVarFiles() []string {
 }
 
 func (o *PathOptions) GetLoadingPrecedence() []string {
+	if o.IsExplicitFile() {
+		return []string{o.GetExplicitFile()}
+	}
+
 	if envVarFiles := o.GetEnvVarFiles(); len(envVarFiles) > 0 {
 		return envVarFiles
 	}
-
 	return []string{o.GlobalFile}
 }
 
@@ -836,11 +854,7 @@ func (o *PathOptions) GetDefaultFilename() string {
 }
 
 func (o *PathOptions) IsExplicitFile() bool {
-	if len(o.LoadingRules.ExplicitPath) > 0 {
-		return true
-	}
-
-	return false
+	return len(o.LoadingRules.ExplicitPath) > 0
 }
 
 func (o *PathOptions) GetExplicitFile() string {
@@ -869,15 +883,17 @@ func NewDefaultPathOptions() *PathOptions {
 // that means that this code will only write into a single file.  If you want to relativizePaths, you must provide a fully qualified path in any
 // modified element.
 func ModifyConfig(configAccess ConfigAccess, newConfig clientcmdapi.Config, relativizePaths bool) error {
-	possibleSources := configAccess.GetLoadingPrecedence()
-	// sort the possible kubeconfig files so we always "lock" in the same order
-	// to avoid deadlock (note: this can fail w/ symlinks, but... come on).
-	sort.Strings(possibleSources)
-	for _, filename := range possibleSources {
-		if err := lockFile(filename); err != nil {
-			return err
+	if UseModifyConfigLock {
+		possibleSources := configAccess.GetLoadingPrecedence()
+		// sort the possible kubeconfig files so we always "lock" in the same order
+		// to avoid deadlock (note: this can fail w/ symlinks, but... come on).
+		sort.Strings(possibleSources)
+		for _, filename := range possibleSources {
+			if err := lockFile(filename); err != nil {
+				return err
+			}
+			defer unlockFile(filename)
 		}
-		defer unlockFile(filename)
 	}
 
 	startingConfig, err := configAccess.GetStartingConfig()
@@ -1073,8 +1089,14 @@ func (p *persister) Persist(config map[string]string) error {
 	authInfo, ok := newConfig.AuthInfos[p.user]
 	if ok && authInfo.AuthProvider != nil {
 		authInfo.AuthProvider.Config = config
+<<<<<<< HEAD
 		ModifyConfig(p.configAccess, *newConfig, false)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		ModifyConfig(p.configAccess, *newConfig, false)
+=======
+		return ModifyConfig(p.configAccess, *newConfig, false)
+>>>>>>> 6b7ce455e (update vendored files)
 	}
 	return nil
 }

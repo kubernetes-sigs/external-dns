@@ -8,6 +8,7 @@ description: the Go library for Exoscale
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![Actions Status](https://github.com/exoscale/egoscale/workflows/CI/badge.svg?branch=master)](https://github.com/exoscale/egoscale/actions?query=workflow%3ACI+branch%3Amaster)
 [![GoDoc](https://godoc.org/github.com/exoscale/egoscale?status.svg)](https://godoc.org/github.com/exoscale/egoscale) [![Go Report Card](https://goreportcard.com/badge/github.com/exoscale/egoscale)](https://goreportcard.com/report/github.com/exoscale/egoscale)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -24,6 +25,11 @@ description: the Go library for Exoscale
 =======
 [![Build Status](https://travis-ci.org/exoscale/egoscale.svg?branch=master)](https://travis-ci.org/exoscale/egoscale) [![Maintainability](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/maintainability)](https://codeclimate.com/github/exoscale/egoscale/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/test_coverage)](https://codeclimate.com/github/exoscale/egoscale/test_coverage) [![GoDoc](https://godoc.org/github.com/exoscale/egoscale?status.svg)](https://godoc.org/github.com/exoscale/egoscale) [![Go Report Card](https://goreportcard.com/badge/github.com/exoscale/egoscale)](https://goreportcard.com/report/github.com/exoscale/egoscale)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+[![Build Status](https://travis-ci.org/exoscale/egoscale.svg?branch=master)](https://travis-ci.org/exoscale/egoscale) [![Maintainability](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/maintainability)](https://codeclimate.com/github/exoscale/egoscale/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/test_coverage)](https://codeclimate.com/github/exoscale/egoscale/test_coverage) [![GoDoc](https://godoc.org/github.com/exoscale/egoscale?status.svg)](https://godoc.org/github.com/exoscale/egoscale) [![Go Report Card](https://goreportcard.com/badge/github.com/exoscale/egoscale)](https://goreportcard.com/report/github.com/exoscale/egoscale)
+=======
+[![Build Status](https://travis-ci.com/exoscale/egoscale.svg?branch=master)](https://travis-ci.com/exoscale/egoscale) [![Maintainability](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/maintainability)](https://codeclimate.com/github/exoscale/egoscale/maintainability) [![Test Coverage](https://api.codeclimate.com/v1/badges/fcab3b624b7d3ca96a9d/test_coverage)](https://codeclimate.com/github/exoscale/egoscale/test_coverage) [![GoDoc](https://godoc.org/github.com/exoscale/egoscale?status.svg)](https://godoc.org/github.com/exoscale/egoscale) [![Go Report Card](https://goreportcard.com/badge/github.com/exoscale/egoscale)](https://goreportcard.com/report/github.com/exoscale/egoscale)
+>>>>>>> 6b7ce455e (update vendored files)
 
 A wrapper for the [Exoscale public cloud](https://www.exoscale.com) API.
 

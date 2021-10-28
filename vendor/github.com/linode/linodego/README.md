@@ -3,6 +3,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 [![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
 [![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
 [![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
@@ -210,6 +211,11 @@ opts := linodego.NewListOptions(2,"")
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 [![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
+||||||| parent of 6b7ce455e (update vendored files)
+[![Build Status](https://travis-ci.org/linode/linodego.svg?branch=master)](https://travis-ci.org/linode/linodego)
+=======
+[![Build Status](https://travis-ci.com/linode/linodego.svg?branch=master)](https://travis-ci.com/linode/linodego)
+>>>>>>> 6b7ce455e (update vendored files)
 [![Release](https://img.shields.io/github/v/release/linode/linodego)](https://github.com/linode/linodego/releases/latest)
 [![GoDoc](https://godoc.org/github.com/linode/linodego?status.svg)](https://godoc.org/github.com/linode/linodego)
 [![Go Report Card](https://goreportcard.com/badge/github.com/linode/linodego)](https://goreportcard.com/report/github.com/linode/linodego)
@@ -303,8 +309,14 @@ kernels, err := linodego.ListKernels(context.Background(), opts)
 
 ```go
 opts := linodego.NewListOptions(2,"")
+<<<<<<< HEAD
 // or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// or opts := linodego.ListOptions{PageOptions: &PageOptions: {Page: 2 }}
+=======
+// or opts := linodego.ListOptions{PageOptions: &linodego.PageOptions{Page: 2}, PageSize: 500}
+>>>>>>> 6b7ce455e (update vendored files)
 kernels, err := linodego.ListKernels(context.Background(), opts)
 // len(kernels) == 100
 ```

@@ -13,6 +13,7 @@ const keysBasePath = "v2/account/keys"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/SSH-Keys
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -27,6 +28,11 @@ const keysBasePath = "v2/account/keys"
 =======
 // See: https://developers.digitalocean.com/documentation/v2#keys
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2#keys
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/SSH-Keys
+>>>>>>> 6b7ce455e (update vendored files)
 type KeysService interface {
 	List(context.Context, *ListOptions) ([]Key, *Response, error)
 	GetByID(context.Context, int) (*Key, *Response, error)
@@ -133,7 +139,7 @@ func (s *KeysServiceOp) GetByID(ctx context.Context, keyID int) (*Key, *Response
 	return s.get(ctx, path)
 }
 
-// GetByFingerprint gets a Key by by fingerprint
+// GetByFingerprint gets a Key by fingerprint
 func (s *KeysServiceOp) GetByFingerprint(ctx context.Context, fingerprint string) (*Key, *Response, error) {
 	if len(fingerprint) < 1 {
 		return nil, nil, NewArgError("fingerprint", "cannot not be empty")

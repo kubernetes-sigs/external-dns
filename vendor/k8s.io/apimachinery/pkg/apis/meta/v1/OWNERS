@@ -11,6 +11,7 @@ reviewers:
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 - davidopp
 - sttts
 - quinton-hoole
@@ -60,6 +61,12 @@ reviewers:
 - nikhiljindal
 - gmarek
 - erictune
+||||||| parent of 6b7ce455e (update vendored files)
+- nikhiljindal
+- gmarek
+- erictune
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 - davidopp
 - sttts
 - quinton-hoole
@@ -69,14 +76,14 @@ reviewers:
 - ncdc
 - soltysh
 - dims
-- madhusudancs
 - hongchaodeng
 - krousey
-- mml
-- mbohlool
-- david-mcmahon
 - therc
-- mqliang
 - kevin-wangzefeng
+<<<<<<< HEAD
 - jianhuiz
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+- jianhuiz
+=======
+>>>>>>> 6b7ce455e (update vendored files)

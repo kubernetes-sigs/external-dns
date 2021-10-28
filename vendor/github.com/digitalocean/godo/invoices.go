@@ -15,6 +15,7 @@ const invoicesBasePath = "v2/customers/my/invoices"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Billing
 type InvoicesService interface {
 	Get(context.Context, string, *ListOptions) (*Invoice, *Response, error)
@@ -424,6 +425,11 @@ func (s *InvoicesServiceOp) GetPDF(ctx context.Context, invoiceUUID string) ([]b
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2/#invoices
+||||||| parent of 6b7ce455e (update vendored files)
+// See: https://developers.digitalocean.com/documentation/v2/#invoices
+=======
+// See: https://docs.digitalocean.com/reference/api/api-reference/#tag/Billing
+>>>>>>> 6b7ce455e (update vendored files)
 type InvoicesService interface {
 	Get(context.Context, string, *ListOptions) (*Invoice, *Response, error)
 	GetPDF(context.Context, string) ([]byte, *Response, error)
@@ -460,6 +466,7 @@ type InvoiceItem struct {
 	StartTime        time.Time `json:"start_time"`
 	EndTime          time.Time `json:"end_time"`
 	ProjectName      string    `json:"project_name"`
+	Category         string    `json:"category"`
 }
 
 // InvoiceList contains a paginated list of all of a customer's invoices.
@@ -581,7 +588,7 @@ func (s *InvoicesServiceOp) List(ctx context.Context, opt *ListOptions) (*Invoic
 	return root, resp, err
 }
 
-// Get a summary of metadata and summarized usage for an Invoice
+// GetSummary returns a summary of metadata and summarized usage for an Invoice
 func (s *InvoicesServiceOp) GetSummary(ctx context.Context, invoiceUUID string) (*InvoiceSummary, *Response, error) {
 	path := fmt.Sprintf("%s/%s/summary", invoicesBasePath, invoiceUUID)
 
@@ -599,7 +606,7 @@ func (s *InvoicesServiceOp) GetSummary(ctx context.Context, invoiceUUID string) 
 	return root, resp, err
 }
 
-// Get the pdf for an Invoice
+// GetPDF returns the pdf for an Invoice
 func (s *InvoicesServiceOp) GetPDF(ctx context.Context, invoiceUUID string) ([]byte, *Response, error) {
 	path := fmt.Sprintf("%s/%s/pdf", invoicesBasePath, invoiceUUID)
 
@@ -617,8 +624,14 @@ func (s *InvoicesServiceOp) GetPDF(ctx context.Context, invoiceUUID string) ([]b
 	return root.Bytes(), resp, err
 }
 
+<<<<<<< HEAD
 // Get the csv for an Invoice
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// Get the csv for an Invoice
+=======
+// GetCSV returns the csv for an Invoice
+>>>>>>> 6b7ce455e (update vendored files)
 func (s *InvoicesServiceOp) GetCSV(ctx context.Context, invoiceUUID string) ([]byte, *Response, error) {
 	path := fmt.Sprintf("%s/%s/csv", invoicesBasePath, invoiceUUID)
 

@@ -465,7 +465,12 @@ func (p fileConfigurationProvider) Region() (value string, err error) {
 
 	value, err = presentOrError(info.Region, hasRegion, info.PresentConfiguration, "region")
 	if err != nil {
-		return
+		val, error := getRegionFromEnvVar()
+		if error != nil {
+			err = fmt.Errorf("region configuration is missing from file, nor for OCI_REGION env var")
+			return
+		}
+		value = val
 	}
 
 	return canStringBeRegion(value)
@@ -538,7 +543,10 @@ func (c composingConfigurationProvider) Region() (string, error) {
 			return val, nil
 		}
 	}
-	return "", fmt.Errorf("did not find a proper configuration for region")
+	if val, err := getRegionFromEnvVar(); err == nil {
+		return val, nil
+	}
+	return "", fmt.Errorf("did not find a proper configuration for region, nor for OCI_REGION env var")
 }
 
 func (c composingConfigurationProvider) KeyID() (string, error) {
@@ -559,4 +567,12 @@ func (c composingConfigurationProvider) PrivateRSAKey() (*rsa.PrivateKey, error)
 		}
 	}
 	return nil, fmt.Errorf("did not find a proper configuration for private key")
+}
+
+func getRegionFromEnvVar() (string, error) {
+	regionEnvVar := "OCI_REGION"
+	if region, existed := os.LookupEnv(regionEnvVar); existed {
+		return region, nil
+	}
+	return "", fmt.Errorf("did not find OCI_REGION env var")
 }

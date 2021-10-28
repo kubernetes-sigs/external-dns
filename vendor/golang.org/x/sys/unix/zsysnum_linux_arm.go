@@ -4,15 +4,20 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ||||||| parent of 5ce8c7613 (update vendored files)
 =======
 >>>>>>> 5ce8c7613 (update vendored files)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 //go:build arm && linux
 // +build arm,linux
 
 package unix
 
 const (
+	SYS_SYSCALL_MASK                 = 0
 	SYS_RESTART_SYSCALL              = 0
 	SYS_EXIT                         = 1
 	SYS_FORK                         = 2
@@ -413,6 +418,7 @@ const (
 	SYS_LANDLOCK_CREATE_RULESET      = 444
 	SYS_LANDLOCK_ADD_RULE            = 445
 	SYS_LANDLOCK_RESTRICT_SELF       = 446
+<<<<<<< HEAD
 <<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -1219,4 +1225,10 @@ const (
 	SYS_PIDFD_GETFD                  = 438
 	SYS_FACCESSAT2                   = 439
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	SYS_PROCESS_MRELEASE             = 448
+	SYS_FUTEX_WAITV                  = 449
+	SYS_SET_MEMPOLICY_HOME_NODE      = 450
+>>>>>>> 6b7ce455e (update vendored files)
 )

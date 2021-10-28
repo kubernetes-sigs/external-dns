@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeDomainGroups invokes the alidns.DescribeDomainGroups API synchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaingroups.html
 func (client *Client) DescribeDomainGroups(request *DescribeDomainGroupsRequest) (response *DescribeDomainGroupsResponse, err error) {
 	response = CreateDescribeDomainGroupsResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeDomainGroups(request *DescribeDomainGroupsRequest)
 }
 
 // DescribeDomainGroupsWithChan invokes the alidns.DescribeDomainGroups API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaingroups.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainGroupsWithChan(request *DescribeDomainGroupsRequest) (<-chan *DescribeDomainGroupsResponse, <-chan error) {
 	responseChan := make(chan *DescribeDomainGroupsResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeDomainGroupsWithChan(request *DescribeDomainGroups
 }
 
 // DescribeDomainGroupsWithCallback invokes the alidns.DescribeDomainGroups API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describedomaingroups.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeDomainGroupsWithCallback(request *DescribeDomainGroupsRequest, callback func(response *DescribeDomainGroupsResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -99,6 +94,7 @@ func CreateDescribeDomainGroupsRequest() (request *DescribeDomainGroupsRequest) 
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeDomainGroups", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

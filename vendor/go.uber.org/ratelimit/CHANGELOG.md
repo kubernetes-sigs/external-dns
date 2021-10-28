@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## v0.2.0 - 2021-03-02
 ### Added
 - Allow configuring the limiter with custom slack.
@@ -40,6 +41,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+## v0.2.0 - 2021-03-02
+### Added
+- Allow configuring the limiter with custom slack.
+  [#64](https://github.com/uber-go/ratelimit/pull/64)
+- Allow configuring the limiter per arbitrary time duration.
+  [#54](https://github.com/uber-go/ratelimit/pull/54)
+### Changed
+- Switched from Glide to Go Modules.
+### Fixed
+- Fix not working slack.
+  [#60](https://github.com/uber-go/ratelimit/pull/60)
+
+>>>>>>> 6b7ce455e (update vendored files)
 ## v0.1.0
 ### Fixed
 - Changed the import path for `go.uber.org/atomic` to its newer, canonical

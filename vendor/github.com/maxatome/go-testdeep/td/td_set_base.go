@@ -14,6 +14,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/flat"
 	"github.com/maxatome/go-testdeep/internal/types"
 	"github.com/maxatome/go-testdeep/internal/util"
@@ -378,6 +379,10 @@ func (s *tdSetBase) TypeBehind() reflect.Type {
 	return reflect.SliceOf(typ)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"github.com/maxatome/go-testdeep/internal/flat"
+>>>>>>> 6b7ce455e (update vendored files)
 	"github.com/maxatome/go-testdeep/internal/types"
 	"github.com/maxatome/go-testdeep/internal/util"
 )
@@ -399,17 +404,12 @@ type tdSetBase struct {
 	expectedItems []reflect.Value
 }
 
-func newSetBase(kind setKind, ignoreDups bool) tdSetBase {
-	return tdSetBase{
-		baseOKNil:  newBaseOKNil(4),
-		kind:       kind,
-		ignoreDups: ignoreDups,
-	}
-}
-
-func (s *tdSetBase) Add(items ...interface{}) {
-	for _, item := range items {
-		s.expectedItems = append(s.expectedItems, reflect.ValueOf(item))
+func newSetBase(kind setKind, ignoreDups bool, expectedItems []interface{}) *tdSetBase {
+	return &tdSetBase{
+		baseOKNil:     newBaseOKNil(4),
+		kind:          kind,
+		ignoreDups:    ignoreDups,
+		expectedItems: flat.Values(expectedItems),
 	}
 }
 
@@ -451,7 +451,7 @@ func (s *tdSetBase) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 					continue
 				}
 
-				if deepValueEqualOK(got.Index(idx), expected) {
+				if deepValueEqualFinalOK(ctx, got.Index(idx), expected) {
 					foundItems = append(foundItems, expected)
 
 					foundGotIdxes[idx] = true
@@ -483,7 +483,7 @@ func (s *tdSetBase) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
 				nextExpected:
 					for _, expected := range missingItems {
 						for idxGot := range foundGotIdxes {
-							if deepValueEqualOK(got.Index(idxGot), expected) {
+							if deepValueEqualFinalOK(ctx, got.Index(idxGot), expected) {
 								continue nextExpected
 							}
 						}
@@ -553,4 +553,12 @@ func (s *tdSetBase) String() string {
 	return util.SliceToBuffer(
 		bytes.NewBufferString(s.GetLocation().Func), s.expectedItems).String()
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+}
+
+func (s *tdSetBase) TypeBehind() reflect.Type {
+	typ := uniqTypeBehindSlice(s.expectedItems)
+	if typ == nil {
+		return nil
+	}
+	return reflect.SliceOf(typ)
 }

@@ -32,6 +32,7 @@ func Delay(delayed func() TestDeep) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	d := tdDelay{
 		base:    newBase(3),
 		delayed: delayed,
@@ -120,23 +121,50 @@ func (d *tdDelay) TypeBehind() reflect.Type {
 		panic("delayed param must be non-nil")
 	}
 	return &tdDelay{
+||||||| parent of 6b7ce455e (update vendored files)
+	if delayed == nil {
+		panic("delayed param must be non-nil")
+	}
+	return &tdDelay{
+=======
+	d := tdDelay{
+>>>>>>> 6b7ce455e (update vendored files)
 		base:    newBase(3),
 		delayed: delayed,
 	}
+
+	if delayed == nil {
+		d.err = ctxerr.OpBad("Delay", "Delay(DELAYED): DELAYED must be non-nil")
+	}
+	return &d
 }
 
 func (d *tdDelay) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error {
+	if d.err != nil {
+		return ctx.CollectError(d.err)
+	}
+
 	op := d.getOperator()
 	ctx.CurOperator = op // to have correct location
 	return op.Match(ctx, got)
 }
 
 func (d *tdDelay) String() string {
+	if d.err != nil {
+		return d.stringError()
+	}
 	return d.getOperator().String()
 }
 
 func (d *tdDelay) TypeBehind() reflect.Type {
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	if d.err != nil {
+		return nil
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 	return d.getOperator().TypeBehind()
 }
 

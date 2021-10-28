@@ -23,6 +23,7 @@ var (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	ErrNonPointerAgument           = errors.New("dst must be a pointer")
 )
 
@@ -186,6 +187,10 @@ func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err 
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	ErrNonPointerAgument           = errors.New("dst must be a pointer")
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // During deepMerge, must keep track of checks that are
@@ -241,6 +246,7 @@ func resolveValues(dst, src interface{}) (vDst, vSrc reflect.Value, err error) {
 	}
 	return
 }
+<<<<<<< HEAD
 
 // Traverses recursively both values, assigning src's fields values to dst.
 // The map argument tracks comparisons that have already been seen, which allows
@@ -262,3 +268,26 @@ func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err 
 	return // TODO refactor
 }
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+// Traverses recursively both values, assigning src's fields values to dst.
+// The map argument tracks comparisons that have already been seen, which allows
+// short circuiting on recursive types.
+func deeper(dst, src reflect.Value, visited map[uintptr]*visit, depth int) (err error) {
+	if dst.CanAddr() {
+		addr := dst.UnsafeAddr()
+		h := 17 * addr
+		seen := visited[h]
+		typ := dst.Type()
+		for p := seen; p != nil; p = p.next {
+			if p.ptr == addr && p.typ == typ {
+				return nil
+			}
+		}
+		// Remember, remember...
+		visited[h] = &visit{addr, typ, seen}
+	}
+	return // TODO refactor
+}
+=======
+>>>>>>> 6b7ce455e (update vendored files)

@@ -21,7 +21,6 @@ import (
 )
 
 // GetMainDomainName invokes the alidns.GetMainDomainName API synchronously
-// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
 func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (response *GetMainDomainNameResponse, err error) {
 	response = CreateGetMainDomainNameResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) GetMainDomainName(request *GetMainDomainNameRequest) (resp
 }
 
 // GetMainDomainNameWithChan invokes the alidns.GetMainDomainName API asynchronously
-// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetMainDomainNameWithChan(request *GetMainDomainNameRequest) (<-chan *GetMainDomainNameResponse, <-chan error) {
 	responseChan := make(chan *GetMainDomainNameResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) GetMainDomainNameWithChan(request *GetMainDomainNameReques
 }
 
 // GetMainDomainNameWithCallback invokes the alidns.GetMainDomainName API asynchronously
-// api document: https://help.aliyun.com/api/alidns/getmaindomainname.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) GetMainDomainNameWithCallback(request *GetMainDomainNameRequest, callback func(response *GetMainDomainNameResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -96,6 +91,7 @@ func CreateGetMainDomainNameRequest() (request *GetMainDomainNameRequest) {
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "GetMainDomainName", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

@@ -435,4 +435,11 @@ const (
 	SYS_LANDLOCK_CREATE_RULESET      = 444
 	SYS_LANDLOCK_ADD_RULE            = 445
 	SYS_LANDLOCK_RESTRICT_SELF       = 446
+<<<<<<< HEAD
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	SYS_PROCESS_MRELEASE             = 448
+	SYS_FUTEX_WAITV                  = 449
+	SYS_SET_MEMPOLICY_HOME_NODE      = 450
+>>>>>>> 6b7ce455e (update vendored files)
 )

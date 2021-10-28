@@ -5,6 +5,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (arm64 || amd64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && linux
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -17,6 +18,12 @@
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 // +build arm64 amd64 ppc64 ppc64le mips64 mips64le riscv64 s390x
+||||||| parent of 6b7ce455e (update vendored files)
+// +build arm64 amd64 ppc64 ppc64le mips64 mips64le riscv64 s390x
+=======
+//go:build (arm64 || amd64 || loong64 || ppc64 || ppc64le || mips64 || mips64le || riscv64 || s390x) && linux
+// +build arm64 amd64 loong64 ppc64 ppc64le mips64 mips64le riscv64 s390x
+>>>>>>> 6b7ce455e (update vendored files)
 // +build linux
 
 package socket

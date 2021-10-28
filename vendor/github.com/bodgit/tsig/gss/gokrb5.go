@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math"
+	"net"
 	"os"
 	"os/user"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"time"
 
 	"github.com/bodgit/tsig"
+	"github.com/bodgit/tsig/internal/util"
+	"github.com/go-logr/logr"
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/credentials"
@@ -34,9 +37,7 @@ var (
 	errGapToken       = errors.New("skipped predecessor token(s) detected")
 )
 
-// SequenceState tracks previously seen sequence numbers for message replay
-// and/or sequence protection
-type SequenceState struct {
+type sequenceState struct {
 	m            sync.Mutex
 	doReplay     bool
 	doSequence   bool
@@ -46,12 +47,8 @@ type SequenceState struct {
 	sequenceMask uint64
 }
 
-// NewSequenceState returns a new SequenceState seeded with sequenceNumber
-// with doReplay and doSequence controlling replay and sequence protection
-// respectively and wide controlling whether sequence numbers are expected to
-// wrap at a 32- or 64-bit boundary.
-func NewSequenceState(sequenceNumber uint64, doReplay, doSequence, wide bool) *SequenceState {
-	ss := &SequenceState{
+func newSequenceState(sequenceNumber uint64, doReplay, doSequence, wide bool) *sequenceState {
+	ss := &sequenceState{
 		doReplay:   doReplay,
 		doSequence: doSequence,
 		base:       sequenceNumber,
@@ -64,11 +61,7 @@ func NewSequenceState(sequenceNumber uint64, doReplay, doSequence, wide bool) *S
 	return ss
 }
 
-// Check the next sequence number. Sequence protection requires the sequence
-// number to increase sequentially with no duplicates or out of order delivery.
-// Replay protection relaxes these restrictions to permit limited out of order
-// delivery.
-func (ss *SequenceState) Check(sequenceNumber uint64) error {
+func (ss *sequenceState) check(sequenceNumber uint64) error {
 	if !ss.doReplay && !ss.doSequence {
 		return nil
 	}
@@ -115,23 +108,47 @@ type context struct {
 	client *client.Client
 	key    types.EncryptionKey
 	seq    uint64
-	ss     *SequenceState
+	ss     *sequenceState
 }
 
-// GSS maps the TKEY name to the context that negotiated it as
+// Client maps the TKEY name to the context that negotiated it as
 // well as any other internal state.
-type GSS struct {
-	m   sync.RWMutex
-	ctx map[string]context
+type Client struct {
+	m      sync.RWMutex
+	client *dns.Client
+	config string
+	ctx    map[string]context
+	logger logr.Logger
 }
 
-// New performs any library initialization necessary.
+// WithConfig sets the Kerberos configuration used
+func WithConfig(config string) func(*Client) error {
+	return func(c *Client) error {
+		c.config = config
+		return nil
+	}
+}
+
+// NewClient performs any library initialization necessary.
 // It returns a context handle for any further functions along with any error
 // that occurred.
-func New() (*GSS, error) {
+func NewClient(dnsClient *dns.Client, options ...func(*Client) error) (*Client, error) {
 
-	c := &GSS{
-		ctx: make(map[string]context),
+	client, err := util.CopyDNSClient(dnsClient)
+	if err != nil {
+		return nil, err
+	}
+
+	client.TsigProvider = new(gssNoVerify)
+
+	c := &Client{
+		client: client,
+		ctx:    make(map[string]context),
+		logger: logr.Discard(),
+	}
+
+	if err := c.setOption(options...); err != nil {
+		return nil, err
 	}
 
 	return c, nil
@@ -140,27 +157,25 @@ func New() (*GSS, error) {
 // Close deletes any active contexts and unloads any underlying libraries as
 // necessary.
 // It returns any error that occurred.
-func (c *GSS) Close() error {
+func (c *Client) Close() error {
 
 	return c.close()
 }
 
-// GenerateGSS generates the TSIG MAC based on the established context.
-// It is intended to be called as an algorithm-specific callback.
-// It is called with the bytes of the DNS message, the algorithm name, the
-// TSIG name (which is the negotiated TKEY for this context) and the secret
-// (which is ignored).
+// Generate generates the TSIG MAC based on the established context.
+// It is called with the bytes of the DNS message, and the partial TSIG
+// record containing the algorithm and name which is the negotiated TKEY
+// for this context.
 // It returns the bytes for the TSIG MAC and any error that occurred.
-func (c *GSS) GenerateGSS(msg []byte, algorithm, name, secret string) ([]byte, error) {
-
-	if dns.CanonicalName(algorithm) != tsig.GSS {
+func (c *Client) Generate(msg []byte, t *dns.TSIG) ([]byte, error) {
+	if dns.CanonicalName(t.Algorithm) != tsig.GSS {
 		return nil, dns.ErrKeyAlg
 	}
 
 	c.m.RLock()
 	defer c.m.RUnlock()
 
-	ctx, ok := c.ctx[name]
+	ctx, ok := c.ctx[t.Hdr.Name]
 	if !ok {
 		return nil, dns.ErrSecret
 	}
@@ -185,13 +200,12 @@ func (c *GSS) GenerateGSS(msg []byte, algorithm, name, secret string) ([]byte, e
 	return b, nil
 }
 
-// VerifyGSS verifies the TSIG MAC based on the established context.
-// It is intended to be called as an algorithm-specific callback.
-// It is called with the bytes of the DNS message, the TSIG record, the TSIG
-// name (which is the negotiated TKEY for this context) and the secret (which
-// is ignored).
+// Verify verifies the TSIG MAC based on the established context.
+// It is called with the bytes of the DNS message, and the TSIG record
+// containing the algorithm, MAC, and name which is the negotiated TKEY
+// for this context.
 // It returns any error that occurred.
-func (c *GSS) VerifyGSS(stripped []byte, t *dns.TSIG, name, secret string) error {
+func (c *Client) Verify(stripped []byte, t *dns.TSIG) error {
 
 	if dns.CanonicalName(t.Algorithm) != tsig.GSS {
 		return dns.ErrKeyAlg
@@ -200,7 +214,7 @@ func (c *GSS) VerifyGSS(stripped []byte, t *dns.TSIG, name, secret string) error
 	c.m.RLock()
 	defer c.m.RUnlock()
 
-	ctx, ok := c.ctx[name]
+	ctx, ok := c.ctx[t.Hdr.Name]
 	if !ok {
 		return dns.ErrSecret
 	}
@@ -216,7 +230,7 @@ func (c *GSS) VerifyGSS(stripped []byte, t *dns.TSIG, name, secret string) error
 	}
 	token.Payload = stripped
 
-	if err = ctx.ss.Check(token.SndSeqNum); err != nil {
+	if err = ctx.ss.check(token.SndSeqNum); err != nil {
 		return err
 	}
 
@@ -228,65 +242,68 @@ func (c *GSS) VerifyGSS(stripped []byte, t *dns.TSIG, name, secret string) error
 	return nil
 }
 
-func (c *GSS) negotiateContext(host string, cl *client.Client) (*string, *time.Time, error) {
+func (c *Client) negotiateContext(host string, cl *client.Client) (string, time.Time, error) {
 
-	hostname, _ := tsig.SplitHostPort(host)
+	hostname, _, err := net.SplitHostPort(host)
+	if err != nil {
+		return "", time.Time{}, err
+	}
 
 	keyname := generateTKEYName(hostname)
 
 	tkt, key, err := cl.GetServiceTicket(generateSPN(hostname))
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	apreq, err := spnego.NewKRB5TokenAPREQ(cl, tkt, key, []int{gssapi.ContextFlagMutual, gssapi.ContextFlagReplay, gssapi.ContextFlagInteg}, []int{flags.APOptionMutualRequired})
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	if err = apreq.APReq.DecryptAuthenticator(key); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	b, err := apreq.Marshal()
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	// We don't care about non-TKEY answers, no additional RR's to send, and no signing
-	tkey, _, err := tsig.ExchangeTKEY(host, keyname, tsig.GSS, tsig.TkeyModeGSS, 3600, b, nil, nil, nil, nil)
+	tkey, _, err := util.ExchangeTKEY(c.client, host, keyname, tsig.GSS, util.TkeyModeGSS, 3600, b, nil, "", "")
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	if tkey.Header().Name != keyname {
-		return nil, nil, errors.New("TKEY name does not match")
+		return "", time.Time{}, errors.New("TKEY name does not match")
 	}
 
 	if b, err = hex.DecodeString(tkey.Key); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	var aprep spnego.KRB5Token
 	if err = aprep.Unmarshal(b); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	if aprep.IsKRBError() {
-		return nil, nil, errors.New("received Kerberos error")
+		return "", time.Time{}, errors.New("received Kerberos error")
 	}
 
 	if !aprep.IsAPRep() {
-		return nil, nil, errors.New("didn't receive an AP_REP")
+		return "", time.Time{}, errors.New("didn't receive an AP_REP")
 	}
 
 	if b, err = crypto.DecryptEncPart(aprep.APRep.EncPart, key, keyusage.AP_REP_ENCPART); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	var payload messages.EncAPRepPart
 	if err = payload.Unmarshal(b); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	expiry := time.Unix(int64(tkey.Expiration), 0)
@@ -298,10 +315,10 @@ func (c *GSS) negotiateContext(host string, cl *client.Client) (*string, *time.T
 		client: cl,
 		key:    payload.Subkey,
 		seq:    uint64(apreq.APReq.Authenticator.SeqNumber),
-		ss:     NewSequenceState(uint64(payload.SequenceNumber), true, false, true),
+		ss:     newSequenceState(uint64(payload.SequenceNumber), true, false, true),
 	}
 
-	return &keyname, &expiry, nil
+	return keyname, expiry, nil
 }
 
 func loadCache() (*credentials.CCache, error) {
@@ -326,7 +343,10 @@ func loadCache() (*credentials.CCache, error) {
 	return cache, nil
 }
 
-func loadConfig() (*config.Config, error) {
+func (c *Client) loadConfig() (*config.Config, error) {
+	if c.config != "" {
+		return config.NewFromString(c.config)
+	}
 
 	path := os.Getenv("KRB5_CONFIG")
 	_, err := os.Stat(path)
@@ -344,33 +364,28 @@ func loadConfig() (*config.Config, error) {
 		}
 	}
 
-	cfg, err := config.Load(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
+	return config.Load(path)
 }
 
 // NegotiateContext exchanges RFC 2930 TKEY records with the indicated DNS
 // server to establish a security context using the current user.
 // It returns the negotiated TKEY name, expiration time, and any error that
 // occurred.
-func (c *GSS) NegotiateContext(host string) (*string, *time.Time, error) {
+func (c *Client) NegotiateContext(host string) (string, time.Time, error) {
 
 	cache, err := loadCache()
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
-	cfg, err := loadConfig()
+	cfg, err := c.loadConfig()
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	cl, err := client.NewFromCCache(cache, cfg, client.DisablePAFXFAST(true))
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	return c.negotiateContext(host, cl)
@@ -381,19 +396,19 @@ func (c *GSS) NegotiateContext(host string) (*string, *time.Time, error) {
 // credentials.
 // It returns the negotiated TKEY name, expiration time, and any error that
 // occurred.
-func (c *GSS) NegotiateContextWithCredentials(host, domain, username, password string) (*string, *time.Time, error) {
+func (c *Client) NegotiateContextWithCredentials(host, domain, username, password string) (string, time.Time, error) {
 
 	// Should I still initialise the credential cache?
 
-	cfg, err := loadConfig()
+	cfg, err := c.loadConfig()
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	cl := client.NewWithPassword(username, domain, password, cfg, client.DisablePAFXFAST(true))
 
 	if err = cl.Login(); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	return c.negotiateContext(host, cl)
@@ -404,24 +419,24 @@ func (c *GSS) NegotiateContextWithCredentials(host, domain, username, password s
 // keytab.
 // It returns the negotiated TKEY name, expiration time, and any error that
 // occurred.
-func (c *GSS) NegotiateContextWithKeytab(host, domain, username, path string) (*string, *time.Time, error) {
+func (c *Client) NegotiateContextWithKeytab(host, domain, username, path string) (string, time.Time, error) {
 
 	// Should I still initialise the credential cache?
 
 	kt, err := keytab.Load(path)
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
-	cfg, err := loadConfig()
+	cfg, err := c.loadConfig()
 	if err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	cl := client.NewWithKeytab(username, domain, kt, cfg, client.DisablePAFXFAST(true))
 
 	if err = cl.Login(); err != nil {
-		return nil, nil, err
+		return "", time.Time{}, err
 	}
 
 	return c.negotiateContext(host, cl)
@@ -430,19 +445,19 @@ func (c *GSS) NegotiateContextWithKeytab(host, domain, username, path string) (*
 // DeleteContext deletes the active security context associated with the given
 // TKEY name.
 // It returns any error that occurred.
-func (c *GSS) DeleteContext(keyname *string) error {
+func (c *Client) DeleteContext(keyname string) error {
 
 	c.m.Lock()
 	defer c.m.Unlock()
 
-	ctx, ok := c.ctx[*keyname]
+	ctx, ok := c.ctx[keyname]
 	if !ok {
 		return errors.New("No such context")
 	}
 
 	ctx.client.Destroy()
 
-	delete(c.ctx, *keyname)
+	delete(c.ctx, keyname)
 
 	return nil
 }

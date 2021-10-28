@@ -27,6 +27,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // NewLoggerFromConfigString reads the string and build a logger. It can be used
@@ -101,6 +102,11 @@ func NewLoggerFromConfigString(s string) Logger {
 =======
 
 	"google.golang.org/grpc/grpclog"
+||||||| parent of 6b7ce455e (update vendored files)
+
+	"google.golang.org/grpc/grpclog"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // NewLoggerFromConfigString reads the string and build a logger. It can be used
@@ -127,8 +133,14 @@ func NewLoggerFromConfigString(s string) Logger {
 	methods := strings.Split(s, ",")
 	for _, method := range methods {
 		if err := l.fillMethodLoggerWithConfigString(method); err != nil {
+<<<<<<< HEAD
 			grpclog.Warningf("failed to parse binary log config: %v", err)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			grpclog.Warningf("failed to parse binary log config: %v", err)
+=======
+			grpclogLogger.Warningf("failed to parse binary log config: %v", err)
+>>>>>>> 6b7ce455e (update vendored files)
 			return nil
 		}
 	}

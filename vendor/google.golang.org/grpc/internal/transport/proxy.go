@@ -37,6 +37,7 @@ var (
 	httpProxyFromEnvironment = http.ProxyFromEnvironment
 )
 
+<<<<<<< HEAD
 func mapAddress(ctx context.Context, address string) (*url.URL, error) {
 	req := &http.Request{
 		URL: &url.URL{
@@ -115,6 +116,87 @@ func doHTTPConnectHandshake(ctx context.Context, conn net.Conn, backendAddr stri
 func proxyDial(ctx context.Context, addr string, grpcUA string) (conn net.Conn, err error) {
 	newAddr := addr
 	proxyURL, err := mapAddress(ctx, addr)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+func mapAddress(address string) (*url.URL, error) {
+	req := &http.Request{
+		URL: &url.URL{
+			Scheme: "https",
+			Host:   address,
+		},
+	}
+	url, err := httpProxyFromEnvironment(req)
+	if err != nil {
+		return nil, err
+	}
+	return url, nil
+}
+
+// To read a response from a net.Conn, http.ReadResponse() takes a bufio.Reader.
+// It's possible that this reader reads more than what's need for the response and stores
+// those bytes in the buffer.
+// bufConn wraps the original net.Conn and the bufio.Reader to make sure we don't lose the
+// bytes in the buffer.
+type bufConn struct {
+	net.Conn
+	r io.Reader
+}
+
+func (c *bufConn) Read(b []byte) (int, error) {
+	return c.r.Read(b)
+}
+
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func doHTTPConnectHandshake(ctx context.Context, conn net.Conn, backendAddr string, proxyURL *url.URL, grpcUA string) (_ net.Conn, err error) {
+	defer func() {
+		if err != nil {
+			conn.Close()
+		}
+	}()
+
+	req := &http.Request{
+		Method: http.MethodConnect,
+		URL:    &url.URL{Host: backendAddr},
+		Header: map[string][]string{"User-Agent": {grpcUA}},
+	}
+	if t := proxyURL.User; t != nil {
+		u := t.Username()
+		p, _ := t.Password()
+		req.Header.Add(proxyAuthHeaderKey, "Basic "+basicAuth(u, p))
+	}
+
+	if err := sendHTTPRequest(ctx, req, conn); err != nil {
+		return nil, fmt.Errorf("failed to write the HTTP request: %v", err)
+	}
+
+	r := bufio.NewReader(conn)
+	resp, err := http.ReadResponse(r, req)
+	if err != nil {
+		return nil, fmt.Errorf("reading server HTTP response: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		dump, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			return nil, fmt.Errorf("failed to do connect handshake, status code: %s", resp.Status)
+		}
+		return nil, fmt.Errorf("failed to do connect handshake, response: %q", dump)
+	}
+
+	return &bufConn{Conn: conn, r: r}, nil
+}
+
+// proxyDial dials, connecting to a proxy first if necessary. Checks if a proxy
+// is necessary, dials, does the HTTP CONNECT handshake, and returns the
+// connection.
+func proxyDial(ctx context.Context, addr string, grpcUA string) (conn net.Conn, err error) {
+	newAddr := addr
+	proxyURL, err := mapAddress(addr)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

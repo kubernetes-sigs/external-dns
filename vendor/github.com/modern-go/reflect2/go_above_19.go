@@ -9,6 +9,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:linkname resolveTypeOff reflect.resolveTypeOff
 func resolveTypeOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
 
@@ -24,6 +25,12 @@ func resolveTypeOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+//go:linkname resolveTypeOff reflect.resolveTypeOff
+func resolveTypeOff(rtype unsafe.Pointer, off int32) unsafe.Pointer
+
+>>>>>>> 6b7ce455e (update vendored files)
 //go:linkname makemap reflect.makemap
 func makemap(rtype unsafe.Pointer, cap int) (m unsafe.Pointer)
 

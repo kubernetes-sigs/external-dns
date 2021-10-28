@@ -84,6 +84,14 @@ func UserAgent(userAgent string) Option {
 	}
 }
 
+// BaseURL allows you to override the default HTTP base URL used for API calls.
+func BaseURL(baseURL string) Option {
+	return func(api *API) error {
+		api.BaseURL = baseURL
+		return nil
+	}
+}
+
 // parseOptions parses the supplied options functions and returns a configured
 // *API instance.
 func (api *API) parseOptions(opts ...Option) error {

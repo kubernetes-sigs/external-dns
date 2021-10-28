@@ -15,6 +15,7 @@ func (InstanceVolumesPagedResponse) endpointWithID(c *Client, id int) string {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	endpoint, err := c.InstanceVolumes.endpointWithParams(id)
 	if err != nil {
 		panic(err)
@@ -64,6 +65,11 @@ func (c *Client) ListInstanceVolumes(ctx context.Context, linodeID int, opts *Li
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 	endpoint, err := c.InstanceVolumes.endpointWithID(id)
+||||||| parent of 6b7ce455e (update vendored files)
+	endpoint, err := c.InstanceVolumes.endpointWithID(id)
+=======
+	endpoint, err := c.InstanceVolumes.endpointWithParams(id)
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		panic(err)
 	}
@@ -79,8 +85,13 @@ func (resp *InstanceVolumesPagedResponse) appendData(r *InstanceVolumesPagedResp
 func (c *Client) ListInstanceVolumes(ctx context.Context, linodeID int, opts *ListOptions) ([]Volume, error) {
 	response := InstanceVolumesPagedResponse{}
 	err := c.listHelperWithID(ctx, &response, linodeID, opts)
+<<<<<<< HEAD
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 	if err != nil {
 		return nil, err
 	}

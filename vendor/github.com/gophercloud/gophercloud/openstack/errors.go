@@ -7,6 +7,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 )
 
 // ErrEndpointNotFound is the error when no suitable endpoint can be found
@@ -103,6 +104,11 @@ func (e ErrMultipleMatchingEndpointsV3) Error() string {
 =======
 	tokens2 "github.com/gophercloud/gophercloud/openstack/identity/v2/tokens"
 	tokens3 "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
+||||||| parent of 6b7ce455e (update vendored files)
+	tokens2 "github.com/gophercloud/gophercloud/openstack/identity/v2/tokens"
+	tokens3 "github.com/gophercloud/gophercloud/openstack/identity/v3/tokens"
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // ErrEndpointNotFound is the error when no suitable endpoint can be found
@@ -121,6 +127,7 @@ func (e ErrInvalidAvailabilityProvided) Error() string {
 	return fmt.Sprintf("Unexpected availability in endpoint query: %s", e.Value)
 }
 
+<<<<<<< HEAD
 // ErrMultipleMatchingEndpointsV2 is the error when more than one endpoint
 // for the given options is found in the v2 catalog
 type ErrMultipleMatchingEndpointsV2 struct {
@@ -144,6 +151,31 @@ func (e ErrMultipleMatchingEndpointsV3) Error() string {
 }
 
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+// ErrMultipleMatchingEndpointsV2 is the error when more than one endpoint
+// for the given options is found in the v2 catalog
+type ErrMultipleMatchingEndpointsV2 struct {
+	gophercloud.BaseError
+	Endpoints []tokens2.Endpoint
+}
+
+func (e ErrMultipleMatchingEndpointsV2) Error() string {
+	return fmt.Sprintf("Discovered %d matching endpoints: %#v", len(e.Endpoints), e.Endpoints)
+}
+
+// ErrMultipleMatchingEndpointsV3 is the error when more than one endpoint
+// for the given options is found in the v3 catalog
+type ErrMultipleMatchingEndpointsV3 struct {
+	gophercloud.BaseError
+	Endpoints []tokens3.Endpoint
+}
+
+func (e ErrMultipleMatchingEndpointsV3) Error() string {
+	return fmt.Sprintf("Discovered %d matching endpoints: %#v", len(e.Endpoints), e.Endpoints)
+}
+
+=======
+>>>>>>> 6b7ce455e (update vendored files)
 // ErrNoAuthURL is the error when the OS_AUTH_URL environment variable is not
 // found
 type ErrNoAuthURL struct{ gophercloud.ErrInvalidInput }

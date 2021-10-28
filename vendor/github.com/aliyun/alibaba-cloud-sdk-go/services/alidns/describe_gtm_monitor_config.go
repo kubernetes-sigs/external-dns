@@ -21,7 +21,6 @@ import (
 )
 
 // DescribeGtmMonitorConfig invokes the alidns.DescribeGtmMonitorConfig API synchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
 func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfigRequest) (response *DescribeGtmMonitorConfigResponse, err error) {
 	response = CreateDescribeGtmMonitorConfigResponse()
 	err = client.DoAction(request, response)
@@ -29,8 +28,6 @@ func (client *Client) DescribeGtmMonitorConfig(request *DescribeGtmMonitorConfig
 }
 
 // DescribeGtmMonitorConfigWithChan invokes the alidns.DescribeGtmMonitorConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorConfigWithChan(request *DescribeGtmMonitorConfigRequest) (<-chan *DescribeGtmMonitorConfigResponse, <-chan error) {
 	responseChan := make(chan *DescribeGtmMonitorConfigResponse, 1)
 	errChan := make(chan error, 1)
@@ -53,8 +50,6 @@ func (client *Client) DescribeGtmMonitorConfigWithChan(request *DescribeGtmMonit
 }
 
 // DescribeGtmMonitorConfigWithCallback invokes the alidns.DescribeGtmMonitorConfig API asynchronously
-// api document: https://help.aliyun.com/api/alidns/describegtmmonitorconfig.html
-// asynchronous document: https://help.aliyun.com/document_detail/66220.html
 func (client *Client) DescribeGtmMonitorConfigWithCallback(request *DescribeGtmMonitorConfigRequest, callback func(response *DescribeGtmMonitorConfigResponse, err error)) <-chan int {
 	result := make(chan int, 1)
 	err := client.AddAsyncTask(func() {
@@ -104,6 +99,7 @@ func CreateDescribeGtmMonitorConfigRequest() (request *DescribeGtmMonitorConfigR
 		RpcRequest: &requests.RpcRequest{},
 	}
 	request.InitWithApiInfo("Alidns", "2015-01-09", "DescribeGtmMonitorConfig", "alidns", "openAPI")
+	request.Method = requests.POST
 	return
 }
 

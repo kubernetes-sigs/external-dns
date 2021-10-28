@@ -79,6 +79,7 @@ let it know that a system call is running.
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 When porting Go to a new architecture/OS, this file must be implemented for
 each GOOS/GOARCH pair.
 
@@ -220,6 +221,11 @@ and a wide variety of miscellaneous constants. The constants come from the list
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 When porting Go to an new architecture/OS, this file must be implemented for
+||||||| parent of 6b7ce455e (update vendored files)
+When porting Go to an new architecture/OS, this file must be implemented for
+=======
+When porting Go to a new architecture/OS, this file must be implemented for
+>>>>>>> 6b7ce455e (update vendored files)
 each GOOS/GOARCH pair.
 
 ### mksysnum
@@ -250,7 +256,7 @@ prototype can be exported (capitalized) or not.
 Adding a new syscall often just requires adding a new `//sys` function prototype
 with the desired arguments and a capitalized name so it is exported. However, if
 you want the interface to the syscall to be different, often one will make an
-unexported `//sys` prototype, an then write a custom wrapper in
+unexported `//sys` prototype, and then write a custom wrapper in
 `syscall_${GOOS}.go`.
 
 ### types files
@@ -280,8 +286,14 @@ some `#if/#elif` macros in your include statements.
 
 This script is used to generate the system's various constants. This doesn't
 just include the error numbers and error strings, but also the signal numbers
+<<<<<<< HEAD
 an a wide variety of miscellaneous constants. The constants come from the list
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+an a wide variety of miscellaneous constants. The constants come from the list
+=======
+and a wide variety of miscellaneous constants. The constants come from the list
+>>>>>>> 6b7ce455e (update vendored files)
 of include files in the `includes_${uname}` variable. A regex then picks out
 the desired `#define` statements, and generates the corresponding Go constants.
 The error numbers and strings are generated from `#include <errno.h>`, and the
@@ -293,7 +305,7 @@ To add a constant, add the header that includes it to the appropriate variable.
 Then, edit the regex (if necessary) to match the desired constant. Avoid making
 the regex too broad to avoid matching unintended constants.
 
-### mkmerge.go
+### internal/mkmerge
 
 This program is used to extract duplicate const, func, and type declarations
 from the generated architecture-specific files listed below, and merge these

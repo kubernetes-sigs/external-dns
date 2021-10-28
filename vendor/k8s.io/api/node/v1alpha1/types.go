@@ -34,6 +34,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class
 type RuntimeClass struct {
 	metav1.TypeMeta `json:",inline"`
@@ -171,6 +172,11 @@ type Scheduling struct {
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md
+||||||| parent of 6b7ce455e (update vendored files)
+// https://git.k8s.io/enhancements/keps/sig-node/runtime-class.md
+=======
+// https://git.k8s.io/enhancements/keps/sig-node/585-runtime-class
+>>>>>>> 6b7ce455e (update vendored files)
 type RuntimeClass struct {
 	metav1.TypeMeta `json:",inline"`
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
@@ -195,14 +201,14 @@ type RuntimeClassSpec struct {
 	// For example, a handler called "runc" might specify that the runc OCI
 	// runtime (using native Linux containers) will be used to run the containers
 	// in a pod.
-	// The RuntimeHandler must conform to the DNS Label (RFC 1123) requirements
-	// and is immutable.
+	// The RuntimeHandler must be lowercase, conform to the DNS Label (RFC 1123)
+	// requirements, and is immutable.
 	RuntimeHandler string `json:"runtimeHandler" protobuf:"bytes,1,opt,name=runtimeHandler"`
 
 	// Overhead represents the resource overhead associated with running a pod for a
 	// given RuntimeClass. For more details, see
-	// https://git.k8s.io/enhancements/keps/sig-node/20190226-pod-overhead.md
-	// This field is alpha-level as of Kubernetes v1.15, and is only honored by servers that enable the PodOverhead feature.
+	// https://git.k8s.io/enhancements/keps/sig-node/688-pod-overhead/README.md
+	// This field is beta-level as of Kubernetes v1.18, and is only honored by servers that enable the PodOverhead feature.
 	// +optional
 	Overhead *Overhead `json:"overhead,omitempty" protobuf:"bytes,2,opt,name=overhead"`
 
@@ -230,7 +236,12 @@ type Scheduling struct {
 	// with a pod's existing nodeSelector. Any conflicts will cause the pod to
 	// be rejected in admission.
 	// +optional
+<<<<<<< HEAD
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	// +mapType=atomic
+>>>>>>> 6b7ce455e (update vendored files)
 	NodeSelector map[string]string `json:"nodeSelector,omitempty" protobuf:"bytes,1,opt,name=nodeSelector"`
 
 	// tolerations are appended (excluding duplicates) to pods running with this

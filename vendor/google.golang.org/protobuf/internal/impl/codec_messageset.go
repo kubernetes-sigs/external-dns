@@ -32,6 +32,7 @@ func sizeMessageSet(mi *MessageInfo, p pointer, opts marshalOptions) (size int) 
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if u := mi.getUnknownBytes(p); u != nil {
 		size += messageset.SizeUnknown(*u)
 	}
@@ -216,6 +217,14 @@ func unmarshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts unmarshalOpt
 =======
 	unknown := *p.Apply(mi.unknownOffset).Bytes()
 	size += messageset.SizeUnknown(unknown)
+||||||| parent of 6b7ce455e (update vendored files)
+	unknown := *p.Apply(mi.unknownOffset).Bytes()
+	size += messageset.SizeUnknown(unknown)
+=======
+	if u := mi.getUnknownBytes(p); u != nil {
+		size += messageset.SizeUnknown(*u)
+	}
+>>>>>>> 6b7ce455e (update vendored files)
 
 	return size
 }
@@ -254,10 +263,12 @@ func marshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts marshalOptions
 		}
 	}
 
-	unknown := *p.Apply(mi.unknownOffset).Bytes()
-	b, err := messageset.AppendUnknown(b, unknown)
-	if err != nil {
-		return b, err
+	if u := mi.getUnknownBytes(p); u != nil {
+		var err error
+		b, err = messageset.AppendUnknown(b, *u)
+		if err != nil {
+			return b, err
+		}
 	}
 
 	return b, nil
@@ -285,14 +296,22 @@ func unmarshalMessageSet(mi *MessageInfo, b []byte, p pointer, opts unmarshalOpt
 		*ep = make(map[int32]ExtensionField)
 	}
 	ext := *ep
-	unknown := p.Apply(mi.unknownOffset).Bytes()
 	initialized := true
 	err = messageset.Unmarshal(b, true, func(num protowire.Number, v []byte) error {
 		o, err := mi.unmarshalExtension(v, num, protowire.BytesType, ext, opts)
 		if err == errUnknown {
+<<<<<<< HEAD
 			*unknown = protowire.AppendTag(*unknown, num, protowire.BytesType)
 			*unknown = append(*unknown, v...)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+			*unknown = protowire.AppendTag(*unknown, num, protowire.BytesType)
+			*unknown = append(*unknown, v...)
+=======
+			u := mi.mutableUnknownBytes(p)
+			*u = protowire.AppendTag(*u, num, protowire.BytesType)
+			*u = append(*u, v...)
+>>>>>>> 6b7ce455e (update vendored files)
 			return nil
 		}
 		if !o.initialized {

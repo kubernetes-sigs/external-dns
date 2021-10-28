@@ -34,6 +34,7 @@ type DomainServiceHandler struct {
 type Domain struct {
 	Domain      string `json:"domain,omitempty"`
 	DateCreated string `json:"date_created,omitempty"`
+	DNSSec      string `json:"dns_sec,omitempty"`
 }
 
 // DomainReq is the struct to create a domain

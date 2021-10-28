@@ -15,6 +15,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"github.com/maxatome/go-testdeep/internal/types"
 )
 
@@ -53,6 +54,10 @@ func getTime(ctx ctxerr.Context, got reflect.Value, mustConvert bool) (time.Time
 >>>>>>> 5ce8c7613 (update vendored files)
 ||||||| parent of 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
+||||||| parent of 6b7ce455e (update vendored files)
+=======
+	"github.com/maxatome/go-testdeep/internal/types"
+>>>>>>> 6b7ce455e (update vendored files)
 )
 
 // getTime returns the time.Time that is inside got or that can be
@@ -63,8 +68,14 @@ func getTime(ctx ctxerr.Context, got reflect.Value, mustConvert bool) (time.Time
 		ok    bool
 	)
 	if mustConvert {
+<<<<<<< HEAD
 		gotIf, ok = dark.GetInterface(got.Convert(timeType), true)
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of 6b7ce455e (update vendored files)
+		gotIf, ok = dark.GetInterface(got.Convert(timeType), true)
+=======
+		gotIf, ok = dark.GetInterface(got.Convert(types.Time), true)
+>>>>>>> 6b7ce455e (update vendored files)
 	} else {
 		gotIf, ok = dark.GetInterface(got, true)
 	}
