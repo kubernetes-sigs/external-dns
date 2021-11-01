@@ -18,6 +18,7 @@ package dnsimple
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -122,7 +123,14 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 	if err != nil {
 		return nil, err
 	}
-	provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
+	if whoamiResponse.Data.Account != nil {
+		provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
+	} else {
+		provider.accountID = os.Getenv("DNSIMPLE_ACCOUNT_ID")
+		if len(provider.accountID) == 0 {
+			return nil, errors.New("No account ID found in whoami response and DNSIMPLE_ACCOUNT_ID not given")
+		}
+	}
 	return provider, nil
 }
 
@@ -133,7 +141,15 @@ func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, 
 	if err != nil {
 		return "", err
 	}
-	return int64ToString(whoamiResponse.Data.Account.ID), nil
+	if whoamiResponse.Data.Account != nil {
+		return int64ToString(whoamiResponse.Data.Account.ID), nil
+	} else {
+		accountID := os.Getenv("DNSIMPLE_ACCOUNT_ID")
+		if len(accountID) == 0 {
+			return "", errors.New("No account ID found in whoami response and DNSIMPLE_ACCOUNT_ID not given")
+		}
+		return accountID, nil
+	}
 }
 
 // Returns a list of filtered Zones
