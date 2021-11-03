@@ -88,9 +88,11 @@ spec:
     http: &echoserver_root
       paths:
       - backend:
-          serviceName: echoserver
-          servicePort: 80
-        path: /
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: ImplementationSpecific
   - host: echoserver.example.org
     http: *echoserver_root
 ```
@@ -123,9 +125,11 @@ spec:
   - http:
       paths:
       - backend:
-          serviceName: echoserver
-          servicePort: 80
-        path: /
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: ImplementationSpecific
 ```
 
 In the above example we create a default path that works for any hostname, and
@@ -159,9 +163,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: echoserver
-          servicePort: 80
-        path: /
+          service:
+            name: echoserver
+            port:
+              number: 80
+        pathType: ImplementationSpecific
 ```
 
 The above Ingress object will result in the creation of an ALB with a dualstack
