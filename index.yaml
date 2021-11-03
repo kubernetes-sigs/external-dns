@@ -123,4 +123,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.4.0/external-dns-1.4.0.tgz
     version: 1.4.0
-generated: "2021-11-25T08:50:00.848784158Z"
+generated: "2021-11-03T11:40:00.848784158Z"
