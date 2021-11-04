@@ -170,7 +170,7 @@ func NewEfficientIPProvider(config EfficientIPConfig) (*EfficientIPProvider, err
 		Password: config.Password,
 	})
 	ctx = context.WithValue(ctx, eip.ContextServerVariables, map[string]string{
-		"your_solidserver_fqdn": config.Host,
+		"host": 	     	 config.Host,
 		"port":                  strconv.Itoa(config.Port),
 	})
 	client := NewEfficientipAPI(ctx, clientConfig)
