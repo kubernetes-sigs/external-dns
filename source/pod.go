@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
 
@@ -84,7 +85,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	domains := make(map[string][]string)
+	domains := make(map[string]map[bool][]string)
 	for _, pod := range pods {
 		if !pod.Spec.HostNetwork {
 			log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
@@ -93,20 +94,22 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 		if domain, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
 			if _, ok := domains[domain]; !ok {
-				domains[domain] = []string{}
+				domains[domain] = map[bool][]string{}
 			}
-			domains[domain] = append(domains[domain], pod.Status.PodIP)
+			isIPv6 := strings.Contains(pod.Status.PodIP, ":")
+			domains[domain][isIPv6] = append(domains[domain][isIPv6], pod.Status.PodIP)
 		}
 
 		if domain, ok := pod.Annotations[hostnameAnnotationKey]; ok {
 			if _, ok := domains[domain]; !ok {
-				domains[domain] = []string{}
+				domains[domain] = map[bool][]string{}
 			}
 
 			node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 			for _, address := range node.Status.Addresses {
-				if address.Type == corev1.NodeExternalIP {
-					domains[domain] = append(domains[domain], address.Address)
+				isIPv6 := strings.Contains(address.Address, ":")
+				if address.Type == corev1.NodeExternalIP || (isIPv6 && address.Type == corev1.NodeInternalIP) {
+					domains[domain][isIPv6] = append(domains[domain][isIPv6], address.Address)
 				}
 			}
 		}
@@ -114,20 +117,22 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		if ps.compatibility == "kops-dns-controller" {
 			if domain, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
 				if _, ok := domains[domain]; !ok {
-					domains[domain] = []string{}
+					domains[domain] = map[bool][]string{}
 				}
-				domains[domain] = append(domains[domain], pod.Status.PodIP)
+				isIPv6 := strings.Contains(pod.Status.PodIP, ":")
+				domains[domain][isIPv6] = append(domains[domain][isIPv6], pod.Status.PodIP)
 			}
 
 			if domain, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
 				if _, ok := domains[domain]; !ok {
-					domains[domain] = []string{}
+					domains[domain] = map[bool][]string{}
 				}
 
 				node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 				for _, address := range node.Status.Addresses {
-					if address.Type == corev1.NodeExternalIP {
-						domains[domain] = append(domains[domain], address.Address)
+					isIPv6 := strings.Contains(address.Address, ":")
+					if address.Type == corev1.NodeExternalIP || (isIPv6 && address.Type == corev1.NodeInternalIP) {
+						domains[domain][isIPv6] = append(domains[domain][isIPv6], address.Address)
 					}
 				}
 			}
@@ -135,7 +140,12 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 	endpoints := []*endpoint.Endpoint{}
 	for domain, targets := range domains {
-		endpoints = append(endpoints, endpoint.NewEndpoint(domain, endpoint.RecordTypeA, targets...))
+		if len(targets[false]) > 0 {
+			endpoints = append(endpoints, endpoint.NewEndpoint(domain, endpoint.RecordTypeA, targets[false]...))
+		}
+		if len(targets[true]) > 0 {
+			endpoints = append(endpoints, endpoint.NewEndpoint(domain, endpoint.RecordTypeAAAA, targets[true]...))
+		}
 	}
 	return endpoints, nil
 }

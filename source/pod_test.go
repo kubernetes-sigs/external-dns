@@ -46,7 +46,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:db8::1", "2001:db8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2", "10.0.1.3"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -58,6 +59,7 @@ func TestPodSource(t *testing.T) {
 						Addresses: []corev1.NodeAddress{
 							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
 							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+							{Type: corev1.NodeInternalIP, Address: "2001:db8::1"},
 						},
 					},
 				},
@@ -69,6 +71,16 @@ func TestPodSource(t *testing.T) {
 						Addresses: []corev1.NodeAddress{
 							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
 							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node3",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeInternalIP, Address: "2001:db8::2"},
 						},
 					},
 				},
@@ -106,6 +118,23 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "10.0.1.2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node3",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.3",
 					},
 				},
 			},
@@ -116,7 +145,8 @@ func TestPodSource(t *testing.T) {
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:db8::1", "2001:db8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2", "10.0.1.3"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -128,6 +158,7 @@ func TestPodSource(t *testing.T) {
 						Addresses: []corev1.NodeAddress{
 							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
 							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+							{Type: corev1.NodeInternalIP, Address: "2001:db8::1"},
 						},
 					},
 				},
@@ -139,6 +170,16 @@ func TestPodSource(t *testing.T) {
 						Addresses: []corev1.NodeAddress{
 							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
 							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node3",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeInternalIP, Address: "2001:db8::2"},
 						},
 					},
 				},
@@ -176,6 +217,23 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "10.0.1.2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node3",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.3",
 					},
 				},
 			},
@@ -249,7 +307,7 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
-			"pods with hostNetwore=false should be ignored",
+			"pods with hostNetwork=false should be ignored",
 			"",
 			"",
 			[]*endpoint.Endpoint{
