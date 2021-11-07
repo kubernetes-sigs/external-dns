@@ -30,6 +30,8 @@ import (
 const (
 	// RecordTypeA is a RecordType enum value
 	RecordTypeA = "A"
+	// RecordTypeAAAA is a RecordType enum value
+	RecordTypeAAAA = "AAAA"
 	// RecordTypeCNAME is a RecordType enum value
 	RecordTypeCNAME = "CNAME"
 	// RecordTypeTXT is a RecordType enum value
