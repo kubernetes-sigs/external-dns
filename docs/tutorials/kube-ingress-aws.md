@@ -145,6 +145,7 @@ metadata:
     kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
+  ingressClassName: skipper
   rules:
   - host: echoserver.mycluster.example.org
     http: &echoserver_root
@@ -183,6 +184,7 @@ metadata:
     kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
+  ingressClassName: skipper
   rules:
   - http:
       paths:
