@@ -121,6 +121,7 @@ The are two ways of running ExternalDNS:
 
 The following tutorials are provided:
 
+* [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * AWS
 	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
