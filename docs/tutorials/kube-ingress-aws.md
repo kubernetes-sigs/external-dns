@@ -221,6 +221,7 @@ metadata:
     kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
+  ingressClassName: skipper
   rules:
   - host: echoserver.example.org
     http:
