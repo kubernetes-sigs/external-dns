@@ -144,7 +144,7 @@ func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, 
 	if whoamiResponse.Data.Account != nil {
 		return int64ToString(whoamiResponse.Data.Account.ID), nil
 	}
-	accountID := os.Getenv("DNSIMPLE_ACCOUNT_ID")
+	accountID = os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if len(accountID) == 0 {
 		return "", errors.New("no account ID found in whoami response and DNSIMPLE_ACCOUNT_ID not given")
 	}
