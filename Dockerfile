@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copyright (C) 2020, Oracle Corporation and/or its affiliates.
+# Copyright (C) 2020, 2021, Oracle Corporation and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 # builder image
 ARG ARCH
-FROM container-registry.oracle.com/os/oraclelinux:7.9@sha256:516acec86602f59fc60d21eb425a6fe08c3dc2aeb68eb0d3d79c611f47baf94d as builder
+FROM ghcr.io/oracle/oraclelinux:7-slim as builder
 ARG ARCH
 
 # Install golang via Oracle's yum servers
@@ -26,7 +26,9 @@ RUN yum update -y \
     && yum install -y oracle-golang-release-el7 \
     && yum-config-manager --enable ol7_developer_golang113 \
     && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL7/developer/golang113/x86_64 \
-    && yum install -y git gcc make golang-1.13.4-1.el7.x86_64 \
+    && yum install -y git gcc make golang-1.13.3-1.el7.x86_64 \
+    && yum-config-manager --enable ol7_u8_security_validation \
+    && yum install -y openssl \
     && yum clean all \
     && go version
 
@@ -46,13 +48,13 @@ COPY . .
 RUN make test build.$ARCH
 
 # final image
-FROM container-registry.oracle.com/os/oraclelinux:7-slim@sha256:9941f4f558d0e6892901263cd2670f6c95978c2699c1947aaa32c2361004fa45
+FROM ghcr.io/oracle/oraclelinux:7-slim
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # COPY LICENSE and README files to the image
-COPY LICENSE README.md THIRD_PARTY_LICENSES.txt /license/
+COPY LICENSE README.md THIRD_PARTY_LICENSES.txt SECURITY.md /licenses/
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
 # https://github.com/kubernetes/kubernetes/issues/40958
