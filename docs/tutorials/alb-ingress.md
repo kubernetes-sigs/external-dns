@@ -87,12 +87,13 @@ spec:
   - host: echoserver.mycluster.example.org
     http: &echoserver_root
       paths:
-      - backend:
+      - path: /
+        backend:
           service:
             name: echoserver
             port:
               number: 80
-        pathType: ImplementationSpecific
+        pathType: Prefix
   - host: echoserver.example.org
     http: *echoserver_root
 ```
@@ -124,12 +125,13 @@ spec:
   rules:
   - http:
       paths:
-      - backend:
+      - path: /
+        backend:
           service:
             name: echoserver
             port:
               number: 80
-        pathType: ImplementationSpecific
+        pathType: Prefix
 ```
 
 In the above example we create a default path that works for any hostname, and
@@ -162,12 +164,13 @@ spec:
   - host: echoserver.example.org
     http:
       paths:
-      - backend:
+      - path: /
+        backend:
           service:
             name: echoserver
             port:
               number: 80
-        pathType: ImplementationSpecific
+        pathType: Prefix
 ```
 
 The above Ingress object will result in the creation of an ALB with a dualstack
