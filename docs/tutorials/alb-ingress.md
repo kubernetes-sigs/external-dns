@@ -83,6 +83,7 @@ metadata:
     kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
+  ingressClassName: alb
   rules:
   - host: echoserver.mycluster.example.org
     http: &echoserver_root
@@ -122,6 +123,7 @@ metadata:
     kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
+  ingressClassName: alb
   rules:
   - http:
       paths:
@@ -160,6 +162,7 @@ metadata:
     kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
+  ingressClassName: alb
   rules:
   - host: echoserver.example.org
     http:
