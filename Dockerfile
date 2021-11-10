@@ -28,6 +28,7 @@ RUN yum update -y \
     && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL7/developer/golang113/x86_64 \
     && yum install -y git gcc make golang-1.13.3-1.el7.x86_64 \
     && yum clean all \
+    && rm -rf /var/cache/yum \
     && go version
 
 # Compile to /usr/bin
@@ -49,12 +50,12 @@ RUN make test build.$ARCH
 FROM ghcr.io/oracle/oraclelinux:7-slim
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-RUN yum-config-manager --enable ol7_u8_security_validation \
+RUN yum update -y && yum-config-manager --enable ol7_u8_security_validation \
     && yum install -y openssl
 
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
-# COPY LICENSE and README files to the image
+# COPY LICENSE and other files to the image
 COPY LICENSE README.md THIRD_PARTY_LICENSES.txt SECURITY.md /licenses/
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
