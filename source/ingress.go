@@ -60,10 +60,11 @@ type ingressSource struct {
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
+	labelSelector            labels.Selector
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
+		labelSelector:            labelSelector,
 	}
 	return sc, nil
 }
@@ -107,7 +109,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(labels.Everything())
+	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}

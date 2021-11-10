@@ -59,6 +59,7 @@ spec:
             - --source={{ . }}
             {{- end }}
             - --policy={{ .Values.policy }}
+            - --registry={{ .Values.registry }}
             {{- if eq .Values.registry "txt" }}
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
