@@ -27,8 +27,6 @@ RUN yum update -y \
     && yum-config-manager --enable ol7_developer_golang113 \
     && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL7/developer/golang113/x86_64 \
     && yum install -y git gcc make golang-1.13.3-1.el7.x86_64 \
-    && yum-config-manager --enable ol7_u8_security_validation \
-    && yum install -y openssl \
     && yum clean all \
     && go version
 
@@ -51,6 +49,9 @@ RUN make test build.$ARCH
 FROM ghcr.io/oracle/oraclelinux:7-slim
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+RUN yum-config-manager --enable ol7_u8_security_validation \
+    && yum install -y openssl
+
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # COPY LICENSE and README files to the image
