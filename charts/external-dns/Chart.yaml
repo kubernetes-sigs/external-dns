@@ -2,7 +2,7 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.5.0
+version: 1.5.1
 appVersion: 0.10.1
 keywords:
   - kubernetes
@@ -18,4 +18,4 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "Cluster role permissions are now only added for enabled sources"
+      description: "Allow specifying Service annotations"
