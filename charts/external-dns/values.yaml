@@ -73,6 +73,7 @@ readinessProbe:
 
 service:
   port: 7979
+  annotations: {}
 
 extraVolumes: []
 
