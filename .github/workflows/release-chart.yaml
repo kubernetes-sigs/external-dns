@@ -9,7 +9,7 @@ on:
 
 jobs:
   release:
-    if: github.repository == "kubernetes-sigs/external-dns"
+    if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
