@@ -4,6 +4,32 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: changed
+          description: "Allow specifying Service annotations."
+    apiVersion: v2
+    appVersion: 0.10.1
+    created: "2021-11-12T14:36:54.293282455Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: b4fc7ae6e254a3218668d36a71e597c3cac54dbe0704e95ef7b6daaeeaeb4b74
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
+    keywords:
+    - kubernetes
+    - external-dns
+    - dns
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.6.0/external-dns-1.6.0.tgz
+    version: 1.6.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: changed
           description: "Cluster role permissions are now only added for enabled sources"
     apiVersion: v2
     appVersion: 0.10.1
@@ -178,4 +204,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2021-11-04T10:04:30.930106106Z"
+generated: "2021-11-12T14:36:54.293324456Z"
