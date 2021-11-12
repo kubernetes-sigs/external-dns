@@ -5,10 +5,11 @@ on:
     branches:
       - master
     paths:
-      - "charts/external-dns/**"
+      - "charts/external-dns/Chart.yaml"
 
 jobs:
   release:
+    if: github.repository == "kubernetes-sigs/external-dns"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
