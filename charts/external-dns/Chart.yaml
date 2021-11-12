@@ -18,4 +18,4 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "Allow specifying Service annotations"
+      description: "Allow specifying Service annotations."
