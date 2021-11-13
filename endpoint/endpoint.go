@@ -166,7 +166,7 @@ type Endpoint struct {
 	DNSName string `json:"dnsName,omitempty"`
 	// The targets the DNS record points to
 	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
+	// RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
 	RecordType string `json:"recordType,omitempty"`
 	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
 	SetIdentifier string `json:"setIdentifier,omitempty"`
