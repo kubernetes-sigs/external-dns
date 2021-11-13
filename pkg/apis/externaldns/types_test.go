@@ -113,7 +113,7 @@ var (
 		TransIPAccountName:          "",
 		TransIPPrivateKeyFile:       "",
 		DigitalOceanAPIPageSize:     50,
-		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
 	}
 
@@ -208,7 +208,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
-		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      100,
 	}
 )

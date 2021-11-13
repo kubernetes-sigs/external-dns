@@ -442,6 +442,14 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		DNSName:    hostname,
 	}
 
+	eaAAAA := &endpoint.Endpoint{
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeAAAA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
+	}
+
 	epCNAME := &endpoint.Endpoint{
 		RecordTTL:  ttl,
 		RecordType: endpoint.RecordTypeCNAME,
@@ -483,6 +491,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		if suitableType(t) == endpoint.RecordTypeA {
 			epA.Targets = append(epA.Targets, t)
 		}
+		if suitableType(t) == endpoint.RecordTypeAAAA {
+			eaAAAA.Targets = append(eaAAAA.Targets, t)
+		}
 		if suitableType(t) == endpoint.RecordTypeCNAME {
 			epCNAME.Targets = append(epCNAME.Targets, t)
 		}
@@ -490,6 +501,9 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	if len(epA.Targets) > 0 {
 		endpoints = append(endpoints, epA)
+	}
+	if len(eaAAAA.Targets) > 0 {
+		endpoints = append(endpoints, eaAAAA)
 	}
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
