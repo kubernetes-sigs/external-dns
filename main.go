@@ -131,6 +131,7 @@ func main() {
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
+		OCPRouterName:                  cfg.OCPRouterName,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
