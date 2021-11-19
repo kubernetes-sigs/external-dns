@@ -24,6 +24,7 @@ import (
 	"text/template"
 
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	"k8s.io/apimachinery/pkg/types"
 
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
@@ -138,6 +139,8 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 
+	cm := newCacheManager()
+
 	for _, virtualService := range virtualServices {
 		// Check controller annotation to see if we are responsible.
 		controller, ok := virtualService.Annotations[controllerAnnotationKey]
@@ -147,14 +150,14 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, virtualService)
+		gwEndpoints, err := sc.endpointsFromVirtualService(ctx, virtualService, cm)
 		if err != nil {
 			return nil, err
 		}
 
 		// apply template if host is missing on VirtualService
 		if (sc.combineFQDNAnnotation || len(gwEndpoints) == 0) && sc.fqdnTemplate != nil {
-			iEndpoints, err := sc.endpointsFromTemplate(ctx, virtualService)
+			iEndpoints, err := sc.endpointsFromTemplate(ctx, virtualService, cm)
 			if err != nil {
 				return nil, err
 			}
@@ -218,7 +221,7 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 	return gateway
 }
 
-func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
+func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService networkingv1alpha3.VirtualService, cm *cacheManager) ([]*endpoint.Endpoint, error) {
 	hostnames, err := execTemplate(sc.fqdnTemplate, &virtualService)
 	if err != nil {
 		return nil, err
@@ -233,7 +236,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
+		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname, cm)
 		if err != nil {
 			return endpoints, err
 		}
@@ -289,21 +292,29 @@ func appendUnique(targets []string, target string) []string {
 	return append(targets, target)
 }
 
-func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
+func (sc *virtualServiceSource) targetsFromVirtualService(
+	ctx context.Context,
+	virtualService networkingv1alpha3.VirtualService,
+	vsHost string,
+	cm *cacheManager,
+) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
-	for _, gateway := range virtualService.Spec.Gateways {
-		gateway := sc.getGateway(ctx, gateway, virtualService)
+	for _, gw := range virtualService.Spec.Gateways {
+		gateway := cm.getGateway(gw, func(s string) *networkingv1alpha3.Gateway {
+			return sc.getGateway(ctx, s, virtualService)
+		})
 		if gateway == nil {
 			continue
 		}
 		if !virtualServiceBindsToGateway(&virtualService, gateway, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gateway)
+		tgs, err := cm.getTargets(gateway, sc.targetsFromGateway)
 		if err != nil {
 			return targets, err
 		}
+
 		for _, target := range tgs {
 			targets = appendUnique(targets, target)
 		}
@@ -313,7 +324,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 }
 
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
-func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
+func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice networkingv1alpha3.VirtualService, cm *cacheManager) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(virtualservice.Annotations)
@@ -324,6 +335,8 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
+
+	cm := newCacheManager()
 
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {
@@ -340,7 +353,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 		targets := targetsFromAnnotation
 		if len(targets) == 0 {
-			targets, err = sc.targetsFromVirtualService(ctx, virtualservice, host)
+			targets, err = sc.targetsFromVirtualService(ctx, virtualservice, host, cm)
 			if err != nil {
 				return endpoints, err
 			}
@@ -355,7 +368,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 		for _, hostname := range hostnameList {
 			targets := targetsFromAnnotation
 			if len(targets) == 0 {
-				targets, err = sc.targetsFromVirtualService(ctx, virtualservice, hostname)
+				targets, err = sc.targetsFromVirtualService(ctx, virtualservice, hostname, cm)
 				if err != nil {
 					return endpoints, err
 				}
@@ -365,6 +378,50 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 	}
 
 	return endpoints, nil
+}
+
+type cacheManager struct {
+	gwLookup map[string]*networkingv1alpha3.Gateway
+	tgsCache map[types.UID][]string
+}
+
+func newCacheManager() *cacheManager {
+	return &cacheManager{
+		gwLookup: make(map[string]*networkingv1alpha3.Gateway),
+		tgsCache: make(map[types.UID][]string),
+	}
+}
+
+func (cm *cacheManager) getGateway(name string, fn func(string) *networkingv1alpha3.Gateway) *networkingv1alpha3.Gateway {
+	if cm == nil {
+		return fn(name)
+	}
+	var gateway *networkingv1alpha3.Gateway
+	var ok bool
+	if gateway, ok = cm.gwLookup[name]; !ok {
+		gateway = fn(name)
+		cm.gwLookup[name] = gateway
+	}
+	return gateway
+}
+
+func (cm *cacheManager) getTargets(
+	gateway *networkingv1alpha3.Gateway,
+	fn func(gateway2 *networkingv1alpha3.Gateway) (endpoint.Targets, error),
+) (endpoint.Targets, error) {
+	if cm == nil {
+		return fn(gateway)
+	}
+	var tgs endpoint.Targets
+	var ok bool
+	if tgs, ok = cm.tgsCache[gateway.UID]; !ok {
+		var err error
+		if tgs, err = fn(gateway); err != nil {
+			return nil, err
+		}
+		cm.tgsCache[gateway.UID] = tgs
+	}
+	return tgs, nil
 }
 
 // checks if the given VirtualService should actually bind to the given gateway
