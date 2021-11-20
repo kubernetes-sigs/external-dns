@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -381,9 +382,13 @@ func testCRDSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			scheme := runtime.NewScheme()
-			addKnownTypes(scheme, groupVersion)
+			require.NoError(t, addKnownTypes(scheme, groupVersion))
 
-			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, ti.labelFilter, scheme)
+			labelSelector, err := labels.Parse(ti.labelFilter)
+			require.NoError(t, err)
+
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme)
+			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {

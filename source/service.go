@@ -63,10 +63,11 @@ type serviceSource struct {
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              map[string]struct{}
+	labelSelector                  labels.Selector
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -137,12 +138,13 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              serviceTypes,
+		labelSelector:                  labelSelector,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
+	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -221,6 +223,7 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			lastMergedEndpoint := len(mergedEndpoints) - 1
 			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
 				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
 				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
 				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
 			} else {

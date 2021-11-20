@@ -6,13 +6,39 @@ metadata:
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
 rules:
-  - apiGroups: [""]
-    resources: ["services","endpoints","pods"]
-    verbs: ["get","watch","list"]
-  - apiGroups: ["extensions","networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get","watch","list"]
+{{- if or (has "node" .Values.sources) (has "pod" .Values.sources) (has "service" .Values.sources) }}
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["list","watch"]
+{{- end }}
+
+{{- if or (has "pod" .Values.sources) (has "service" .Values.sources) }}
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get","watch","list"]
+{{- end }}
+
+{{- if has "service" .Values.sources }}
+  - apiGroups: [""]
+    resources: ["services","endpoints"]
+    verbs: ["get","watch","list"]
+{{- end }}
+
+{{- if has "ingress" .Values.sources }}
+  - apiGroups: ["extensions","networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get","watch","list"]
+{{- end }}
+
+{{- if has "istio-gateway" .Values.sources }}
+  - apiGroups: ["networking.istio.io"]
+    resources: ["gateways"]
+    verbs: ["get","watch","list"]
+{{- end }}
+
+{{- if has "istio-virtualservice" .Values.sources }}
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- end }}

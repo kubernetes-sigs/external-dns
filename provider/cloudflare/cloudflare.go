@@ -308,7 +308,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				}
 				err := p.Client.UpdateDNSRecord(zoneID, recordID, change.ResourceRecord)
 				if err != nil {
-					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
+					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
 			} else if change.Action == cloudFlareDelete {
 				recordID := p.getRecordID(records, change.ResourceRecord)
