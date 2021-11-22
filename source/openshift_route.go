@@ -102,8 +102,12 @@ func NewOcpRouteSource(
 	}, nil
 }
 
-// TODO add a meaningful EventHandler
 func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for openshift route")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
