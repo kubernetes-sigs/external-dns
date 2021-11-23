@@ -110,6 +110,13 @@ The following table clarifies the current status of the providers according to t
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
 
+## Kubernetes version compatibility
+
+| ExternalDNS        |      <= 0.9.x      |     >= 0.10.0      |
+| ------------------ | :----------------: | :----------------: |
+| Kubernetes <= 1.18 | :white_check_mark: |        :x:         |
+| Kubernetes >= 1.19 |        :x:         | :white_check_mark: |
+
 ## Running ExternalDNS:
 
 The are two ways of running ExternalDNS:
