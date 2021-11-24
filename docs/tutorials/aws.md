@@ -490,6 +490,23 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--aws-batch-change-size=4000` (default `1000`)
 * Increase the interval between changes
   * `--aws-batch-change-interval=10s` (default `1s`)
+* Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.
+
+A simple way to implement randomised startup is with an init container:
+
+```
+...
+    spec:
+      initContainers:
+      - name: init-jitter
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        command:
+        - /bin/sh
+        - -c
+        - 'FOR=$((RANDOM % 10))s;echo "Sleeping for $FOR";sleep $FOR'
+      containers:
+...
+```
 
 ### EKS
 
