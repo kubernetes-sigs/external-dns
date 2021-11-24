@@ -50,9 +50,6 @@ RUN make test build.$ARCH
 FROM ghcr.io/oracle/oraclelinux:7-slim
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-RUN yum update -y && yum-config-manager --enable ol7_u8_security_validation \
-    && yum install -y openssl
-
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 # COPY LICENSE and other files to the image
