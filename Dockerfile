@@ -52,6 +52,8 @@ FROM ghcr.io/oracle/oraclelinux:7-slim
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
+RUN yum update -y
+
 # COPY LICENSE and other files to the image
 COPY LICENSE README.md THIRD_PARTY_LICENSES.txt SECURITY.md /licenses/
 
