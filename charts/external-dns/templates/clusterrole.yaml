@@ -41,4 +41,13 @@ rules:
     resources: ["virtualservices"]
     verbs: ["get","watch","list"]
 {{- end }}
+
+{{- if has "crd" .Values.sources }}
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsendpoints"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["externaldns.k8s.io"]
+    resources: ["dnsendpoints/status"]
+    verbs: ["*"]
+{{- end }}
 {{- end }}
