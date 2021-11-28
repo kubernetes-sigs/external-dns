@@ -1054,7 +1054,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter: []string{},
 			annotations:        map[string]string{hostnameAnnotationKey: "foobar.example.org"},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foobar.example.org", Targets: endpoint.Targets{"1.1.1.1", "2001:db8::1"}},
+				{DNSName: "foobar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+				{DNSName: "foobar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1"}},
 			},
 		},
 		{
@@ -1070,7 +1071,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter: []string{},
 			annotations:        map[string]string{hostnameAnnotationKey: "foobar-v6.example.org"},
 			expected: []*endpoint.Endpoint{
-				{DNSName: "foobar-v6.example.org", Targets: endpoint.Targets{"2001:db8::2"}},
+				{DNSName: "foobar-v6.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::2"}},
 			},
 		},
 	} {
