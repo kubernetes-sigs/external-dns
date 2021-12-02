@@ -40,6 +40,8 @@ import (
 const (
 	// The annotation used for figuring out which controller is responsible
 	controllerAnnotationKey = "external-dns.alpha.kubernetes.io/controller"
+	// The annotation use to ovverride the local traffic policy
+	trafficPolicyAnnotationKey = "external-dns.alpha.kubernetes.io/traffic-policy"
 	// The annotation used for defining the desired hostname
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for specifying whether the public or private interface address is used

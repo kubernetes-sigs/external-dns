@@ -544,14 +544,26 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 
 func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targets, error) {
 	var (
-		internalIPs endpoint.Targets
-		externalIPs endpoint.Targets
-		nodes       []*v1.Node
-		err         error
+		internalIPs     endpoint.Targets
+		externalIPs     endpoint.Targets
+		nodes           []*v1.Node
+		err             error
+		useLocalAddress bool
 	)
 
-	switch svc.Spec.ExternalTrafficPolicy {
-	case v1.ServiceExternalTrafficPolicyTypeLocal:
+	if svc.Spec.ExternalTrafficPolicy == v1.ServiceExternalTrafficPolicyTypeLocal {
+		useLocalAddress = true
+	} else {
+		// Check trafficPolicyAnnotationKey (overrides ExternalTrafficPolicy)
+		controller, ok := svc.Annotations[trafficPolicyAnnotationKey]
+		if ok && controller == "local" {
+			useLocalAddress = true
+		} else {
+			useLocalAddress = false
+		}
+	}
+
+	if useLocalAddress {
 		nodesMap := map[*v1.Node]struct{}{}
 		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
 		if err != nil {
@@ -579,7 +591,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				}
 			}
 		}
-	default:
+	} else {
 		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
 		if err != nil {
 			return nil, err
