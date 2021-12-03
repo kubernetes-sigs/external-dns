@@ -38,8 +38,11 @@ ENV GOBIN=/usr/bin
 # Set go path
 ENV GOPATH=/go
 
+# Turn GO111Module on to enable go get
+ENV GO111MODULE=on
+
 # Install Controller-gen dependency and move to bin location
-RUN go mod download sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
+RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
     && mv $GOPATH/bin/controller-gen /usr/local/bin
 
 
