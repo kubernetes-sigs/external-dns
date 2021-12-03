@@ -39,7 +39,7 @@ ENV GOBIN=/usr/bin
 ENV GOPATH=/go
 
 # Install Controller-gen dependency and move to bin location
-RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
+RUN go mod download sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
     && mv $GOPATH/bin/controller-gen /usr/local/bin
 
 
