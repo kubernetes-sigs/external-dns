@@ -42,8 +42,7 @@ ENV GOPATH=/go
 ENV GO111MODULE=on
 
 # Install Controller-gen dependency and move to bin location
-RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
-    && mv $GOPATH/bin/controller-gen /usr/local/bin
+RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
 
 
 WORKDIR /sigs.k8s.io/external-dns
