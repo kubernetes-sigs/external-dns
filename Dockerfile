@@ -28,6 +28,7 @@ RUN yum update -y \
     && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL7/developer/golang116/x86_64 \
     && yum install -y git gcc make golang-1.16-1.el7.x86_64 \
     && yum install -y which \
+    && yum install -y ca-certificates \
     && yum clean all \
     && rm -rf /var/cache/yum \
     && go version
@@ -57,7 +58,7 @@ RUN make test build.$ARCH
 # final image
 FROM ghcr.io/oracle/oraclelinux:7-slim
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
 
 RUN yum update -y
