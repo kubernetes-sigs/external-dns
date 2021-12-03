@@ -32,14 +32,16 @@ RUN yum update -y \
     && rm -rf /var/cache/yum \
     && go version
 
-RUN curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH) \
-    && chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
-
 # Compile to /usr/bin
 ENV GOBIN=/usr/bin
 
 # Set go path
 ENV GOPATH=/go
+
+# Install Controller-gen dependency and move to bin location
+RUN go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
+    && mv $GOPATH/bin/controller-gen /usr/local/bin
+
 
 WORKDIR /sigs.k8s.io/external-dns
 
