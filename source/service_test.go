@@ -187,7 +187,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 		labels                   map[string]string
 		annotations              map[string]string
 		clusterIP                string
-		ipFamilies               []v1.IPFamily
 		externalIPs              []string
 		lbs                      []string
 		serviceTypesFilter       []string
@@ -202,7 +201,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			svcType:            v1.ServiceTypeLoadBalancer,
 			labels:             map[string]string{},
 			annotations:        map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -216,7 +214,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			ignoreHostnameAnnotation: true,
 			labels:                   map[string]string{},
 			annotations:              map[string]string{},
-			ipFamilies:               []v1.IPFamily{"IPv4"},
 			externalIPs:              []string{},
 			lbs:                      []string{"1.2.3.4"},
 			serviceTypesFilter:       []string{},
@@ -231,7 +228,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -249,7 +245,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -264,7 +259,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			clusterIP:          "1.2.3.4",
 			externalIPs:        []string{},
 			lbs:                []string{},
@@ -279,7 +273,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			fqdnTemplate:       "{{.Name}}.fqdn.org,{{.Name}}.fqdn.com",
 			labels:             map[string]string{},
 			annotations:        map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -297,7 +290,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			ignoreHostnameAnnotation: true,
 			labels:                   map[string]string{},
 			annotations:              map[string]string{},
-			ipFamilies:               []v1.IPFamily{"IPv4"},
 			externalIPs:              []string{},
 			lbs:                      []string{"1.2.3.4"},
 			serviceTypesFilter:       []string{},
@@ -317,7 +309,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -340,7 +331,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -358,7 +348,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org., bar.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -376,7 +365,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org, bar.example.org",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -394,7 +382,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"lb.example.com"}, // Kubernetes omits the trailing dot
 			serviceTypesFilter: []string{},
@@ -411,7 +398,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org", // Trailing dot is omitted
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4", "lb.example.com"}, // Kubernetes omits the trailing dot
 			serviceTypesFilter: []string{},
@@ -430,7 +416,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				controllerAnnotationKey: controllerAnnotationValue,
 				hostnameAnnotationKey:   "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -449,7 +434,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				controllerAnnotationKey: "some-other-tool",
 				hostnameAnnotationKey:   "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -465,7 +449,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -483,7 +466,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -498,7 +480,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -517,7 +498,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:                         "foo.example.org.",
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -536,7 +516,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:                         "foo.example.org.",
 				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -553,7 +532,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:                         "foo.example.org.",
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -571,7 +549,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:                         "foo.example.org.",
 				"service.beta.kubernetes.io/external-traffic": "Global",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -590,7 +567,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:                         "foo.example.org.",
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -605,7 +581,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{},
 			serviceTypesFilter: []string{},
@@ -620,7 +595,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{"10.2.3.4", "11.2.3.4"},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -637,7 +611,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4", "8.8.8.8"},
 			serviceTypesFilter: []string{},
@@ -654,7 +627,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -670,7 +642,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				"zalando.org/dnsname": "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -687,7 +658,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			labels: map[string]string{
 				"dns": "route53",
 			},
-			ipFamilies: []v1.IPFamily{"IPv4"},
 			annotations: map[string]string{
 				"domainName": "foo.example.org., bar.example.org",
 			},
@@ -709,7 +679,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4", "lb.example.com"},
 			serviceTypesFilter: []string{},
@@ -729,7 +698,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				kopsDNSControllerInternalHostnameAnnotationKey: "internal.foo.example.org., internal.bar.example.org",
 				kopsDNSControllerHostnameAnnotationKey:         "foo.example.org., bar.example.org",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -748,7 +716,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			fqdnTemplate:       "{{.Name}}.bar.example.com",
 			labels:             map[string]string{},
 			annotations:        map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4", "elb.com"},
 			serviceTypesFilter: []string{},
@@ -767,7 +734,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4", "elb.com"},
 			serviceTypesFilter: []string{},
@@ -787,7 +753,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				"zalando.org/dnsname": "mate.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -803,7 +768,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			fqdnTemplate:       "{{.Calibre}}.bar.example.com",
 			labels:             map[string]string{},
 			annotations:        map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -819,7 +783,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -837,7 +800,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "foo",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -855,7 +817,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "10",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -873,7 +834,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "1m",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -891,7 +851,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "foo.example.org.",
 				ttlAnnotationKey:      "-10",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{},
@@ -908,7 +867,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
@@ -925,7 +883,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				hostnameAnnotationKey: "foo.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
 			serviceTypesFilter: []string{string(v1.ServiceTypeLoadBalancer)},
@@ -940,7 +897,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			annotations: map[string]string{
 				internalHostnameAnnotationKey: "foo.internal.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			clusterIP:          "1.1.1.1",
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
@@ -959,7 +915,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey:         "foo.example.org.",
 				internalHostnameAnnotationKey: "foo.internal.example.org.",
 			},
-			ipFamilies:         []v1.IPFamily{"IPv4"},
 			clusterIP:          "1.1.1.1",
 			externalIPs:        []string{},
 			lbs:                []string{"1.2.3.4"},
@@ -977,7 +932,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			labels: map[string]string{
 				"app": "web-external",
 			},
-			ipFamilies:           []v1.IPFamily{"IPv4"},
 			clusterIP:            "1.1.1.1",
 			externalIPs:          []string{},
 			lbs:                  []string{"1.2.3.4"},
@@ -996,7 +950,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			labels: map[string]string{
 				"app": "web-external",
 			},
-			ipFamilies:           []v1.IPFamily{"IPv4"},
 			clusterIP:            "1.1.1.1",
 			externalIPs:          []string{},
 			lbs:                  []string{"1.2.3.4"},
@@ -1015,7 +968,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			labels: map[string]string{
 				"app": "web-internal",
 			},
-			ipFamilies:           []v1.IPFamily{"IPv4"},
 			clusterIP:            "1.1.1.1",
 			externalIPs:          []string{},
 			lbs:                  []string{"1.2.3.4"},
@@ -1032,7 +984,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			labels: map[string]string{
 				"app": "web-internal",
 			},
-			ipFamilies:           []v1.IPFamily{"IPv4"},
 			clusterIP:            "1.1.1.1",
 			externalIPs:          []string{},
 			lbs:                  []string{"1.2.3.4"},
@@ -1047,7 +998,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			svcName:            "foobar",
 			svcType:            v1.ServiceTypeLoadBalancer,
 			labels:             map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv4", "IPv6"},
 			clusterIP:          "1.1.1.2,2001:db8::2",
 			externalIPs:        []string{},
 			lbs:                []string{"1.1.1.1", "2001:db8::1"},
@@ -1064,7 +1014,6 @@ func testServiceSourceEndpoints(t *testing.T) {
 			svcName:            "foobar-v6",
 			svcType:            v1.ServiceTypeLoadBalancer,
 			labels:             map[string]string{},
-			ipFamilies:         []v1.IPFamily{"IPv6"},
 			clusterIP:          "2001:db8::1",
 			externalIPs:        []string{},
 			lbs:                []string{"2001:db8::2"},
