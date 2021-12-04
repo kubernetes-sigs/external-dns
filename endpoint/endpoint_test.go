@@ -35,22 +35,6 @@ func TestNewEndpoint(t *testing.T) {
 	}
 }
 
-func TestNewEndpointWithIPv6(t *testing.T) {
-	e := NewEndpoint("example.org", "AAAA", "foo.com")
-	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != "AAAA" {
-		t.Error("Endpoint is not initialized correctly")
-	}
-
-	if e.Labels == nil {
-		t.Error("Labels is not initialized")
-	}
-
-	w := NewEndpoint("example.org", "", "load-balancer.com.")
-	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
-		t.Error("Endpoint is not initialized correctly")
-	}
-}
-
 func TestTargetsSame(t *testing.T) {
 	tests := []Targets{
 		{""},
