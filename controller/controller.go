@@ -102,6 +102,14 @@ var (
 			Help:      "Number of DNS A-records that exists both in source and registry.",
 		},
 	)
+	verifiedAAAARecords = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "verified_aaaa_records",
+			Help:      "Number of DNS AAAA-records that exists both in source and registry.",
+		},
+	)
 )
 
 func init() {
@@ -114,6 +122,7 @@ func init() {
 	prometheus.MustRegister(deprecatedSourceErrors)
 	prometheus.MustRegister(controllerNoChangesTotal)
 	prometheus.MustRegister(verifiedARecords)
+	prometheus.MustRegister(verifiedAAAARecords)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -160,8 +169,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
-	vRecords := fetchMatchingARecords(endpoints, records)
-	verifiedARecords.Set(float64(len(vRecords)))
+	vARecords, vAAAARecords := countMatchingAddressRecords(endpoints, records)
+	verifiedARecords.Set(float64(vARecords))
+	verifiedAAAARecords.Set(float64(vAAAARecords))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
@@ -191,30 +201,30 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-// Checks and returns the intersection of A records in endpoint and registry.
-func fetchMatchingARecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) []string {
-	aRecords := filterARecords(endpoints)
-	recordsMap := make(map[string]struct{})
+// Counts the intersections of A and AAAA records in endpoint and registry.
+func countMatchingAddressRecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) (int, int) {
+	recordsMap := make(map[string]map[string]struct{})
 	for _, regRecord := range registryRecords {
-		recordsMap[regRecord.DNSName] = struct{}{}
+		if _, found := recordsMap[regRecord.DNSName]; !found {
+			recordsMap[regRecord.DNSName] = make(map[string]struct{})
+		}
+		recordsMap[regRecord.DNSName][regRecord.RecordType] = struct{}{}
 	}
-	var cm []string
-	for _, sourceRecord := range aRecords {
-		if _, found := recordsMap[sourceRecord]; found {
-			cm = append(cm, sourceRecord)
+	aCount := 0
+	aaaaCount := 0
+	for _, sourceRecord := range endpoints {
+		if _, found := recordsMap[sourceRecord.DNSName]; found {
+			if _, found := recordsMap[sourceRecord.DNSName][sourceRecord.RecordType]; found {
+				switch sourceRecord.RecordType {
+				case endpoint.RecordTypeA:
+					aCount++
+				case endpoint.RecordTypeAAAA:
+					aaaaCount++
+				}
+			}
 		}
 	}
-	return cm
-}
-
-func filterARecords(endpoints []*endpoint.Endpoint) []string {
-	var aRecords []string
-	for _, endPoint := range endpoints {
-		if endPoint.RecordType == endpoint.RecordTypeA {
-			aRecords = append(aRecords, endPoint.DNSName)
-		}
-	}
-	return aRecords
+	return aCount, aaaaCount
 }
 
 // ScheduleRunOnce makes sure execution happens at most once per interval.
