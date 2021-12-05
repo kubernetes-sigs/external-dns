@@ -256,7 +256,7 @@ func TestProviderRecords(t *testing.T) {
 
 	endpoints, err := p.Records(context.TODO())
 	if assert.NoError(t, err) {
-		if assert.Equal(t, 2, len(endpoints)) {
+		if assert.Equal(t, 4, len(endpoints)) {
 			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
 			assert.EqualValues(t, "@", endpoints[0].Targets[0])
 			assert.Equal(t, "CNAME", endpoints[0].RecordType)
