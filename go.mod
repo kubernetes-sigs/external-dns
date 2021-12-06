@@ -45,7 +45,7 @@ require (
 	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
-	github.com/oracle/oci-go-sdk v21.4.0+incompatible
+	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.18.1

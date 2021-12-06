@@ -12,10 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Copyright (C) 2020, 2021, Oracle Corporation and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
 # builder image
 ARG ARCH
-FROM golang:1.16 as builder
+FROM ghcr.io/oracle/oraclelinux:7-slim as builder
 ARG ARCH
+
+# Install golang via Oracle's yum servers
+RUN yum update -y \
+    && yum-config-manager --save --setopt=ol7_ociyum_config.skip_if_unavailable=true \
+    && yum install -y oracle-golang-release-el7 \
+    && yum-config-manager --enable ol7_developer_golang116 \
+    && yum-config-manager --add-repo http://yum.oracle.com/repo/OracleLinux/OL7/developer/golang116/x86_64 \
+    && yum install -y git gcc make golang-1.16-1.el7.x86_64 \
+    && yum install -y which \
+    && yum install -y ca-certificates \
+    && yum clean all \
+    && rm -rf /var/cache/yum \
+    && go version
+
+# Compile to /usr/bin
+ENV GOBIN=/usr/bin
+
+# Set go path
+ENV GOPATH=/go
+
+# Turn GO111Module on to enable go get
+ENV GO111MODULE=on
+
+# Install Controller-gen dependency and move to bin location
+RUN go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1
+
 
 WORKDIR /sigs.k8s.io/external-dns
 
@@ -27,13 +56,19 @@ COPY . .
 RUN make test build.$ARCH
 
 # final image
-FROM $ARCH/alpine:3.14
+FROM ghcr.io/oracle/oraclelinux:7-slim
 
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
+
+RUN yum update -y
+
+# COPY LICENSE and other files to the image
+COPY LICENSE README.md THIRD_PARTY_LICENSES.txt SECURITY.md /licenses/
 
 # Run as UID for nobody since k8s pod securityContext runAsNonRoot can't resolve the user ID:
 # https://github.com/kubernetes/kubernetes/issues/40958
 USER 65534
 
 ENTRYPOINT ["/bin/external-dns"]
+
