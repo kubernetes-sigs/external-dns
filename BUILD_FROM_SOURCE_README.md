@@ -1,6 +1,6 @@
 # Build Instructions
 
-The base tag this release is branched from is `v0.7.1`
+The base tag this release is branched from is `v0.10.1`
 
 ## To build the Go code for external-dns
 Does a local build of external-dns.
