@@ -12,7 +12,7 @@ Builds external-dns and creates a docker image
 
 ```
 export IMAGE=<image-prefix>/external-dns/external-dns
-export VERSION=v0.7.1
+export VERSION=v0.10.1
 make build.docker
 ```
 
@@ -21,7 +21,7 @@ Builds external-dns, creates a docker image and pushes it
 
 ```
 export IMAGE=<image-prefix>/external-dns/external-dns
-export VERSION=v0.7.1
+export VERSION=v0.10.1
 make build.push
 ```
 
