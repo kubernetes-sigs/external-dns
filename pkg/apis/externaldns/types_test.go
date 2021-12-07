@@ -46,6 +46,7 @@ var (
 		GoogleProject:               "",
 		GoogleBatchChangeSize:       1000,
 		GoogleBatchChangeInterval:   time.Second,
+		GoogleZoneVisibility:        "",
 		DomainFilter:                []string{""},
 		ExcludeDomains:              []string{""},
 		RegexDomainFilter:           regexp.MustCompile(""),
@@ -114,6 +115,7 @@ var (
 		DigitalOceanAPIPageSize:     50,
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
+		OCPRouterName:               "default",
 	}
 
 	overriddenConfig = &Config{
@@ -134,6 +136,7 @@ var (
 		GoogleProject:               "project",
 		GoogleBatchChangeSize:       100,
 		GoogleBatchChangeInterval:   time.Second * 2,
+		GoogleZoneVisibility:        "private",
 		DomainFilter:                []string{"example.org", "company.com"},
 		ExcludeDomains:              []string{"xapi.example.org", "xapi.company.com"},
 		RegexDomainFilter:           regexp.MustCompile("(example\\.org|company\\.com)$"),
@@ -223,6 +226,7 @@ func TestParseFlags(t *testing.T) {
 			args: []string{
 				"--source=service",
 				"--provider=google",
+				"--openshift-router-name=default",
 			},
 			envVars:  map[string]string{},
 			expected: minimalConfig,
@@ -249,6 +253,7 @@ func TestParseFlags(t *testing.T) {
 				"--google-project=project",
 				"--google-batch-change-size=100",
 				"--google-batch-change-interval=2s",
+				"--google-zone-visibility=private",
 				"--azure-config-file=azure.json",
 				"--azure-resource-group=arg",
 				"--azure-subscription-id=arg",
@@ -351,6 +356,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_GOOGLE_PROJECT":                  "project",
 				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_SIZE":        "100",
 				"EXTERNAL_DNS_GOOGLE_BATCH_CHANGE_INTERVAL":    "2s",
+				"EXTERNAL_DNS_GOOGLE_ZONE_VISIBILITY":          "private",
 				"EXTERNAL_DNS_AZURE_CONFIG_FILE":               "azure.json",
 				"EXTERNAL_DNS_AZURE_RESOURCE_GROUP":            "arg",
 				"EXTERNAL_DNS_AZURE_SUBSCRIPTION_ID":           "arg",

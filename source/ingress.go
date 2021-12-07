@@ -17,20 +17,18 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/extensions/v1beta1"
+	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
-	extinformers "k8s.io/client-go/informers/extensions/v1beta1"
+	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
@@ -59,30 +57,23 @@ type ingressSource struct {
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
-	ingressInformer          extinformers.IngressInformer
+	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
+	labelSelector            labels.Selector
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector) (Source, error) {
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	ingressInformer := informerFactory.Extensions().V1beta1().Ingresses()
+	ingressInformer := informerFactory.Networking().V1().Ingresses()
 
 	// Add default resource event handlers to properly initialize informer.
 	ingressInformer.Informer().AddEventHandler(
@@ -96,11 +87,8 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return ingressInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	sc := &ingressSource{
@@ -113,6 +101,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		ingressInformer:          ingressInformer,
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
+		labelSelector:            labelSelector,
 	}
 	return sc, nil
 }
@@ -120,7 +109,7 @@ func NewIngressSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all ingress resources on all namespaces
 func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(labels.Everything())
+	ingresses, err := sc.ingressInformer.Lister().Ingresses(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -174,15 +163,11 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoints, nil
 }
 
-func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, ing)
+func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpoint.Endpoint, error) {
+	hostnames, err := execTemplate(sc.fqdnTemplate, ing)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on ingress %s: %v", ing.String(), err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
@@ -190,7 +175,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	}
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
-
 	if len(targets) == 0 {
 		targets = targetsFromIngressStatus(ing.Status)
 	}
@@ -198,17 +182,14 @@ func (sc *ingressSource) endpointsFromTemplate(ing *v1beta1.Ingress) ([]*endpoin
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.
-func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v1beta1.Ingress, error) {
+func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
 	selector, err := getLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -219,7 +200,7 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 		return ingresses, nil
 	}
 
-	filteredList := []*v1beta1.Ingress{}
+	filteredList := []*networkv1.Ingress{}
 
 	for _, ingress := range ingresses {
 		// include ingress if its annotations match the selector
@@ -231,13 +212,13 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*v1beta1.Ingress) ([]*v
 	return filteredList, nil
 }
 
-func (sc *ingressSource) setResourceLabel(ingress *v1beta1.Ingress, endpoints []*endpoint.Endpoint) {
+func (sc *ingressSource) setResourceLabel(ingress *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingress/%s/%s", ingress.Namespace, ingress.Name)
 	}
 }
 
-func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints []*endpoint.Endpoint) {
+func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
 	val, ok := ingress.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to ingress %s/%s.", ingress.Namespace, ingress.Name)
@@ -248,7 +229,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *v1beta1.Ingress, endpoints [
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
 		log.Warn(err)
@@ -311,7 +292,7 @@ func endpointsFromIngress(ing *v1beta1.Ingress, ignoreHostnameAnnotation bool, i
 	return endpoints
 }
 
-func targetsFromIngressStatus(status v1beta1.IngressStatus) endpoint.Targets {
+func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 	var targets endpoint.Targets
 
 	for _, lb := range status.LoadBalancer.Ingress {
@@ -331,17 +312,5 @@ func (sc *ingressSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.ingressInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.ingressInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

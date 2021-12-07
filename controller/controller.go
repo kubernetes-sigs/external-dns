@@ -94,6 +94,14 @@ var (
 			Help:      "Number of Source errors.",
 		},
 	)
+	verifiedARecords = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "verified_a_records",
+			Help:      "Number of DNS A-records that exists both in source and registry.",
+		},
+	)
 )
 
 func init() {
@@ -105,6 +113,7 @@ func init() {
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
 	prometheus.MustRegister(controllerNoChangesTotal)
+	prometheus.MustRegister(verifiedARecords)
 }
 
 // Controller is responsible for orchestrating the different components.
@@ -151,7 +160,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
-
+	vRecords := fetchMatchingARecords(endpoints, records)
+	verifiedARecords.Set(float64(len(vRecords)))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
@@ -160,7 +170,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Desired:            endpoints,
 		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
-		ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		ManagedRecords:     c.ManagedRecordTypes,
 	}
 
 	plan = plan.Calculate()
@@ -179,6 +189,32 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 
 	lastSyncTimestamp.SetToCurrentTime()
 	return nil
+}
+
+// Checks and returns the intersection of A records in endpoint and registry.
+func fetchMatchingARecords(endpoints []*endpoint.Endpoint, registryRecords []*endpoint.Endpoint) []string {
+	aRecords := filterARecords(endpoints)
+	recordsMap := make(map[string]struct{})
+	for _, regRecord := range registryRecords {
+		recordsMap[regRecord.DNSName] = struct{}{}
+	}
+	var cm []string
+	for _, sourceRecord := range aRecords {
+		if _, found := recordsMap[sourceRecord]; found {
+			cm = append(cm, sourceRecord)
+		}
+	}
+	return cm
+}
+
+func filterARecords(endpoints []*endpoint.Endpoint) []string {
+	var aRecords []string
+	for _, endPoint := range endpoints {
+		if endPoint.RecordType == endpoint.RecordTypeA {
+			aRecords = append(aRecords, endPoint.DNSName)
+		}
+	}
+	return aRecords
 }
 
 // ScheduleRunOnce makes sure execution happens at most once per interval.

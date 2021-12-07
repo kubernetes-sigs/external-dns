@@ -25,7 +25,11 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
 )
@@ -89,16 +93,31 @@ type ByNamesTestSuite struct {
 }
 
 func (suite *ByNamesTestSuite) TestAllInitialized() {
-	fakeDynamic, _ := newDynamicKubernetesClient()
-
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
-	mockClientGenerator.On("IstioClient").Return(NewFakeConfigStore(), nil)
-	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic, nil)
+	mockClientGenerator.On("IstioClient").Return(istiofake.NewSimpleClientset(), nil)
+	mockClientGenerator.On("DynamicKubernetesClient").Return(fakeDynamic.NewSimpleDynamicClientWithCustomListKinds(runtime.NewScheme(),
+		map[schema.GroupVersionResource]string{
+			{
+				Group:    "projectcontour.io",
+				Version:  "v1",
+				Resource: "httpproxies",
+			}: "HTTPPRoxiesList",
+			{
+				Group:    "contour.heptio.com",
+				Version:  "v1beta1",
+				Resource: "tcpingresses",
+			}: "TCPIngressesList",
+			{
+				Group:    "configuration.konghq.com",
+				Version:  "v1beta1",
+				Resource: "tcpingresses",
+			}: "TCPIngressesList",
+		}), nil)
 
-	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-ingressroute", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)
+	sources, err := ByNames(mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 7, "should generate all six sources")
+	suite.Len(sources, 6, "should generate all six sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
@@ -133,9 +152,6 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	_, err = ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
-
 	_, err = ByNames(mockClientGenerator, []string{"kong-tcpingress"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
@@ -149,8 +165,6 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	_, err := ByNames(mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
 	suite.Error(err, "should return an error if istio client cannot be created")
 
-	_, err = ByNames(mockClientGenerator, []string{"contour-ingressroute"}, minimalConfig)
-	suite.Error(err, "should return an error if contour client cannot be created")
 	_, err = ByNames(mockClientGenerator, []string{"contour-httpproxy"}, minimalConfig)
 	suite.Error(err, "should return an error if contour client cannot be created")
 }

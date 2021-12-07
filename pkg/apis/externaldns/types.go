@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/endpoint"
 
 	"github.com/alecthomas/kingpin"
@@ -67,6 +69,7 @@ type Config struct {
 	GoogleProject                     string
 	GoogleBatchChangeSize             int
 	GoogleBatchChangeInterval         time.Duration
+	GoogleZoneVisibility              string
 	DomainFilter                      []string
 	ExcludeDomains                    []string
 	RegexDomainFilter                 *regexp.Regexp
@@ -108,6 +111,7 @@ type Config struct {
 	InfobloxView                      string
 	InfobloxMaxResults                int
 	InfobloxFQDNRegEx                 string
+	InfobloxCreatePTR                 bool
 	DynCustomerName                   string
 	DynUsername                       string
 	DynPassword                       string `secure:"yes"`
@@ -173,6 +177,7 @@ type Config struct {
 	GoDaddySecretKey                  string `secure:"yes"`
 	GoDaddyTTL                        int64
 	GoDaddyOTE                        bool
+	OCPRouterName                     string
 }
 
 var defaultConfig = &Config{
@@ -186,7 +191,7 @@ var defaultConfig = &Config{
 	Sources:                     nil,
 	Namespace:                   "",
 	AnnotationFilter:            "",
-	LabelFilter:                 "",
+	LabelFilter:                 labels.Everything().String(),
 	FQDNTemplate:                "",
 	CombineFQDNAndAnnotation:    false,
 	IgnoreHostnameAnnotation:    false,
@@ -200,6 +205,7 @@ var defaultConfig = &Config{
 	GoogleProject:               "",
 	GoogleBatchChangeSize:       1000,
 	GoogleBatchChangeInterval:   time.Second,
+	GoogleZoneVisibility:        "",
 	DomainFilter:                []string{},
 	ExcludeDomains:              []string{},
 	RegexDomainFilter:           regexp.MustCompile(""),
@@ -237,6 +243,7 @@ var defaultConfig = &Config{
 	InfobloxView:                "",
 	InfobloxMaxResults:          0,
 	InfobloxFQDNRegEx:           "",
+	InfobloxCreatePTR:           false,
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 	InMemoryZones:               []string{},
 	OVHEndpoint:                 "ovh-eu",
@@ -357,11 +364,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
-	// Flags related to processing sources
+	// Flags related to processing source
 	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress")
+	app.Flag("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.").StringVar(&cfg.OCPRouterName)
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
-	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently only supported by source CRD").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
+	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently supported by source types CRD, ingress, service and openshift-route").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when using fqdn-template is set (optional, default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
@@ -389,6 +397,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("google-project", "When using the Google provider, current project is auto-detected, when running on GCP. Specify other project with this. Must be specified when running outside GCP.").Default(defaultConfig.GoogleProject).StringVar(&cfg.GoogleProject)
 	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
 	app.Flag("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.").Default(defaultConfig.GoogleBatchChangeInterval.String()).DurationVar(&cfg.GoogleBatchChangeInterval)
+	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
@@ -423,6 +432,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-view", "DNS view (default: \"\")").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
 	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
 	app.Flag("infoblox-fqdn-regex", "Apply this regular expression as a filter for obtaining zone_auth objects. This is disabled by default.").Default(defaultConfig.InfobloxFQDNRegEx).StringVar(&cfg.InfobloxFQDNRegEx)
+	app.Flag("infoblox-create-ptr", "When using the Infoblox provider, create a ptr entry in addition to an entry").Default(strconv.FormatBool(defaultConfig.InfobloxCreatePTR)).BoolVar(&cfg.InfobloxCreatePTR)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)

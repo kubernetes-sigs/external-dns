@@ -21,9 +21,9 @@ The [FAQ](docs/faq.md) contains additional information and addresses several que
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://codemine.be/posts/20190125-devops-eks-externaldns/).
 
-## The Latest Release: v0.8
+## The Latest Release
 
-ExternalDNS' current release is `v0.8`. This version allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -110,6 +110,13 @@ The following table clarifies the current status of the providers according to t
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
 
+## Kubernetes version compatibility
+
+| ExternalDNS        |      <= 0.9.x      |     >= 0.10.0      |
+| ------------------ | :----------------: | :----------------: |
+| Kubernetes <= 1.18 | :white_check_mark: |        :x:         |
+| Kubernetes >= 1.19 |        :x:         | :white_check_mark: |
+
 ## Running ExternalDNS:
 
 The are two ways of running ExternalDNS:
@@ -139,7 +146,7 @@ The following tutorials are provided:
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
-* Google Container Engine
+* Google Kubernetes Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [Headless Services](docs/tutorials/hostport.md)

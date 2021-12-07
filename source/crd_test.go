@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -57,7 +58,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func startCRDServerToServeTargets(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, t *testing.T) rest.Interface {
+func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, t *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
@@ -372,15 +373,22 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
-			restClient := startCRDServerToServeTargets(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
+			t.Parallel()
+
+			restClient := fakeRESTClient(ti.endpoints, ti.registeredAPIVersion, ti.registeredKind, ti.registeredNamespace, "test", ti.annotations, ti.labels, t)
 			groupVersion, err := schema.ParseGroupVersion(ti.apiVersion)
 			require.NoError(t, err)
 
 			scheme := runtime.NewScheme()
-			addKnownTypes(scheme, groupVersion)
+			require.NoError(t, addKnownTypes(scheme, groupVersion))
 
-			cs, _ := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, ti.labelFilter, scheme)
+			labelSelector, err := labels.Parse(ti.labelFilter)
+			require.NoError(t, err)
+
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme)
+			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(context.Background())
 			if ti.expectError {

@@ -29,6 +29,8 @@ import (
 )
 
 func TestMultiSource(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Interface", testMultiSourceImplementsSource)
 	t.Run("Endpoints", testMultiSourceEndpoints)
 	t.Run("EndpointsWithError", testMultiSourceEndpointsWithError)
@@ -71,7 +73,10 @@ func testMultiSourceEndpoints(t *testing.T) {
 			[]*endpoint.Endpoint{foo, bar},
 		},
 	} {
+		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
 			// Prepare the nested mock sources.
 			sources := make([]Source, 0, len(tc.nestedEndpoints))
 

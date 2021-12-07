@@ -19,12 +19,15 @@ package controller
 import (
 	"context"
 	"errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"math"
 	"reflect"
 	"testing"
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/registry"
@@ -48,6 +51,10 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
+type errorMockProvider struct {
+	mockProvider
+}
+
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
@@ -67,6 +74,10 @@ func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.C
 // Records returns the desired mock endpoints.
 func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
+}
+
+func (p *errorMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, errors.New("error for testing")
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumptions.
@@ -119,6 +130,8 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 func TestRunOnce(t *testing.T) {
 	// Fake some desired endpoints coming from our source.
 	source := new(testutils.MockSource)
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
 			DNSName:    "create-record",
@@ -167,15 +180,23 @@ func TestRunOnce(t *testing.T) {
 
 	// Run our controller once to trigger the validation.
 	ctrl := &Controller{
-		Source:   source,
-		Registry: r,
-		Policy:   &plan.SyncPolicy{},
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
+	// check the verified records
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
+}
+
+func valueFromMetric(metric prometheus.Gauge) uint64 {
+	ref := reflect.ValueOf(metric)
+	return reflect.Indirect(ref).FieldByName("valBits").Uint()
 }
 
 func TestShouldRunOnce(t *testing.T) {
@@ -219,6 +240,9 @@ func TestShouldRunOnce(t *testing.T) {
 
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME}
+
 	source := new(testutils.MockSource)
 	source.On("Endpoints").Return(configuredEndpoints, nil)
 
@@ -231,10 +255,11 @@ func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.
 	require.NoError(t, err)
 
 	ctrl := &Controller{
-		Source:       source,
-		Registry:     r,
-		Policy:       &plan.SyncPolicy{},
-		DomainFilter: domainFilter,
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		DomainFilter:       domainFilter,
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
@@ -367,4 +392,81 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 			},
 		},
 	)
+}
+
+func TestVerifyARecords(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "create-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "create-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+		},
+		[]*plan.Changes{},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
+
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "some-record.3.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"24.24.24.24"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		[]*plan.Changes{{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "some-record.3.used.tld",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"24.24.24.24"},
+				},
+			},
+		}},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
 }
