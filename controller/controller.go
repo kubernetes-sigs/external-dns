@@ -139,6 +139,10 @@ type Controller struct {
 	ManagedRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
+	// modify owner
+	TXTOwner string
+	// migrate txt-owner flag
+	TXTOwnerMigrate bool
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -171,11 +175,13 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
 		ManagedRecords:     c.ManagedRecordTypes,
+		TXTOwner:           c.TXTOwner,
+		TXTOwnerMigrate:    c.TXTOwnerMigrate,
 	}
 
 	plan = plan.Calculate()
 
-	if plan.Changes.HasChanges() {
+	if plan.Changes.HasChanges() || plan.HasMig {
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)
 		if err != nil {
 			registryErrorsTotal.Inc()

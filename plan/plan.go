@@ -48,6 +48,12 @@ type Plan struct {
 	PropertyComparator PropertyComparator
 	// DNS record types that will be considered for management
 	ManagedRecords []string
+	// current txt-owner
+	TXTOwner string
+	// has migrate txt-owner
+	HasMig bool
+	// modify owner flag
+	TXTOwnerMigrate bool
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -143,6 +149,7 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	changes := &Changes{}
+	var hasMig bool
 
 	for _, topRow := range t.rows {
 		for _, row := range topRow {
@@ -151,6 +158,18 @@ func (p *Plan) Calculate() *Plan {
 			}
 			if row.current != nil && len(row.candidates) == 0 {
 				changes.Delete = append(changes.Delete, row.current)
+			}
+
+			// modify the previous txt-owner to the current txt-owner if TXTOwnerMigrate==true
+			if p.TXTOwnerMigrate && row.current != nil && len(row.candidates) > 0 && row.current.Labels[endpoint.OwnerLabelKey] != p.TXTOwner {
+				hasMig = true
+				oldOwner := row.current.Labels[endpoint.OwnerLabelKey]
+				update := row.current
+				update.Labels[endpoint.OwnerLabelKey] = p.TXTOwner
+				log.Infof("find a record owner!=%s: it's DNSName: %s, old-owner: %s, type: %s\n", p.TXTOwner, row.current.DNSName, oldOwner, row.current.RecordType)
+				changes.UpdateNew = append(changes.UpdateNew, update)
+				changes.UpdateOld = append(changes.UpdateOld, row.current)
+				continue
 			}
 
 			// TODO: allows record type change, which might not be supported by all dns providers
@@ -175,6 +194,7 @@ func (p *Plan) Calculate() *Plan {
 		Desired:        p.Desired,
 		Changes:        changes,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		HasMig:         hasMig,
 	}
 
 	return plan
