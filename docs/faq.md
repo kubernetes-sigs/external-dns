@@ -187,6 +187,8 @@ Here is the full list of available metrics provided by ExternalDNS:
 | external_dns_source_errors_total                    | Number of Source errors                                 | Counter |
 | external_dns_controller_verified_records            | Number of DNS A-records that exists both in             | Gauge   |
 |                                                     | source & registry                                       |         |
+| external_dns_registry_a_records                     | Number of A records in registry                         | Gauge   |
+| external_dns_source_a_records                       | Number of A records in source                           | Gauge   |
 
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 

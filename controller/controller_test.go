@@ -470,3 +470,50 @@ func TestVerifyARecords(t *testing.T) {
 	)
 	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
 }
+
+func TestARecords(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "record1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "record2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
+				RecordType: endpoint.RecordTypeSRV,
+				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "record1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
+				RecordType: endpoint.RecordTypeSRV,
+				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+			},
+		},
+		[]*plan.Changes{{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "record2.used.tld",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		}},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryARecords))
+}
