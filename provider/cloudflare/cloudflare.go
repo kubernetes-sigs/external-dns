@@ -382,10 +382,6 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 		ttl = int(endpoint.RecordTTL)
 	}
 
-	if len(endpoint.Targets) > 1 {
-		log.Errorf("Updates should have just one target")
-	}
-
 	return &cloudFlareChange{
 		Action: action,
 		ResourceRecord: cloudflare.DNSRecord{
