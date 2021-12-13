@@ -129,6 +129,7 @@ type Config struct {
 	Policy                            string
 	Registry                          string
 	TXTOwnerID                        string
+	TXTOwnerOld                       string
 	TXTOwnerMigrate                   bool
 	TXTPrefix                         string
 	TXTSuffix                         string
@@ -256,6 +257,7 @@ var defaultConfig = &Config{
 	Policy:                      "sync",
 	Registry:                    "txt",
 	TXTOwnerID:                  "default",
+	TXTOwnerOld:                 "default",
 	TXTOwnerMigrate:             false,
 	TXTPrefix:                   "",
 	TXTSuffix:                   "",
@@ -490,6 +492,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to the registry
 	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")
 	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
+	app.Flag("from-txt-owner", "Old txt-owner-id that needs to be overwritten (default: default)").StringVar(&cfg.TXTOwnerOld)
 	app.Flag("migrate-txt-owner", "When enabled, modify the previous txt-owner to the current txt-owner (default: disabled)").BoolVar(&cfg.TXTOwnerMigrate)
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)

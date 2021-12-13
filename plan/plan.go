@@ -54,6 +54,8 @@ type Plan struct {
 	HasMig bool
 	// modify owner flag
 	TXTOwnerMigrate bool
+	// old txt-owner whitch needed to modify
+	TXTOwnerOld string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -160,8 +162,8 @@ func (p *Plan) Calculate() *Plan {
 				changes.Delete = append(changes.Delete, row.current)
 			}
 
-			// modify the previous txt-owner to the current txt-owner if TXTOwnerMigrate==true
-			if p.TXTOwnerMigrate && row.current != nil && len(row.candidates) > 0 && row.current.Labels[endpoint.OwnerLabelKey] != p.TXTOwner {
+			// Change the specified old txt-owner to the new txt-owner (if TXTOwnerMigrate==true and set the from-txt-owner)
+			if p.TXTOwnerMigrate && row.current != nil && len(row.candidates) > 0 && row.current.Labels[endpoint.OwnerLabelKey] == p.TXTOwnerOld {
 				hasMig = true
 				oldOwner := row.current.Labels[endpoint.OwnerLabelKey]
 				update := row.current
