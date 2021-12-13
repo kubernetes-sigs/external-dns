@@ -412,6 +412,7 @@ func main() {
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
 		TXTOwner:             cfg.TXTOwnerID,
 		TXTOwnerMigrate:      cfg.TXTOwnerMigrate,
+		TXTOwnerOld:          cfg.TXTOwnerOld,
 	}
 
 	if cfg.Once {

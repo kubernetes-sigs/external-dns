@@ -188,6 +188,8 @@ type Controller struct {
 	TXTOwner string
 	// migrate txt-owner flag
 	TXTOwnerMigrate bool
+	// old txt-owner whitch needed to modify
+	TXTOwnerOld string
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -254,6 +256,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ManagedRecords:     c.ManagedRecordTypes,
 		TXTOwner:           c.TXTOwner,
 		TXTOwnerMigrate:    c.TXTOwnerMigrate,
+		TXTOwnerOld:        c.TXTOwnerOld,
 	}
 
 	plan = plan.Calculate()
