@@ -4,6 +4,10 @@ metadata:
   name: {{ include "external-dns.fullname" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   selector:
