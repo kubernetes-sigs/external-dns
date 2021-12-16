@@ -38,7 +38,7 @@ type MockAction struct {
 	RecordData cloudflare.DNSRecord
 }
 
-type mockCloudFlareClient struct {
+type mockCloudflareClient struct {
 	User            cloudflare.User
 	Zones           map[string]string
 	Records         map[string]map[string]cloudflare.DNSRecord
@@ -77,8 +77,8 @@ var ExampleDomain = []cloudflare.DNSRecord{
 	},
 }
 
-func NewMockCloudFlareClient() *mockCloudFlareClient {
-	return &mockCloudFlareClient{
+func NewMockCloudflareClient() *mockCloudflareClient {
+	return &mockCloudflareClient{
 		User: cloudflare.User{ID: "xxxxxxxxxxxxxxxxxxx"},
 		Zones: map[string]string{
 			"001": "bar.com",
@@ -91,8 +91,8 @@ func NewMockCloudFlareClient() *mockCloudFlareClient {
 	}
 }
 
-func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecord) *mockCloudFlareClient {
-	m := NewMockCloudFlareClient()
+func NewMockCloudflareClientWithRecords(records map[string][]cloudflare.DNSRecord) *mockCloudflareClient {
+	m := NewMockCloudflareClient()
 
 	for zoneID, zoneRecords := range records {
 		if zone, ok := m.Records[zoneID]; ok {
@@ -105,7 +105,7 @@ func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecor
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
+func (m *mockCloudflareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
 		ZoneId:     zoneID,
@@ -118,7 +118,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 	return nil, nil
 }
 
-func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
+func (m *mockCloudflareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if m.dnsRecordsError != nil {
 		return nil, m.dnsRecordsError
 	}
@@ -132,7 +132,7 @@ func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord
 	return result, nil
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
+func (m *mockCloudflareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
 		ZoneId:     zoneID,
@@ -147,7 +147,7 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloud
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(zoneID, recordID string) error {
+func (m *mockCloudflareClient) DeleteDNSRecord(zoneID, recordID string) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
 		ZoneId:   zoneID,
@@ -162,11 +162,11 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(zoneID, recordID string) error {
 	return nil
 }
 
-func (m *mockCloudFlareClient) UserDetails() (cloudflare.User, error) {
+func (m *mockCloudflareClient) UserDetails() (cloudflare.User, error) {
 	return m.User, nil
 }
 
-func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
+func (m *mockCloudflareClient) ZoneIDByName(zoneName string) (string, error) {
 	for id, name := range m.Zones {
 		if name == zoneName {
 			return id, nil
@@ -176,7 +176,7 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "", errors.New("Unknown zone: " + zoneName)
 }
 
-func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
+func (m *mockCloudflareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
 	if m.listZonesError != nil {
 		return nil, m.listZonesError
 	}
@@ -193,7 +193,7 @@ func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, e
 	return result, nil
 }
 
-func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
+func (m *mockCloudflareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
 	if m.listZonesError != nil {
 		return cloudflare.ZonesResponse{}, m.listZonesError
 	}
@@ -216,7 +216,7 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 	}, nil
 }
 
-func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+func (m *mockCloudflareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
 	for id, zoneName := range m.Zones {
 		if zoneID == id {
 			return cloudflare.Zone{
@@ -229,16 +229,16 @@ func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, erro
 	return cloudflare.Zone{}, errors.New("Unknown zoneID: " + zoneID)
 }
 
-func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
+func AssertActions(t *testing.T, provider *CloudflareProvider, endpoints []*endpoint.Endpoint, actions []MockAction, managedRecords []string, args ...interface{}) {
 	t.Helper()
 
-	var client *mockCloudFlareClient
+	var client *mockCloudflareClient
 
 	if provider.Client == nil {
-		client = NewMockCloudFlareClient()
+		client = NewMockCloudflareClient()
 		provider.Client = client
 	} else {
-		client = provider.Client.(*mockCloudFlareClient)
+		client = provider.Client.(*mockCloudflareClient)
 	}
 
 	ctx := context.Background()
@@ -283,7 +283,7 @@ func TestCloudflareA(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -321,7 +321,7 @@ func TestCloudflareCname(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -359,7 +359,7 @@ func TestCloudflareCustomTTL(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -385,7 +385,7 @@ func TestCloudflareProxiedDefault(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{proxiedByDefault: true}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -417,7 +417,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -449,7 +449,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{proxiedByDefault: true}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -481,7 +481,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 		},
 	}
 
-	AssertActions(t, &CloudFlareProvider{proxiedByDefault: true}, endpoints, []MockAction{
+	AssertActions(t, &CloudflareProvider{proxiedByDefault: true}, endpoints, []MockAction{
 		{
 			Name:   "Create",
 			ZoneId: "001",
@@ -529,7 +529,7 @@ func TestCloudflareSetProxied(t *testing.T) {
 			},
 		}
 
-		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+		AssertActions(t, &CloudflareProvider{}, endpoints, []MockAction{
 			{
 				Name:   "Create",
 				ZoneId: "001",
@@ -546,8 +546,8 @@ func TestCloudflareSetProxied(t *testing.T) {
 }
 
 func TestCloudflareZones(t *testing.T) {
-	provider := &CloudFlareProvider{
-		Client:       NewMockCloudFlareClient(),
+	provider := &CloudflareProvider{
+		Client:       NewMockCloudflareClient(),
 		domainFilter: endpoint.NewDomainFilter([]string{"bar.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 	}
@@ -561,10 +561,10 @@ func TestCloudflareZones(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
-func TestCloudFlareZonesWithIDFilter(t *testing.T) {
-	client := NewMockCloudFlareClient()
+func TestCloudflareZonesWithIDFilter(t *testing.T) {
+	client := NewMockCloudflareClient()
 	client.listZonesError = errors.New("shouldn't need to list zones when ZoneIDFilter in use")
-	provider := &CloudFlareProvider{
+	provider := &CloudflareProvider{
 		Client:       client,
 		domainFilter: endpoint.NewDomainFilter([]string{"bar.com", "foo.com"}),
 		zoneIDFilter: provider.NewZoneIDFilter([]string{"001"}),
@@ -581,11 +581,11 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 }
 
 func TestCloudflareRecords(t *testing.T) {
-	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+	client := NewMockCloudflareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
 
-	provider := &CloudFlareProvider{
+	provider := &CloudflareProvider{
 		Client: client,
 	}
 	ctx := context.Background()
@@ -611,7 +611,7 @@ func TestCloudflareRecords(t *testing.T) {
 
 func TestCloudflareProvider(t *testing.T) {
 	_ = os.Setenv("CF_API_TOKEN", "abc123def")
-	_, err := NewCloudFlareProvider(
+	_, err := NewCloudflareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		25,
@@ -623,7 +623,7 @@ func TestCloudflareProvider(t *testing.T) {
 	_ = os.Unsetenv("CF_API_TOKEN")
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
-	_, err = NewCloudFlareProvider(
+	_, err = NewCloudflareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		1,
@@ -634,7 +634,7 @@ func TestCloudflareProvider(t *testing.T) {
 	}
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
-	_, err = NewCloudFlareProvider(
+	_, err = NewCloudflareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		50,
@@ -647,8 +647,8 @@ func TestCloudflareProvider(t *testing.T) {
 
 func TestCloudflareApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
-	client := NewMockCloudFlareClient()
-	provider := &CloudFlareProvider{
+	client := NewMockCloudflareClient()
+	provider := &CloudflareProvider{
 		Client: client,
 	}
 	changes.Create = []*endpoint.Endpoint{{
@@ -710,7 +710,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 }
 
 func TestCloudflareGetRecordID(t *testing.T) {
-	p := &CloudFlareProvider{}
+	p := &CloudflareProvider{}
 	records := []cloudflare.DNSRecord{
 		{
 			Name:    "foo.com",
@@ -778,7 +778,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -786,7 +786,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -804,13 +804,13 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -818,7 +818,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -836,25 +836,25 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -862,7 +862,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -875,7 +875,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -893,19 +893,19 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -913,7 +913,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -926,7 +926,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "bar.de",
 					Targets:    endpoint.Targets{"10.10.10.1"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -944,19 +944,19 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 				{
 					Name:    "bar.de",
 					Type:    "NOT SUPPORTED",
 					Content: "10.10.10.1",
-					TTL:     defaultCloudFlareRecordTTL,
+					TTL:     defaultCloudflareRecordTTL,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -964,7 +964,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					DNSName:    "foo.com",
 					Targets:    endpoint.Targets{"10.10.10.1", "10.10.10.2"},
 					RecordType: endpoint.RecordTypeA,
-					RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+					RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 					Labels:     endpoint.Labels{},
 					ProviderSpecific: endpoint.ProviderSpecific{
 						{
@@ -1011,7 +1011,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+		client := NewMockCloudflareClientWithRecords(map[string][]cloudflare.DNSRecord{
 			"001": {
 				{
 					ID:      "1234567890",
@@ -1025,7 +1025,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			},
 		})
 
-		provider := &CloudFlareProvider{
+		provider := &CloudflareProvider{
 			Client:           client,
 			proxiedByDefault: test.ProviderProxiedByDefault,
 		}
@@ -1076,11 +1076,11 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 }
 
 func TestCloudflareComplexUpdate(t *testing.T) {
-	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+	client := NewMockCloudflareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
 
-	provider := &CloudFlareProvider{
+	provider := &CloudflareProvider{
 		Client: client,
 	}
 	ctx := context.Background()
@@ -1098,7 +1098,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				DNSName:    "foobar.bar.com",
 				Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
 				RecordType: endpoint.RecordTypeA,
-				RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+				RecordTTL:  endpoint.TTL(defaultCloudflareRecordTTL),
 				Labels:     endpoint.Labels{},
 				ProviderSpecific: endpoint.ProviderSpecific{
 					{
@@ -1153,7 +1153,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 }
 
 func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
-	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+	client := NewMockCloudflareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": []cloudflare.DNSRecord{
 			{
 				ID:      "1234567890",
@@ -1167,7 +1167,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		},
 	})
 
-	provider := &CloudFlareProvider{
+	provider := &CloudflareProvider{
 		Client: client,
 	}
 
