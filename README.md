@@ -28,7 +28,7 @@ ExternalDNS' current release is `v0.5`. This version allows you to keep selected
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Service Discovery](https://docs.aws.amazon.com/Route53/latest/APIReference/overview-service-discovery.html)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
-* [CloudFlare](https://www.cloudflare.com/dns)
+* [Cloudflare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
@@ -68,7 +68,7 @@ The following table clarifies the current status of the providers according to t
 | AWS Route 53 | Stable |
 | AWS Service Discovery | Beta |
 | AzureDNS | Beta |
-| CloudFlare | Beta
+| Cloudflare | Beta
 | RcodeZero | Alpha |
 | DigitalOcean | Alpha |
 | DNSimple | Alpha |
@@ -226,7 +226,7 @@ Here's a rough outline on what is to come (subject to change):
 ### v0.4
 
 - [x] Support for AzureDNS
-- [x] Support for CloudFlare
+- [x] Support for Cloudflare
 - [x] Support for DigitalOcean
 - [x] Multiple DNS names per Service
 

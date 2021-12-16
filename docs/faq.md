@@ -33,7 +33,7 @@ Currently, the following providers are supported:
 - Google Cloud DNS
 - AWS Route 53
 - AzureDNS
-- CloudFlare
+- Cloudflare
 - DigitalOcean
 - DNSimple
 - Infoblox
