@@ -31,7 +31,7 @@ import (
   "sigs.k8s.io/external-dns/plan"
 )
 
-// The SafeDNS interface is a subset of the SafeDNS service API that are actually used.
+// SafeDNS is an interface that is a subset of the SafeDNS service API that are actually used.
 // Signatures must match exactly.
 type SafeDNS interface {
   CreateZoneRecord(zoneName string, req safedns.CreateRecordRequest) (int, error)
@@ -44,6 +44,7 @@ type SafeDNS interface {
   UpdateZoneRecord(zoneName string, record safedns.Record) (int, error)
 }
 
+// SafeDNSProvider implements the DNS provider spec for UKFast SafeDNS.
 type SafeDNSProvider struct {
   provider.BaseProvider
   Client SafeDNS
@@ -53,6 +54,7 @@ type SafeDNSProvider struct {
   APIRequestParams  ukf_connection.APIRequestParameters
 }
 
+// ZoneRecord is a datatype to simplify management of a record in a zone.
 type ZoneRecord struct {
   ID      int
   Name    string
