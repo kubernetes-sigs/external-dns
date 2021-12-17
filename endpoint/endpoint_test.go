@@ -76,7 +76,6 @@ func TestSameFailures(t *testing.T) {
 		}
 	}
 }
-
 func TestIsLess(t *testing.T) {
 	testsA := []Targets{
 		{""},
@@ -112,6 +111,33 @@ func TestIsLess(t *testing.T) {
 	for i, d := range testsA {
 		if d.IsLess(testsB[i]) != expected[i] {
 			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
+		}
+	}
+}
+func TestSub(t *testing.T) {
+	tests := []struct {
+		a        Targets
+		b        Targets
+		expected Targets
+	}{
+		{
+			[]string{"1.2.3.4"},
+			[]string{"4.3.2.1"},
+			[]string{"1.2.3.4"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"1.2.3.4"},
+			[]string{"4.3.2.1"},
+		}, {
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{"1.2.3.4", "4.3.2.1"},
+			[]string{},
+		},
+	}
+
+	for _, d := range tests {
+		if d.a.Sub(d.b).Same(d.expected) == false {
+			t.Errorf("%#v difference with %#v should equal %#v", d.a, d.b, d.expected)
 		}
 	}
 }

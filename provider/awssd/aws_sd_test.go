@@ -366,9 +366,30 @@ func TestAWSSDProvider_ApplyChanges(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(expectedEndpoints, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", expectedEndpoints, endpoints)
 
 	ctx = context.Background()
+
+	provider.ApplyChanges(ctx, &plan.Changes{
+		UpdateNew: []*endpoint.Endpoint{
+			{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+		},
+		UpdateOld: []*endpoint.Endpoint{
+			{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4", "1.2.3.5"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+		},
+	})
+
+	endpointsAfterUpdate := []*endpoint.Endpoint{
+		{DNSName: "service1.private.com", Targets: endpoint.Targets{"1.2.3.4"}, RecordType: endpoint.RecordTypeA, RecordTTL: 60},
+		{DNSName: "service2.private.com", Targets: endpoint.Targets{"load-balancer.us-east-1.elb.amazonaws.com"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 80},
+		{DNSName: "service3.private.com", Targets: endpoint.Targets{"cname.target.com"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100},
+	}
+
+	assert.NotNil(t, existingServices["service1"])
+	endpoints, _ = provider.Records(ctx)
+	assert.True(t, testutils.SameEndpoints(endpointsAfterUpdate, endpoints), "expected and actual endpoints don't match, expected=%v, actual=%v", endpointsAfterUpdate, endpoints)
+
+	ctx = context.Background()
 	// apply deletes
 	provider.ApplyChanges(ctx, &plan.Changes{
-		Delete: expectedEndpoints,
+		Delete: endpointsAfterUpdate,
 	})
 
 	// make sure all instances are gone
