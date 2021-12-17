@@ -88,6 +88,8 @@ tolerations: []
 
 affinity: {}
 
+topologySpreadConstraints: []
+
 logLevel: info
 logFormat: text
 
