@@ -186,9 +186,10 @@ func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 		}
 	}
 	for _, endpoint := range changes.UpdateNew {
-		// TODO: Find a more effient way of doing this.
-		// Currently iterates over each zoneRecord in ZoneRecords for each Endpoint in UpdateNew; the same will go for
-		// Delete. As it's double-iteration, that's O(n^2), which isn't great.
+		// Currently iterates over each zoneRecord in ZoneRecords for each Endpoint
+		// in UpdateNew; the same will go for Delete. As it's double-iteration,
+		// that's O(n^2), which isn't great. No performance issues have been noted
+		// thus far.
 		var zoneRecord ZoneRecord
 		for _, target := range endpoint.Targets {
 			for _, zr := range zoneRecords {
@@ -219,7 +220,7 @@ func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 		}
 	}
 	for _, endpoint := range changes.Delete {
-		// TODO: Find a more effient way of doing this.
+		// As above, currently iterates in O(n^2). May be a good start for optimisations.
 		var zoneRecord ZoneRecord
 		for _, zr := range zoneRecords {
 			if zr.Name == endpoint.DNSName && string(zr.Type) == endpoint.RecordType {
