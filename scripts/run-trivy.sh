@@ -9,4 +9,5 @@ tar -xvf trivy_0.20.2_Linux-64bit.tar.gz
 chmod +x trivy
 
 # run trivy
+cd - 
 ./trivy image --exit-code 1 us.gcr.io/k8s-artifacts-prod/external-dns/external-dns:$(git describe --tags --always --dirty)
