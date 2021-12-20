@@ -1,8 +1,8 @@
 name: trivy vulnerability scanner
 on:
   push:
-    # branches:
-    #   - master
+    branches:
+      - master
 jobs:
   build:
     name: Build
