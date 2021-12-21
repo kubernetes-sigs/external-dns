@@ -67,6 +67,9 @@ spec:
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- end }}
+            {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
+            - --txt-suffix={{ .Values.txtSuffix }}
+            {{- end }}
             {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
