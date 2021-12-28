@@ -19,18 +19,25 @@ package infoblox
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 
+	transform "github.com/StackExchange/dnscontrol/pkg/transform"
 	ibclient "github.com/infobloxopen/infoblox-go-client"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+)
+
+const (
+	// provider specific key to track if PTR record was already created or not for A records
+	providerSpecificInfobloxPtrRecord = "infoblox-ptr-record-exists"
 )
 
 // InfobloxConfig clarifies the method signature
@@ -46,6 +53,8 @@ type InfobloxConfig struct {
 	DryRun       bool
 	View         string
 	MaxResults   int
+	FQDNRexEx    string
+	CreatePTR    bool
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
@@ -56,6 +65,8 @@ type InfobloxProvider struct {
 	zoneIDFilter provider.ZoneIDFilter
 	view         string
 	dryRun       bool
+	fqdnRegEx    string
+	createPTR    bool
 }
 
 type infobloxRecordSet struct {
@@ -63,28 +74,36 @@ type infobloxRecordSet struct {
 	res interface{}
 }
 
-// MaxResultsRequestBuilder implements a HttpRequestBuilder which sets the
-// _max_results query parameter on all get requests
-type MaxResultsRequestBuilder struct {
+// ExtendedRequestBuilder implements a HttpRequestBuilder which sets
+// additional query parameter on all get requests
+type ExtendedRequestBuilder struct {
+	fqdnRegEx  string
 	maxResults int
 	ibclient.WapiRequestBuilder
 }
 
-// NewMaxResultsRequestBuilder returns a MaxResultsRequestBuilder which adds
+// NewExtendedRequestBuilder returns a ExtendedRequestBuilder which adds
 // _max_results query parameter to all GET requests
-func NewMaxResultsRequestBuilder(maxResults int) *MaxResultsRequestBuilder {
-	return &MaxResultsRequestBuilder{
+func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedRequestBuilder {
+	return &ExtendedRequestBuilder{
+		fqdnRegEx:  fqdnRegEx,
 		maxResults: maxResults,
 	}
 }
 
 // BuildRequest prepares the api request. it uses BuildRequest of
 // WapiRequestBuilder and then add the _max_requests parameter
-func (mrb *MaxResultsRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
+func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
 	req, err = mrb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
 	if req.Method == "GET" {
 		query := req.URL.Query()
-		query.Set("_max_results", strconv.Itoa(mrb.maxResults))
+		if mrb.maxResults > 0 {
+			query.Set("_max_results", strconv.Itoa(mrb.maxResults))
+		}
+		_, ok := obj.(*ibclient.ZoneAuth)
+		if ok && t == ibclient.GET && mrb.fqdnRegEx != "" {
+			query.Set("fqdn~", mrb.fqdnRegEx)
+		}
 		req.URL.RawQuery = query.Encode()
 	}
 	return
@@ -110,9 +129,9 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 	)
 
 	var requestBuilder ibclient.HttpRequestBuilder
-	if infobloxConfig.MaxResults != 0 {
+	if infobloxConfig.MaxResults != 0 || infobloxConfig.FQDNRexEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewMaxResultsRequestBuilder(infobloxConfig.MaxResults)
+		requestBuilder = NewExtendedRequestBuilder(infobloxConfig.MaxResults, infobloxConfig.FQDNRexEx)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder = &ibclient.WapiRequestBuilder{}
@@ -132,6 +151,8 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		zoneIDFilter: infobloxConfig.ZoneIDFilter,
 		dryRun:       infobloxConfig.DryRun,
 		view:         infobloxConfig.View,
+		fqdnRegEx:    infobloxConfig.FQDNRexEx,
+		createPTR:    infobloxConfig.CreatePTR,
 	}
 
 	return provider, nil
@@ -159,6 +180,9 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resA {
 			newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr)
+			if p.createPTR {
+				newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "false")
+			}
 			// Check if endpoint already exists and add to existing endpoint if it does
 			foundExisting := false
 			for _, ep := range endpoints {
@@ -192,7 +216,13 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
-				endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr))
+				// host record is an abstraction in infoblox that combines A and PTR records
+				// for any host record we already should have a PTR record in infoblox, so mark it as created
+				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr)
+				if p.createPTR {
+					newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+				}
+				endpoints = append(endpoints, newEndpoint)
 			}
 		}
 
@@ -209,6 +239,29 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resC {
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeCNAME, res.Canonical))
+		}
+
+		if p.createPTR {
+			// infoblox doesn't accept reverse zone's fqdn, and instead expects .in-addr.arpa zone
+			// so convert our zone fqdn (if it is a correct cidr block) into in-addr.arpa address and pass that into infoblox
+			// example: 10.196.38.0/24 becomes 38.196.10.in-addr.arpa
+			arpaZone, err := transform.ReverseDomainName(zone.Fqdn)
+			if err == nil {
+				var resP []ibclient.RecordPTR
+				objP := ibclient.NewRecordPTR(
+					ibclient.RecordPTR{
+						Zone: arpaZone,
+						View: p.view,
+					},
+				)
+				err = p.client.GetObject(objP, "", &resP)
+				if err != nil {
+					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
+				}
+				for _, res := range resP {
+					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
+				}
+			}
 		}
 
 		var resT []ibclient.RecordTXT
@@ -231,8 +284,64 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
+
+	// update A records that have PTR record created for them already
+	if p.createPTR {
+		// save all ptr records into map for a quick look up
+		ptrRecordsMap := make(map[string]bool)
+		for _, ptrRecord := range endpoints {
+			if ptrRecord.RecordType != endpoint.RecordTypePTR {
+				continue
+			}
+			ptrRecordsMap[ptrRecord.DNSName] = true
+		}
+
+		for i := range endpoints {
+			if endpoints[i].RecordType != endpoint.RecordTypeA {
+				continue
+			}
+			// if PTR record already exists for A record, then mark it as such
+			if ptrRecordsMap[endpoints[i].DNSName] {
+				found := false
+				for j := range endpoints[i].ProviderSpecific {
+					if endpoints[i].ProviderSpecific[j].Name == providerSpecificInfobloxPtrRecord {
+						endpoints[i].ProviderSpecific[j].Value = "true"
+						found = true
+					}
+				}
+				if !found {
+					endpoints[i].WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+				}
+			}
+		}
+	}
 	logrus.Debugf("fetched %d records from infoblox", len(endpoints))
 	return endpoints, nil
+}
+
+func (p *InfobloxProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	if !p.createPTR {
+		return endpoints
+	}
+
+	// for all A records, we want to create PTR records
+	// so add provider specific property to track if the record was created or not
+	for i := range endpoints {
+		if endpoints[i].RecordType == endpoint.RecordTypeA {
+			found := false
+			for j := range endpoints[i].ProviderSpecific {
+				if endpoints[i].ProviderSpecific[j].Name == providerSpecificInfobloxPtrRecord {
+					endpoints[i].ProviderSpecific[j].Value = "true"
+					found = true
+				}
+			}
+			if !found {
+				endpoints[i].WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+			}
+		}
+	}
+
+	return endpoints
 }
 
 // ApplyChanges applies the given changes.
@@ -290,6 +399,17 @@ func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.C
 		}
 		// Ensure the record type is suitable
 		changeMap[zone.Fqdn] = append(changeMap[zone.Fqdn], change)
+
+		if p.createPTR && change.RecordType == endpoint.RecordTypeA {
+			reverseZone := p.findReverseZone(zones, change.Targets[0])
+			if reverseZone == nil {
+				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found.", change.Targets[0])
+				return
+			}
+			changecopy := *change
+			changecopy.RecordType = endpoint.RecordTypePTR
+			changeMap[reverseZone.Fqdn] = append(changeMap[reverseZone.Fqdn], &changecopy)
+		}
 	}
 
 	for _, change := range changes.Delete {
@@ -327,6 +447,28 @@ func (p *InfobloxProvider) findZone(zones []ibclient.ZoneAuth, name string) *ibc
 	return result
 }
 
+func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
+	ip := net.ParseIP(name)
+	networks := map[int]*ibclient.ZoneAuth{}
+	maxMask := 0
+
+	for i, zone := range zones {
+		_, net, err := net.ParseCIDR(zone.Fqdn)
+		if err != nil {
+			logrus.WithError(err).Debugf("fqdn %s is no cidr", zone.Fqdn)
+		} else {
+			if net.Contains(ip) {
+				_, mask := net.Mask.Size()
+				networks[mask] = &zones[i]
+				if mask > maxMask {
+					maxMask = mask
+				}
+			}
+		}
+	}
+	return networks[maxMask]
+}
+
 func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targetIndex int) (recordSet infobloxRecordSet, err error) {
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
@@ -334,6 +476,25 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj := ibclient.NewRecordA(
 			ibclient.RecordA{
 				Name:     ep.DNSName,
+				Ipv4Addr: ep.Targets[targetIndex],
+				View:     p.view,
+			},
+		)
+		if getObject {
+			err = p.client.GetObject(obj, "", &res)
+			if err != nil {
+				return
+			}
+		}
+		recordSet = infobloxRecordSet{
+			obj: obj,
+			res: &res,
+		}
+	case endpoint.RecordTypePTR:
+		var res []ibclient.RecordPTR
+		obj := ibclient.NewRecordPTR(
+			ibclient.RecordPTR{
+				PtrdName: ep.DNSName,
 				Ipv4Addr: ep.Targets[targetIndex],
 				View:     p.view,
 			},
@@ -470,6 +631,10 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 					switch ep.RecordType {
 					case endpoint.RecordTypeA:
 						for _, record := range *recordSet.res.(*[]ibclient.RecordA) {
+							_, err = p.client.DeleteObject(record.Ref)
+						}
+					case endpoint.RecordTypePTR:
+						for _, record := range *recordSet.res.(*[]ibclient.RecordPTR) {
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					case endpoint.RecordTypeCNAME:

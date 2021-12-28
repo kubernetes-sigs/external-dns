@@ -17,12 +17,9 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -46,18 +43,9 @@ type nodeSource struct {
 
 // NewNodeSource creates a new nodeSource with the given config.
 func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informers to listen for add/update/delete of nodes.
@@ -78,11 +66,8 @@ func NewNodeSource(kubeClient kubernetes.Interface, annotationFilter, fqdnTempla
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &nodeSource{
@@ -131,14 +116,15 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		if ns.fqdnTemplate != nil {
-			// Process the whole template string
-			var buf bytes.Buffer
-			err := ns.fqdnTemplate.Execute(&buf, node)
+			hostnames, err := execTemplate(ns.fqdnTemplate, node)
 			if err != nil {
-				return nil, fmt.Errorf("failed to apply template on node %s: %v", node.Name, err)
+				return nil, err
 			}
-
-			ep.DNSName = buf.String()
+			hostname := ""
+			if len(hostnames) > 0 {
+				hostname = hostnames[0]
+			}
+			ep.DNSName = hostname
 			log.Debugf("applied template for %s, converting to %s", node.Name, ep.DNSName)
 		} else {
 			ep.DNSName = node.Name
@@ -151,6 +137,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		ep.Targets = endpoint.Targets(addrs)
+		ep.Labels = endpoint.NewLabels()
 
 		log.Debugf("adding endpoint %s", ep)
 		if _, ok := endpoints[ep.DNSName]; ok {

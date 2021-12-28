@@ -55,7 +55,7 @@ If your EKS-managed cluster is >= 1.13 and was created after 2019-09-04, refer
 to the [Amazon EKS
 documentation](https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html)
 for instructions on how to create the IAM Role. Otherwise, you will need to use
-kiam or kube2iam.
+kiam or kube2iam or set the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY on the deployment.
 
 ### kiam
 
@@ -166,7 +166,7 @@ metadata:
     # Substitute your account ID and IAM service role name below.
     eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT-ID:role/IAM-SERVICE-ROLE-NAME
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -181,7 +181,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list","watch"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -464,6 +464,58 @@ $ aws route53 delete-hosted-zone --id /hostedzone/ZEWFWZ4R16P7IB
 ## Throttling
 
 Route53 has a [5 API requests per second per account hard quota](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests-route-53).
-Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to circumvent that issue includes:
-* Augment the synchronization interval (`--interval`), at the cost of slower changes propagation.
-* If the ExternalDNS managed zones list doesn't change frequently, set `--aws-zones-cache-duration` (zones list cache time-to-live) to a larger value. Note that zones list cache can be disabled with `--aws-zones-cache-duration=0s`.
+Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:
+* Reduce the polling loop's synchronization interval at the possible cost of slower change propagation (but see `--events` below to reduce the impact).
+  * `--interval=5m` (default `1m`)
+* Trigger the polling loop on changes to K8s objects, rather than only at `interval`, to have responsive updates with long poll intervals
+  * `--events`
+* Limit the [sources watched](https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L364) when the `--events` flag is specified to specific types, namespaces, labels, or annotations
+  * `--source=ingress --source=service` - specify multiple times for multiple sources
+  * `--namespace=my-app`
+  * `--label-filter=app in (my-app)`
+  * `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)` - note that this filter would apply to services too..
+* Limit services watched by type (not applicable to ingress or other types)
+  * `--service-type-filter=LoadBalancer` default `all`
+* Limit the hosted zones considered
+  * `--zone-id-filter=ABCDEF12345678` - specify multiple times if needed
+  * `--domain-filter=example.com` by domain suffix - specify multiple times if needed
+  * `--regex-domain-filter=example*` by domain suffix but as a regex - overrides domain-filter
+  * `--exclude-domains=ignore.this.example.com` to exclude a domain or subdomain
+  * `--regex-domain-exclusion=ignore*` subtracts it's matches from `regex-domain-filter`'s matches
+  * `--aws-zone-type=public` only sync zones of this type `[public|private]`
+  * `--aws-zone-tags=owner=k8s` only sync zones with this tag
+* If the list of zones managed by ExternalDNS doesn't change frequently, cache it by setting a TTL.
+  * `--aws-zones-cache-duration=3h` (default `0` - disabled)
+* Increase the number of changes applied to Route53 in each batch
+  * `--aws-batch-change-size=4000` (default `1000`)
+* Increase the interval between changes
+  * `--aws-batch-change-interval=10s` (default `1s`)
+* Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.
+
+A simple way to implement randomised startup is with an init container:
+
+```
+...
+    spec:
+      initContainers:
+      - name: init-jitter
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        command:
+        - /bin/sh
+        - -c
+        - 'FOR=$((RANDOM % 10))s;echo "Sleeping for $FOR";sleep $FOR'
+      containers:
+...
+```
+
+### EKS
+
+An effective starting point for EKS with an ingress controller might look like:
+
+```bash
+--interval=5m
+--events
+--source=ingress
+--domain-filter=example.com
+--aws-zones-cache-duration=1h
+```

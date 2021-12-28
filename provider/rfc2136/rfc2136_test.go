@@ -95,7 +95,7 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
-	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", stub)
+	return NewRfc2136Provider("", 0, "", false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, stub)
 }
 
 func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
@@ -172,6 +172,11 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 				RecordType: "TXT",
 				Targets:    []string{"boom"},
 			},
+			{
+				DNSName:    "ns.foobar.com",
+				RecordType: "NS",
+				Targets:    []string{"boom"},
+			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
@@ -190,12 +195,15 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 2, len(stub.createMsgs))
+	assert.Equal(t, 3, len(stub.createMsgs))
 	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
 	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
 
 	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
 	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "ns.foobar.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "boom"))
 
 	assert.Equal(t, 2, len(stub.updateMsgs))
 	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
@@ -324,6 +332,24 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v1.foobar.com"))
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "boom"))
 
+}
+
+func TestChunkBy(t *testing.T) {
+	var records []*endpoint.Endpoint
+
+	for i := 0; i < 10; i++ {
+		records = append(records, &endpoint.Endpoint{
+			DNSName:    "v1.foo.com",
+			RecordType: "A",
+			Targets:    []string{"1.1.2.2"},
+			RecordTTL:  endpoint.TTL(400),
+		})
+	}
+
+	chunks := chunkBy(records, 2)
+	if len(chunks) != 5 {
+		t.Errorf("incorrect number of chunks returned")
+	}
 }
 
 func contains(arr []*endpoint.Endpoint, name string) bool {

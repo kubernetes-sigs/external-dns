@@ -17,26 +17,46 @@ limitations under the License.
 package source
 
 import (
+	"reflect"
 	"sort"
-	"strings"
 	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// test helper functions
+func sortEndpoints(endpoints []*endpoint.Endpoint) {
+	for _, ep := range endpoints {
+		sort.Strings([]string(ep.Targets))
+	}
+	sort.Slice(endpoints, func(i, k int) bool {
+		// Sort by DNSName and Targets
+		ei, ek := endpoints[i], endpoints[k]
+		if ei.DNSName != ek.DNSName {
+			return ei.DNSName < ek.DNSName
+		}
+		// Targets are sorted ahead of time.
+		for j, ti := range ei.Targets {
+			if j >= len(ek.Targets) {
+				return true
+			}
+			if tk := ek.Targets[j]; ti != tk {
+				return ti < tk
+			}
+		}
+		return false
+	})
+}
 
 func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
+	t.Helper()
+
 	if len(endpoints) != len(expected) {
 		t.Fatalf("expected %d endpoints, got %d", len(expected), len(endpoints))
 	}
+
 	// Make sure endpoints are sorted - validateEndpoint() depends on it.
-	sort.SliceStable(endpoints, func(i, j int) bool {
-		return strings.Compare(endpoints[i].DNSName, endpoints[j].DNSName) < 0
-	})
-	sort.SliceStable(expected, func(i, j int) bool {
-		return strings.Compare(expected[i].DNSName, expected[j].DNSName) < 0
-	})
+	sortEndpoints(endpoints)
+	sortEndpoints(expected)
 
 	for i := range endpoints {
 		validateEndpoint(t, endpoints[i], expected[i])
@@ -44,20 +64,36 @@ func validateEndpoints(t *testing.T, endpoints, expected []*endpoint.Endpoint) {
 }
 
 func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
+	t.Helper()
+
 	if endpoint.DNSName != expected.DNSName {
-		t.Errorf("expected %s, got %s", expected.DNSName, endpoint.DNSName)
+		t.Errorf("DNSName expected %q, got %q", expected.DNSName, endpoint.DNSName)
 	}
 
 	if !endpoint.Targets.Same(expected.Targets) {
-		t.Errorf("expected %s, got %s", expected.Targets, endpoint.Targets)
+		t.Errorf("Targets expected %q, got %q", expected.Targets, endpoint.Targets)
 	}
 
 	if endpoint.RecordTTL != expected.RecordTTL {
-		t.Errorf("expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
+		t.Errorf("RecordTTL expected %v, got %v", expected.RecordTTL, endpoint.RecordTTL)
 	}
 
 	// if non-empty record type is expected, check that it matches.
 	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
-		t.Errorf("expected %s, got %s", expected.RecordType, endpoint.RecordType)
+		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
+	}
+
+	// if non-empty labels are expected, check that they matches.
+	if expected.Labels != nil && !reflect.DeepEqual(endpoint.Labels, expected.Labels) {
+		t.Errorf("Labels expected %s, got %s", expected.Labels, endpoint.Labels)
+	}
+
+	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
+		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
+		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
+	}
+
+	if endpoint.SetIdentifier != expected.SetIdentifier {
+		t.Errorf("SetIdentifier expected %q, got %q", expected.SetIdentifier, endpoint.SetIdentifier)
 	}
 }

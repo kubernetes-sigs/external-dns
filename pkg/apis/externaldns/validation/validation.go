@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -96,6 +98,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 				return errors.New("--rfc2136-kerberos-realm, --rfc2136-kerberos-username, and --rfc2136-kerberos-password are required when specifying --rfc2136-gss-tsig option")
 			}
 		}
+
+		if cfg.RFC2136BatchChangeSize < 1 {
+			return errors.New("batch size specified for rfc2136 cannot be less than 1")
+		}
 	}
 
 	if cfg.IgnoreHostnameAnnotation && cfg.FQDNTemplate == "" {
@@ -106,5 +112,9 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		return errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
+	_, err := labels.Parse(cfg.LabelFilter)
+	if err != nil {
+		return errors.New("--label-filter does not specify a valid label selector")
+	}
 	return nil
 }

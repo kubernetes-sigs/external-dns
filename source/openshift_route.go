@@ -17,15 +17,12 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
-	"strings"
 	"text/template"
-	"time"
 
-	routeapi "github.com/openshift/api/route/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
@@ -39,9 +36,10 @@ import (
 )
 
 // ocpRouteSource is an implementation of Source for OpenShift Route objects.
-// Route implementation will use the spec.host value for the hostname
-// Use targetAnnotationKey to explicitly set Endpoint. (useful if the router
-// does not update, or to override with alternative endpoint)
+// The Route implementation will use the Route spec.host field for the hostname,
+// and the Route status' canonicalHostname field as the target.
+// The targetAnnotationKey can be used to explicitly set an alternative
+// endpoint, if desired.
 type ocpRouteSource struct {
 	client                   versioned.Interface
 	namespace                string
@@ -50,6 +48,8 @@ type ocpRouteSource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	routeInformer            routeInformer.RouteInformer
+	labelSelector            labels.Selector
+	ocpRouterName            string
 }
 
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
@@ -60,27 +60,21 @@ func NewOcpRouteSource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	labelSelector labels.Selector,
+	ocpRouterName string,
 ) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
-	// Use shared informer to listen for add/update/delete of Routes in the specified namespace.
+	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewFilteredSharedInformerFactory(ocpClient, 0, namespace, nil)
-	routeInformer := informerFactory.Route().V1().Routes()
+	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0, extInformers.WithNamespace(namespace))
+	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.
-	routeInformer.Informer().AddEventHandler(
+	informer.Informer().AddEventHandler(
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj interface{}) {
 			},
@@ -91,11 +85,8 @@ func NewOcpRouteSource(
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return routeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &ocpRouteSource{
@@ -105,18 +96,25 @@ func NewOcpRouteSource(
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFQDNAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
-		routeInformer:            routeInformer,
+		routeInformer:            informer,
+		labelSelector:            labelSelector,
+		ocpRouterName:            ocpRouterName,
 	}, nil
 }
 
-// TODO add a meaningful EventHandler
 func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for openshift route")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
-// Retrieves all OpenShift Route resources on all namespaces
+// Retrieves all OpenShift Route resources on all namespaces, unless an explicit namespace
+// is specified in ocpRouteSource.
 func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(labels.Everything())
+	ocpRoutes, err := ors.routeInformer.Lister().Routes(ors.namespace).List(ors.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +135,7 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 			continue
 		}
 
-		orEndpoints := endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
+		orEndpoints := ors.endpointsFromOcpRoute(ocpRoute, ors.ignoreHostnameAnnotation)
 
 		// apply template if host is missing on OpenShift Route
 		if (ors.combineFQDNAnnotation || len(orEndpoints) == 0) && ors.fqdnTemplate != nil {
@@ -170,15 +168,11 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 	return endpoints, nil
 }
 
-func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routeapi.Route) ([]*endpoint.Endpoint, error) {
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := ors.fqdnTemplate.Execute(&buf, ocpRoute)
+func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*endpoint.Endpoint, error) {
+	hostnames, err := execTemplate(ors.fqdnTemplate, ocpRoute)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on OpenShift Route %s: %s", ocpRoute.Name, err)
+		return nil, err
 	}
-
-	hostnames := buf.String()
 
 	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
 	if err != nil {
@@ -186,24 +180,20 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routeapi.Route) ([]*e
 	}
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
-
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
-	// splits the FQDN template and removes the trailing periods
-	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
-	for _, hostname := range hostnameList {
-		hostname = strings.TrimSuffix(hostname, ".")
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
 }
 
-func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routeapi.Route) ([]*routeapi.Route, error) {
+func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*routev1.Route, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ors.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -218,7 +208,7 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routeapi.Route) ([]*
 		return ocpRoutes, nil
 	}
 
-	filteredList := []*routeapi.Route{}
+	filteredList := []*routev1.Route{}
 
 	for _, ocpRoute := range ocpRoutes {
 		// convert the Route's annotations to an equivalent label selector
@@ -233,14 +223,14 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routeapi.Route) ([]*
 	return filteredList, nil
 }
 
-func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routeapi.Route, endpoints []*endpoint.Endpoint) {
+func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routev1.Route, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 	}
 }
 
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
-func endpointsFromOcpRoute(ocpRoute *routeapi.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
+func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
@@ -251,7 +241,7 @@ func endpointsFromOcpRoute(ocpRoute *routeapi.Route, ignoreHostnameAnnotation bo
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 
 	if len(targets) == 0 {
-		targets = targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -270,14 +260,18 @@ func endpointsFromOcpRoute(ocpRoute *routeapi.Route, ignoreHostnameAnnotation bo
 	return endpoints
 }
 
-func targetsFromOcpRouteStatus(status routeapi.RouteStatus) endpoint.Targets {
+func (ors *ocpRouteSource) targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
 	var targets endpoint.Targets
-
 	for _, ing := range status.Ingress {
-		if ing.RouterCanonicalHostname != "" {
+		if len(ors.ocpRouterName) != 0 {
+			if ing.RouterName == ors.ocpRouterName {
+				targets = append(targets, ing.RouterCanonicalHostname)
+				return targets
+			}
+		} else if ing.RouterCanonicalHostname != "" {
 			targets = append(targets, ing.RouterCanonicalHostname)
+			return targets
 		}
 	}
-
 	return targets
 }

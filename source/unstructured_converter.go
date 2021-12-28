@@ -17,7 +17,6 @@ limitations under the License.
 package source
 
 import (
-	contour "github.com/projectcontour/contour/apis/contour/v1beta1"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -36,7 +35,6 @@ func NewUnstructuredConverter() (*UnstructuredConverter, error) {
 	}
 
 	// Setup converter to understand custom CRD types
-	_ = contour.AddToScheme(uc.scheme)
 	_ = projectcontour.AddToScheme(uc.scheme)
 
 	// Add the core types we need

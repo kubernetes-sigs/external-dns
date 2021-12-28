@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	istionetworking "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -47,7 +48,7 @@ type VirtualServiceSuite struct {
 
 func (suite *VirtualServiceSuite) SetupTest() {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 	var err error
 
 	suite.lbServices = []*v1.Service{
@@ -70,17 +71,6 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		suite.NoError(err, "should succeed")
 	}
 
-	suite.source, err = NewIstioVirtualServiceSource(
-		fakeKubernetesClient,
-		fakeIstioClient,
-		"",
-		"",
-		"{{.Name}}",
-		false,
-		false,
-	)
-	suite.NoError(err, "should initialize virtualservice source")
-
 	suite.gwconfig = (fakeGatewayConfig{
 		name:      "foo-gateway-with-targets",
 		namespace: "istio-system",
@@ -97,6 +87,17 @@ func (suite *VirtualServiceSuite) SetupTest() {
 	}).Config()
 	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), &suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
+
+	suite.source, err = NewIstioVirtualServiceSource(
+		fakeKubernetesClient,
+		fakeIstioClient,
+		"",
+		"",
+		"{{.Name}}",
+		false,
+		false,
+	)
+	suite.NoError(err, "should initialize virtualservice source")
 }
 
 func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
@@ -109,6 +110,8 @@ func (suite *VirtualServiceSuite) TestResourceLabelIsSet() {
 }
 
 func TestVirtualService(t *testing.T) {
+	t.Parallel()
+
 	suite.Run(t, new(VirtualServiceSuite))
 	t.Run("virtualServiceBindsToGateway", testVirtualServiceBindsToGateway)
 	t.Run("endpointsFromVirtualServiceConfig", testEndpointsFromVirtualServiceConfig)
@@ -117,6 +120,8 @@ func TestVirtualService(t *testing.T) {
 }
 
 func TestNewIstioVirtualServiceSource(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title                    string
 		annotationFilter         string
@@ -155,10 +160,13 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/gateway.class=nginx",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			_, err := NewIstioVirtualServiceSource(
 				fake.NewSimpleClientset(),
-				NewFakeConfigStore(),
+				istiofake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -358,6 +366,8 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 }
 
 func testEndpointsFromVirtualServiceConfig(t *testing.T) {
+	t.Parallel()
+
 	for _, ti := range []struct {
 		title      string
 		lbServices []fakeIngressGatewayService
@@ -537,7 +547,10 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			if source, err := newTestVirtualServiceSource(ti.lbServices, []fakeGatewayConfig{ti.gwconfig}); err != nil {
 				require.NoError(t, err)
 			} else if endpoints, err := source.endpointsFromVirtualService(context.Background(), ti.vsconfig.Config()); err != nil {
@@ -550,6 +563,8 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 }
 
 func testVirtualServiceEndpoints(t *testing.T) {
+	t.Parallel()
+
 	namespace := "testing"
 	for _, ti := range []struct {
 		title                    string
@@ -1432,7 +1447,10 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
 		},
 	} {
+		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
+
 			var gateways []networkingv1alpha3.Gateway
 			var virtualservices []networkingv1alpha3.VirtualService
 
@@ -1451,7 +1469,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			fakeIstioClient := NewFakeConfigStore()
+			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
 				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
@@ -1520,7 +1538,7 @@ func testGatewaySelectorMatchesService(t *testing.T) {
 
 func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, gwList []fakeGatewayConfig) (*virtualServiceSource, error) {
 	fakeKubernetesClient := fake.NewSimpleClientset()
-	fakeIstioClient := NewFakeConfigStore()
+	fakeIstioClient := istiofake.NewSimpleClientset()
 
 	for _, lb := range loadBalancerList {
 		service := lb.Service()

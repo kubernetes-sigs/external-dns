@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "external-dns.fullname" . }}
+  labels:
+    {{- include "external-dns.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "external-dns.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "external-dns.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "external-dns.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.priorityClassName }}
+      priorityClassName: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
+      containers:
+        - name: external-dns
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ include "external-dns.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+            - --log-level={{ .Values.logLevel }}
+            - --log-format={{ .Values.logFormat }}
+            - --interval={{ .Values.interval }}
+            {{- if .Values.triggerLoopOnEvent }}
+            - --events
+            {{- end }}
+            {{- range .Values.sources }}
+            - --source={{ . }}
+            {{- end }}
+            - --policy={{ .Values.policy }}
+            - --registry={{ .Values.registry }}
+            {{- if eq .Values.registry "txt" }}
+            {{- if .Values.txtOwnerId }}
+            - --txt-owner-id={{ .Values.txtOwnerId }}
+            {{- end }}
+            {{- if .Values.txtPrefix }}
+            - --txt-prefix={{ .Values.txtPrefix }}
+            {{- end }}
+            {{- end }}
+            {{- range .Values.domainFilters }}
+            - --domain-filter={{ . }}
+            {{- end }}
+            - --provider={{ .Values.provider }}
+          {{- range .Values.extraArgs }}
+            - {{ . }}
+          {{- end }}
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 7979
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- with .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

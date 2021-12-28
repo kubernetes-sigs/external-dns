@@ -18,8 +18,6 @@ package source
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 
@@ -34,14 +32,15 @@ import (
 )
 
 type podSource struct {
-	client       kubernetes.Interface
-	namespace    string
-	podInformer  coreinformers.PodInformer
-	nodeInformer coreinformers.NodeInformer
+	client        kubernetes.Interface
+	namespace     string
+	podInformer   coreinformers.PodInformer
+	nodeInformer  coreinformers.NodeInformer
+	compatibility string
 }
 
 // NewPodSource creates a new podSource with the given config.
-func NewPodSource(kubeClient kubernetes.Interface, namespace string) (Source, error) {
+func NewPodSource(kubeClient kubernetes.Interface, namespace string, compatibility string) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -62,19 +61,16 @@ func NewPodSource(kubeClient kubernetes.Interface, namespace string) (Source, er
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err := poll(time.Second, 60*time.Second, func() (bool, error) {
-		return podInformer.Informer().HasSynced() &&
-			nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	return &podSource{
-		client:       kubeClient,
-		podInformer:  podInformer,
-		nodeInformer: nodeInformer,
-		namespace:    namespace,
+		client:        kubeClient,
+		podInformer:   podInformer,
+		nodeInformer:  nodeInformer,
+		namespace:     namespace,
+		compatibility: compatibility,
 	}, nil
 }
 
@@ -111,6 +107,28 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			for _, address := range node.Status.Addresses {
 				if address.Type == corev1.NodeExternalIP {
 					domains[domain] = append(domains[domain], address.Address)
+				}
+			}
+		}
+
+		if ps.compatibility == "kops-dns-controller" {
+			if domain, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
+				if _, ok := domains[domain]; !ok {
+					domains[domain] = []string{}
+				}
+				domains[domain] = append(domains[domain], pod.Status.PodIP)
+			}
+
+			if domain, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
+				if _, ok := domains[domain]; !ok {
+					domains[domain] = []string{}
+				}
+
+				node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+				for _, address := range node.Status.Addresses {
+					if address.Type == corev1.NodeExternalIP {
+						domains[domain] = append(domains[domain], address.Address)
+					}
 				}
 			}
 		}

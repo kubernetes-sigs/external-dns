@@ -54,12 +54,14 @@ spec:
         - --interval=30s
 ```
 
-#### Domain Filter (--domain-filter)
-When the domain-filter argument is specified, external-dns will automatically create DNS records based on host names specified in ingress objects and services with the external-dns annotation that match the domain-filter argument in the external-dns deployment manifest.
+#### Domain Filter (`--domain-filter`)
+When the `--domain-filter` argument is specified, external-dns will only create DNS records for host names (specified in ingress objects and services with the external-dns annotation) related to zones that match the `--domain-filter` argument in the external-dns deployment manifest.
 
 eg. ```--domain-filter=example.org``` will allow for zone `example.org` and any zones in PowerDNS that ends in `.example.org`, including `an.example.org`, ie. the subdomains of example.org.
 
 eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.example.org`, ie. the subdomains of example.org but not the `example.org` zone itself.
+
+The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot pre-pend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
 
 ## RBAC
 
@@ -70,7 +72,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -88,7 +90,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer

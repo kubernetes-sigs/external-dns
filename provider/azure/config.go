@@ -103,14 +103,13 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
-		msiEndpoint, err := adal.GetMSIVMEndpoint()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get the managed service identity endpoint: %v", err)
-		}
 
 		if cfg.UserAssignedIdentityID != "" {
 			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
-			token, err := adal.NewServicePrincipalTokenFromMSIWithUserAssignedID(msiEndpoint, environment.ServiceManagementEndpoint, cfg.UserAssignedIdentityID)
+			token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, &adal.ManagedIdentityOptions{
+				ClientID: cfg.UserAssignedIdentityID,
+			})
+
 			if err != nil {
 				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 			}
@@ -118,7 +117,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		}
 
 		log.Info("Resolving to system assigned identity.")
-		token, err := adal.NewServicePrincipalTokenFromMSI(msiEndpoint, environment.ServiceManagementEndpoint)
+		token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 		}

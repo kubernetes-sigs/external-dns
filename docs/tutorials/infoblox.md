@@ -78,6 +78,7 @@ spec:
         - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
         - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
         - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -103,7 +104,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -118,7 +119,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -158,6 +159,7 @@ spec:
         - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
         - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
         - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -260,3 +262,19 @@ $ curl -kl \
       -u ${WAPI_USERNAME}:${WAPI_PASSWORD} \
          https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/zone_auth?fqdn=example.com
 ```
+
+## Ability to filter results from the zone auth API using a regular expression
+
+There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature for the zone_auth service, set the parameter infoblox-fqdn-regex for external-dns to a regular expression that makes sense for you.  For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
+
+```
+--infoblox-fqdn-regex=^staging.*test.com$
+```
+
+## Infoblox PTR record support
+
+There is an option to enable PTR records support for infoblox provider. PTR records allow to do reverse dns search. To enable PTR records support, add following into arguments for external-dns:  
+`--infoblox-create-ptr` to allow management of PTR records.  
+You can also add a filter for reverse dns zone to limit PTR records to specific zones only:  
+`--domain-filter=10.196.0.0/16` change this to the reverse zone(s) as defined in your infoblox.  
+Now external-dns will manage PTR records for you.

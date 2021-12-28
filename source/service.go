@@ -17,13 +17,11 @@ limitations under the License.
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 	"text/template"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -65,21 +63,14 @@ type serviceSource struct {
 	podInformer                    coreinformers.PodInformer
 	nodeInformer                   coreinformers.NodeInformer
 	serviceTypeFilter              map[string]struct{}
+	labelSelector                  labels.Selector
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool) (Source, error) {
-	var (
-		tmpl *template.Template
-		err  error
-	)
-	if fqdnTemplate != "" {
-		tmpl, err = template.New("endpoint").Funcs(template.FuncMap{
-			"trimPrefix": strings.TrimPrefix,
-		}).Parse(fqdnTemplate)
-		if err != nil {
-			return nil, err
-		}
+func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+	tmpl, err := parseTemplate(fqdnTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
@@ -120,14 +111,8 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 	informerFactory.Start(wait.NeverStop)
 
 	// wait for the local cache to be populated.
-	err = poll(time.Second, 60*time.Second, func() (bool, error) {
-		return serviceInformer.Informer().HasSynced() &&
-			endpointsInformer.Informer().HasSynced() &&
-			podInformer.Informer().HasSynced() &&
-			nodeInformer.Informer().HasSynced(), nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to sync cache: %v", err)
+	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+		return nil, err
 	}
 
 	// Transform the slice into a map so it will
@@ -153,12 +138,13 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		podInformer:                    podInformer,
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              serviceTypes,
+		labelSelector:                  labelSelector,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
+	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +173,10 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
 		if len(svcEndpoints) == 0 && sc.compatibility != "" {
-			svcEndpoints = legacyEndpointsFromService(svc, sc.compatibility)
+			svcEndpoints, err = legacyEndpointsFromService(svc, sc)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// apply template if none of the above is found
@@ -234,6 +223,7 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			lastMergedEndpoint := len(mergedEndpoints) - 1
 			if mergedEndpoints[lastMergedEndpoint].DNSName == endpoints[i].DNSName &&
 				mergedEndpoints[lastMergedEndpoint].RecordType == endpoints[i].RecordType &&
+				mergedEndpoints[lastMergedEndpoint].SetIdentifier == endpoints[i].SetIdentifier &&
 				mergedEndpoints[lastMergedEndpoint].RecordTTL == endpoints[i].RecordTTL {
 				mergedEndpoints[lastMergedEndpoint].Targets = append(mergedEndpoints[lastMergedEndpoint].Targets, endpoints[i].Targets[0])
 			} else {
@@ -350,18 +340,15 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 }
 
 func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.Endpoint, error) {
-	var endpoints []*endpoint.Endpoint
-
-	// Process the whole template string
-	var buf bytes.Buffer
-	err := sc.fqdnTemplate.Execute(&buf, svc)
+	hostnames, err := execTemplate(sc.fqdnTemplate, svc)
 	if err != nil {
-		return nil, fmt.Errorf("failed to apply template on service %s: %v", svc.String(), err)
+		return nil, err
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
-	hostnameList := strings.Split(strings.Replace(buf.String(), " ", "", -1), ",")
-	for _, hostname := range hostnameList {
+
+	var endpoints []*endpoint.Endpoint
+	for _, hostname := range hostnames {
 		endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
 	}
 
@@ -667,17 +654,5 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				handler()
-			},
-			UpdateFunc: func(old interface{}, new interface{}) {
-				handler()
-			},
-			DeleteFunc: func(obj interface{}) {
-				handler()
-			},
-		},
-	)
+	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }

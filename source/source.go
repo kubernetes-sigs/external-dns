@@ -17,20 +17,24 @@ limitations under the License.
 package source
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math"
 	"net"
+	"reflect"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
+	"unicode"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/internal/config"
 )
 
 const (
@@ -46,6 +50,9 @@ const (
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
+	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
+	// available hostname sources are used if not specified.
+	ingressHostnameSourceKey = "external-dns.alpha.kubernetes.io/ingress-hostname-source"
 	// The value of the controller annotation so that we feel responsible
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
@@ -101,6 +108,35 @@ func parseTTL(s string) (ttlSeconds int64, err error) {
 	}
 
 	return int64(ttlDuration.Seconds()), nil
+}
+
+type kubeObject interface {
+	runtime.Object
+	metav1.Object
+}
+
+func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, err error) {
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, obj); err != nil {
+		kind := obj.GetObjectKind().GroupVersionKind().Kind
+		return nil, fmt.Errorf("failed to apply template on %s %s/%s: %w", kind, obj.GetNamespace(), obj.GetName(), err)
+	}
+	for _, name := range strings.Split(buf.String(), ",") {
+		name = strings.TrimFunc(name, unicode.IsSpace)
+		name = strings.TrimSuffix(name, ".")
+		hostnames = append(hostnames, name)
+	}
+	return hostnames, nil
+}
+
+func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
+	if fqdnTemplate == "" {
+		return nil, nil
+	}
+	funcs := template.FuncMap{
+		"trimPrefix": strings.TrimPrefix,
+	}
+	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
 func getHostnamesFromAnnotations(annotations map[string]string) []string {
@@ -250,23 +286,48 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 	return selector.Matches(annotations)
 }
 
-func poll(interval time.Duration, timeout time.Duration, condition wait.ConditionFunc) error {
-	if config.FastPoll {
-		time.Sleep(5 * time.Millisecond)
+type eventHandlerFunc func()
 
-		ok, err := condition()
+func (fn eventHandlerFunc) OnAdd(obj interface{})               { fn() }
+func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{}) { fn() }
+func (fn eventHandlerFunc) OnDelete(obj interface{})            { fn() }
 
-		if err != nil {
-			return err
+type informerFactory interface {
+	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
+}
+
+func waitForCacheSync(ctx context.Context, factory informerFactory) error {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
+		if !done {
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+			default:
+				return fmt.Errorf("failed to sync %v", typ)
+			}
 		}
-
-		if ok {
-			return nil
-		}
-
-		interval = 50 * time.Millisecond
-		timeout = 10 * time.Second
 	}
+	return nil
+}
 
-	return wait.Poll(interval, timeout, condition)
+type dynamicInformerFactory interface {
+	WaitForCacheSync(stopCh <-chan struct{}) map[schema.GroupVersionResource]bool
+}
+
+func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory) error {
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
+		if !done {
+			select {
+			case <-ctx.Done():
+				return fmt.Errorf("failed to sync %v: %v", typ, ctx.Err())
+			default:
+				return fmt.Errorf("failed to sync %v", typ)
+			}
+		}
+	}
+	return nil
 }

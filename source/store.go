@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,11 +43,12 @@ var ErrSourceNotFound = errors.New("source not found")
 type Config struct {
 	Namespace                      string
 	AnnotationFilter               string
-	LabelFilter                    string
+	LabelFilter                    labels.Selector
 	FQDNTemplate                   string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
+	IgnoreIngressRulesSpec         bool
 	Compatibility                  string
 	PublishInternal                bool
 	PublishHostIP                  bool
@@ -64,6 +66,8 @@ type Config struct {
 	GlooNamespace                  string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
+	DefaultTargets                 []string
+	OCPRouterName                  string
 }
 
 // ClientGenerator provides clients
@@ -181,19 +185,19 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation)
+		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec)
+		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewPodSource(client, cfg.Namespace)
+		return NewPodSource(client, cfg.Namespace, cfg.Compatibility)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -230,16 +234,6 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			return nil, err
 		}
 		return NewAmbassadorHostSource(dynamicClient, kubernetesClient, cfg.Namespace)
-	case "contour-ingressroute":
-		kubernetesClient, err := p.KubeClient()
-		if err != nil {
-			return nil, err
-		}
-		dynamicClient, err := p.DynamicKubernetesClient()
-		if err != nil {
-			return nil, err
-		}
-		return NewContourIngressRouteSource(dynamicClient, kubernetesClient, cfg.ContourLoadBalancerService, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "contour-httpproxy":
 		dynamicClient, err := p.DynamicKubernetesClient()
 		if err != nil {
@@ -261,7 +255,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewOcpRouteSource(ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewOcpRouteSource(ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.OCPRouterName)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
@@ -287,6 +281,16 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 			token = restConfig.BearerToken
 		}
 		return NewRouteGroupSource(cfg.RequestTimeout, token, tokenPath, apiServerURL, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.SkipperRouteGroupVersion, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+	case "kong-tcpingress":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewKongTCPIngressSource(dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	}
 	return nil, ErrSourceNotFound
 }

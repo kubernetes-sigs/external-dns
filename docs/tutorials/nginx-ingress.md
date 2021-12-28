@@ -227,7 +227,7 @@ kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -242,7 +242,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -297,13 +297,18 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
   - host: via-ingress.external-dns-test.gcp.zalan.do
     http:
       paths:
-      - backend:
-          serviceName: nginx
-          servicePort: 80
+      - path: /
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 80
+        pathType: Prefix
 
 ---
 
@@ -593,13 +598,18 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
   - host: via-ingress.external-dns-test.gcp.zalan.do
     http:
       paths:
-      - backend:
-          serviceName: nginx
-          servicePort: 80
+      - path: /
+        backend:
+          service:
+            name: nginx
+            port:
+              number: 80
+        pathType: Prefix
 ---
 apiVersion: v1
 kind: Service

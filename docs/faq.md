@@ -2,7 +2,7 @@
 
 ### How is ExternalDNS useful to me?
 
-You've probably created many deployments. Typically, you expose your deployment to the Internet by creating a Service with `type=LoadBalancer`. Depending on your environment, this usually assigns a random publicly available endpoint to your service that you can access from anywhere in the world. On Google Container Engine, this is a public IP address:
+You've probably created many deployments. Typically, you expose your deployment to the Internet by creating a Service with `type=LoadBalancer`. Depending on your environment, this usually assigns a random publicly available endpoint to your service that you can access from anywhere in the world. On Google Kubernetes Engine, this is a public IP address:
 
 ```console
 $ kubectl get svc
@@ -40,7 +40,9 @@ Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostna
 
 There are three sources of information for ExternalDNS to decide on DNS name. ExternalDNS will pick one in order as listed below:
 
-1. For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
+1. For ingress objects ExternalDNS will create a DNS record based on the hosts specified for the ingress object, as well as the `external-dns.alpha.kubernetes.io/hostname` annotation. For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the loadbalancer IP, it also will look for the annotation `external-dns.alpha.kubernetes.io/internal-hostname` on the service and use the service IP.
+    - For ingresses, you can optionally force ExternalDNS to create records based on _either_ the hosts specified or the `external-dns.alpha.kubernetes.io/hostname` annotation. This behavior is controlled by
+      setting the `external-dns.alpha.kubernetes.io/ingress-hostname-source` annotation on that ingress to either `defined-hosts-only` or `annotation-only`.
 
 2. If compatibility mode is enabled (e.g. `--compatibility={mate,molecule}` flag), External DNS will parse annotations used by Zalando/Mate, wearemolecule/route53-kubernetes. Compatibility mode with Kops DNS Controller is planned to be added in the future.
 
@@ -52,7 +54,7 @@ Yes, you can. Pass in a comma separated list to `--fqdn-template`. Beaware this 
 
 ### Which Service and Ingress controllers are supported?
 
-Regarding Services, we'll support the OSI Layer 4 load balancers that Kubernetes creates on AWS and Google Container Engine, and possibly other clusters running on Google Compute Engine.
+Regarding Services, we'll support the OSI Layer 4 load balancers that Kubernetes creates on AWS and Google Kubernetes Engine, and possibly other clusters running on Google Compute Engine.
 
 Regarding Ingress, we'll support:
 * Google's Ingress Controller on GKE that integrates with their Layer 7 load balancers (GLBC)
@@ -183,6 +185,10 @@ Here is the full list of available metrics provided by ExternalDNS:
 | external_dns_registry_errors_total                  | Number of Registry errors                               | Counter |
 | external_dns_source_endpoints_total                 | Number of Endpoints in the registry                     | Gauge   |
 | external_dns_source_errors_total                    | Number of Source errors                                 | Counter |
+| external_dns_controller_verified_records            | Number of DNS A-records that exists both in             | Gauge   |
+|                                                     | source & registry                                       |         |
+| external_dns_registry_a_records                     | Number of A records in registry                         | Gauge   |
+| external_dns_source_a_records                       | Number of A records in source                           | Gauge   |
 
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 
@@ -253,12 +259,20 @@ The internal one should provision hostnames used on the internal network (perhap
 one to expose DNS to the internet.
 
 To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
-an instance of a ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
+an instance of an ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
 then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
 and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
 
+If you need to search for multiple values of said annotation, you can provide a comma separated list, like so:
+`--annotation-filter=kubernetes.io/ingress.class in (nginx-internal, alb-ingress-internal)`.
+
 Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
 If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+
+**Note:** Filtering based on annotation means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
+In larger clusters with many resources which change frequently this can cause performance issues. If only some resources need to be managed by an instance
+of external-dns then label filtering can be used instead of annotation filtering. This means that only those resources which match the selector specified
+in `--label-filter` will be passed to the controller.
 
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
