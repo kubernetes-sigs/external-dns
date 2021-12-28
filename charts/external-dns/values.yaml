@@ -24,6 +24,7 @@ serviceAccount:
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
+  additionalPermissions: {}
 
 podLabels: {}
 
@@ -73,6 +74,7 @@ readinessProbe:
 
 service:
   port: 7979
+  annotations: {}
 
 extraVolumes: []
 
