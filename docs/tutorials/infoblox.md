@@ -263,13 +263,25 @@ $ curl -kl \
          https://${GRID_HOST}:${WAPI_PORT}/wapi/v${WAPI_VERSION}/zone_auth?fqdn=example.com
 ```
 
-## Ability to filter results from the zone auth API using a regular expression
+## Ability to filter results from the Infoblox API using a regular expression
 
-There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature for the zone_auth service, set the parameter infoblox-fqdn-regex for external-dns to a regular expression that makes sense for you.  For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
+There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression. See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples. To use this feature for the zone_auth service, set the parameter infoblox-zone-filter for external-dns to a regular expression that makes sense for you. For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
 
-```
---infoblox-fqdn-regex=^staging.*test.com$
-```
+The following filters are supported:
+
+* zone_auth
+
+  ```shell
+  --infoblox-zone-filter=^staging.*test.com$
+  ```
+
+* records
+
+  This includes all derivatives of records like `records:txt` and `records:a`
+
+  ```shell
+  --infoblox-record-filter=^.*example.*$
+  ```
 
 ## Infoblox PTR record support
 

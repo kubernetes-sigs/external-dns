@@ -110,7 +110,8 @@ type Config struct {
 	InfobloxSSLVerify                 bool
 	InfobloxView                      string
 	InfobloxMaxResults                int
-	InfobloxFQDNRegEx                 string
+	InfobloxZoneFilter                string
+	InfobloxRecordFilter              string
 	InfobloxCreatePTR                 bool
 	InfobloxCacheDuration             int
 	DynCustomerName                   string
@@ -241,7 +242,8 @@ var defaultConfig = &Config{
 	InfobloxSSLVerify:           true,
 	InfobloxView:                "",
 	InfobloxMaxResults:          0,
-	InfobloxFQDNRegEx:           "",
+	InfobloxZoneFilter:          "",
+	InfobloxRecordFilter:        "",
 	InfobloxCreatePTR:           false,
 	InfobloxCacheDuration:       0,
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
@@ -431,9 +433,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
 	app.Flag("infoblox-view", "DNS view (default: \"\")").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
 	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
-	app.Flag("infoblox-fqdn-regex", "Apply this regular expression as a filter for obtaining zone_auth objects. This is disabled by default.").Default(defaultConfig.InfobloxFQDNRegEx).StringVar(&cfg.InfobloxFQDNRegEx)
-	app.Flag("infoblox-create-ptr", "When using the Infoblox provider, create a ptr entry in addition to an entry").Default(strconv.FormatBool(defaultConfig.InfobloxCreatePTR)).BoolVar(&cfg.InfobloxCreatePTR)
 	app.Flag("infoblox-cache-duration", "When using the Infoblox provider, set the record TTL (0s to disable).").Default(strconv.Itoa(defaultConfig.InfobloxCacheDuration)).IntVar(&cfg.InfobloxCacheDuration)
+	app.Flag("infoblox-zone-filter", "Apply this regular expression as a filter for obtaining zone_auth objects. (optional).").Default(defaultConfig.InfobloxZoneFilter).StringVar(&cfg.InfobloxZoneFilter)
+	app.Flag("infoblox-record-filter", "Apply this regular expression as a filter for obtaining record objects. (optional).").Default(defaultConfig.InfobloxRecordFilter).StringVar(&cfg.InfobloxRecordFilter)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)

@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -53,7 +54,8 @@ type InfobloxConfig struct {
 	DryRun        bool
 	View          string
 	MaxResults    int
-	FQDNRexEx     string
+	ZoneFilter    string
+	RecordFilter  string
 	CreatePTR     bool
 	CacheDuration int
 }
@@ -66,7 +68,8 @@ type InfobloxProvider struct {
 	zoneIDFilter  provider.ZoneIDFilter
 	view          string
 	dryRun        bool
-	fqdnRegEx     string
+	zoneFilter    string
+	recordFilter  string
 	createPTR     bool
 	cacheDuration int
 }
@@ -79,17 +82,21 @@ type infobloxRecordSet struct {
 // ExtendedRequestBuilder implements a HttpRequestBuilder which sets
 // additional query parameter on all get requests
 type ExtendedRequestBuilder struct {
-	fqdnRegEx  string
-	maxResults int
+	zoneFilter   string
+	recordFilter string
+	maxResults   int
 	ibclient.WapiRequestBuilder
 }
 
 // NewExtendedRequestBuilder returns a ExtendedRequestBuilder which adds
 // _max_results query parameter to all GET requests
-func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedRequestBuilder {
+func NewExtendedRequestBuilder(maxResults int, zoneFilter string, recordFilter string) *ExtendedRequestBuilder {
+	regexp.MustCompile(zoneFilter)
+	regexp.MustCompile(recordFilter)
 	return &ExtendedRequestBuilder{
-		fqdnRegEx:  fqdnRegEx,
-		maxResults: maxResults,
+		zoneFilter:   zoneFilter,
+		recordFilter: recordFilter,
+		maxResults:   maxResults,
 	}
 }
 
@@ -97,14 +104,17 @@ func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedReques
 // WapiRequestBuilder and then add the _max_requests parameter
 func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
 	req, err = mrb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
-	if req.Method == "GET" {
+	if t == ibclient.GET {
 		query := req.URL.Query()
 		if mrb.maxResults > 0 {
 			query.Set("_max_results", strconv.Itoa(mrb.maxResults))
 		}
 		_, ok := obj.(*ibclient.ZoneAuth)
-		if ok && t == ibclient.GET && mrb.fqdnRegEx != "" {
-			query.Set("fqdn~", mrb.fqdnRegEx)
+		if ok && len(mrb.zoneFilter) > 0 {
+			query.Set("fqdn~", mrb.zoneFilter)
+		}
+		if strings.HasPrefix(obj.ObjectType(), "record:") && len(mrb.recordFilter) > 0 {
+			query.Set("name~", mrb.recordFilter)
 		}
 		req.URL.RawQuery = query.Encode()
 	}
@@ -131,9 +141,9 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 	)
 
 	var requestBuilder ibclient.HttpRequestBuilder
-	if infobloxConfig.MaxResults != 0 || infobloxConfig.FQDNRexEx != "" {
+	if infobloxConfig.MaxResults != 0 || infobloxConfig.ZoneFilter != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(infobloxConfig.MaxResults, infobloxConfig.FQDNRexEx)
+		requestBuilder = NewExtendedRequestBuilder(infobloxConfig.MaxResults, infobloxConfig.ZoneFilter, infobloxConfig.RecordFilter)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder = &ibclient.WapiRequestBuilder{}
@@ -153,7 +163,8 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		zoneIDFilter:  infobloxConfig.ZoneIDFilter,
 		dryRun:        infobloxConfig.DryRun,
 		view:          infobloxConfig.View,
-		fqdnRegEx:     infobloxConfig.FQDNRexEx,
+		zoneFilter:    infobloxConfig.ZoneFilter,
+		recordFilter:  infobloxConfig.RecordFilter,
 		createPTR:     infobloxConfig.CreatePTR,
 		cacheDuration: infobloxConfig.CacheDuration,
 	}

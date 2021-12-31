@@ -707,7 +707,7 @@ func TestInfobloxReverseZones(t *testing.T) {
 	assert.Equal(t, provider.findReverseZone(zones, "10.28.29.30").Fqdn, "10.0.0.0/8")
 }
 
-func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
+func TestExtendedRequestZoneFilterBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
 		Host:     "localhost",
 		Port:     "8080",
@@ -716,19 +716,59 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 		Version:  "2.3.1",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
 	requestBuilder.Init(hostConfig)
 
-	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
+	checks := []map[string]interface{}{
+		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.GET, "result": "^staging.*test.com$"},
+		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.GET, "result": ""},
+		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.GET, "result": ""},
+		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.CREATE, "result": ""},
+	}
 
-	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+	for _, test := range checks {
+		obj := test["obj"]
+		requestType := test["requestType"]
+		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", ibclient.QueryParams{})
+		assert.True(t, req.URL.Query().Get("fqdn~") == test["result"], "obj: %T, requestType: %T", obj, requestType)
+	}
 
-	assert.True(t, req.URL.Query().Get("fqdn~") == "^staging.*test.com$")
-
-	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
-
-	assert.True(t, req.URL.Query().Get("fqdn~") == "")
+	assert.Panics(t, func() { NewExtendedRequestBuilder(0, "^(staging.*test\\.com$", "") })
 }
+
+func TestExtendedRequestRecordFilterBuilder(t *testing.T) {
+	hostConfig := ibclient.HostConfig{
+		Host:     "localhost",
+		Port:     "8080",
+		Username: "user",
+		Password: "abcd",
+		Version:  "2.3.1",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(0, "", ".*example.*")
+	requestBuilder.Init(hostConfig)
+
+	checks := []map[string]interface{}{
+		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.GET, "result": ""},
+		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.GET, "result": ".*example.*"},
+		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.GET, "result": ".*example.*"},
+		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.CREATE, "result": ""},
+	}
+
+	for _, test := range checks {
+		obj := test["obj"]
+		requestType := test["requestType"]
+		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", ibclient.QueryParams{})
+		assert.True(t, req.URL.Query().Get("name~") == test["result"], "obj: %T, requestType: %T", obj, requestType)
+	}
+
+	assert.Panics(t, func() { NewExtendedRequestBuilder(0, "", "^(staging.*test\\.com$") })
+}
+
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
 		Host:     "localhost",
@@ -738,7 +778,7 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 		Version:  "2.3.1",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(54321, "")
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
 	requestBuilder.Init(hostConfig)
 
 	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
