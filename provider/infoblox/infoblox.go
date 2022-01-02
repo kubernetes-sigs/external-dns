@@ -42,31 +42,33 @@ const (
 
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
-	DomainFilter endpoint.DomainFilter
-	ZoneIDFilter provider.ZoneIDFilter
-	Host         string
-	Port         int
-	Username     string
-	Password     string
-	Version      string
-	SSLVerify    bool
-	DryRun       bool
-	View         string
-	MaxResults   int
-	FQDNRexEx    string
-	CreatePTR    bool
+	DomainFilter  endpoint.DomainFilter
+	ZoneIDFilter  provider.ZoneIDFilter
+	Host          string
+	Port          int
+	Username      string
+	Password      string
+	Version       string
+	SSLVerify     bool
+	DryRun        bool
+	View          string
+	MaxResults    int
+	FQDNRexEx     string
+	CreatePTR     bool
+	CacheDuration int
 }
 
 // InfobloxProvider implements the DNS provider for Infoblox.
 type InfobloxProvider struct {
 	provider.BaseProvider
-	client       ibclient.IBConnector
-	domainFilter endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	view         string
-	dryRun       bool
-	fqdnRegEx    string
-	createPTR    bool
+	client        ibclient.IBConnector
+	domainFilter  endpoint.DomainFilter
+	zoneIDFilter  provider.ZoneIDFilter
+	view          string
+	dryRun        bool
+	fqdnRegEx     string
+	createPTR     bool
+	cacheDuration int
 }
 
 type infobloxRecordSet struct {
@@ -146,13 +148,14 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 	}
 
 	provider := &InfobloxProvider{
-		client:       client,
-		domainFilter: infobloxConfig.DomainFilter,
-		zoneIDFilter: infobloxConfig.ZoneIDFilter,
-		dryRun:       infobloxConfig.DryRun,
-		view:         infobloxConfig.View,
-		fqdnRegEx:    infobloxConfig.FQDNRexEx,
-		createPTR:    infobloxConfig.CreatePTR,
+		client:        client,
+		domainFilter:  infobloxConfig.DomainFilter,
+		zoneIDFilter:  infobloxConfig.ZoneIDFilter,
+		dryRun:        infobloxConfig.DryRun,
+		view:          infobloxConfig.View,
+		fqdnRegEx:     infobloxConfig.FQDNRexEx,
+		createPTR:     infobloxConfig.CreatePTR,
+		cacheDuration: infobloxConfig.CacheDuration,
 	}
 
 	return provider, nil
@@ -320,6 +323,11 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 }
 
 func (p *InfobloxProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	// Update user specified TTL (0 == disabled)
+	for i := range endpoints {
+		endpoints[i].RecordTTL = endpoint.TTL(p.cacheDuration)
+	}
+
 	if !p.createPTR {
 		return endpoints
 	}
