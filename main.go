@@ -237,19 +237,20 @@ func main() {
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
 			infoblox.InfobloxConfig{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				Host:         cfg.InfobloxGridHost,
-				Port:         cfg.InfobloxWapiPort,
-				Username:     cfg.InfobloxWapiUsername,
-				Password:     cfg.InfobloxWapiPassword,
-				Version:      cfg.InfobloxWapiVersion,
-				SSLVerify:    cfg.InfobloxSSLVerify,
-				View:         cfg.InfobloxView,
-				MaxResults:   cfg.InfobloxMaxResults,
-				DryRun:       cfg.DryRun,
-				FQDNRexEx:    cfg.InfobloxFQDNRegEx,
-				CreatePTR:    cfg.InfobloxCreatePTR,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				Host:          cfg.InfobloxGridHost,
+				Port:          cfg.InfobloxWapiPort,
+				Username:      cfg.InfobloxWapiUsername,
+				Password:      cfg.InfobloxWapiPassword,
+				Version:       cfg.InfobloxWapiVersion,
+				SSLVerify:     cfg.InfobloxSSLVerify,
+				View:          cfg.InfobloxView,
+				MaxResults:    cfg.InfobloxMaxResults,
+				DryRun:        cfg.DryRun,
+				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				CreatePTR:     cfg.InfobloxCreatePTR,
+				CacheDuration: cfg.InfobloxCacheDuration,
 			},
 		)
 	case "dyn":
