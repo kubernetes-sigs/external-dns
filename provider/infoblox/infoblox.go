@@ -216,6 +216,8 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
+				logrus.Debugf("Record='%s' A(H):'%s'", res.Name, ip.Ipv4Addr)
+
 				// host record is an abstraction in infoblox that combines A and PTR records
 				// for any host record we already should have a PTR record in infoblox, so mark it as created
 				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, ip.Ipv4Addr)
@@ -238,6 +240,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resC {
+			logrus.Debugf("Record='%s' CNAME:'%s'", res.Name, res.Canonical)
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeCNAME, res.Canonical))
 		}
 
@@ -281,6 +284,8 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			if _, err := strconv.Unquote(res.Text); err != nil {
 				res.Text = strconv.Quote(res.Text)
 			}
+
+			logrus.Debugf("Record='%s' TXT:'%s'", res.Name, res.Text)
 			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
 		}
 	}
@@ -611,50 +616,66 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
-			if p.dryRun {
-				logrus.Infof("Would delete %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
-			} else {
-				logrus.Infof("Deleting %s record named '%s' for Infoblox DNS zone '%s'.", ep.RecordType, ep.DNSName, zone)
-				for targetIndex := range ep.Targets {
-					recordSet, err := p.recordSet(ep, true, targetIndex)
-					if err != nil {
-						logrus.Errorf(
-							"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
-							ep.RecordType,
-							ep.DNSName,
-							ep.Targets[targetIndex],
-							zone,
-							err,
-						)
-						continue
-					}
-					switch ep.RecordType {
-					case endpoint.RecordTypeA:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordA) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
-					case endpoint.RecordTypePTR:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordPTR) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
-					case endpoint.RecordTypeCNAME:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordCNAME) {
-							_, err = p.client.DeleteObject(record.Ref)
-						}
-					case endpoint.RecordTypeTXT:
-						for _, record := range *recordSet.res.(*[]ibclient.RecordTXT) {
+			for targetIndex := range ep.Targets {
+				recordSet, err := p.recordSet(ep, true, targetIndex)
+				if err != nil {
+					logrus.Errorf(
+						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						ep.Targets[targetIndex],
+						zone,
+						err,
+					)
+					continue
+				}
+				switch ep.RecordType {
+				case endpoint.RecordTypeA:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordA) {
+						if p.dryRun {
+							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
+						} else {
+							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
-					if err != nil {
-						logrus.Errorf(
-							"Failed to delete %s record named '%s' for Infoblox DNS zone '%s': %v",
-							ep.RecordType,
-							ep.DNSName,
-							zone,
-							err,
-						)
+				case endpoint.RecordTypePTR:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordPTR) {
+						if p.dryRun {
+							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
+						} else {
+							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
+							_, err = p.client.DeleteObject(record.Ref)
+						}
 					}
+				case endpoint.RecordTypeCNAME:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordCNAME) {
+						if p.dryRun {
+							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
+						} else {
+							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
+							_, err = p.client.DeleteObject(record.Ref)
+						}
+					}
+				case endpoint.RecordTypeTXT:
+					for _, record := range *recordSet.res.(*[]ibclient.RecordTXT) {
+						if p.dryRun {
+							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
+						} else {
+							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
+								_, err = p.client.DeleteObject(record.Ref)
+						}
+					}
+				}
+				if err != nil {
+					logrus.Errorf(
+						"Failed to delete %s record named '%s' to '%s' for Infoblox DNS zone '%s': %v",
+						ep.RecordType,
+						ep.DNSName,
+						ep.Targets[targetIndex],
+						zone,
+						err,
+					)
 				}
 			}
 		}
