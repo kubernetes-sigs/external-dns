@@ -20,6 +20,10 @@ BlueCat Gateway username and password can be supplied using the configuration fi
 | rootZone          | Yes                |
 | skipTLSVerify     | No (default false) |
 
+### HTTP proxy
+
+BlueCat provider supports getting the proxy URL from the environment variables. The format is the one specified by golang's [http.ProxyFromEnvironment](https://pkg.go.dev/net/http#ProxyFromEnvironment).
+
 ## Deploy
 Setup configuration file as k8s `Secret`.
 ```

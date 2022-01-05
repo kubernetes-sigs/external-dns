@@ -19,7 +19,6 @@ package azure
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -104,10 +103,6 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
-		os.Setenv("MSI_ENDPOINT", "http://dummy")
-		defer func() {
-			os.Unsetenv("MSI_ENDPOINT")
-		}()
 
 		if cfg.UserAssignedIdentityID != "" {
 			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
