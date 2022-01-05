@@ -19,6 +19,8 @@ package controller
 import (
 	"context"
 	"errors"
+	"github.com/prometheus/client_golang/prometheus"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -49,6 +51,10 @@ type filteredMockProvider struct {
 	ApplyChangesCalls []*plan.Changes
 }
 
+type errorMockProvider struct {
+	mockProvider
+}
+
 func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
@@ -68,6 +74,10 @@ func (p *filteredMockProvider) ApplyChanges(ctx context.Context, changes *plan.C
 // Records returns the desired mock endpoints.
 func (p *mockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return p.RecordsStore, nil
+}
+
+func (p *errorMockProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, errors.New("error for testing")
 }
 
 // ApplyChanges validates that the passed in changes satisfy the assumptions.
@@ -180,6 +190,13 @@ func TestRunOnce(t *testing.T) {
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
+	// check the verified records
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
+}
+
+func valueFromMetric(metric prometheus.Gauge) uint64 {
+	ref := reflect.ValueOf(metric)
+	return reflect.Indirect(ref).FieldByName("valBits").Uint()
 }
 
 func TestShouldRunOnce(t *testing.T) {
@@ -375,4 +392,128 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 			},
 		},
 	)
+}
+
+func TestVerifyARecords(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "create-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "create-record.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+		},
+		[]*plan.Changes{},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
+
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "some-record.3.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"24.24.24.24"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "some-record.1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "some-record.2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+		},
+		[]*plan.Changes{{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "some-record.3.used.tld",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"24.24.24.24"},
+				},
+			},
+		}},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(verifiedARecords))
+}
+
+func TestARecords(t *testing.T) {
+	testControllerFiltersDomains(
+		t,
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "record1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "record2.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
+				RecordType: endpoint.RecordTypeSRV,
+				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+			},
+		},
+		endpoint.NewDomainFilter([]string{"used.tld"}),
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "record1.used.tld",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"1.2.3.4"},
+			},
+			{
+				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
+				RecordType: endpoint.RecordTypeSRV,
+				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+			},
+		},
+		[]*plan.Changes{{
+			Create: []*endpoint.Endpoint{
+				{
+					DNSName:    "record2.used.tld",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		}},
+	)
+	assert.Equal(t, math.Float64bits(2), valueFromMetric(sourceARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(registryARecords))
 }

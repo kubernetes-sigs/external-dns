@@ -145,10 +145,11 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 
 	if project == "" {
 		mProject, mErr := metadata.ProjectID()
-		if mErr == nil {
-			log.Infof("Google project auto-detected: %s", mProject)
-			project = mProject
+		if mErr != nil {
+			return nil, fmt.Errorf("failed to auto-detect the project id: %w", mErr)
 		}
+		log.Infof("Google project auto-detected: %s", mProject)
+		project = mProject
 	}
 
 	zoneTypeFilter := provider.NewZoneTypeFilter(zoneVisibility)

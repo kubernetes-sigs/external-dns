@@ -54,7 +54,7 @@ if external_dns_manages_services:
             k8s_domains.extend(annotations['domainName'].split(','))
 
 if external_dns_manages_ingresses:
-    ev1 = client.ExtensionsV1beta1Api()
+    ev1 = client.NetworkingV1Api()
     ings = ev1.list_ingress_for_all_namespaces()
     for i in ings.items:
         for r in i.spec.rules:

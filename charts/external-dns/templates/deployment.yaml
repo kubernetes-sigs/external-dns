@@ -59,12 +59,16 @@ spec:
             - --source={{ . }}
             {{- end }}
             - --policy={{ .Values.policy }}
+            - --registry={{ .Values.registry }}
             {{- if eq .Values.registry "txt" }}
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
+            {{- end }}
+            {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
+            - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- end }}
             {{- range .Values.domainFilters }}
