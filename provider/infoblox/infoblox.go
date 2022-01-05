@@ -564,26 +564,27 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 	for zone, endpoints := range created {
 		for _, ep := range endpoints {
-			if p.dryRun {
+			for targetIndex := range ep.Targets {
+				if p.dryRun {
+					logrus.Infof(
+
+						"Would create %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
+						ep.RecordType,
+						ep.DNSName,
+						ep.Targets[targetIndex],
+						zone,
+					)
+					continue
+				}
+
 				logrus.Infof(
-					"Would create %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
+					"Creating %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
 					ep.RecordType,
 					ep.DNSName,
-					ep.Targets,
+					ep.Targets[targetIndex],
 					zone,
 				)
-				continue
-			}
 
-			logrus.Infof(
-				"Creating %s record named '%s' to '%s' for Infoblox DNS zone '%s'.",
-				ep.RecordType,
-				ep.DNSName,
-				ep.Targets,
-				zone,
-			)
-
-			for targetIndex := range ep.Targets {
 				recordSet, err := p.recordSet(ep, false, targetIndex)
 				if err != nil {
 					logrus.Errorf(
