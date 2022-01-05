@@ -18,12 +18,10 @@ package azure
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
 	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/stretchr/testify/assert"
 
@@ -443,59 +441,6 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
-	}
-}
-
-func TestAzureGetAccessToken(t *testing.T) {
-	env := azure.PublicCloud
-	cfg := config{
-		ClientID:                    "",
-		ClientSecret:                "",
-		TenantID:                    "",
-		UseManagedIdentityExtension: false,
-	}
-
-	_, err := getAccessToken(cfg, env)
-	if err == nil {
-		t.Fatalf("expected to fail, but got no error")
-	}
-
-	// Expect to use managed identity in this case
-	cfg = config{
-		ClientID:                    "msi",
-		ClientSecret:                "msi",
-		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
-		UserAssignedIdentityID:      "userAssignedIdentityClientID",
-		UseManagedIdentityExtension: true,
-	}
-	token, err := getAccessToken(cfg, env)
-	if err != nil {
-		t.Fatalf("expected to construct a token successfully, but got error %v", err)
-	}
-	_, err = token.MarshalJSON()
-	if err == nil ||
-		!strings.Contains(err.Error(), "marshalling ServicePrincipalMSISecret is not supported") {
-		t.Fatalf("expected to fail to marshal token, but got %v", err)
-	}
-
-	// Expect to use SPN in this case
-	cfg = config{
-		ClientID:                    "SPNClientID",
-		ClientSecret:                "SPNSecret",
-		TenantID:                    "cefe8aef-5127-4d65-a299-012053f81f60",
-		UserAssignedIdentityID:      "userAssignedIdentityClientID",
-		UseManagedIdentityExtension: true,
-	}
-	token, err = getAccessToken(cfg, env)
-	if err != nil {
-		t.Fatalf("expected to construct a token successfully, but got error %v", err)
-	}
-	innerToken, err := token.MarshalJSON()
-	if err != nil {
-		t.Fatalf("expected to marshal token successfully, but got error %v", err)
-	}
-	if !strings.Contains(string(innerToken), "SPNClientID") {
-		t.Fatalf("expect the clientID of the token is SPNClientID, but got token %s", string(innerToken))
 	}
 }
 
