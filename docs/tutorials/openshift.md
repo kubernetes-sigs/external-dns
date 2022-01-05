@@ -2,6 +2,60 @@
 This tutorial describes how to configure ExternalDNS to use the OpenShift Route source.
 It is meant to supplement the other provider-specific setup tutorials.
 
+### For OCP 4.x
+
+In OCP 4.x, if you have multiple ingress controllers then you must specify an ingress controller name or a router name(you can get it from the route's Status.Ingress.RouterName field).
+If you don't specify an ingress controller's or router name when you have multiple ingresscontrollers in your environment then the route gets populated with multiple entries of router canonical hostnames which causes external dns to create a CNAME record with multiple router canonical hostnames pointing to the route host which is a violation of RFC 1912 and is not allowed by Cloud Providers which leads to failure of record creation.
+Once you specify the ingresscontroller or router name then that will be matched by the external-dns and the router canonical hostname corresponding to this routerName(which is present in route's Status.Ingress.RouterName field) is selected and a CNAME record of this route host pointing to this router canonical hostname is created.
+
+Your externaldns CR shall be created as per the following example.
+Replace names in the domain section and zone ID as per your environment.
+This is example is for AWS environment.
+
+```yaml
+
+  apiVersion: externaldns.olm.openshift.io/v1alpha1
+  kind: ExternalDNS
+  metadata:
+    name: sample1
+  spec:
+    domains:
+      - filterType: Include
+        matchType: Exact
+        names: apps.miheer.externaldns
+    provider:
+      type: AWS
+    source:
+      hostnameAnnotation: Allow
+      openshiftRouteOptions:
+        routerName: default
+      type: OpenShiftRoute
+    zones:
+      - Z05387772BD5723IZFRX3
+
+```
+
+This will create an externaldns pod with the following container args under spec in the external-dns namespace where `- --source=openshift-route` and `- --openshift-router-name=default` is added by the external-dns-operator.
+
+```
+spec:
+  containers:
+  - args:
+    - --domain-filter=apps.misalunk.externaldns
+    - --metrics-address=127.0.0.1:7979
+    - --txt-owner-id=external-dns-sample1
+    - --provider=aws
+    - --source=openshift-route
+    - --policy=sync
+    - --registry=txt
+    - --log-level=debug
+    - --zone-id-filter=Z05387772BD5723IZFRX3
+    - --openshift-router-name=default
+    - --txt-prefix=external-dns-
+
+```
+
+### For OCP 3.11 environment
 ### Prepare ROUTER_CANONICAL_HOSTNAME in default/router deployment
 Read and go through [Finding the Host Name of the Router](https://docs.openshift.com/container-platform/3.11/install_config/router/default_haproxy_router.html#finding-router-hostname).
 If no ROUTER_CANONICAL_HOSTNAME is set, you must annotate each route with external-dns.alpha.kubernetes.io/target!

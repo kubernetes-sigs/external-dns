@@ -176,6 +176,9 @@ OuterLoop:
 		case dns.TypeTXT:
 			rrValues = (rr.(*dns.TXT).Txt)
 			rrType = "TXT"
+		case dns.TypeNS:
+			rrValues = []string{rr.(*dns.NS).Ns}
+			rrType = "NS"
 		default:
 			continue // Unhandled record type
 		}

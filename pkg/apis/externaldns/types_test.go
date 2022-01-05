@@ -115,6 +115,7 @@ var (
 		DigitalOceanAPIPageSize:     50,
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
+		OCPRouterName:               "default",
 	}
 
 	overriddenConfig = &Config{
@@ -225,6 +226,7 @@ func TestParseFlags(t *testing.T) {
 			args: []string{
 				"--source=service",
 				"--provider=google",
+				"--openshift-router-name=default",
 			},
 			envVars:  map[string]string{},
 			expected: minimalConfig,

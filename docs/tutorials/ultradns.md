@@ -237,7 +237,7 @@ spec:
 ```
 - Then, create service file called 'expose-apple-banana-app.yaml' to expose the services. For more information to deploy ingress controller, refer to (https://kubernetes.github.io/ingress-nginx/deploy/)
 ```yaml
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: example-ingress
@@ -252,8 +252,10 @@ spec:
       paths:
         - path: /apple
           backend:
-            serviceName: example-service
-            servicePort: 5678
+            service:
+              name: example-service
+              port:
+                number: 5678
 ```
 - Then, create the deployment and service:
 ```console
@@ -298,7 +300,7 @@ $ kubectl delete -f external-dns.yaml
       ports:
         - port: 5678 # Default port for image
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress
@@ -313,8 +315,10 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service
-                servicePort: 5678
+                service:
+                  name: example-service
+                  port:
+                    number: 5678
     ```
     - _Config File Example – Kubernetes cluster service from different cloud vendors_
     ```yaml
@@ -434,7 +438,7 @@ $ kubectl delete -f external-dns.yaml
       ports:
         - port: 5680 # Default port for image
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress
@@ -449,10 +453,12 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service
-                servicePort: 5678
+                service:
+                  name: example-service
+                  port:
+                    number: 5678
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress1
@@ -467,10 +473,12 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service1
-                servicePort: 5679
+                service:
+                  name: example-service1
+                  port:
+                    number: 5679
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress2
@@ -485,8 +493,10 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service2
-                servicePort: 5680
+                service:
+                  name: example-service2
+                  port:
+                    number: 5680
     ```
     - _Config File Example – Kubernetes cluster service from different cloud vendors_
     ```yaml
@@ -572,6 +582,7 @@ $ kubectl delete -f external-dns.yaml
       ports:
         - port: 5679 # Default port for image
     ---
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress
@@ -586,10 +597,12 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service
-                servicePort: 5678
+                service:
+                  name: example-service
+                  port:
+                    number: 5678
     ---
-    apiVersion: extensions/v1beta1
+    apiVersion: networking.k8s.io/v1
     kind: Ingress
     metadata:
       name: example-ingress1
@@ -604,8 +617,10 @@ $ kubectl delete -f external-dns.yaml
           paths:
             - path: /apple
               backend:
-                serviceName: example-service1
-                servicePort: 5679
+                service:
+                  name: example-service1
+                  port:
+                    number: 5679
     ```
 - Then, create the deployment and service:
 ```console
