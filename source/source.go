@@ -63,7 +63,7 @@ const (
 const (
 	// The annotation used for determining if traffic will go through Cloudflare
 	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-	CisProxiedKey        = "external-dns.alpha.kubernetes.io/cis-proxied"
+	IBMCloudProxiedKey   = "external-dns.alpha.kubernetes.io/ibmcloud-proxied"
 
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
