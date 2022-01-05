@@ -103,6 +103,7 @@ policy: upsert-only
 registry: txt
 txtOwnerId: ""
 txtPrefix: ""
+txtSuffix: ""
 
 domainFilters: []
 
