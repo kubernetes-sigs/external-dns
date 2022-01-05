@@ -663,7 +663,7 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
 						} else {
 							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
-								_, err = p.client.DeleteObject(record.Ref)
+							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
 				}
