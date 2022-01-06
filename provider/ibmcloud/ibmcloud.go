@@ -47,11 +47,11 @@ var proxyTypeNotSupported = map[string]bool{
 }
 
 const (
-	// cisCreate is a ChangeAction enum value
+	// recordCreate is a ChangeAction enum value
 	recordCreate = "CREATE"
-	// cisDelete is a ChangeAction enum value
+	// recordDelete is a ChangeAction enum value
 	recordDelete = "DELETE"
-	// cisUpdate is a ChangeAction enum value
+	// recordUpdate is a ChangeAction enum value
 	recordUpdate = "UPDATE"
 	// defaultCISRecordTTL 1 = automatic
 	defaultCISRecordTTL = 1
@@ -207,7 +207,7 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
-func (p *IBMCloudProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	if p.privateZone {
 		endpoints, err = p.privateRecords(ctx)
 	} else {
@@ -263,7 +263,7 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
-			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(cisCreate, endpoint, target))
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target))
 		}
 	}
 
@@ -327,9 +327,9 @@ func (p *IBMCloudProvider) submitChanges(ctx context.Context, changes []*ibmclou
 	}
 	for _, change := range changes {
 		logFields := log.Fields{
-			"record": *change.ResourceRecord.Name,
-			"type":   *change.ResourceRecord.Type,
-			"ttl":    *change.ResourceRecord.TTL,
+			"record": *change.PublicResourceRecord.Name,
+			"type":   *change.PublicResourceRecord.Type,
+			"ttl":    *change.PublicResourceRecord.TTL,
 			"action": change.Action,
 		}
 
@@ -339,21 +339,21 @@ func (p *IBMCloudProvider) submitChanges(ctx context.Context, changes []*ibmclou
 			continue
 		}
 
-		if change.Action == cisUpdate {
-			recordID := p.getRecordID(records.Result, change.ResourceRecord)
+		if change.Action == recordUpdate {
+			recordID := p.getRecordID(records.Result, change.PublicResourceRecord)
 			if recordID == "" {
-				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PublicResourceRecord)
 				continue
 			}
 			p.updateRecord(ctx, recordID, change)
-		} else if change.Action == cisDelete {
-			recordID := p.getRecordID(records.Result, change.ResourceRecord)
+		} else if change.Action == recordDelete {
+			recordID := p.getRecordID(records.Result, change.PublicResourceRecord)
 			if recordID == "" {
-				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
+				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PublicResourceRecord)
 				continue
 			}
 			p.deleteRecord(ctx, recordID)
-		} else if change.Action == cisCreate {
+		} else if change.Action == recordCreate {
 			p.createRecord(ctx, change)
 		}
 	}
@@ -447,8 +447,7 @@ func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.DnsrecordDeta
 			endpoint.NewEndpointWithTTL(
 				*records[0].Name,
 				*records[0].Type,
-				endpoint.TTL(*records[0].TTL), targets...,
-			))
+				endpoint.TTL(*records[0].TTL), targets...))
 	}
 	return endpoints
 }
@@ -470,9 +469,21 @@ func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.E
 		ttl = int(endpoint.RecordTTL)
 	}
 
-	return &ibmcloudPublicChange{
+	if p.privateZone {
+		return &ibmcloudChange{
+			Action: action,
+			PrivateResourceRecord: dnssvcsv1.DnsrecordDetails{
+				Name:    core.StringPtr(endpoint.DNSName),
+				TTL:     core.Int64Ptr(int64(ttl)),
+				Type:    core.StringPtr(endpoint.RecordType),
+				Content: core.StringPtr(target),
+			},
+		}
+	}
+
+	return &ibmcloudChange{
 		Action: action,
-		ResourceRecord: dnsrecordsv1.DnsrecordDetails{
+		PublicResourceRecord: dnsrecordsv1.DnsrecordDetails{
 			Name:    core.StringPtr(endpoint.DNSName),
 			TTL:     core.Int64Ptr(int64(ttl)),
 			Proxied: core.BoolPtr(proxied),
@@ -483,40 +494,52 @@ func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.E
 }
 
 func (p *IBMCloudProvider) createRecord(ctx context.Context, change *ibmcloudChange) {
-	createDnsRecordOptions := &dnsrecordsv1.CreateDnsRecordOptions{
-		Name:    change.ResourceRecord.Name,
-		Type:    change.ResourceRecord.Type,
-		TTL:     change.ResourceRecord.TTL,
-		Content: change.ResourceRecord.Content,
-	}
-	_, _, err := p.publicRecordsClient.CreateDnsRecordWithContext(ctx, createDnsRecordOptions)
-	if err != nil {
-		log.Errorf("failed to create %s type record named %s: %v", *change.ResourceRecord.Type, *change.ResourceRecord.Name, err)
+	if p.privateZone {
+
+	} else {
+		createDnsRecordOptions := &dnsrecordsv1.CreateDnsRecordOptions{
+			Name:    change.PublicResourceRecord.Name,
+			Type:    change.PublicResourceRecord.Type,
+			TTL:     change.PublicResourceRecord.TTL,
+			Content: change.PublicResourceRecord.Content,
+		}
+		_, _, err := p.publicRecordsClient.CreateDnsRecordWithContext(ctx, createDnsRecordOptions)
+		if err != nil {
+			log.Errorf("failed to create %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
+		}
 	}
 }
 
 func (p *IBMCloudProvider) updateRecord(ctx context.Context, recordID string, change *ibmcloudChange) {
-	updateDnsRecordOptions := &dnsrecordsv1.UpdateDnsRecordOptions{
-		DnsrecordIdentifier: &recordID,
-		Name:                change.ResourceRecord.Name,
-		Type:                change.ResourceRecord.Type,
-		TTL:                 change.ResourceRecord.TTL,
-		Content:             change.ResourceRecord.Content,
-		Proxied:             change.ResourceRecord.Proxied,
-	}
-	_, _, err := p.publicRecordsClient.UpdateDnsRecordWithContext(ctx, updateDnsRecordOptions)
-	if err != nil {
-		log.Errorf("failed to update %s type record named %s: %v", *change.ResourceRecord.Type, *change.ResourceRecord.Name, err)
+	if p.privateZone {
+
+	} else {
+		updateDnsRecordOptions := &dnsrecordsv1.UpdateDnsRecordOptions{
+			DnsrecordIdentifier: &recordID,
+			Name:                change.PublicResourceRecord.Name,
+			Type:                change.PublicResourceRecord.Type,
+			TTL:                 change.PublicResourceRecord.TTL,
+			Content:             change.PublicResourceRecord.Content,
+			Proxied:             change.PublicResourceRecord.Proxied,
+		}
+		_, _, err := p.publicRecordsClient.UpdateDnsRecordWithContext(ctx, updateDnsRecordOptions)
+		if err != nil {
+			log.Errorf("failed to update %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
+		}
 	}
 }
 
 func (p *IBMCloudProvider) deleteRecord(ctx context.Context, recordID string) {
-	deleteDnsRecordOptions := &dnsrecordsv1.DeleteDnsRecordOptions{
-		DnsrecordIdentifier: &recordID,
-	}
-	_, _, err := p.publicRecordsClient.DeleteDnsRecordWithContext(ctx, deleteDnsRecordOptions)
-	if err != nil {
-		log.Errorf("failed to delete record %s: %v", recordID, err)
+	if p.privateZone {
+
+	} else {
+		deleteDnsRecordOptions := &dnsrecordsv1.DeleteDnsRecordOptions{
+			DnsrecordIdentifier: &recordID,
+		}
+		_, _, err := p.publicRecordsClient.DeleteDnsRecordWithContext(ctx, deleteDnsRecordOptions)
+		if err != nil {
+			log.Errorf("failed to delete record %s: %v", recordID, err)
+		}
 	}
 }
 
