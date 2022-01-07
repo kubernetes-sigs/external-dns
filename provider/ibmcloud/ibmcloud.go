@@ -46,6 +46,12 @@ var proxyTypeNotSupported = map[string]bool{
 	"SRV": true,
 }
 
+var privateTypeSupported = map[string]bool{
+	"A":     true,
+	"CNAME": true,
+	"TXT":   true,
+}
+
 const (
 	// recordCreate is a ChangeAction enum value
 	recordCreate = "CREATE"
@@ -74,6 +80,12 @@ type PrivateRecordsClient interface {
 	CreateResourceRecordWithContext(ctx context.Context, createResourceRecordOptions *dnssvcsv1.CreateResourceRecordOptions) (result *dnssvcsv1.ResourceRecord, response *core.DetailedResponse, err error)
 	DeleteResourceRecordWithContext(ctx context.Context, deleteResourceRecordOptions *dnssvcsv1.DeleteResourceRecordOptions) (response *core.DetailedResponse, err error)
 	UpdateResourceRecordWithContext(ctx context.Context, updateResourceRecordOptions *dnssvcsv1.UpdateResourceRecordOptions) (result *dnssvcsv1.ResourceRecord, response *core.DetailedResponse, err error)
+	NewResourceRecordInputRdataRdataARecord(ip string) (model *dnssvcsv1.ResourceRecordInputRdataRdataARecord, err error)
+	NewResourceRecordInputRdataRdataCnameRecord(cname string) (model *dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord, err error)
+	NewResourceRecordInputRdataRdataTxtRecord(text string) (model *dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord, err error)
+	NewResourceRecordUpdateInputRdataRdataARecord(ip string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataARecord, err error)
+	NewResourceRecordUpdateInputRdataRdataCnameRecord(cname string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataCnameRecord, err error)
+	NewResourceRecordUpdateInputRdataRdataTxtRecord(text string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataTxtRecord, err error)
 }
 
 type recordService struct {
@@ -123,7 +135,7 @@ type ibmcloudConfig struct {
 type ibmcloudChange struct {
 	Action                string
 	PublicResourceRecord  dnsrecordsv1.DnsrecordDetails
-	PrivateResourceRecord dnssvcsv1.DnsrecordDetails
+	PrivateResourceRecord dnssvcsv1.ResourceRecord
 }
 
 func getConfig(configFile string) (*ibmcloudConfig, error) {
@@ -142,8 +154,8 @@ func getConfig(configFile string) (*ibmcloudConfig, error) {
 		return nil, fmt.Errorf("IBM Cloud instance crn is not provided or invalid dns crn'%s': %v", cfg.CRN, err)
 	}
 	cfg.InstanceID = crn.ServiceInstance
-	if strings.Contains(crn.ServiceName, "internet-svcs") && cfg.DomainID == "" {
-		return nil, fmt.Errorf("IBM Cloud Domain ID is not provided or invalid'%s': %v", cfg.DomainID, err)
+	if cfg.DomainID == "" {
+		return nil, fmt.Errorf("IBM Cloud DNS Domain ID is not provided or invalid'%s': %v", cfg.DomainID, err)
 	}
 	return cfg, nil
 }
@@ -190,6 +202,8 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 	if cfg.Endpoint != "" {
 		privateRecordsClient.SetServiceURL(cfg.Endpoint)
 	}
+	// Feed configued domain ID to Filter
+	zoneIDFilter.ZoneIDs[0] = cfg.DomainID
 
 	provider := &IBMCloudProvider{
 		publicRecordsClient:  publicRecordsClient,
@@ -214,47 +228,6 @@ func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		endpoints, err = p.publicRecords(ctx)
 	}
 	return endpoints, err
-}
-
-// Zones returns the list of private hosted zones.
-func (p *IBMCloudProvider) Zones(ctx context.Context) ([]dnssvcsv1.Dnszone, error) {
-	var result []dnssvcsv1.Dnszone
-	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
-		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
-		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-			log.Debugf("looking up zone %s", zoneID)
-			getZonesOptions := dnssvcsv1.NewGetDnszoneOptions(p.instanceID, zoneID)
-			zone, _, err := p.privateRecordsClient.ListResourceRecordsWithContext(ctx, getZonesOptions)
-			if err != nil {
-				log.Errorf("zone %s lookup failed, %v", zoneID, err)
-				continue
-			}
-			log.WithFields(log.Fields{
-				"zoneName": zone.Name,
-				"zoneID":   zone.ID,
-			}).Debugln("adding zone for consideration")
-			result = append(result, zone)
-		}
-		return result, nil
-	}
-
-	log.Debugln("no zoneIDFilter configured, looking at all zones")
-
-	listZonesOptions := dnssvcsv1.NewListDnszonesOptions(p.instanceID)
-	zones, _, err := p.privateRecordsClient.ListDnszonesWithContext(ctx, listZonesOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, zone := range zones.Dnszones {
-		if !p.domainFilter.Match(zone.Name) {
-			log.Debugf("zone %s not in domain filter", zone.Name)
-			continue
-		}
-		result = append(result, zone)
-	}
-
-	return result, nil
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
@@ -321,6 +294,14 @@ func (p *IBMCloudProvider) submitChanges(ctx context.Context, changes []*ibmclou
 		return nil
 	}
 
+	if p.privateZone {
+		return p.submitChangesForPrivateDNS(ctx, changes)
+	}
+	return p.submitChangesForPublicDNS(ctx, changes)
+}
+
+// submitChangesForPublicDNS takes a zone and a collection of Changes and sends them as a single transaction on public dns.
+func (p *IBMCloudProvider) submitChangesForPublicDNS(ctx context.Context, changes []*ibmcloudChange) error {
 	records, _, err := p.publicRecordsClient.ListAllDnsRecordsWithContext(ctx, &dnsrecordsv1.ListAllDnsRecordsOptions{})
 	if err != nil {
 		return fmt.Errorf("could not fetch records from zone, %v", err)
@@ -340,16 +321,62 @@ func (p *IBMCloudProvider) submitChanges(ctx context.Context, changes []*ibmclou
 		}
 
 		if change.Action == recordUpdate {
-			recordID := p.getRecordID(records.Result, change.PublicResourceRecord)
+			recordID := p.getPublicRecordID(records.Result, change.PublicResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PublicResourceRecord)
 				continue
 			}
 			p.updateRecord(ctx, recordID, change)
 		} else if change.Action == recordDelete {
-			recordID := p.getRecordID(records.Result, change.PublicResourceRecord)
+			recordID := p.getPublicRecordID(records.Result, change.PublicResourceRecord)
 			if recordID == "" {
 				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PublicResourceRecord)
+				continue
+			}
+			p.deleteRecord(ctx, recordID)
+		} else if change.Action == recordCreate {
+			p.createRecord(ctx, change)
+		}
+	}
+
+	return nil
+}
+
+// submitChangesForPrivateDNS takes a zone and a collection of Changes and sends them as a single transaction on private dns.
+func (p *IBMCloudProvider) submitChangesForPrivateDNS(ctx context.Context, changes []*ibmcloudChange) error {
+	listResourceRecordsOptions := &dnssvcsv1.ListResourceRecordsOptions{
+		InstanceID: core.StringPtr(p.instanceID),
+		DnszoneID:  core.StringPtr(p.zoneIDFilter.ZoneIDs[0]),
+	}
+	records, _, err := p.privateRecordsClient.ListResourceRecordsWithContext(ctx, listResourceRecordsOptions)
+	if err != nil {
+		return fmt.Errorf("could not fetch records from zone, %v", err)
+	}
+	for _, change := range changes {
+		logFields := log.Fields{
+			"record": *change.PrivateResourceRecord.Name,
+			"type":   *change.PrivateResourceRecord.Type,
+			"ttl":    *change.PrivateResourceRecord.TTL,
+			"action": change.Action,
+		}
+
+		log.WithFields(logFields).Info("Changing record.")
+
+		if p.DryRun {
+			continue
+		}
+
+		if change.Action == recordUpdate {
+			recordID := p.getPrivateRecordID(records.ResourceRecords, change.PrivateResourceRecord)
+			if recordID == "" {
+				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PrivateResourceRecord)
+				continue
+			}
+			p.updateRecord(ctx, recordID, change)
+		} else if change.Action == recordDelete {
+			recordID := p.getPrivateRecordID(records.ResourceRecords, change.PrivateResourceRecord)
+			if recordID == "" {
+				log.WithFields(logFields).Errorf("failed to find previous record: %v", change.PrivateResourceRecord)
 				continue
 			}
 			p.deleteRecord(ctx, recordID)
@@ -396,41 +423,56 @@ func (p *IBMCloudProvider) groupPublicRecords(records []dnsrecordsv1.DnsrecordDe
 			targets[i] = *record.Content
 		}
 
-		endpoints = append(endpoints,
-			endpoint.NewEndpointWithTTL(
-				*records[0].Name,
-				*records[0].Type,
-				endpoint.TTL(*records[0].TTL),
-				targets...).WithProviderSpecific(source.IBMCloudProxiedKey, strconv.FormatBool(*records[0].Proxied)),
+		ep := endpoint.NewEndpointWithTTL(
+			*records[0].Name,
+			*records[0].Type,
+			endpoint.TTL(*records[0].TTL),
+			targets...).WithProviderSpecific(source.IBMCloudProxiedKey, strconv.FormatBool(*records[0].Proxied))
+
+		log.Debugf(
+			"Found %s record for '%s' with target '%s'.",
+			ep.RecordType,
+			ep.DNSName,
+			ep.Targets,
 		)
+
+		endpoints = append(endpoints, ep)
 	}
 	return endpoints
 }
 
 func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endpoint, error) {
 
-	records, _, err := p.privateRecordsClient.ListResourceRecordsWithContext(ctx, &dnssvcsv1.ListResourceRecordsOptions{})
+	listResourceRecordsOptions := &dnssvcsv1.ListResourceRecordsOptions{
+		InstanceID: core.StringPtr(p.instanceID),
+		DnszoneID:  core.StringPtr(p.zoneIDFilter.ZoneIDs[0]),
+	}
+	records, _, err := p.privateRecordsClient.ListResourceRecordsWithContext(ctx, listResourceRecordsOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.groupPublicRecords(records.Result), nil
+	return p.groupPrivateRecords(records.ResourceRecords), nil
 }
 
-func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.DnsrecordDetails) []*endpoint.Endpoint {
+func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.ResourceRecord) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 
 	// group supported records by name and type
-	groups := map[string][]dnssvcsv1.DnsrecordDetails{}
+	groups := map[string][]dnssvcsv1.ResourceRecord{}
 
 	for _, r := range records {
 		if !provider.SupportedRecordType(*r.Type) {
 			continue
 		}
 
+		if !privateTypeSupported[*r.Type] {
+			continue
+		}
+
 		groupBy := *r.Name + *r.Type
 		if _, ok := groups[groupBy]; !ok {
-			groups[groupBy] = []dnssvcsv1.DnsrecordDetails{}
+			groups[groupBy] = []dnssvcsv1.ResourceRecord{}
 		}
 
 		groups[groupBy] = append(groups[groupBy], r)
@@ -440,21 +482,48 @@ func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.DnsrecordDeta
 	for _, records := range groups {
 		targets := make([]string, len(records))
 		for i, record := range records {
-			targets[i] = *record.Content
+			switch *record.Type {
+			case "A":
+				data, _ := record.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataAaaaRecord)
+				targets[i] = *data.Ip
+			case "CNAME":
+				data, _ := record.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord)
+				targets[i] = *data.Cname
+			case "TXT":
+				data, _ := record.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord)
+				targets[i] = *data.Text
+			}
 		}
 
-		endpoints = append(endpoints,
-			endpoint.NewEndpointWithTTL(
-				*records[0].Name,
-				*records[0].Type,
-				endpoint.TTL(*records[0].TTL), targets...))
+		ep := endpoint.NewEndpointWithTTL(
+			*records[0].Name,
+			*records[0].Type,
+			endpoint.TTL(*records[0].TTL), targets...)
+
+		log.Debugf(
+			"Found %s record for '%s' with target '%s'.",
+			ep.RecordType,
+			ep.DNSName,
+			ep.Targets,
+		)
+
+		endpoints = append(endpoints, ep)
 	}
 	return endpoints
 }
 
-func (p *IBMCloudProvider) getRecordID(records []dnsrecordsv1.DnsrecordDetails, record dnsrecordsv1.DnsrecordDetails) string {
+func (p *IBMCloudProvider) getPublicRecordID(records []dnsrecordsv1.DnsrecordDetails, record dnsrecordsv1.DnsrecordDetails) string {
 	for _, zoneRecord := range records {
 		if *zoneRecord.Name == *record.Name && *zoneRecord.Type == *record.Type && *zoneRecord.Content == *record.Content {
+			return *zoneRecord.ID
+		}
+	}
+	return ""
+}
+
+func (p *IBMCloudProvider) getPrivateRecordID(records []dnssvcsv1.ResourceRecord, record dnssvcsv1.ResourceRecord) string {
+	for _, zoneRecord := range records {
+		if *zoneRecord.Name == *record.Name && *zoneRecord.Type == *record.Type {
 			return *zoneRecord.ID
 		}
 	}
@@ -470,13 +539,28 @@ func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.E
 	}
 
 	if p.privateZone {
+		var rData interface{}
+		switch endpoint.RecordType {
+		case "A":
+			rData = &dnssvcsv1.ResourceRecordInputRdataRdataARecord{
+				Ip: core.StringPtr(target),
+			}
+		case "CNAME":
+			rData = &dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord{
+				Cname: core.StringPtr(target),
+			}
+		case "TXT":
+			rData = &dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord{
+				Text: core.StringPtr(target),
+			}
+		}
 		return &ibmcloudChange{
 			Action: action,
-			PrivateResourceRecord: dnssvcsv1.DnsrecordDetails{
-				Name:    core.StringPtr(endpoint.DNSName),
-				TTL:     core.Int64Ptr(int64(ttl)),
-				Type:    core.StringPtr(endpoint.RecordType),
-				Content: core.StringPtr(target),
+			PrivateResourceRecord: dnssvcsv1.ResourceRecord{
+				Name:  core.StringPtr(endpoint.DNSName),
+				TTL:   core.Int64Ptr(int64(ttl)),
+				Type:  core.StringPtr(endpoint.RecordType),
+				Rdata: rData,
 			},
 		}
 	}
@@ -495,7 +579,31 @@ func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.E
 
 func (p *IBMCloudProvider) createRecord(ctx context.Context, change *ibmcloudChange) {
 	if p.privateZone {
-
+		createResourceRecordOptions := &dnssvcsv1.CreateResourceRecordOptions{
+			InstanceID: core.StringPtr(p.instanceID),
+			DnszoneID:  core.StringPtr(p.zoneIDFilter.ZoneIDs[0]),
+			Name:       change.PrivateResourceRecord.Name,
+			Type:       change.PrivateResourceRecord.Type,
+			TTL:        change.PrivateResourceRecord.TTL,
+		}
+		switch *change.PrivateResourceRecord.Type {
+		case "A":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataAaaaRecord)
+			aData, _ := p.privateRecordsClient.NewResourceRecordInputRdataRdataARecord(*data.Ip)
+			createResourceRecordOptions.SetRdata(aData)
+		case "CNAME":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord)
+			cnameData, _ := p.privateRecordsClient.NewResourceRecordInputRdataRdataCnameRecord(*data.Cname)
+			createResourceRecordOptions.SetRdata(cnameData)
+		case "TXT":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord)
+			txtData, _ := p.privateRecordsClient.NewResourceRecordInputRdataRdataTxtRecord(*data.Text)
+			createResourceRecordOptions.SetRdata(txtData)
+		}
+		_, _, err := p.privateRecordsClient.CreateResourceRecordWithContext(ctx, createResourceRecordOptions)
+		if err != nil {
+			log.Errorf("failed to create %s type record named %s: %v", *change.PrivateResourceRecord.Type, *change.PrivateResourceRecord.Name, err)
+		}
 	} else {
 		createDnsRecordOptions := &dnsrecordsv1.CreateDnsRecordOptions{
 			Name:    change.PublicResourceRecord.Name,
@@ -512,7 +620,31 @@ func (p *IBMCloudProvider) createRecord(ctx context.Context, change *ibmcloudCha
 
 func (p *IBMCloudProvider) updateRecord(ctx context.Context, recordID string, change *ibmcloudChange) {
 	if p.privateZone {
-
+		updateResourceRecordOptions := &dnssvcsv1.UpdateResourceRecordOptions{
+			InstanceID: core.StringPtr(p.instanceID),
+			DnszoneID:  core.StringPtr(p.zoneIDFilter.ZoneIDs[0]),
+			RecordID:   core.StringPtr(recordID),
+			Name:       change.PrivateResourceRecord.Name,
+			TTL:        change.PrivateResourceRecord.TTL,
+		}
+		switch *change.PrivateResourceRecord.Type {
+		case "A":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataAaaaRecord)
+			aData, _ := p.privateRecordsClient.NewResourceRecordUpdateInputRdataRdataARecord(*data.Ip)
+			updateResourceRecordOptions.SetRdata(aData)
+		case "CNAME":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord)
+			cnameData, _ := p.privateRecordsClient.NewResourceRecordUpdateInputRdataRdataCnameRecord(*data.Cname)
+			updateResourceRecordOptions.SetRdata(cnameData)
+		case "TXT":
+			data, _ := change.PrivateResourceRecord.Rdata.(*dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord)
+			txtData, _ := p.privateRecordsClient.NewResourceRecordUpdateInputRdataRdataTxtRecord(*data.Text)
+			updateResourceRecordOptions.SetRdata(txtData)
+		}
+		_, _, err := p.privateRecordsClient.UpdateResourceRecordWithContext(ctx, updateResourceRecordOptions)
+		if err != nil {
+			log.Errorf("failed to update %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
+		}
 	} else {
 		updateDnsRecordOptions := &dnsrecordsv1.UpdateDnsRecordOptions{
 			DnsrecordIdentifier: &recordID,
@@ -531,7 +663,15 @@ func (p *IBMCloudProvider) updateRecord(ctx context.Context, recordID string, ch
 
 func (p *IBMCloudProvider) deleteRecord(ctx context.Context, recordID string) {
 	if p.privateZone {
-
+		deleteResourceRecordOptions := &dnssvcsv1.DeleteResourceRecordOptions{
+			InstanceID: core.StringPtr(p.instanceID),
+			DnszoneID:  core.StringPtr(p.zoneIDFilter.ZoneIDs[0]),
+			RecordID:   core.StringPtr(recordID),
+		}
+		_, err := p.privateRecordsClient.DeleteResourceRecordWithContext(ctx, deleteResourceRecordOptions)
+		if err != nil {
+			log.Errorf("failed to delete record %s: %v", recordID, err)
+		}
 	} else {
 		deleteDnsRecordOptions := &dnsrecordsv1.DeleteDnsRecordOptions{
 			DnsrecordIdentifier: &recordID,
