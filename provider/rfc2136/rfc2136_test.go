@@ -172,6 +172,11 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 				RecordType: "TXT",
 				Targets:    []string{"boom"},
 			},
+			{
+				DNSName:    "ns.foobar.com",
+				RecordType: "NS",
+				Targets:    []string{"boom"},
+			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
@@ -190,12 +195,15 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 2, len(stub.createMsgs))
+	assert.Equal(t, 3, len(stub.createMsgs))
 	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
 	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
 
 	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
 	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "ns.foobar.com"))
+	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "boom"))
 
 	assert.Equal(t, 2, len(stub.updateMsgs))
 	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))

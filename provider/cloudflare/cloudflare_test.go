@@ -55,7 +55,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
 		Content: "1.2.3.4",
-		Proxied: false,
+		Proxied: proxyDisabled,
 	},
 	{
 		ID:      "2345678901",
@@ -64,7 +64,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     120,
 		Content: "3.4.5.6",
-		Proxied: false,
+		Proxied: proxyDisabled,
 	},
 	{
 		ID:      "1231231233",
@@ -73,7 +73,7 @@ var ExampleDomain = []cloudflare.DNSRecord{
 		Type:    endpoint.RecordTypeA,
 		TTL:     1,
 		Content: "2.3.4.5",
-		Proxied: false,
+		Proxied: proxyDisabled,
 	},
 }
 
@@ -105,7 +105,7 @@ func NewMockCloudFlareClientWithRecords(records map[string][]cloudflare.DNSRecor
 	return m
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
+func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
 		ZoneId:     zoneID,
@@ -118,7 +118,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(zoneID string, rr cloudflare.DNSR
 	return nil, nil
 }
 
-func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
+func (m *mockCloudFlareClient) DNSRecords(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	if m.dnsRecordsError != nil {
 		return nil, m.dnsRecordsError
 	}
@@ -132,7 +132,7 @@ func (m *mockCloudFlareClient) DNSRecords(zoneID string, rr cloudflare.DNSRecord
 	return result, nil
 }
 
-func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloudflare.DNSRecord) error {
+func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, zoneID, recordID string, rr cloudflare.DNSRecord) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Update",
 		ZoneId:     zoneID,
@@ -147,7 +147,7 @@ func (m *mockCloudFlareClient) UpdateDNSRecord(zoneID, recordID string, rr cloud
 	return nil
 }
 
-func (m *mockCloudFlareClient) DeleteDNSRecord(zoneID, recordID string) error {
+func (m *mockCloudFlareClient) DeleteDNSRecord(ctx context.Context, zoneID, recordID string) error {
 	m.Actions = append(m.Actions, MockAction{
 		Name:     "Delete",
 		ZoneId:   zoneID,
@@ -162,7 +162,7 @@ func (m *mockCloudFlareClient) DeleteDNSRecord(zoneID, recordID string) error {
 	return nil
 }
 
-func (m *mockCloudFlareClient) UserDetails() (cloudflare.User, error) {
+func (m *mockCloudFlareClient) UserDetails(ctx context.Context) (cloudflare.User, error) {
 	return m.User, nil
 }
 
@@ -176,7 +176,7 @@ func (m *mockCloudFlareClient) ZoneIDByName(zoneName string) (string, error) {
 	return "", errors.New("Unknown zone: " + zoneName)
 }
 
-func (m *mockCloudFlareClient) ListZones(zoneID ...string) ([]cloudflare.Zone, error) {
+func (m *mockCloudFlareClient) ListZones(ctx context.Context, zoneID ...string) ([]cloudflare.Zone, error) {
 	if m.listZonesError != nil {
 		return nil, m.listZonesError
 	}
@@ -216,7 +216,7 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 	}, nil
 }
 
-func (m *mockCloudFlareClient) ZoneDetails(zoneID string) (cloudflare.Zone, error) {
+func (m *mockCloudFlareClient) ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error) {
 	for id, zoneName := range m.Zones {
 		if zoneID == id {
 			return cloudflare.Zone{
@@ -292,7 +292,7 @@ func TestCloudflareA(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -303,7 +303,7 @@ func TestCloudflareA(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.2",
 				TTL:     1,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -330,7 +330,7 @@ func TestCloudflareCname(t *testing.T) {
 				Name:    "cname.bar.com",
 				Content: "google.com",
 				TTL:     1,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -341,7 +341,7 @@ func TestCloudflareCname(t *testing.T) {
 				Name:    "cname.bar.com",
 				Content: "facebook.com",
 				TTL:     1,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -368,7 +368,7 @@ func TestCloudflareCustomTTL(t *testing.T) {
 				Name:    "ttl.bar.com",
 				Content: "127.0.0.1",
 				TTL:     120,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -394,7 +394,7 @@ func TestCloudflareProxiedDefault(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -426,7 +426,7 @@ func TestCloudflareProxiedOverrideTrue(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -458,7 +458,7 @@ func TestCloudflareProxiedOverrideFalse(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: false,
+				Proxied: proxyDisabled,
 			},
 		},
 	},
@@ -490,7 +490,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 				Name:    "bar.com",
 				Content: "127.0.0.1",
 				TTL:     1,
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 	},
@@ -499,19 +499,21 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 }
 
 func TestCloudflareSetProxied(t *testing.T) {
+	var proxied *bool = proxyEnabled
+	var notProxied *bool = proxyDisabled
 	var testCases = []struct {
 		recordType string
 		domain     string
-		proxiable  bool
+		proxiable  *bool
 	}{
-		{"A", "bar.com", true},
-		{"CNAME", "bar.com", true},
-		{"TXT", "bar.com", false},
-		{"MX", "bar.com", false},
-		{"NS", "bar.com", false},
-		{"SPF", "bar.com", false},
-		{"SRV", "bar.com", false},
-		{"A", "*.bar.com", false},
+		{"A", "bar.com", proxied},
+		{"CNAME", "bar.com", proxied},
+		{"TXT", "bar.com", notProxied},
+		{"MX", "bar.com", notProxied},
+		{"NS", "bar.com", notProxied},
+		{"SPF", "bar.com", notProxied},
+		{"SRV", "bar.com", notProxied},
+		{"A", "*.bar.com", notProxied},
 	}
 
 	for _, testCase := range testCases {
@@ -684,6 +686,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				Name:    "new.bar.com",
 				Content: "target",
 				TTL:     1,
+				Proxied: proxyDisabled,
 			},
 		},
 		{
@@ -693,6 +696,7 @@ func TestCloudflareApplyChanges(t *testing.T) {
 				Name:    "foobar.bar.com",
 				Content: "target-new",
 				TTL:     1,
+				Proxied: proxyDisabled,
 			},
 		},
 	})
@@ -779,6 +783,7 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -805,12 +810,14 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -837,24 +844,28 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -894,18 +905,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -945,18 +959,21 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "foo.com",
 					Type:    endpoint.RecordTypeA,
 					Content: "10.10.10.2",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 				{
 					Name:    "bar.de",
 					Type:    "NOT SUPPORTED",
 					Content: "10.10.10.1",
 					TTL:     defaultCloudFlareRecordTTL,
+					Proxied: proxyDisabled,
 				},
 			},
 			ExpectedEndpoints: []*endpoint.Endpoint{
@@ -984,94 +1001,101 @@ func TestCloudflareGroupByNameAndType(t *testing.T) {
 
 func TestProviderPropertiesIdempotency(t *testing.T) {
 	testCases := []struct {
+		Name                     string
 		ProviderProxiedByDefault bool
-		RecordsAreProxied        bool
+		RecordsAreProxied        *bool
 		ShouldBeUpdated          bool
 	}{
 		{
+			Name:                     "ProxyDefault: false, ShouldBeProxied: false, ExpectUpdates: false",
 			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        false,
+			RecordsAreProxied:        proxyDisabled,
 			ShouldBeUpdated:          false,
 		},
 		{
+			Name:                     "ProxyDefault: true, ShouldBeProxied: true, ExpectUpdates: false",
 			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        true,
+			RecordsAreProxied:        proxyEnabled,
 			ShouldBeUpdated:          false,
 		},
 		{
+			Name:                     "ProxyDefault: true, ShouldBeProxied: false, ExpectUpdates: true",
 			ProviderProxiedByDefault: true,
-			RecordsAreProxied:        false,
+			RecordsAreProxied:        proxyDisabled,
 			ShouldBeUpdated:          true,
 		},
 		{
+			Name:                     "ProxyDefault: false, ShouldBeProxied: true, ExpectUpdates: true",
 			ProviderProxiedByDefault: false,
-			RecordsAreProxied:        true,
+			RecordsAreProxied:        proxyEnabled,
 			ShouldBeUpdated:          true,
 		},
 	}
 
 	for _, test := range testCases {
-		client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
-			"001": {
-				{
-					ID:      "1234567890",
-					ZoneID:  "001",
-					Name:    "foobar.bar.com",
-					Type:    endpoint.RecordTypeA,
-					TTL:     120,
-					Content: "1.2.3.4",
-					Proxied: test.RecordsAreProxied,
+		t.Run(test.Name, func(t *testing.T) {
+			client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
+				"001": {
+					{
+						ID:      "1234567890",
+						ZoneID:  "001",
+						Name:    "foobar.bar.com",
+						Type:    endpoint.RecordTypeA,
+						TTL:     120,
+						Content: "1.2.3.4",
+						Proxied: test.RecordsAreProxied,
+					},
 				},
-			},
-		})
-
-		provider := &CloudFlareProvider{
-			Client:           client,
-			proxiedByDefault: test.ProviderProxiedByDefault,
-		}
-		ctx := context.Background()
-
-		current, err := provider.Records(ctx)
-		if err != nil {
-			t.Errorf("should not fail, %s", err)
-		}
-		assert.Equal(t, 1, len(current))
-
-		desired := []*endpoint.Endpoint{}
-		for _, c := range current {
-			// Copy all except ProviderSpecific fields
-			desired = append(desired, &endpoint.Endpoint{
-				DNSName:       c.DNSName,
-				Targets:       c.Targets,
-				RecordType:    c.RecordType,
-				SetIdentifier: c.SetIdentifier,
-				RecordTTL:     c.RecordTTL,
-				Labels:        c.Labels,
 			})
-		}
 
-		plan := plan.Plan{
-			Current:            current,
-			Desired:            desired,
-			PropertyComparator: provider.PropertyValuesEqual,
-			ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-		}
+			provider := &CloudFlareProvider{
+				Client:           client,
+				proxiedByDefault: test.ProviderProxiedByDefault,
+			}
+			ctx := context.Background()
 
-		plan = *plan.Calculate()
-		assert.NotNil(t, plan.Changes, "should have plan")
-		if plan.Changes == nil {
-			return
-		}
-		assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
-		assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+			current, err := provider.Records(ctx)
+			if err != nil {
+				t.Errorf("should not fail, %s", err)
+			}
+			assert.Equal(t, 1, len(current))
 
-		if test.ShouldBeUpdated {
-			assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
-			assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
-		} else {
-			assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
-			assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
-		}
+			desired := []*endpoint.Endpoint{}
+			for _, c := range current {
+				// Copy all except ProviderSpecific fields
+				desired = append(desired, &endpoint.Endpoint{
+					DNSName:       c.DNSName,
+					Targets:       c.Targets,
+					RecordType:    c.RecordType,
+					SetIdentifier: c.SetIdentifier,
+					RecordTTL:     c.RecordTTL,
+					Labels:        c.Labels,
+				})
+			}
+
+			plan := plan.Plan{
+				Current:            current,
+				Desired:            desired,
+				PropertyComparator: provider.PropertyValuesEqual,
+				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+			}
+
+			plan = *plan.Calculate()
+			assert.NotNil(t, plan.Changes, "should have plan")
+			if plan.Changes == nil {
+				return
+			}
+			assert.Equal(t, 0, len(plan.Changes.Create), "should not have creates")
+			assert.Equal(t, 0, len(plan.Changes.Delete), "should not have deletes")
+
+			if test.ShouldBeUpdated {
+				assert.Equal(t, 1, len(plan.Changes.UpdateNew), "should not have new updates")
+				assert.Equal(t, 1, len(plan.Changes.UpdateOld), "should not have old updates")
+			} else {
+				assert.Equal(t, 0, len(plan.Changes.UpdateNew), "should not have new updates")
+				assert.Equal(t, 0, len(plan.Changes.UpdateOld), "should not have old updates")
+			}
+		})
 	}
 }
 
@@ -1129,7 +1153,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Type:    "A",
 				Content: "2.3.4.5",
 				TTL:     1,
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 		MockAction{
@@ -1141,7 +1165,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Type:    "A",
 				Content: "1.2.3.4",
 				TTL:     1,
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 		MockAction{
@@ -1162,7 +1186,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 				Type:    endpoint.RecordTypeA,
 				TTL:     1,
 				Content: "1.2.3.4",
-				Proxied: true,
+				Proxied: proxyEnabled,
 			},
 		},
 	})
