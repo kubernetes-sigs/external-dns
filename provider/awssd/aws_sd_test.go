@@ -100,7 +100,7 @@ func (s *AWSSDClientStub) DiscoverInstances(input *sd.DiscoverInstancesInput) (*
 			for _, srv := range s.services[*ns.Id] {
 				if srv.Name == input.ServiceName {
 					for _, inst := range s.instances[*srv.Id] {
-						instances = append(instances, instanceToHttpInstanceSummary(inst))
+						instances = append(instances, instanceToHTTPInstanceSummary(inst))
 					}
 				}
 			}
@@ -511,7 +511,7 @@ func TestAWSSDProvider_DiscoverInstancesByService(t *testing.T) {
 	result, err := provider.DiscoverInstancesByServiceName(namespaces["private"].Name, services["private"]["srv1"].Name)
 	require.NoError(t, err)
 
-	expectedInstances := []*sd.HttpInstanceSummary{instanceToHttpInstanceSummary(instances["srv1"]["inst1"]), instanceToHttpInstanceSummary(instances["srv1"]["inst2"])}
+	expectedInstances := []*sd.HttpInstanceSummary{instanceToHTTPInstanceSummary(instances["srv1"]["inst1"]), instanceToHTTPInstanceSummary(instances["srv1"]["inst2"])}
 
 	expectedMap := make(map[string]*sd.HttpInstanceSummary)
 	resultMap := make(map[string]*sd.HttpInstanceSummary)

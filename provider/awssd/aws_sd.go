@@ -585,7 +585,7 @@ func serviceToServiceSummary(service *sd.Service) *sd.ServiceSummary {
 
 // nolint: deadcode
 // used from unit test
-func instanceToHttpInstanceSummary(instance *sd.Instance) *sd.HttpInstanceSummary {
+func instanceToHTTPInstanceSummary(instance *sd.Instance) *sd.HttpInstanceSummary {
 	if instance == nil {
 		return nil
 	}
