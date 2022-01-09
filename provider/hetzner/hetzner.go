@@ -141,6 +141,10 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 				}
 			}
 
+			logMessage := "Changing record"
+			if p.DryRun {
+				logMessage = "Would change record"
+			}
 			log.WithFields(log.Fields{
 				"id":      change.ResourceRecordSet.ID,
 				"record":  change.ResourceRecordSet.Name,
@@ -150,7 +154,10 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes []*HetznerC
 				"action":  change.Action,
 				"zone":    change.ZoneName,
 				"zone_id": change.ZoneID,
-			}).Info("Changing record")
+			}).Info(logMessage)
+			if p.DryRun {
+				continue
+			}
 
 			switch change.Action {
 			case hetznerCreate:
