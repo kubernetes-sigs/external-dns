@@ -187,9 +187,6 @@ func (s *AWSSDClientStub) DeleteService(input *sd.DeleteServiceInput) (*sd.Delet
 		return nil, err
 	}
 
-	// serviceInstances := s.instances[*input.ServiceId]
-	// delete(serviceInstances, *input.InstanceId)
-
 	service := out.Service
 	namespace := s.services[*service.NamespaceId]
 	delete(namespace, *input.Id)
