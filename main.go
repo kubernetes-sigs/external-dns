@@ -52,6 +52,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/hetzner"
+	"sigs.k8s.io/external-dns/provider/hosts"
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
@@ -327,6 +328,8 @@ func main() {
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
 	case "safedns":
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
+	case "hosts":
+		p, err = hosts.NewHostsProvider(ctx, cfg.HostsFile, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
