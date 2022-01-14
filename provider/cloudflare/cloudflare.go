@@ -42,8 +42,10 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultCloudFlareRecordTTL 1 = automatic
 	defaultCloudFlareRecordTTL = 1
-	// planKeyword = "plan"
+
 	planKeyword = "plan"
+
+	enterprisePlan = "enterprise"
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -347,16 +349,16 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 	if err != nil {
 		log.WithFields(log.Fields{
 			"endpoints": endpoints,
-		}).WithError(err).Debugf("Cannot adjust endpoints because zone mapping failed")
+		}).WithError(err).Errorf("Cannot adjust endpoints because zone mapping failed")
 
 		return endpoints
 	}
 
 	for _, e := range endpoints {
-		if err := p.enhanceEndpoint(e, zoneNameIDMapper, idToZoneMapper); err != nil {
+		if err := p.addPlanInfoToEndpoint(e, zoneNameIDMapper, idToZoneMapper); err != nil {
 			log.WithFields(log.Fields{
 				"endpoint": e,
-			}).WithError(err).Debugf("Cannot enhance endpoint to include plan information")
+			}).WithError(err).Errorf("Unable to attach Cloudflare plan information to endpoint")
 		}
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
@@ -366,7 +368,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 	return adjustedEndpoints
 }
 
-func (p *CloudFlareProvider) enhanceEndpoint(record *endpoint.Endpoint, zoneNameIDMapper provider.ZoneIDName, idToZoneMapper map[string]cloudflare.Zone) error {
+func (p *CloudFlareProvider) addPlanInfoToEndpoint(record *endpoint.Endpoint, zoneNameIDMapper provider.ZoneIDName, idToZoneMapper map[string]cloudflare.Zone) error {
 	zoneID, zoneName := zoneNameIDMapper.FindZone(record.DNSName)
 
 	if zoneID == "" || zoneName == "" {
@@ -470,7 +472,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	}
 
 	// disables proxying for wildcard DNS records unless they are in a zone using the enterprise plan
-	if strings.Contains(endpoint.DNSName, "*") && !strings.Contains(strings.ToLower(plan), "enterprise") {
+	if strings.Contains(endpoint.DNSName, "*") && !strings.Contains(strings.ToLower(plan), enterprisePlan) {
 		proxied = false
 	}
 

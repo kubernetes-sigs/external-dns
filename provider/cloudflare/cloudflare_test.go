@@ -229,7 +229,7 @@ func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...clo
 		return cloudflare.ZonesResponse{}, m.listZonesError
 	}
 
-	result, err := m.ListZones()
+	result, err := m.ListZones(ctx)
 	if err != nil {
 		return cloudflare.ZonesResponse{}, m.listZonesError
 	}
@@ -530,6 +530,8 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 }
 
 func TestCloudflareSetProxied(t *testing.T) {
+	var proxied *bool = proxyEnabled
+	var notProxied *bool = proxyDisabled
 	type zoneInfo struct {
 		id   string
 		plan string
@@ -540,24 +542,24 @@ func TestCloudflareSetProxied(t *testing.T) {
 		proxiable  *bool
 		zone       zoneInfo
 	}{
-		{"A", "foo.com", true, zoneInfo{"002", "Pro"}},
-		{"A", "tar.com", true, zoneInfo{"004", "Enterprise"}},
-		{"CNAME", "bar.com", true, zoneInfo{"001", "Free"}},
-		{"CNAME", "tar.com", true, zoneInfo{"004", "Enterprise"}},
-		{"TXT", "bar.com", false, zoneInfo{"001", "Free"}},
-		{"TXT", "tar.com", false, zoneInfo{"004", "Enterprise"}},
-		{"MX", "foo.com", false, zoneInfo{"002", "Pro"}},
-		{"MX", "tar.com", false, zoneInfo{"004", "Enterprise"}},
-		{"NS", "baz.com", false, zoneInfo{"003", "Business"}},
-		{"NS", "tar.com", false, zoneInfo{"004", "Enterprise"}},
-		{"SPF", "bar.com", false, zoneInfo{"001", "Free"}},
-		{"SPF", "tar.com", false, zoneInfo{"004", "Enterprise"}},
-		{"SRV", "baz.com", false, zoneInfo{"003", "Business"}},
-		{"SRV", "tar.com", false, zoneInfo{"004", "Enterprise"}},
-		{"A", "*.bar.com", false, zoneInfo{"001", "Free"}},
-		{"A", "*.foo.com", false, zoneInfo{"002", "Pro"}},
-		{"A", "*.baz.com", false, zoneInfo{"003", "Business"}},
-		{"A", "*.tar.com", true, zoneInfo{"004", "Enterprise"}},
+		{"A", "foo.com", proxied, zoneInfo{"002", "Pro"}},
+		{"A", "tar.com", proxied, zoneInfo{"004", "Enterprise"}},
+		{"CNAME", "bar.com", proxied, zoneInfo{"001", "Free"}},
+		{"CNAME", "tar.com", proxied, zoneInfo{"004", "Enterprise"}},
+		{"TXT", "bar.com", notProxied, zoneInfo{"001", "Free"}},
+		{"TXT", "tar.com", notProxied, zoneInfo{"004", "Enterprise"}},
+		{"MX", "foo.com", notProxied, zoneInfo{"002", "Pro"}},
+		{"MX", "tar.com", notProxied, zoneInfo{"004", "Enterprise"}},
+		{"NS", "baz.com", notProxied, zoneInfo{"003", "Business"}},
+		{"NS", "tar.com", notProxied, zoneInfo{"004", "Enterprise"}},
+		{"SPF", "bar.com", notProxied, zoneInfo{"001", "Free"}},
+		{"SPF", "tar.com", notProxied, zoneInfo{"004", "Enterprise"}},
+		{"SRV", "baz.com", notProxied, zoneInfo{"003", "Business"}},
+		{"SRV", "tar.com", notProxied, zoneInfo{"004", "Enterprise"}},
+		{"A", "*.bar.com", notProxied, zoneInfo{"001", "Free"}},
+		{"A", "*.foo.com", notProxied, zoneInfo{"002", "Pro"}},
+		{"A", "*.baz.com", notProxied, zoneInfo{"003", "Business"}},
+		{"A", "*.tar.com", proxied, zoneInfo{"004", "Enterprise"}},
 	}
 
 	for _, testCase := range testCases {
@@ -1117,7 +1119,7 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				})
 			}
 
-		desired = provider.AdjustEndpoints(desired)
+			desired = provider.AdjustEndpoints(desired)
 
 			plan := plan.Plan{
 				Current:            current,
