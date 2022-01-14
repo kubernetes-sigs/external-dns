@@ -317,56 +317,10 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 	return provider, nil
 }
 
-func (p *IBMCloudProvider) PrivateZones(ctx context.Context) ([]dnssvcsv1.Dnszone, error) {
-	result := []dnssvcsv1.Dnszone{}
-	// if there is a zoneIDfilter configured
-	// && if the filter isn't just a blank string (used in tests)
-	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
-		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
-		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
-			log.Debugf("looking up zone %s", zoneID)
-			detailResponse, _, err := p.Client.GetDnszoneWithContext(ctx, &dnssvcsv1.GetDnszoneOptions{
-				InstanceID: core.StringPtr(p.instanceID),
-				DnszoneID:  core.StringPtr(zoneID),
-			})
-			if err != nil {
-				log.Errorf("zone %s lookup failed, %v", zoneID, err)
-				continue
-			}
-			log.WithFields(log.Fields{
-				"zoneName": *detailResponse.Name,
-				"zoneID":   *detailResponse.ID,
-			}).Debugln("adding zone for consideration")
-			result = append(result, *detailResponse)
-		}
-		return result, nil
-	}
-
-	log.Debugln("no zoneIDFilter configured, looking at all zones")
-
-	zonesResponse, _, err := p.Client.ListDnszonesWithContext(ctx, &dnssvcsv1.ListDnszonesOptions{
-		InstanceID: core.StringPtr(p.instanceID),
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, zone := range zonesResponse.Dnszones {
-		if !p.domainFilter.Match(*zone.Name) {
-			log.Debugf("zone %s not in domain filter", *zone.Name)
-			continue
-		}
-		result = append(result, zone)
-	}
-
-	return result, nil
-}
-
 // Records gets the current records.
 //
 // Returns the current records or an error if the operation failed.
 func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
-	log.Debugf("List records")
 	if p.privateZone {
 		endpoints, err = p.privateRecords(ctx)
 	} else {
@@ -377,58 +331,36 @@ func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("CHanging records")
 	ibmcloudChanges := []*ibmcloudChange{}
-	seps, err := p.source.Endpoints(ctx)
-	if err != nil {
-		return err
-	}
-	log.Debugf("source endpoints: %v", seps)
 	for _, endpoint := range changes.Create {
-		for _, sep := range seps {
-			if endpoint.DNSName != sep.DNSName && strings.HasPrefix(endpoint.DNSName, sep.DNSName) {
-				log.Debugf("skip update host %s as record name: %s exist.", sep.DNSName, endpoint.DNSName)
-				continue
-			}
-			for _, target := range endpoint.Targets {
-				ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target))
-			}
+		for _, target := range endpoint.Targets {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target))
 		}
 	}
 
 	for i, desired := range changes.UpdateNew {
 		current := changes.UpdateOld[i]
-		//as ibmcoud support create record with prefix without FQDN, skip the change if records containe the labled host
-		for _, sep := range seps {
-			if current.DNSName != sep.DNSName && strings.HasPrefix(current.DNSName, sep.DNSName) {
-				log.Debugf("skip update host %s as record name: %s exist.", sep.DNSName, current.DNSName)
-				continue
-			}
-			add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
-			for _, a := range add {
-				ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, desired, a))
-			}
+		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
-			for _, a := range leave {
-				ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordUpdate, desired, a))
-			}
-
-			for _, a := range remove {
-				ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, current, a))
-			}
+		log.Debugf("add: %v, remove: %v, leave: %v", add, remove, leave)
+		for _, a := range add {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, desired, a))
 		}
+
+		for _, a := range leave {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordUpdate, desired, a))
+		}
+
+		for _, a := range remove {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, current, a))
+		}
+
 	}
 
 	for _, endpoint := range changes.Delete {
-		for _, sep := range seps {
-			if endpoint.DNSName != sep.DNSName && strings.HasPrefix(endpoint.DNSName, sep.DNSName) {
-				log.Debugf("skip update host %s as record name: %s exist.", sep.DNSName, endpoint.DNSName)
-				continue
-			}
-			for _, target := range endpoint.Targets {
-				ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, endpoint, target))
-			}
+		for _, target := range endpoint.Targets {
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, endpoint, target))
 		}
 	}
 
@@ -474,7 +406,9 @@ func (p *IBMCloudProvider) submitChangesForPublicDNS(ctx context.Context, change
 	if err != nil {
 		return err
 	}
+
 	for _, change := range changes {
+
 		logFields := log.Fields{
 			"record": *change.PublicResourceRecord.Name,
 			"type":   *change.PublicResourceRecord.Type,
@@ -482,11 +416,11 @@ func (p *IBMCloudProvider) submitChangesForPublicDNS(ctx context.Context, change
 			"action": change.Action,
 		}
 
-		log.WithFields(logFields).Info("Changing record.")
-
 		if p.DryRun {
 			continue
 		}
+
+		log.WithFields(logFields).Info("Changing record.")
 
 		if change.Action == recordUpdate {
 			recordID := p.getPublicRecordID(records, change.PublicResourceRecord)
@@ -512,12 +446,12 @@ func (p *IBMCloudProvider) submitChangesForPublicDNS(ctx context.Context, change
 
 // submitChangesForPrivateDNS takes a zone and a collection of Changes and sends them as a single transaction on private dns.
 func (p *IBMCloudProvider) submitChangesForPrivateDNS(ctx context.Context, changes []*ibmcloudChange) error {
-	zones, err := p.PrivateZones(ctx)
+	zones, err := p.privateZones(ctx)
 	if err != nil {
 		return err
 	}
 	// separate into per-zone change sets to be passed to the API.
-	changesByPrivateZone := p.changesByPrivateZone(zones, changes)
+	changesByPrivateZone := p.changesByPrivateZone(ctx, zones, changes)
 
 	for zoneID, changes := range changesByPrivateZone {
 		records, err := p.listAllPrivateRecords(ctx, zoneID)
@@ -526,6 +460,7 @@ func (p *IBMCloudProvider) submitChangesForPrivateDNS(ctx context.Context, chang
 		}
 
 		for _, change := range changes {
+
 			logFields := log.Fields{
 				"record": *change.PrivateResourceRecord.Name,
 				"type":   *change.PrivateResourceRecord.Type,
@@ -562,11 +497,56 @@ func (p *IBMCloudProvider) submitChangesForPrivateDNS(ctx context.Context, chang
 	return nil
 }
 
+// privateZones return zones in private dns
+func (p *IBMCloudProvider) privateZones(ctx context.Context) ([]dnssvcsv1.Dnszone, error) {
+	result := []dnssvcsv1.Dnszone{}
+	// if there is a zoneIDfilter configured
+	// && if the filter isn't just a blank string (used in tests)
+	if len(p.zoneIDFilter.ZoneIDs) > 0 && p.zoneIDFilter.ZoneIDs[0] != "" {
+		log.Debugln("zoneIDFilter configured. only looking up zone IDs defined")
+		for _, zoneID := range p.zoneIDFilter.ZoneIDs {
+			log.Debugf("looking up zone %s", zoneID)
+			detailResponse, _, err := p.Client.GetDnszoneWithContext(ctx, &dnssvcsv1.GetDnszoneOptions{
+				InstanceID: core.StringPtr(p.instanceID),
+				DnszoneID:  core.StringPtr(zoneID),
+			})
+			if err != nil {
+				log.Errorf("zone %s lookup failed, %v", zoneID, err)
+				continue
+			}
+			log.WithFields(log.Fields{
+				"zoneName": *detailResponse.Name,
+				"zoneID":   *detailResponse.ID,
+			}).Debugln("adding zone for consideration")
+			result = append(result, *detailResponse)
+		}
+		return result, nil
+	}
+
+	log.Debugln("no zoneIDFilter configured, looking at all zones")
+
+	zonesResponse, _, err := p.Client.ListDnszonesWithContext(ctx, &dnssvcsv1.ListDnszonesOptions{
+		InstanceID: core.StringPtr(p.instanceID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zonesResponse.Dnszones {
+		if !p.domainFilter.Match(*zone.Name) {
+			log.Debugf("zone %s not in domain filter", *zone.Name)
+			continue
+		}
+		result = append(result, zone)
+	}
+
+	return result, nil
+}
+
 // changesByPrivateZone separates a multi-zone change into a single change per zone.
-func (p *IBMCloudProvider) changesByPrivateZone(zones []dnssvcsv1.Dnszone, changeSet []*ibmcloudChange) map[string][]*ibmcloudChange {
+func (p *IBMCloudProvider) changesByPrivateZone(ctx context.Context, zones []dnssvcsv1.Dnszone, changeSet []*ibmcloudChange) map[string][]*ibmcloudChange {
 	changes := make(map[string][]*ibmcloudChange)
 	zoneNameIDMapper := provider.ZoneIDName{}
-
 	for _, z := range zones {
 		zoneNameIDMapper.Add(*z.ID, *z.Name)
 		changes[*z.ID] = []*ibmcloudChange{}
@@ -585,6 +565,7 @@ func (p *IBMCloudProvider) changesByPrivateZone(zones []dnssvcsv1.Dnszone, chang
 }
 
 func (p *IBMCloudProvider) publicRecords(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Debugf("Listing records on public zone")
 	dnsRecords, err := p.listAllPublicRecords(ctx)
 	if err != nil {
 		return nil, err
@@ -658,7 +639,8 @@ func (p *IBMCloudProvider) groupPublicRecords(records []dnsrecordsv1.DnsrecordDe
 }
 
 func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	zones, err := p.PrivateZones(ctx)
+	log.Debugf("Listing records on private zones")
+	zones, err := p.privateZones(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -722,6 +704,7 @@ func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.ResourceRecor
 		targets := make([]string, len(records))
 		for i, record := range records {
 			data := record.Rdata.(map[string]interface{})
+			log.Debugf("record data: %v", data)
 			switch *record.Type {
 			case "A":
 				if !isNil(data["ip"]) {
@@ -732,9 +715,10 @@ func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.ResourceRecor
 					targets[i] = data["cname"].(string)
 				}
 			case "TXT":
-				if !isNil(data["txt"]) {
-					targets[i] = data["txt"].(string)
+				if !isNil(data["text"]) {
+					targets[i] = data["text"].(string)
 				}
+				log.Debugf("text record data: %v", targets[i])
 			}
 		}
 
