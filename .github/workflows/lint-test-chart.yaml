@@ -7,6 +7,7 @@ on:
 
 jobs:
   lint-test:
+    if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -36,7 +37,7 @@ jobs:
           fi
 
       - name: Run chart-testing (lint)
-        run: ct lint
+        run: ct lint --check-version-increment=false
 
       - name: Create Kind cluster
         uses: helm/kind-action@v1.2.0

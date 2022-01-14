@@ -55,7 +55,7 @@ If your EKS-managed cluster is >= 1.13 and was created after 2019-09-04, refer
 to the [Amazon EKS
 documentation](https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html)
 for instructions on how to create the IAM Role. Otherwise, you will need to use
-kiam or kube2iam.
+kiam or kube2iam or set the environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY on the deployment.
 
 ### kiam
 
@@ -490,6 +490,23 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--aws-batch-change-size=4000` (default `1000`)
 * Increase the interval between changes
   * `--aws-batch-change-interval=10s` (default `1s`)
+* Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.
+
+A simple way to implement randomised startup is with an init container:
+
+```
+...
+    spec:
+      initContainers:
+      - name: init-jitter
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        command:
+        - /bin/sh
+        - -c
+        - 'FOR=$((RANDOM % 10))s;echo "Sleeping for $FOR";sleep $FOR'
+      containers:
+...
+```
 
 ### EKS
 
