@@ -325,7 +325,7 @@ func main() {
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
 	case "ibmcloud":
-		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, cfg.IBMCloudZoneType, cfg.IBMCloudProxied, cfg.DryRun)
+		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

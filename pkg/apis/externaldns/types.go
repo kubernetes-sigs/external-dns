@@ -177,7 +177,6 @@ type Config struct {
 	GoDaddyOTE                        bool
 	OCPRouterName                     string
 	IBMCloudProxied                   bool
-	IBMCloudZoneType                  string
 	IBMCloudConfigFile                string
 }
 
@@ -269,7 +268,7 @@ var defaultConfig = &Config{
 	UpdateEvents:                false,
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
-	LogLevel:                    logrus.InfoLevel.String(),
+	LogLevel:                    logrus.DebugLevel.String(),
 	ExoscaleEndpoint:            "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:              "",
 	ExoscaleAPISecret:           "",
@@ -304,7 +303,6 @@ var defaultConfig = &Config{
 	GoDaddyTTL:                  600,
 	GoDaddyOTE:                  false,
 	IBMCloudProxied:             false,
-	IBMCloudZoneType:            "",
 	IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 }
 
@@ -455,7 +453,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 	app.Flag("ibmcloud-config-file", "When using the IBM Cloud provider, specify the IBM Cloud configuration file (required when --provider=ibmcloud").Default(defaultConfig.IBMCloudConfigFile).StringVar(&cfg.IBMCloudConfigFile)
 	app.Flag("ibmcloud-proxied", "When using the IBM provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.IBMCloudProxied)
-	app.Flag("ibmcloud-zone-type", "When using the IBM Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.IBMCloudZoneType).EnumVar(&cfg.IBMCloudZoneType, "", "public", "private")
 	// GoDaddy flags
 	app.Flag("godaddy-api-key", "When using the GoDaddy provider, specify the API Key (required when --provider=godaddy)").Default(defaultConfig.GoDaddyAPIKey).StringVar(&cfg.GoDaddyAPIKey)
 	app.Flag("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)").Default(defaultConfig.GoDaddySecretKey).StringVar(&cfg.GoDaddySecretKey)
