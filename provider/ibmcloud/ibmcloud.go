@@ -63,6 +63,9 @@ const (
 	recordUpdate = "UPDATE"
 	// defaultCISRecordTTL 1 = automatic
 	defaultCISRecordTTL = 1
+
+	ZONE_STATE_PENDING_NETWORK = "PENDING_NETWORK_ADD"
+	ZONE_STATE_ACTIVE          = "ACTIVE"
 )
 
 // ibmcloudClient is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
@@ -73,6 +76,7 @@ type ibmcloudClient interface {
 	UpdateDnsRecordWithContext(ctx context.Context, updateDnsRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error)
 	ListDnszonesWithContext(ctx context.Context, listDnszonesOptions *dnssvcsv1.ListDnszonesOptions) (result *dnssvcsv1.ListDnszones, response *core.DetailedResponse, err error)
 	GetDnszoneWithContext(ctx context.Context, getDnszoneOptions *dnssvcsv1.GetDnszoneOptions) (result *dnssvcsv1.Dnszone, response *core.DetailedResponse, err error)
+	CreatePermittedNetworkWithContext(ctx context.Context, createPermittedNetworkOptions *dnssvcsv1.CreatePermittedNetworkOptions) (result *dnssvcsv1.PermittedNetwork, response *core.DetailedResponse, err error)
 	ListResourceRecordsWithContext(ctx context.Context, listResourceRecordsOptions *dnssvcsv1.ListResourceRecordsOptions) (result *dnssvcsv1.ListResourceRecords, response *core.DetailedResponse, err error)
 	CreateResourceRecordWithContext(ctx context.Context, createResourceRecordOptions *dnssvcsv1.CreateResourceRecordOptions) (result *dnssvcsv1.ResourceRecord, response *core.DetailedResponse, err error)
 	DeleteResourceRecordWithContext(ctx context.Context, deleteResourceRecordOptions *dnssvcsv1.DeleteResourceRecordOptions) (response *core.DetailedResponse, err error)
@@ -113,6 +117,10 @@ func (i ibmcloudService) ListDnszonesWithContext(ctx context.Context, listDnszon
 
 func (i ibmcloudService) GetDnszoneWithContext(ctx context.Context, getDnszoneOptions *dnssvcsv1.GetDnszoneOptions) (result *dnssvcsv1.Dnszone, response *core.DetailedResponse, err error) {
 	return i.privateDnsService.GetDnszoneWithContext(ctx, getDnszoneOptions)
+}
+
+func (i ibmcloudService) CreatePermittedNetworkWithContext(ctx context.Context, createPermittedNetworkOptions *dnssvcsv1.CreatePermittedNetworkOptions) (result *dnssvcsv1.PermittedNetwork, response *core.DetailedResponse, err error) {
+	return i.privateDnsService.CreatePermittedNetworkWithContext(ctx, createPermittedNetworkOptions)
 }
 
 func (i ibmcloudService) ListResourceRecordsWithContext(ctx context.Context, listResourceRecordsOptions *dnssvcsv1.ListResourceRecordsOptions) (result *dnssvcsv1.ListResourceRecords, response *core.DetailedResponse, err error) {
@@ -331,6 +339,7 @@ func (p *IBMCloudProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	log.Debugln("applying change...")
 	ibmcloudChanges := []*ibmcloudChange{}
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
@@ -379,9 +388,11 @@ func (p *IBMCloudProvider) PropertyValuesEqual(name string, previous string, cur
 func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
+		log.Debugf("adjusting endpont: %v", *e)
 		if shouldBeProxied(e, p.proxiedByDefault) {
 			e.RecordTTL = 0
 		}
+
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints
@@ -394,6 +405,7 @@ func (p *IBMCloudProvider) submitChanges(ctx context.Context, changes []*ibmclou
 		return nil
 	}
 
+	log.Debugln("submmiting change...")
 	if p.privateZone {
 		return p.submitChangesForPrivateDNS(ctx, changes)
 	}
@@ -408,7 +420,6 @@ func (p *IBMCloudProvider) submitChangesForPublicDNS(ctx context.Context, change
 	}
 
 	for _, change := range changes {
-
 		logFields := log.Fields{
 			"record": *change.PublicResourceRecord.Name,
 			"type":   *change.PublicResourceRecord.Type,
@@ -543,6 +554,23 @@ func (p *IBMCloudProvider) privateZones(ctx context.Context) ([]dnssvcsv1.Dnszon
 	return result, nil
 }
 
+// activePrivateZone active zone with new records add if not active
+func (p *IBMCloudProvider) activePrivateZone(ctx context.Context, zoneID, vpc string) {
+	permittedNetworkVpc := &dnssvcsv1.PermittedNetworkVpc{
+		VpcCrn: core.StringPtr(vpc),
+	}
+	createPermittedNetworkOptions := &dnssvcsv1.CreatePermittedNetworkOptions{
+		InstanceID:       core.StringPtr(p.instanceID),
+		DnszoneID:        core.StringPtr(zoneID),
+		PermittedNetwork: permittedNetworkVpc,
+		Type:             core.StringPtr("vpc"),
+	}
+	_, _, err := p.Client.CreatePermittedNetworkWithContext(ctx, createPermittedNetworkOptions)
+	if err != nil {
+		log.Errorf("failed to active zone %s in VPC %s with error: %v", zoneID, vpc, err)
+	}
+}
+
 // changesByPrivateZone separates a multi-zone change into a single change per zone.
 func (p *IBMCloudProvider) changesByPrivateZone(ctx context.Context, zones []dnssvcsv1.Dnszone, changeSet []*ibmcloudChange) map[string][]*ibmcloudChange {
 	changes := make(map[string][]*ibmcloudChange)
@@ -639,13 +667,31 @@ func (p *IBMCloudProvider) groupPublicRecords(records []dnsrecordsv1.DnsrecordDe
 }
 
 func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	log.Debugf("Listing records on private zones")
+	log.Debugf("Listing records on private zone")
+	var vpc string
 	zones, err := p.privateZones(ctx)
 	if err != nil {
 		return nil, err
 	}
+	sources, err := p.source.Endpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, source := range sources {
+		vpc = checkVPCAnnotation(source)
+		if len(vpc) > 0 {
+			log.Debugf("VPC found: %s", vpc)
+			break
+		}
+	}
+
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
+		if len(vpc) > 0 && *zone.State == ZONE_STATE_PENDING_NETWORK {
+			log.Debugf("active zone: %s", *zone.ID)
+			p.activePrivateZone(ctx, *zone.ID, vpc)
+		}
+
 		dnsRecords, err := p.listAllPrivateRecords(ctx, *zone.ID)
 		if err != nil {
 			return nil, err
@@ -682,7 +728,6 @@ GETRECORDS:
 
 func (p *IBMCloudProvider) groupPrivateRecords(records []dnssvcsv1.ResourceRecord) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
-
 	// group supported records by name and type
 	groups := map[string][]dnssvcsv1.ResourceRecord{}
 	for _, r := range records {
@@ -929,6 +974,22 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		proxied = false
 	}
 	return proxied
+}
+
+func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
+	var vpc string
+	for _, v := range endpoint.ProviderSpecific {
+		if v.Name == "ibmcloud-vpc" {
+			vpcCrn, err := crn.Parse(v.Value)
+			if vpcCrn.ResourceType != "vpc" || err != nil {
+				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
+			} else {
+				vpc = v.Value
+			}
+			break
+		}
+	}
+	return vpc
 }
 
 func isNil(i interface{}) bool {
