@@ -88,6 +88,7 @@ func (suite *HTTPProxySuite) SetupTest() {
 	var err error
 
 	suite.source, err = NewContourHTTPProxySource(
+		context.TODO(),
 		fakeDynamicClient,
 		"default",
 		"",
@@ -184,6 +185,7 @@ func TestNewContourHTTPProxySource(t *testing.T) {
 			fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 			_, err := NewContourHTTPProxySource(
+				context.TODO(),
 				fakeDynamicClient,
 				"",
 				ti.annotationFilter,
@@ -1033,6 +1035,7 @@ func testHTTPProxyEndpoints(t *testing.T) {
 			}
 
 			httpProxySource, err := NewContourHTTPProxySource(
+				context.TODO(),
 				fakeDynamicClient,
 				ti.targetNamespace,
 				ti.annotationFilter,
@@ -1059,6 +1062,7 @@ func newTestHTTPProxySource() (*httpProxySource, error) {
 	fakeDynamicClient, _ := newDynamicKubernetesClient()
 
 	src, err := NewContourHTTPProxySource(
+		context.TODO(),
 		fakeDynamicClient,
 		"default",
 		"",
