@@ -300,7 +300,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 				continue
 			}
 
-			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
+			if !p.domainFilter.Match(aws.StringValue(zone.Name)) && !p.domainFilter.MatchParent(aws.StringValue(zone.Name)) {
 				continue
 			}
 

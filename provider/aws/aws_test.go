@@ -290,19 +290,23 @@ func TestAWSZones(t *testing.T) {
 
 	noZones := map[string]*route53.HostedZone{}
 
+	defaultDomainFilters := endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."})
+
 	for _, ti := range []struct {
 		msg            string
 		zoneIDFilter   provider.ZoneIDFilter
 		zoneTypeFilter provider.ZoneTypeFilter
 		zoneTagFilter  provider.ZoneTagFilter
+		domainFilters  endpoint.DomainFilter
 		expectedZones  map[string]*route53.HostedZone
 	}{
-		{"no filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), allZones},
-		{"public filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("public"), provider.NewZoneTagFilter([]string{}), publicZones},
-		{"private filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("private"), provider.NewZoneTagFilter([]string{}), privateZones},
-		{"unknown filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("unknown"), provider.NewZoneTagFilter([]string{}), noZones},
-		{"zone id filter", provider.NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), privateZones},
-		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), privateZones},
+		{"no filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), defaultDomainFilters, allZones},
+		{"public filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("public"), provider.NewZoneTagFilter([]string{}), defaultDomainFilters, publicZones},
+		{"private filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("private"), provider.NewZoneTagFilter([]string{}), defaultDomainFilters, privateZones},
+		{"unknown filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter("unknown"), provider.NewZoneTagFilter([]string{}), defaultDomainFilters, noZones},
+		{"zone id filter", provider.NewZoneIDFilter([]string{"/hostedzone/zone-3.ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), defaultDomainFilters, privateZones},
+		{"tag filter", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{"zone=3"}), defaultDomainFilters, privateZones},
+		{"domain filter zone-1", provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), provider.NewZoneTagFilter([]string{}), endpoint.NewDomainFilter([]string{"zone-1.ext-dns-test-2.teapot.zalan.do"}), map[string]*route53.HostedZone{"/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.": allZones["/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."]}},
 	} {
 		provider, _ := newAWSProviderWithTagFilter(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), ti.zoneIDFilter, ti.zoneTypeFilter, ti.zoneTagFilter, defaultEvaluateTargetHealth, false, nil)
 
