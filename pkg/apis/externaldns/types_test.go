@@ -67,7 +67,7 @@ var (
 		AzureResourceGroup:          "",
 		AzureSubscriptionID:         "",
 		BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
-		ProVisionConfigFile:         "/etc/kubernetes/provision.json",
+		ProVisionConfigFile:         "",
 		ProVisionUsername:           "",
 		ProVisionPassword:           "",
 		ProVisionHost:               "",
