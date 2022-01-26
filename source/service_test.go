@@ -65,6 +65,7 @@ func (suite *ServiceSuite) SetupTest() {
 	suite.NoError(err, "should successfully create service")
 
 	suite.sc, err = NewServiceSource(
+		context.TODO(),
 		fakeClient,
 		"",
 		"",
@@ -144,6 +145,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewServiceSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
@@ -1039,6 +1041,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				tc.annotationFilter,
@@ -1227,6 +1230,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				tc.annotationFilter,
@@ -1391,6 +1395,7 @@ func TestClusterIpServices(t *testing.T) {
 			}
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				tc.annotationFilter,
@@ -1960,6 +1965,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				tc.annotationFilter,
@@ -2295,6 +2301,7 @@ func TestHeadlessServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				"",
@@ -2651,6 +2658,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				"",
@@ -2762,6 +2770,7 @@ func TestExternalServices(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, _ := NewServiceSource(
+				context.TODO(),
 				kubernetes,
 				tc.targetNamespace,
 				"",
@@ -2815,6 +2824,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 	require.NoError(b, err)
 
 	client, err := NewServiceSource(
+		context.TODO(),
 		kubernetes,
 		v1.NamespaceAll,
 		"",
