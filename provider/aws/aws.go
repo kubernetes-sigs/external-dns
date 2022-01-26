@@ -119,6 +119,8 @@ var (
 		"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
 		// Global Accelerator
 		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
+		// Cloudfront
+		"cloudfront.net": "Z2FDTNDATAQYW2",
 	}
 )
 
