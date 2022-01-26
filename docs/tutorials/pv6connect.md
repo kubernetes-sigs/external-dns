@@ -5,15 +5,17 @@ The first external-dns release with with ProVision provider support
 
 ## Configuration Options
 
-The options for configuring the 6connect ProVision Provider are available through the json file provided to External-DNS via the flag `--pv6connect-config-file`. 
+The options for configuring the 6connect ProVision Provider are available through the json file provided to External-DNS via the flag `--pv6connect-config-file`. You can also use ENV variables or External DNS flags to set the required options
 
-| Key               | Required           |
-| ----------------- | ------------------ |
-| provisionHost     | Yes                |
-| provisionUsername | Yes                |
-| provisionPassword | Yes                |
-| dnsViews          | Yes                |
-| skipTLSVerify     | No (default false) |
+| Key               | Required           | Env                 | Flag                   |
+| ----------------- | ------------------ | ------------------- | ---------------------- |
+| provisionHost     | Yes                | PROVISION_HOST      | --pv6connect-host      |
+| provisionUsername | Yes                | PROVISION_USERNAME  | --pv6connect-username  |
+| provisionPassword | Yes                | PROVISION_PASSWORD  | --pv6connect-password  |
+| zoneIDs           | Yes                | PROVISION_ZONEIDS   | --pv6connect-zoneids   |
+| provisionPush     | No                 |                     | --pv6connect-push      |
+| skipTLSVerify     | No (default false) |                     |                        |
+
 
 ### HTTP proxy
 

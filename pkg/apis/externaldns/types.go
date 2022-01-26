@@ -93,6 +93,11 @@ type Config struct {
 	AzureUserAssignedIdentityClientID string
 	BluecatConfigFile                 string
 	ProVisionConfigFile               string
+	ProVisionUsername                 string
+	ProVisionPassword                 string
+	ProVisionHost                     string
+	ProVisionZoneIDs                  string
+	ProVisionPush                     bool
 	CloudflareProxied                 bool
 	CloudflareZonesPerPage            int
 	CoreDNSPrefix                     string
@@ -224,7 +229,12 @@ var defaultConfig = &Config{
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
 	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
-	ProVisionConfigFile:         "/etc/kubernetes/provision.json",
+	ProVisionConfigFile:         "",
+	ProVisionUsername:           "",
+	ProVisionPassword:           "",
+	ProVisionHost:               "",
+	ProVisionZoneIDs:            "",
+	ProVisionPush:               false,
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
@@ -417,6 +427,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
 	app.Flag("bluecat-config-file", "When using the Bluecat provider, specify the Bluecat configuration file (required when --provider=bluecat").Default(defaultConfig.BluecatConfigFile).StringVar(&cfg.BluecatConfigFile)
 	app.Flag("pv6connect-config-file", "When using the 6Connect ProVision provider, specify the ProVision configuration file (required when --provider=6cprovision").Default(defaultConfig.ProVisionConfigFile).StringVar(&cfg.ProVisionConfigFile)
+	app.Flag("pv6connect-username", "When using the 6Connect ProVision provider, specify the ProVision UserName (required when --provider=6cprovision").Default(defaultConfig.ProVisionUsername).StringVar(&cfg.ProVisionUsername)
+	app.Flag("pv6connect-password", "When using the 6Connect ProVision provider, specify the ProVision Password (required when --provider=6cprovision").Default(defaultConfig.ProVisionPassword).StringVar(&cfg.ProVisionPassword)
+	app.Flag("pv6connect-host", "When using the 6Connect ProVision provider, specify the ProVision Host URL (required when --provider=6cprovision").Default(defaultConfig.ProVisionHost).StringVar(&cfg.ProVisionHost)
+	app.Flag("pv6connect-zoneids", "When using the 6Connect ProVision provider, specify the ProVision Zone IDs separated by comma (required when --provider=6cprovision").Default(defaultConfig.ProVisionZoneIDs).StringVar(&cfg.ProVisionZoneIDs)
+	app.Flag("pv6connect-push", "When using the 6Connect ProVision provider, specify the ProVision Push Flag (required when --provider=6cprovision").Default(strconv.FormatBool(defaultConfig.ProVisionPush)).BoolVar(&cfg.ProVisionPush)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-zones-per-page", "When using the Cloudflare provider, specify how many zones per page listed, max. possible 50 (default: 50)").Default(strconv.Itoa(defaultConfig.CloudflareZonesPerPage)).IntVar(&cfg.CloudflareZonesPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)

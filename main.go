@@ -214,7 +214,15 @@ func main() {
 	case "bluecat":
 		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "pv6connect":
-		p, err = pv6connect.NewProVisionProvider(cfg.ProVisionConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = pv6connect.NewProVisionProvider(
+			pv6connect.ProVisionConfig{
+				ProVisionHost:     cfg.ProVisionHost,
+				ProVisionUsername: cfg.ProVisionUsername,
+				ProVisionPassword: cfg.ProVisionPassword,
+				ProVisionPush:     cfg.ProVisionPush,
+				ZoneIDs:           pv6connect.SplitZoneIds(cfg.ProVisionZoneIDs),
+			},
+			cfg.ProVisionConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":

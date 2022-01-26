@@ -63,6 +63,9 @@ func (g mockPVClient) createProVisionRecord(zoneID string, ep *endpoint.Endpoint
 func (g mockPVClient) deleteProVisionRecord(recordID string) (err error) {
 	return nil
 }
+func (g mockPVClient) pushProVisionZone(zoneID string) (err error) {
+	return nil
+}
 
 func (g mockPVClient) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
 	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/users", "http://some.com/api/v1"), nil)

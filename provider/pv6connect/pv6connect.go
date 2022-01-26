@@ -27,6 +27,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -44,17 +45,19 @@ type ProVisionConfig struct {
 	ProVisionUsername string   `json:"provisionUsername,omitempty"`
 	ProVisionPassword string   `json:"provisionPassword,omitempty"`
 	ZoneIDs           []string `json:"zoneIDs,omitempty"`
+	ProVisionPush     bool     `json:"provisionPush"`
 	SkipTLSVerify     bool     `json:"skipTLSVerify"`
 }
 
 // ProVisionProvider implements the DNS provider for 6connect ProVision
 type ProVisionProvider struct {
 	provider.BaseProvider
-	domainFilter endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	dryRun       bool
-	ZoneIDs      []string
-	PVClient     PVClient
+	domainFilter  endpoint.DomainFilter
+	zoneIDFilter  provider.ZoneIDFilter
+	dryRun        bool
+	ZoneIDs       []string
+	ProVisionPush bool
+	PVClient      PVClient
 }
 
 // PVClientConfig defines new client on ProVision
@@ -73,6 +76,7 @@ type PVClient interface {
 	getProVisionSpecificRecord(ZoneID, RecordHost, RecordType, RecordValue string, OutputRes *PVResource) (bool, error)
 	createProVisionRecord(zoneID string, ep *endpoint.Endpoint) (bool, error)
 	deleteProVisionRecord(recordID string) error
+	pushProVisionZone(zoneID string) error
 }
 
 // PVResource defines a resource for both zones and records
@@ -93,29 +97,96 @@ func IsValidRecordType(recordType string) bool {
 	return false
 }
 
+func SplitZoneIds(zoneIds string) []string {
+	//TODO check if the zone id elements are integers
+	var zone_ids_slice []string
+	if zoneIds == "" {
+		return zone_ids_slice
+	}
+
+	return strings.Split(zoneIds, ",")
+}
+
+func checkIfCfgApplied(cfg ProVisionConfig) bool {
+	if cfg.ProVisionUsername == "" ||
+		cfg.ProVisionHost == "" ||
+		cfg.ProVisionPassword == "" ||
+		len(cfg.ZoneIDs) == 0 {
+		return false
+	}
+
+	return true
+}
+
+func fillCfgWithEnv(cfg *ProVisionConfig) error {
+
+	if cfg.ProVisionUsername == "" {
+		if v, ok := os.LookupEnv("PROVISION_USERNAME"); ok {
+			cfg.ProVisionUsername = v
+		} else {
+			return errors.Errorf("JSON ProVisionUsername and PROVISION_USERNAME are empty")
+		}
+	}
+
+	if cfg.ProVisionPassword == "" {
+		if v, ok := os.LookupEnv("PROVISION_PASSWORD"); ok {
+			cfg.ProVisionPassword = v
+		} else {
+			return errors.Errorf("JSON ProVisionPassword and PROVISION_PASSWORD are empty")
+		}
+	}
+
+	if cfg.ProVisionHost == "" {
+		if v, ok := os.LookupEnv("PROVISION_HOST"); ok {
+			cfg.ProVisionHost = v
+		} else {
+			return errors.Errorf("JSON ProVisionHost and PROVISION_HOST are empty")
+		}
+	}
+
+	if len(cfg.ZoneIDs) == 0 {
+		if v, ok := os.LookupEnv("PROVISION_ZONEIDS"); ok {
+			cfg.ZoneIDs = SplitZoneIds(v)
+		} else {
+			return errors.Errorf("JSON ZoneIDs and PROVISION_ZONEIDS are empty")
+		}
+	}
+
+	return nil
+}
+
 // NewProVisionProvider creates a new 6connect ProVision provider.
 //
 // Returns a pointer to the provider or an error if a provider could not be created.
-func NewProVisionProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*ProVisionProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read ProVision config file %v", configFile)
+func NewProVisionProvider(cfg ProVisionConfig, configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*ProVisionProvider, error) {
+	if configFile != "" && !checkIfCfgApplied(cfg) {
+		contents, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read ProVision config file %v", configFile)
+		}
+
+		err = json.Unmarshal(contents, &cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read ProVision config file %v", configFile)
+		}
 	}
 
-	cfg := ProVisionConfig{}
-	err = json.Unmarshal(contents, &cfg)
+	err := fillCfgWithEnv(&cfg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read ProVision config file %v", configFile)
+		return nil, errors.Wrapf(err, "Missing ProVision Config Values : %v", err)
 	}
+
+	//log.Debugf("CONFIG : %v", cfg)
 
 	pvClient := NewPVClient(cfg.ProVisionHost, cfg.ProVisionUsername, cfg.ProVisionPassword, cfg.ZoneIDs, cfg.SkipTLSVerify)
 
 	provider := &ProVisionProvider{
-		domainFilter: domainFilter,
-		zoneIDFilter: zoneIDFilter,
-		dryRun:       dryRun,
-		ZoneIDs:      cfg.ZoneIDs,
-		PVClient:     pvClient,
+		domainFilter:  domainFilter,
+		zoneIDFilter:  zoneIDFilter,
+		dryRun:        dryRun,
+		ZoneIDs:       cfg.ZoneIDs,
+		ProVisionPush: cfg.ProVisionPush,
+		PVClient:      pvClient,
 	}
 	return provider, nil
 }
@@ -265,6 +336,28 @@ func (p *ProVisionProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	p.deleteRecords(deleted)
 	p.createRecords(created)
+
+	if p.ProVisionPush {
+		//lets get hash of the zone ids for both created and deleted
+		processed_zones := make(map[string]bool)
+		for zoneID, _ := range deleted {
+			processed_zones[zoneID] = true
+		}
+		for zoneID, _ := range created {
+			processed_zones[zoneID] = true
+		}
+
+		//do the actual push
+		for zoneID, _ := range processed_zones {
+			log.Infof("Pushing zone ID '%s'.",
+				zoneID,
+			)
+			if p.dryRun {
+				continue
+			}
+			p.PVClient.pushProVisionZone(zoneID)
+		}
+	}
 
 	return nil
 }
@@ -493,6 +586,29 @@ func (p *ProVisionProvider) deleteRecords(deleted pvChangeMap) {
 	}
 }
 
+func (c PVClientConfig) pushProVisionZone(zoneID string) error {
+	client := newHTTPClient(c.SkipTLSVerify)
+
+	url := "/api/v2/dns/zones/" + zoneID + "/push"
+	log.Debugf("Executing Push on " + url)
+	req, err := c.buildHTTPRequest("POST", url, nil)
+	if err != nil {
+		return errors.Wrap(err, "error building http request")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return errors.Wrap(err, "error executing the request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return errors.Errorf("status is " + resp.Status)
+	}
+
+	return nil
+}
+
 func (c PVClientConfig) deleteProVisionRecord(recordID string) error {
 	client := newHTTPClient(c.SkipTLSVerify)
 
@@ -522,6 +638,7 @@ func (c PVClientConfig) createProVisionRecord(zoneID string, ep *endpoint.Endpoi
 	RecordHost := ep.DNSName
 	RecordType := ep.RecordType
 	RecordValue := ep.Targets[0]
+	RecordTTL := int(ep.RecordTTL)
 
 	RecordValue = strings.Trim(RecordValue, "\"")
 	RecordValue = strings.Trim(RecordValue, " ")
@@ -530,15 +647,21 @@ func (c PVClientConfig) createProVisionRecord(zoneID string, ep *endpoint.Endpoi
 		RecordHost += "."
 	}
 
+	attrs := map[string]string{
+		"record_host":  RecordHost,
+		"record_type":  RecordType,
+		"record_value": RecordValue,
+	}
+
+	if RecordTTL > 0 {
+		attrs["record_ttl"] = strconv.Itoa(RecordTTL)
+	}
+
 	body, err := json.Marshal(map[string]interface{}{
 		"name":      "EXTERNALDNS Record",
 		"type":      "dnsrecord",
 		"parent_id": zoneID,
-		"attrs": map[string]string{
-			"record_host":  RecordHost,
-			"record_type":  RecordType,
-			"record_value": RecordValue,
-		},
+		"attrs":     attrs,
 	})
 	if err != nil {
 		return false, errors.Wrap(err, "error with json body marshal")
@@ -571,6 +694,7 @@ func (c PVClientConfig) getProVisionZones(zoneIDs []string) ([]PVResource, error
 		"type":         "dnszone",
 		"resource__in": zoneIDs,
 	})
+	//log.Debugf("BODY: %v", string(body))
 	if err != nil {
 		return nil, errors.Wrap(err, "error building the json body")
 	}
@@ -587,6 +711,10 @@ func (c PVClientConfig) getProVisionZones(zoneIDs []string) ([]PVResource, error
 		return nil, errors.Wrapf(err, "error retrieving zone(s) from ProVision: %v", url)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return nil, errors.Wrapf(err, "error retrieving zone(s) from ProVision: %v", resp.Status)
+	}
 
 	zones := []PVResource{}
 	json.NewDecoder(resp.Body).Decode(&zones)
