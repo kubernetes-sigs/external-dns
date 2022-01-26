@@ -5,7 +5,7 @@ go 1.17
 require (
 	cloud.google.com/go v0.97.0
 	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
-	github.com/Azure/azure-sdk-for-go v46.4.0+incompatible
+	github.com/Azure/azure-sdk-for-go v61.3.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.21
 	github.com/Azure/go-autorest/autorest/adal v0.9.16
 	github.com/Azure/go-autorest/autorest/to v0.4.0
