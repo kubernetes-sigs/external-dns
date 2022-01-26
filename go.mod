@@ -20,7 +20,7 @@ require (
 	github.com/datawire/ambassador v1.6.0
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
 	github.com/digitalocean/godo v1.69.1
-	github.com/dnsimple/dnsimple-go v0.60.0
+	github.com/dnsimple/dnsimple-go v0.71.1
 	github.com/exoscale/egoscale v0.80.1
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
@@ -37,7 +37,7 @@ require (
 	github.com/nic-at/rc0go v1.1.1
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
-	github.com/oracle/oci-go-sdk v21.4.0+incompatible
+	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/ovh/go-ovh v0.0.0-20181109152953-ba5adb4cf014
 	github.com/pkg/errors v0.9.1
 	github.com/projectcontour/contour v1.18.2
