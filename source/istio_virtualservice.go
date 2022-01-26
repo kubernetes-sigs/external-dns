@@ -31,7 +31,6 @@ import (
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -60,6 +59,7 @@ type virtualServiceSource struct {
 
 // NewIstioVirtualServiceSource creates a new virtualServiceSource with the given config.
 func NewIstioVirtualServiceSource(
+	ctx context.Context,
 	kubeClient kubernetes.Interface,
 	istioClient istioclient.Interface,
 	namespace string,
@@ -97,9 +97,8 @@ func NewIstioVirtualServiceSource(
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
-	istioInformerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
+	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
