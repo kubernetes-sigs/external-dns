@@ -114,10 +114,13 @@ The following table clarifies the current status of the providers according to t
 
 ## Kubernetes version compatibility
 
-| ExternalDNS        |      <= 0.9.x      |     >= 0.10.0      |
-| ------------------ | :----------------: | :----------------: |
-| Kubernetes <= 1.18 | :white_check_mark: |        :x:         |
-| Kubernetes >= 1.19 |        :x:         | :white_check_mark: |
+A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0. 
+
+| ExternalDNS                    |      <= 0.9.x      |     >= 0.10.0      |
+| ------------------------------ | :----------------: | :----------------: |
+| Kubernetes <= 1.18             | :white_check_mark: |        :x:         |
+| Kubernetes >= 1.19 and <= 1.21 | :white_check_mark: | :white_check_mark: |
+| Kubernetes >= 1.22             |        :x:         | :white_check_mark: |
 
 ## Running ExternalDNS:
 
