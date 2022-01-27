@@ -61,12 +61,20 @@ const (
 	recordDelete = "DELETE"
 	// recordUpdate is a ChangeAction enum value
 	recordUpdate = "UPDATE"
-	// defaultCISRecordTTL 1 = automatic
-	defaultCISRecordTTL = 1
+	// defaultPublicRecordTTL 1 = automatic
+	defaultPublicRecordTTL = 1
 
+	PROXY_FILTER               = "ibmcloud-proxied"
+	VPC_FILTER                 = "ibmcloud-vpc"
 	ZONE_STATE_PENDING_NETWORK = "PENDING_NETWORK_ADD"
 	ZONE_STATE_ACTIVE          = "ACTIVE"
 )
+
+// Source shadow the interface source.Source. used primarily for unit testing.
+type Source interface {
+	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
+	AddEventHandler(context.Context, func())
+}
 
 // ibmcloudClient is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
 type ibmcloudClient interface {
@@ -166,7 +174,7 @@ func (i ibmcloudService) NewResourceRecordUpdateInputRdataRdataTxtRecord(text st
 // IBMCloudProvider is an implementation of Provider for IBM Cloud DNS.
 type IBMCloudProvider struct {
 	provider.BaseProvider
-	source source.Source
+	source Source
 	Client ibmcloudClient
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter     endpoint.DomainFilter
@@ -206,7 +214,7 @@ func getConfig(configFile string) (*ibmcloudConfig, error) {
 	return cfg, nil
 }
 
-func (c *ibmcloudConfig) Validate(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter) (ibmcloudService, bool, error) {
+func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter) (ibmcloudService, bool, error) {
 	var service ibmcloudService
 	isPrivate := false
 	log.Debugf("filters: %v, %v", domainFilter.Filters, zoneIDFilter.ZoneIDs)
@@ -221,15 +229,6 @@ func (c *ibmcloudConfig) Validate(domainFilter endpoint.DomainFilter, zoneIDFilt
 	log.Infof("IBM Cloud Service: %s", crn.ServiceName)
 	c.InstanceID = crn.ServiceInstance
 
-	authenticator := &core.IamAuthenticator{
-		ApiKey: c.APIKey,
-	}
-	if c.IAMURL != "" {
-		authenticator = &core.IamAuthenticator{
-			ApiKey: c.APIKey,
-			URL:    c.IAMURL,
-		}
-	}
 	switch {
 	case strings.Contains(crn.ServiceName, "internet-svcs"):
 		if len(domainFilter.Filters) > 1 || len(zoneIDFilter.ZoneIDs) > 1 {
@@ -247,6 +246,7 @@ func (c *ibmcloudConfig) Validate(domainFilter endpoint.DomainFilter, zoneIDFilt
 		if c.Endpoint != "" {
 			service.publicZonesService.SetServiceURL(c.Endpoint)
 		}
+
 		zonesResp, _, err := service.publicZonesService.ListZones(&zonesv1.ListZonesOptions{})
 		if err != nil {
 			return service, isPrivate, fmt.Errorf("failed to list ibmcloud public zones: %v", err)
@@ -307,7 +307,17 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		return nil, err
 	}
 
-	client, isPrivate, err := cfg.Validate(domainFilter, zoneIDFilter)
+	authenticator := &core.IamAuthenticator{
+		ApiKey: cfg.APIKey,
+	}
+	if cfg.IAMURL != "" {
+		authenticator = &core.IamAuthenticator{
+			ApiKey: cfg.APIKey,
+			URL:    cfg.IAMURL,
+		}
+	}
+
+	client, isPrivate, err := cfg.Validate(authenticator, domainFilter, zoneIDFilter)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +387,7 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 }
 
 func (p *IBMCloudProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == source.IBMCloudProxiedKey {
+	if name == PROXY_FILTER {
 		return plan.CompareBoolean(p.proxiedByDefault, name, previous, current)
 	}
 
@@ -652,7 +662,7 @@ func (p *IBMCloudProvider) groupPublicRecords(records []dnsrecordsv1.DnsrecordDe
 			*records[0].Name,
 			*records[0].Type,
 			endpoint.TTL(*records[0].TTL),
-			targets...).WithProviderSpecific(source.IBMCloudProxiedKey, strconv.FormatBool(*records[0].Proxied))
+			targets...).WithProviderSpecific(PROXY_FILTER, strconv.FormatBool(*records[0].Proxied))
 
 		log.Debugf(
 			"Found %s record for '%s' with target '%s'.",
@@ -677,6 +687,7 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 	if err != nil {
 		return nil, err
 	}
+	log.Infof("source %v", sources)
 	for _, source := range sources {
 		vpc = checkVPCAnnotation(source)
 		if len(vpc) > 0 {
@@ -803,7 +814,7 @@ func (p *IBMCloudProvider) getPrivateRecordID(records []dnssvcsv1.ResourceRecord
 }
 
 func (p *IBMCloudProvider) newIBMCloudChange(action string, endpoint *endpoint.Endpoint, target string) *ibmcloudChange {
-	ttl := defaultCISRecordTTL
+	ttl := defaultPublicRecordTTL
 	proxied := shouldBeProxied(endpoint, p.proxiedByDefault)
 
 	if endpoint.RecordTTL.IsConfigured() {
@@ -959,10 +970,10 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.IBMCloudProxiedKey {
+		if v.Name == PROXY_FILTER {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", source.IBMCloudProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%s]: %v", PROXY_FILTER, err)
 			} else {
 				proxied = b
 			}
@@ -979,7 +990,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	var vpc string
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == "ibmcloud-vpc" {
+		if v.Name == VPC_FILTER {
 			vpcCrn, err := crn.Parse(v.Value)
 			if vpcCrn.ResourceType != "vpc" || err != nil {
 				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
