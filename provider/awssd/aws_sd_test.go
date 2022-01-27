@@ -706,6 +706,7 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "")
 
 	expectedInstances := make(map[string]*sd.Instance)
+	defaultPort := "443"
 
 	// IP-based instance
 	provider.RegisterInstance(services["private"]["a-srv"], &endpoint.Endpoint{
@@ -718,12 +719,14 @@ func TestAWSSDProvider_RegisterInstance(t *testing.T) {
 		Id: aws.String("1.2.3.4"),
 		Attributes: map[string]*string{
 			sdInstanceAttrIPV4: aws.String("1.2.3.4"),
+			sdInstanceAttrPort: &defaultPort,
 		},
 	}
 	expectedInstances["1.2.3.5"] = &sd.Instance{
 		Id: aws.String("1.2.3.5"),
 		Attributes: map[string]*string{
 			sdInstanceAttrIPV4: aws.String("1.2.3.5"),
+			sdInstanceAttrPort: &defaultPort,
 		},
 	}
 

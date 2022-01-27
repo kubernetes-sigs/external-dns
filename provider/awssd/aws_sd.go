@@ -49,6 +49,7 @@ const (
 	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
 	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
 	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
+	sdInstanceAttrPort  = "AWS_INSTANCE_PORT"
 )
 
 var (
@@ -489,6 +490,7 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 		log.Infof("Registering a new instance \"%s\" for service \"%s\" (%s)", target, *service.Name, *service.Id)
 
 		attr := make(map[string]*string)
+		defaultPort := "443"
 
 		if ep.RecordType == endpoint.RecordTypeCNAME {
 			if p.isAWSLoadBalancer(target) {
@@ -498,6 +500,7 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 			}
 		} else if ep.RecordType == endpoint.RecordTypeA {
 			attr[sdInstanceAttrIPV4] = aws.String(target)
+			attr[sdInstanceAttrPort] = &defaultPort
 		} else {
 			return fmt.Errorf("invalid endpoint type (%v)", ep)
 		}
