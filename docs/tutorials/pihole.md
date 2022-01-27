@@ -125,11 +125,13 @@ spec:
   - host: foo.bar.com
     http:
       paths:
-      - pathType: ImplementationSpecific
+      - path: /
+        pathType: Prefix
         backend:
           service:
             name: foo
-            port: 80
+            port:
+              number: 80
 ```
 
 ### Service Example
