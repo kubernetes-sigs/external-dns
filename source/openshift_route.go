@@ -29,7 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -54,6 +53,7 @@ type ocpRouteSource struct {
 
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
 func NewOcpRouteSource(
+	ctx context.Context,
 	ocpClient versioned.Interface,
 	namespace string,
 	annotationFilter string,
@@ -81,8 +81,7 @@ func NewOcpRouteSource(
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
@@ -102,8 +101,12 @@ func NewOcpRouteSource(
 	}, nil
 }
 
-// TODO add a meaningful EventHandler
 func (ors *ocpRouteSource) AddEventHandler(ctx context.Context, handler func()) {
+	log.Debug("Adding event handler for openshift route")
+
+	// Right now there is no way to remove event handler from informer, see:
+	// https://github.com/kubernetes/kubernetes/issues/79610
+	ors.routeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.

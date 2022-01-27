@@ -63,6 +63,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
+	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
@@ -136,7 +137,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
+	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -238,19 +239,20 @@ func main() {
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
 			infoblox.InfobloxConfig{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				Host:         cfg.InfobloxGridHost,
-				Port:         cfg.InfobloxWapiPort,
-				Username:     cfg.InfobloxWapiUsername,
-				Password:     cfg.InfobloxWapiPassword,
-				Version:      cfg.InfobloxWapiVersion,
-				SSLVerify:    cfg.InfobloxSSLVerify,
-				View:         cfg.InfobloxView,
-				MaxResults:   cfg.InfobloxMaxResults,
-				DryRun:       cfg.DryRun,
-				FQDNRexEx:    cfg.InfobloxFQDNRegEx,
-				CreatePTR:    cfg.InfobloxCreatePTR,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				Host:          cfg.InfobloxGridHost,
+				Port:          cfg.InfobloxWapiPort,
+				Username:      cfg.InfobloxWapiUsername,
+				Password:      cfg.InfobloxWapiPassword,
+				Version:       cfg.InfobloxWapiVersion,
+				SSLVerify:     cfg.InfobloxSSLVerify,
+				View:          cfg.InfobloxView,
+				MaxResults:    cfg.InfobloxMaxResults,
+				DryRun:        cfg.DryRun,
+				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				CreatePTR:     cfg.InfobloxCreatePTR,
+				CacheDuration: cfg.InfobloxCacheDuration,
 			},
 		)
 	case "dyn":
@@ -334,6 +336,8 @@ func main() {
 				DryRun:                cfg.DryRun,
 			},
 		)
+	case "safedns":
+		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

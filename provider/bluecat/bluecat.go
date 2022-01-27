@@ -587,10 +587,7 @@ func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
 		return "", http.Cookie{}, errors.Wrap(err, "could not unmarshal credentials for bluecat gateway config")
 	}
 
-	c := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: cfg.SkipTLSVerify},
-		}}
+	c := newHTTPClient(cfg.SkipTLSVerify)
 
 	resp, err := c.Post(cfg.GatewayHost+"/rest_login", "application/json", bytes.NewBuffer(body))
 	if err != nil {
@@ -622,12 +619,8 @@ func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
 }
 
 func (c GatewayClientConfig) getBluecatZones(zoneName string) ([]BluecatZone, error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
+
 	zonePath := expandZone(zoneName)
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath
 	req, err := c.buildHTTPRequest("GET", url, nil)
@@ -660,12 +653,7 @@ func (c GatewayClientConfig) getBluecatZones(zoneName string) ([]BluecatZone, er
 }
 
 func (c GatewayClientConfig) getHostRecords(zone string, records *[]BluecatHostRecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 
@@ -692,12 +680,7 @@ func (c GatewayClientConfig) getHostRecords(zone string, records *[]BluecatHostR
 }
 
 func (c GatewayClientConfig) getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 
@@ -724,12 +707,7 @@ func (c GatewayClientConfig) getCNAMERecords(zone string, records *[]BluecatCNAM
 }
 
 func (c GatewayClientConfig) getTXTRecords(zone string, records *[]BluecatTXTRecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 
@@ -757,12 +735,7 @@ func (c GatewayClientConfig) getTXTRecords(zone string, records *[]BluecatTXTRec
 }
 
 func (c GatewayClientConfig) getHostRecord(name string, record *BluecatHostRecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -785,12 +758,7 @@ func (c GatewayClientConfig) getHostRecord(name string, record *BluecatHostRecor
 }
 
 func (c GatewayClientConfig) getCNAMERecord(name string, record *BluecatCNAMERecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -813,12 +781,7 @@ func (c GatewayClientConfig) getCNAMERecord(name string, record *BluecatCNAMERec
 }
 
 func (c GatewayClientConfig) getTXTRecord(name string, record *BluecatTXTRecord) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -842,12 +805,7 @@ func (c GatewayClientConfig) getTXTRecord(name string, record *BluecatTXTRecord)
 }
 
 func (c GatewayClientConfig) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
@@ -866,12 +824,7 @@ func (c GatewayClientConfig) createHostRecord(zone string, req *bluecatCreateHos
 }
 
 func (c GatewayClientConfig) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
@@ -892,12 +845,7 @@ func (c GatewayClientConfig) createCNAMERecord(zone string, req *bluecatCreateCN
 }
 
 func (c GatewayClientConfig) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (interface{}, error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
@@ -917,12 +865,7 @@ func (c GatewayClientConfig) createTXTRecord(zone string, req *bluecatCreateTXTR
 }
 
 func (c GatewayClientConfig) deleteHostRecord(name string, zone string) (err error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -941,12 +884,7 @@ func (c GatewayClientConfig) deleteHostRecord(name string, zone string) (err err
 }
 
 func (c GatewayClientConfig) deleteCNAMERecord(name string, zone string) (err error) {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -965,12 +903,7 @@ func (c GatewayClientConfig) deleteCNAMERecord(name string, zone string) (err er
 }
 
 func (c GatewayClientConfig) deleteTXTRecord(name string, zone string) error {
-	transportCfg := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.SkipTLSVerify},
-	}
-	client := &http.Client{
-		Transport: transportCfg,
-	}
+	client := newHTTPClient(c.SkipTLSVerify)
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
@@ -1041,4 +974,16 @@ func extractOwnerfromTXTRecord(propString string) (string, error) {
 		return "", errors.Errorf("External-DNS Owner not found, %s", propString)
 	}
 	return strings.Split(match[0], "=")[1], nil
+}
+
+// newHTTPClient returns an instance of http client
+func newHTTPClient(skipTLSVerify bool) *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyFromEnvironment,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: skipTLSVerify,
+			},
+		},
+	}
 }

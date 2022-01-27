@@ -94,6 +94,22 @@ var (
 			Help:      "Number of Source errors.",
 		},
 	)
+	registryARecords = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "registry",
+			Name:      "a_records",
+			Help:      "Number of Registry A records.",
+		},
+	)
+	sourceARecords = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "source",
+			Name:      "a_records",
+			Help:      "Number of Source A records.",
+		},
+	)
 	verifiedARecords = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
@@ -113,6 +129,8 @@ func init() {
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
 	prometheus.MustRegister(controllerNoChangesTotal)
+	prometheus.MustRegister(registryARecords)
+	prometheus.MustRegister(sourceARecords)
 	prometheus.MustRegister(verifiedARecords)
 }
 
@@ -150,7 +168,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	registryEndpointsTotal.Set(float64(len(records)))
-
+	regARecords := filterARecords(records)
+	registryARecords.Set(float64(len(regARecords)))
 	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
 
 	endpoints, err := c.Source.Endpoints(ctx)
@@ -160,6 +179,8 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 	sourceEndpointsTotal.Set(float64(len(endpoints)))
+	srcARecords := filterARecords(endpoints)
+	sourceARecords.Set(float64(len(srcARecords)))
 	vRecords := fetchMatchingARecords(endpoints, records)
 	verifiedARecords.Set(float64(len(vRecords)))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)

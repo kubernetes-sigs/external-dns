@@ -413,18 +413,21 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 	services := map[string]map[string]*sd.Service{
 		"private": {
 			"srv1": {
-				Id:   aws.String("srv1"),
-				Name: aws.String("service1"),
+				Id:          aws.String("srv1"),
+				Name:        aws.String("service1"),
+				NamespaceId: aws.String("private"),
 			},
 			"srv2": {
-				Id:   aws.String("srv2"),
-				Name: aws.String("service2"),
+				Id:          aws.String("srv2"),
+				Name:        aws.String("service2"),
+				NamespaceId: aws.String("private"),
 			},
 		},
 		"public": {
 			"srv3": {
-				Id:   aws.String("srv3"),
-				Name: aws.String("service3"),
+				Id:          aws.String("srv3"),
+				Name:        aws.String("service3"),
+				NamespaceId: aws.String("public"),
 			},
 		},
 	}
@@ -443,10 +446,7 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 
 		result, err := provider.ListServicesByNamespaceID(namespaces["private"].Id)
 		require.NoError(t, err)
-
-		if !reflect.DeepEqual(result, tc.expectedServices) {
-			t.Errorf("AWSSDProvider.ListServicesByNamespaceID() error = %v, wantErr %v", result, tc.expectedServices)
-		}
+		assert.Equal(t, tc.expectedServices, result)
 	}
 }
 

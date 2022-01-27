@@ -209,7 +209,7 @@ var (
 		TransIPAccountName:          "transip",
 		TransIPPrivateKeyFile:       "/path/to/transip.key",
 		DigitalOceanAPIPageSize:     100,
-		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:      100,
 	}
 )
@@ -330,6 +330,9 @@ func TestParseFlags(t *testing.T) {
 				"--transip-account=transip",
 				"--transip-keyfile=/path/to/transip.key",
 				"--digitalocean-api-page-size=100",
+				"--managed-record-types=A",
+				"--managed-record-types=CNAME",
+				"--managed-record-types=NS",
 				"--rfc2136-batch-change-size=100",
 			},
 			envVars:  map[string]string{},
@@ -429,6 +432,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_ACCOUNT":                 "transip",
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                 "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":      "100",
+				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":            "A\nCNAME\nNS",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
 			},
 			expected: overriddenConfig,

@@ -24,9 +24,14 @@ serviceAccount:
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
+  additionalPermissions: {}
+
+# Annotations to add to the Deployment
+deploymentAnnotations: {}
 
 podLabels: {}
 
+# Annotations to add to the Pod
 podAnnotations: {}
 
 podSecurityContext:
@@ -87,6 +92,8 @@ tolerations: []
 
 affinity: {}
 
+topologySpreadConstraints: []
+
 logLevel: info
 logFormat: text
 
@@ -102,6 +109,7 @@ policy: upsert-only
 registry: txt
 txtOwnerId: ""
 txtPrefix: ""
+txtSuffix: ""
 
 domainFilters: []
 
