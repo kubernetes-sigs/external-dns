@@ -101,10 +101,11 @@ func createMockProVisionRecord(record_host string, record_type string, record_va
 		ID:   strconv.Itoa(idInc),
 		Name: "Record " + record_host,
 		Attrs: map[string]interface{}{
-			"record_host":  record_host,
-			"record_type":  record_type,
-			"record_value": record_value,
-			"record_ttl":   record_ttl,
+			"record_host":     record_host,
+			"record_type":     record_type,
+			"record_value":    record_value,
+			"record_ttl":      record_ttl,
+			"k8s_externaldns": "1",
 		},
 	}
 }
