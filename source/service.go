@@ -56,6 +56,7 @@ type serviceSource struct {
 	ignoreHostnameAnnotation       bool
 	publishInternal                bool
 	publishHostIP                  bool
+	omitSRVRecords                 bool
 	alwaysPublishNotReadyAddresses bool
 	serviceInformer                coreinformers.ServiceInformer
 	endpointsInformer              coreinformers.EndpointsInformer
@@ -66,7 +67,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, omitSRVRecords bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -130,6 +131,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		ignoreHostnameAnnotation:       ignoreHostnameAnnotation,
 		publishInternal:                publishInternal,
 		publishHostIP:                  publishHostIP,
+		omitSRVRecords:                 omitSRVRecords,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
 		endpointsInformer:              endpointsInformer,
@@ -472,7 +474,10 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
 			return endpoints
 		}
-		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
+		if sc.omitSRVRecords {
+			break
+		}
+		endpoints = append(endpoints, sc.extractNodePortSRVEndpoints(svc, targets, hostname, ttl)...)
 	case v1.ServiceTypeExternalName:
 		targets = append(targets, extractServiceExternalName(svc)...)
 	}
@@ -608,7 +613,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	return internalIPs, nil
 }
 
-func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
+func (sc *serviceSource) extractNodePortSRVEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, port := range svc.Spec.Ports {

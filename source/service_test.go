@@ -78,6 +78,7 @@ func (suite *ServiceSuite) SetupTest() {
 		[]string{},
 		false,
 		labels.Everything(),
+		false,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -158,6 +159,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.serviceTypesFilter,
 				false,
 				labels.Everything(),
+				false,
 			)
 
 			if ti.expectError {
@@ -1054,6 +1056,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				sourceLabel,
+				false,
 			)
 
 			require.NoError(t, err)
@@ -1243,6 +1246,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1408,6 +1412,7 @@ func TestClusterIpServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labelSelector,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1437,6 +1442,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 		svcType                  v1.ServiceType
 		svcTrafficPolicy         v1.ServiceExternalTrafficPolicyType
 		compatibility            string
+		omitSRVRecord            bool
 		fqdnTemplate             string
 		ignoreHostnameAnnotation bool
 		labels                   map[string]string
@@ -1736,6 +1742,41 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}},
 		},
 		{
+			title:            "NodePort services omit SRV records",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			omitSRVRecord:    true,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+		},
+		{
 			title:            "node port services annotated DNS Controller annotations return an endpoint where all targets has the node role",
 			svcNamespace:     "testing",
 			svcName:          "foo",
@@ -1978,6 +2019,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				tc.omitSRVRecord,
 			)
 			require.NoError(t, err)
 
@@ -2314,6 +2356,7 @@ func TestHeadlessServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2671,6 +2714,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				true,
 			)
 			require.NoError(t, err)
 
@@ -2783,6 +2827,7 @@ func TestExternalServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2837,6 +2882,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		[]string{},
 		false,
 		labels.Everything(),
+		false,
 	)
 	require.NoError(b, err)
 
