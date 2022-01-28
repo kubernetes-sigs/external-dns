@@ -79,6 +79,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		false,
+		"",
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -160,6 +161,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				labels.Everything(),
 				false,
+				"",
 			)
 
 			if ti.expectError {
@@ -1057,6 +1059,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				sourceLabel,
 				false,
+				"",
 			)
 
 			require.NoError(t, err)
@@ -1247,6 +1250,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				"",
 			)
 			require.NoError(t, err)
 
@@ -1413,6 +1417,7 @@ func TestClusterIpServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labelSelector,
 				false,
+				"",
 			)
 			require.NoError(t, err)
 
@@ -1455,6 +1460,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 		nodeIndex                []int
 		phases                   []v1.PodPhase
 		labelSelector            labels.Selector
+		nodeSelector             string
 	}{
 		{
 			title:            "annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
@@ -1777,6 +1783,54 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}},
 		},
 		{
+			title:            "annotated NodePort services return an endpoint with IP addresses of the cluster's nodes labelled subset",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			nodeSelector: "example.com/routable=",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.3"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node1",
+					Labels: map[string]string{"example.com/routable": ""},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name:   "node3",
+					Labels: map[string]string{"example.com/routable": ""},
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
+					},
+				},
+			}},
+		},
+		{
 			title:            "node port services annotated DNS Controller annotations return an endpoint where all targets has the node role",
 			svcNamespace:     "testing",
 			svcName:          "foo",
@@ -2020,6 +2074,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				tc.omitSRVRecord,
+				tc.nodeSelector,
 			)
 			require.NoError(t, err)
 
@@ -2357,6 +2412,7 @@ func TestHeadlessServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				"",
 			)
 			require.NoError(t, err)
 
@@ -2715,6 +2771,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				true,
+				"",
 			)
 			require.NoError(t, err)
 
@@ -2828,6 +2885,7 @@ func TestExternalServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				"",
 			)
 			require.NoError(t, err)
 
@@ -2883,6 +2941,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		labels.Everything(),
 		false,
+		"",
 	)
 	require.NoError(b, err)
 
