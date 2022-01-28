@@ -46,6 +46,7 @@ type ProVisionConfig struct {
 	ProVisionPassword string   `json:"provisionPassword,omitempty"`
 	ZoneIDs           []string `json:"zoneIDs,omitempty"`
 	ProVisionPush     bool     `json:"provisionPush"`
+	GetAllRecords     bool     `json:"getAllRecords"`
 	SkipTLSVerify     bool     `json:"skipTLSVerify"`
 }
 
@@ -57,6 +58,7 @@ type ProVisionProvider struct {
 	dryRun        bool
 	ZoneIDs       []string
 	ProVisionPush bool
+	GetAllRecords bool
 	PVClient      PVClient
 }
 
@@ -74,6 +76,7 @@ type PVClient interface {
 	getProVisionRecords(zoneID string) ([]PVResource, error)
 	buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error)
 	getProVisionSpecificRecord(ZoneID, RecordHost, RecordType, RecordValue string, OutputRes *PVResource) (bool, error)
+	flagProVisionRecord(recordID string) (bool, error)
 	createProVisionRecord(zoneID string, ep *endpoint.Endpoint) (bool, error)
 	deleteProVisionRecord(recordID string) error
 	pushProVisionZone(zoneID string) error
@@ -152,6 +155,24 @@ func fillCfgWithEnv(cfg *ProVisionConfig) error {
 		}
 	}
 
+	if !cfg.GetAllRecords {
+		if _, ok := os.LookupEnv("PROVISION_PUSH"); ok {
+			cfg.ProVisionPush = true
+		}
+	}
+
+	if !cfg.GetAllRecords {
+		if _, ok := os.LookupEnv("PROVISION_GETALLRECORDS"); ok {
+			cfg.GetAllRecords = true
+		}
+	}
+
+	if !cfg.SkipTLSVerify {
+		if _, ok := os.LookupEnv("PROVISION_SKIPTLSVERIFY"); ok {
+			cfg.SkipTLSVerify = true
+		}
+	}
+
 	return nil
 }
 
@@ -186,6 +207,7 @@ func NewProVisionProvider(cfg ProVisionConfig, configFile string, domainFilter e
 		dryRun:        dryRun,
 		ZoneIDs:       cfg.ZoneIDs,
 		ProVisionPush: cfg.ProVisionPush,
+		GetAllRecords: cfg.GetAllRecords,
 		PVClient:      pvClient,
 	}
 	return provider, nil
@@ -236,6 +258,18 @@ func (p *ProVisionProvider) Records(ctx context.Context) (endpoints []*endpoint.
 				continue
 			}
 
+			if !p.GetAllRecords {
+				if _, ok := record.Attrs["k8s_externaldns"]; ok {
+					k8s_externaldns := record.Attrs["k8s_externaldns"].(string)
+					if k8s_externaldns == "0" {
+						continue
+					}
+
+				} else {
+					continue
+				}
+			}
+
 			record_host := record.Attrs["record_host"].(string)
 			record_value := record.Attrs["record_value"].(string)
 
@@ -277,6 +311,18 @@ func (p *ProVisionProvider) Records(ctx context.Context) (endpoints []*endpoint.
 			//lets skip the TXTs as they have been already processed
 			if record_type == "TXT" {
 				continue
+			}
+
+			if !p.GetAllRecords {
+				if _, ok := record.Attrs["k8s_externaldns"]; ok {
+					k8s_externaldns := record.Attrs["k8s_externaldns"].(string)
+					if k8s_externaldns == "0" {
+						continue
+					}
+
+				} else {
+					continue
+				}
 			}
 
 			if !IsValidRecordType(record_type) {
@@ -504,6 +550,10 @@ func (p *ProVisionProvider) createRecords(created pvChangeMap) {
 			//the record already exists so nothing to create
 			if is_exist {
 				log.Debugf("Record record already exist so nothing to create")
+				if !p.GetAllRecords {
+					log.Debugf("Record record already exist, updating the externaldns flag")
+					p.PVClient.flagProVisionRecord(record_res.ID)
+				}
 				continue
 			}
 
@@ -632,6 +682,30 @@ func (c PVClientConfig) deleteProVisionRecord(recordID string) error {
 	return nil
 }
 
+func (c PVClientConfig) flagProVisionRecord(recordID string) (bool, error) {
+	client := newHTTPClient(c.SkipTLSVerify)
+	body := []byte("{\"attrs\":{\"k8s_externaldns\":\"1\"}}")
+
+	url := "/api/v2/resources/" + recordID
+	req, err := c.buildHTTPRequest("PATCH", url, bytes.NewBuffer(body))
+	if err != nil {
+		return false, errors.Wrap(err, "error building http request")
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, errors.Wrap(err, "error executing the request")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		rbody, err := io.ReadAll(resp.Body)
+		return false, errors.Wrap(err, string(rbody))
+	}
+
+	return true, nil
+}
+
 func (c PVClientConfig) createProVisionRecord(zoneID string, ep *endpoint.Endpoint) (bool, error) {
 	client := newHTTPClient(c.SkipTLSVerify)
 
@@ -648,9 +722,10 @@ func (c PVClientConfig) createProVisionRecord(zoneID string, ep *endpoint.Endpoi
 	}
 
 	attrs := map[string]string{
-		"record_host":  RecordHost,
-		"record_type":  RecordType,
-		"record_value": RecordValue,
+		"record_host":     RecordHost,
+		"record_type":     RecordType,
+		"record_value":    RecordValue,
+		"k8s_externaldns": "1",
 	}
 
 	if RecordTTL > 0 {
@@ -856,7 +931,7 @@ func (c PVClientConfig) buildHTTPRequest(method, url string, body io.Reader) (*h
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Authorization", "Basic "+basicAuth(c.Username, c.Password))
 
-	if method == "POST" {
+	if method != "GET" {
 		req.Header.Add("Content-Type", "application/json")
 	}
 

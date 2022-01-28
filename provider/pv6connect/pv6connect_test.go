@@ -60,6 +60,11 @@ func (g mockPVClient) getProVisionSpecificRecord(ZoneID, RecordHost, RecordType,
 func (g mockPVClient) createProVisionRecord(zoneID string, ep *endpoint.Endpoint) (status bool, err error) {
 	return true, nil
 }
+
+func (g mockPVClient) flagProVisionRecord(recordID string) (status bool, err error) {
+	return true, nil
+}
+
 func (g mockPVClient) deleteProVisionRecord(recordID string) (err error) {
 	return nil
 }

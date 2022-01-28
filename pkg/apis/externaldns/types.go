@@ -98,6 +98,7 @@ type Config struct {
 	ProVisionHost                     string
 	ProVisionZoneIDs                  string
 	ProVisionPush                     bool
+	ProVisionGetAllRecords            bool
 	CloudflareProxied                 bool
 	CloudflareZonesPerPage            int
 	CoreDNSPrefix                     string
@@ -235,6 +236,7 @@ var defaultConfig = &Config{
 	ProVisionHost:               "",
 	ProVisionZoneIDs:            "",
 	ProVisionPush:               false,
+	ProVisionGetAllRecords:      false,
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
@@ -431,7 +433,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("pv6connect-password", "When using the 6Connect ProVision provider, specify the ProVision Password (required when --provider=6cprovision").Default(defaultConfig.ProVisionPassword).StringVar(&cfg.ProVisionPassword)
 	app.Flag("pv6connect-host", "When using the 6Connect ProVision provider, specify the ProVision Host URL (required when --provider=6cprovision").Default(defaultConfig.ProVisionHost).StringVar(&cfg.ProVisionHost)
 	app.Flag("pv6connect-zoneids", "When using the 6Connect ProVision provider, specify the ProVision Zone IDs separated by comma (required when --provider=6cprovision").Default(defaultConfig.ProVisionZoneIDs).StringVar(&cfg.ProVisionZoneIDs)
-	app.Flag("pv6connect-push", "When using the 6Connect ProVision provider, specify the ProVision Push Flag (required when --provider=6cprovision").Default(strconv.FormatBool(defaultConfig.ProVisionPush)).BoolVar(&cfg.ProVisionPush)
+	app.Flag("pv6connect-push", "When using the 6Connect ProVision provider, specify the ProVision Push Flag ").Default(strconv.FormatBool(defaultConfig.ProVisionPush)).BoolVar(&cfg.ProVisionPush)
+	app.Flag("pv6connect-getallrecords", "When using the 6Connect ProVision provider, specify Get All Records to ommit the k8s-externaldns attribute").Default(strconv.FormatBool(defaultConfig.ProVisionGetAllRecords)).BoolVar(&cfg.ProVisionGetAllRecords)
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-zones-per-page", "When using the Cloudflare provider, specify how many zones per page listed, max. possible 50 (default: 50)").Default(strconv.Itoa(defaultConfig.CloudflareZonesPerPage)).IntVar(&cfg.CloudflareZonesPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)

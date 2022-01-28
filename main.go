@@ -220,6 +220,7 @@ func main() {
 				ProVisionUsername: cfg.ProVisionUsername,
 				ProVisionPassword: cfg.ProVisionPassword,
 				ProVisionPush:     cfg.ProVisionPush,
+				GetAllRecords:     cfg.ProVisionGetAllRecords,
 				ZoneIDs:           pv6connect.SplitZoneIds(cfg.ProVisionZoneIDs),
 			},
 			cfg.ProVisionConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
