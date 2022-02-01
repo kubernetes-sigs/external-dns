@@ -124,6 +124,15 @@ var (
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
 		OCPRouterName:               "default",
+		ExternalDnsCaCrt:            "",
+		ExternalDnsNamespace:        "",
+		ExternalDnsToken:            "",
+		ExternalDnsCaCrtPath:        "",
+		ExternalDnsNamespacePath:    "",
+		ExternalDnsTokenPath:        "",
+		ExternalDnsCrName:           "external-dns",
+		ExternalDnsKubernetesHost:   "127.0.0.1",
+		ExternalDnsKubernetesPort:   "443",
 	}
 
 	overriddenConfig = &Config{
@@ -227,6 +236,15 @@ var (
 		DigitalOceanAPIPageSize:     100,
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:      100,
+		ExternalDnsCaCrt:            "",
+		ExternalDnsNamespace:        "",
+		ExternalDnsToken:            "",
+		ExternalDnsCaCrtPath:        "",
+		ExternalDnsNamespacePath:    "",
+		ExternalDnsTokenPath:        "",
+		ExternalDnsCrName:           "external-dns",
+		ExternalDnsKubernetesHost:   "127.0.0.1",
+		ExternalDnsKubernetesPort:   "443",
 	}
 )
 
@@ -358,6 +376,9 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
 				"--rfc2136-batch-change-size=100",
+				"--externaldns-kubernetes-host=127.0.0.1",
+				"--externaldns-kubernetes-port=443",
+				"--externaldns-resource-name=external-dns",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,

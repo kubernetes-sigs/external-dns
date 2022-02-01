@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/dnsimple"
 	"sigs.k8s.io/external-dns/provider/dyn"
 	"sigs.k8s.io/external-dns/provider/exoscale"
+	externaldnsprovider "sigs.k8s.io/external-dns/provider/externaldns"
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
@@ -230,6 +231,20 @@ func main() {
 		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
 	case "linode":
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
+	case "externaldns":
+		p, err = externaldnsprovider.NewExternalDns(&externaldnsprovider.ExternalDnsProviderConfig{
+			CaCrt:          cfg.ExternalDnsCaCrt,
+			CaCrtPath:      cfg.ExternalDnsCaCrtPath,
+			Namespace:      cfg.ExternalDnsNamespace,
+			NamespacePath:  cfg.ExternalDnsNamespacePath,
+			Token:          cfg.ExternalDnsToken,
+			TokenPath:      cfg.ExternalDnsTokenPath,
+			KubernetesHost: cfg.ExternalDnsKubernetesHost,
+			KubernetesPort: cfg.ExternalDnsKubernetesPort,
+			CrName:         cfg.ExternalDnsCrName,
+			CrdApiVersion:  cfg.CRDSourceAPIVersion,
+			CrdKind:        cfg.CRDSourceKind,
+		}, cfg.DryRun)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
