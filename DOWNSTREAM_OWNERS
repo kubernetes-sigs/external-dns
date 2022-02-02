@@ -8,6 +8,7 @@ approvers:
   - rfredette
   - alebedev87
   - miheer
+  - arjunrn
 reviewers:
   - knobunc
   - Miciah
@@ -18,4 +19,5 @@ reviewers:
   - rfredette
   - alebedev87
   - miheer
+  - arjunrn
 component: DNS
