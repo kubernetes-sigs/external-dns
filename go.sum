@@ -290,8 +290,8 @@ github.com/digitalocean/godo v1.69.1 h1:aCyfwth8R3DeOaWB9J9E8v7cjlDIlF19eXTt8R3X
 github.com/digitalocean/godo v1.69.1/go.mod h1:epPuOzTOOJujNo0nduDj2D5O1zu8cSpp9R+DdN0W9I0=
 github.com/dnaeon/go-vcr v1.0.1 h1:r8L/HqC0Hje5AXMu1ooW8oyQyOFv4GxqpL0nRP7SLLY=
 github.com/dnaeon/go-vcr v1.0.1/go.mod h1:aBB1+wY4s93YsC3HHjMBMrwTj2R9FHDzUr9KyGc8n1E=
-github.com/dnsimple/dnsimple-go v0.60.0 h1:N+q+ML1CZGf+5r4udu9Opy7WJNtOaFT9aM86Af9gLhk=
-github.com/dnsimple/dnsimple-go v0.60.0/go.mod h1:O5TJ0/U6r7AfT8niYNlmohpLbCSG+c71tQlGr9SeGrg=
+github.com/dnsimple/dnsimple-go v0.71.1 h1:1hGoBA3CIjpjZj5DM3081xfxr4e2jYmYnkO2VuBF8Qc=
+github.com/dnsimple/dnsimple-go v0.71.1/go.mod h1:F9WHww9cC76hrnwGFfAfrqdW99j3MOYasQcIwTS/aUk=
 github.com/docker/cli v0.0.0-20200130152716-5d0cf8839492/go.mod h1:JLrzqnKDaYBop7H2jaqPtU4hHvMKP+vjCwu2uszcLI8=
 github.com/docker/distribution v0.0.0-20191216044856-a8371794149d/go.mod h1:0+TTO4EOBfRPhZXAeF1Vu+W3hHZ8eLp8PgKVZlcvtFY=
 github.com/docker/distribution v2.7.1+incompatible/go.mod h1:J2gT2udsDAN96Uj4KfcMRqY0/ypR+oyYUYmja8H+y+w=
