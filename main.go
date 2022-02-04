@@ -212,7 +212,7 @@ func main() {
 	case "azure-private-dns":
 		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
+		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
