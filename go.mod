@@ -44,6 +44,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
+	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73

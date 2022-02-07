@@ -116,6 +116,8 @@ var (
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
 		OCPRouterName:               "default",
+		IBMCloudProxied:             false,
+		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 	}
 
 	overriddenConfig = &Config{
@@ -211,6 +213,8 @@ var (
 		DigitalOceanAPIPageSize:     100,
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      100,
+		IBMCloudProxied:             true,
+		IBMCloudConfigFile:          "ibmcloud.json",
 	}
 )
 
@@ -331,6 +335,8 @@ func TestParseFlags(t *testing.T) {
 				"--transip-keyfile=/path/to/transip.key",
 				"--digitalocean-api-page-size=100",
 				"--rfc2136-batch-change-size=100",
+				"--ibmcloud-proxied",
+				"--ibmcloud-config-file=ibmcloud.json",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -430,6 +436,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TRANSIP_KEYFILE":                 "/path/to/transip.key",
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":      "100",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
+				"EXTERNAL_DNS_IBMCLOUD_PROXIED":                "1",
+				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",
 			},
 			expected: overriddenConfig,
 		},

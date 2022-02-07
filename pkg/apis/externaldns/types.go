@@ -270,7 +270,7 @@ var defaultConfig = &Config{
 	UpdateEvents:                false,
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
-	LogLevel:                    logrus.DebugLevel.String(),
+	LogLevel:                    logrus.InfoLevel.String(),
 	ExoscaleEndpoint:            "https://api.exoscale.ch/dns",
 	ExoscaleAPIKey:              "",
 	ExoscaleAPISecret:           "",

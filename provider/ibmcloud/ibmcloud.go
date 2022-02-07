@@ -687,7 +687,7 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("source %v", sources)
+	// Filter VPC annoation for private zone active
 	for _, source := range sources {
 		vpc = checkVPCAnnotation(source)
 		if len(vpc) > 0 {
