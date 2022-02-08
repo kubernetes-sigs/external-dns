@@ -26,17 +26,18 @@ import (
 
 // NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
 func NewGatewayHTTPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInfomer {
+	return newGatewayRouteSource(clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1alpha2().HTTPRoutes()}
 	})
 }
 
 type gatewayHTTPRoute struct{ route *v1alpha2.HTTPRoute }
 
-func (rt *gatewayHTTPRoute) Object() kubeObject             { return rt.route }
-func (rt *gatewayHTTPRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
-func (rt *gatewayHTTPRoute) Hostnames() []v1alpha2.Hostname { return rt.route.Spec.Hostnames }
-func (rt *gatewayHTTPRoute) Status() v1alpha2.RouteStatus   { return rt.route.Status.RouteStatus }
+func (rt *gatewayHTTPRoute) Object() kubeObject                { return rt.route }
+func (rt *gatewayHTTPRoute) Metadata() *metav1.ObjectMeta      { return &rt.route.ObjectMeta }
+func (rt *gatewayHTTPRoute) Hostnames() []v1alpha2.Hostname    { return rt.route.Spec.Hostnames }
+func (rt *gatewayHTTPRoute) Protocol() v1alpha2.ProtocolType   { return v1alpha2.HTTPProtocolType }
+func (rt *gatewayHTTPRoute) RouteStatus() v1alpha2.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayHTTPRouteInformer struct {
 	informers_v1a2.HTTPRouteInformer

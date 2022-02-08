@@ -26,17 +26,18 @@ import (
 
 // NewGatewayTCPRouteSource creates a new Gateway TCPRoute source with the given config.
 func NewGatewayTCPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "TCPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInfomer {
+	return newGatewayRouteSource(clients, config, "TCPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTCPRouteInformer{factory.Gateway().V1alpha2().TCPRoutes()}
 	})
 }
 
 type gatewayTCPRoute struct{ route *v1alpha2.TCPRoute }
 
-func (rt *gatewayTCPRoute) Object() kubeObject             { return rt.route }
-func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
-func (rt *gatewayTCPRoute) Hostnames() []v1alpha2.Hostname { return nil }
-func (rt *gatewayTCPRoute) Status() v1alpha2.RouteStatus   { return rt.route.Status.RouteStatus }
+func (rt *gatewayTCPRoute) Object() kubeObject                { return rt.route }
+func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta      { return &rt.route.ObjectMeta }
+func (rt *gatewayTCPRoute) Hostnames() []v1alpha2.Hostname    { return nil }
+func (rt *gatewayTCPRoute) Protocol() v1alpha2.ProtocolType   { return v1alpha2.TCPProtocolType }
+func (rt *gatewayTCPRoute) RouteStatus() v1alpha2.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayTCPRouteInformer struct {
 	informers_v1a2.TCPRouteInformer

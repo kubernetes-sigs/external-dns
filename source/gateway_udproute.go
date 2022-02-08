@@ -26,17 +26,18 @@ import (
 
 // NewGatewayUDPRouteSource creates a new Gateway UDPRoute source with the given config.
 func NewGatewayUDPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "UDPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInfomer {
+	return newGatewayRouteSource(clients, config, "UDPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayUDPRouteInformer{factory.Gateway().V1alpha2().UDPRoutes()}
 	})
 }
 
 type gatewayUDPRoute struct{ route *v1alpha2.UDPRoute }
 
-func (rt *gatewayUDPRoute) Object() kubeObject             { return rt.route }
-func (rt *gatewayUDPRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
-func (rt *gatewayUDPRoute) Hostnames() []v1alpha2.Hostname { return nil }
-func (rt *gatewayUDPRoute) Status() v1alpha2.RouteStatus   { return rt.route.Status.RouteStatus }
+func (rt *gatewayUDPRoute) Object() kubeObject                { return rt.route }
+func (rt *gatewayUDPRoute) Metadata() *metav1.ObjectMeta      { return &rt.route.ObjectMeta }
+func (rt *gatewayUDPRoute) Hostnames() []v1alpha2.Hostname    { return nil }
+func (rt *gatewayUDPRoute) Protocol() v1alpha2.ProtocolType   { return v1alpha2.UDPProtocolType }
+func (rt *gatewayUDPRoute) RouteStatus() v1alpha2.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayUDPRouteInformer struct {
 	informers_v1a2.UDPRouteInformer
