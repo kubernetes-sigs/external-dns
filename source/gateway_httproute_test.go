@@ -91,17 +91,17 @@ func newTestEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...st
 	}
 }
 
-func joinTargets(targets ...[]string) []string {
-	var s []string
-	for _, v := range targets {
-		s = append(s, v...)
-	}
-	return s
-}
-
 func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
+	fromAll := v1alpha2.NamespacesFromAll
+	fromSame := v1alpha2.NamespacesFromSame
+	fromSelector := v1alpha2.NamespacesFromSelector
+	allowAllNamespaces := &v1alpha2.AllowedRoutes{
+		Namespaces: &v1alpha2.RouteNamespaces{
+			From: &fromAll,
+		},
+	}
 	objectMeta := func(namespace, name string) metav1.ObjectMeta {
 		return metav1.ObjectMeta{
 			Name:      name,
@@ -135,7 +135,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				{
 					ObjectMeta: objectMeta("gateway-namespace", "test"),
 					Spec: v1alpha2.GatewaySpec{
-						Listeners: []v1alpha2.Listener{{Protocol: v1alpha2.HTTPProtocolType}},
+						Listeners: []v1alpha2.Listener{{
+							Protocol:      v1alpha2.HTTPProtocolType,
+							AllowedRoutes: allowAllNamespaces,
+						}},
 					},
 					Status: gatewayStatus("1.2.3.4"),
 				},
@@ -170,7 +173,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			gateways: []*v1alpha2.Gateway{{
 				ObjectMeta: objectMeta("gateway-namespace", "test"),
 				Spec: v1alpha2.GatewaySpec{
-					Listeners: []v1alpha2.Listener{{Protocol: v1alpha2.HTTPProtocolType}},
+					Listeners: []v1alpha2.Listener{{
+						Protocol:      v1alpha2.HTTPProtocolType,
+						AllowedRoutes: allowAllNamespaces,
+					}},
 				},
 				Status: gatewayStatus("1.2.3.4"),
 			}},
@@ -381,6 +387,144 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:      "MultipleListeners",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "one"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("foo.example.internal"),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("bar.example.internal"),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+				},
+				Status: httpRouteStatus(
+					gatewayParentRef("default", "one"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "WildcardInGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						Hostname: hostnamePtr("*.example.internal"),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "no-hostname"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: []v1alpha2.Hostname{
+						"foo.example.internal",
+					},
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+		},
+		{
+			title:      "WildcardInRoute",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						Hostname: hostnamePtr("foo.example.internal"),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "no-hostname"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: []v1alpha2.Hostname{
+						"*.example.internal",
+					},
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+		},
+		{
+			title:      "WildcardInRouteAndGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						Hostname: hostnamePtr("*.example.internal"),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "no-hostname"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: []v1alpha2.Hostname{
+						"*.example.internal",
+					},
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("*.example.internal", "A", "1.2.3.4")},
+		},
+		{
+			title:      "NoRouteHostname",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						Hostname: hostnamePtr("foo.example.internal"),
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "no-hostname"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: nil,
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+		},
+		{
 			title:      "NoGateways",
 			config:     Config{},
 			namespaces: namespaces("default"),
@@ -406,7 +550,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: gatewayStatus("1.2.3.4"),
 			}},
 			routes: []*v1alpha2.HTTPRoute{{
-				ObjectMeta: objectMeta("default", "no-hostame"),
+				ObjectMeta: objectMeta("default", "no-hostname"),
 				Spec: v1alpha2.HTTPRouteSpec{
 					Hostnames: nil,
 				},
@@ -622,6 +766,175 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 					WithSetIdentifier("test-set-identifier"),
 			},
 		},
+		{
+			title:      "DifferentHostnameDifferentGateway",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{
+				{
+					ObjectMeta: objectMeta("default", "one"),
+					Spec: v1alpha2.GatewaySpec{
+						Listeners: []v1alpha2.Listener{{
+							Hostname: hostnamePtr("*.one.internal"),
+							Protocol: v1alpha2.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("1.2.3.4"),
+				},
+				{
+					ObjectMeta: objectMeta("default", "two"),
+					Spec: v1alpha2.GatewaySpec{
+						Listeners: []v1alpha2.Listener{{
+							Hostname: hostnamePtr("*.two.internal"),
+							Protocol: v1alpha2.HTTPProtocolType,
+						}},
+					},
+					Status: gatewayStatus("2.3.4.5"),
+				},
+			},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: hostnames("test.one.internal", "test.two.internal"),
+				},
+				Status: httpRouteStatus(
+					gatewayParentRef("default", "one"),
+					gatewayParentRef("default", "two"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("test.one.internal", "A", "1.2.3.4"),
+				newTestEndpoint("test.two.internal", "A", "2.3.4.5"),
+			},
+		},
+		{
+			title:      "AllowedRoutesSameNamespace",
+			config:     Config{},
+			namespaces: namespaces("same-namespace", "other-namespace"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("same-namespace", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						AllowedRoutes: &v1alpha2.AllowedRoutes{
+							Namespaces: &v1alpha2.RouteNamespaces{
+								From: &fromSame,
+							},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{
+				{
+					ObjectMeta: objectMeta("same-namespace", "test"),
+					Spec: v1alpha2.HTTPRouteSpec{
+						Hostnames: hostnames("same-namespace.example.internal"),
+					},
+					Status: httpRouteStatus(gatewayParentRef("same-namespace", "test")),
+				},
+				{
+					ObjectMeta: objectMeta("other-namespace", "test"),
+					Spec: v1alpha2.HTTPRouteSpec{
+						Hostnames: hostnames("other-namespace.example.internal"),
+					},
+					Status: httpRouteStatus(gatewayParentRef("same-namespace", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("same-namespace.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:  "AllowedRoutesNamespaceSelector",
+			config: Config{},
+			namespaces: []*corev1.Namespace{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "default",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "foo",
+						Labels: map[string]string{"team": "foo"},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "bar",
+						Labels: map[string]string{"team": "bar"},
+					},
+				},
+			},
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						AllowedRoutes: &v1alpha2.AllowedRoutes{
+							Namespaces: &v1alpha2.RouteNamespaces{
+								From: &fromSelector,
+								Selector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{"team": "foo"},
+								},
+							},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{
+				{
+					ObjectMeta: objectMeta("foo", "test"),
+					Spec: v1alpha2.HTTPRouteSpec{
+						Hostnames: hostnames("foo.example.internal"),
+					},
+					Status: httpRouteStatus(gatewayParentRef("default", "test")),
+				},
+				{
+					ObjectMeta: objectMeta("bar", "test"),
+					Spec: v1alpha2.HTTPRouteSpec{
+						Hostnames: hostnames("bar.example.internal"),
+					},
+					Status: httpRouteStatus(gatewayParentRef("default", "test")),
+				},
+			},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "MissingNamespace",
+			config:     Config{},
+			namespaces: nil,
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{{
+						Protocol: v1alpha2.HTTPProtocolType,
+						AllowedRoutes: &v1alpha2.AllowedRoutes{
+							Namespaces: &v1alpha2.RouteNamespaces{
+								// Namespace selector triggers namespace lookup.
+								From: &fromSelector,
+								Selector: &metav1.LabelSelector{
+									MatchLabels: map[string]string{"foo": "bar"},
+								},
+							},
+						},
+					}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: hostnames("example.internal"),
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: nil,
+		},
 	}
 	for _, tt := range tests {
 		tt := tt
@@ -658,7 +971,5 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		})
 	}
 }
-
-func strPtr(val string) *string { return &val }
 
 func hostnamePtr(val v1alpha2.Hostname) *v1alpha2.Hostname { return &val }

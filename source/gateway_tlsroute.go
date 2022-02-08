@@ -26,17 +26,18 @@ import (
 
 // NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given config.
 func NewGatewayTLSRouteSource(clients ClientGenerator, config *Config) (Source, error) {
-	return newGatewayRouteSource(clients, config, "TLSRoute", func(factory informers.SharedInformerFactory) gatewayRouteInfomer {
+	return newGatewayRouteSource(clients, config, "TLSRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTLSRouteInformer{factory.Gateway().V1alpha2().TLSRoutes()}
 	})
 }
 
 type gatewayTLSRoute struct{ route *v1alpha2.TLSRoute }
 
-func (rt *gatewayTLSRoute) Object() kubeObject             { return rt.route }
-func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
-func (rt *gatewayTLSRoute) Hostnames() []v1alpha2.Hostname { return rt.route.Spec.Hostnames }
-func (rt *gatewayTLSRoute) Status() v1alpha2.RouteStatus   { return rt.route.Status.RouteStatus }
+func (rt *gatewayTLSRoute) Object() kubeObject                { return rt.route }
+func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta      { return &rt.route.ObjectMeta }
+func (rt *gatewayTLSRoute) Hostnames() []v1alpha2.Hostname    { return rt.route.Spec.Hostnames }
+func (rt *gatewayTLSRoute) Protocol() v1alpha2.ProtocolType   { return v1alpha2.TLSProtocolType }
+func (rt *gatewayTLSRoute) RouteStatus() v1alpha2.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayTLSRouteInformer struct {
 	informers_v1a2.TLSRouteInformer

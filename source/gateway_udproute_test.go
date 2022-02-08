@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/fake"
@@ -31,19 +33,34 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
 	gwClient := gatewayfake.NewSimpleClientset()
+	kubeClient := kubefake.NewSimpleClientset()
 	clients := new(MockClientGenerator)
 	clients.On("GatewayClient").Return(gwClient, nil)
+	clients.On("KubeClient").Return(kubeClient, nil)
 
 	ctx := context.Background()
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "default",
+		},
+	}
+	_, err := kubeClient.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	require.NoError(t, err, "failed to create Namespace")
+
 	ips := []string{"10.64.0.1", "10.64.0.2"}
 	gw := &v1alpha2.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: "default",
 		},
+		Spec: v1alpha2.GatewaySpec{
+			Listeners: []v1alpha2.Listener{{
+				Protocol: v1alpha2.UDPProtocolType,
+			}},
+		},
 		Status: gatewayStatus(ips...),
 	}
-	_, err := gwClient.GatewayV1alpha2().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1alpha2().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Gateway")
 
 	rt := &v1alpha2.UDPRoute{
