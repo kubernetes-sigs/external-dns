@@ -30,7 +30,7 @@ rules:
     verbs: ["get","watch","list"]
 {{- end }}
 
-{{- if has "istio-gateway" .Values.sources }}
+{{- if or (has "istio-gateway" .Values.sources) (has "istio-virtualservice" .Values.sources) }}
   - apiGroups: ["networking.istio.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]

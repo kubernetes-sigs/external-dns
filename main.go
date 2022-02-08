@@ -137,7 +137,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
+	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -213,7 +213,7 @@ func main() {
 	case "azure-private-dns":
 		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":

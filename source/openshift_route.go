@@ -29,7 +29,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/cache"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -54,6 +53,7 @@ type ocpRouteSource struct {
 
 // NewOcpRouteSource creates a new ocpRouteSource with the given config.
 func NewOcpRouteSource(
+	ctx context.Context,
 	ocpClient versioned.Interface,
 	namespace string,
 	annotationFilter string,
@@ -81,8 +81,7 @@ func NewOcpRouteSource(
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
