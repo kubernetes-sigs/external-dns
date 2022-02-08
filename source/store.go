@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strings"
@@ -158,10 +159,10 @@ func (p *SingletonClientGenerator) OpenShiftClient() (openshift.Interface, error
 }
 
 // ByNames returns multiple Sources given multiple names.
-func ByNames(p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
+func ByNames(ctx context.Context, p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
 	sources := []Source{}
 	for _, name := range names {
-		source, err := BuildWithConfig(name, p, cfg)
+		source, err := BuildWithConfig(ctx, name, p, cfg)
 		if err != nil {
 			return nil, err
 		}
@@ -172,32 +173,32 @@ func ByNames(p ClientGenerator, names []string, cfg *Config) ([]Source, error) {
 }
 
 // BuildWithConfig allows to generate a Source implementation from the shared config
-func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, error) {
+func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg *Config) (Source, error) {
 	switch source {
 	case "node":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(client, cfg.AnnotationFilter, cfg.FQDNTemplate)
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
+		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
+		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewPodSource(client, cfg.Namespace, cfg.Compatibility)
+		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -207,7 +208,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioGatewaySource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIstioGatewaySource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "istio-virtualservice":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -217,7 +218,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewIstioVirtualServiceSource(kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewIstioVirtualServiceSource(ctx, kubernetesClient, istioClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "cloudfoundry":
 		cfClient, err := p.CloudFoundryClient(cfg.CFAPIEndpoint, cfg.CFUsername, cfg.CFPassword)
 		if err != nil {
@@ -233,13 +234,13 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewAmbassadorHostSource(dynamicClient, kubernetesClient, cfg.Namespace)
+		return NewAmbassadorHostSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace)
 	case "contour-httpproxy":
 		dynamicClient, err := p.DynamicKubernetesClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewContourHTTPProxySource(dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
+		return NewContourHTTPProxySource(ctx, dynamicClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation)
 	case "gloo-proxy":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -255,7 +256,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewOcpRouteSource(ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.OCPRouterName)
+		return NewOcpRouteSource(ctx, ocpClient, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.OCPRouterName)
 	case "fake":
 		return NewFakeSource(cfg.FQDNTemplate)
 	case "connector":
@@ -290,7 +291,7 @@ func BuildWithConfig(source string, p ClientGenerator, cfg *Config) (Source, err
 		if err != nil {
 			return nil, err
 		}
-		return NewKongTCPIngressSource(dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+		return NewKongTCPIngressSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	}
 	return nil, ErrSourceNotFound
 }

@@ -43,6 +43,7 @@ func (suite *OCPRouteSuite) SetupTest() {
 	var err error
 
 	suite.sc, err = NewOcpRouteSource(
+		context.TODO(),
 		fakeClient,
 		"",
 		"",
@@ -141,6 +142,7 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewOcpRouteSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
@@ -439,6 +441,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			require.NoError(t, err)
 
 			source, err := NewOcpRouteSource(
+				context.TODO(),
 				fakeClient,
 				"",
 				"",

@@ -147,16 +147,28 @@ type bluecatCreateTXTRecordRequest struct {
 // NewBluecatProvider creates a new Bluecat provider.
 //
 // Returns a pointer to the provider or an error if a provider could not be created.
-func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*BluecatProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
-	}
-
+func NewBluecatProvider(configFile, dnsConfiguration, dnsView, gatewayHost, rootZone string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
 	cfg := bluecatConfig{}
-	err = json.Unmarshal(contents, &cfg)
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
+		if errors.Is(err, os.ErrNotExist) {
+			cfg = bluecatConfig{
+				GatewayHost:      gatewayHost,
+				DNSConfiguration: dnsConfiguration,
+				View:             dnsView,
+				RootZone:         rootZone,
+				SkipTLSVerify:    skipTLSVerify,
+				GatewayUsername:  "",
+				GatewayPassword:  "",
+			}
+		} else {
+			return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
+		}
+	} else {
+		err = json.Unmarshal(contents, &cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse Bluecat JSON config file %v", configFile)
+		}
 	}
 
 	token, cookie, err := getBluecatGatewayToken(cfg)
@@ -179,6 +191,8 @@ func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, z
 
 // NewGatewayClient creates and returns a new Bluecat gateway client
 func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone string, skipTLSVerify bool) GatewayClientConfig {
+	// TODO: do not handle defaulting here
+	//
 	// Right now the Bluecat gateway doesn't seem to have a way to get the root zone from the API. If the user
 	// doesn't provide one via the config file we'll assume it's 'com'
 	if rootZone == "" {
