@@ -9,6 +9,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.21
 	github.com/Azure/go-autorest/autorest/adal v0.9.16
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/DNSMadeEasy/dme-go-client v1.10.11
 	github.com/StackExchange/dnscontrol v0.2.8
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.1.1
 	github.com/alecthomas/kingpin v2.2.5+incompatible
@@ -67,6 +68,8 @@ require (
 )
 
 require (
+	4d63.com/embedfiles v0.0.0-20190311033909-995e0740726f // indirect
+	4d63.com/tz v1.2.0 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect

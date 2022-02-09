@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sigs.k8s.io/external-dns/provider/dnsmadeeasy"
 	"syscall"
 	"time"
 
@@ -235,6 +236,8 @@ func main() {
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
+	case "dnsmadeeasy":
+		p, err = dnsmadeeasy.NewDmeProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
 			infoblox.InfobloxConfig{

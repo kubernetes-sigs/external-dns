@@ -1,3 +1,7 @@
+4d63.com/embedfiles v0.0.0-20190311033909-995e0740726f h1:oyYjGRBNq1TxAIG8aHqtxlvqUfzdZf+MbcRb/oweNfY=
+4d63.com/embedfiles v0.0.0-20190311033909-995e0740726f/go.mod h1:HxEsUxoVZyRxsZML/S6e2xAuieFMlGO0756ncWx1aXE=
+4d63.com/tz v1.2.0 h1:EpJt060xY+M+M0Wj8btz+THdOJbSxj4i8jhVQP3Wr0U=
+4d63.com/tz v1.2.0/go.mod h1:SHGqVdL7hd2ZaX2T9uEiOZ/OFAUfCCLURdLPJsd8ZNs=
 bazil.org/fuse v0.0.0-20160811212531-371fbbdaa898/go.mod h1:Xbm+BRKSBEpa4q4hTSxohYNQpsxXPbPry4JJWOB3LB8=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
@@ -104,6 +108,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/DNSMadeEasy/dme-go-client v1.10.11 h1:xNU7qMTqB16riB3Vujf+QSd/o1mMwDwChU4+p572jd8=
+github.com/DNSMadeEasy/dme-go-client v1.10.11/go.mod h1:b/ChCh5HEYEdLo7z5eZALjsY6GG2m+BmI2ObROqBtYg=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
