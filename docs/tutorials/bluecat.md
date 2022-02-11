@@ -82,6 +82,8 @@ The options for configuring the Bluecat Provider are available through the JSON 
 | dnsConfiguration  | Yes                |
 | dnsView           | Yes                |
 | rootZone          | Yes                |
+| dnsServerName     | No                 |
+| dnsDeployType     | No                 |
 | skipTLSVerify     | No (default false) |
 
 #### Deploy
