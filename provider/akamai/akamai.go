@@ -242,7 +242,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 				continue
 			}
 			var temp interface{} = int64(recordset.TTL)
-			var ttl endpoint.TTL = endpoint.TTL(temp.(int64))
+			var ttl = endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
 				ttl,
