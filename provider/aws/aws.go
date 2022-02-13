@@ -292,10 +292,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 // wildcardUnescape converts \\052.abc back to *.abc
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardUnescape(s string) string {
-	if strings.Contains(s, "\\052") {
-		s = strings.Replace(s, "\\052", "*", 1)
-	}
-	return s
+	return strings.Replace(s, "\\052", "*", 1)
 }
 
 // Records returns the list of records in a given hosted zone.
@@ -888,8 +885,5 @@ func canonicalHostedZone(hostname string) string {
 
 // cleanZoneID removes the "/hostedzone/" prefix
 func cleanZoneID(id string) string {
-	if strings.HasPrefix(id, "/hostedzone/") {
-		id = strings.TrimPrefix(id, "/hostedzone/")
-	}
-	return id
+	return strings.TrimPrefix(id, "/hostedzone/")
 }
