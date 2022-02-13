@@ -94,7 +94,7 @@ func (m *MockAlibabaCloudDNSAPI) UpdateDomainRecord(request *alidns.UpdateDomain
 }
 
 func (m *MockAlibabaCloudDNSAPI) DescribeDomains(request *alidns.DescribeDomainsRequest) (response *alidns.DescribeDomainsResponse, err error) {
-	var result alidns.Domains
+	var result alidns.DomainsInDescribeDomains
 	for _, record := range m.records {
 		domain := alidns.Domain{}
 		domain.DomainName = record.DomainName
@@ -209,7 +209,7 @@ func (m *MockAlibabaCloudPrivateZoneAPI) DescribeZoneInfo(request *pvtz.Describe
 	response = pvtz.CreateDescribeZoneInfoResponse()
 	response.ZoneId = m.zone.ZoneId
 	response.ZoneName = m.zone.ZoneName
-	response.BindVpcs = pvtz.BindVpcs{Vpc: m.zone.Vpcs.Vpc}
+	response.BindVpcs = pvtz.BindVpcsInDescribeZoneInfo{Vpc: m.zone.Vpcs.Vpc}
 	return response, nil
 }
 
