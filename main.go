@@ -62,6 +62,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
+	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
@@ -136,7 +137,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(&source.SingletonClientGenerator{
+	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -206,13 +207,13 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun)
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID)
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
 		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
+		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
@@ -238,19 +239,20 @@ func main() {
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
 			infoblox.InfobloxConfig{
-				DomainFilter: domainFilter,
-				ZoneIDFilter: zoneIDFilter,
-				Host:         cfg.InfobloxGridHost,
-				Port:         cfg.InfobloxWapiPort,
-				Username:     cfg.InfobloxWapiUsername,
-				Password:     cfg.InfobloxWapiPassword,
-				Version:      cfg.InfobloxWapiVersion,
-				SSLVerify:    cfg.InfobloxSSLVerify,
-				View:         cfg.InfobloxView,
-				MaxResults:   cfg.InfobloxMaxResults,
-				DryRun:       cfg.DryRun,
-				FQDNRexEx:    cfg.InfobloxFQDNRegEx,
-				CreatePTR:    cfg.InfobloxCreatePTR,
+				DomainFilter:  domainFilter,
+				ZoneIDFilter:  zoneIDFilter,
+				Host:          cfg.InfobloxGridHost,
+				Port:          cfg.InfobloxWapiPort,
+				Username:      cfg.InfobloxWapiUsername,
+				Password:      cfg.InfobloxWapiPassword,
+				Version:       cfg.InfobloxWapiVersion,
+				SSLVerify:     cfg.InfobloxSSLVerify,
+				View:          cfg.InfobloxView,
+				MaxResults:    cfg.InfobloxMaxResults,
+				DryRun:        cfg.DryRun,
+				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				CreatePTR:     cfg.InfobloxCreatePTR,
+				CacheDuration: cfg.InfobloxCacheDuration,
 			},
 		)
 	case "dyn":
@@ -324,6 +326,8 @@ func main() {
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+	case "safedns":
+		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

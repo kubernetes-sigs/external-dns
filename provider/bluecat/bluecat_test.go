@@ -109,6 +109,9 @@ func (g mockGatewayClient) deleteTXTRecord(name string, zone string) error {
 	*g.mockBluecatTXTs = nil
 	return nil
 }
+func (g mockGatewayClient) serverFullDeploy() error {
+	return nil
+}
 
 func (g mockGatewayClient) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
 	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/users", "http://some.com/api/v1"), nil)
@@ -374,11 +377,12 @@ func TestBluecatNewGatewayClient(t *testing.T) {
 	testToken := "exampleToken"
 	testgateWayHost := "exampleHost"
 	testDNSConfiguration := "exampleDNSConfiguration"
+	testDNSServer := "exampleServer"
 	testView := "testView"
 	testZone := "example.com"
 	testVerify := true
 
-	client := NewGatewayClient(testCookie, testToken, testgateWayHost, testDNSConfiguration, testView, testZone, testVerify)
+	client := NewGatewayClient(testCookie, testToken, testgateWayHost, testDNSConfiguration, testView, testZone, testDNSServer, testVerify)
 
 	if client.Cookie.Value != testCookie.Value || client.Cookie.Name != testCookie.Name || client.Token != testToken || client.Host != testgateWayHost || client.DNSConfiguration != testDNSConfiguration || client.View != testView || client.RootZone != testZone || client.SkipTLSVerify != testVerify {
 		t.Fatal("Client values dont match")
@@ -473,6 +477,21 @@ func TestBluecatRecordset(t *testing.T) {
 	}
 	assert.Equal(t, cnameActual.obj, cnameExpected.obj)
 	assert.Equal(t, cnameActual.res, cnameExpected.res)
+}
+
+func TestValidDeployTypes(t *testing.T) {
+	validTypes := []string{"no-deploy", "full-deploy"}
+	invalidTypes := []string{"anything-else"}
+	for _, i := range validTypes {
+		if !isValidDNSDeployType(i) {
+			t.Fatalf("%s should be a valid deploy type", i)
+		}
+	}
+	for _, i := range invalidTypes {
+		if isValidDNSDeployType(i) {
+			t.Fatalf("%s should be a invalid deploy type", i)
+		}
+	}
 }
 
 func validateEndpoints(t *testing.T, actual, expected []*endpoint.Endpoint) {

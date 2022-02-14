@@ -215,7 +215,7 @@ func newMockedAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter e
 		},
 	}
 
-	mockZoneListResultPage := dns.NewZoneListResultPage(pageIterator.getNextPage)
+	mockZoneListResultPage := dns.NewZoneListResultPage(dns.ZoneListResult{}, pageIterator.getNextPage)
 	mockZoneClientIterator := dns.NewZoneListResultIterator(mockZoneListResultPage)
 	zonesClient := mockZonesClient{
 		mockZonesClientIterator: &mockZoneClientIterator,
@@ -229,7 +229,8 @@ func newMockedAzureProvider(domainFilter endpoint.DomainFilter, zoneNameFilter e
 			},
 		},
 	}
-	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(resultPageIterator.getNextPage)
+
+	mockRecordSetListResultPage := dns.NewRecordSetListResultPage(dns.RecordSetListResult{}, resultPageIterator.getNextPage)
 	mockRecordSetListIterator := dns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
 	recordSetsClient := mockRecordSetsClient{
 		mockRecordSetListIterator: &mockRecordSetListIterator,
@@ -377,7 +378,7 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		zlr,
 	}
 
-	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
+	mockZoneListResultPage := dns.NewZoneListResultPage(dns.ZoneListResult{}, func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
 		if len(results) > 0 {
 			result := results[0]
 			results = nil
@@ -512,7 +513,7 @@ func testAzureApplyChangesInternalZoneName(t *testing.T, dryRun bool, client Rec
 		zlr,
 	}
 
-	mockZoneListResultPage := dns.NewZoneListResultPage(func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
+	mockZoneListResultPage := dns.NewZoneListResultPage(dns.ZoneListResult{}, func(ctxParam context.Context, zlrParam dns.ZoneListResult) (dns.ZoneListResult, error) {
 		if len(results) > 0 {
 			result := results[0]
 			results = nil

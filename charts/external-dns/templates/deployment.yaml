@@ -4,6 +4,10 @@ metadata:
   name: {{ include "external-dns.fullname" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
+  {{- with .Values.deploymentAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   replicas: 1
   selector:
@@ -67,6 +71,9 @@ spec:
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
             {{- end }}
+            {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
+            - --txt-suffix={{ .Values.txtSuffix }}
+            {{- end }}
             {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
@@ -101,6 +108,10 @@ spec:
       {{- end }}
       {{- with .Values.affinity }}
       affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.tolerations }}

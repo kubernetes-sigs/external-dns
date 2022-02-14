@@ -56,6 +56,7 @@ func (suite *IngressSuite) SetupTest() {
 	suite.NoError(err, "should succeed")
 
 	suite.sc, err = NewIngressSource(
+		context.TODO(),
 		fakeClient,
 		"",
 		"",
@@ -151,6 +152,7 @@ func TestNewIngressSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIngressSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				"",
 				ti.annotationFilter,
@@ -1291,6 +1293,7 @@ func testIngressEndpoints(t *testing.T) {
 			}
 
 			source, _ := NewIngressSource(
+				context.TODO(),
 				fakeClient,
 				ti.targetNamespace,
 				ti.annotationFilter,

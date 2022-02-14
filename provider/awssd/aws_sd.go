@@ -64,12 +64,12 @@ var (
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
 	DeregisterInstance(input *sd.DeregisterInstanceInput) (*sd.DeregisterInstanceOutput, error)
-	GetService(input *sd.GetServiceInput) (*sd.GetServiceOutput, error)
 	ListInstancesPages(input *sd.ListInstancesInput, fn func(*sd.ListInstancesOutput, bool) bool) error
 	ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error
 	ListServicesPages(input *sd.ListServicesInput, fn func(*sd.ListServicesOutput, bool) bool) error
 	RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error)
 	UpdateService(input *sd.UpdateServiceInput) (*sd.UpdateServiceOutput, error)
+	DeleteService(input *sd.DeleteServiceInput) (*sd.DeleteServiceOutput, error)
 }
 
 // AWSSDProvider is an implementation of Provider for AWS Cloud Map.
@@ -81,10 +81,14 @@ type AWSSDProvider struct {
 	namespaceFilter endpoint.DomainFilter
 	// filter namespace by type (private or public)
 	namespaceTypeFilter *sd.NamespaceFilter
+	// enables service without instances cleanup
+	cleanEmptyService bool
+	// filter services for removal
+	ownerID string
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun bool) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun, cleanEmptyService bool, ownerID string) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -113,9 +117,11 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 
 	provider := &AWSSDProvider{
 		client:              sd.New(sess),
+		dryRun:              dryRun,
 		namespaceFilter:     domainFilter,
 		namespaceTypeFilter: newSdNamespaceFilter(namespaceType),
-		dryRun:              dryRun,
+		cleanEmptyService:   cleanEmptyService,
+		ownerID:             ownerID,
 	}
 
 	return provider, nil
@@ -161,6 +167,12 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 			if len(instances) > 0 {
 				ep := p.instancesToEndpoint(ns, srv, instances)
 				endpoints = append(endpoints, ep)
+			}
+			if len(instances) == 0 {
+				err = p.DeleteService(srv)
+				if err != nil {
+					log.Warnf("Failed to delete service \"%s\", error: %s", aws.StringValue(srv.Name), err)
+				}
 			}
 		}
 	}
@@ -285,9 +297,8 @@ func (p *AWSSDProvider) submitCreates(namespaces []*sd.NamespaceSummary, changes
 				}
 				// update local list of services
 				services[*srv.Name] = srv
-			} else if (ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL)) ||
-				aws.StringValue(srv.Description) != ch.Labels[endpoint.AWSSDDescriptionLabel] {
-				// update service when TTL or Description differ
+			} else if ch.RecordTTL.IsConfigured() && *srv.DnsConfig.DnsRecords[0].TTL != int64(ch.RecordTTL) {
+				// update service when TTL differ
 				err = p.UpdateService(srv, ch)
 				if err != nil {
 					return err
@@ -359,13 +370,10 @@ func (p *AWSSDProvider) ListNamespaces() ([]*sd.NamespaceSummary, error) {
 
 // ListServicesByNamespaceID returns list of services in given namespace. Returns map[srv_name]*sd.Service
 func (p *AWSSDProvider) ListServicesByNamespaceID(namespaceID *string) (map[string]*sd.Service, error) {
-	serviceIds := make([]*string, 0)
+	services := make([]*sd.ServiceSummary, 0)
 
 	f := func(resp *sd.ListServicesOutput, lastPage bool) bool {
-		for _, srv := range resp.Services {
-			serviceIds = append(serviceIds, srv.Id)
-		}
-
+		services = append(services, resp.Services...)
 		return true
 	}
 
@@ -374,35 +382,31 @@ func (p *AWSSDProvider) ListServicesByNamespaceID(namespaceID *string) (map[stri
 			Name:   aws.String(sd.ServiceFilterNameNamespaceId),
 			Values: []*string{namespaceID},
 		}},
+		MaxResults: aws.Int64(100),
 	}, f)
 	if err != nil {
 		return nil, err
 	}
 
-	// get detail of each listed service
-	services := make(map[string]*sd.Service)
-	for _, serviceID := range serviceIds {
-		service, err := p.GetServiceDetail(serviceID)
-		if err != nil {
-			return nil, err
+	servicesMap := make(map[string]*sd.Service)
+	for _, serviceSummary := range services {
+		service := &sd.Service{
+			Arn:                     serviceSummary.Arn,
+			CreateDate:              serviceSummary.CreateDate,
+			Description:             serviceSummary.Description,
+			DnsConfig:               serviceSummary.DnsConfig,
+			HealthCheckConfig:       serviceSummary.HealthCheckConfig,
+			HealthCheckCustomConfig: serviceSummary.HealthCheckCustomConfig,
+			Id:                      serviceSummary.Id,
+			InstanceCount:           serviceSummary.InstanceCount,
+			Name:                    serviceSummary.Name,
+			NamespaceId:             namespaceID,
+			Type:                    serviceSummary.Type,
 		}
 
-		services[aws.StringValue(service.Name)] = service
+		servicesMap[aws.StringValue(service.Name)] = service
 	}
-
-	return services, nil
-}
-
-// GetServiceDetail returns detail of given service
-func (p *AWSSDProvider) GetServiceDetail(serviceID *string) (*sd.Service, error) {
-	output, err := p.client.GetService(&sd.GetServiceInput{
-		Id: serviceID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return output.Service, nil
+	return servicesMap, nil
 }
 
 // ListInstancesByServiceID returns list of instances registered in given service.
@@ -488,6 +492,27 @@ func (p *AWSSDProvider) UpdateService(service *sd.Service, ep *endpoint.Endpoint
 		}
 	}
 
+	return nil
+}
+
+// DeleteService deletes empty Service from AWS API if its owner id match
+func (p *AWSSDProvider) DeleteService(service *sd.Service) error {
+	log.Debugf("Check if service \"%s\" owner id match and it can be deleted", *service.Name)
+	if !p.dryRun && p.cleanEmptyService {
+		// convert ownerID string to service description format
+		label := endpoint.NewLabels()
+		label[endpoint.OwnerLabelKey] = p.ownerID
+		label[endpoint.AWSSDDescriptionLabel] = label.Serialize(false)
+
+		if aws.StringValue(service.Description) == label[endpoint.AWSSDDescriptionLabel] {
+			log.Infof("Deleting service \"%s\"", *service.Name)
+			_, err := p.client.DeleteService(&sd.DeleteServiceInput{
+				Id: aws.String(*service.Id),
+			})
+			return err
+		}
+		log.Debugf("Skipping service removal %s because owner id does not match, found: \"%s\", required: \"%s\"", aws.StringValue(service.Name), aws.StringValue(service.Description), label[endpoint.AWSSDDescriptionLabel])
+	}
 	return nil
 }
 
@@ -578,11 +603,16 @@ func serviceToServiceSummary(service *sd.Service) *sd.ServiceSummary {
 	}
 
 	return &sd.ServiceSummary{
-		Name:          service.Name,
-		Id:            service.Id,
-		Arn:           service.Arn,
-		Description:   service.Description,
-		InstanceCount: service.InstanceCount,
+		Arn:                     service.Arn,
+		CreateDate:              service.CreateDate,
+		Description:             service.Description,
+		DnsConfig:               service.DnsConfig,
+		HealthCheckConfig:       service.HealthCheckConfig,
+		HealthCheckCustomConfig: service.HealthCheckCustomConfig,
+		Id:                      service.Id,
+		InstanceCount:           service.InstanceCount,
+		Name:                    service.Name,
+		Type:                    service.Type,
 	}
 }
 

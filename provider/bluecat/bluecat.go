@@ -44,6 +44,8 @@ type bluecatConfig struct {
 	GatewayUsername  string `json:"gatewayUsername,omitempty"`
 	GatewayPassword  string `json:"gatewayPassword,omitempty"`
 	DNSConfiguration string `json:"dnsConfiguration"`
+	DNSServerName    string `json:"dnsServerName"`
+	DNSDeployType    string `json:"dnsDeployType"`
 	View             string `json:"dnsView"`
 	RootZone         string `json:"rootZone"`
 	SkipTLSVerify    bool   `json:"skipTLSVerify"`
@@ -57,6 +59,8 @@ type BluecatProvider struct {
 	dryRun           bool
 	RootZone         string
 	DNSConfiguration string
+	DNSServerName    string
+	DNSDeployType    string
 	View             string
 	gatewayClient    GatewayClient
 }
@@ -76,6 +80,7 @@ type GatewayClient interface {
 	getTXTRecord(name string, record *BluecatTXTRecord) error
 	createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (res interface{}, err error)
 	deleteTXTRecord(name string, zone string) error
+	serverFullDeploy() error
 }
 
 // GatewayClientConfig defines new client on bluecat gateway
@@ -86,6 +91,7 @@ type GatewayClientConfig struct {
 	DNSConfiguration string
 	View             string
 	RootZone         string
+	DNSServerName    string
 	SkipTLSVerify    bool
 }
 
@@ -144,26 +150,48 @@ type bluecatCreateTXTRecordRequest struct {
 	Text         string `json:"txt"`
 }
 
+type bluecatServerFullDeployRequest struct {
+	ServerName string `json:"server_name"`
+}
+
 // NewBluecatProvider creates a new Bluecat provider.
 //
 // Returns a pointer to the provider or an error if a provider could not be created.
-func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*BluecatProvider, error) {
-	contents, err := ioutil.ReadFile(configFile)
+func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployType, dnsView, gatewayHost, rootZone string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
+	cfg := bluecatConfig{}
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
+		if errors.Is(err, os.ErrNotExist) {
+			cfg = bluecatConfig{
+				GatewayHost:      gatewayHost,
+				DNSConfiguration: dnsConfiguration,
+				DNSServerName:    dnsServerName,
+				DNSDeployType:    dnsDeployType,
+				View:             dnsView,
+				RootZone:         rootZone,
+				SkipTLSVerify:    skipTLSVerify,
+				GatewayUsername:  "",
+				GatewayPassword:  "",
+			}
+		} else {
+			return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
+		}
+	} else {
+		err = json.Unmarshal(contents, &cfg)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse Bluecat JSON config file %v", configFile)
+		}
 	}
 
-	cfg := bluecatConfig{}
-	err = json.Unmarshal(contents, &cfg)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read Bluecat config file %v", configFile)
+	if !isValidDNSDeployType(cfg.DNSDeployType) {
+		return nil, errors.Errorf("%v is not a valid deployment type", cfg.DNSDeployType)
 	}
 
 	token, cookie, err := getBluecatGatewayToken(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get API token from Bluecat Gateway")
 	}
-	gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone, cfg.SkipTLSVerify)
+	gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone, cfg.DNSServerName, cfg.SkipTLSVerify)
 
 	provider := &BluecatProvider{
 		domainFilter:     domainFilter,
@@ -171,6 +199,8 @@ func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, z
 		dryRun:           dryRun,
 		gatewayClient:    gatewayClient,
 		DNSConfiguration: cfg.DNSConfiguration,
+		DNSServerName:    cfg.DNSServerName,
+		DNSDeployType:    cfg.DNSDeployType,
 		View:             cfg.View,
 		RootZone:         cfg.RootZone,
 	}
@@ -178,7 +208,9 @@ func NewBluecatProvider(configFile string, domainFilter endpoint.DomainFilter, z
 }
 
 // NewGatewayClient creates and returns a new Bluecat gateway client
-func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone string, skipTLSVerify bool) GatewayClientConfig {
+func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone, dnsServerName string, skipTLSVerify bool) GatewayClientConfig {
+	// TODO: do not handle defaulting here
+	//
 	// Right now the Bluecat gateway doesn't seem to have a way to get the root zone from the API. If the user
 	// doesn't provide one via the config file we'll assume it's 'com'
 	if rootZone == "" {
@@ -189,6 +221,7 @@ func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, 
 		Token:            token,
 		Host:             gatewayHost,
 		DNSConfiguration: dnsConfiguration,
+		DNSServerName:    dnsServerName,
 		View:             view,
 		RootZone:         rootZone,
 		SkipTLSVerify:    skipTLSVerify,
@@ -278,8 +311,6 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 			}
 			endpoints = append(endpoints, ep)
 		}
-
-		// TODO: add bluecat deploy API call here
 	}
 
 	log.Debugf("fetched %d records from Bluecat", len(endpoints))
@@ -301,6 +332,20 @@ func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	log.Infof("deleted: %+v\n", deleted)
 	p.deleteRecords(deleted)
 	p.createRecords(created)
+
+	if p.DNSServerName != "" {
+		switch p.DNSDeployType {
+		case "full-deploy":
+			err := p.gatewayClient.serverFullDeploy()
+			if err != nil {
+				return err
+			}
+		case "no-deploy":
+			log.Debug("Not executing deploy because DNSDeployType is set to 'no-deploy'")
+		}
+	} else {
+		log.Debug("Not executing deploy because server name was not provided")
+	}
 
 	return nil
 }
@@ -922,6 +967,41 @@ func (c GatewayClientConfig) deleteTXTRecord(name string, zone string) error {
 	return nil
 }
 
+func (c GatewayClientConfig) serverFullDeploy() error {
+	log.Infof("Executing full deploy on server %s", c.DNSServerName)
+	httpClient := newHTTPClient(c.SkipTLSVerify)
+	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/server/full_deploy/"
+	requestBody := bluecatServerFullDeployRequest{
+		ServerName: c.DNSServerName,
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return errors.Wrap(err, "could not marshal body for server full deploy")
+	}
+
+	request, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return errors.Wrap(err, "error building http request")
+	}
+
+	request.Header.Add("Content-Type", "application/json")
+	response, err := httpClient.Do(request)
+	if err != nil {
+		return errors.Wrap(err, "error executing full deploy")
+	}
+
+	if response.StatusCode != http.StatusCreated {
+		responseBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return errors.Wrap(err, "failed to read full deploy response body")
+		}
+		return errors.Errorf("got HTTP response code %v, detailed message: %v", response.StatusCode, string(responseBody))
+	}
+
+	return nil
+}
+
 //buildHTTPRequest builds a standard http Request and adds authentication headers required by Bluecat Gateway
 func (c GatewayClientConfig) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
@@ -945,6 +1025,17 @@ func splitProperties(props string) map[string]string {
 	}
 
 	return propMap
+}
+
+// isValidDNSDeployType validates the deployment type provided by a users configuration is supported by the Bluecat Provider.
+func isValidDNSDeployType(deployType string) bool {
+	validDNSDeployTypes := []string{"no-deploy", "full-deploy"}
+	for _, t := range validDNSDeployTypes {
+		if t == deployType {
+			return true
+		}
+	}
+	return false
 }
 
 //expandZone takes an absolute domain name such as 'example.com' and returns a zone hierarchy used by Bluecat Gateway,
