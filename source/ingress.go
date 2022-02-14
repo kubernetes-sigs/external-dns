@@ -83,7 +83,7 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		requirements, _ := selector.Requirements()
 		for _, requirement := range requirements {
 			if requirement.Key() == "kubernetes.io/ingress.class" {
-				return nil, errors.New("--ingress-class is mutually exclusive with kubernetes.io/ingress.class annotation")
+				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
 			}
 		}
 	}
