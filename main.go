@@ -110,6 +110,7 @@ func main() {
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
 		NodeSelector:                   cfg.NodeSelector,
+		MaxNodePortTargets:             cfg.MaxNodePortTargets,
 		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,

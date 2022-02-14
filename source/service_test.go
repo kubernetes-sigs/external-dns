@@ -18,8 +18,10 @@ package source
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -29,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -80,6 +83,7 @@ func (suite *ServiceSuite) SetupTest() {
 		labels.Everything(),
 		false,
 		"",
+		0,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -162,6 +166,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				labels.Everything(),
 				false,
 				"",
+				0,
 			)
 
 			if ti.expectError {
@@ -1060,6 +1065,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				sourceLabel,
 				false,
 				"",
+				0,
 			)
 
 			require.NoError(t, err)
@@ -1251,6 +1257,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				labels.Everything(),
 				false,
 				"",
+				0,
 			)
 			require.NoError(t, err)
 
@@ -1418,6 +1425,7 @@ func TestClusterIpServices(t *testing.T) {
 				labelSelector,
 				false,
 				"",
+				0,
 			)
 			require.NoError(t, err)
 
@@ -2075,6 +2083,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				labels.Everything(),
 				tc.omitSRVRecord,
 				tc.nodeSelector,
+				0,
 			)
 			require.NoError(t, err)
 
@@ -2086,6 +2095,173 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			}
 
 			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
+
+// TestNodePortMaxTargets tests the selection of node targets for NodePort services
+func TestNodePortMaxTargets(t *testing.T) {
+	t.Parallel()
+
+	makeNode := func(n int) *v1.Node {
+		nstr := strconv.Itoa(n)
+		return &v1.Node{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "node" + nstr,
+				UID:  types.UID(fmt.Sprintf("00000000-%04x-0000-0000-000000000000", n)),
+			},
+			Status: v1.NodeStatus{
+				Addresses: []v1.NodeAddress{
+					{Type: v1.NodeExternalIP, Address: "54.10.11." + nstr},
+					{Type: v1.NodeInternalIP, Address: "10.0.1." + nstr},
+				},
+			},
+		}
+	}
+
+	makeSvc := func(n int) *v1.Service {
+		return &v1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "svc" + strconv.Itoa(n),
+				Namespace: "testing",
+				UID:       types.UID(fmt.Sprintf("00000000-0000-%04x-0000-000000000000", n)),
+				Annotations: map[string]string{
+					hostnameAnnotationKey: "foo.example.org.",
+				},
+			},
+			Spec: v1.ServiceSpec{
+				Type:                  v1.ServiceTypeNodePort,
+				ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeCluster,
+				Ports: []v1.ServicePort{
+					{
+						NodePort: 30192,
+					},
+				},
+			},
+		}
+	}
+
+	// This bash function can be used to figure out which nodes should be
+	// selected for a test.
+	/*
+		selectNodes() {
+		    local serviceNum="$1" nodeCount="$2" maxTargets="$3"
+		    for ((i = 0; i < nodeCount; i++)); do
+		        nodeUID=$(printf '00000000-%04x-0000-0000-000000000000' $i)
+		        svcUID=$(printf '00000000-0000-%04x-0000-000000000000' $serviceNum)
+		        hash=$(printf '%s%s' $nodeUID $svcUID | md5sum | cut -d\  -f1)
+		        echo "$hash $i"
+		    done | sort | head -n $maxTargets
+		}
+	*/
+
+	for _, tc := range []struct {
+		title      string
+		nodeCount  int // max 255 due to use as IPv4 address octet
+		serviceNum int
+		maxTargets int
+		expected   []*endpoint.Endpoint
+	}{
+		// The first three tests are related. For the generated UIDs,
+		// service 57 has the last node (node99) in the set of targets
+		// for that service when there are 100 nodes. We expect the
+		// target node99 to change when that node is removed - i.e.
+		// there are 99 nodes, but the other two targets to stay the
+		// same. With 101 nodes, we expect the same result as 100 as
+		// node100 hashes to a value outside the top 3.
+		{
+			title:      "Test 3 of 100 nodes",
+			nodeCount:  100,
+			serviceNum: 57,
+			maxTargets: 3,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_svc57._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.49", "54.10.11.94", "54.10.11.99"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title:      "Test 3 of 99 nodes",
+			nodeCount:  99,
+			serviceNum: 57,
+			maxTargets: 3,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_svc57._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.49", "54.10.11.56", "54.10.11.94"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title:      "Test 3 of 101 nodes",
+			nodeCount:  101,
+			serviceNum: 57,
+			maxTargets: 3,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_svc57._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.49", "54.10.11.94", "54.10.11.99"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title:      "Test all nodes selected when count is zero",
+			nodeCount:  3,
+			serviceNum: 57,
+			maxTargets: 0,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_svc57._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.0", "54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+		{
+			title:      "Test all nodes selected when count is less than nodes",
+			nodeCount:  3,
+			serviceNum: 57,
+			maxTargets: 4,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_svc57._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.0", "54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+			},
+		},
+	} {
+		tc := tc
+		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			// Create the nodes
+			for i := 0; i < tc.nodeCount; i++ {
+				node := makeNode(i)
+				if _, err := kubernetes.CoreV1().Nodes().Create(context.Background(), node, metav1.CreateOptions{}); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			// Create the service
+			service := makeSvc(tc.serviceNum)
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			client, _ := NewServiceSource(
+				context.TODO(),
+				kubernetes,          // kubeClient
+				"",                  // namespace
+				"",                  // annotationFilter
+				"",                  // fqdnTemplate
+				false,               // combineFqdnAnnotation
+				"",                  // compatibility
+				true,                // publishInternal
+				false,               // publishHostIP
+				false,               // alwaysPublishNotReadyAddresses
+				[]string{},          // serviceTypeFilter
+				false,               // ignoreHostnameAnnotation
+				labels.Everything(), // labelSelector
+				false,               // omitSRVRecords
+				"",                  // nodePortSelector
+				tc.maxTargets,       // maxNodePortTargets
+			)
+			require.NoError(t, err)
+			endpoints, err := client.Endpoints(context.Background())
+			require.NoError(t, err)
 			validateEndpoints(t, endpoints, tc.expected)
 		})
 	}
@@ -2413,6 +2589,7 @@ func TestHeadlessServices(t *testing.T) {
 				labels.Everything(),
 				false,
 				"",
+				0,
 			)
 			require.NoError(t, err)
 
@@ -2772,6 +2949,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				labels.Everything(),
 				true,
 				"",
+				0,
 			)
 			require.NoError(t, err)
 
@@ -2886,6 +3064,7 @@ func TestExternalServices(t *testing.T) {
 				labels.Everything(),
 				false,
 				"",
+				0,
 			)
 			require.NoError(t, err)
 
@@ -2942,6 +3121,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		labels.Everything(),
 		false,
 		"",
+		0,
 	)
 	require.NoError(b, err)
 

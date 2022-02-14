@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"sort"
 	"strings"
@@ -65,10 +66,11 @@ type serviceSource struct {
 	serviceTypeFilter              map[string]struct{}
 	labelSelector                  labels.Selector
 	nodeSelector                   labels.Selector
+	maxNodePortTargets             int
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, omitSRVRecords bool, nodePortSelector string) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, omitSRVRecords bool, nodePortSelector string, maxNodePortTargets int) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -146,6 +148,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
 		nodeSelector:                   nodeLabels.AsSelector(),
+		maxNodePortTargets:             maxNodePortTargets,
 	}, nil
 }
 
@@ -594,6 +597,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		if err != nil {
 			return nil, err
 		}
+		nodes = selectNodes(svc, nodes, sc.maxNodePortTargets)
 	}
 
 	for _, node := range nodes {
@@ -618,6 +622,51 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		return externalIPs, nil
 	}
 	return internalIPs, nil
+}
+
+// selectNodes returns up to count nodes from the nodes slice.
+//
+// A form of consistent hashing is used to select the nodes for the service.
+// This keeps the list of nodes selected for a service reasonably stable in the
+// face of nodes being added or removed.
+//
+// If count is 0 or there are fewer nodes than requested, all nodes are
+// returned.
+func selectNodes(svc *v1.Service, nodes []*v1.Node, count int) []*v1.Node {
+	if count == 0 || len(nodes) <= count {
+		return nodes
+	}
+
+	// Order all the nodes by hash of node UID + service UID. This gives
+	// each service its own hash ring, spreading the nodes more randomly
+	// across the services.
+	type hashedNode struct {
+		node *v1.Node
+		hash [md5.Size]byte
+	}
+	hashedNodes := make([]hashedNode, len(nodes))
+	for i, node := range nodes {
+		hashedNodes[i] = hashedNode{node, md5.Sum([]byte(node.UID + svc.UID))}
+	}
+	sort.Slice(hashedNodes, func(i, j int) bool {
+		a, b := hashedNodes[i].hash, hashedNodes[j].hash
+		for k := range a {
+			if a[k] != b[k] {
+				return a[k] < b[k]
+			}
+		}
+		return false
+	})
+
+	// Since each service has its own hash ring, we do not need to index
+	// the service into the ring - we can just take the first N nodes
+	// and we'll get a reasonably unique and consistent set of nodes for
+	// the service.
+	result := make([]*v1.Node, count)
+	for i := 0; i < count; i++ {
+		result[i] = hashedNodes[i].node
+	}
+	return result
 }
 
 func (sc *serviceSource) extractNodePortSRVEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
