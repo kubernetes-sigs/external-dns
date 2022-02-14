@@ -154,6 +154,10 @@ func main() {
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
 
+	if cfg.SuppressIPv6 {
+		endpointsSource = source.NewSuppressedSource(endpointsSource)
+	}
+
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
 	if cfg.RegexDomainFilter.String() != "" {
