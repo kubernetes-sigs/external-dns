@@ -213,7 +213,7 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `annotation-filter` and `aws-zone-type`:
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and either `ingress-class` or `annotation-filter` (depending on whether your cluster makes use of `ingressClassName`):
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -241,7 +241,9 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
-        - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
+        - --ingress-class=external-ingress
+        # ... or, if you use annotations for ingress classes
+        # - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
         - --aws-zone-type=public
         image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         name: external-dns-public
@@ -251,7 +253,7 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `annotation-filter` and `aws-zone-type`:
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and either `ingress-class` or `annotation-filter` (depending on whether your cluster makes use of `ingressClassName`):
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -279,7 +281,9 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
-        - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
+        - --ingress-class=internal-ingress
+        # ... or, if you use annotations for ingress classes
+        # - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
         - --aws-zone-type=private
         image: k8s.gcr.io/external-dns/external-dns:v0.7.6
         name: external-dns-private
@@ -287,20 +291,23 @@ spec:
 
 ## Create application Service definitions
 
-For this setup to work, you've to create two Service definitions for your application.
+For this setup to work, you need to create two Ingress definitions for your application.
 
-At first, create public Service definition:
+At first, create public Ingress definition (make sure to un-comment either the `annotations` or `ingressClassName` lines):
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "external-ingress"
+  # uncomment if you use annotations for ingress classes
+  # annotations:
+  #   kubernetes.io/ingress.class: "external-ingress"
   labels:
     app: app
   name: app-public
 spec:
+  # uncomment if you use ingressClassName
+  # ingressClassName: external-ingress
   rules:
   - host: app.domain.com
     http:
@@ -310,18 +317,21 @@ spec:
           servicePort: 80
 ```
 
-Then create private Service definition:
+Then create private Ingress definition (again, make sure to un-comment either the `annotations` or `ingressClassName` lines):
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "internal-ingress"
+  # uncomment if you use annotations for ingress classes
+  # annotations:
+  #   kubernetes.io/ingress.class: "internal-ingress"
   labels:
     app: app
   name: app-private
 spec:
+  # uncomment if you use ingressClassName
+  # ingressClassName: internal-ingress
   rules:
   - host: app.domain.com
     http:
