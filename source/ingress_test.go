@@ -410,6 +410,25 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:           "ipv6 ingress",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					dnsnames:  []string{"example.org"},
+					ips:       []string{"2001:DB8::1"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2001:DB8::1"},
+				},
+			},
+		},
+		{
 			title:                  "ignore rules",
 			targetNamespace:        "",
 			ignoreIngressRulesSpec: true,
