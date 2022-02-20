@@ -432,5 +432,13 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 			return []string{(*values)[0]}
 		}
 	}
+
+	// Check for A, CNAME records with 'Alias record set' pointed to Azure resource
+	// https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/dns/dns-alias.md
+	targetResource := properties.TargetResource
+	if targetResource != nil && targetResource.ID != nil {
+		return []string{*targetResource.ID}
+	}
+
 	return []string{}
 }
