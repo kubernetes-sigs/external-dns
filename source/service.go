@@ -76,9 +76,8 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	// endpointsInformer := informerFactory.Core().V1().Endpoints()
-	// podInformer := informerFactory.Core().V1().Pods()
-	// nodeInformer := informerFactory.Core().V1().Nodes()
+	endpointsInformer := informerFactory.Core().V1().Endpoints()
+	podInformer := informerFactory.Core().V1().Pods()
 
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
@@ -87,24 +86,31 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 			},
 		},
 	)
-	// endpointsInformer.Informer().AddEventHandler(
-	// 	cache.ResourceEventHandlerFuncs{
-	// 		AddFunc: func(obj interface{}) {
-	// 		},
-	// 	},
-	// )
-	// podInformer.Informer().AddEventHandler(
-	// 	cache.ResourceEventHandlerFuncs{
-	// 		AddFunc: func(obj interface{}) {
-	// 		},
-	// 	},
-	// )
-	// nodeInformer.Informer().AddEventHandler(
-	// 	cache.ResourceEventHandlerFuncs{
-	// 		AddFunc: func(obj interface{}) {
-	// 		},
-	// 	},
-	// )
+	endpointsInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+			},
+		},
+	)
+	podInformer.Informer().AddEventHandler(
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj interface{}) {
+			},
+		},
+	)
+
+	var nodeInformer coreinformers.NodeInformer
+
+	if contains(serviceTypeFilter, "NodePort") || len(serviceTypeFilter) == 0 {
+		nodeInformer = informerFactory.Core().V1().Nodes()
+
+		nodeInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
+			},
+		)
+	}
 
 	informerFactory.Start(ctx.Done())
 
@@ -132,9 +138,9 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		publishHostIP:                  publishHostIP,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
 		serviceInformer:                serviceInformer,
-		endpointsInformer:              nil,
-		podInformer:                    nil,
-		nodeInformer:                   nil,
+		endpointsInformer:              endpointsInformer,
+		podInformer:                    podInformer,
+		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
 	}, nil
@@ -653,4 +659,14 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
 }

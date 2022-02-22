@@ -24,8 +24,7 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN make build.$ARCH
-# RUN make test build.$ARCH
+RUN make test build.$ARCH
 
 # final image
 FROM $ARCH/alpine:3.15
