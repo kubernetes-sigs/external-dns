@@ -138,30 +138,32 @@ func legacyEndpointsFromDNSControllerNodePortService(svc *v1.Service, sc *servic
 		return nil, nil
 	}
 
-	nodes, err := sc.nodeInformer.Lister().List(labels.Everything())
-	if err != nil {
-		return nil, err
-	}
+	for _, informer := range sc.informers {
+		nodes, err := informer.nodeInformer.Lister().List(labels.Everything())
+		if err != nil {
+			return nil, err
+		}
 
-	var hostnameList []string
-	if isExternal {
-		hostnameList = strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
-	} else {
-		hostnameList = strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
-	}
+		var hostnameList []string
+		if isExternal {
+			hostnameList = strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+		} else {
+			hostnameList = strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
+		}
 
-	for _, hostname := range hostnameList {
-		for _, node := range nodes {
-			_, isNode := node.Labels["node-role.kubernetes.io/node"]
-			if !isNode {
-				continue
-			}
-			for _, address := range node.Status.Addresses {
-				if address.Type == v1.NodeExternalIP && isExternal {
-					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, address.Address))
+		for _, hostname := range hostnameList {
+			for _, node := range nodes {
+				_, isNode := node.Labels["node-role.kubernetes.io/node"]
+				if !isNode {
+					continue
 				}
-				if address.Type == v1.NodeInternalIP && isInternal {
-					endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, address.Address))
+				for _, address := range node.Status.Addresses {
+					if address.Type == v1.NodeExternalIP && isExternal {
+						endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, address.Address))
+					}
+					if address.Type == v1.NodeInternalIP && isInternal {
+						endpoints = append(endpoints, endpoint.NewEndpoint(hostname, endpoint.RecordTypeA, address.Address))
+					}
 				}
 			}
 		}
