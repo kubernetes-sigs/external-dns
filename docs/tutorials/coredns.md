@@ -18,74 +18,110 @@ Helm chart is used to install etcd and CoreDNS.
 helm init
 ```
 ### Installing etcd
-[etcd operator](https://github.com/coreos/etcd-operator) is used to manage etcd clusters.
+[etcd chart by bitnami](https://artifacthub.io/packages/helm/bitnami/etcd) is currently the most popular chart for etcd available on artifacthub. First you will need to add bitnami chart repository to use it
 ```
-helm install stable/etcd-operator --name my-etcd-op
+helm repo add bitnami https://charts.bitnami.com/bitnami
 ```
-etcd cluster is installed with example yaml from etcd operator website.
+
+<!-- TODO: Add disclamer for riscs of this approach -->
+To make it easier to connect later on, you need to set root password through values.yaml. First let's download them:
 ```
-kubectl apply -f https://raw.githubusercontent.com/coreos/etcd-operator/HEAD/example/example-etcd-cluster.yaml
+wget https://raw.githubusercontent.com/bitnami/charts/master/bitnami/etcd/values.yaml
+```
+
+Then you need to patch values with this diff
+```diff
+--- a/values.yaml
++++ b/values.yaml
+@@ -101,7 +101,7 @@
+     allowNoneAuthentication: true
+     ## @param auth.rbac.rootPassword Root user password. The root user is always `root`
+     ##
+-    rootPassword: ""
++    rootPassword: "NotSecurePassword"
+     ## @param auth.rbac.existingSecret Name of the existing secret containing credentials for the root user
+     ##
+     existingSecret: ""
+```
+
+Finally to install etcd with those values run
+```
+helm install my-etcd --values values.yaml bitnami/etcd
 ```
 
 ### Installing CoreDNS
+First, you need to add CoreDNS helm chart repository:
+```
+helm repo add coredns https://coredns.github.io/helm
+```
+
 In order to make CoreDNS work with etcd backend, values.yaml of the chart should be changed with corresponding configurations.
 ```
-wget https://raw.githubusercontent.com/helm/charts/HEAD/stable/coredns/values.yaml
+wget https://raw.githubusercontent.com/coredns/helm/master/charts/coredns/values.yaml
 ```
 
 You need to edit/patch the file with below diff
 ```diff
-diff --git a/values.yaml b/values.yaml
-index 964e72b..e2fa934 100644
 --- a/values.yaml
 +++ b/values.yaml
-@@ -27,12 +27,12 @@ service:
-
- rbac:
-   # If true, create & use RBAC resources
--  create: false
-+  create: true
-   # Ignored if rbac.create is true
-   serviceAccountName: default
-
+@@ -81,7 +81,7 @@
+   # name:
+ 
  # isClusterService specifies whether chart should be deployed as cluster-service or normal k8s app.
 -isClusterService: true
 +isClusterService: false
-
+ 
+ # Optional priority class to be used for the coredns pods. Used for autoscaler if autoscaler.priorityClassName not set.
+ priorityClassName: ""
+@@ -90,7 +90,7 @@
+ # https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/#coredns-configmap-options
  servers:
  - zones:
-@@ -51,6 +51,12 @@ servers:
+-  - zone: .
++  - zone: example.org
+   port: 53
+   plugins:
+   - name: errors
+@@ -100,18 +100,14 @@
+       lameduck 5s
+   # Serves a /ready endpoint on :8181, required for readinessProbe
+   - name: ready
+-  # Required to query kubernetes API for data
+-  - name: kubernetes
+-    parameters: cluster.local in-addr.arpa ip6.arpa
+-    configBlock: |-
+-      pods insecure
+-      fallthrough in-addr.arpa ip6.arpa
+-      ttl 30
+   # Serves a /metrics endpoint on :9153, required for serviceMonitor
+   - name: prometheus
      parameters: 0.0.0.0:9153
-   - name: proxy
-     parameters: . /etc/resolv.conf
+-  - name: forward
+-    parameters: . /etc/resolv.conf
 +  - name: etcd
-+    parameters: example.org
 +    configBlock: |-
-+      stubzones
 +      path /skydns
-+      endpoint http://10.105.68.165:2379
-
- # Complete example with all the options:
- # - zones:                 # the `zones` block can be left out entirely, defaults to "."
++      endpoint http://my-etcd.default.svc.cluster.local:2379
++      credentials root NotSecurePassword
+   - name: cache
+     parameters: 30
+   - name: loop
 ```
 **Note**:
-* IP address of etcd's endpoint should be get from etcd client service. It should be "example-etcd-cluster-client" in this example. This IP address is used through this document for etcd endpoint configuration.
-```
-$ kubectl get svc example-etcd-cluster-client
-NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
-example-etcd-cluster-client   ClusterIP   10.105.68.165   <none>        2379/TCP   16m
-```
-* Parameters should configure your own domain. "example.org" is used in this example.
+* You could either use parameters or zone to configure domain. "example.org" is used in this example.
 
 
 After configuration done in values.yaml, you can install coredns chart.
 ```
-helm install --name my-coredns --values values.yaml stable/coredns
+helm install my-coredns --values values.yaml coredns/coredns
 ```
 
 ## Installing ExternalDNS
 ### Install external ExternalDNS
-ETCD_URLS is configured to etcd client service address.
+Set this environment variables:
+ETCD_URLS='http://my-etcd.default.svc.cluster.local:2379'
+ETCD_USER='root' 
+ETCD_PASS='NotSecurePassword'
 
 #### Manifest (for clusters without RBAC enabled)
 
@@ -115,7 +151,11 @@ spec:
         - --log-level=debug # debug only
         env:
         - name: ETCD_URLS
-          value: http://10.105.68.165:2379
+          value: http://my-etcd.default.svc.cluster.local:2379
+        - name: ETCD_USER
+          value: root
+        - name: ETCD_PASS
+          value: NotSecurePassword
 ```
 
 #### Manifest (for clusters with RBAC enabled)
@@ -182,7 +222,11 @@ spec:
         - --log-level=debug # debug only
         env:
         - name: ETCD_URLS
-          value: http://10.105.68.165:2379
+          value: http://my-etcd.default.svc.cluster.local:2379
+        - name: ETCD_USER
+          value: root
+        - name: ETCD_PASS
+          value: NotSecurePassword
 ```
 
 ## Enable the ingress controller
