@@ -204,15 +204,24 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 
 // builds etcd client config depending on connection scheme and TLS parameters
 func getETCDConfig() (*etcdcv3.Config, error) {
+    config := etcdcv3.Config{}
 	etcdURLsStr := os.Getenv("ETCD_URLS")
 	if etcdURLsStr == "" {
 		etcdURLsStr = "http://localhost:2379"
 	}
 	etcdURLs := strings.Split(etcdURLsStr, ",")
 	firstURL := strings.ToLower(etcdURLs[0])
+    etcdUser, etcdUserDefined := os.LookupEnv("ETCD_USER")
+    if etcdUserDefined {
+        config.Username = etcdUser
+    }
+    etcdPass, etcdPassDefined := os.LookupEnv("ETCD_USER")
+    if etcdPassDefined {
+        config.Password = etcdPass
+    }
 	if strings.HasPrefix(firstURL, "http://") {
-		return &etcdcv3.Config{Endpoints: etcdURLs}, nil
-	} else if strings.HasPrefix(firstURL, "https://") {
+		config.Endpoints = etcdURLs
+    } else if strings.HasPrefix(firstURL, "https://") {
 		caFile := os.Getenv("ETCD_CA_FILE")
 		certFile := os.Getenv("ETCD_CERT_FILE")
 		keyFile := os.Getenv("ETCD_KEY_FILE")
@@ -223,13 +232,12 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &etcdcv3.Config{
-			Endpoints: etcdURLs,
-			TLS:       tlsConfig,
-		}, nil
+        config.Endpoints = etcdURLs
+        config.TLS = tlsConfig
 	} else {
 		return nil, errors.New("etcd URLs must start with either http:// or https://")
 	}
+    return &config, nil
 }
 
 //newETCDClient is an etcd client constructor
