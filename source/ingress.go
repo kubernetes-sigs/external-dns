@@ -53,6 +53,7 @@ type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
+        defaultTargetAnnotation  string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -63,7 +64,7 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector) (Source, error) {
+func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector, defaultTargetAnnotation string) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
 		labelSelector:            labelSelector,
+                defaultTargetAnnotation:  defaultTargetAnnotation,
 	}
 	return sc, nil
 }
@@ -127,7 +129,8 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec, 
+                                                     sc.defaultTargetAnnotation)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -227,7 +230,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, defaultTargetAnnotation string) []*endpoint.Endpoint {
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
 		log.Warn(err)
@@ -236,7 +239,11 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
 	if len(targets) == 0 {
-		targets = targetsFromIngressStatus(ing.Status)
+                if len(defaultTargetAnnotation) > 0 {
+                        targets = append(targets, defaultTargetAnnotation)
+                } else {
+        		targets = targetsFromIngressStatus(ing.Status)
+                }
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)

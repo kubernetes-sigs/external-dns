@@ -66,6 +66,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		labels.Everything(),
+                "",
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -149,6 +150,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				labels.Everything(),
+                                "",
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -250,7 +252,7 @@ func testEndpointsFromIngress(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec, ""), ti.expected)
 		})
 	}
 }
@@ -342,7 +344,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false, ""), ti.expected)
 		})
 	}
 }
@@ -1237,6 +1239,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
 				ti.ingressLabelSelector,
+                                "",
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())

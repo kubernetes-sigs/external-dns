@@ -47,6 +47,7 @@ type Config struct {
 	LabelFilter                    labels.Selector
 	FQDNTemplate                   string
 	CombineFQDNAndAnnotation       bool
+        DefaultIngressTargetAnnotation string
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
@@ -192,7 +193,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
+		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.DefaultIngressTargetAnnotation)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
