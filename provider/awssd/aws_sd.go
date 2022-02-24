@@ -19,10 +19,13 @@ package awssd
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+
+	"golang.org/x/sync/errgroup"
 
 	"regexp"
 
@@ -49,6 +52,8 @@ const (
 	sdInstanceAttrIPV4  = "AWS_INSTANCE_IPV4"
 	sdInstanceAttrCname = "AWS_INSTANCE_CNAME"
 	sdInstanceAttrAlias = "AWS_ALIAS_DNS_NAME"
+
+	sdConcurrentWorkersNum = 50
 )
 
 var (
@@ -64,7 +69,7 @@ var (
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
 	DeregisterInstance(input *sd.DeregisterInstanceInput) (*sd.DeregisterInstanceOutput, error)
-	ListInstancesPages(input *sd.ListInstancesInput, fn func(*sd.ListInstancesOutput, bool) bool) error
+	DiscoverInstances(input *sd.DiscoverInstancesInput) (*sd.DiscoverInstancesOutput, error)
 	ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error
 	ListServicesPages(input *sd.ListServicesInput, fn func(*sd.ListServicesOutput, bool) bool) error
 	RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error)
@@ -164,23 +169,56 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 		if err != nil {
 			return nil, err
 		}
+		endpointsChan := make(chan *endpoint.Endpoint)
+		var sem = make(chan int, int64(sdConcurrentWorkersNum)) // sdConcurrentWorkersNum concurrent workers
+		g, ctx := errgroup.WithContext(ctx)
+		var workers int64 = int64(len(services))
 
 		for _, srv := range services {
-			instances, err := p.ListInstancesByServiceID(srv.Id)
-			if err != nil {
-				return nil, err
-			}
-
-			if len(instances) > 0 {
-				ep := p.instancesToEndpoint(ns, srv, instances)
-				endpoints = append(endpoints, ep)
-			}
-			if len(instances) == 0 {
-				err = p.DeleteService(srv)
+			service := srv
+			g.Go(func() error {
+				sem <- 1
+				defer func() {
+					<-sem
+					if atomic.AddInt64(&workers, -1) == 0 {
+						close(endpointsChan)
+						close(sem)
+					}
+				}()
+				instances, err := p.DiscoverInstancesByServiceName(ns.Name, service.Name)
 				if err != nil {
-					log.Warnf("Failed to delete service \"%s\", error: %s", aws.StringValue(srv.Name), err)
+					return err
 				}
+
+				var ep *endpoint.Endpoint = nil
+				if len(instances) > 0 {
+					ep = p.instancesToEndpoint(ns, service, instances)
+				}
+				if len(instances) == 0 {
+					err = p.DeleteService(service)
+					if err != nil {
+						log.Warnf("Failed to delete service \"%s\", error: %s", aws.StringValue(service.Name), err)
+					}
+				}
+				select {
+				case endpointsChan <- ep:
+					return nil
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			})
+
+		}
+		g.Go(func() error {
+			for endpoint := range endpointsChan {
+				endpoints = append(endpoints, endpoint)
 			}
+			return nil
+		})
+
+		err = g.Wait()
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -416,22 +454,26 @@ func (p *AWSSDProvider) ListServicesByNamespaceID(namespaceID *string) (map[stri
 	return servicesMap, nil
 }
 
-// ListInstancesByServiceID returns list of instances registered in given service.
-func (p *AWSSDProvider) ListInstancesByServiceID(serviceID *string) ([]*sd.InstanceSummary, error) {
+// DiscoverInstancesByServiceID returns list of instances registered in given service.
+func (p *AWSSDProvider) DiscoverInstancesByServiceName(namespaceName, serviceName *string) ([]*sd.InstanceSummary, error) {
 	instances := make([]*sd.InstanceSummary, 0)
 
-	f := func(resp *sd.ListInstancesOutput, lastPage bool) bool {
-		instances = append(instances, resp.Instances...)
-
-		return true
-	}
-
-	err := p.client.ListInstancesPages(&sd.ListInstancesInput{
-		ServiceId: serviceID,
-	}, f)
+	resp, err := p.client.DiscoverInstances(&sd.DiscoverInstancesInput{
+		NamespaceName: namespaceName,
+		ServiceName:   serviceName,
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	convert := func(httpInstances []*sd.HttpInstanceSummary) []*sd.InstanceSummary {
+		instancesSum := make([]*sd.InstanceSummary, len(httpInstances))
+		for i, inst := range httpInstances {
+			instancesSum[i] = &sd.InstanceSummary{Id: inst.InstanceId, Attributes: inst.Attributes}
+		}
+		return instancesSum
+	}
+	instances = append(instances, convert(resp.Instances)...)
 
 	return instances, nil
 }
@@ -620,19 +662,6 @@ func serviceToServiceSummary(service *sd.Service) *sd.ServiceSummary {
 		InstanceCount:           service.InstanceCount,
 		Name:                    service.Name,
 		Type:                    service.Type,
-	}
-}
-
-// nolint: deadcode
-// used from unit test
-func instanceToInstanceSummary(instance *sd.Instance) *sd.InstanceSummary {
-	if instance == nil {
-		return nil
-	}
-
-	return &sd.InstanceSummary{
-		Id:         instance.Id,
-		Attributes: instance.Attributes,
 	}
 }
 
