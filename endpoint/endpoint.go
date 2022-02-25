@@ -92,22 +92,17 @@ func (t Targets) Same(o Targets) bool {
 	return true
 }
 
-// Checks if targets constain specified target (case-insensitive)
-func (targets Targets) Contains(target string) bool {
-	for _, t := range targets {
-		if strings.EqualFold(target, t) {
-			return true
-		}
-	}
-	return false
-}
-
 // Subtracts specified targets from current
 func (targets Targets) Sub(another Targets) Targets {
 	result := []string{}
+	anotherMap := make(map[string]bool)
+
+	for _, target := range another {
+		anotherMap[target] = true
+	}
 
 	for _, target := range targets {
-		if !another.Contains(target) {
+		if !anotherMap[target] {
 			result = append(result, target)
 		}
 	}
