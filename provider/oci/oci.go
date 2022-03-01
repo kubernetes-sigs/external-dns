@@ -21,8 +21,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v58/common"
+	"github.com/oracle/oci-go-sdk/v58/dns"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -57,9 +57,10 @@ type OCIProvider struct {
 	client ociDNSClient
 	cfg    OCIConfig
 
-	domainFilter endpoint.DomainFilter
-	zoneIDFilter provider.ZoneIDFilter
-	dryRun       bool
+	domainFilter    endpoint.DomainFilter
+	zoneIDFilter    provider.ZoneIDFilter
+	zoneScopeFilter provider.ZoneTypeFilter
+	dryRun          bool
 }
 
 // ociDNSClient is the subset of the OCI DNS API required by the OCI Provider.
@@ -85,7 +86,7 @@ func LoadOCIConfig(path string) (*OCIConfig, error) {
 }
 
 // NewOCIProvider initializes a new OCI DNS based Provider.
-func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*OCIProvider, error) {
+func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope string, dryRun bool) (*OCIProvider, error) {
 	var client ociDNSClient
 	client, err := dns.NewDnsClientWithConfigurationProvider(common.NewRawConfigurationProvider(
 		cfg.Auth.TenancyID,
@@ -99,12 +100,15 @@ func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFil
 		return nil, errors.Wrap(err, "initializing OCI DNS API client")
 	}
 
+	zoneScopeFilter := provider.NewZoneTypeFilter(zoneScope)
+
 	return &OCIProvider{
-		client:       client,
-		cfg:          cfg,
-		domainFilter: domainFilter,
-		zoneIDFilter: zoneIDFilter,
-		dryRun:       dryRun,
+		client:          client,
+		cfg:             cfg,
+		domainFilter:    domainFilter,
+		zoneIDFilter:    zoneIDFilter,
+		zoneScopeFilter: zoneScopeFilter,
+		dryRun:          dryRun,
 	}, nil
 }
 
@@ -118,6 +122,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 			CompartmentId: &p.cfg.CompartmentID,
 			ZoneType:      dns.ListZonesZoneTypePrimary,
 			Page:          page,
+			Scope:         p.zoneScope(),
 		})
 		if err != nil {
 			return nil, errors.Wrapf(err, "listing zones in %q", p.cfg.CompartmentID)
@@ -298,4 +303,11 @@ func operationsByZone(zones map[string]dns.ZoneSummary, ops []dns.RecordOperatio
 	}
 
 	return changes
+}
+
+func (p *OCIProvider) zoneScope() dns.ListZonesScopeEnum {
+	if p.zoneScopeFilter.Match("private") {
+		return dns.ListZonesScopePrivate
+	}
+	return dns.ListZonesScopeGlobal
 }
