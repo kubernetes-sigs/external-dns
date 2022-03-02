@@ -168,6 +168,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 	for _, ns := range namespaces {
 		services, err := p.ListServicesByNamespaceID(ns.Id)
 		if err != nil {
+			log.Warnf("Failed to list services be namespace \"%s\", error: %s", aws.StringValue(ns.Name), err)
 			return nil, err
 		}
 		endpointsChan := make(chan *endpoint.Endpoint)
@@ -182,12 +183,14 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 				defer func() {
 					<-sem
 					if atomic.AddInt64(&workers, -1) == 0 {
+						log.Debugf("Finished service discovery \"%s\", number of services: %d", aws.StringValue(ns.Name), len(services))
 						close(endpointsChan)
 						close(sem)
 					}
 				}()
 				instances, err := p.DiscoverInstancesByServiceName(ns.Name, service.Name)
 				if err != nil {
+					log.Warnf("Failed to discover service \"%s\", error: %s", aws.StringValue(service.Name), err)
 					return err
 				}
 
@@ -219,6 +222,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 
 		err = g.Wait()
 		if err != nil {
+			log.Warnf("Error during service discovery \"%s\", error: %s", aws.StringValue(ns.Name), err)
 			return nil, err
 		}
 	}
