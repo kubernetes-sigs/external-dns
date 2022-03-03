@@ -23,11 +23,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	dnsInt "github.com/yandex-cloud/go-genproto/yandex/cloud/dns/v1"
-	op "github.com/yandex-cloud/go-genproto/yandex/cloud/operation"
 	ycsdk "github.com/yandex-cloud/go-sdk"
-	"github.com/yandex-cloud/go-sdk/gen/dns"
 	"github.com/yandex-cloud/go-sdk/iamkey"
-	"google.golang.org/grpc"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -60,34 +57,7 @@ type YandexProvider struct {
 	DryRun         bool
 	FolderID       string
 
-	client DNSZoneClient
-}
-
-type upsertBatch struct {
-	ZoneID   string
-	ZoneName string
-	Deletes  []*dnsInt.RecordSet
-	Updates  []*dnsInt.RecordSet
-	Creates  []*dnsInt.RecordSet
-}
-
-type upsertBatchMap map[string]*upsertBatch
-
-type DNSZoneClient interface {
-	DnsZoneIterator(ctx context.Context,
-		req *dnsInt.ListDnsZonesRequest,
-		opts ...grpc.CallOption,
-	) *dns.DnsZoneIterator
-
-	DnsZoneRecordSetsIterator(ctx context.Context,
-		req *dnsInt.ListDnsZoneRecordSetsRequest,
-		opts ...grpc.CallOption,
-	) *dns.DnsZoneRecordSetsIterator
-
-	UpsertRecordSets(ctx context.Context,
-		in *dnsInt.UpsertRecordSetsRequest,
-		opts ...grpc.CallOption,
-	) (*op.Operation, error)
+	client DnsZoneClient
 }
 
 func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider, error) {
@@ -113,7 +83,7 @@ func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider,
 		DryRun:         cfg.DryRun,
 		FolderID:       cfg.FolderID,
 
-		client: sdk.DNS().DnsZone(),
+		client: &DNSZoneClientAdapter{sdk.DNS().DnsZone()},
 	}, nil
 }
 
@@ -235,6 +205,10 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 		zones = append(zones, zone)
 	}
 
+	if err := iterator.Error(); err != nil {
+		return nil, err
+	}
+
 	log.Debugf("Found %d Yandex DNS zone(s).", len(zones))
 	return zones, nil
 }
@@ -304,35 +278,6 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 		return err
 	}
 	return nil
-}
-
-func (m upsertBatchMap) GetOrCreate(zoneID, zoneName string) *upsertBatch {
-	batch, ok := m[zoneID]
-
-	if !ok {
-		batch = &upsertBatch{
-			ZoneID:   zoneID,
-			ZoneName: zoneName,
-			Creates:  make([]*dnsInt.RecordSet, 0),
-			Deletes:  make([]*dnsInt.RecordSet, 0),
-			Updates:  make([]*dnsInt.RecordSet, 0),
-		}
-		m[zoneID] = batch
-	}
-
-	return batch
-}
-
-func (m upsertBatchMap) ApplyChanges(mapper provider.ZoneIDName, changes []*endpoint.Endpoint, handler func(*upsertBatch, *dnsInt.RecordSet)) {
-	for _, change := range changes {
-		zoneID, zoneName := mapper.FindZone(change.DNSName)
-		if zoneID == "" || zoneName == "" {
-			continue
-		}
-
-		batch := m.GetOrCreate(zoneID, zoneName)
-		handler(batch, toRecordSet(change))
-	}
 }
 
 func toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
