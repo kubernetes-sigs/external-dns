@@ -47,8 +47,33 @@ type YandexProvider struct {
 	client DNSZoneClient
 }
 
+type upsertBatch struct {
+	ZoneId       string
+	ZoneName     string
+	Deletions    []*dnsInt.RecordSet
+	Replacements []*dnsInt.RecordSet
+	Merges       []*dnsInt.RecordSet
+}
+
+type DNSZoneClient interface {
+	DnsZoneIterator(ctx context.Context,
+		req *dnsInt.ListDnsZonesRequest,
+		opts ...grpc.CallOption,
+	) *dns.DnsZoneIterator
+
+	DnsZoneRecordSetsIterator(ctx context.Context,
+		req *dnsInt.ListDnsZoneRecordSetsRequest,
+		opts ...grpc.CallOption,
+	) *dns.DnsZoneRecordSetsIterator
+
+	UpsertRecordSets(ctx context.Context,
+		in *dnsInt.UpsertRecordSetsRequest,
+		opts ...grpc.CallOption,
+	) (*op.Operation, error)
+}
+
 func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider, error) {
-	creds, err := cfg.credentials()
+	creds, err := cfg.ResolveCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -56,9 +81,11 @@ func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider,
 	sdk, err := ycsdk.Build(ctx, ycsdk.Config{
 		Credentials: creds,
 	})
-
 	if err != nil {
 		return nil, err
+	}
+	if cfg.FolderId == "" {
+		return nil, errors.New("empty folderId specified")
 	}
 
 	return &YandexProvider{
@@ -107,7 +134,7 @@ func (p *YandexProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		for _, record := range records {
-			ep := p.convert(record)
+			ep := p.toEndpoint(record)
 
 			if ep == nil {
 				continue
@@ -126,12 +153,32 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	for _, zone := range zones {
-		// todo: map changes per zone to batch
-		//       create -> merges
-		//       delete -> deletes
-		//       update -> replacements
-		log.Debugf(zone.Name)
+	zoneId := provider.ZoneIDName{}
+	for _, z := range zones {
+		zoneId.Add(z.Name, z.Name)
+	}
+
+	// todo: map changes per zone to batch
+	//       create -> merges
+	//       delete -> deletes
+	//       update -> replacements
+
+	batchMap := make(map[string]upsertBatch)
+
+	for _, change := range changes.Delete {
+
+	}
+
+	for _, change := range changes.UpdateOld {
+
+	}
+
+	for _, change := range changes.Create {
+
+	}
+
+	for _, change := range changes.UpdateNew {
+
 	}
 
 	return nil
@@ -143,9 +190,23 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	iterator := p.client.DnsZoneIterator(ctx, &dnsInt.ListDnsZonesRequest{
 		FolderId: p.FolderId,
 	})
-	zones, err := iterator.TakeAll()
-	if err != nil {
-		return nil, err
+
+	zones := make([]*dnsInt.DnsZone, 0)
+
+	for iterator.Next() {
+		zone := iterator.Value()
+
+		if !p.DomainFilter.Match(zone.Zone) || !p.ZoneIdFilter.Match(zone.Id) {
+			log.Debugf("Skipping zone '%s' because of Domain And ZoneId filters", zone.Zone)
+			continue
+		}
+
+		if !p.ZoneNameFilter.Match(zone.Zone) {
+			log.Debugf("Skipping zone '%s' because of ZoneName filter", zone.Zone)
+			continue
+		}
+
+		zones = append(zones, zone)
 	}
 
 	log.Debugf("Found %d Yandex DNS zone(s).", len(zones))
@@ -158,8 +219,36 @@ func (p *YandexProvider) records(ctx context.Context, zoneName, zoneId string) (
 	iterator := p.client.DnsZoneRecordSetsIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
 		DnsZoneId: zoneId,
 	})
-	records, err := iterator.TakeAll()
-	if err != nil {
+
+	records := make([]*dnsInt.RecordSet, 0)
+
+	for iterator.Next() {
+		record := iterator.Value()
+
+		if record == nil {
+			log.Debugf("Skipping invalid nil record")
+			continue
+		}
+
+		if !provider.SupportedRecordType(record.Type) {
+			log.Debugf("Skipping record because of not supported type")
+			continue
+		}
+
+		if len(p.ZoneNameFilter.Filters) > 0 && !p.DomainFilter.Match(record.Name) {
+			log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", record.Name)
+			continue
+		}
+
+		if record.Data == nil || len(record.Data) == 0 {
+			log.Debugf("Skipping return of record %s (%s) because it with empty targets", record.Name, record.Type)
+			continue
+		}
+
+		records = append(records, record)
+	}
+
+	if err := iterator.Error(); err != nil {
 		return nil, err
 	}
 
@@ -167,33 +256,54 @@ func (p *YandexProvider) records(ctx context.Context, zoneName, zoneId string) (
 	return records, nil
 }
 
-func (p *YandexProvider) convert(record *dnsInt.RecordSet) *endpoint.Endpoint {
+func (p *YandexProvider) toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
 	if record == nil {
 		log.Errorf("Skipping invalid record set with nil definition")
 		return nil
 	}
 
-	recordType := record.GetType()
-	recordName := record.GetName()
-
-	if !provider.SupportedRecordType(recordType) {
-		return nil
-	}
-
-	if len(p.ZoneNameFilter.Filters) > 0 && !p.DomainFilter.Match(recordName) {
-		log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", recordName)
-		return nil
-	}
-
-	if record.Data == nil || len(record.Data) == 0 {
-		log.Debugf("Skipping return of record %s because it with empty targets", recordName)
-		return nil
-	}
-
 	return endpoint.NewEndpointWithTTL(
-		recordName,
-		recordType,
+		record.GetName(),
+		record.GetType(),
 		endpoint.TTL(record.GetTtl()),
 		record.Data...,
 	)
+}
+
+func (p *YandexProvider) toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
+	if ep == nil {
+		log.Errorf("Skipping invalid endpoint with nil definition")
+		return nil
+	}
+
+	return &dnsInt.RecordSet{
+		Name: ep.DNSName,
+		Type: ep.RecordType,
+		Ttl:  int64(ep.RecordTTL),
+		Data: ep.Targets,
+	}
+}
+
+func (p *YandexProvider) upsertRecords(ctx context.Context, batch upsertBatch) error {
+	log.Infof("Perform upsert operation for zone '%s'. Deletions: %d, Replacements: %d, Merges: %d",
+		batch.ZoneName,
+		len(batch.Deletions),
+		len(batch.Replacements),
+		len(batch.Merges),
+	)
+
+	_, err := p.client.UpsertRecordSets(ctx,
+		&dnsInt.UpsertRecordSetsRequest{
+			DnsZoneId:    batch.ZoneId,
+			Deletions:    batch.Deletions,
+			Replacements: batch.Replacements,
+			Merges:       batch.Merges,
+		},
+	)
+
+	if err != nil {
+		log.Errorf("Failed to perform upsert operation for zone '%s'", batch.ZoneName)
+		return err
+	}
+	return nil
 }
