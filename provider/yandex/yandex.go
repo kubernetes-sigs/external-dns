@@ -161,27 +161,15 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	batchMap := make(upsertBatchMap)
-
-	for _, change := range changes.Delete {
-		zoneId, zoneName := zoneId.FindZone(change.DNSName)
-		if zoneId != "" && zoneName != "" {
-			batchMap.GetOrCreate(zoneId, zoneName).AddDeleted(change)
-		}
-	}
-
-	for _, change := range changes.Create {
-		zoneId, zoneName := zoneId.FindZone(change.DNSName)
-		if zoneId != "" && zoneName != "" {
-			batchMap.GetOrCreate(zoneId, zoneName).AddCreated(change)
-		}
-	}
-
-	for _, change := range changes.UpdateNew {
-		zoneId, zoneName := zoneId.FindZone(change.DNSName)
-		if zoneId != "" && zoneName != "" {
-			batchMap.GetOrCreate(zoneId, zoneName).AddUpdated(change)
-		}
-	}
+	batchMap.ApplyChanges(zoneId, changes.Delete, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+		batch.Deletes = append(batch.Deletes, rs)
+	})
+	batchMap.ApplyChanges(zoneId, changes.Create, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+		batch.Creates = append(batch.Creates, rs)
+	})
+	batchMap.ApplyChanges(zoneId, changes.UpdateNew, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+		batch.Updates = append(batch.Updates, rs)
+	})
 
 	for _, batch := range batchMap {
 		if p.DryRun {
@@ -301,18 +289,6 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 	return nil
 }
 
-func (b *upsertBatch) AddDeleted(ep *endpoint.Endpoint) {
-	b.Deletes = append(b.Deletes, toRecordSet(ep))
-}
-
-func (b *upsertBatch) AddCreated(ep *endpoint.Endpoint) {
-	b.Creates = append(b.Creates, toRecordSet(ep))
-}
-
-func (b *upsertBatch) AddUpdated(ep *endpoint.Endpoint) {
-	b.Updates = append(b.Updates, toRecordSet(ep))
-}
-
 func (m upsertBatchMap) GetOrCreate(zoneId, zoneName string) *upsertBatch {
 	batch, ok := m[zoneId]
 
@@ -328,6 +304,18 @@ func (m upsertBatchMap) GetOrCreate(zoneId, zoneName string) *upsertBatch {
 	}
 
 	return batch
+}
+
+func (m upsertBatchMap) ApplyChanges(zoneId provider.ZoneIDName, changes []*endpoint.Endpoint, handler func(*upsertBatch, *dnsInt.RecordSet)) {
+	for _, change := range changes {
+		zoneId, zoneName := zoneId.FindZone(change.DNSName)
+		if zoneId == "" || zoneName == "" {
+			continue
+		}
+
+		batch := m.GetOrCreate(zoneId, zoneName)
+		handler(batch, toRecordSet(change))
+	}
 }
 
 func toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
