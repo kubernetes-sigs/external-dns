@@ -188,16 +188,17 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	})
 
 	for _, batch := range batchMap {
+		log.Infof("Would perform be batch update for zone: %s\n"+
+			"Records to delete: %s\n"+
+			"Records to create: %s\n"+
+			"Records to update: %s\n",
+			batch.ZoneName,
+			toString(batch.Deletes),
+			toString(batch.Creates),
+			toString(batch.Updates),
+		)
+
 		if p.DryRun {
-			log.Infof("Would perform be batch update for zone: %s\n"+
-				"Records to delete: %s\n"+
-				"Records to create: %s\n"+
-				"Records to update: %s\n",
-				batch.ZoneName,
-				toString(batch.Deletes),
-				toString(batch.Creates),
-				toString(batch.Updates),
-			)
 			continue
 		}
 
