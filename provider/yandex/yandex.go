@@ -48,12 +48,14 @@ type YandexProvider struct {
 }
 
 type upsertBatch struct {
-	ZoneId       string
-	ZoneName     string
-	Deletions    []*dnsInt.RecordSet
-	Replacements []*dnsInt.RecordSet
-	Merges       []*dnsInt.RecordSet
+	ZoneId   string
+	ZoneName string
+	Deletes  []*dnsInt.RecordSet
+	Updates  []*dnsInt.RecordSet
+	Creates  []*dnsInt.RecordSet
 }
+
+type upsertBatchMap map[string]*upsertBatch
 
 type DNSZoneClient interface {
 	DnsZoneIterator(ctx context.Context,
@@ -134,7 +136,7 @@ func (p *YandexProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 
 		for _, record := range records {
-			ep := p.toEndpoint(record)
+			ep := toEndpoint(record)
 
 			if ep == nil {
 				continue
@@ -155,30 +157,49 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 	zoneId := provider.ZoneIDName{}
 	for _, z := range zones {
-		zoneId.Add(z.Name, z.Name)
+		zoneId.Add(z.Id, strings.TrimSuffix(z.Zone, "."))
 	}
 
-	// todo: map changes per zone to batch
-	//       create -> merges
-	//       delete -> deletes
-	//       update -> replacements
-
-	batchMap := make(map[string]upsertBatch)
+	batchMap := make(upsertBatchMap)
 
 	for _, change := range changes.Delete {
-
-	}
-
-	for _, change := range changes.UpdateOld {
-
+		zoneId, zoneName := zoneId.FindZone(change.DNSName)
+		if zoneId != "" && zoneName != "" {
+			batchMap.GetOrCreate(zoneId, zoneName).AddDeleted(change)
+		}
 	}
 
 	for _, change := range changes.Create {
-
+		zoneId, zoneName := zoneId.FindZone(change.DNSName)
+		if zoneId != "" && zoneName != "" {
+			batchMap.GetOrCreate(zoneId, zoneName).AddCreated(change)
+		}
 	}
 
 	for _, change := range changes.UpdateNew {
+		zoneId, zoneName := zoneId.FindZone(change.DNSName)
+		if zoneId != "" && zoneName != "" {
+			batchMap.GetOrCreate(zoneId, zoneName).AddUpdated(change)
+		}
+	}
 
+	for _, batch := range batchMap {
+		if p.DryRun {
+			log.Infof("Would perform be batch update for zone: %s\n"+
+				"Records to delete: %s\n"+
+				"Records to create: %s\n"+
+				"Records to update: %s\n",
+				batch.ZoneName,
+				toString(batch.Deletes),
+				toString(batch.Creates),
+				toString(batch.Updates),
+			)
+			continue
+		}
+
+		if err := p.upsertRecords(ctx, batch); err != nil {
+			log.Errorf("Failed to execute upsert operation: %v", err)
+		}
 	}
 
 	return nil
@@ -256,7 +277,60 @@ func (p *YandexProvider) records(ctx context.Context, zoneName, zoneId string) (
 	return records, nil
 }
 
-func (p *YandexProvider) toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
+func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) error {
+	log.Infof("Perform upsert operation for zone '%s'. Deletes: %d, Updates: %d, Creates: %d",
+		batch.ZoneName,
+		len(batch.Deletes),
+		len(batch.Updates),
+		len(batch.Creates),
+	)
+
+	_, err := p.client.UpsertRecordSets(ctx,
+		&dnsInt.UpsertRecordSetsRequest{
+			DnsZoneId:    batch.ZoneId,
+			Deletions:    batch.Deletes,
+			Replacements: batch.Updates,
+			Merges:       batch.Creates,
+		},
+	)
+
+	if err != nil {
+		log.Errorf("Failed to perform upsert operation for zone '%s'", batch.ZoneName)
+		return err
+	}
+	return nil
+}
+
+func (b *upsertBatch) AddDeleted(ep *endpoint.Endpoint) {
+	b.Deletes = append(b.Deletes, toRecordSet(ep))
+}
+
+func (b *upsertBatch) AddCreated(ep *endpoint.Endpoint) {
+	b.Creates = append(b.Creates, toRecordSet(ep))
+}
+
+func (b *upsertBatch) AddUpdated(ep *endpoint.Endpoint) {
+	b.Updates = append(b.Updates, toRecordSet(ep))
+}
+
+func (m upsertBatchMap) GetOrCreate(zoneId, zoneName string) *upsertBatch {
+	batch, ok := m[zoneId]
+
+	if !ok {
+		batch = &upsertBatch{
+			ZoneId:   zoneId,
+			ZoneName: zoneName,
+			Creates:  make([]*dnsInt.RecordSet, 0),
+			Deletes:  make([]*dnsInt.RecordSet, 0),
+			Updates:  make([]*dnsInt.RecordSet, 0),
+		}
+		m[zoneId] = batch
+	}
+
+	return batch
+}
+
+func toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
 	if record == nil {
 		log.Errorf("Skipping invalid record set with nil definition")
 		return nil
@@ -270,40 +344,27 @@ func (p *YandexProvider) toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint
 	)
 }
 
-func (p *YandexProvider) toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
+func toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
 	if ep == nil {
 		log.Errorf("Skipping invalid endpoint with nil definition")
 		return nil
 	}
 
 	return &dnsInt.RecordSet{
-		Name: ep.DNSName,
+		Name: ep.DNSName + ".",
 		Type: ep.RecordType,
 		Ttl:  int64(ep.RecordTTL),
 		Data: ep.Targets,
 	}
 }
 
-func (p *YandexProvider) upsertRecords(ctx context.Context, batch upsertBatch) error {
-	log.Infof("Perform upsert operation for zone '%s'. Deletions: %d, Replacements: %d, Merges: %d",
-		batch.ZoneName,
-		len(batch.Deletions),
-		len(batch.Replacements),
-		len(batch.Merges),
-	)
+func toString(records []*dnsInt.RecordSet) string {
+	message := ""
 
-	_, err := p.client.UpsertRecordSets(ctx,
-		&dnsInt.UpsertRecordSetsRequest{
-			DnsZoneId:    batch.ZoneId,
-			Deletions:    batch.Deletions,
-			Replacements: batch.Replacements,
-			Merges:       batch.Merges,
-		},
-	)
-
-	if err != nil {
-		log.Errorf("Failed to perform upsert operation for zone '%s'", batch.ZoneName)
-		return err
+	for _, record := range records {
+		message += record.Name
+		message += ","
 	}
-	return nil
+
+	return message
 }
