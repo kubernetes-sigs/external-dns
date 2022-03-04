@@ -36,7 +36,7 @@ const (
 	YandexAuthorizationTypeOAuthToken             = "iam-token"
 	YandexAuthorizationTypeKey                    = "iam-key-file"
 
-	YandexDnsRecordSetDefaultTTL = int64(300)
+	YandexDNSRecordSetDefaultTTL = int64(300)
 )
 
 type YandexConfig struct {
@@ -59,7 +59,7 @@ type YandexProvider struct {
 	DryRun         bool
 	FolderID       string
 
-	client DnsZoneClient
+	client DNSClient
 }
 
 func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider, error) {
@@ -185,7 +185,7 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	log.Debugf("Retrieving Yandex DNS zones for folder: %s.", p.FolderID)
 
-	iterator := p.client.DnsZoneIterator(ctx, &dnsInt.ListDnsZonesRequest{
+	iterator := p.client.ZoneIterator(ctx, &dnsInt.ListDnsZonesRequest{
 		FolderId: p.FolderID,
 	})
 
@@ -218,7 +218,7 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 func (p *YandexProvider) records(ctx context.Context, zoneName, zoneID string) ([]*dnsInt.RecordSet, error) {
 	log.Debugf("Retrieving Yandex DNS records for zone '%s'.", zoneName)
 
-	iterator := p.client.DnsZoneRecordSetsIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
+	iterator := p.client.RecordSetsIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
 		DnsZoneId: zoneID,
 	})
 
@@ -302,15 +302,15 @@ func toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
 		return nil
 	}
 
-	recordTtl := YandexDnsRecordSetDefaultTTL
+	recordTTL := YandexDNSRecordSetDefaultTTL
 	if ep.RecordTTL.IsConfigured() {
-		recordTtl = int64(ep.RecordTTL)
+		recordTTL = int64(ep.RecordTTL)
 	}
 
 	return &dnsInt.RecordSet{
 		Name: ep.DNSName + ".",
 		Type: ep.RecordType,
-		Ttl:  recordTtl,
+		Ttl:  recordTTL,
 		Data: ep.Targets,
 	}
 }

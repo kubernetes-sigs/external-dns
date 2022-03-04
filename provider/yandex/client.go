@@ -25,28 +25,28 @@ import (
 	"google.golang.org/grpc"
 )
 
-type DnsZoneIteratorAdapter interface {
+type ZoneIteratorAdapter interface {
 	Next() bool
 	Error() error
 	Value() *dnsProto.DnsZone
 }
 
-type DnsZoneRecordSetIteratorAdapter interface {
+type RecordSetIteratorAdapter interface {
 	Next() bool
 	Error() error
 	Value() *dnsProto.RecordSet
 }
 
-type DnsZoneClient interface {
-	DnsZoneIterator(ctx context.Context,
+type DNSClient interface {
+	ZoneIterator(ctx context.Context,
 		req *dnsProto.ListDnsZonesRequest,
 		opts ...grpc.CallOption,
-	) DnsZoneIteratorAdapter
+	) ZoneIteratorAdapter
 
-	DnsZoneRecordSetsIterator(ctx context.Context,
+	RecordSetsIterator(ctx context.Context,
 		req *dnsProto.ListDnsZoneRecordSetsRequest,
 		opts ...grpc.CallOption,
-	) DnsZoneRecordSetIteratorAdapter
+	) RecordSetIteratorAdapter
 
 	UpsertRecordSets(ctx context.Context,
 		in *dnsProto.UpsertRecordSetsRequest,
@@ -58,17 +58,17 @@ type DNSZoneClientAdapter struct {
 	c *dns.DnsZoneServiceClient
 }
 
-func (a *DNSZoneClientAdapter) DnsZoneIterator(ctx context.Context,
+func (a *DNSZoneClientAdapter) ZoneIterator(ctx context.Context,
 	req *dnsProto.ListDnsZonesRequest,
 	opts ...grpc.CallOption,
-) DnsZoneIteratorAdapter {
+) ZoneIteratorAdapter {
 	return a.c.DnsZoneIterator(ctx, req, opts...)
 }
 
-func (a *DNSZoneClientAdapter) DnsZoneRecordSetsIterator(ctx context.Context,
+func (a *DNSZoneClientAdapter) RecordSetsIterator(ctx context.Context,
 	req *dnsProto.ListDnsZoneRecordSetsRequest,
 	opts ...grpc.CallOption,
-) DnsZoneRecordSetIteratorAdapter {
+) RecordSetIteratorAdapter {
 	return a.c.DnsZoneRecordSetsIterator(ctx, req, opts...)
 }
 

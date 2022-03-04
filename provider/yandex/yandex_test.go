@@ -25,23 +25,23 @@ import (
 	"google.golang.org/grpc"
 )
 
-type mockDNSZoneClient struct {
+type mockDNSClient struct {
 }
 
-type mockDnsZoneIterator struct {
+type mockZoneIterator struct {
 }
 
-type mockDnsZoneRecordSetIterator struct {
+type mockRecordSetIterator struct {
 }
 
-func (c *mockDNSZoneClient) DnsZoneIterator(ctx context.Context, req *dnsInt.ListDnsZonesRequest, _ ...grpc.CallOption) DnsZoneIteratorAdapter {
+func (c *mockDNSClient) ZoneIterator(ctx context.Context, req *dnsInt.ListDnsZonesRequest, _ ...grpc.CallOption) ZoneIteratorAdapter {
 	return &dns.DnsZoneIterator{}
 }
 
-func (c *mockDNSZoneClient) DnsZoneRecordSetsIterator(ctx context.Context, req *dnsInt.ListDnsZoneRecordSetsRequest, _ ...grpc.CallOption) DnsZoneRecordSetIteratorAdapter {
+func (c *mockDNSClient) RecordSetsIterator(ctx context.Context, req *dnsInt.ListDnsZoneRecordSetsRequest, _ ...grpc.CallOption) RecordSetIteratorAdapter {
 	return nil
 }
 
-func (c *mockDNSZoneClient) UpsertRecordSets(ctx context.Context, in *dnsInt.UpsertRecordSetsRequest, _ ...grpc.CallOption) (*op.Operation, error) {
+func (c *mockDNSClient) UpsertRecordSets(ctx context.Context, in *dnsInt.UpsertRecordSetsRequest, _ ...grpc.CallOption) (*op.Operation, error) {
 	return nil, nil
 }
