@@ -218,7 +218,7 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 func (p *YandexProvider) records(ctx context.Context, zoneName, zoneID string) ([]*dnsInt.RecordSet, error) {
 	log.Debugf("Retrieving Yandex DNS records for zone '%s'.", zoneName)
 
-	iterator := p.client.RecordSetsIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
+	iterator := p.client.RecordSetIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
 		DnsZoneId: zoneID,
 	})
 

@@ -43,7 +43,7 @@ type DNSClient interface {
 		opts ...grpc.CallOption,
 	) ZoneIteratorAdapter
 
-	RecordSetsIterator(ctx context.Context,
+	RecordSetIterator(ctx context.Context,
 		req *dnsProto.ListDnsZoneRecordSetsRequest,
 		opts ...grpc.CallOption,
 	) RecordSetIteratorAdapter
@@ -65,7 +65,7 @@ func (a *DNSZoneClientAdapter) ZoneIterator(ctx context.Context,
 	return a.c.DnsZoneIterator(ctx, req, opts...)
 }
 
-func (a *DNSZoneClientAdapter) RecordSetsIterator(ctx context.Context,
+func (a *DNSZoneClientAdapter) RecordSetIterator(ctx context.Context,
 	req *dnsProto.ListDnsZoneRecordSetsRequest,
 	opts ...grpc.CallOption,
 ) RecordSetIteratorAdapter {
