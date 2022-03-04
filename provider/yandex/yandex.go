@@ -35,6 +35,8 @@ const (
 	YandexAuthorizationTypeInstanceServiceAccount = "instance-service-account"
 	YandexAuthorizationTypeOAuthToken             = "iam-token"
 	YandexAuthorizationTypeKey                    = "iam-key-file"
+
+	YandexDnsRecordSetDefaultTTL = int64(300)
 )
 
 type YandexConfig struct {
@@ -300,10 +302,15 @@ func toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
 		return nil
 	}
 
+	recordTtl := YandexDnsRecordSetDefaultTTL
+	if ep.RecordTTL.IsConfigured() {
+		recordTtl = int64(ep.RecordTTL)
+	}
+
 	return &dnsInt.RecordSet{
 		Name: ep.DNSName + ".",
 		Type: ep.RecordType,
-		Ttl:  int64(ep.RecordTTL),
+		Ttl:  recordTtl,
 		Data: ep.Targets,
 	}
 }
