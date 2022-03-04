@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/k8s-config-connector/pkg/apis/compute/v1beta1"
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -94,7 +95,11 @@ func (cas *computeAddressSource) Endpoints(ctx context.Context) ([]*endpoint.End
 		ttl, _ := getTTLFromAnnotations(computeAddress.ObjectMeta.Annotations)
 
 		for _, hostname := range getHostnamesFromAnnotations(computeAddress.ObjectMeta.Annotations) {
+			if computeAddress.Spec.Address == nil {
+				continue
+			}
 			ep := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, *computeAddress.Spec.Address)
+			log.Debugf("Endpoints generated from computeaddress: %s/%s: %v", computeAddress.Namespace, computeAddress.Name, *computeAddress.Spec.Address)
 
 			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
