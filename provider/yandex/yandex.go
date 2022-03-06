@@ -290,9 +290,9 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 	log.WithFields(log.Fields{
 		"zone":         batch.ZoneName,
 		"zoneID":       batch.ZoneID,
-		"createsCount": len(batch.Deletes),
+		"createsCount": len(batch.Creates),
 		"updatesCount": len(batch.Updates),
-		"deletesCount": len(batch.Creates),
+		"deletesCount": len(batch.Deletes),
 	}).Info("Perform upsert operation for zone")
 
 	_, err := p.client.UpsertRecordSets(ctx,
