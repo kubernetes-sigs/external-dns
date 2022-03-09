@@ -17,6 +17,7 @@ limitations under the License.
 package source
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -24,7 +25,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	"golang.org/x/net/context"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -36,6 +36,9 @@ import (
 
 const defaultAmbassadorNamespace = "ambassador"
 const defaultAmbassadorServiceName = "ambassador"
+
+// This is a compile-time validation that ambassadorHostSource is a Source.
+var _ Source = &ambassadorHostSource{}
 
 type AmbassadorSuite struct {
 	suite.Suite
@@ -57,10 +60,11 @@ func TestAmbassadorHostSource(t *testing.T) {
 	hostAnnotation := fmt.Sprintf("%s/%s", defaultAmbassadorNamespace, defaultAmbassadorServiceName)
 
 	for _, ti := range []struct {
-		title    string
-		host     ambassador.Host
-		service  v1.Service
-		expected []*endpoint.Endpoint
+		title            string
+		annotationFilter string
+		host             ambassador.Host
+		service          v1.Service
+		expected         []*endpoint.Endpoint
 	}{
 		{
 			title: "Simple host",
@@ -288,6 +292,96 @@ func TestAmbassadorHostSource(t *testing.T) {
 				},
 			},
 			expected: []*endpoint.Endpoint{},
+		}, {
+			title:            "valid matching annotation filter expression",
+			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation:             hostAnnotation,
+						"kubernetes.io/ingress.class": "external-ingress",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1"},
+				},
+			},
+		}, {
+			title:            "valid non-matching annotation filter expression",
+			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation:             hostAnnotation,
+						"kubernetes.io/ingress.class": "internal-ingress",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		}, {
+			title:            "invalid annotation filter expression",
+			annotationFilter: "kubernetes.io/ingress.class in (invalid-ingress)",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation:             hostAnnotation,
+						"kubernetes.io/ingress.class": "external-ingress",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
 		},
 	} {
 		ti := ti
@@ -312,7 +406,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(context.Background(), host, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace)
+			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace, ti.annotationFilter)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 

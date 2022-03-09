@@ -57,6 +57,7 @@ type ambassadorHostSource struct {
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
 	namespace              string
+	annotationFilter       string
 	ambassadorHostInformer informers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
 }
@@ -67,6 +68,7 @@ func NewAmbassadorHostSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	namespace string,
+	annotationFilter string,
 ) (Source, error) {
 	var err error
 
@@ -85,6 +87,7 @@ func NewAmbassadorHostSource(
 
 	informerFactory.Start(ctx.Done())
 
+	// wait for the local cache to be populated.
 	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err
 	}
@@ -98,6 +101,7 @@ func NewAmbassadorHostSource(
 		dynamicKubeClient:      dynamicKubeClient,
 		kubeClient:             kubeClient,
 		namespace:              namespace,
+		annotationFilter:       annotationFilter,
 		ambassadorHostInformer: ambassadorHostInformer,
 		unstructuredConverter:  uc,
 	}, nil
@@ -111,7 +115,8 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		return nil, err
 	}
 
-	endpoints := []*endpoint.Endpoint{}
+	// Get a list of Ambassador Host resources
+	ambassadorHosts := []*ambassador.Host{}
 	for _, hostObj := range hosts {
 		unstructuredHost, ok := hostObj.(*unstructured.Unstructured)
 		if !ok {
@@ -123,7 +128,18 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if err != nil {
 			return nil, err
 		}
+		ambassadorHosts = append(ambassadorHosts, host)
+	}
 
+	// Filter Ambassador Hosts
+	ambassadorHosts, err = sc.filterByAnnotations(ambassadorHosts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to filter Ambassador Hosts by annotation")
+	}
+
+	endpoints := []*endpoint.Endpoint{}
+
+	for _, host := range ambassadorHosts {
 		fullname := fmt.Sprintf("%s/%s", host.Namespace, host.Name)
 
 		// look for the "exernal-dns.ambassador-service" annotation. If it is not there then just ignore this `Host`
@@ -268,4 +284,36 @@ func newUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	return uc, nil
+}
+
+// Filter a list of Ambassador Host Resources to only return the ones that
+// contain the required External-DNS annotation filter
+func (sc *ambassadorHostSource) filterByAnnotations(ambassadorHosts []*ambassador.Host) ([]*ambassador.Host, error) {
+	// External-DNS Annotation Filter
+	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
+	if err != nil {
+		return nil, err
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		return nil, err
+	}
+
+	// empty filter returns original list of Ambassador Hosts
+	if selector.Empty() {
+		return ambassadorHosts, nil
+	}
+
+	// Return a filtered list of Ambassador Hosts
+	filteredList := []*ambassador.Host{}
+	for _, host := range ambassadorHosts {
+		annotations := labels.Set(host.Annotations)
+		// include Ambassador Host if its annotations match the annotation filter
+		if selector.Matches(annotations) {
+			filteredList = append(filteredList, host)
+		}
+	}
+
+	return filteredList, nil
 }
