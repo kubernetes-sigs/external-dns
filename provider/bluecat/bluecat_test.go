@@ -76,11 +76,11 @@ func (g mockGatewayClient) GetCNAMERecord(name string, record *api.BluecatCNAMER
 	}
 	return nil
 }
-func (g mockGatewayClient) CreateHostRecord(zone string, req *api.BluecatCreateHostRecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateHostRecord(zone string, req *api.BluecatCreateHostRecordRequest) (err error) {
+	return nil
 }
-func (g mockGatewayClient) CreateCNAMERecord(zone string, req *api.BluecatCreateCNAMERecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateCNAMERecord(zone string, req *api.BluecatCreateCNAMERecordRequest) (err error) {
+	return nil
 }
 func (g mockGatewayClient) DeleteHostRecord(name string, zone string) (err error) {
 	*g.mockBluecatHosts = nil
@@ -103,8 +103,8 @@ func (g mockGatewayClient) GetTXTRecord(name string, record *api.BluecatTXTRecor
 	}
 	return nil
 }
-func (g mockGatewayClient) CreateTXTRecord(zone string, req *api.BluecatCreateTXTRecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateTXTRecord(zone string, req *api.BluecatCreateTXTRecordRequest) error {
+	return nil
 }
 func (g mockGatewayClient) DeleteTXTRecord(name string, zone string) error {
 	*g.mockBluecatTXTs = nil

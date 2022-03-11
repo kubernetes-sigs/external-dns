@@ -49,13 +49,13 @@ type GatewayClient interface {
 	GetCNAMERecords(zone string, records *[]BluecatCNAMERecord) error
 	GetHostRecord(name string, record *BluecatHostRecord) error
 	GetCNAMERecord(name string, record *BluecatCNAMERecord) error
-	CreateHostRecord(zone string, req *BluecatCreateHostRecordRequest) (res interface{}, err error)
-	CreateCNAMERecord(zone string, req *BluecatCreateCNAMERecordRequest) (res interface{}, err error)
+	CreateHostRecord(zone string, req *BluecatCreateHostRecordRequest) error
+	CreateCNAMERecord(zone string, req *BluecatCreateCNAMERecordRequest) error
 	DeleteHostRecord(name string, zone string) (err error)
 	DeleteCNAMERecord(name string, zone string) (err error)
 	GetTXTRecords(zone string, records *[]BluecatTXTRecord) error
 	GetTXTRecord(name string, record *BluecatTXTRecord) error
-	CreateTXTRecord(zone string, req *BluecatCreateTXTRecordRequest) (res interface{}, err error)
+	CreateTXTRecord(zone string, req *BluecatCreateTXTRecordRequest) error
 	DeleteTXTRecord(name string, zone string) error
 	ServerFullDeploy() error
 }
@@ -413,7 +413,7 @@ func (c GatewayClientConfig) GetTXTRecord(name string, record *BluecatTXTRecord)
 	return nil
 }
 
-func (c GatewayClientConfig) CreateHostRecord(zone string, req *BluecatCreateHostRecordRequest) (res interface{}, err error) {
+func (c GatewayClientConfig) CreateHostRecord(zone string, req *BluecatCreateHostRecordRequest) error {
 	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
@@ -424,15 +424,23 @@ func (c GatewayClientConfig) CreateHostRecord(zone string, req *BluecatCreateHos
 	body, _ := json.Marshal(req)
 	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
+		return errors.Wrap(err, "error building http request")
 	}
 	hreq.Header.Add("Content-Type", "application/json")
-	res, err = client.Do(hreq)
+	resp, err := client.Do(hreq)
+	if err != nil {
+		return errors.Wrapf(err, "error creating host record %v in gateway", req.AbsoluteName)
+	}
+	defer resp.Body.Close()
 
-	return
+	if resp.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating host record %v in gateway", resp.StatusCode, req.AbsoluteName)
+	}
+
+	return nil
 }
 
-func (c GatewayClientConfig) CreateCNAMERecord(zone string, req *BluecatCreateCNAMERecordRequest) (res interface{}, err error) {
+func (c GatewayClientConfig) CreateCNAMERecord(zone string, req *BluecatCreateCNAMERecordRequest) error {
 	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
@@ -444,16 +452,24 @@ func (c GatewayClientConfig) CreateCNAMERecord(zone string, req *BluecatCreateCN
 
 	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
+		return errors.Wrap(err, "error building http request")
 	}
 
 	hreq.Header.Add("Content-Type", "application/json")
-	res, err = client.Do(hreq)
+	resp, err := client.Do(hreq)
+	if err != nil {
+		return errors.Wrapf(err, "error creating cname record %v in gateway", req.AbsoluteName)
+	}
+	defer resp.Body.Close()
 
-	return
+	if resp.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating cname record %v to alias %v in gateway", resp.StatusCode, req.AbsoluteName, req.LinkedRecord)
+	}
+
+	return nil
 }
 
-func (c GatewayClientConfig) CreateTXTRecord(zone string, req *BluecatCreateTXTRecordRequest) (interface{}, error) {
+func (c GatewayClientConfig) CreateTXTRecord(zone string, req *BluecatCreateTXTRecordRequest) error {
 	client := newHTTPClient(c.SkipTLSVerify)
 
 	zonePath := expandZone(zone)
@@ -464,13 +480,21 @@ func (c GatewayClientConfig) CreateTXTRecord(zone string, req *BluecatCreateTXTR
 	body, _ := json.Marshal(req)
 	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "error building http request")
 	}
 
 	hreq.Header.Add("Content-Type", "application/json")
-	res, err := client.Do(hreq)
+	resp, err := client.Do(hreq)
+	if err != nil {
+		return errors.Wrapf(err, "error creating txt record %v in gateway", req.AbsoluteName)
+	}
+	defer resp.Body.Close()
 
-	return res, err
+	if resp.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating txt record %v in gateway", resp.StatusCode, req.AbsoluteName)
+	}
+
+	return nil
 }
 
 func (c GatewayClientConfig) DeleteHostRecord(name string, zone string) (err error) {
