@@ -18,6 +18,7 @@ package aws
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"net"
 	"sort"
@@ -762,6 +763,51 @@ func TestAWSChangesByZones(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAWSsubmitChangesTooManyEndpointTargets(t *testing.T) {
+	// Route53 bails if there are more than maxResourceRecordsPerResourceRecordSet records in a recordset, so we blindly
+	// limit an Endpoint.Targets to the first maxResourceRecordsPerResourceRecordSet to avoid this failure
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+	const subnets = 16
+	const hosts = defaultBatchChangeSize / subnets
+
+	endpoints := make([]*endpoint.Endpoint, 0)
+	expectedEndpoints := make([]*endpoint.Endpoint, 0)
+
+	hostname := "largerecord.zone-1.ext-dns-test-2.teapot.zalan.do"
+	targets := []string{}
+	expectedTargets := []string{}
+	// create maxResourceRecordsPerResourceRecordSet + 100 IPs descending order, to confirm
+	// expected endpoints are the first maxResourceRecordsPerResourceRecordSet in ascending order
+	for i := uint32(maxResourceRecordsPerResourceRecordSet + 100); i > 0; i-- {
+		ipByte := make([]byte, 4)
+		binary.BigEndian.PutUint32(ipByte, i)
+		ip := net.IP(ipByte).String()
+		targets = append(targets, ip)
+		expectedTargets = append(expectedTargets, ip)
+	}
+	fmt.Printf("Creating endpoint with %d targets: %v\n", len(targets), targets)
+	ep := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, endpoint.TTL(recordTTL), targets...)
+	endpoints = append(endpoints, ep)
+
+	expectedTargets = truncateEndpointTargetSubset(ep)
+	fmt.Printf("Expecting endpoint with %d targets: %v\n", len(expectedTargets), expectedTargets)
+	expectedEp := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, endpoint.TTL(recordTTL), expectedTargets...)
+	expectedEndpoints = append(expectedEndpoints, expectedEp)
+
+	ctx := context.Background()
+	zones, _ := provider.Zones(ctx)
+	records, _ := provider.Records(ctx)
+	cs := make([]*route53.Change, 0, len(endpoints))
+	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints)...)
+
+	require.NoError(t, provider.submitChanges(ctx, cs, zones))
+
+	records, err := provider.Records(ctx)
+	require.NoError(t, err)
+
+	validateEndpoints(t, records, expectedEndpoints)
 }
 
 func TestAWSsubmitChanges(t *testing.T) {

@@ -18,6 +18,7 @@ package aws
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"sort"
 	"strconv"
@@ -47,6 +48,9 @@ const (
 	// As we are using the standard AWS client, this should already be compliant.
 	// Hence, ifever AWS decides to raise this limit, we will automatically reduce the pressure on rate limits
 	route53PageSize = "300"
+
+	// Route53 does not tolerate more than 400 resource records per RRSet
+	maxResourceRecordsPerResourceRecordSet = 400
 	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
 	// field set to true.
 	providerSpecificAlias                      = "alias"
@@ -626,8 +630,9 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*route53.
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(ep.Targets))
-		for idx, val := range ep.Targets {
+		mungedEndpointTargets := truncateEndpointTargetSubset(ep)
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(mungedEndpointTargets))
+		for idx, val := range mungedEndpointTargets {
 			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
 				Value: aws.String(val),
 			}
@@ -680,6 +685,34 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*route53.
 	}
 
 	return change, dualstack
+}
+
+func truncateEndpointTargetSubset(ep *endpoint.Endpoint) []string {
+	if len(ep.Targets) < maxResourceRecordsPerResourceRecordSet {
+		// no mutating needed - just return a list (unsorted) of all endpoint.Targets
+		targets := make([]string, len(ep.Targets))
+		for idx, val := range ep.Targets {
+			targets[idx] = val
+		}
+		return targets
+	}
+
+	log.Warnf("Truncating and sorting %d (of %d) endpoint targets for endpoint %s, which is in excess of Route53 limits of ResourceRecord per ResourceRecordSet", maxResourceRecordsPerResourceRecordSet, len(ep.Targets), ep.DNSName)
+	hashedTargets := map[string]string{}
+	var hashedTargetKeys []string
+	// hash, then sort targets, so we have a stable yet random subset of IPs
+	for _, val := range ep.Targets {
+		k := fmt.Sprintf("%x", md5.Sum([]byte(val)))
+		hashedTargets[k] = val
+		hashedTargetKeys = append(hashedTargetKeys, k)
+	}
+
+	sort.Strings(hashedTargetKeys)
+	targets := make([]string, maxResourceRecordsPerResourceRecordSet)
+	for idx, k := range hashedTargetKeys[0:maxResourceRecordsPerResourceRecordSet] {
+		targets[idx] = hashedTargets[k]
+	}
+	return targets
 }
 
 func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[string]string, error) {
