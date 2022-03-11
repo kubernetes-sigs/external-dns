@@ -345,11 +345,11 @@ func (p *BluecatProvider) createRecords(created bluecatChangeMap) {
 			var response interface{}
 			switch ep.RecordType {
 			case endpoint.RecordTypeA:
-				response, err = p.gatewayClient.CreateHostRecord(zone, recordSet.obj.(*api.BluecatCreateHostRecordRequest))
+				err = p.gatewayClient.CreateHostRecord(zone, recordSet.obj.(*api.BluecatCreateHostRecordRequest))
 			case endpoint.RecordTypeCNAME:
-				response, err = p.gatewayClient.CreateCNAMERecord(zone, recordSet.obj.(*api.BluecatCreateCNAMERecordRequest))
+				err = p.gatewayClient.CreateCNAMERecord(zone, recordSet.obj.(*api.BluecatCreateCNAMERecordRequest))
 			case endpoint.RecordTypeTXT:
-				response, err = p.gatewayClient.CreateTXTRecord(zone, recordSet.obj.(*api.BluecatCreateTXTRecordRequest))
+				err = p.gatewayClient.CreateTXTRecord(zone, recordSet.obj.(*api.BluecatCreateTXTRecordRequest))
 			}
 			log.Debugf("Response from create: %v", response)
 			if err != nil {
