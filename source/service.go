@@ -59,12 +59,17 @@ type serviceSource struct {
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
 	resolveLoadBalancerHostname    bool
-	serviceInformer                coreinformers.ServiceInformer
-	endpointsInformer              coreinformers.EndpointsInformer
-	podInformer                    coreinformers.PodInformer
-	nodeInformer                   coreinformers.NodeInformer
+	informers                      []informersMap
 	serviceTypeFilter              map[string]struct{}
 	labelSelector                  labels.Selector
+}
+
+type informersMap struct {
+	namespace         string
+	serviceInformer   coreinformers.ServiceInformer
+	endpointsInformer coreinformers.EndpointsInformer
+	podInformer       coreinformers.PodInformer
+	nodeInformer      coreinformers.NodeInformer
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
@@ -74,45 +79,75 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		return nil, err
 	}
 
-	// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
-	// Set resync period to 0, to prevent processing when nothing has changed
-	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
-	serviceInformer := informerFactory.Core().V1().Services()
-	endpointsInformer := informerFactory.Core().V1().Endpoints()
-	podInformer := informerFactory.Core().V1().Pods()
-	nodeInformer := informerFactory.Core().V1().Nodes()
+	/*
+		Assume namespace can be "ns1,ns2,ns3"
+		Step 1:
+			Split by ','
+		Step 2:
+			Modify interface to return map[string]
+	*/
 
-	// Add default resource event handlers to properly initialize informer.
-	serviceInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	endpointsInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	podInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
-	nodeInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-			},
-		},
-	)
+	namespaces := removeDuplicateValues(strings.Split(namespace, ","))
+	var informers []informersMap
 
-	informerFactory.Start(ctx.Done())
+	for _, entry := range namespaces {
+		// Use shared informers to listen for add/update/delete of services/pods/nodes in the specified namespace.
+		// Set resync period to 0, to prevent processing when nothing has changed
+		informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(entry))
+		serviceInformer := informerFactory.Core().V1().Services()
+		endpointsInformer := informerFactory.Core().V1().Endpoints()
+		podInformer := informerFactory.Core().V1().Pods()
 
-	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
-		return nil, err
+		// Add default resource event handlers to properly initialize informer.
+		serviceInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
+			},
+		)
+		endpointsInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
+			},
+		)
+		podInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+				},
+			},
+		)
+
+		var nodeInformer coreinformers.NodeInformer
+
+		if contains(serviceTypeFilter, "NodePort") || len(serviceTypeFilter) == 0 {
+			nodeInformer = informerFactory.Core().V1().Nodes()
+
+			nodeInformer.Informer().AddEventHandler(
+				cache.ResourceEventHandlerFuncs{
+					AddFunc: func(obj interface{}) {
+					},
+				},
+			)
+		}
+
+		informersMap := informersMap{
+			namespace:         entry,
+			serviceInformer:   serviceInformer,
+			endpointsInformer: endpointsInformer,
+			podInformer:       podInformer,
+			nodeInformer:      nodeInformer,
+		}
+
+		informers = append(informers, informersMap)
+
+		informerFactory.Start(ctx.Done())
+
+		// wait for the local cache to be populated.
+		if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+			return nil, err
+		}
+
 	}
 
 	// Transform the slice into a map so it will
@@ -133,10 +168,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		publishInternal:                publishInternal,
 		publishHostIP:                  publishHostIP,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
-		serviceInformer:                serviceInformer,
-		endpointsInformer:              endpointsInformer,
-		podInformer:                    podInformer,
-		nodeInformer:                   nodeInformer,
+		informers:                      informers,
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
 		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
@@ -145,65 +177,67 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
-	if err != nil {
-		return nil, err
-	}
-	services, err = sc.filterByAnnotations(services)
-	if err != nil {
-		return nil, err
-	}
-
-	// filter on service types if at least one has been provided
-	if len(sc.serviceTypeFilter) > 0 {
-		services = sc.filterByServiceType(services)
-	}
-
 	endpoints := []*endpoint.Endpoint{}
+	for _, informer := range sc.informers {
 
-	for _, svc := range services {
-		// Check controller annotation to see if we are responsible.
-		controller, ok := svc.Annotations[controllerAnnotationKey]
-		if ok && controller != controllerAnnotationValue {
-			log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
-				svc.Namespace, svc.Name, controller, controllerAnnotationValue)
-			continue
+		services, err := informer.serviceInformer.Lister().Services(informer.namespace).List(sc.labelSelector)
+		if err != nil {
+			return nil, err
 		}
 
-		svcEndpoints := sc.endpoints(svc)
+		services, err = sc.filterByAnnotations(services)
+		if err != nil {
+			return nil, err
+		}
 
-		// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
-		if len(svcEndpoints) == 0 && sc.compatibility != "" {
-			svcEndpoints, err = legacyEndpointsFromService(svc, sc)
-			if err != nil {
-				return nil, err
+		// filter on service types if at least one has been provided
+		if len(sc.serviceTypeFilter) > 0 {
+			services = sc.filterByServiceType(services)
+		}
+
+		for _, svc := range services {
+			// Check controller annotation to see if we are responsible.
+			controller, ok := svc.Annotations[controllerAnnotationKey]
+			if ok && controller != controllerAnnotationValue {
+				log.Debugf("Skipping service %s/%s because controller value does not match, found: %s, required: %s",
+					svc.Namespace, svc.Name, controller, controllerAnnotationValue)
+				continue
 			}
-		}
 
-		// apply template if none of the above is found
-		if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
-			sEndpoints, err := sc.endpointsFromTemplate(svc)
-			if err != nil {
-				return nil, err
+			svcEndpoints := sc.endpoints(svc)
+
+			// process legacy annotations if no endpoints were returned and compatibility mode is enabled.
+			if len(svcEndpoints) == 0 && sc.compatibility != "" {
+				svcEndpoints, err = legacyEndpointsFromService(svc, sc)
+				if err != nil {
+					return nil, err
+				}
 			}
 
-			if sc.combineFQDNAnnotation {
-				svcEndpoints = append(svcEndpoints, sEndpoints...)
-			} else {
-				svcEndpoints = sEndpoints
+			// apply template if none of the above is found
+			if (sc.combineFQDNAnnotation || len(svcEndpoints) == 0) && sc.fqdnTemplate != nil {
+				sEndpoints, err := sc.endpointsFromTemplate(svc)
+				if err != nil {
+					return nil, err
+				}
+
+				if sc.combineFQDNAnnotation {
+					svcEndpoints = append(svcEndpoints, sEndpoints...)
+				} else {
+					svcEndpoints = sEndpoints
+				}
 			}
-		}
 
-		if len(svcEndpoints) == 0 {
-			log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
-			continue
-		}
+			if len(svcEndpoints) == 0 {
+				log.Debugf("No endpoints could be generated from service %s/%s", svc.Namespace, svc.Name)
+				continue
+			}
 
-		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
-		sc.setResourceLabel(svc, svcEndpoints)
-		endpoints = append(endpoints, svcEndpoints...)
+			log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
+			sc.setResourceLabel(svc, svcEndpoints)
+			endpoints = append(endpoints, svcEndpoints...)
+		}
 	}
-
 	// this sorting is required to make merging work.
 	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
 	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
@@ -257,13 +291,17 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		return nil
 	}
 
-	endpointsObject, err := sc.endpointsInformer.Lister().Endpoints(svc.Namespace).Get(svc.GetName())
+	// TO DO: treat no namespace given
+	// extract the informer for the specific namespace
+	informer := getInformerByNamespace(sc.informers, svc.Namespace)
+
+	endpointsObject, err := informer.endpointsInformer.Lister().Endpoints(svc.Namespace).Get(svc.GetName())
 	if err != nil {
 		log.Errorf("Get endpoints of service[%s] error:%v", svc.GetName(), err)
 		return endpoints
 	}
 
-	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+	pods, err := informer.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
 		log.Errorf("List pods of service[%s] error: %v", svc.GetName(), err)
 		return endpoints
@@ -305,7 +343,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				targets := getTargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
-						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+						node, err := informer.nodeInformer.Lister().Get(pod.Spec.NodeName)
 						if err != nil {
 							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
 							return endpoints
@@ -595,6 +633,9 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		err         error
 	)
 
+	// extract the informer for the specific namespace
+	informer := getInformerByNamespace(sc.informers, svc.Namespace)
+
 	switch svc.Spec.ExternalTrafficPolicy {
 	case v1.ServiceExternalTrafficPolicyTypeLocal:
 		nodesMap := map[*v1.Node]struct{}{}
@@ -606,14 +647,14 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		if err != nil {
 			return nil, err
 		}
-		pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
+		pods, err := informer.podInformer.Lister().Pods(svc.Namespace).List(selector)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, v := range pods {
 			if v.Status.Phase == v1.PodRunning {
-				node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
+				node, err := informer.nodeInformer.Lister().Get(v.Spec.NodeName)
 				if err != nil {
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
@@ -625,7 +666,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			}
 		}
 	default:
-		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
+		nodes, err = informer.nodeInformer.Lister().List(labels.Everything())
 		if err != nil {
 			return nil, err
 		}
@@ -700,7 +741,47 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	log.Debug("Adding event handler for service")
 
-	// Right now there is no way to remove event handler from informer, see:
-	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	for _, informer := range sc.informers {
+		// Right now there is no way to remove event handler from informer, see:
+		// https://github.com/kubernetes/kubernetes/issues/79610
+		informer.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+
+	return false
+}
+
+func removeDuplicateValues(strSlice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+
+	// If the key(values of the slice) is not equal
+	// to the already present value in new slice (list)
+	// then we append it. else we jump on another element.
+	for _, entry := range strSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
+func getInformerByNamespace(informers []informersMap, namespace string) informersMap {
+	var informer informersMap
+	for _, entry := range informers {
+		if entry.namespace == namespace || entry.namespace == "" {
+			informer = entry
+			break
+		}
+	}
+
+	return informer
 }

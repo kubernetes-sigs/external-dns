@@ -1,0 +1,9 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: inmemory-service2
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: my-dns-test.test.domain.net
+spec:
+  type: ExternalName
+  externalName: 192.168.10.10

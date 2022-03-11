@@ -176,3 +176,30 @@ release.staging: test
 
 release.prod: test
 	$(MAKE) build.push/multiarch
+
+# ================= Kind deployment
+
+KIND_CLUSTER="edns"
+
+kind-up:
+	kind create cluster \
+		--image kindest/node:v1.23.0@sha256:49824ab1727c04e56a21a5d8372a402fcd32ea51ac96a2706a12af38934f81ac \
+		--name $(KIND_CLUSTER) \
+		--config zarf/kind/kind-config.yaml
+	kubectl config set-context --current --namespace=default
+
+kind-down:
+	kind delete cluster --name $(KIND_CLUSTER)
+
+kind-load:
+	kind load docker-image "$(IMAGE):$(VERSION)" --name $(KIND_CLUSTER)
+
+kind-apply:
+	kubectl apply -f zarf/helm/rolebinding.yaml
+	helm template edns charts/external-dns -f zarf/helm/custom-values.yaml --set image.repository=$(IMAGE) --set image.tag=$(VERSION) | kubectl apply -f -
+	kubectl apply -f zarf/helm/service.yaml
+
+kind-update: build build.docker kind-load kind-apply
+
+kind-logs:
+	kubectl logs deployment/edns-external-dns -f
