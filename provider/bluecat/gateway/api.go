@@ -216,10 +216,13 @@ func (c GatewayClientConfig) GetBluecatZones(zoneName string) ([]BluecatZone, er
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error retrieving zone(s) from gateway: %v, %v", url, zoneName)
+		return nil, errors.Wrapf(err, "error requesting zones from gateway: %v, %v", url, zoneName)
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("received http %v requesting zones from gateway in zone %v", resp.StatusCode, zoneName)
+	}
 
 	zones := []BluecatZone{}
 	json.NewDecoder(resp.Body).Decode(&zones)
@@ -254,10 +257,13 @@ func (c GatewayClientConfig) GetHostRecords(zone string, records *[]BluecatHostR
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
+		return errors.Wrapf(err, "error requesting host records from gateway in zone %v", zone)
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting host records from gateway in zone %v", resp.StatusCode, zone)
+	}
 
 	json.NewDecoder(resp.Body).Decode(records)
 	log.Debugf("Get Host Records Response: %v", records)
@@ -281,10 +287,13 @@ func (c GatewayClientConfig) GetCNAMERecords(zone string, records *[]BluecatCNAM
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
+		return errors.Wrapf(err, "error retrieving cname records from gateway in zone %v", zone)
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting cname records from gateway in zone %v", resp.StatusCode, zone)
+	}
 
 	json.NewDecoder(resp.Body).Decode(records)
 	log.Debugf("Get CName Records Response: %v", records)
@@ -309,11 +318,15 @@ func (c GatewayClientConfig) GetTXTRecords(zone string, records *[]BluecatTXTRec
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
+		return errors.Wrapf(err, "error retrieving txt records from gateway in zone %v", zone)
 	}
-	log.Debugf("Get Txt Records response: %v", resp)
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting txt records from gateway in zone %v", resp.StatusCode, zone)
+	}
+
+	log.Debugf("Get Txt Records response: %v", resp)
 	json.NewDecoder(resp.Body).Decode(records)
 	log.Debugf("Get TXT Records Body: %v", records)
 
@@ -333,10 +346,13 @@ func (c GatewayClientConfig) GetHostRecord(name string, record *BluecatHostRecor
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error retrieving host record %v from gateway", name)
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving host record %v from gateway", resp.StatusCode, name)
+	}
 
 	json.NewDecoder(resp.Body).Decode(record)
 	log.Debugf("Get Host Record Response: %v", record)
@@ -356,10 +372,13 @@ func (c GatewayClientConfig) GetCNAMERecord(name string, record *BluecatCNAMERec
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error retrieving cname record %v from gateway", name)
 	}
-
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving cname record %v from gateway", resp.StatusCode, name)
+	}
 
 	json.NewDecoder(resp.Body).Decode(record)
 	log.Debugf("Get CName Record Response: %v", record)
@@ -380,10 +399,14 @@ func (c GatewayClientConfig) GetTXTRecord(name string, record *BluecatTXTRecord)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error retrieving record %v from gateway", name)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving txt record %v from gateway", resp.StatusCode, name)
 	}
 
-	defer resp.Body.Close()
 	json.NewDecoder(resp.Body).Decode(record)
 	log.Debugf("Get TXT Record Response: %v", record)
 
@@ -461,9 +484,13 @@ func (c GatewayClientConfig) DeleteHostRecord(name string, zone string) (err err
 		return errors.Wrapf(err, "error building http request: %v", name)
 	}
 
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error deleting host record %v from gateway", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while deleting host record %v from gateway", resp.StatusCode, name)
 	}
 
 	return nil
@@ -480,9 +507,13 @@ func (c GatewayClientConfig) DeleteCNAMERecord(name string, zone string) (err er
 		return errors.Wrapf(err, "error building http request: %v", name)
 	}
 
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error deleting cname record %v from gateway", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while deleting cname record %v from gateway", resp.StatusCode, name)
 	}
 
 	return nil
@@ -500,9 +531,13 @@ func (c GatewayClientConfig) DeleteTXTRecord(name string, zone string) error {
 		return errors.Wrap(err, "error building http request")
 	}
 
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
+		return errors.Wrapf(err, "error deleting txt record %v from gateway", name)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while deleting txt record %v from gateway", resp.StatusCode, name)
 	}
 
 	return nil
