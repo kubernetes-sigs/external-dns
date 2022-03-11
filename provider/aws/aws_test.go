@@ -18,6 +18,7 @@ package aws
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"net"
@@ -44,6 +45,7 @@ const (
 	defaultBatchChangeSizeBytes  = 32000
 	defaultBatchChangeSizeValues = 1000
 	defaultBatchChangeInterval   = time.Second
+	defaultRecordSetSizeValues   = 400
 	defaultEvaluateTargetHealth  = true
 )
 
@@ -137,10 +139,7 @@ func (c *Route53APICounter) ListTagsForResourceWithContext(ctx context.Context, 
 
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardEscape(s string) string {
-	if strings.Contains(s, "*") {
-		s = strings.Replace(s, "*", "\\052", 1)
-	}
-	return s
+	return strings.Replace(s, "*", "\\052", 1)
 }
 
 func (r *Route53APIStub) ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error) {
@@ -1145,6 +1144,45 @@ func TestAWSChangesByZones(t *testing.T) {
 	})
 }
 
+func TestAWSsubmitChangesTooManyEndpointTargets(t *testing.T) {
+	// Route53 bails if there are more than maxResourceRecordsPerResourceRecordSet records in a recordset, so we blindly
+	// limit an Endpoint.Targets to the first maxResourceRecordsPerResourceRecordSet to avoid this failure
+	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
+	endpoints := make([]*endpoint.Endpoint, 0)
+	expectedEndpoints := make([]*endpoint.Endpoint, 0)
+
+	hostname := "largerecord.zone-1.ext-dns-test-2.teapot.zalan.do"
+	targets := []string{}
+	// create defaultRecordSetSizeValues + 100 IPs descending order, to confirm
+	// expected endpoints are the first defaultRecordSetSizeValues in ascending order
+	for i := uint32(defaultRecordSetSizeValues + 100); i > 0; i-- {
+		ipByte := make([]byte, 4)
+		binary.BigEndian.PutUint32(ipByte, i)
+		ip := net.IP(ipByte).String()
+		targets = append(targets, ip)
+	}
+	fmt.Printf("Creating endpoint with %d targets: %v\n", len(targets), targets)
+	ep := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, endpoint.TTL(recordTTL), targets...)
+	endpoints = append(endpoints, ep)
+
+	expectedTargets := truncateEndpointTargetSubset(ep, provider.recordSetSizeValues)
+	fmt.Printf("Expecting endpoint with %d targets: %v\n", len(expectedTargets), expectedTargets)
+	expectedEp := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, endpoint.TTL(recordTTL), expectedTargets...)
+	expectedEndpoints = append(expectedEndpoints, expectedEp)
+
+	ctx := context.Background()
+	zones, _ := provider.Zones(ctx)
+	cs := make(Route53Changes, 0, len(endpoints))
+	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints)...)
+
+	require.NoError(t, provider.submitChanges(ctx, cs, zones))
+
+	records, err := provider.Records(ctx)
+	require.NoError(t, err)
+
+	validateEndpoints(t, provider, records, expectedEndpoints)
+}
+
 func TestAWSsubmitChanges(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
 	const subnets = 16
@@ -1162,7 +1200,6 @@ func TestAWSsubmitChanges(t *testing.T) {
 
 	ctx := context.Background()
 	zones, _ := provider.Zones(ctx)
-	records, _ := provider.Records(ctx)
 	cs := make(Route53Changes, 0, len(endpoints))
 	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints)...)
 
@@ -1898,6 +1935,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		batchChangeSizeBytes:  defaultBatchChangeSizeBytes,
 		batchChangeSizeValues: defaultBatchChangeSizeValues,
 		batchChangeInterval:   defaultBatchChangeInterval,
+		recordSetSizeValues:   defaultRecordSetSizeValues,
 		evaluateTargetHealth:  evaluateTargetHealth,
 		domainFilter:          domainFilter,
 		zoneIDFilter:          zoneIDFilter,

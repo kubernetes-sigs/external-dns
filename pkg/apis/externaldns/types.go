@@ -89,6 +89,7 @@ type Config struct {
 	AWSBatchChangeSizeBytes            int
 	AWSBatchChangeSizeValues           int
 	AWSBatchChangeInterval             time.Duration
+	AWSRecordSetSizeValues             int
 	AWSEvaluateTargetHealth            bool
 	AWSAPIRetries                      int
 	AWSPreferCNAME                     bool
@@ -271,6 +272,7 @@ var defaultConfig = &Config{
 	AWSBatchChangeSizeBytes:     32000,
 	AWSBatchChangeSizeValues:    1000,
 	AWSBatchChangeInterval:      time.Second,
+	AWSRecordSetSizeValues:      400,
 	AWSEvaluateTargetHealth:     true,
 	AWSAPIRetries:               3,
 	AWSPreferCNAME:              false,
@@ -499,6 +501,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-batch-change-size-bytes", "When using the AWS provider, set the maximum byte size that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeBytes)).IntVar(&cfg.AWSBatchChangeSizeBytes)
 	app.Flag("aws-batch-change-size-values", "When using the AWS provider, set the maximum total record values that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeValues)).IntVar(&cfg.AWSBatchChangeSizeValues)
 	app.Flag("aws-batch-change-interval", "When using the AWS provider, set the interval between batch changes.").Default(defaultConfig.AWSBatchChangeInterval.String()).DurationVar(&cfg.AWSBatchChangeInterval)
+	app.Flag("aws-record-set-size-values", "When using the AWS provider, set the maximum total record values in a record set.").Default(strconv.Itoa(defaultConfig.AWSRecordSetSizeValues)).IntVar(&cfg.AWSRecordSetSizeValues)
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
 	app.Flag("aws-api-retries", "When using the AWS API, set the maximum number of retries before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)

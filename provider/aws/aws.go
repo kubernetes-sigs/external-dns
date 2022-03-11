@@ -18,6 +18,7 @@ package aws
 
 import (
 	"context"
+	"crypto/md5"
 	"fmt"
 	"sort"
 	"strconv"
@@ -236,6 +237,7 @@ type AWSProvider struct {
 	batchChangeSizeBytes  int
 	batchChangeSizeValues int
 	batchChangeInterval   time.Duration
+	recordSetSizeValues   int
 	evaluateTargetHealth  bool
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter endpoint.DomainFilter
@@ -264,6 +266,7 @@ type AWSConfig struct {
 	BatchChangeSizeBytes  int
 	BatchChangeSizeValues int
 	BatchChangeInterval   time.Duration
+	RecordSetSizeValues   int
 	EvaluateTargetHealth  bool
 	PreferCNAME           bool
 	DryRun                bool
@@ -283,6 +286,7 @@ func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error
 		batchChangeSizeBytes:  awsConfig.BatchChangeSizeBytes,
 		batchChangeSizeValues: awsConfig.BatchChangeSizeValues,
 		batchChangeInterval:   awsConfig.BatchChangeInterval,
+		recordSetSizeValues:   awsConfig.RecordSetSizeValues,
 		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
@@ -764,8 +768,9 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 		} else {
 			change.ResourceRecordSet.TTL = aws.Int64(int64(ep.RecordTTL))
 		}
-		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(ep.Targets))
-		for idx, val := range ep.Targets {
+		mungedEndpointTargets := truncateEndpointTargetSubset(ep, p.recordSetSizeValues)
+		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(mungedEndpointTargets))
+		for idx, val := range mungedEndpointTargets {
 			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
 				Value: aws.String(val),
 			}
@@ -869,6 +874,29 @@ func groupChangesByNameAndOwnershipRelation(cs Route53Changes) map[string]Route5
 		changesByOwnership[key] = append(changesByOwnership[key], v)
 	}
 	return changesByOwnership
+}
+
+func truncateEndpointTargetSubset(ep *endpoint.Endpoint, maxSize int) []string {
+	if len(ep.Targets) < maxSize {
+		return ep.Targets
+	}
+
+	log.Warnf("Truncating and sorting %d (of %d) endpoint targets for endpoint %s, which is in excess of Route53 limits of ResourceRecord per ResourceRecordSet", maxSize, len(ep.Targets), ep.DNSName)
+	hashedTargets := map[string]string{}
+	var hashedTargetKeys []string
+	// hash, then sort targets, so we have a stable yet random subset of IPs
+	for _, val := range ep.Targets {
+		k := fmt.Sprintf("%x", md5.Sum([]byte(val)))
+		hashedTargets[k] = val
+		hashedTargetKeys = append(hashedTargetKeys, k)
+	}
+
+	sort.Strings(hashedTargetKeys)
+	targets := make([]string, maxSize)
+	for idx, k := range hashedTargetKeys[0:maxSize] {
+		targets[idx] = hashedTargets[k]
+	}
+	return targets
 }
 
 func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[string]string, error) {
