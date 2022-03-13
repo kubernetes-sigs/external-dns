@@ -33,13 +33,23 @@ import (
 )
 
 const (
+	// YandexAuthorizationTypeInstanceServiceAccount is the authorization type describes that
+	// Compute Instance Service Account credentials should be used for authorizing requests to Yandex Cloud
 	YandexAuthorizationTypeInstanceServiceAccount = "instance-service-account"
-	YandexAuthorizationTypeOAuthToken             = "iam-token"
-	YandexAuthorizationTypeKey                    = "iam-key-file"
 
+	// YandexAuthorizationTypeOAuthToken is the authorization type describes that
+	// OAuth token should be used for authorizing requests to Yandex Cloud
+	YandexAuthorizationTypeOAuthToken = "iam-token"
+
+	// YandexAuthorizationTypeKey is the authorization type describes that
+	// Service Account authorization key file used for authorizing requests to Yandex Cloud
+	YandexAuthorizationTypeKey = "iam-key-file"
+
+	// YandexDNSRecordSetDefaultTTL is the default TTL for record sets
 	YandexDNSRecordSetDefaultTTL = int64(300)
 )
 
+// YandexConfig holds configuration options of YandexProvider.
 type YandexConfig struct {
 	DomainFilter            endpoint.DomainFilter
 	ZoneNameFilter          endpoint.DomainFilter
@@ -51,6 +61,7 @@ type YandexConfig struct {
 	AuthorizationKeyFile    string
 }
 
+// YandexProvider implements the DNS provider for Yandex cloud platform.
 type YandexProvider struct {
 	provider.BaseProvider
 
@@ -63,8 +74,11 @@ type YandexProvider struct {
 	client DNSClient
 }
 
+// NewYandexProvider creates a new Yandex provider.
+//
+// Returns the provider or an error if a provider could not be created.
 func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider, error) {
-	creds, err := cfg.ResolveCredentials()
+	creds, err := cfg.credentials()
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +104,10 @@ func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider,
 	}, nil
 }
 
-func (cfg *YandexConfig) ResolveCredentials() (ycsdk.Credentials, error) {
+// Helper function
+//
+// Returns ycsdk.Credentials that resolved by AuthorizationType or an error if operation failed.
+func (cfg *YandexConfig) credentials() (ycsdk.Credentials, error) {
 	auth := strings.TrimSpace(cfg.AuthorizationType)
 
 	switch auth {
@@ -109,6 +126,9 @@ func (cfg *YandexConfig) ResolveCredentials() (ycsdk.Credentials, error) {
 	}
 }
 
+// Records gets the current records.
+//
+// Returns the current records or an error if the operation failed.
 func (p *YandexProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	zones, err := p.zones(ctx)
 	if err != nil {
@@ -138,6 +158,9 @@ func (p *YandexProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	return endpoints, nil
 }
 
+// ApplyChanges applies the given changes.
+//
+// Returns nil if the operation was successful or an error if the operation failed.
 func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones(ctx)
 	if err != nil {
@@ -185,6 +208,9 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return nil
 }
 
+// Helper function
+//
+// Returns all available dns zones or an error if operation failed.
 func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	log.WithFields(log.Fields{"folder": p.FolderID}).Debug("Retrieving Yandex DNS zones for folder")
 
@@ -227,6 +253,9 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	return zones, nil
 }
 
+// Helper function
+//
+// Returns all available record sets for specified zone or an error if operation failed.
 func (p *YandexProvider) records(ctx context.Context, zoneName, zoneID string) ([]*dnsInt.RecordSet, error) {
 	log.WithFields(log.Fields{
 		"zone":   zoneName,
@@ -286,6 +315,9 @@ func (p *YandexProvider) records(ctx context.Context, zoneName, zoneID string) (
 	return records, nil
 }
 
+// Helper function
+//
+// Executes dns.UpsertRecordSets operation with additional logging.
 func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) error {
 	log.WithFields(log.Fields{
 		"zone":         batch.ZoneName,
@@ -314,6 +346,9 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 	return nil
 }
 
+// Helper function (shared with test code)
+//
+// Returns endpoint that converted from RecordSet.
 func toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
 	if record == nil {
 		log.Error("Skipping invalid record set with nil definition")
@@ -328,6 +363,9 @@ func toEndpoint(record *dnsInt.RecordSet) *endpoint.Endpoint {
 	)
 }
 
+// Helper function (shared with test code)
+//
+// Returns RecordSet that converted from Endpoint.
 func toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
 	if ep == nil {
 		log.Error("Skipping invalid endpoint with nil definition")
@@ -347,6 +385,9 @@ func toRecordSet(ep *endpoint.Endpoint) *dnsInt.RecordSet {
 	}
 }
 
+// Helper function
+//
+// Returns string that describes slice of RecordSets.
 func toString(records []*dnsInt.RecordSet) string {
 	var message strings.Builder
 

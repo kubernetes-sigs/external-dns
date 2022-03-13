@@ -25,18 +25,21 @@ import (
 	"google.golang.org/grpc"
 )
 
+// ZoneIteratorAdapter is an interface of dns.DnsZoneIterator that can be stubbed for testing.
 type ZoneIteratorAdapter interface {
 	Next() bool
 	Error() error
 	Value() *dnsProto.DnsZone
 }
 
+// RecordSetIteratorAdapter is an interface of dns.DnsZoneRecordSetsIterator that can be stubbed for testing.
 type RecordSetIteratorAdapter interface {
 	Next() bool
 	Error() error
 	Value() *dnsProto.RecordSet
 }
 
+// DNSClient is an interface of dns.DnsZoneServiceClient that can be stubbed for testing.
 type DNSClient interface {
 	ZoneIterator(ctx context.Context,
 		req *dnsProto.ListDnsZonesRequest,
@@ -54,10 +57,12 @@ type DNSClient interface {
 	) (*opProto.Operation, error)
 }
 
+// DNSZoneClientAdapter is an implementation of DNSClient interface for *dns.DnsZoneServiceClient.
 type DNSZoneClientAdapter struct {
 	c *dns.DnsZoneServiceClient
 }
 
+// ZoneIterator returns an ZoneIteratorAdapter that iterates over DNS zones (dns.DnsZoneIterator).
 func (a *DNSZoneClientAdapter) ZoneIterator(ctx context.Context,
 	req *dnsProto.ListDnsZonesRequest,
 	opts ...grpc.CallOption,
@@ -65,6 +70,7 @@ func (a *DNSZoneClientAdapter) ZoneIterator(ctx context.Context,
 	return a.c.DnsZoneIterator(ctx, req, opts...)
 }
 
+// RecordSetIterator returns an RecordSetIteratorAdapter that iterates over DNS record sets (dns.DnsZoneRecordSetsIterator).
 func (a *DNSZoneClientAdapter) RecordSetIterator(ctx context.Context,
 	req *dnsProto.ListDnsZoneRecordSetsRequest,
 	opts ...grpc.CallOption,
@@ -72,6 +78,7 @@ func (a *DNSZoneClientAdapter) RecordSetIterator(ctx context.Context,
 	return a.c.DnsZoneRecordSetsIterator(ctx, req, opts...)
 }
 
+// UpsertRecordSets executes dns.UpsertRecordSets operation.
 func (a *DNSZoneClientAdapter) UpsertRecordSets(ctx context.Context,
 	in *dnsProto.UpsertRecordSetsRequest,
 	opts ...grpc.CallOption,

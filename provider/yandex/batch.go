@@ -40,9 +40,9 @@ func (m upsertBatchMap) GetOrCreate(zoneID, zoneName string) *upsertBatch {
 		batch = &upsertBatch{
 			ZoneID:   zoneID,
 			ZoneName: zoneName,
-			Creates:  make([]*dnsInt.RecordSet, 0),
-			Deletes:  make([]*dnsInt.RecordSet, 0),
-			Updates:  make([]*dnsInt.RecordSet, 0),
+			Creates:  []*dnsInt.RecordSet{},
+			Deletes:  []*dnsInt.RecordSet{},
+			Updates:  []*dnsInt.RecordSet{},
 		}
 		m[zoneID] = batch
 	}
