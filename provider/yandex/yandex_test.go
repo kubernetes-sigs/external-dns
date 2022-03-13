@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 )
 
 func assertEndpointsAreSame(t *testing.T, expected, actual []*endpoint.Endpoint) {
@@ -34,7 +35,7 @@ func assertEndpointsAreSame(t *testing.T, expected, actual []*endpoint.Endpoint)
 
 func TestYandexRecord(t *testing.T) {
 	f := newFixture().
-		WithZoneRecords("yandex.io.",
+		WithZoneRecords("1", "yandex.io.",
 			&dnsProto.RecordSet{Name: "test.yandex.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
 			&dnsProto.RecordSet{Name: "another.yandex.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
 		)
@@ -52,11 +53,11 @@ func TestYandexRecord(t *testing.T) {
 
 func TestYandexRecordWithDomainFilter(t *testing.T) {
 	f := newFixture().
-		WithZoneRecords("another.io.",
+		WithZoneRecords("1", "another.io.",
 			&dnsProto.RecordSet{Name: "internal.another.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
 			&dnsProto.RecordSet{Name: "stub.another.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
 		).
-		WithZoneRecords("yandex.io.",
+		WithZoneRecords("2", "yandex.io.",
 			&dnsProto.RecordSet{Name: "test.yandex.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
 			&dnsProto.RecordSet{Name: "another.yandex.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
 		).
@@ -73,9 +74,32 @@ func TestYandexRecordWithDomainFilter(t *testing.T) {
 	}, actual)
 }
 
+func TestYandexRecordWithZoneIdFilter(t *testing.T) {
+	f := newFixture().
+		WithZoneRecords("1", "another.io.",
+			&dnsProto.RecordSet{Name: "internal.another.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
+			&dnsProto.RecordSet{Name: "stub.another.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
+		).
+		WithZoneRecords("2", "yandex.io.",
+			&dnsProto.RecordSet{Name: "test.yandex.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
+			&dnsProto.RecordSet{Name: "another.yandex.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
+		).
+		WithZoneIDFilter(provider.NewZoneIDFilter([]string{"2"}))
+
+	actual, err := f.Provider().Records(context.Background())
+
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEndpointsAreSame(t, []*endpoint.Endpoint{
+		{DNSName: "test.yandex.io", Targets: []string{"1.2.3.4"}, RecordType: "A", RecordTTL: 10},
+		{DNSName: "another.yandex.io", Targets: []string{"test2.yandex.io"}, RecordType: "CNAME", RecordTTL: 10},
+	}, actual)
+}
+
 func TestYandexApplyChangesWithDryRun(t *testing.T) {
 	f := newFixture().
-		WithZoneRecords("yandex.io.",
+		WithZoneRecords("1", "yandex.io.",
 			&dnsProto.RecordSet{Name: "internal.yandex.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
 			&dnsProto.RecordSet{Name: "stub.yandex.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
 		).
@@ -105,7 +129,7 @@ func TestYandexApplyChangesWithDryRun(t *testing.T) {
 
 func TestYandexApplyChanges(t *testing.T) {
 	f := newFixture().
-		WithZoneRecords("yandex.io.",
+		WithZoneRecords("1", "yandex.io.",
 			&dnsProto.RecordSet{Name: "internal.yandex.io.", Type: "A", Ttl: 10, Data: []string{"1.2.3.4"}},
 			&dnsProto.RecordSet{Name: "stub.yandex.io.", Type: "CNAME", Ttl: 10, Data: []string{"test2.yandex.io"}},
 		)

@@ -18,7 +18,6 @@ package yandex
 
 import (
 	"context"
-	"strconv"
 
 	dnsProto "github.com/yandex-cloud/go-genproto/yandex/cloud/dns/v1"
 	opProto "github.com/yandex-cloud/go-genproto/yandex/cloud/operation"
@@ -134,19 +133,17 @@ func newFixture() *fixture {
 	}
 }
 
-func (f *fixture) WithZoneRecords(zone string, sets ...*dnsProto.RecordSet) *fixture {
-	key := strconv.Itoa(len(f.client.zoneIterator.values) + 1)
-
+func (f *fixture) WithZoneRecords(id, zone string, sets ...*dnsProto.RecordSet) *fixture {
 	f.client.zoneIterator.SetValues(&dnsProto.DnsZone{
-		Id:   key,
+		Id:   id,
 		Zone: zone,
 	})
 
 	for _, rs := range sets {
-		it, ok := f.client.recordSetIterators[key]
+		it, ok := f.client.recordSetIterators[id]
 		if !ok {
 			it = &mockRecordSetIterator{&mockIterator{values: make([]interface{}, 0)}}
-			f.client.recordSetIterators[key] = it
+			f.client.recordSetIterators[id] = it
 		}
 		it.SetValues(rs)
 	}
