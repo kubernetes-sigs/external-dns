@@ -84,16 +84,9 @@ $ yc iam key create \
   --folder-name externaldns
 ```
 
-### Create Service Account API Key
+### Create OAuth token
 
-Create service account [API Key](https://cloud.yandex.com/en-ru/docs/iam/concepts/authorization/api-key)
-
-```
-$ yc iam api-key create \
-  --service-account-name externaldns-example-sa \
-  --folder-name externaldns \
-  --format json
-```
+OAuth token can be obtained from [here](https://cloud.yandex.com/en-ru/docs/iam/concepts/authorization/oauth-token)
 
 ## Deploy External DNS
 
@@ -213,14 +206,14 @@ $ kubectl create -f externaldns.yaml
 ```
 
 
-### Manifest with Service Account API Key
+### Manifest with OAuth token
 
 Create K8S secret from API Key:
 
 ```
 $ kubectl create secret generic \
-  externaldns-example-sa-api-key \
-  --from-literal=api-key=<insert here secret field of api key>
+  externaldns-example-sa-oauth-token \
+  --from-literal=oauth-token=<insert here obtained token>
 ```
 
 Retrieve folder id:
@@ -298,8 +291,8 @@ spec:
           - name: EXTERNAL_DNS_YANDEX_AUTHORIZATION_OAUTH_TOKEN
             valueFrom:
               secretKeyRef:
-                key: api-key
-                name: externaldns-example-sa-api-key
+                key: oauth-token
+                name: externaldns-example-sa-oauth-token
       serviceAccountName: external-dns
 ```
 
@@ -444,9 +437,12 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: nginx-svc
-          servicePort: 80
+          service:
+            name: nginx-svc
+            port: 
+              number: 80
         path: /
+        pathType: ImplementationSpecific
 ```
 
 When using external-dns with ingress objects it will automatically create DNS records based on host names specified in ingress objects that match the domain-filter argument in the external-dns deployment manifest. 
