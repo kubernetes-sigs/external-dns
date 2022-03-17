@@ -18,11 +18,18 @@ jobs:
         with:
           python-version: "3.10"
 
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+
       - name: Install dependencies
         run: python3 -m pip install -r ./docs/scripts/requirements.txt
 
       - name: Build site
+        env:
+          EXTERNAL_DNS_VERSION: ${{ env.GITHUB_REF_NAME }}
         run: |
+          go run ./docs/scripts/docs.go
           ./docs/scripts/copy_docs.sh
           mkdocs build
 
