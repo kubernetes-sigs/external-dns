@@ -2,11 +2,7 @@ name: Release Docs
 
 on:
   push:
-    branches:
-      - tags
-    paths:
-      - docs/**
-      - 
+    tags:
 
 jobs:
   release_docs:
