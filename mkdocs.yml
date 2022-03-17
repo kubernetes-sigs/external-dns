@@ -1,9 +1,8 @@
 site_name: external-dns
-site_author: Rene Hernandez
+site_author: external-dns maintainers
 
-repo_name: renehernandez/external-dns
-repo_url: https://github.com/renehernandez/external-dns/
-edit_uri: ""
+repo_name: kubernetes-sigs/external-dns
+repo_url: https://github.com/kubernetes-sigs/external-dns/
 
 nav:
   - index.md
