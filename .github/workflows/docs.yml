@@ -17,32 +17,24 @@ jobs:
       - uses: actions/setup-python@v2
         with:
           python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: "docs/script/requirements.txt"
 
       - uses: actions/setup-go@v2
         with:
           go-version: ^1.17
 
-      - name: Install dependencies
-        run: python3 -m pip install -r ./docs/scripts/requirements.txt
-
-      - name: Build site
-        env:
-          EXTERNAL_DNS_VERSION: ${{ github.ref_name }}
+      - name: setup
         run: |
           ./docs/scripts/copy_docs.sh
           go run ./docs/scripts/docs.go
-          mkdocs build
 
-      - name: Push site
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_dir: ${{ github.ref_name }}
-          publish_dir: ./site
+      - name: Configure Git user
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
 
-      - name: Push redirect
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/redirect
-          keep_files: true
+      - name: build and push
+        run: |
+          mike deploy ${{ github.ref_name }} latest --push --update-aliases
+          mike set-default --push latest

@@ -1,36 +1,10 @@
 package main
 
 import (
-	"html/template"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 )
-
-func generateRedirect() {
-	version := os.Getenv("EXTERNAL_DNS_VERSION")
-
-	content, err := ioutil.ReadFile("./docs/scripts/index.html.gotmpl")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := os.Mkdir("./docs/redirect", os.ModePerm); err != nil {
-		log.Fatal(err)
-	}
-
-	f, err := os.Create("./docs/redirect/index.html")
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	tmpl := template.Must(template.New("redirect").Parse(string(content)))
-
-	tmpl.Execute(f, version)
-}
 
 func removeLinkPrefixInIndex() {
 	content, err := os.ReadFile("./docs/index.md")
@@ -55,5 +29,4 @@ func removeLinkPrefixInIndex() {
 
 func main() {
 	removeLinkPrefixInIndex()
-	generateRedirect()
 }
