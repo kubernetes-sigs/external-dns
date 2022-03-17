@@ -27,7 +27,7 @@ jobs:
 
       - name: Build site
         env:
-          EXTERNAL_DNS_VERSION: ${{ env.GITHUB_REF_NAME }}
+          EXTERNAL_DNS_VERSION: ${{ github.ref_name }}
         run: |
           ./docs/scripts/copy_docs.sh
           go run ./docs/scripts/docs.go
@@ -37,7 +37,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_dir: ${{ env.GITHUB_REF_NAME }}
+          destination_dir: ${{ github.ref_name }}
           publish_dir: ./site
 
       - name: Push redirect
