@@ -45,4 +45,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/redirect
-          keep_files: true]
+          keep_files: true
