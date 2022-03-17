@@ -32,6 +32,10 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
 
+extra:
+  version:
+    provider: mike
+
 markdown_extensions:
   - meta
   - tables

@@ -2,3 +2,4 @@ mkdocs-git-revision-date-localized-plugin == 1.0.0
 mkdocs == 1.2.3
 mkdocs-material == 8.2.5
 mkdocs-literate-nav == 0.4.0
+mike == 1.1.2
