@@ -1,0 +1,44 @@
+name: Release Docs
+
+on:
+  push:
+    branches:
+      - tags
+    paths:
+      - docs/**
+      - 
+
+jobs:
+  release_docs:
+    name: Release Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: python3 -m pip install -r ./docs/scripts/requirements.txt
+
+      - name: Build site
+        run: |
+          ./docs/scripts/copy_docs.sh
+          mkdocs build
+
+      - name: Push site
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          destination_dir: ${{ env.GITHUB_REF_NAME }}
+          publish_dir: ./site
+
+      - name: Push redirect
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/redirect
+          keep_files: true]
