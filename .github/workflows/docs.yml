@@ -29,8 +29,8 @@ jobs:
         env:
           EXTERNAL_DNS_VERSION: ${{ env.GITHUB_REF_NAME }}
         run: |
-          go run ./docs/scripts/docs.go
           ./docs/scripts/copy_docs.sh
+          go run ./docs/scripts/docs.go
           mkdocs build
 
       - name: Push site
