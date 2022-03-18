@@ -51,6 +51,8 @@ type BluecatProvider struct {
 	DNSDeployType    string
 	View             string
 	gatewayClient    api.GatewayClient
+	TxtPrefix        string
+	TxtSuffix        string
 }
 
 type bluecatRecordSet struct {
@@ -61,7 +63,7 @@ type bluecatRecordSet struct {
 // NewBluecatProvider creates a new Bluecat provider.
 //
 // Returns a pointer to the provider or an error if a provider could not be created.
-func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployType, dnsView, gatewayHost, rootZone string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
+func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployType, dnsView, gatewayHost, rootZone, txtPrefix, txtSuffix string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
 	cfg := api.BluecatConfig{}
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
@@ -107,6 +109,8 @@ func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployTy
 		DNSDeployType:    cfg.DNSDeployType,
 		View:             cfg.View,
 		RootZone:         cfg.RootZone,
+		TxtPrefix:        txtPrefix,
+		TxtSuffix:        txtSuffix,
 	}
 	return provider, nil
 }
@@ -156,7 +160,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 					ep = endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
 				}
 				for _, txtRec := range resT {
-					if strings.Compare(rec.Name, txtRec.Name) == 0 {
+					if strings.Compare(p.TxtPrefix+rec.Name+p.TxtSuffix, txtRec.Name) == 0 {
 						ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 						if err != nil {
 							log.Debugf("External DNS Owner %s", err)
@@ -185,7 +189,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 				ep = endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"])
 			}
 			for _, txtRec := range resT {
-				if strings.Compare(rec.Name, txtRec.Name) == 0 {
+				if strings.Compare(p.TxtPrefix+rec.Name+p.TxtSuffix, txtRec.Name) == 0 {
 					ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 					if err != nil {
 						log.Debugf("External DNS Owner %s", err)
