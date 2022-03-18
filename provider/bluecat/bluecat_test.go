@@ -345,9 +345,10 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 			if strings.Contains(ep.Targets.String(), "external-dns") {
 				owner, err := extractOwnerfromTXTRecord(ep.Targets.String())
 				if err != nil {
-					continue
+					t.Logf("%v", err)
+				} else {
+					t.Logf("Owner %s", owner)
 				}
-				t.Logf("Owner %s %s", owner, err)
 			}
 		}
 		err := provider.ApplyChanges(context.Background(), &plan.Changes{Delete: ti.Endpoints})

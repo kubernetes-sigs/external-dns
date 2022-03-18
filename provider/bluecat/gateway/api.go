@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+// TODO: add logging
 package api
 
 import (
@@ -513,7 +513,7 @@ func (c GatewayClientConfig) DeleteHostRecord(name string, zone string) (err err
 		return errors.Wrapf(err, "error deleting host record %v from gateway", name)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		return errors.Errorf("received http %v while deleting host record %v from gateway", resp.StatusCode, name)
 	}
 
@@ -536,7 +536,7 @@ func (c GatewayClientConfig) DeleteCNAMERecord(name string, zone string) (err er
 		return errors.Wrapf(err, "error deleting cname record %v from gateway", name)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		return errors.Errorf("received http %v while deleting cname record %v from gateway", resp.StatusCode, name)
 	}
 
@@ -560,7 +560,7 @@ func (c GatewayClientConfig) DeleteTXTRecord(name string, zone string) error {
 		return errors.Wrapf(err, "error deleting txt record %v from gateway", name)
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		return errors.Errorf("received http %v while deleting txt record %v from gateway", resp.StatusCode, name)
 	}
 
