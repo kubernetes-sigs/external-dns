@@ -1023,7 +1023,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 	}
 }
 
-func TestAWSisLoadBalancer(t *testing.T) {
+func TestAWSInferAlias(t *testing.T) {
 	for _, tc := range []struct {
 		target      string
 		recordType  string
@@ -1039,11 +1039,11 @@ func TestAWSisLoadBalancer(t *testing.T) {
 			Targets:    endpoint.Targets{tc.target},
 			RecordType: tc.recordType,
 		}
-		assert.Equal(t, tc.expected, useAlias(ep, tc.preferCNAME))
+		assert.Equal(t, tc.expected, inferAlias(ep, tc.preferCNAME))
 	}
 }
 
-func TestAWSisAWSAlias(t *testing.T) {
+func TestAWSAliasHostedZone(t *testing.T) {
 	for _, tc := range []struct {
 		target     string
 		recordType string
@@ -1063,7 +1063,7 @@ func TestAWSisAWSAlias(t *testing.T) {
 			ep = ep.WithProviderSpecific(providerSpecificAlias, "true")
 			ep = ep.WithProviderSpecific(providerSpecificTargetHostedZone, tc.hz)
 		}
-		assert.Equal(t, tc.hz, isAWSAlias(ep), "%v", tc)
+		assert.Equal(t, tc.hz, aliasHostedZone(ep), "%v", tc)
 	}
 }
 
@@ -1202,6 +1202,148 @@ func TestAWSHealthTargetAnnotation(tt *testing.T) {
 			}
 			plan = plan.Calculate()
 			assert.Equal(t, test.shouldUpdate, len(plan.Changes.UpdateNew) == 1)
+		})
+	}
+}
+
+func TestAWSCreateUpdateChanges(t *testing.T) {
+	type (
+		ep     = endpoint.Endpoint
+		change = route53.Change
+	)
+	for _, tc := range []struct {
+		name                 string
+		updateOld, updateNew []*ep
+		expected             []*change
+	}{
+		{"empty", nil, nil, []*change{}},
+		{
+			"no type change",
+			[]*ep{
+				{
+					RecordType: endpoint.RecordTypeCNAME,
+					DNSName:    "example.com",
+					Targets:    []string{"backend.example.com"},
+					RecordTTL:  60,
+				},
+			},
+			[]*ep{
+				{
+					RecordType: endpoint.RecordTypeCNAME,
+					DNSName:    "example.com",
+					Targets:    []string{"backend.example.com"},
+					RecordTTL:  70,
+				},
+			},
+			[]*change{
+				{
+					Action: aws.String("UPSERT"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Type: aws.String("CNAME"),
+						Name: aws.String("example.com"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{Value: aws.String("backend.example.com")},
+						},
+						TTL: aws.Int64(70),
+					},
+				},
+			},
+		},
+		{
+			"from CNAME to ALIAS",
+			[]*ep{
+				{
+					RecordType: endpoint.RecordTypeCNAME,
+					DNSName:    "example.com",
+					Targets:    []string{"backend.example.com"},
+					RecordTTL:  60,
+				},
+			},
+			[]*ep{
+				{
+					RecordType:       endpoint.RecordTypeCNAME,
+					DNSName:          "example.com",
+					Targets:          []string{"backend.example.com"},
+					RecordTTL:        60,
+					ProviderSpecific: endpoint.ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				},
+			},
+			[]*route53.Change{
+				{
+					Action: aws.String("CREATE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						AliasTarget: &route53.AliasTarget{
+							DNSName:              aws.String("backend.example.com"),
+							EvaluateTargetHealth: aws.Bool(false),
+							HostedZoneId:         aws.String(sameZoneAlias),
+						},
+						Name: aws.String("example.com"),
+						Type: aws.String("A"),
+					},
+				},
+				{
+					Action: aws.String("DELETE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String("example.com"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{Value: aws.String("backend.example.com")},
+						},
+						TTL:  aws.Int64(60),
+						Type: aws.String("CNAME"),
+					},
+				},
+			},
+		},
+		{
+			"from ALIAS to CNAME",
+			[]*ep{
+				{
+					RecordType:       endpoint.RecordTypeCNAME,
+					DNSName:          "example.com",
+					Targets:          []string{"backend.example.com"},
+					RecordTTL:        60,
+					ProviderSpecific: endpoint.ProviderSpecific{{Name: providerSpecificAlias, Value: "true"}},
+				},
+			},
+			[]*ep{
+				{
+					RecordType: endpoint.RecordTypeCNAME,
+					DNSName:    "example.com",
+					Targets:    []string{"backend.example.com"},
+					RecordTTL:  60,
+				},
+			},
+			[]*route53.Change{
+				{
+					Action: aws.String("CREATE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String("example.com"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{Value: aws.String("backend.example.com")},
+						},
+						TTL:  aws.Int64(60),
+						Type: aws.String("CNAME"),
+					},
+				},
+				{
+					Action: aws.String("DELETE"),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						AliasTarget: &route53.AliasTarget{
+							DNSName:              aws.String("backend.example.com"),
+							EvaluateTargetHealth: aws.Bool(false),
+							HostedZoneId:         aws.String(sameZoneAlias),
+						},
+						Name: aws.String("example.com"),
+						Type: aws.String("A"),
+					},
+				},
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := require.New(t)
+			changes := (&AWSProvider{}).createUpdateChanges(tc.updateNew, tc.updateOld)
+			r.Equal(tc.expected, changes)
 		})
 	}
 }
