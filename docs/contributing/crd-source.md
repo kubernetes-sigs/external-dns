@@ -88,6 +88,7 @@ Apply this to register the CRD
 $ kubectl apply --validate=false -f docs/contributing/crd-source/crd-manifest.yaml
 customresourcedefinition.apiextensions.k8s.io "dnsendpoints.externaldns.k8s.io" created
 ```
+Or alternatively deploy the external-dns helm chart with value `deployCrd=true`.
 
 Then you can create the dns-endpoint yaml similar to [dnsendpoint-example](crd-source/dnsendpoint-example.yaml)
 

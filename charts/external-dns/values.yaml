@@ -21,6 +21,9 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# Specifies whether the custom resource definition of DNSEndpoint should be deployed
+deployCrd: false
+
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
