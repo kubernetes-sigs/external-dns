@@ -451,6 +451,12 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 
 	updatesOld := []*endpoint.Endpoint{
 		{
+			DNSName:    "www.example.com",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    endpoint.Targets{"text1"},
+			Labels:     map[string]string{},
+		},
+		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.2"},
@@ -472,6 +478,12 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		},
 	}
 	updatesNew := []*endpoint.Endpoint{
+		{
+			DNSName:    "www.example.com",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    endpoint.Targets{"text2"},
+			Labels:     map[string]string{},
+		},
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
@@ -496,6 +508,7 @@ func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*re
 	expectedCopy := make([]*recordsets.RecordSet, len(expected))
 	copy(expectedCopy, expected)
 
+	expected[1].Records = []string{"text2"}
 	expected[2].Records = []string{"10.3.3.1"}
 	expected[3].Records = []string{"10.2.1.1", "10.3.3.2"}
 
@@ -535,6 +548,12 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 	deletes := []*endpoint.Endpoint{
 		{
 			DNSName:    "www.example.com.",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    endpoint.Targets{"text1"},
+			Labels:     map[string]string{},
+		},
+		{
+			DNSName:    "www.example.com.",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.1"},
 			Labels: map[string]string{
@@ -555,7 +574,7 @@ func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
 		},
 	}
 	expected[3].Records = []string{"10.3.3.2"}
-	expected = expected[1:]
+	expected = expected[2:]
 
 	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Delete: deletes})
 	if err != nil {

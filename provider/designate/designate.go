@@ -316,28 +316,39 @@ func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 	if err != nil {
 		return nil, err
 	}
-	for zoneID := range managedZones {
-		err = p.client.ForEachRecordSet(zoneID,
-			func(recordSet *recordsets.RecordSet) error {
-				if recordSet.Type != endpoint.RecordTypeA && recordSet.Type != endpoint.RecordTypeTXT && recordSet.Type != endpoint.RecordTypeCNAME {
-					return nil
-				}
-				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
-					result = append(result, ep)
-				}
-				return nil
-			},
-		)
-		if err != nil {
-			return nil, err
+	recordSets, err := p.records(managedZones)
+	if err != nil {
+		return nil, err
+	}
+	for _, recordSet := range recordSets {
+		for _, record := range recordSet.Records {
+			ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
+			ep.Labels[designateRecordSetID] = recordSet.ID
+			ep.Labels[designateZoneID] = recordSet.ZoneID
+			ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
+			result = append(result, ep)
 		}
 	}
 
 	return result, nil
+}
+
+func (p designateProvider) records(zones map[string]string) ([]*recordsets.RecordSet, error) {
+	var records []*recordsets.RecordSet
+	for zone := range zones {
+		err := p.client.ForEachRecordSet(zone, func(recordSet *recordsets.RecordSet) error {
+			if recordSet.Type != endpoint.RecordTypeA && recordSet.Type != endpoint.RecordTypeTXT && recordSet.Type != endpoint.RecordTypeCNAME {
+				return nil
+			}
+			rs := *recordSet
+			records = append(records, &rs)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+	return records, nil
 }
 
 // temporary structure to hold recordset parameters so that we could aggregate endpoints into recordsets
@@ -391,13 +402,40 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	for _, ep := range changes.Create {
 		addEndpoint(ep, recordSets, false)
 	}
+	var knownRecordSets []*recordsets.RecordSet
+	if len(changes.Delete) > 0 || len(changes.UpdateNew) > 0 {
+		// The why... TXTRegistry.Records on purpose filters TXT records.
+		// The planner on the other hand, "creates" a TXT Endpoint if needed, for instance in the
+		// Delete case in changes.Delete.
+		// But because generated and added to the list of endpoints
+		// (and not coming from p.Records), there is no ID associated with it.
+		// upsertRecordSet depends on IDs for the recordSet and the zone, primarily because this
+		// is how designate works. So we fill missing IDs in here.
+		var zoneErr error
+		knownRecordSets, zoneErr = p.records(managedZones)
+		if zoneErr != nil {
+			return fmt.Errorf("failed to fetch knownRecordSets: %w", zoneErr)
+		}
+	}
 	for _, ep := range changes.UpdateNew {
+		err := enrichEndpoint(ep, knownRecordSets)
+		if err != nil {
+			// This error likely only happens if the corresponding entry is already gone.
+			log.Info(err)
+			continue
+		}
 		addEndpoint(ep, recordSets, false)
 	}
 	for _, ep := range changes.UpdateOld {
 		addEndpoint(ep, recordSets, true)
 	}
 	for _, ep := range changes.Delete {
+		err := enrichEndpoint(ep, knownRecordSets)
+		if err != nil {
+			// This error likely only happens if the corresponding entry is already gone.
+			log.Info(err)
+			continue
+		}
 		addEndpoint(ep, recordSets, true)
 	}
 	for _, rs := range recordSets {
@@ -406,6 +444,28 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 		}
 	}
 	return err
+}
+
+// enrichEndpoint adds designateZoneID and designateRecordSetID to an endpoint based on records
+// in designate.
+func enrichEndpoint(ep *endpoint.Endpoint, recordSets []*recordsets.RecordSet) error {
+	if _, ok := ep.Labels[designateRecordSetID]; !ok {
+		for _, r := range recordSets {
+			n := canonicalizeDomainName(ep.DNSName)
+			if r.Name == n && r.Type == ep.RecordType {
+				ep.Labels[designateZoneID] = r.ZoneID
+				ep.Labels[designateRecordSetID] = r.ID
+				return nil
+			}
+		}
+	}
+	if _, ok := ep.Labels[designateZoneID]; !ok {
+		return fmt.Errorf("unable to enrich Endpoint because of missing ZoneID: %v", *ep)
+	}
+	if _, ok := ep.Labels[designateRecordSetID]; !ok {
+		return fmt.Errorf("unable to enrich Endpoint because of missing RecordSetID: %v", *ep)
+	}
+	return nil
 }
 
 // apply recordset changes by inserting/updating/deleting recordsets
