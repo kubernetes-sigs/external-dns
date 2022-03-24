@@ -161,8 +161,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	providerSpecific := endpoint.ProviderSpecific{}
-	setIdentifier := ""
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(host.Annotations)
 
 	annotations := host.Annotations
 	ttl, err := getTTLFromAnnotations(annotations)
