@@ -27,7 +27,7 @@ import (
 	"strings"
 
 	transform "github.com/StackExchange/dnscontrol/pkg/transform"
-	ibclient "github.com/infobloxopen/infoblox-go-client"
+	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -95,7 +95,7 @@ func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedReques
 
 // BuildRequest prepares the api request. it uses BuildRequest of
 // WapiRequestBuilder and then add the _max_requests parameter
-func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams ibclient.QueryParams) (req *http.Request, err error) {
+func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibclient.IBObject, ref string, queryParams *ibclient.QueryParams) (req *http.Request, err error) {
 	req, err = mrb.WapiRequestBuilder.BuildRequest(t, obj, ref, queryParams)
 	if req.Method == "GET" {
 		query := req.URL.Query()
@@ -147,7 +147,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		return nil, err
 	}
 
-	provider := &InfobloxProvider{
+	providerCfg := &InfobloxProvider{
 		client:        client,
 		domainFilter:  infobloxConfig.DomainFilter,
 		zoneIDFilter:  infobloxConfig.ZoneIDFilter,
@@ -158,7 +158,7 @@ func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, erro
 		cacheDuration: infobloxConfig.CacheDuration,
 	}
 
-	return provider, nil
+	return providerCfg, nil
 }
 
 // Records gets the current records.
@@ -171,13 +171,10 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 	for _, zone := range zones {
 		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
 		var resA []ibclient.RecordA
-		objA := ibclient.NewRecordA(
-			ibclient.RecordA{
-				Zone: zone.Fqdn,
-				View: p.view,
-			},
-		)
-		err = p.client.GetObject(objA, "", &resA)
+		objA := ibclient.NewEmptyRecordA()
+		objA.View = p.view
+		objA.Zone = zone.Fqdn
+		err = p.client.GetObject(objA, "", nil, &resA)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -207,13 +204,10 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 
 		// Include Host records since they should be treated synonymously with A records
 		var resH []ibclient.HostRecord
-		objH := ibclient.NewHostRecord(
-			ibclient.HostRecord{
-				Zone: zone.Fqdn,
-				View: p.view,
-			},
-		)
-		err = p.client.GetObject(objH, "", &resH)
+		objH := ibclient.NewEmptyHostRecord()
+		objH.View = p.view
+		objH.Zone = zone.Fqdn
+		err = p.client.GetObject(objH, "", nil, &resH)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -232,13 +226,10 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		}
 
 		var resC []ibclient.RecordCNAME
-		objC := ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Zone: zone.Fqdn,
-				View: p.view,
-			},
-		)
-		err = p.client.GetObject(objC, "", &resC)
+		objC := ibclient.NewEmptyRecordCNAME()
+		objC.View = p.view
+		objC.Zone = zone.Fqdn
+		err = p.client.GetObject(objC, "", nil, &resC)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -254,13 +245,10 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			arpaZone, err := transform.ReverseDomainName(zone.Fqdn)
 			if err == nil {
 				var resP []ibclient.RecordPTR
-				objP := ibclient.NewRecordPTR(
-					ibclient.RecordPTR{
-						Zone: arpaZone,
-						View: p.view,
-					},
-				)
-				err = p.client.GetObject(objP, "", &resP)
+				objP := ibclient.NewEmptyRecordPTR()
+				objP.Zone = arpaZone
+				objP.View = p.view
+				err = p.client.GetObject(objP, "", nil, &resP)
 				if err != nil {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
 				}
@@ -277,7 +265,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				View: p.view,
 			},
 		)
-		err = p.client.GetObject(objT, "", &resT)
+		err = p.client.GetObject(objT, "", nil, &resT)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -377,7 +365,7 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 			View: p.view,
 		},
 	)
-	err := p.client.GetObject(obj, "", &res)
+	err := p.client.GetObject(obj, "", nil, &res)
 
 	if err != nil {
 		return nil, err
@@ -466,12 +454,12 @@ func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name strin
 	maxMask := 0
 
 	for i, zone := range zones {
-		_, net, err := net.ParseCIDR(zone.Fqdn)
+		_, rZoneNet, err := net.ParseCIDR(zone.Fqdn)
 		if err != nil {
 			logrus.WithError(err).Debugf("fqdn %s is no cidr", zone.Fqdn)
 		} else {
-			if net.Contains(ip) {
-				_, mask := net.Mask.Size()
+			if rZoneNet.Contains(ip) {
+				_, mask := rZoneNet.Mask.Size()
 				networks[mask] = &zones[i]
 				if mask > maxMask {
 					maxMask = mask
@@ -486,15 +474,12 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []ibclient.RecordA
-		obj := ibclient.NewRecordA(
-			ibclient.RecordA{
-				Name:     ep.DNSName,
-				Ipv4Addr: ep.Targets[targetIndex],
-				View:     p.view,
-			},
-		)
+		obj := ibclient.NewEmptyRecordA()
+		obj.Name = ep.DNSName
+		obj.Ipv4Addr = ep.Targets[targetIndex]
+		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil {
 				return
 			}
@@ -505,15 +490,12 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		}
 	case endpoint.RecordTypePTR:
 		var res []ibclient.RecordPTR
-		obj := ibclient.NewRecordPTR(
-			ibclient.RecordPTR{
-				PtrdName: ep.DNSName,
-				Ipv4Addr: ep.Targets[targetIndex],
-				View:     p.view,
-			},
-		)
+		obj := ibclient.NewEmptyRecordPTR()
+		obj.PtrdName = ep.DNSName
+		obj.Ipv4Addr = ep.Targets[targetIndex]
+		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil {
 				return
 			}
@@ -524,15 +506,12 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		}
 	case endpoint.RecordTypeCNAME:
 		var res []ibclient.RecordCNAME
-		obj := ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Name:      ep.DNSName,
-				Canonical: ep.Targets[0],
-				View:      p.view,
-			},
-		)
+		obj := ibclient.NewEmptyRecordCNAME()
+		obj.Name = ep.DNSName
+		obj.Canonical = ep.Targets[0]
+		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil {
 				return
 			}
@@ -556,7 +535,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 			},
 		)
 		if getObject {
-			err = p.client.GetObject(obj, "", &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil {
 				return
 			}
