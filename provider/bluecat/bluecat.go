@@ -221,14 +221,18 @@ func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	p.createRecords(created)
 
 	if p.DNSServerName != "" {
-		switch p.DNSDeployType {
-		case "full-deploy":
-			err := p.gatewayClient.ServerFullDeploy()
-			if err != nil {
-				return err
+		if p.dryRun {
+			log.Debug("Not executing deploy because this is running in dry-run mode")
+		} else {
+			switch p.DNSDeployType {
+			case "full-deploy":
+				err := p.gatewayClient.ServerFullDeploy()
+				if err != nil {
+					return err
+				}
+			case "no-deploy":
+				log.Debug("Not executing deploy because DNSDeployType is set to 'no-deploy'")
 			}
-		case "no-deploy":
-			log.Debug("Not executing deploy because DNSDeployType is set to 'no-deploy'")
 		}
 	} else {
 		log.Debug("Not executing deploy because server name was not provided")
