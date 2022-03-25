@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 // TODO: add logging
+// TODO: add timeouts
 package api
 
 import (
@@ -172,27 +173,26 @@ func GetBluecatGatewayToken(cfg BluecatConfig) (string, http.Cookie, error) {
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "could not unmarshal credentials for bluecat gateway config")
 	}
+	url := cfg.GatewayHost + "/rest_login"
 
-	c := newHTTPClient(cfg.SkipTLSVerify)
+	response, err := executeHTTPRequest(cfg.SkipTLSVerify, http.MethodPost, url, "", bytes.NewBuffer(body), http.Cookie{})
 
-	resp, err := c.Post(cfg.GatewayHost+"/rest_login", "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "error obtaining API token from bluecat gateway")
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		details, _ := ioutil.ReadAll(resp.Body)
-		return "", http.Cookie{}, errors.Errorf("got HTTP response code %v, detailed message: %v", resp.StatusCode, string(details))
-	}
-
-	res, err := ioutil.ReadAll(resp.Body)
+	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", http.Cookie{}, errors.Wrap(err, "error reading get_token response from bluecat gateway")
+		return "", http.Cookie{}, errors.Wrap(err, "failed to read login response from bluecat gateway")
 	}
 
-	resJSON := map[string]string{}
-	err = json.Unmarshal(res, &resJSON)
+	if response.StatusCode != http.StatusOK {
+		return "", http.Cookie{}, errors.Errorf("got HTTP response code %v, detailed message: %v", response.StatusCode, string(responseBody))
+	}
+
+	jsonResponse := map[string]string{}
+	err = json.Unmarshal(responseBody, &jsonResponse)
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "error unmarshaling json response (auth) from bluecat gateway")
 	}
@@ -201,31 +201,25 @@ func GetBluecatGatewayToken(cfg BluecatConfig) (string, http.Cookie, error) {
 	// We only care about the actual token string - i.e. abc123
 	// The gateway also creates a cookie as part of the response. This seems to be the actual auth mechanism, at least
 	// for now.
-	return strings.Split(resJSON["access_token"], " ")[1], *resp.Cookies()[0], nil
+	return strings.Split(jsonResponse["access_token"], " ")[1], *response.Cookies()[0], nil
 }
 
 func (c GatewayClientConfig) GetBluecatZones(zoneName string) ([]BluecatZone, error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zoneName)
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return nil, errors.Wrapf(err, "error requesting zones from gateway: %v, %v", url, zoneName)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.Errorf("received http %v requesting zones from gateway in zone %v", resp.StatusCode, zoneName)
+	if response.StatusCode != http.StatusOK {
+		return nil, errors.Errorf("received http %v requesting zones from gateway in zone %v", response.StatusCode, zoneName)
 	}
 
 	zones := []BluecatZone{}
-	json.NewDecoder(resp.Body).Decode(&zones)
+	json.NewDecoder(response.Body).Decode(&zones)
 
 	// Bluecat Gateway only returns subzones one level deeper than the provided zone
 	// so this recursion is needed to traverse subzones until none are returned
@@ -242,326 +236,252 @@ func (c GatewayClientConfig) GetBluecatZones(zoneName string) ([]BluecatZone, er
 }
 
 func (c GatewayClientConfig) GetHostRecords(zone string, records *[]BluecatHostRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
-
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error requesting host records from gateway in zone %v", zone)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v requesting host records from gateway in zone %v", resp.StatusCode, zone)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting host records from gateway in zone %v", response.StatusCode, zone)
 	}
 
-	json.NewDecoder(resp.Body).Decode(records)
+	json.NewDecoder(response.Body).Decode(records)
 	log.Debugf("Get Host Records Response: %v", records)
 
 	return nil
 }
 
 func (c GatewayClientConfig) GetCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
-
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving cname records from gateway in zone %v", zone)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v requesting cname records from gateway in zone %v", resp.StatusCode, zone)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting cname records from gateway in zone %v", response.StatusCode, zone)
 	}
 
-	json.NewDecoder(resp.Body).Decode(records)
+	json.NewDecoder(response.Body).Decode(records)
 	log.Debugf("Get CName Records Response: %v", records)
 
 	return nil
 }
 
 func (c GatewayClientConfig) GetTXTRecords(zone string, records *[]BluecatTXTRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
-
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "text_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-	log.Debugf("Request: %v", req)
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving txt records from gateway in zone %v", zone)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v requesting txt records from gateway in zone %v", resp.StatusCode, zone)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v requesting txt records from gateway in zone %v", response.StatusCode, zone)
 	}
 
-	log.Debugf("Get Txt Records response: %v", resp)
-	json.NewDecoder(resp.Body).Decode(records)
+	log.Debugf("Get Txt Records response: %v", response)
+	json.NewDecoder(response.Body).Decode(records)
 	log.Debugf("Get TXT Records Body: %v", records)
 
 	return nil
 }
 
 func (c GatewayClientConfig) GetHostRecord(name string, record *BluecatHostRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"host_records/" + name + "/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving host record %v from gateway", name)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v while retrieving host record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving host record %v from gateway", response.StatusCode, name)
 	}
 
-	json.NewDecoder(resp.Body).Decode(record)
+	json.NewDecoder(response.Body).Decode(record)
 	log.Debugf("Get Host Record Response: %v", record)
 	return nil
 }
 
 func (c GatewayClientConfig) GetCNAMERecord(name string, record *BluecatCNAMERecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"cname_records/" + name + "/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving cname record %v from gateway", name)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v while retrieving cname record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving cname record %v from gateway", response.StatusCode, name)
 	}
 
-	json.NewDecoder(resp.Body).Decode(record)
+	json.NewDecoder(response.Body).Decode(record)
 	log.Debugf("Get CName Record Response: %v", record)
 	return nil
 }
 
 func (c GatewayClientConfig) GetTXTRecord(name string, record *BluecatTXTRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"text_records/" + name + "/"
 
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodGet, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error retrieving record %v from gateway", name)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("received http %v while retrieving txt record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("received http %v while retrieving txt record %v from gateway", response.StatusCode, name)
 	}
 
-	json.NewDecoder(resp.Body).Decode(record)
+	json.NewDecoder(response.Body).Decode(record)
 	log.Debugf("Get TXT Record Response: %v", record)
 
 	return nil
 }
 
 func (c GatewayClientConfig) CreateHostRecord(zone string, req *BluecatCreateHostRecordRequest) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
-	body, _ := json.Marshal(req)
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
+	body, err := json.Marshal(req)
 	if err != nil {
-		return errors.Wrap(err, "error building http request")
+		return errors.Wrap(err, "could not marshal body for create host record")
 	}
-	hreq.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(hreq)
+
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodPost, url, c.Token, bytes.NewBuffer(body), c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error creating host record %v in gateway", req.AbsoluteName)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return errors.Errorf("received http %v while creating host record %v in gateway", resp.StatusCode, req.AbsoluteName)
+	if response.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating host record %v in gateway", response.StatusCode, req.AbsoluteName)
 	}
 
 	return nil
 }
 
 func (c GatewayClientConfig) CreateCNAMERecord(zone string, req *BluecatCreateCNAMERecordRequest) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
-	body, _ := json.Marshal(req)
-
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
+	body, err := json.Marshal(req)
 	if err != nil {
-		return errors.Wrap(err, "error building http request")
+		return errors.Wrap(err, "could not marshal body for create cname record")
 	}
 
-	hreq.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(hreq)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodPost, url, c.Token, bytes.NewBuffer(body), c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error creating cname record %v in gateway", req.AbsoluteName)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return errors.Errorf("received http %v while creating cname record %v to alias %v in gateway", resp.StatusCode, req.AbsoluteName, req.LinkedRecord)
+	if response.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating cname record %v to alias %v in gateway", response.StatusCode, req.AbsoluteName, req.LinkedRecord)
 	}
 
 	return nil
 }
 
 func (c GatewayClientConfig) CreateTXTRecord(zone string, req *BluecatCreateTXTRecordRequest) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	zonePath := expandZone(zone)
 	// Remove the trailing 'zones/'
 	zonePath = strings.TrimSuffix(zonePath, "zones/")
 
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "text_records/"
-	body, _ := json.Marshal(req)
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
+	body, err := json.Marshal(req)
 	if err != nil {
-		return errors.Wrap(err, "error building http request")
+		return errors.Wrap(err, "could not marshal body for create txt record")
 	}
 
-	hreq.Header.Add("Content-Type", "application/json")
-	resp, err := client.Do(hreq)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodPost, url, c.Token, bytes.NewBuffer(body), c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error creating txt record %v in gateway", req.AbsoluteName)
 	}
-	defer resp.Body.Close()
+	defer response.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return errors.Errorf("received http %v while creating txt record %v in gateway", resp.StatusCode, req.AbsoluteName)
+	if response.StatusCode != http.StatusCreated {
+		return errors.Errorf("received http %v while creating txt record %v in gateway", response.StatusCode, req.AbsoluteName)
 	}
 
 	return nil
 }
 
 func (c GatewayClientConfig) DeleteHostRecord(name string, zone string) (err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"host_records/" + name + "." + zone + "/"
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodDelete, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting host record %v from gateway", name)
 	}
 
-	if resp.StatusCode != http.StatusNoContent {
-		return errors.Errorf("received http %v while deleting host record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusNoContent {
+		return errors.Errorf("received http %v while deleting host record %v from gateway", response.StatusCode, name)
 	}
 
 	return nil
 }
 
 func (c GatewayClientConfig) DeleteCNAMERecord(name string, zone string) (err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"cname_records/" + name + "." + zone + "/"
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
 
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodDelete, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting cname record %v from gateway", name)
 	}
-
-	if resp.StatusCode != http.StatusNoContent {
-		return errors.Errorf("received http %v while deleting cname record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusNoContent {
+		return errors.Errorf("received http %v while deleting cname record %v from gateway", response.StatusCode, name)
 	}
 
 	return nil
 }
 
 func (c GatewayClientConfig) DeleteTXTRecord(name string, zone string) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
 		"/views/" + c.View + "/" +
 		"text_records/" + name + "." + zone + "/"
 
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodDelete, url, c.Token, nil, c.Cookie)
 	if err != nil {
 		return errors.Wrapf(err, "error deleting txt record %v from gateway", name)
 	}
-
-	if resp.StatusCode != http.StatusNoContent {
-		return errors.Errorf("received http %v while deleting txt record %v from gateway", resp.StatusCode, name)
+	if response.StatusCode != http.StatusNoContent {
+		return errors.Errorf("received http %v while deleting txt record %v from gateway", response.StatusCode, name)
 	}
 
 	return nil
@@ -569,7 +489,6 @@ func (c GatewayClientConfig) DeleteTXTRecord(name string, zone string) error {
 
 func (c GatewayClientConfig) ServerFullDeploy() error {
 	log.Infof("Executing full deploy on server %s", c.DNSServerName)
-	httpClient := newHTTPClient(c.SkipTLSVerify)
 	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/server/full_deploy/"
 	requestBody := BluecatServerFullDeployRequest{
 		ServerName: c.DNSServerName,
@@ -580,13 +499,7 @@ func (c GatewayClientConfig) ServerFullDeploy() error {
 		return errors.Wrap(err, "could not marshal body for server full deploy")
 	}
 
-	request, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	request.Header.Add("Content-Type", "application/json")
-	response, err := httpClient.Do(request)
+	response, err := executeHTTPRequest(c.SkipTLSVerify, http.MethodPost, url, c.Token, bytes.NewBuffer(body), c.Cookie)
 	if err != nil {
 		return errors.Wrap(err, "error executing full deploy")
 	}
@@ -600,15 +513,6 @@ func (c GatewayClientConfig) ServerFullDeploy() error {
 	}
 
 	return nil
-}
-
-// buildHTTPRequest builds a standard http Request and adds authentication headers required by Bluecat Gateway
-func (c GatewayClientConfig) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", "Basic "+c.Token)
-	req.AddCookie(&c.Cookie)
-	return req, err
 }
 
 // SplitProperties is a helper function to break a '|' separated string into key/value pairs
@@ -654,9 +558,8 @@ func expandZone(zone string) string {
 	return ze
 }
 
-// newHTTPClient returns an instance of http client
-func newHTTPClient(skipTLSVerify bool) *http.Client {
-	return &http.Client{
+func executeHTTPRequest(skipTLSVerify bool, method, url, token string, body io.Reader, cookie http.Cookie) (*http.Response, error) {
+	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			TLSClientConfig: &tls.Config{
@@ -664,4 +567,19 @@ func newHTTPClient(skipTLSVerify bool) *http.Client {
 			},
 		},
 	}
+	request, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	if request.Method == http.MethodPost {
+		request.Header.Add("Content-Type", "application/json")
+	}
+	request.Header.Add("Accept", "application/json")
+
+	if token != "" {
+		request.Header.Add("Authorization", "Basic "+token)
+	}
+	request.AddCookie(&cookie)
+
+	return httpClient.Do(request)
 }
