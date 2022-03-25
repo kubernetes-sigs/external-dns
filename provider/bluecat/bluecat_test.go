@@ -16,8 +16,6 @@ package bluecat
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"testing"
 
@@ -112,11 +110,6 @@ func (g mockGatewayClient) DeleteTXTRecord(name string, zone string) error {
 }
 func (g mockGatewayClient) ServerFullDeploy() error {
 	return nil
-}
-
-func (g mockGatewayClient) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
-	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/users", "http://some.com/api/v1"), nil)
-	return request, nil
 }
 
 func createMockBluecatZone(fqdn string) api.BluecatZone {
@@ -362,23 +355,6 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 		validateEndpoints(t, actual, []*endpoint.Endpoint{})
 	}
 
-}
-
-func TestBluecatNewGatewayClient(t *testing.T) {
-	testCookie := http.Cookie{Name: "testCookie", Value: "exampleCookie"}
-	testToken := "exampleToken"
-	testgateWayHost := "exampleHost"
-	testDNSConfiguration := "exampleDNSConfiguration"
-	testDNSServer := "exampleServer"
-	testView := "testView"
-	testZone := "example.com"
-	testVerify := true
-
-	client := api.NewGatewayClientConfig(testCookie, testToken, testgateWayHost, testDNSConfiguration, testView, testZone, testDNSServer, testVerify)
-
-	if client.Cookie.Value != testCookie.Value || client.Cookie.Name != testCookie.Name || client.Token != testToken || client.Host != testgateWayHost || client.DNSConfiguration != testDNSConfiguration || client.View != testView || client.RootZone != testZone || client.SkipTLSVerify != testVerify {
-		t.Fatal("Client values dont match")
-	}
 }
 
 // TODO: ensure findZone method is tested
