@@ -21,8 +21,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v58/common"
+	"github.com/oracle/oci-go-sdk/v58/dns"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
@@ -101,15 +101,16 @@ func (c *mockOCIDNSClient) PatchZoneRecords(ctx context.Context, request dns.Pat
 }
 
 // newOCIProvider creates an OCI provider with API calls mocked out.
-func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) *OCIProvider {
+func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneScope provider.ZoneTypeFilter, dryRun bool) *OCIProvider {
 	return &OCIProvider{
 		client: client,
 		cfg: OCIConfig{
 			CompartmentID: "ocid1.compartment.oc1..aaaaaaaaujjg4lf3v6uaqeml7xfk7stzvrxeweaeyolhh75exuoqxpqjb4qq",
 		},
-		domainFilter: domainFilter,
-		zoneIDFilter: zoneIDFilter,
-		dryRun:       dryRun,
+		domainFilter:    domainFilter,
+		zoneIDFilter:    zoneIDFilter,
+		zoneScopeFilter: zoneScope,
+		dryRun:          dryRun,
 	}
 }
 
@@ -186,6 +187,7 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 				tc.config,
 				endpoint.NewDomainFilter([]string{"com"}),
 				provider.NewZoneIDFilter([]string{""}),
+				"private",
 				false,
 			)
 			if err == nil {
@@ -199,15 +201,17 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 
 func TestOCIZones(t *testing.T) {
 	testCases := []struct {
-		name         string
-		domainFilter endpoint.DomainFilter
-		zoneIDFilter provider.ZoneIDFilter
-		expected     map[string]dns.ZoneSummary
+		name            string
+		domainFilter    endpoint.DomainFilter
+		zoneIDFilter    provider.ZoneIDFilter
+		zoneScopeFilter provider.ZoneTypeFilter
+		expected        map[string]dns.ZoneSummary
 	}{
 		{
-			name:         "DomainFilter_com",
-			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
-			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			name:            "DomainFilter_com",
+			domainFilter:    endpoint.NewDomainFilter([]string{"com"}),
+			zoneIDFilter:    provider.NewZoneIDFilter([]string{""}),
+			zoneScopeFilter: provider.NewZoneTypeFilter(""),
 			expected: map[string]dns.ZoneSummary{
 				"foo.com": {
 					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
@@ -242,7 +246,7 @@ func TestOCIZones(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
+			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneScopeFilter, false)
 			zones, err := provider.zones(context.Background())
 			require.NoError(t, err)
 			validateOCIZones(t, zones, tc.expected)
@@ -252,15 +256,17 @@ func TestOCIZones(t *testing.T) {
 
 func TestOCIRecords(t *testing.T) {
 	testCases := []struct {
-		name         string
-		domainFilter endpoint.DomainFilter
-		zoneIDFilter provider.ZoneIDFilter
-		expected     []*endpoint.Endpoint
+		name           string
+		domainFilter   endpoint.DomainFilter
+		zoneIDFilter   provider.ZoneIDFilter
+		zoneTypeFilter provider.ZoneTypeFilter
+		expected       []*endpoint.Endpoint
 	}{
 		{
-			name:         "unfiltered",
-			domainFilter: endpoint.NewDomainFilter([]string{""}),
-			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			name:           "unfiltered",
+			domainFilter:   endpoint.NewDomainFilter([]string{""}),
+			zoneIDFilter:   provider.NewZoneIDFilter([]string{""}),
+			zoneTypeFilter: provider.NewZoneTypeFilter(""),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeTXT, endpoint.TTL(ociRecordTTL), "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
@@ -268,18 +274,20 @@ func TestOCIRecords(t *testing.T) {
 				endpoint.NewEndpointWithTTL("foo.bar.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 			},
 		}, {
-			name:         "DomainFilter_foo.com",
-			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
-			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			name:           "DomainFilter_foo.com",
+			domainFilter:   endpoint.NewDomainFilter([]string{"foo.com"}),
+			zoneIDFilter:   provider.NewZoneIDFilter([]string{""}),
+			zoneTypeFilter: provider.NewZoneTypeFilter(""),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 				endpoint.NewEndpointWithTTL("foo.foo.com", endpoint.RecordTypeTXT, endpoint.TTL(ociRecordTTL), "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/default/my-svc"),
 				endpoint.NewEndpointWithTTL("bar.foo.com", endpoint.RecordTypeCNAME, endpoint.TTL(ociRecordTTL), "bar.com."),
 			},
 		}, {
-			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404",
-			domainFilter: endpoint.NewDomainFilter([]string{""}),
-			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"}),
+			name:           "ZoneIDFilter_ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404",
+			domainFilter:   endpoint.NewDomainFilter([]string{""}),
+			zoneIDFilter:   provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"}),
+			zoneTypeFilter: provider.NewZoneTypeFilter(""),
 			expected: []*endpoint.Endpoint{
 				endpoint.NewEndpointWithTTL("foo.bar.com", endpoint.RecordTypeA, endpoint.TTL(ociRecordTTL), "127.0.0.1"),
 			},
@@ -287,7 +295,7 @@ func TestOCIRecords(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, false)
+			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneTypeFilter, false)
 			endpoints, err := provider.Records(context.Background())
 			require.NoError(t, err)
 			require.ElementsMatch(t, tc.expected, endpoints)
@@ -828,6 +836,7 @@ func TestOCIApplyChanges(t *testing.T) {
 				client,
 				endpoint.NewDomainFilter([]string{""}),
 				provider.NewZoneIDFilter([]string{""}),
+				provider.NewZoneTypeFilter(""),
 				tc.dryRun,
 			)
 

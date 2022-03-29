@@ -124,6 +124,7 @@ var (
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 		RFC2136BatchChangeSize:      50,
 		OCPRouterName:               "default",
+		OCIZoneScopeFilter:          "",
 	}
 
 	overriddenConfig = &Config{
@@ -227,6 +228,7 @@ var (
 		DigitalOceanAPIPageSize:     100,
 		ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS},
 		RFC2136BatchChangeSize:      100,
+		OCIZoneScopeFilter:          "private",
 	}
 )
 
@@ -358,6 +360,7 @@ func TestParseFlags(t *testing.T) {
 				"--managed-record-types=CNAME",
 				"--managed-record-types=NS",
 				"--rfc2136-batch-change-size=100",
+				"--oci-zone-scope-filter=private",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -466,6 +469,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_DIGITALOCEAN_API_PAGE_SIZE":      "100",
 				"EXTERNAL_DNS_MANAGED_RECORD_TYPES":            "A\nCNAME\nNS",
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
+				"EXTERNAL_DNS_OCI_ZONE_SCOPE_FILTER":           "private",
 			},
 			expected: overriddenConfig,
 		},

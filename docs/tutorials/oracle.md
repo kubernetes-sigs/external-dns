@@ -99,6 +99,7 @@ spec:
         - --source=ingress
         - --provider=oci
         - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --oci-zone-scope-filter=private
         - --txt-owner-id=my-identifier
         volumeMounts:
           - name: config
@@ -108,6 +109,11 @@ spec:
         secret:
           secretName: external-dns-config
 ```
+## Arguments
+
+### oci-zone-scope-filter
+
+`oci-zone-scope-filter` allows filtering for private and public zones
 
 ## Verify ExternalDNS works (Service example)
 
