@@ -36,7 +36,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          printf '${{ steps.changelog_reader.outputs.changes }}' > charts/external-dns/_release-notes.md
+          cat <<"EOF" > charts/external-dns/_release-notes.md
+          ${{ steps.changelog_reader.outputs.changes }}
+          EOF
 
       - name: Configure Git
         run: |
