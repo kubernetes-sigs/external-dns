@@ -36,7 +36,7 @@ Providers
 =========
 
 - [x] AWS (Route53)
-- [ ] Azure
+- [x] Azure
 - [ ] Cloudflare
 - [x] DigitalOcean
 - [x] DNSimple
@@ -57,6 +57,10 @@ When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the 
 ### AWS Provider
 The AWS Provider overrides the value to 300s when the TTL is 0.
 This value is a constant in the provider code.
+
+## Azure
+TTL value should be between 1 and 2,147,483,647 seconds.
+By default it will be 300s.
 
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
@@ -82,5 +86,5 @@ The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 6
 ### Vultr Provider
 The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.
 
-### UltraDNS 
+### UltraDNS
 The UltraDNS provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.
