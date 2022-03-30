@@ -15,10 +15,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Run Artifact Hub lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -Lo ah_linux_amd64.tar.gz https://github.com/artifacthub/hub/releases/download/v1.6.0/ah_1.6.0_linux_amd64.tar.gz
+          tar -xzvf ah_linux_amd64.tar.gz ah
+          ./ah lint --kind helm || exit 1
+          rm -f ./ah ./ah_linux_amd64.tar.gz
+
       - name: Set up Helm
         uses: azure/setup-helm@v1
         with:
-          version: v3.6.3
+          version: 3.*
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -26,7 +35,7 @@ jobs:
           python-version: 3.7
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.1.0
+        uses: helm/chart-testing-action@v2.2.0
 
       - name: Run chart-testing (list-changed)
         id: list-changed
