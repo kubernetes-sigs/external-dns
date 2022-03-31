@@ -59,7 +59,7 @@ You can find service account id with following command:
 
 ```
 $ yc iam service-account get \
-  --name externaldns-example-sa \                                                                                                                              ☸ kind-kind in 16:46:14
+  --name externaldns-example-sa \
   --folder-name externaldns \
   --format json | jq '.id'
 ```
