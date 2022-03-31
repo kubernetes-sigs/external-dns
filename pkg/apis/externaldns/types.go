@@ -523,6 +523,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
 	app.Flag("transip-keyfile", "When using the TransIP provider, specify the path to the private key file (required when --provider=transip)").Default(defaultConfig.TransIPPrivateKeyFile).StringVar(&cfg.TransIPPrivateKeyFile)
 
+	// Flags related to Yandex provider
+	app.Flag("yandex-folder-id", "When using the Yandex provider, specify the folder ID (required when --provider=yandex)").Default(defaultConfig.YandexFolderID).StringVar(&cfg.YandexFolderID)
+	app.Flag("yandex-authorization-type", "When using the Yandex provider, specify the path to the authorization type iam-token, instance-service-account or iam-key-file (required when --provider=yandex)").Default(defaultConfig.YandexAuthorizationType).StringVar(&cfg.YandexAuthorizationType)
+	app.Flag("yandex-authorization-key-file", "When using the Yandex provider, specify the path to the authorization iam-key-file (required when --yandex-authorization-type=iam-key-file)").Default(defaultConfig.YandexAuthorizationKeyFile).StringVar(&cfg.YandexAuthorizationKeyFile)
+	app.Flag("yandex-authorization-oauth-token", "When using the Yandex provider, specify the path to the authorization iam-token (required when --yandex-authorization-type=iam-token)").Default(defaultConfig.YandexAuthorizationOAuthToken).StringVar(&cfg.YandexAuthorizationOAuthToken)
+
 	// Flags related to policies
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only", "create-only")
 
