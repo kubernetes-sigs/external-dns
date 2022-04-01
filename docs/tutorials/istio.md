@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: k8s.gcr.io/external-dns/external-dns:v0.10.2
         args:
         - --source=service
         - --source=ingress
@@ -98,7 +98,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: k8s.gcr.io/external-dns/external-dns:v0.10.2
         args:
         - --source=service
         - --source=ingress
@@ -110,6 +110,9 @@ spec:
         - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
         - --registry=txt
         - --txt-owner-id=my-identifier
+        env:
+        - name: AWS_REGION
+          value: your-region
 ```
 
 ### Update existing ExternalDNS Deployment
@@ -160,7 +163,7 @@ metadata:
   namespace: istio-system
 spec:
   selector:
-    istio: ingressgateway # use Istio default gateway implementation
+    istio: ingress # use Istio default gateway implementation
   servers:
   - port:
       number: 80
@@ -209,7 +212,7 @@ metadata:
   namespace: istio-system
 spec:
   selector:
-    istio: ingressgateway # use Istio default gateway implementation
+    istio: ingress # use Istio default gateway implementation
   servers:
   - port:
       number: 80
