@@ -238,6 +238,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 				log.Error("AXFR error: unexpected response received from the server")
 			} else {
 				log.Errorf("AXFR error: %v", e.Error)
+				return nil, fmt.Errorf("AXFR error: %v", e.Error)
 			}
 			continue
 		}
