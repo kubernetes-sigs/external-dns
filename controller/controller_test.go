@@ -248,6 +248,24 @@ func TestShouldRunOnce(t *testing.T) {
 	// Should not postpone the reconciliation further than firstChangeTime + MinInterval
 	now = now.Add(ctrl.MinEventSyncInterval)
 	assert.True(t, ctrl.ShouldRunOnce(now))
+
+	// now set DebounceEventRuns to true
+	ctrl.DebounceEventRuns = true
+
+	// when a change happens in ingresses or services
+	ctrl.ScheduleRunOnce(now)
+
+	// Then when another change happens a second later
+	now = now.Add(time.Second)
+	ctrl.ScheduleRunOnce(now)
+
+	// ShouldRunOnce should return False, as we debounce changes
+	assert.False(t, ctrl.ShouldRunOnce(now))
+	assert.False(t, ctrl.ShouldRunOnce(now.Add(100*time.Microsecond)))
+
+	// But after MinInterval from the first event, it's OK to reconcile
+	now = now.Add(4*time.Second + 100*time.Millisecond)
+	assert.True(t, ctrl.ShouldRunOnce(now))
 }
 
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {

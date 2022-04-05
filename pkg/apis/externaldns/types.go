@@ -64,6 +64,7 @@ type Config struct {
 	PublishInternal                   bool
 	PublishHostIP                     bool
 	AlwaysPublishNotReadyAddresses    bool
+	EventSources                      []string
 	ConnectorSourceServer             string
 	Provider                          string
 	GoogleProject                     string
@@ -145,6 +146,8 @@ type Config struct {
 	TXTSuffix                         string
 	Interval                          time.Duration
 	MinEventSyncInterval              time.Duration
+	RequeueAfterErrorInterval         time.Duration
+	DebounceEventRuns                 bool
 	Once                              bool
 	DryRun                            bool
 	UpdateEvents                      bool
@@ -218,6 +221,7 @@ var defaultConfig = &Config{
 	Compatibility:               "",
 	PublishInternal:             false,
 	PublishHostIP:               false,
+	EventSources:                []string{"services"},
 	ConnectorSourceServer:       "localhost:8080",
 	Provider:                    "",
 	GoogleProject:               "",
@@ -287,6 +291,8 @@ var defaultConfig = &Config{
 	TXTCacheInterval:            0,
 	TXTWildcardReplacement:      "",
 	MinEventSyncInterval:        5 * time.Second,
+	RequeueAfterErrorInterval:   0,
+	DebounceEventRuns:           false,
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -412,6 +418,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("publish-internal-services", "Allow external-dns to publish DNS records for ClusterIP services (optional)").BoolVar(&cfg.PublishInternal)
 	app.Flag("publish-host-ip", "Allow external-dns to publish host-ip for headless services (optional)").BoolVar(&cfg.PublishHostIP)
 	app.Flag("always-publish-not-ready-addresses", "Always publish also not ready addresses for headless services (optional)").BoolVar(&cfg.AlwaysPublishNotReadyAddresses)
+	app.Flag("event-sources", "The event sources to follow when using --events with services (default services, options: services, endpoints, nodes, pods)").StringsVar(&cfg.EventSources)
 	app.Flag("connector-source-server", "The server to connect for connector source, valid only when using connector source").Default(defaultConfig.ConnectorSourceServer).StringVar(&cfg.ConnectorSourceServer)
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
@@ -554,6 +561,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("min-event-sync-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)").Default(defaultConfig.MinEventSyncInterval.String()).DurationVar(&cfg.MinEventSyncInterval)
+	app.Flag("requeue-after-error-interval", "The minimum interval between retries after an error is encountered while syncing (default: 0 (disabled))").Default(defaultConfig.RequeueAfterErrorInterval.String()).DurationVar(&cfg.RequeueAfterErrorInterval)
+	app.Flag("debounce-events", "When enabled, makes events triggered be guaranteed to run within min-event-sync-interval, when disabled, events shift the next run forward by min-event-sync-interval (default: disabled)").BoolVar(&cfg.DebounceEventRuns)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
 	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)

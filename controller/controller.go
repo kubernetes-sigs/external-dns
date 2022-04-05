@@ -157,6 +157,10 @@ type Controller struct {
 	ManagedRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
+	// DebounceEventRuns if event runs should always trigger once scheduled, or pushed forward when a new event occurs
+	DebounceEventRuns bool
+	// RequeueErrorInterval is how long to wait to retry after a sync error occurs
+	RequeueAfterErrorInterval time.Duration
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -264,14 +268,25 @@ func filterARecords(endpoints []*endpoint.Endpoint) []string {
 	return aRecords
 }
 
-// ScheduleRunOnce makes sure execution happens at most once per interval.
 func (c *Controller) ScheduleRunOnce(now time.Time) {
-	c.nextRunAtMux.Lock()
-	defer c.nextRunAtMux.Unlock()
 	// schedule only if a reconciliation is not already planned
 	// to happen in the following c.MinEventSyncInterval
 	if !c.nextRunAt.Before(now.Add(c.MinEventSyncInterval)) {
-		c.nextRunAt = now.Add(c.MinEventSyncInterval)
+		c.scheduleRunAt(now.Add(c.MinEventSyncInterval))
+	}
+}
+
+// ScheduleRunAt makes sure execution happens at most once per interval.
+func (c *Controller) scheduleRunAt(nextRun time.Time) {
+	c.nextRunAtMux.Lock()
+	defer c.nextRunAtMux.Unlock()
+	if c.DebounceEventRuns {
+		// if we're debouncing event runs, reschedule the run only if it happens after the currently planned run
+		if c.nextRunAt.After(nextRun) {
+			c.nextRunAt = nextRun
+		}
+	} else {
+		c.nextRunAt = nextRun
 	}
 }
 
@@ -293,6 +308,9 @@ func (c *Controller) Run(ctx context.Context) {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
 				log.Error(err)
+				if c.RequeueAfterErrorInterval > 0 {
+					c.scheduleRunAt(time.Now().Add(c.RequeueAfterErrorInterval))
+				}
 			}
 		}
 		select {

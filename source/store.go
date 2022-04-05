@@ -62,6 +62,7 @@ type Config struct {
 	CRDSourceKind                  string
 	KubeConfig                     string
 	APIServerURL                   string
+	EventSources                   []string
 	ServiceTypeFilter              []string
 	CFAPIEndpoint                  string
 	CFUsername                     string
@@ -214,7 +215,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
+		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.EventSources, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {

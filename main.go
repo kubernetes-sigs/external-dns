@@ -127,6 +127,7 @@ func main() {
 		CRDSourceKind:                  cfg.CRDSourceKind,
 		KubeConfig:                     cfg.KubeConfig,
 		APIServerURL:                   cfg.APIServerURL,
+		EventSources:                   cfg.EventSources,
 		ServiceTypeFilter:              cfg.ServiceTypeFilter,
 		CFAPIEndpoint:                  cfg.CFAPIEndpoint,
 		CFUsername:                     cfg.CFUsername,
@@ -369,13 +370,15 @@ func main() {
 	}
 
 	ctrl := controller.Controller{
-		Source:               endpointsSource,
-		Registry:             r,
-		Policy:               policy,
-		Interval:             cfg.Interval,
-		DomainFilter:         domainFilter,
-		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
-		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		Source:                    endpointsSource,
+		Registry:                  r,
+		Policy:                    policy,
+		Interval:                  cfg.Interval,
+		DomainFilter:              domainFilter,
+		ManagedRecordTypes:        cfg.ManagedDNSRecordTypes,
+		MinEventSyncInterval:      cfg.MinEventSyncInterval,
+		DebounceEventRuns:         cfg.DebounceEventRuns,
+		RequeueAfterErrorInterval: cfg.RequeueAfterErrorInterval,
 	}
 
 	if cfg.Once {

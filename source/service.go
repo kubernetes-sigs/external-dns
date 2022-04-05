@@ -57,6 +57,7 @@ type serviceSource struct {
 	publishInternal                bool
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
+	eventSources                   []string
 	serviceInformer                coreinformers.ServiceInformer
 	endpointsInformer              coreinformers.EndpointsInformer
 	podInformer                    coreinformers.PodInformer
@@ -66,7 +67,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, eventSources []string, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -131,6 +132,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		publishInternal:                publishInternal,
 		publishHostIP:                  publishHostIP,
 		alwaysPublishNotReadyAddresses: alwaysPublishNotReadyAddresses,
+		eventSources:                   eventSources,
 		serviceInformer:                serviceInformer,
 		endpointsInformer:              endpointsInformer,
 		podInformer:                    podInformer,
@@ -668,5 +670,18 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
-	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	for _, eventObject := range sc.eventSources {
+		switch eventObject {
+		case "services":
+			sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		case "endpoints":
+			sc.endpointsInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		case "nodes":
+			sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+		case "pods":
+			if sc.publishHostIP {
+				sc.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+			}
+		}
+	}
 }
