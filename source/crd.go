@@ -162,6 +162,10 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				ep.Labels = endpoint.NewLabels()
 			}
 
+			providerSpecific, setIdentifier := getProviderSpecificAnnotations(dnsEndpoint.GetAnnotations())
+			ep.ProviderSpecific = providerSpecific
+			ep.SetIdentifier = setIdentifier
+
 			crdEndpoints = append(crdEndpoints, ep)
 		}
 
