@@ -3,7 +3,7 @@ name: Release Docs
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
 jobs:
   release_docs:
