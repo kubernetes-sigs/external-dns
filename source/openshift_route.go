@@ -27,6 +27,7 @@ import (
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
@@ -180,7 +181,8 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
-		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
+		targetsFromRoute, _ := ors.getTargetsFromRouteStatus(ocpRoute.Status)
+		targets = targetsFromRoute
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
@@ -238,14 +240,15 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	}
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
+	targetsFromRoute, host := ors.getTargetsFromRouteStatus(ocpRoute.Status)
 
 	if len(targets) == 0 {
-		targets = ors.targetsFromOcpRouteStatus(ocpRoute.Status)
+		targets = targetsFromRoute
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
-	if host := ocpRoute.Spec.Host; host != "" {
+	if host != "" {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
@@ -259,18 +262,35 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	return endpoints
 }
 
-func (ors *ocpRouteSource) targetsFromOcpRouteStatus(status routev1.RouteStatus) endpoint.Targets {
-	var targets endpoint.Targets
+// getTargetsFromRouteStatus returns the router's canonical hostname and host
+// either for the given router if it admitted the route
+// or for the first (in the status list) router that admitted the route.
+func (ors *ocpRouteSource) getTargetsFromRouteStatus(status routev1.RouteStatus) (endpoint.Targets, string) {
 	for _, ing := range status.Ingress {
-		if len(ors.ocpRouterName) != 0 {
-			if ing.RouterName == ors.ocpRouterName {
-				targets = append(targets, ing.RouterCanonicalHostname)
-				return targets
-			}
-		} else if ing.RouterCanonicalHostname != "" {
-			targets = append(targets, ing.RouterCanonicalHostname)
-			return targets
+		// if this Ingress didn't admit the route or it doesn't have the canonical hostname, then ignore it
+		if ingressConditionStatus(&ing, routev1.RouteAdmitted) != corev1.ConditionTrue || ing.RouterCanonicalHostname == "" {
+			continue
+		}
+
+		// if the router name is specified for the Route source and it matches the route's ingress name, then return it
+		if ors.ocpRouterName != "" && ors.ocpRouterName == ing.RouterName {
+			return endpoint.Targets{ing.RouterCanonicalHostname}, ing.Host
+		}
+
+		// if the router name is not specified in the Route source then return the first ingress
+		if ors.ocpRouterName == "" {
+			return endpoint.Targets{ing.RouterCanonicalHostname}, ing.Host
 		}
 	}
-	return targets
+	return endpoint.Targets{}, ""
+}
+
+func ingressConditionStatus(ingress *routev1.RouteIngress, t routev1.RouteIngressConditionType) corev1.ConditionStatus {
+	for _, condition := range ingress.Conditions {
+		if t != condition.Type {
+			continue
+		}
+		return condition.Status
+	}
+	return corev1.ConditionUnknown
 }
