@@ -150,8 +150,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Filter targets
+	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
+
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
+	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
