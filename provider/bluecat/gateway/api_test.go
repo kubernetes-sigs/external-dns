@@ -14,7 +14,11 @@ limitations under the License.
 package api
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -88,6 +92,136 @@ func TestBluecatSplitProperties(t *testing.T) {
 			diff := cmp.Diff(tc.want, got)
 			if diff != "" {
 				t.Fatalf(diff)
+			}
+		})
+	}
+}
+
+func TestCreateTXTRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		req := BluecatCreateTXTRecordRequest{}
+		requestBodyBytes, _ := ioutil.ReadAll(r.Body)
+		err := json.Unmarshal(requestBodyBytes, &req)
+		if err != nil {
+			t.Fatalf("failed to unmarshal body for server full deploy")
+		}
+		if req.AbsoluteName == "alreadyexists.test.com" {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+		}
+	}))
+	defer server.Close()
+
+	tests := map[string]struct {
+		config      GatewayClientConfig
+		zone        string
+		record      BluecatCreateTXTRecordRequest
+		expectError bool
+	}{
+		"simple-success": {GatewayClientConfig{Host: server.URL}, "test.com", BluecatCreateTXTRecordRequest{AbsoluteName: "my.test.com", Text: "here is my text"}, false},
+		"simple-failure": {GatewayClientConfig{Host: server.URL}, "test.com", BluecatCreateTXTRecordRequest{AbsoluteName: "alreadyexists.test.com", Text: "here is my text"}, true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := tc.config.CreateTXTRecord(tc.zone, &tc.record)
+			if got != nil && !tc.expectError {
+				t.Fatalf("expected error %v, received error %v", tc.expectError, got)
+			}
+		})
+	}
+}
+
+func TestGetTXTRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.RequestURI, "doesnotexist") {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer server.Close()
+
+	tests := map[string]struct {
+		config      GatewayClientConfig
+		name        string
+		expectError bool
+	}{
+		"simple-success": {GatewayClientConfig{Host: server.URL}, "mytxtrecord", false},
+		"simple-failure": {GatewayClientConfig{Host: server.URL}, "doesnotexist", true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			record := BluecatTXTRecord{}
+			got := tc.config.GetTXTRecord(tc.name, &record)
+			if got != nil && !tc.expectError {
+				t.Fatalf("expected error %v, received error %v", tc.expectError, got)
+			}
+		})
+	}
+}
+
+func TestDeleteTXTRecord(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.RequestURI, "doesnotexist") {
+			w.WriteHeader(http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusNoContent)
+		}
+	}))
+	defer server.Close()
+
+	tests := map[string]struct {
+		config      GatewayClientConfig
+		name        string
+		zone        string
+		expectError bool
+	}{
+		"simple-success": {GatewayClientConfig{Host: server.URL}, "todelete", "test.com", false},
+		"simple-failure": {GatewayClientConfig{Host: server.URL}, "doesnotexist", "test.com", true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := tc.config.DeleteTXTRecord(tc.name, tc.zone)
+			if got != nil && !tc.expectError {
+				t.Fatalf("expected error %v, received error %v", tc.expectError, got)
+			}
+		})
+	}
+}
+
+func TestServerFullDeploy(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		req := BluecatServerFullDeployRequest{}
+		requestBodyBytes, _ := ioutil.ReadAll(r.Body)
+		err := json.Unmarshal(requestBodyBytes, &req)
+		if err != nil {
+			t.Fatalf("failed to unmarshal body for server full deploy")
+		}
+		if req.ServerName == "serverdoesnotexist" {
+			w.WriteHeader(http.StatusNotFound)
+		} else {
+			w.WriteHeader(http.StatusCreated)
+		}
+	}))
+	defer server.Close()
+
+	tests := map[string]struct {
+		config      GatewayClientConfig
+		expectError bool
+	}{
+		"simple-success": {GatewayClientConfig{Host: server.URL, DNSServerName: "myserver"}, false},
+		"simple-failure": {GatewayClientConfig{Host: server.URL, DNSServerName: "serverdoesnotexist"}, true},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			got := tc.config.ServerFullDeploy()
+			if got != nil && !tc.expectError {
+				t.Fatalf("expected error %v, received error %v", tc.expectError, got)
 			}
 		})
 	}
