@@ -23,7 +23,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
-ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -32,7 +32,6 @@ ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchroni
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
-* [Hetzner](https://hetzner.com/)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
@@ -89,7 +88,6 @@ The following table clarifies the current status of the providers according to t
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
-| Hetzner | Alpha | @21h |
 | DNSimple | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
 | Dyn | Alpha | |
@@ -147,7 +145,6 @@ The following tutorials are provided:
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
-* [Hetzner](docs/tutorials/hetzner.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
@@ -178,6 +175,7 @@ The following tutorials are provided:
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
 * [SafeDNS](docs/tutorials/safedns.md)
+* [Nodes as source](docs/tutorials/nodes.md)
 
 ### Running Locally
 
