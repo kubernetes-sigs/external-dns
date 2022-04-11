@@ -110,7 +110,7 @@ The following table clarifies the current status of the providers according to t
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
 | SafeDNS | Alpha | @assureddt |
-| IBMCloud | Alpha | |
+| IBMCloud | Alpha | @hughhuangzh |
 
 ## Kubernetes version compatibility
 
