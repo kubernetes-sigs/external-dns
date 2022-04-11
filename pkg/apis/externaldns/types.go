@@ -87,6 +87,7 @@ type Config struct {
 	AWSAPIRetries                     int
 	AWSPreferCNAME                    bool
 	AWSZoneCacheDuration              time.Duration
+	AWSSDServiceCleanup               bool
 	AzureConfigFile                   string
 	AzureResourceGroup                string
 	AzureSubscriptionID               string
@@ -96,6 +97,8 @@ type Config struct {
 	BluecatDNSView                    string
 	BluecatGatewayHost                string
 	BluecatRootZone                   string
+	BluecatDNSServerName              string
+	BluecatDNSDeployType              string
 	BluecatSkipTLSVerify              bool
 	CloudflareProxied                 bool
 	CloudflareZonesPerPage            int
@@ -226,10 +229,12 @@ var defaultConfig = &Config{
 	AWSAPIRetries:               3,
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
+	AWSSDServiceCleanup:         false,
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
 	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
+	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
@@ -396,7 +401,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("default-targets", "Set globally default IP address that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "hetzner", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
@@ -418,6 +423,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
+	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure-private-dns)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
@@ -430,6 +436,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("bluecat-gateway-host", "When using the Bluecat provider, specify the Bluecat Gateway Host (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatGatewayHost)
 	app.Flag("bluecat-root-zone", "When using the Bluecat provider, specify the Bluecat root zone (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatRootZone)
 	app.Flag("bluecat-skip-tls-verify", "When using the Bluecat provider, specify to skip TLS verification (optional when --provider=bluecat) (default: false)").BoolVar(&cfg.BluecatSkipTLSVerify)
+	app.Flag("bluecat-dns-server-name", "When using the Bluecat provider, specify the Bluecat DNS Server to initiate deploys against. This is only used if --bluecat-dns-deploy-type is not 'no-deploy' (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatDNSServerName)
+	app.Flag("bluecat-dns-deploy-type", "When using the Bluecat provider, specify the type of DNS deployment to initiate after records are updated. Valid options are 'full-deploy' and 'no-deploy'. Deploy will only execute if --bluecat-dns-server-name is set (optional when --provider=bluecat)").Default(defaultConfig.BluecatDNSDeployType).StringVar(&cfg.BluecatDNSDeployType)
 
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-zones-per-page", "When using the Cloudflare provider, specify how many zones per page listed, max. possible 50 (default: 50)").Default(strconv.Itoa(defaultConfig.CloudflareZonesPerPage)).IntVar(&cfg.CloudflareZonesPerPage)

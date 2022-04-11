@@ -2,7 +2,7 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.7.1
+version: 1.8.0
 appVersion: 0.10.2
 keywords:
   - kubernetes
@@ -18,8 +18,6 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: added
-      description: "Allow custom ClusterRole rules to be specified for sources without defaults."
+      description: "Add annotations to Deployment."
     - kind: changed
-      description: "Update ExternalDNS version to v0.10.2."
-    - kind: changed
-      description: "Set ClusterRole rules based more enabled sources."
+      description: "Fix RBAC for istio-virtualservice source when istio-gateway isn't also added."

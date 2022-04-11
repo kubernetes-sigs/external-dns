@@ -7,8 +7,9 @@ Install the BlueCat Gateway product and deploy the [community gateway workflows]
 
 ## Configuration Options
 
-There are two ways to pass configuration options to the Bluecat Provider JSON configuration file and command line flags. The JSON configuration file option
-is deprecated and will eventually be removed.
+There are two ways to pass configuration options to the Bluecat Provider JSON configuration file and command line flags. Currently if a valid configuration file is used all
+BlueCat provider configurations will be taken from the configuration file. If a configuraiton file is not provided or cannot be read then all BlueCat provider configurations will
+be taken from the command line flags. In the future an enhancement will be made to merge configuration options from the configuration file and command line flags if both are provided.
 
 BlueCat provider supports getting the proxy URL from the environment variables. The format is the one specified by golang's [http.ProxyFromEnvironment](https://pkg.go.dev/net/http#ProxyFromEnvironment).
 
@@ -71,7 +72,7 @@ kubectl apply -f ~/bluecat.yml -n bluecat-example
 ```
 
 
-### Using JSON Configuration file (DEPRECATED)
+### Using JSON Configuration File
 The options for configuring the Bluecat Provider are available through the JSON file provided to External-DNS via the flag `--bluecat-config-file`.
 
 | Key               | Required           |
@@ -82,6 +83,8 @@ The options for configuring the Bluecat Provider are available through the JSON 
 | dnsConfiguration  | Yes                |
 | dnsView           | Yes                |
 | rootZone          | Yes                |
+| dnsServerName     | No                 |
+| dnsDeployType     | No                 |
 | skipTLSVerify     | No (default false) |
 
 #### Deploy
