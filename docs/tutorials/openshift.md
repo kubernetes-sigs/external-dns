@@ -4,46 +4,34 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 ### For OCP 4.x
 
-In OCP 4.x, if you have multiple ingress controllers then you must specify an ingress controller name or a router name(you can get it from the route's Status.Ingress.RouterName field).
-If you don't specify an ingress controller's or router name when you have multiple ingresscontrollers in your environment then the route gets populated with multiple entries of router canonical hostnames which causes external dns to create a CNAME record with multiple router canonical hostnames pointing to the route host which is a violation of RFC 1912 and is not allowed by Cloud Providers which leads to failure of record creation.
-Once you specify the ingresscontroller or router name then that will be matched by the external-dns and the router canonical hostname corresponding to this routerName(which is present in route's Status.Ingress.RouterName field) is selected and a CNAME record of this route host pointing to this router canonical hostname is created.
+In OCP 4.x, if you have multiple [OpenShift ingress controllers](https://docs.openshift.com/container-platform/4.9/networking/ingress-operator.html) then you must specify an ingress controller name (also called router name), you can get it from the route's `status.ingress[*].routerName` field.
+If you don't specify a router name when you have multiple ingress controllers in your cluster then the first router from the route's `status.ingress` will be used. Note that the router must have admitted the route in order to be selected.
+Once the router is known, ExternalDNS will use this router's canonical hostname as the target for the CNAME record.
 
-Your externaldns CR shall be created as per the following example.
-Replace names in the domain section and zone ID as per your environment.
-This is example is for AWS environment.
-
+Starting from OCP 4.10 you can use [ExternalDNS Operator](https://github.com/openshift/external-dns-operator) to manage ExternalDNS instances. Example of its custom resource for AWS provider:
 ```yaml
-
   apiVersion: externaldns.olm.openshift.io/v1alpha1
   kind: ExternalDNS
   metadata:
-    name: sample1
+    name: sample
   spec:
-    domains:
-      - filterType: Include
-        matchType: Exact
-        names: apps.miheer.externaldns
     provider:
       type: AWS
     source:
-      hostnameAnnotation: Allow
       openshiftRouteOptions:
         routerName: default
       type: OpenShiftRoute
     zones:
       - Z05387772BD5723IZFRX3
-
 ```
 
-This will create an externaldns pod with the following container args under spec in the external-dns namespace where `- --source=openshift-route` and `- --openshift-router-name=default` is added by the external-dns-operator.
-
+This will create an ExternalDNS POD with the following container args in `external-dns` namespace:
 ```
 spec:
   containers:
   - args:
-    - --domain-filter=apps.misalunk.externaldns
     - --metrics-address=127.0.0.1:7979
-    - --txt-owner-id=external-dns-sample1
+    - --txt-owner-id=external-dns-sample
     - --provider=aws
     - --source=openshift-route
     - --policy=sync
@@ -52,7 +40,6 @@ spec:
     - --zone-id-filter=Z05387772BD5723IZFRX3
     - --openshift-router-name=default
     - --txt-prefix=external-dns-
-
 ```
 
 ### For OCP 3.11 environment
