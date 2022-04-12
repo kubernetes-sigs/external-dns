@@ -15,17 +15,16 @@ limitations under the License.
 */
 
 // TODO: Ensure we have proper error handling/logging for API calls to Bluecat. getBluecatGatewayToken has a good example of this
+// TODO: Remove naked returns
+// TODO: Remove studdering
+// TODO: Make API calls more consistent (eg error handling on HTTP response codes)
+// TODO: zone-id-filter does not seem to work with our provider
 
 package bluecat
 
 import (
-	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -37,19 +36,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	api "sigs.k8s.io/external-dns/provider/bluecat/gateway"
 )
-
-type bluecatConfig struct {
-	GatewayHost      string `json:"gatewayHost"`
-	GatewayUsername  string `json:"gatewayUsername,omitempty"`
-	GatewayPassword  string `json:"gatewayPassword,omitempty"`
-	DNSConfiguration string `json:"dnsConfiguration"`
-	DNSServerName    string `json:"dnsServerName"`
-	DNSDeployType    string `json:"dnsDeployType"`
-	View             string `json:"dnsView"`
-	RootZone         string `json:"rootZone"`
-	SkipTLSVerify    bool   `json:"skipTLSVerify"`
-}
 
 // BluecatProvider implements the DNS provider for Bluecat DNS
 type BluecatProvider struct {
@@ -62,68 +50,9 @@ type BluecatProvider struct {
 	DNSServerName    string
 	DNSDeployType    string
 	View             string
-	gatewayClient    GatewayClient
-}
-
-type GatewayClient interface {
-	getBluecatZones(zoneName string) ([]BluecatZone, error)
-	getHostRecords(zone string, records *[]BluecatHostRecord) error
-	getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error
-	getHostRecord(name string, record *BluecatHostRecord) error
-	getCNAMERecord(name string, record *BluecatCNAMERecord) error
-	createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error)
-	createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error)
-	deleteHostRecord(name string, zone string) (err error)
-	deleteCNAMERecord(name string, zone string) (err error)
-	buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error)
-	getTXTRecords(zone string, records *[]BluecatTXTRecord) error
-	getTXTRecord(name string, record *BluecatTXTRecord) error
-	createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (res interface{}, err error)
-	deleteTXTRecord(name string, zone string) error
-	serverFullDeploy() error
-}
-
-// GatewayClientConfig defines new client on bluecat gateway
-type GatewayClientConfig struct {
-	Cookie           http.Cookie
-	Token            string
-	Host             string
-	DNSConfiguration string
-	View             string
-	RootZone         string
-	DNSServerName    string
-	SkipTLSVerify    bool
-}
-
-// BluecatZone defines a zone to hold records
-type BluecatZone struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Properties string `json:"properties"`
-	Type       string `json:"type"`
-}
-
-// BluecatHostRecord defines dns Host record
-type BluecatHostRecord struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Properties string `json:"properties"`
-	Type       string `json:"type"`
-}
-
-// BluecatCNAMERecord defines dns CNAME record
-type BluecatCNAMERecord struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Properties string `json:"properties"`
-	Type       string `json:"type"`
-}
-
-// BluecatTXTRecord defines dns TXT record
-type BluecatTXTRecord struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Properties string `json:"properties"`
+	gatewayClient    api.GatewayClient
+	TxtPrefix        string
+	TxtSuffix        string
 }
 
 type bluecatRecordSet struct {
@@ -131,38 +60,15 @@ type bluecatRecordSet struct {
 	res interface{}
 }
 
-type bluecatCreateHostRecordRequest struct {
-	AbsoluteName string `json:"absolute_name"`
-	IP4Address   string `json:"ip4_address"`
-	TTL          int    `json:"ttl"`
-	Properties   string `json:"properties"`
-}
-
-type bluecatCreateCNAMERecordRequest struct {
-	AbsoluteName string `json:"absolute_name"`
-	LinkedRecord string `json:"linked_record"`
-	TTL          int    `json:"ttl"`
-	Properties   string `json:"properties"`
-}
-
-type bluecatCreateTXTRecordRequest struct {
-	AbsoluteName string `json:"absolute_name"`
-	Text         string `json:"txt"`
-}
-
-type bluecatServerFullDeployRequest struct {
-	ServerName string `json:"server_name"`
-}
-
 // NewBluecatProvider creates a new Bluecat provider.
 //
 // Returns a pointer to the provider or an error if a provider could not be created.
-func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployType, dnsView, gatewayHost, rootZone string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
-	cfg := bluecatConfig{}
+func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployType, dnsView, gatewayHost, rootZone, txtPrefix, txtSuffix string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun, skipTLSVerify bool) (*BluecatProvider, error) {
+	cfg := api.BluecatConfig{}
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			cfg = bluecatConfig{
+			cfg = api.BluecatConfig{
 				GatewayHost:      gatewayHost,
 				DNSConfiguration: dnsConfiguration,
 				DNSServerName:    dnsServerName,
@@ -183,15 +89,15 @@ func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployTy
 		}
 	}
 
-	if !isValidDNSDeployType(cfg.DNSDeployType) {
+	if !api.IsValidDNSDeployType(cfg.DNSDeployType) {
 		return nil, errors.Errorf("%v is not a valid deployment type", cfg.DNSDeployType)
 	}
 
-	token, cookie, err := getBluecatGatewayToken(cfg)
+	token, cookie, err := api.GetBluecatGatewayToken(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get API token from Bluecat Gateway")
 	}
-	gatewayClient := NewGatewayClient(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone, cfg.DNSServerName, cfg.SkipTLSVerify)
+	gatewayClient := api.NewGatewayClientConfig(cookie, token, cfg.GatewayHost, cfg.DNSConfiguration, cfg.View, cfg.RootZone, cfg.DNSServerName, cfg.SkipTLSVerify)
 
 	provider := &BluecatProvider{
 		domainFilter:     domainFilter,
@@ -203,29 +109,10 @@ func NewBluecatProvider(configFile, dnsConfiguration, dnsServerName, dnsDeployTy
 		DNSDeployType:    cfg.DNSDeployType,
 		View:             cfg.View,
 		RootZone:         cfg.RootZone,
+		TxtPrefix:        txtPrefix,
+		TxtSuffix:        txtSuffix,
 	}
 	return provider, nil
-}
-
-// NewGatewayClient creates and returns a new Bluecat gateway client
-func NewGatewayClient(cookie http.Cookie, token, gatewayHost, dnsConfiguration, view, rootZone, dnsServerName string, skipTLSVerify bool) GatewayClientConfig {
-	// TODO: do not handle defaulting here
-	//
-	// Right now the Bluecat gateway doesn't seem to have a way to get the root zone from the API. If the user
-	// doesn't provide one via the config file we'll assume it's 'com'
-	if rootZone == "" {
-		rootZone = "com"
-	}
-	return GatewayClientConfig{
-		Cookie:           cookie,
-		Token:            token,
-		Host:             gatewayHost,
-		DNSConfiguration: dnsConfiguration,
-		DNSServerName:    dnsServerName,
-		View:             view,
-		RootZone:         rootZone,
-		SkipTLSVerify:    skipTLSVerify,
-	}
 }
 
 // Records fetches Host, CNAME, and TXT records from bluecat gateway
@@ -239,8 +126,8 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 	for _, zone := range zones {
 		log.Debugf("fetching records from zone '%s'", zone)
 
-		var resT []BluecatTXTRecord
-		err = p.gatewayClient.getTXTRecords(zone, &resT)
+		var resT []api.BluecatTXTRecord
+		err = p.gatewayClient.GetTXTRecords(zone, &resT)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not fetch TXT records for zone: %v", zone)
 		}
@@ -253,14 +140,14 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 			endpoints = append(endpoints, tempEndpoint)
 		}
 
-		var resH []BluecatHostRecord
-		err = p.gatewayClient.getHostRecords(zone, &resH)
+		var resH []api.BluecatHostRecord
+		err = p.gatewayClient.GetHostRecords(zone, &resH)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not fetch host records for zone: %v", zone)
 		}
 		var ep *endpoint.Endpoint
 		for _, rec := range resH {
-			propMap := splitProperties(rec.Properties)
+			propMap := api.SplitProperties(rec.Properties)
 			ips := strings.Split(propMap["addresses"], ",")
 			for _, ip := range ips {
 				if _, ok := propMap["ttl"]; ok {
@@ -273,7 +160,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 					ep = endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeA, ip)
 				}
 				for _, txtRec := range resT {
-					if strings.Compare(rec.Name, txtRec.Name) == 0 {
+					if strings.Compare(p.TxtPrefix+rec.Name+p.TxtSuffix, txtRec.Name) == 0 {
 						ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 						if err != nil {
 							log.Debugf("External DNS Owner %s", err)
@@ -284,14 +171,14 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 			}
 		}
 
-		var resC []BluecatCNAMERecord
-		err = p.gatewayClient.getCNAMERecords(zone, &resC)
+		var resC []api.BluecatCNAMERecord
+		err = p.gatewayClient.GetCNAMERecords(zone, &resC)
 		if err != nil {
 			return nil, errors.Wrapf(err, "could not fetch CNAME records for zone: %v", zone)
 		}
 
 		for _, rec := range resC {
-			propMap := splitProperties(rec.Properties)
+			propMap := api.SplitProperties(rec.Properties)
 			if _, ok := propMap["ttl"]; ok {
 				ttl, err := strconv.Atoi(propMap["ttl"])
 				if err != nil {
@@ -302,7 +189,7 @@ func (p *BluecatProvider) Records(ctx context.Context) (endpoints []*endpoint.En
 				ep = endpoint.NewEndpoint(propMap["absoluteName"], endpoint.RecordTypeCNAME, propMap["linkedRecordName"])
 			}
 			for _, txtRec := range resT {
-				if strings.Compare(rec.Name, txtRec.Name) == 0 {
+				if strings.Compare(p.TxtPrefix+rec.Name+p.TxtSuffix, txtRec.Name) == 0 {
 					ep.Labels[endpoint.OwnerLabelKey], err = extractOwnerfromTXTRecord(txtRec.Properties)
 					if err != nil {
 						log.Debugf("External DNS Owner %s", err)
@@ -334,14 +221,18 @@ func (p *BluecatProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	p.createRecords(created)
 
 	if p.DNSServerName != "" {
-		switch p.DNSDeployType {
-		case "full-deploy":
-			err := p.gatewayClient.serverFullDeploy()
-			if err != nil {
-				return err
+		if p.dryRun {
+			log.Debug("Not executing deploy because this is running in dry-run mode")
+		} else {
+			switch p.DNSDeployType {
+			case "full-deploy":
+				err := p.gatewayClient.ServerFullDeploy()
+				if err != nil {
+					return err
+				}
+			case "no-deploy":
+				log.Debug("Not executing deploy because DNSDeployType is set to 'no-deploy'")
 			}
-		case "no-deploy":
-			log.Debug("Not executing deploy because DNSDeployType is set to 'no-deploy'")
 		}
 	} else {
 		log.Debug("Not executing deploy because server name was not provided")
@@ -404,7 +295,7 @@ func (p *BluecatProvider) zones() ([]string, error) {
 	log.Debugf("retrieving Bluecat zones for configuration: %s, view: %s", p.DNSConfiguration, p.View)
 	var zones []string
 
-	zonelist, err := p.gatewayClient.getBluecatZones(p.RootZone)
+	zonelist, err := p.gatewayClient.GetBluecatZones(p.RootZone)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +310,7 @@ func (p *BluecatProvider) zones() ([]string, error) {
 			continue
 		}
 
-		zoneProps := splitProperties(zone.Properties)
+		zoneProps := api.SplitProperties(zone.Properties)
 
 		zones = append(zones, zoneProps["absoluteName"])
 	}
@@ -462,11 +353,11 @@ func (p *BluecatProvider) createRecords(created bluecatChangeMap) {
 			var response interface{}
 			switch ep.RecordType {
 			case endpoint.RecordTypeA:
-				response, err = p.gatewayClient.createHostRecord(zone, recordSet.obj.(*bluecatCreateHostRecordRequest))
+				err = p.gatewayClient.CreateHostRecord(zone, recordSet.obj.(*api.BluecatCreateHostRecordRequest))
 			case endpoint.RecordTypeCNAME:
-				response, err = p.gatewayClient.createCNAMERecord(zone, recordSet.obj.(*bluecatCreateCNAMERecordRequest))
+				err = p.gatewayClient.CreateCNAMERecord(zone, recordSet.obj.(*api.BluecatCreateCNAMERecordRequest))
 			case endpoint.RecordTypeTXT:
-				response, err = p.gatewayClient.createTXTRecord(zone, recordSet.obj.(*bluecatCreateTXTRecordRequest))
+				err = p.gatewayClient.CreateTXTRecord(zone, recordSet.obj.(*api.BluecatCreateTXTRecordRequest))
 			}
 			log.Debugf("Response from create: %v", response)
 			if err != nil {
@@ -516,16 +407,16 @@ func (p *BluecatProvider) deleteRecords(deleted bluecatChangeMap) {
 
 				switch ep.RecordType {
 				case endpoint.RecordTypeA:
-					for _, record := range *recordSet.res.(*[]BluecatHostRecord) {
-						err = p.gatewayClient.deleteHostRecord(record.Name, zone)
+					for _, record := range *recordSet.res.(*[]api.BluecatHostRecord) {
+						err = p.gatewayClient.DeleteHostRecord(record.Name, zone)
 					}
 				case endpoint.RecordTypeCNAME:
-					for _, record := range *recordSet.res.(*[]BluecatCNAMERecord) {
-						err = p.gatewayClient.deleteCNAMERecord(record.Name, zone)
+					for _, record := range *recordSet.res.(*[]api.BluecatCNAMERecord) {
+						err = p.gatewayClient.DeleteCNAMERecord(record.Name, zone)
 					}
 				case endpoint.RecordTypeTXT:
-					for _, record := range *recordSet.res.(*[]BluecatTXTRecord) {
-						err = p.gatewayClient.deleteTXTRecord(record.Name, zone)
+					for _, record := range *recordSet.res.(*[]api.BluecatTXTRecord) {
+						err = p.gatewayClient.DeleteTXTRecord(record.Name, zone)
 					}
 				}
 				if err != nil {
@@ -543,16 +434,16 @@ func (p *BluecatProvider) deleteRecords(deleted bluecatChangeMap) {
 func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (recordSet bluecatRecordSet, err error) {
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
-		var res []BluecatHostRecord
-		obj := bluecatCreateHostRecordRequest{
+		var res []api.BluecatHostRecord
+		obj := api.BluecatCreateHostRecordRequest{
 			AbsoluteName: ep.DNSName,
 			IP4Address:   ep.Targets[0],
 			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
-			var record BluecatHostRecord
-			err = p.gatewayClient.getHostRecord(ep.DNSName, &record)
+			var record api.BluecatHostRecord
+			err = p.gatewayClient.GetHostRecord(ep.DNSName, &record)
 			if err != nil {
 				return
 			}
@@ -563,16 +454,16 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 			res: &res,
 		}
 	case endpoint.RecordTypeCNAME:
-		var res []BluecatCNAMERecord
-		obj := bluecatCreateCNAMERecordRequest{
+		var res []api.BluecatCNAMERecord
+		obj := api.BluecatCreateCNAMERecordRequest{
 			AbsoluteName: ep.DNSName,
 			LinkedRecord: ep.Targets[0],
 			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
 		if getObject {
-			var record BluecatCNAMERecord
-			err = p.gatewayClient.getCNAMERecord(ep.DNSName, &record)
+			var record api.BluecatCNAMERecord
+			err = p.gatewayClient.GetCNAMERecord(ep.DNSName, &record)
 			if err != nil {
 				return
 			}
@@ -583,16 +474,16 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 			res: &res,
 		}
 	case endpoint.RecordTypeTXT:
-		var res []BluecatTXTRecord
+		var res []api.BluecatTXTRecord
 		// TODO: Allow setting TTL
 		// This is not implemented in the Bluecat Gateway
-		obj := bluecatCreateTXTRecordRequest{
+		obj := api.BluecatCreateTXTRecordRequest{
 			AbsoluteName: ep.DNSName,
 			Text:         ep.Targets[0],
 		}
 		if getObject {
-			var record BluecatTXTRecord
-			err = p.gatewayClient.getTXTRecord(ep.DNSName, &record)
+			var record api.BluecatTXTRecord
+			err = p.gatewayClient.GetTXTRecord(ep.DNSName, &record)
 			if err != nil {
 				return
 			}
@@ -606,455 +497,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 	return
 }
 
-// getBluecatGatewayToken retrieves a Bluecat Gateway API token.
-func getBluecatGatewayToken(cfg bluecatConfig) (string, http.Cookie, error) {
-	var username string
-	if cfg.GatewayUsername != "" {
-		username = cfg.GatewayUsername
-	}
-	if v, ok := os.LookupEnv("BLUECAT_USERNAME"); ok {
-		username = v
-	}
-
-	var password string
-	if cfg.GatewayPassword != "" {
-		password = cfg.GatewayPassword
-	}
-	if v, ok := os.LookupEnv("BLUECAT_PASSWORD"); ok {
-		password = v
-	}
-
-	body, err := json.Marshal(map[string]string{
-		"username": username,
-		"password": password,
-	})
-	if err != nil {
-		return "", http.Cookie{}, errors.Wrap(err, "could not unmarshal credentials for bluecat gateway config")
-	}
-
-	c := newHTTPClient(cfg.SkipTLSVerify)
-
-	resp, err := c.Post(cfg.GatewayHost+"/rest_login", "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return "", http.Cookie{}, errors.Wrap(err, "error obtaining API token from bluecat gateway")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		details, _ := ioutil.ReadAll(resp.Body)
-		return "", http.Cookie{}, errors.Errorf("got HTTP response code %v, detailed message: %v", resp.StatusCode, string(details))
-	}
-
-	res, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", http.Cookie{}, errors.Wrap(err, "error reading get_token response from bluecat gateway")
-	}
-
-	resJSON := map[string]string{}
-	err = json.Unmarshal(res, &resJSON)
-	if err != nil {
-		return "", http.Cookie{}, errors.Wrap(err, "error unmarshaling json response (auth) from bluecat gateway")
-	}
-
-	// Example response: {"access_token": "BAMAuthToken: abc123"}
-	// We only care about the actual token string - i.e. abc123
-	// The gateway also creates a cookie as part of the response. This seems to be the actual auth mechanism, at least
-	// for now.
-	return strings.Split(resJSON["access_token"], " ")[1], *resp.Cookies()[0], nil
-}
-
-func (c GatewayClientConfig) getBluecatZones(zoneName string) ([]BluecatZone, error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zoneName)
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error retrieving zone(s) from gateway: %v, %v", url, zoneName)
-	}
-
-	defer resp.Body.Close()
-
-	zones := []BluecatZone{}
-	json.NewDecoder(resp.Body).Decode(&zones)
-
-	// Bluecat Gateway only returns subzones one level deeper than the provided zone
-	// so this recursion is needed to traverse subzones until none are returned
-	for _, zone := range zones {
-		zoneProps := splitProperties(zone.Properties)
-		subZones, err := c.getBluecatZones(zoneProps["absoluteName"])
-		if err != nil {
-			return nil, errors.Wrapf(err, "error retrieving subzones from gateway: %v", zoneName)
-		}
-		zones = append(zones, subZones...)
-	}
-
-	return zones, nil
-}
-
-func (c GatewayClientConfig) getHostRecords(zone string, records *[]BluecatHostRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
-	}
-
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(records)
-	log.Debugf("Get Host Records Response: %v", records)
-
-	return nil
-}
-
-func (c GatewayClientConfig) getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
-	}
-
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(records)
-	log.Debugf("Get CName Records Response: %v", records)
-
-	return nil
-}
-
-func (c GatewayClientConfig) getTXTRecords(zone string, records *[]BluecatTXTRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "text_records/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-	log.Debugf("Request: %v", req)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", zone)
-	}
-	log.Debugf("Get Txt Records response: %v", resp)
-
-	defer resp.Body.Close()
-	json.NewDecoder(resp.Body).Decode(records)
-	log.Debugf("Get TXT Records Body: %v", records)
-
-	return nil
-}
-
-func (c GatewayClientConfig) getHostRecord(name string, record *BluecatHostRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"host_records/" + name + "/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
-	}
-
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(record)
-	log.Debugf("Get Host Record Response: %v", record)
-	return nil
-}
-
-func (c GatewayClientConfig) getCNAMERecord(name string, record *BluecatCNAMERecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"cname_records/" + name + "/"
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
-	}
-
-	defer resp.Body.Close()
-
-	json.NewDecoder(resp.Body).Decode(record)
-	log.Debugf("Get CName Record Response: %v", record)
-	return nil
-}
-
-func (c GatewayClientConfig) getTXTRecord(name string, record *BluecatTXTRecord) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"text_records/" + name + "/"
-
-	req, err := c.buildHTTPRequest("GET", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error retrieving record(s) from gateway: %v", name)
-	}
-
-	defer resp.Body.Close()
-	json.NewDecoder(resp.Body).Decode(record)
-	log.Debugf("Get TXT Record Response: %v", record)
-
-	return nil
-}
-
-func (c GatewayClientConfig) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "host_records/"
-	body, _ := json.Marshal(req)
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
-	}
-	hreq.Header.Add("Content-Type", "application/json")
-	res, err = client.Do(hreq)
-
-	return
-}
-
-func (c GatewayClientConfig) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "cname_records/"
-	body, _ := json.Marshal(req)
-
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, errors.Wrap(err, "error building http request")
-	}
-
-	hreq.Header.Add("Content-Type", "application/json")
-	res, err = client.Do(hreq)
-
-	return
-}
-
-func (c GatewayClientConfig) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (interface{}, error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	zonePath := expandZone(zone)
-	// Remove the trailing 'zones/'
-	zonePath = strings.TrimSuffix(zonePath, "zones/")
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/views/" + c.View + "/" + zonePath + "text_records/"
-	body, _ := json.Marshal(req)
-	hreq, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	hreq.Header.Add("Content-Type", "application/json")
-	res, err := client.Do(hreq)
-
-	return res, err
-}
-
-func (c GatewayClientConfig) deleteHostRecord(name string, zone string) (err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"host_records/" + name + "." + zone + "/"
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
-
-	_, err = client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
-	}
-
-	return nil
-}
-
-func (c GatewayClientConfig) deleteCNAMERecord(name string, zone string) (err error) {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"cname_records/" + name + "." + zone + "/"
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrapf(err, "error building http request: %v", name)
-	}
-
-	_, err = client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
-	}
-
-	return nil
-}
-
-func (c GatewayClientConfig) deleteTXTRecord(name string, zone string) error {
-	client := newHTTPClient(c.SkipTLSVerify)
-
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration +
-		"/views/" + c.View + "/" +
-		"text_records/" + name + "." + zone + "/"
-
-	req, err := c.buildHTTPRequest("DELETE", url, nil)
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	_, err = client.Do(req)
-	if err != nil {
-		return errors.Wrapf(err, "error deleting record(s) from gateway: %v", name)
-	}
-
-	return nil
-}
-
-func (c GatewayClientConfig) serverFullDeploy() error {
-	log.Infof("Executing full deploy on server %s", c.DNSServerName)
-	httpClient := newHTTPClient(c.SkipTLSVerify)
-	url := c.Host + "/api/v1/configurations/" + c.DNSConfiguration + "/server/full_deploy/"
-	requestBody := bluecatServerFullDeployRequest{
-		ServerName: c.DNSServerName,
-	}
-
-	body, err := json.Marshal(requestBody)
-	if err != nil {
-		return errors.Wrap(err, "could not marshal body for server full deploy")
-	}
-
-	request, err := c.buildHTTPRequest("POST", url, bytes.NewBuffer(body))
-	if err != nil {
-		return errors.Wrap(err, "error building http request")
-	}
-
-	request.Header.Add("Content-Type", "application/json")
-	response, err := httpClient.Do(request)
-	if err != nil {
-		return errors.Wrap(err, "error executing full deploy")
-	}
-
-	if response.StatusCode != http.StatusCreated {
-		responseBody, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return errors.Wrap(err, "failed to read full deploy response body")
-		}
-		return errors.Errorf("got HTTP response code %v, detailed message: %v", response.StatusCode, string(responseBody))
-	}
-
-	return nil
-}
-
-//buildHTTPRequest builds a standard http Request and adds authentication headers required by Bluecat Gateway
-func (c GatewayClientConfig) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Authorization", "Basic "+c.Token)
-	req.AddCookie(&c.Cookie)
-	return req, err
-}
-
-//splitProperties is a helper function to break a '|' separated string into key/value pairs
-// i.e. "foo=bar|baz=mop"
-func splitProperties(props string) map[string]string {
-	propMap := make(map[string]string)
-	// remove trailing | character before we split
-	props = strings.TrimSuffix(props, "|")
-
-	splits := strings.Split(props, "|")
-	for _, pair := range splits {
-		items := strings.Split(pair, "=")
-		propMap[items[0]] = items[1]
-	}
-
-	return propMap
-}
-
-// isValidDNSDeployType validates the deployment type provided by a users configuration is supported by the Bluecat Provider.
-func isValidDNSDeployType(deployType string) bool {
-	validDNSDeployTypes := []string{"no-deploy", "full-deploy"}
-	for _, t := range validDNSDeployTypes {
-		if t == deployType {
-			return true
-		}
-	}
-	return false
-}
-
-//expandZone takes an absolute domain name such as 'example.com' and returns a zone hierarchy used by Bluecat Gateway,
-//such as '/zones/com/zones/example/zones/'
-func expandZone(zone string) string {
-	ze := "zones/"
-	parts := strings.Split(zone, ".")
-	if len(parts) > 1 {
-		last := len(parts) - 1
-		for i := range parts {
-			ze = ze + parts[last-i] + "/zones/"
-		}
-	} else {
-		ze = ze + zone + "/zones/"
-	}
-	return ze
-}
-
-//extractOwnerFromTXTRecord takes a single text property string and returns the owner after parsing theowner string.
+// extractOwnerFromTXTRecord takes a single text property string and returns the owner after parsing the owner string.
 func extractOwnerfromTXTRecord(propString string) (string, error) {
 	if len(propString) == 0 {
 		return "", errors.Errorf("External-DNS Owner not found")
@@ -1065,16 +508,4 @@ func extractOwnerfromTXTRecord(propString string) (string, error) {
 		return "", errors.Errorf("External-DNS Owner not found, %s", propString)
 	}
 	return strings.Split(match[0], "=")[1], nil
-}
-
-// newHTTPClient returns an instance of http client
-func newHTTPClient(skipTLSVerify bool) *http.Client {
-	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: skipTLSVerify,
-			},
-		},
-	}
 }
