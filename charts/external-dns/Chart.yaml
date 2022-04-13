@@ -8,6 +8,8 @@ keywords:
   - kubernetes
   - external-dns
   - dns
+  - service
+  - ingress
 home: https://github.com/kubernetes-sigs/external-dns/
 icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
 sources:
