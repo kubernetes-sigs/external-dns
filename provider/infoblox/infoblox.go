@@ -174,7 +174,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objA := ibclient.NewEmptyRecordA()
 		objA.View = p.view
 		objA.Zone = zone.Fqdn
-		err = p.client.GetObject(objA, "", nil, &resA)
+		err = p.client.GetObject(objA, "", ibclient.NewQueryParams(false, nil), &resA)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -207,7 +207,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objH := ibclient.NewEmptyHostRecord()
 		objH.View = p.view
 		objH.Zone = zone.Fqdn
-		err = p.client.GetObject(objH, "", nil, &resH)
+		err = p.client.GetObject(objH, "", ibclient.NewQueryParams(false, nil), &resH)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -229,7 +229,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objC := ibclient.NewEmptyRecordCNAME()
 		objC.View = p.view
 		objC.Zone = zone.Fqdn
-		err = p.client.GetObject(objC, "", nil, &resC)
+		err = p.client.GetObject(objC, "", ibclient.NewQueryParams(false, nil), &resC)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -248,7 +248,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				objP := ibclient.NewEmptyRecordPTR()
 				objP.Zone = arpaZone
 				objP.View = p.view
-				err = p.client.GetObject(objP, "", nil, &resP)
+				err = p.client.GetObject(objP, "", ibclient.NewQueryParams(false, nil), &resP)
 				if err != nil {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
 				}
@@ -265,7 +265,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				View: p.view,
 			},
 		)
-		err = p.client.GetObject(objT, "", nil, &resT)
+		err = p.client.GetObject(objT, "", ibclient.NewQueryParams(false, nil), &resT)
 		if err != nil {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -365,7 +365,7 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 			View: p.view,
 		},
 	)
-	err := p.client.GetObject(obj, "", nil, &res)
+	err := p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
 
 	if err != nil {
 		return nil, err
@@ -479,7 +479,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
 			if err != nil {
 				return
 			}
@@ -495,7 +495,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
 			if err != nil {
 				return
 			}
@@ -511,7 +511,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
 			if err != nil {
 				return
 			}
@@ -535,7 +535,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 			},
 		)
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
 			if err != nil {
 				return
 			}
