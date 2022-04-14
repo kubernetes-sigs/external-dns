@@ -26,7 +26,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
-ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -178,6 +178,7 @@ The following tutorials are provided:
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
 * [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
+* [Nodes as source](docs/tutorials/nodes.md)
 
 ### Running Locally
 
