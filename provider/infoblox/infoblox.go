@@ -40,6 +40,11 @@ const (
 	providerSpecificInfobloxPtrRecord = "infoblox-ptr-record-exists"
 )
 
+func isNotFoundError(err error) bool {
+	_, ok := err.(*ibclient.NotFoundError)
+	return ok
+}
+
 // InfobloxConfig clarifies the method signature
 type InfobloxConfig struct {
 	DomainFilter  endpoint.DomainFilter
@@ -175,7 +180,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objA.View = p.view
 		objA.Zone = zone.Fqdn
 		err = p.client.GetObject(objA, "", ibclient.NewQueryParams(false, nil), &resA)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resA {
@@ -208,7 +213,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objH.View = p.view
 		objH.Zone = zone.Fqdn
 		err = p.client.GetObject(objH, "", ibclient.NewQueryParams(false, nil), &resH)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resH {
@@ -230,7 +235,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objC.View = p.view
 		objC.Zone = zone.Fqdn
 		err = p.client.GetObject(objC, "", ibclient.NewQueryParams(false, nil), &resC)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resC {
@@ -249,7 +254,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				objP.Zone = arpaZone
 				objP.View = p.view
 				err = p.client.GetObject(objP, "", ibclient.NewQueryParams(false, nil), &resP)
-				if err != nil {
+				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
 				}
 				for _, res := range resP {
@@ -266,7 +271,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 			},
 		)
 		err = p.client.GetObject(objT, "", ibclient.NewQueryParams(false, nil), &resT)
-		if err != nil {
+		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resT {
@@ -366,8 +371,7 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 		},
 	)
 	err := p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
-
-	if err != nil {
+	if err != nil && !isNotFoundError(err) {
 		return nil, err
 	}
 
@@ -480,7 +484,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.View = p.view
 		if getObject {
 			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
-			if err != nil {
+			if err != nil && !isNotFoundError(err) {
 				return
 			}
 		}
@@ -496,7 +500,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.View = p.view
 		if getObject {
 			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
-			if err != nil {
+			if err != nil && !isNotFoundError(err) {
 				return
 			}
 		}
@@ -512,7 +516,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.View = p.view
 		if getObject {
 			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
-			if err != nil {
+			if err != nil && !isNotFoundError(err) {
 				return
 			}
 		}
@@ -536,7 +540,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		)
 		if getObject {
 			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
-			if err != nil {
+			if err != nil && !isNotFoundError(err) {
 				return
 			}
 		}
