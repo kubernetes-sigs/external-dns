@@ -66,7 +66,7 @@ spec:
             - --registry={{ .Values.registry }}
             {{- if eq .Values.registry "txt" }}
             {{- if .Values.txtOwnerId }}
-            - --txt-owner-id={{ .Values.txtOwnerId }}
+            - --txt-owner-id={{ tpl (.Values.txtOwnerId) . }}
             {{- end }}
             {{- if .Values.txtPrefix }}
             - --txt-prefix={{ .Values.txtPrefix }}
