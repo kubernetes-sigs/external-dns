@@ -28,7 +28,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
@@ -53,6 +52,7 @@ type httpProxySource struct {
 
 // NewContourHTTPProxySource creates a new contourHTTPProxySource with the given config.
 func NewContourHTTPProxySource(
+	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	namespace string,
 	annotationFilter string,
@@ -78,8 +78,7 @@ func NewContourHTTPProxySource(
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {

@@ -32,8 +32,7 @@ The following presents two ways to implement the registry, and we are planning t
 
 This implementation idea is borrowed from [Mate](https://github.com/linki/mate/)
 
-Each record created by external-dns is accompanied by the TXT record, which internally stores the external-dns identifier. For example, if external dns with `owner-id="external-dns-1"` record to be created with dns name `foo.zone.org`, external-dns will create a TXT record with the same dns name `foo.zone.org` and injected value of `"external-dns-1"`. The transfer of ownership can be done by modifying the value of the TXT record.  If no TXT record exists for the record or the value does not match its own `owner-id`, then external-dns will simply ignore it.
-
+Each record created by external-dns is accompanied by the TXT record, which internally stores the external-dns identifier. For example, if external dns with `owner-id="external-dns-1"` record to be created with dns name `foo.zone.org`, external-dns will create a TXT record with the same dns name `<record_type>-foo.zone.org` and injected value of `"external-dns-1"`. The transfer of ownership can be done by modifying the value of the TXT record.  If no TXT record exists for the record or the value does not match its own `owner-id`, then external-dns will simply ignore it.
 
 #### Goods
 1. Easy to guarantee cross-cluster ownership safety
@@ -122,8 +121,4 @@ A single loop iteration of external-dns operation:
 1. DNS Provider should use batch operations
 2. DNS Provider should be called with CREATE operation (not UPSERT!) when the record does not yet exist!
 
-### Resources:
 
-1. Registry implementation draft: 
-
-[Flow](https://lh3.googleusercontent.com/BNUZZQ8XivYkXyYVPDgPCoZpwYv0pOyoyfBKbOnYJGsqueeB-EUXfzBZLk7xP-E_GDo7YHiTlA4XgPEs6ao_Ex0TY2SN66-yg5iRmn5Tc2EXVqs_yS9CtumhE1T4krZc4Z8_1gHOirDxCegU-Fk0K3fvg-J3UpzdKmGDG-JZwdzRyP4WyORWUQilJO9jErh-HP8AtM8p2ZjiqN9B3-VXdYuHbsiR6EHNFw43aOQAk52muDf2AgjqX2YUSbN9eO0Akt39ien3euT2HsZJlPvm5s8v2a_ZqTSW0DVcGaRhLQbZXcogSEP-ebbuGunuVbz45Ws8X6zJhZpASNQ-jknhGZEhZkSAQdwvihZpTsDdUuJx9RFDXNwA0lEaE_xediW119uJGywSNc6w8hnJZ6Xo49YQStuGbJKRAieQMvEhZXofiqCKyOUXSlsO7j9iE-rzis0JRSHWB8acA3AlcXqBj9D70AHfRHC_HfBLw9lcusy4dInmK2OCzGqXV11PoqibiZPqh-oNED31pToZQk4NB1xbOuUC_Tjf8UR_xAyhJ3yKzS09K898uCf-87Ra4iqRDCz3N35b=w2560-h1260)
