@@ -18,6 +18,7 @@ package endpoint
 
 import (
 	"fmt"
+	"net/netip"
 	"sort"
 	"strings"
 
@@ -107,7 +108,21 @@ func (t Targets) IsLess(o Targets) bool {
 
 	for i, e := range t {
 		if e != o[i] {
-			return e < o[i]
+			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
+			// This prevents behavior like `1-2-3-4.example.com` being "less" than `1.2.3.4` when doing lexicographical string comparison.
+			ipA, _ := netip.ParseAddr(e)
+			ipB, _ := netip.ParseAddr(o[i])
+
+			switch {
+			case ipA.IsValid() && ipB.IsValid():
+				return ipA.Less(ipB)
+			case ipA.IsValid() && !ipB.IsValid():
+				return true
+			case !ipA.IsValid() && ipB.IsValid():
+				return false
+			default:
+				return e < o[i]
+			}
 		}
 	}
 	return false
