@@ -409,7 +409,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 
 			msg.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
 		} else {
-			c.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+			c.TsigProvider = tsig.HMAC{r.tsigKeyName: r.tsigSecret}
 			msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
 	}
