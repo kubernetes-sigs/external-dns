@@ -42,6 +42,7 @@ type TXTRegistry struct {
 	recordsCache            []*endpoint.Endpoint
 	recordsCacheRefreshTime time.Time
 	cacheInterval           time.Duration
+	deleteCacheOnFail       bool
 
 	// optional string to use to replace the asterisk in wildcard entries - without using this,
 	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
@@ -50,13 +51,22 @@ type TXTRegistry struct {
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, cachePolicy string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
 
 	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
+	}
+
+	var deleteCacheOnFail bool
+	if cachePolicy == "skip-on-fail" {
+		deleteCacheOnFail = false
+	} else if cachePolicy == "delete-on-fail" {
+		deleteCacheOnFail = true
+	} else {
+		return nil, errors.New(fmt.Sprintf("unknown record cache policy: %s", cachePolicy))
 	}
 
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
@@ -67,6 +77,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		mapper:              mapper,
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
+		deleteCacheOnFail:   deleteCacheOnFail,
 	}, nil
 }
 
@@ -141,6 +152,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	if im.cacheInterval > 0 {
 		im.recordsCache = endpoints
 		im.recordsCacheRefreshTime = time.Now()
+		log.Debug("Update cached records.")
 	}
 
 	return endpoints, nil
@@ -216,7 +228,17 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	if im.cacheInterval > 0 {
 		ctx = context.WithValue(ctx, provider.RecordsContextKey, nil)
 	}
-	return im.provider.ApplyChanges(ctx, filteredChanges)
+
+	err := im.provider.ApplyChanges(ctx, filteredChanges)
+	if err != nil {
+		// when apply failed, delete dirty cache
+		if im.cacheInterval > 0 && im.deleteCacheOnFail {
+			im.recordsCache = nil
+			log.Debug("Delete dirty cached records on apply fail.")
+		}
+		return err
+	}
+	return nil
 }
 
 // PropertyValuesEqual compares two attribute values for equality
