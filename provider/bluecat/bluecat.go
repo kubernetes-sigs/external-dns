@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 // TODO: Ensure we have proper error handling/logging for API calls to Bluecat. getBluecatGatewayToken has a good example of this
-// TODO: Remove naked returns
 // TODO: Remove studdering
 // TODO: Make API calls more consistent (eg error handling on HTTP response codes)
 // TODO: zone-id-filter does not seem to work with our provider
@@ -431,7 +430,8 @@ func (p *BluecatProvider) deleteRecords(deleted bluecatChangeMap) {
 	}
 }
 
-func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (recordSet bluecatRecordSet, err error) {
+func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (bluecatRecordSet, error) {
+	recordSet := bluecatRecordSet{}
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []api.BluecatHostRecord
@@ -443,9 +443,9 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		}
 		if getObject {
 			var record api.BluecatHostRecord
-			err = p.gatewayClient.GetHostRecord(ep.DNSName, &record)
+			err := p.gatewayClient.GetHostRecord(ep.DNSName, &record)
 			if err != nil {
-				return
+				return bluecatRecordSet{}, err
 			}
 			res = append(res, record)
 		}
@@ -463,9 +463,9 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		}
 		if getObject {
 			var record api.BluecatCNAMERecord
-			err = p.gatewayClient.GetCNAMERecord(ep.DNSName, &record)
+			err := p.gatewayClient.GetCNAMERecord(ep.DNSName, &record)
 			if err != nil {
-				return
+				return bluecatRecordSet{}, err
 			}
 			res = append(res, record)
 		}
@@ -483,9 +483,9 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 		}
 		if getObject {
 			var record api.BluecatTXTRecord
-			err = p.gatewayClient.GetTXTRecord(ep.DNSName, &record)
+			err := p.gatewayClient.GetTXTRecord(ep.DNSName, &record)
 			if err != nil {
-				return
+				return bluecatRecordSet{}, err
 			}
 			res = append(res, record)
 		}
@@ -494,7 +494,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (reco
 			res: &res,
 		}
 	}
-	return
+	return recordSet, nil
 }
 
 // extractOwnerFromTXTRecord takes a single text property string and returns the owner after parsing the owner string.
