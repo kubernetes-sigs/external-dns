@@ -215,7 +215,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
     if etcdUserDefined {
         config.Username = etcdUser
     }
-    etcdPass, etcdPassDefined := os.LookupEnv("ETCD_USER")
+    etcdPass, etcdPassDefined := os.LookupEnv("ETCD_PASS")
     if etcdPassDefined {
         config.Password = etcdPass
     }
