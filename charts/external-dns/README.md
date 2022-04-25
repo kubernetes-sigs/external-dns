@@ -13,7 +13,7 @@ helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
 After you've installed the repo you can install the chart.
 
 ```shell
-helm upgrade --install external-dns/external-dns
+helm upgrade --install external-dns external-dns/external-dns
 ```
 
 ## Configuration
@@ -37,6 +37,7 @@ The following table lists the configurable parameters of the _ExternalDNS_ chart
 | `podLabels`                       | Labels to add to the pod.                                                                                                                                                                                                                                                                                             | `{}`                                   |
 | `podAnnotations`                  | Annotations to add to the pod.                                                                                                                                                                                                                                                                                        | `{}`                                   |
 | `podSecurityContext`              | Security context for the pod, this supports the full [PodSecurityContext](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core) API.                                                                                                                                       | _see values.yaml_                      |
+| `shareProcessNamespace`           | If `true` enable [Process Namespace Sharing](https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/)                                                                                                                        | `false`                      |
 | `securityContext`                 | Security context for the _external-dns_ container, this supports the full [SecurityContext](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) API.                                                                                                                        | _see values.yaml_                      |
 | `priorityClassName`               | Priority class name to use for the pod.                                                                                                                                                                                                                                                                               | `""`                                   |
 | `terminationGracePeriodSeconds`   | Termination grace period for the pod.                                                                                                                                                                                                                                                                                 | `null`                                 |
