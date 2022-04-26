@@ -216,7 +216,7 @@ func newMockedAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneID
 		},
 	}
 
-	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(pageIterator.getNextPage)
+	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(privatedns.PrivateZoneListResult{}, pageIterator.getNextPage)
 	mockZoneClientIterator := privatedns.NewPrivateZoneListResultIterator(mockZoneListResultPage)
 	zonesClient := mockPrivateZonesClient{
 		mockZonesClientIterator: &mockZoneClientIterator,
@@ -230,7 +230,8 @@ func newMockedAzurePrivateDNSProvider(domainFilter endpoint.DomainFilter, zoneID
 			},
 		},
 	}
-	mockRecordSetListResultPage := privatedns.NewRecordSetListResultPage(resultPageIterator.getNextPage)
+
+	mockRecordSetListResultPage := privatedns.NewRecordSetListResultPage(privatedns.RecordSetListResult{}, resultPageIterator.getNextPage)
 	mockRecordSetListIterator := privatedns.NewRecordSetListResultIterator(mockRecordSetListResultPage)
 	recordSetsClient := mockPrivateRecordSetsClient{
 		mockRecordSetListIterator: &mockRecordSetListIterator,
@@ -370,7 +371,7 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 		zlr,
 	}
 
-	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(func(ctxParam context.Context, zlrParam privatedns.PrivateZoneListResult) (privatedns.PrivateZoneListResult, error) {
+	mockZoneListResultPage := privatedns.NewPrivateZoneListResultPage(privatedns.PrivateZoneListResult{}, func(ctxParam context.Context, zlrParam privatedns.PrivateZoneListResult) (privatedns.PrivateZoneListResult, error) {
 		if len(results) > 0 {
 			result := results[0]
 			results = nil

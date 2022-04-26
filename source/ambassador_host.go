@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/informers"
@@ -64,6 +63,7 @@ type ambassadorHostSource struct {
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
 func NewAmbassadorHostSource(
+	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	namespace string) (Source, error) {
@@ -82,8 +82,7 @@ func NewAmbassadorHostSource(
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
 
 	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
 		return nil, err

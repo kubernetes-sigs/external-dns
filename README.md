@@ -23,7 +23,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
-ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -32,7 +32,6 @@ ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchroni
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
-* [Hetzner](https://hetzner.com/)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
@@ -90,7 +89,6 @@ The following table clarifies the current status of the providers according to t
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
-| Hetzner | Alpha | @21h |
 | DNSimple | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
 | Dyn | Alpha | |
@@ -116,10 +114,13 @@ The following table clarifies the current status of the providers according to t
 
 ## Kubernetes version compatibility
 
-| ExternalDNS        |      <= 0.9.x      |     >= 0.10.0      |
-| ------------------ | :----------------: | :----------------: |
-| Kubernetes <= 1.18 | :white_check_mark: |        :x:         |
-| Kubernetes >= 1.19 |        :x:         | :white_check_mark: |
+A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0. 
+
+| ExternalDNS                    |      <= 0.9.x      |     >= 0.10.0      |
+| ------------------------------ | :----------------: | :----------------: |
+| Kubernetes <= 1.18             | :white_check_mark: |        :x:         |
+| Kubernetes >= 1.19 and <= 1.21 | :white_check_mark: | :white_check_mark: |
+| Kubernetes >= 1.22             |        :x:         | :white_check_mark: |
 
 ## Running ExternalDNS:
 
@@ -132,6 +133,7 @@ The are two ways of running ExternalDNS:
 
 The following tutorials are provided:
 
+* [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * AWS
 	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
@@ -145,7 +147,6 @@ The following tutorials are provided:
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
-* [Hetzner](docs/tutorials/hetzner.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
@@ -177,6 +178,7 @@ The following tutorials are provided:
 * [Gandi](docs/tutorials/gandi.md)
 * [G-Core Labs](docs/tutorials/gcore.md)
 * [SafeDNS](docs/tutorials/safedns.md)
+* [Nodes as source](docs/tutorials/nodes.md)
 
 ### Running Locally
 

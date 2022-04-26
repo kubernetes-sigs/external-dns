@@ -223,7 +223,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 		return endpoints, err
 	}
 	for _, zone := range zones.Zones {
-		recordsets, err := p.client.GetRecordsets(zone.Zone, dns.RecordsetQueryArgs{})
+		recordsets, err := p.client.GetRecordsets(zone.Zone, dns.RecordsetQueryArgs{ShowAll: true})
 		if err != nil {
 			log.Errorf("Recordsets retrieval for zone: '%s' failed! %s", zone.Zone, err.Error())
 			continue
@@ -242,7 +242,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 				continue
 			}
 			var temp interface{} = int64(recordset.TTL)
-			var ttl endpoint.TTL = endpoint.TTL(temp.(int64))
+			var ttl = endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
 				ttl,
