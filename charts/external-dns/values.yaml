@@ -79,6 +79,8 @@ readinessProbe:
   successThreshold: 1
 
 service:
+  # Specifies whether to create Service resource or not
+  enabled: true
   port: 7979
   annotations: {}
 
