@@ -84,7 +84,7 @@ service:
 
 ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#update-strategies
 updateStrategy: {}
-#   type: Recreate
+#   type: RollingUpdate
 #   rollingUpdate:
 #     maxSurge: 25%
 #     maxUnavailable: 25%
