@@ -171,6 +171,11 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			return nil, err
 		}
 
+		if len(gwEndpoints) == 0 {
+			log.Debugf("No endpoints could be generated from gateway %s/%s", gateway.Namespace, gateway.Name)
+			continue
+		}
+
 		log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
 		sc.setResourceLabel(gateway, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
