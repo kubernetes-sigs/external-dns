@@ -82,6 +82,13 @@ service:
   port: 7979
   annotations: {}
 
+## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#update-strategies
+updateStrategy: {}
+#   type: Recreate
+#   rollingUpdate:
+#     maxSurge: 25%
+#     maxUnavailable: 25%
+
 extraVolumes: []
 
 extraVolumeMounts: []
