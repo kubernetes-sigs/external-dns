@@ -66,7 +66,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	} else if cachePolicy == "delete-on-fail" {
 		deleteCacheOnFail = true
 	} else {
-		return nil, errors.New(fmt.Sprintf("unknown record cache policy: %s", cachePolicy))
+		return nil, fmt.Errorf("unknown record cache policy: %s", cachePolicy)
 	}
 
 	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
