@@ -3,7 +3,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Azure.
 
-Make sure to use **>=0.5.7** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial.
 
 This tutorial uses [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) for all
 Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and `kubectl` commands
