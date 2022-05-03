@@ -12,4 +12,4 @@ The controller will try to create the "new format" TXT records if they are not p
 
 Later on, the old format will be dropped and only the new format will be kept (<record_type>-<endpoint_name>).
 
-Cleanup will be done by controller itself.
+On next record reconcile controller will drop `old` record format and keep creating only new format.

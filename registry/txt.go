@@ -185,20 +185,12 @@ func (im *TXTRegistry) MissingRecords() []*endpoint.Endpoint {
 
 // generateTXTRecord generates both "old" and "new" TXT records.
 // Once we decide to drop old format we need to drop toTXTName() and rename toNewTXTName
-func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	// Missing TXT records are added to the set of changes.
-	// Obviously, we don't need any other TXT record for them.
-	if r.RecordType == endpoint.RecordTypeTXT {
-		return nil
-	}
-	// old TXT record format
-	txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-	txt.ProviderSpecific = r.ProviderSpecific
+func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) *endpoint.Endpoint {
 	// new TXT record format (containing record type)
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 	txtNew.ProviderSpecific = r.ProviderSpecific
 
-	return []*endpoint.Endpoint{txt, txtNew}
+	return txtNew
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -216,7 +208,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
 
-		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
+		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r))
 
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
@@ -224,10 +216,14 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, r := range filteredChanges.Delete {
+		// drop old TXT record format
+		oldTxt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
+		oldTxt.ProviderSpecific = r.ProviderSpecific
 		// when we delete TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
 		// !!! After migration to the new TXT registry format we can drop records in old format here!!!
-		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r)...)
+		filteredChanges.Delete = append(filteredChanges.Delete, im.generateTXTRecord(r))
+		filteredChanges.Delete = append(filteredChanges.Delete, oldTxt)
 
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -238,7 +234,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r))
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -247,7 +243,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r))
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
