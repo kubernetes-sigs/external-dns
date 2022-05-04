@@ -129,6 +129,11 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
 
+		// Template configurations are a fallback to determine endpoint targets
+		if sc.fqdnTemplate != nil && endpoint.EndpointsHaveEmptyTargets(ingEndpoints) {
+			ingEndpoints = []*endpoint.Endpoint{}
+		}
+
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
 			iEndpoints, err := sc.endpointsFromTemplate(ing)
@@ -226,6 +231,24 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 	}
 }
 
+func endpointsForIngressHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+	if len(targets) == 0 {
+		epNull := &endpoint.Endpoint{
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          targets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
+		}
+		endpoints = append(endpoints, epNull)
+		return endpoints
+	}
+	return endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)
+}
+
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
@@ -249,7 +272,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForIngressHostame(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 

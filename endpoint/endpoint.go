@@ -169,6 +169,11 @@ func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 	return e
 }
 
+// EndpointsHaveEmptyTargets checks if an endpoint has no targets
+func EndpointsHaveEmptyTargets(ingEndpoints []*Endpoint) bool {
+	return len(ingEndpoints) == 1 && len(ingEndpoints[0].Targets) == 0
+}
+
 // WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
 // This can be used to pass additional data through the stages of ExternalDNS's Endpoint processing.
 // The assumption is that most of the time this will be provider specific metadata that doesn't

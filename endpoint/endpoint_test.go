@@ -76,3 +76,15 @@ func TestSameFailures(t *testing.T) {
 		}
 	}
 }
+
+func TestEndpointHasEmptyTargets(t *testing.T) {
+	e := NewEndpoint("example.org", "CNAME")
+	if !EndpointsHaveEmptyTargets([]*Endpoint{e}) {
+		t.Errorf("%#v should not have targets", e)
+	}
+
+	e2 := NewEndpoint("example.org", "CNAME", "foo.com")
+	if EndpointsHaveEmptyTargets([]*Endpoint{e2}) {
+		t.Errorf("%#v should have targets", e2)
+	}
+}

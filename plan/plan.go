@@ -146,6 +146,14 @@ func (p *Plan) Calculate() *Plan {
 
 	for _, topRow := range t.rows {
 		for _, row := range topRow {
+			// We ignore defined Endpoints with empty targets, as there seems to be
+			// intention for the DNS entry, but it is not known where to point them.
+			// This is the case when the status is missing from ingresses because a
+			// failure in the ingress controller.
+			if endpoint.EndpointsHaveEmptyTargets(row.candidates) {
+				continue
+			}
+
 			if row.current == nil { //dns name not taken
 				changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
 			}
