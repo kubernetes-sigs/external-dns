@@ -71,6 +71,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewNodeSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
@@ -353,6 +354,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 
 			// Create our object under test and get the endpoints.
 			client, err := NewNodeSource(
+				context.TODO(),
 				kubernetes,
 				tc.annotationFilter,
 				tc.fqdnTemplate,

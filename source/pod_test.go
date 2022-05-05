@@ -412,7 +412,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(kubernetes, tc.targetNamespace, tc.compatibility)
+			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)

@@ -89,6 +89,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 	suite.NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -165,6 +166,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioVirtualServiceSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -1482,6 +1484,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			}
 
 			virtualServiceSource, err := NewIstioVirtualServiceSource(
+				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ti.targetNamespace,
@@ -1557,6 +1560,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 	}
 
 	src, err := NewIstioVirtualServiceSource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",

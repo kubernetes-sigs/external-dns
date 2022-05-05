@@ -16,8 +16,6 @@ package bluecat
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 	"testing"
 
@@ -26,13 +24,14 @@ import (
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	api "sigs.k8s.io/external-dns/provider/bluecat/gateway"
 )
 
 type mockGatewayClient struct {
-	mockBluecatZones  *[]BluecatZone
-	mockBluecatHosts  *[]BluecatHostRecord
-	mockBluecatCNAMEs *[]BluecatCNAMERecord
-	mockBluecatTXTs   *[]BluecatTXTRecord
+	mockBluecatZones  *[]api.BluecatZone
+	mockBluecatHosts  *[]api.BluecatHostRecord
+	mockBluecatCNAMEs *[]api.BluecatCNAMERecord
+	mockBluecatTXTs   *[]api.BluecatTXTRecord
 }
 
 type Changes struct {
@@ -46,18 +45,18 @@ type Changes struct {
 	Delete []*endpoint.Endpoint
 }
 
-func (g mockGatewayClient) getBluecatZones(zoneName string) ([]BluecatZone, error) {
+func (g mockGatewayClient) GetBluecatZones(zoneName string) ([]api.BluecatZone, error) {
 	return *g.mockBluecatZones, nil
 }
-func (g mockGatewayClient) getHostRecords(zone string, records *[]BluecatHostRecord) error {
+func (g mockGatewayClient) GetHostRecords(zone string, records *[]api.BluecatHostRecord) error {
 	*records = *g.mockBluecatHosts
 	return nil
 }
-func (g mockGatewayClient) getCNAMERecords(zone string, records *[]BluecatCNAMERecord) error {
+func (g mockGatewayClient) GetCNAMERecords(zone string, records *[]api.BluecatCNAMERecord) error {
 	*records = *g.mockBluecatCNAMEs
 	return nil
 }
-func (g mockGatewayClient) getHostRecord(name string, record *BluecatHostRecord) error {
+func (g mockGatewayClient) GetHostRecord(name string, record *api.BluecatHostRecord) error {
 	for _, currentRecord := range *g.mockBluecatHosts {
 		if currentRecord.Name == strings.Split(name, ".")[0] {
 			*record = currentRecord
@@ -66,7 +65,7 @@ func (g mockGatewayClient) getHostRecord(name string, record *BluecatHostRecord)
 	}
 	return nil
 }
-func (g mockGatewayClient) getCNAMERecord(name string, record *BluecatCNAMERecord) error {
+func (g mockGatewayClient) GetCNAMERecord(name string, record *api.BluecatCNAMERecord) error {
 	for _, currentRecord := range *g.mockBluecatCNAMEs {
 		if currentRecord.Name == strings.Split(name, ".")[0] {
 			*record = currentRecord
@@ -75,25 +74,25 @@ func (g mockGatewayClient) getCNAMERecord(name string, record *BluecatCNAMERecor
 	}
 	return nil
 }
-func (g mockGatewayClient) createHostRecord(zone string, req *bluecatCreateHostRecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateHostRecord(zone string, req *api.BluecatCreateHostRecordRequest) (err error) {
+	return nil
 }
-func (g mockGatewayClient) createCNAMERecord(zone string, req *bluecatCreateCNAMERecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateCNAMERecord(zone string, req *api.BluecatCreateCNAMERecordRequest) (err error) {
+	return nil
 }
-func (g mockGatewayClient) deleteHostRecord(name string, zone string) (err error) {
+func (g mockGatewayClient) DeleteHostRecord(name string, zone string) (err error) {
 	*g.mockBluecatHosts = nil
 	return nil
 }
-func (g mockGatewayClient) deleteCNAMERecord(name string, zone string) (err error) {
+func (g mockGatewayClient) DeleteCNAMERecord(name string, zone string) (err error) {
 	*g.mockBluecatCNAMEs = nil
 	return nil
 }
-func (g mockGatewayClient) getTXTRecords(zone string, records *[]BluecatTXTRecord) error {
+func (g mockGatewayClient) GetTXTRecords(zone string, records *[]api.BluecatTXTRecord) error {
 	*records = *g.mockBluecatTXTs
 	return nil
 }
-func (g mockGatewayClient) getTXTRecord(name string, record *BluecatTXTRecord) error {
+func (g mockGatewayClient) GetTXTRecord(name string, record *api.BluecatTXTRecord) error {
 	for _, currentRecord := range *g.mockBluecatTXTs {
 		if currentRecord.Name == name {
 			*record = currentRecord
@@ -102,55 +101,53 @@ func (g mockGatewayClient) getTXTRecord(name string, record *BluecatTXTRecord) e
 	}
 	return nil
 }
-func (g mockGatewayClient) createTXTRecord(zone string, req *bluecatCreateTXTRecordRequest) (res interface{}, err error) {
-	return nil, nil
+func (g mockGatewayClient) CreateTXTRecord(zone string, req *api.BluecatCreateTXTRecordRequest) error {
+	return nil
 }
-func (g mockGatewayClient) deleteTXTRecord(name string, zone string) error {
+func (g mockGatewayClient) DeleteTXTRecord(name string, zone string) error {
 	*g.mockBluecatTXTs = nil
 	return nil
 }
-
-func (g mockGatewayClient) buildHTTPRequest(method, url string, body io.Reader) (*http.Request, error) {
-	request, _ := http.NewRequest("GET", fmt.Sprintf("%s/users", "http://some.com/api/v1"), nil)
-	return request, nil
+func (g mockGatewayClient) ServerFullDeploy() error {
+	return nil
 }
 
-func createMockBluecatZone(fqdn string) BluecatZone {
+func createMockBluecatZone(fqdn string) api.BluecatZone {
 	props := "absoluteName=" + fqdn
-	return BluecatZone{
+	return api.BluecatZone{
 		Properties: props,
 		Name:       fqdn,
 		ID:         3,
 	}
 }
 
-func createMockBluecatHostRecord(fqdn, target string, ttl int) BluecatHostRecord {
+func createMockBluecatHostRecord(fqdn, target string, ttl int) api.BluecatHostRecord {
 	props := "absoluteName=" + fqdn + "|addresses=" + target + "|ttl=" + fmt.Sprint(ttl) + "|"
 	nameParts := strings.Split(fqdn, ".")
-	return BluecatHostRecord{
+	return api.BluecatHostRecord{
 		Name:       nameParts[0],
 		Properties: props,
 		ID:         3,
 	}
 }
 
-func createMockBluecatCNAME(alias, target string, ttl int) BluecatCNAMERecord {
+func createMockBluecatCNAME(alias, target string, ttl int) api.BluecatCNAMERecord {
 	props := "absoluteName=" + alias + "|linkedRecordName=" + target + "|ttl=" + fmt.Sprint(ttl) + "|"
 	nameParts := strings.Split(alias, ".")
-	return BluecatCNAMERecord{
+	return api.BluecatCNAMERecord{
 		Name:       nameParts[0],
 		Properties: props,
 	}
 }
 
-func createMockBluecatTXT(fqdn, txt string) BluecatTXTRecord {
-	return BluecatTXTRecord{
+func createMockBluecatTXT(fqdn, txt string) api.BluecatTXTRecord {
+	return api.BluecatTXTRecord{
 		Name:       fqdn,
 		Properties: txt,
 	}
 }
 
-func newBluecatProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, client GatewayClient) *BluecatProvider {
+func newBluecatProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, client mockGatewayClient) *BluecatProvider {
 	return &BluecatProvider{
 		domainFilter:  domainFilter,
 		zoneIDFilter:  zoneIDFilter,
@@ -216,20 +213,20 @@ var tests = bluecatTestData{
 
 func TestBluecatRecords(t *testing.T) {
 	client := mockGatewayClient{
-		mockBluecatZones: &[]BluecatZone{
+		mockBluecatZones: &[]api.BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatTXTs: &[]BluecatTXTRecord{
+		mockBluecatTXTs: &[]api.BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
 			createMockBluecatTXT("wack.example.com", "hello"),
 			createMockBluecatTXT("sack.example.com", ""),
 		},
-		mockBluecatHosts: &[]BluecatHostRecord{
+		mockBluecatHosts: &[]api.BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
 			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
 			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+		mockBluecatCNAMEs: &[]api.BluecatCNAMERecord{
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
 	}
@@ -249,12 +246,12 @@ func TestBluecatRecords(t *testing.T) {
 
 func TestBluecatApplyChangesCreate(t *testing.T) {
 	client := mockGatewayClient{
-		mockBluecatZones: &[]BluecatZone{
+		mockBluecatZones: &[]api.BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatHosts:  &[]BluecatHostRecord{},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{},
-		mockBluecatTXTs:   &[]BluecatTXTRecord{},
+		mockBluecatHosts:  &[]api.BluecatHostRecord{},
+		mockBluecatCNAMEs: &[]api.BluecatCNAMERecord{},
+		mockBluecatTXTs:   &[]api.BluecatTXTRecord{},
 	}
 
 	provider := newBluecatProvider(
@@ -276,18 +273,18 @@ func TestBluecatApplyChangesCreate(t *testing.T) {
 }
 func TestBluecatApplyChangesDelete(t *testing.T) {
 	client := mockGatewayClient{
-		mockBluecatZones: &[]BluecatZone{
+		mockBluecatZones: &[]api.BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatHosts: &[]BluecatHostRecord{
+		mockBluecatHosts: &[]api.BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
 			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
 			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+		mockBluecatCNAMEs: &[]api.BluecatCNAMERecord{
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
-		mockBluecatTXTs: &[]BluecatTXTRecord{
+		mockBluecatTXTs: &[]api.BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
 			createMockBluecatTXT("wack.example.com", "hello"),
 			createMockBluecatTXT("sack.example.com", ""),
@@ -314,18 +311,18 @@ func TestBluecatApplyChangesDelete(t *testing.T) {
 
 func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 	client := mockGatewayClient{
-		mockBluecatZones: &[]BluecatZone{
+		mockBluecatZones: &[]api.BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatHosts: &[]BluecatHostRecord{
+		mockBluecatHosts: &[]api.BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
 			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
 			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+		mockBluecatCNAMEs: &[]api.BluecatCNAMERecord{
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
-		mockBluecatTXTs: &[]BluecatTXTRecord{
+		mockBluecatTXTs: &[]api.BluecatTXTRecord{
 			createMockBluecatTXT("kdb.example.com", "heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
 			createMockBluecatTXT("wack.example.com", "hello"),
 			createMockBluecatTXT("sack.example.com", ""),
@@ -341,9 +338,10 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 			if strings.Contains(ep.Targets.String(), "external-dns") {
 				owner, err := extractOwnerfromTXTRecord(ep.Targets.String())
 				if err != nil {
-					continue
+					t.Logf("%v", err)
+				} else {
+					t.Logf("Owner %s", owner)
 				}
-				t.Logf("Owner %s %s", owner, err)
 			}
 		}
 		err := provider.ApplyChanges(context.Background(), &plan.Changes{Delete: ti.Endpoints})
@@ -359,32 +357,6 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 
 }
 
-func TestExpandZones(t *testing.T) {
-	mockZones := []string{"example.com", "nginx.example.com", "hack.example.com"}
-	expected := []string{"zones/com/zones/example/zones/", "zones/com/zones/example/zones/nginx/zones/", "zones/com/zones/example/zones/hack/zones/"}
-	for i := range mockZones {
-		if expandZone(mockZones[i]) != expected[i] {
-			t.Fatalf("%s", expected[i])
-		}
-	}
-}
-
-func TestBluecatNewGatewayClient(t *testing.T) {
-	testCookie := http.Cookie{Name: "testCookie", Value: "exampleCookie"}
-	testToken := "exampleToken"
-	testgateWayHost := "exampleHost"
-	testDNSConfiguration := "exampleDNSConfiguration"
-	testView := "testView"
-	testZone := "example.com"
-	testVerify := true
-
-	client := NewGatewayClient(testCookie, testToken, testgateWayHost, testDNSConfiguration, testView, testZone, testVerify)
-
-	if client.Cookie.Value != testCookie.Value || client.Cookie.Name != testCookie.Name || client.Token != testToken || client.Host != testgateWayHost || client.DNSConfiguration != testDNSConfiguration || client.View != testView || client.RootZone != testZone || client.SkipTLSVerify != testVerify {
-		t.Fatal("Client values dont match")
-	}
-}
-
 // TODO: ensure findZone method is tested
 // TODO: ensure zones method is tested
 // TODO: ensure createRecords method is tested
@@ -394,18 +366,18 @@ func TestBluecatNewGatewayClient(t *testing.T) {
 // TODO: Figure out why recordSet.res is not being set properly
 func TestBluecatRecordset(t *testing.T) {
 	client := mockGatewayClient{
-		mockBluecatZones: &[]BluecatZone{
+		mockBluecatZones: &[]api.BluecatZone{
 			createMockBluecatZone("example.com"),
 		},
-		mockBluecatHosts: &[]BluecatHostRecord{
+		mockBluecatHosts: &[]api.BluecatHostRecord{
 			createMockBluecatHostRecord("example.com", "123.123.123.122", 30),
 			createMockBluecatHostRecord("nginx.example.com", "123.123.123.123", 30),
 			createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 		},
-		mockBluecatCNAMEs: &[]BluecatCNAMERecord{
+		mockBluecatCNAMEs: &[]api.BluecatCNAMERecord{
 			createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 		},
-		mockBluecatTXTs: &[]BluecatTXTRecord{
+		mockBluecatTXTs: &[]api.BluecatTXTRecord{
 			createMockBluecatTXT("abc.example.com", "hello"),
 		},
 	}
@@ -416,11 +388,11 @@ func TestBluecatRecordset(t *testing.T) {
 
 	// Test txt records for recordSet function
 	testTxtEndpoint := endpoint.NewEndpoint("abc.example.com", endpoint.RecordTypeTXT, "hello")
-	txtObj := bluecatCreateTXTRecordRequest{
+	txtObj := api.BluecatCreateTXTRecordRequest{
 		AbsoluteName: testTxtEndpoint.DNSName,
 		Text:         testTxtEndpoint.Targets[0],
 	}
-	txtRecords := []BluecatTXTRecord{
+	txtRecords := []api.BluecatTXTRecord{
 		createMockBluecatTXT("abc.example.com", "hello"),
 	}
 	expected := bluecatRecordSet{
@@ -436,11 +408,11 @@ func TestBluecatRecordset(t *testing.T) {
 
 	// Test a records for recordSet function
 	testHostEndpoint := endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124")
-	hostObj := bluecatCreateHostRecordRequest{
+	hostObj := api.BluecatCreateHostRecordRequest{
 		AbsoluteName: testHostEndpoint.DNSName,
 		IP4Address:   testHostEndpoint.Targets[0],
 	}
-	hostRecords := []BluecatHostRecord{
+	hostRecords := []api.BluecatHostRecord{
 		createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
 	}
 	hostExpected := bluecatRecordSet{
@@ -456,11 +428,11 @@ func TestBluecatRecordset(t *testing.T) {
 
 	// Test CName records for recordSet function
 	testCnameEndpoint := endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "bluecatnetworks.com")
-	cnameObj := bluecatCreateCNAMERecordRequest{
+	cnameObj := api.BluecatCreateCNAMERecordRequest{
 		AbsoluteName: testCnameEndpoint.DNSName,
 		LinkedRecord: testCnameEndpoint.Targets[0],
 	}
-	cnameRecords := []BluecatCNAMERecord{
+	cnameRecords := []api.BluecatCNAMERecord{
 		createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),
 	}
 	cnameExpected := bluecatRecordSet{

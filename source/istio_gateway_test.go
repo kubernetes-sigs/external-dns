@@ -69,6 +69,7 @@ func (suite *GatewaySuite) SetupTest() {
 	}
 
 	suite.source, err = NewIstioGatewaySource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -142,6 +143,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioGatewaySource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -1165,6 +1167,7 @@ func testGatewayEndpoints(t *testing.T) {
 			}
 
 			gatewaySource, err := NewIstioGatewaySource(
+				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ti.targetNamespace,
@@ -1201,6 +1204,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 	}
 
 	src, err := NewIstioGatewaySource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
