@@ -31,7 +31,7 @@ Substitute a domain you own for `example.com` if desired.
 
 If using your own domain that was registered with a third-party domain registrar, you should point your domain's name servers to the values in the `nameServers` field from the JSON data returned by the `az network dns zone create` command. Please consult your registrar's documentation on how to do that.
 
-## Configuration File
+## Configuration file
 
 The azure provider will reference a configuration file called `azure.json`.  The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named `azure.json` with content similar to this:
 
@@ -123,7 +123,7 @@ Use this file to create a Kubernetes secret:
 $ kubectl create secret generic azure-config-file --namespace "default" --from-file /local/path/to/azure.json
 ```
 
-### Managed Identity using AKS Kubelet identity
+### Managed identity using AKS Kubelet identity
 
 The [managed identity](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview) that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.  The managed identity assigned Kuberetes node pool, or specifically the [VMSS](https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview), is called the Kubelet identity.
 
@@ -187,7 +187,7 @@ Use the `azure.json` file to create a Kubernetes secret:
 $ kubectl create secret generic azure-config-file --namespace "default" --from-file /local/path/to/azure.json
 ```
 
-### Managed Identity Using AAD Pod Identities
+### Managed identity using AAD Pod Identities
 
 For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is similar to Kubelet identity except that this managed identity is not associated with the Kubernetes node pool, but rather associated with explicit ExternalDNS containers.
 
