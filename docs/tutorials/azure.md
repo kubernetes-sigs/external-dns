@@ -11,8 +11,7 @@ are being run on an orchestration node.
 
 ## Creating an Azure DNS zone
 
-The Azure provider for ExternalDNS will find suitable zones for domains it manages; it will
-not automatically create zones.
+The Azure provider for ExternalDNS will find suitable zones for domains it manages; it will not automatically create zones.
 
 For this tutorial, we will create a Azure resource group named `MyDnsResourceGroup` that can easily be deleted later:
 
@@ -51,7 +50,7 @@ The following fields are used:
 * `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
 * `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 * `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
-* `aadClientID` and `aaClientSecret` are associated with the Service Principal.  This only used with Service Principal method documented in the next section.
+* `aadClientID` and `aaClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
 
@@ -69,7 +68,7 @@ ExternalDNS needs permissions to make changes to the Azure DNS zone. There are t
 
 These permissions are defined in a Service Principal that should be made available to ExternalDNS as a configuration file `azure.json`.
 
-#### Creating service principal
+#### Creating a service principal
 
 A Service Principal with a minimum access level of `DNS Zone Contributor` or `Contributor` to the DNS zone(s) and `Reader` to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. However, other more permissive access levels will work too (e.g. `Contributor` to the resource group or the whole subscription).
 
@@ -86,7 +85,9 @@ $ EXTERNALDNS_SP_APP_ID=$(echo $DNS_SP | jq -r '.appId')
 $ EXTERNALDNS_SP_PASSWORD=$(echo $DNS_SP | jq -r '.password')
 ```
 
-Assign the rights for the service principal
+#### Assign the rights for the service principal
+
+Grant access to Azure DNS zone for the servoce principal.
 
 ```bash
 # fetch DNS id used to grant access to the service principal
@@ -124,7 +125,7 @@ $ kubectl create secret generic azure-config-file --namespace "default" --from-f
 
 ### Managed Identity using AKS Kubelet identity
 
-The [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS will also delete the service principals associating with AKS.  The managed identity associated with the AKS Kubenetes node pool is called Kubelet identity.
+The [managed identity](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview) that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.  The managed identity assigned Kuberetes node pool, or specifically the [VMSS](https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview), is called the Kubelet identity.
 
 The managed identites were previously called MSI (Managed Service Identity) and are enabled by default when creating an AKS cluster.
 
@@ -141,7 +142,7 @@ For the managed identity, the contents of `azure.json` should be similar to this
 }
 ```
 
-## Fetching the Kubelet identity
+#### Fetching the Kubelet identity
 
 For this process, you will need to get the kublet identity:
 
@@ -149,7 +150,10 @@ For this process, you will need to get the kublet identity:
 $ PRINCIPAL_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
   --query "identityProfile.kubeletidentity.objectId" --output tsv)
 ```
-Grant access to Azure DNS zone to the kublet identity:
+
+#### Assign rights for the Kubelet identity
+
+Grant access to Azure DNS zone for the kublet identity.
 
 ```bash
 $ AZURE_DNS_ZONE="example.com" # DNS zone name like example.com or sub.example.com
@@ -185,7 +189,7 @@ $ kubectl create secret generic azure-config-file --namespace "default" --from-f
 
 ### Managed Identity Using AAD Pod Identities
 
-For this process, we will create [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is similar to Kubelet identity except that this managed identity is not associated with the Kubernetes node pool, but rather associated with explicit ExternalDNS containers.
+For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is similar to Kubelet identity except that this managed identity is not associated with the Kubernetes node pool, but rather associated with explicit ExternalDNS containers.
 
 #### Enable the AAD Pod Identities feature
 
@@ -224,7 +228,9 @@ $ IDENTITY_NAME="example-com-identity"
 $ az identity create --resource-group "${IDENTITY_RESOURCE_GROUP}" --name "${IDENTITY_NAME}"
 ```
 
-Grant access to Azure DNS zone to the managed identity.
+#### Assign rights for the managed identity
+
+Grant access to Azure DNS zone for the managed identity.
 
 ```bash
 $ AZURE_DNS_ZONE_RESOURCE_GROUP="MyDnsResourceGroup" # name of resource group where dns zone is hosted
@@ -263,9 +269,9 @@ Use the `azure.json` file to create a Kubernetes secret:
 $ kubectl create secret generic azure-config-file --namespace "default" --from-file /local/path/to/azure.json
 ```
 
-#### Creating a Azure identity binding
+#### Creating an Azure identity binding
 
-A binding between the managed identity and the External DNS pods needs to be setup by creating `AzureIdentity` and `AzureIdentityBinding` resources.  This will allow appropriately labeled ExternalDNS pods to authenticate using the managed identity.  When AAD Pod Identity feature is enabled from previous steps above, the `az aks pod-identity add` can be used to create these resources:
+A binding between the managed identity and the ExternalDNS pods needs to be setup by creating `AzureIdentity` and `AzureIdentityBinding` resources.  This will allow appropriately labeled ExternalDNS pods to authenticate using the managed identity.  When AAD Pod Identity feature is enabled from previous steps above, the `az aks pod-identity add` can be used to create these resources:
 
 ```bash
 $ IDENTITY_RESOURCE_ID=$(az identity show --resource-group ${IDENTITY_RESOURCE_GROUP} \
@@ -306,7 +312,7 @@ spec:
 
 #### Update ExternalDNS labels
 
-When deploying ExternalDNS, you want to make sure that deployed pod(s) will have the label `aadpodidbinding: external-dns` to enable AAD Pod Identities. You can patch an existing deployment of External DNS with this command:
+When deploying ExternalDNS, you want to make sure that deployed pod(s) will have the label `aadpodidbinding: external-dns` to enable AAD Pod Identities. You can patch an existing deployment of ExternalDNS with this command:
 
 ```bash
 kubectl patch deployment external-dns --namespace "default" --patch \
@@ -356,7 +362,7 @@ spec:
         - --source=ingress
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
-        - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+        - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
         volumeMounts:
         - name: azure-config-file
           mountPath: /etc/kubernetes
@@ -424,7 +430,7 @@ spec:
             - --source=ingress
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
-            - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+            - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
             - --txt-prefix=externaldns-
           volumeMounts:
             - name: azure-config-file
@@ -495,7 +501,7 @@ spec:
             - --source=ingress
             - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
             - --provider=azure
-            - --azure-resource-group=externaldns # (optional) use the DNS zones from the tutorial's resource group
+            - --azure-resource-group=MyDnsResourceGroup # (optional) use the DNS zones from the tutorial's resource group
           volumeMounts:
             - name: azure-config-file
               mountPath: /etc/kubernetes
