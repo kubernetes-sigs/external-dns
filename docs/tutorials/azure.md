@@ -87,7 +87,7 @@ $ EXTERNALDNS_SP_PASSWORD=$(echo $DNS_SP | jq -r '.password')
 
 #### Assign the rights for the service principal
 
-Grant access to Azure DNS zone for the servoce principal.
+Grant access to Azure DNS zone for the service principal.
 
 ```bash
 # fetch DNS id used to grant access to the service principal
@@ -564,7 +564,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: server.devopsstudio.org
+    - host: server.example.com
       http:
         paths:
           - path: /
