@@ -3,7 +3,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on Azure.
 
-Make sure to use **>=0.5.7** version of ExternalDNS for this tutorial.
+Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial.
 
 This tutorial uses [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) for all
 Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and `kubectl` commands
@@ -149,6 +149,8 @@ The contents of `azure.json` should be similar to this:
 }
 ```
 
+*NOTE:* If there are multiple user assigned identitys available add  "userAssignedIdentityID": "<id>" to the json
+
 If you have all the information necessary: create a file called azure.json containing the json structure above and substitute the values. Otherwise create a service principal as previously shown before creating the Kubernetes secret.
 
 Then add the secret to the Kubernetes cluster before continuing:
@@ -191,7 +193,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
+        image: k8s.gcr.io/external-dns/external-dns:v0.11.0
         args:
         - --source=service
         - --source=ingress
@@ -207,7 +209,7 @@ spec:
         secret:
           secretName: azure-config-file
           items:
-          - key: externaldns-config.json
+          - key: azure.json
             path: azure.json
 ```
 
@@ -223,15 +225,18 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups: [""]
-  resources: ["services","endpoints","pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["list"]
+  - apiGroups: ['']
+    resources: ['endpoints', 'pods', 'services']
+    verbs: ['get', 'watch', 'list']
+  - apiGroups: ['extensions']
+    resources: ['ingresses']
+    verbs: ['get', 'watch', 'list']
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get","watch","list"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["watch", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -281,7 +286,7 @@ spec:
         secret:
           secretName: azure-config-file
           items:
-          - key: externaldns-config.json
+          - key: azure.json
             path: azure.json
 ```
 
@@ -354,7 +359,7 @@ spec:
         secret:
           secretName: azure-config-file
           items:
-          - key: externaldns-config.json
+          - key: azure.json
             path: azure.json
 ```
 
