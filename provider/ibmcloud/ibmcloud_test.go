@@ -69,13 +69,13 @@ func NewMockIBMCloudDNSAPI() *mockIbmcloudClientInterface {
 	firstPrivateZone := dnssvcsv1.Dnszone{
 		ID:    core.StringPtr("123"),
 		Name:  core.StringPtr("example.com"),
-		State: core.StringPtr(ZONE_STATE_PENDING_NETWORK),
+		State: core.StringPtr(zoneStatePendingNetwork),
 	}
 
 	secondPrivateZone := dnssvcsv1.Dnszone{
 		ID:    core.StringPtr("456"),
 		Name:  core.StringPtr("example1.com"),
-		State: core.StringPtr(ZONE_STATE_ACTIVE),
+		State: core.StringPtr(zoneStateActive),
 	}
 	privateZones := []dnssvcsv1.Dnszone{firstPrivateZone, secondPrivateZone}
 	listZonesResp := &dnssvcsv1.ListDnszones{
@@ -132,10 +132,10 @@ func NewMockIBMCloudDNSAPI() *mockIbmcloudClientInterface {
 
 	// Setup mock services
 	mockDNSClient := &mockIbmcloudClientInterface{}
-	mockDNSClient.On("CreateDnsRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
-	mockDNSClient.On("UpdateDnsRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
-	mockDNSClient.On("DeleteDnsRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
-	mockDNSClient.On("ListAllDnsRecordsWithContext", mock.Anything, mock.Anything).Return(publicRecordsResp, nil, nil)
+	mockDNSClient.On("CreateDNSRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
+	mockDNSClient.On("UpdateDNSRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
+	mockDNSClient.On("DeleteDNSRecordWithContext", mock.Anything, mock.Anything).Return(nil, nil, nil)
+	mockDNSClient.On("ListAllDDNSRecordsWithContext", mock.Anything, mock.Anything).Return(publicRecordsResp, nil, nil)
 	mockDNSClient.On("ListDnszonesWithContext", mock.Anything, mock.Anything).Return(listZonesResp, nil, nil)
 	mockDNSClient.On("GetDnszoneWithContext", mock.Anything, mock.Anything).Return(&firstPrivateZone, nil, nil)
 	mockDNSClient.On("ListResourceRecordsWithContext", mock.Anything, mock.Anything).Return(privateRecordsResop, nil, nil)
@@ -428,8 +428,8 @@ type mockIbmcloudClientInterface struct {
 	mock.Mock
 }
 
-// CreateDnsRecordWithContext provides a mock function with given fields: ctx, createDnsRecordOptions
-func (_m *mockIbmcloudClientInterface) CreateDnsRecordWithContext(ctx context.Context, createDnsRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (*dnsrecordsv1.DnsrecordResp, *core.DetailedResponse, error) {
+// CreateDNSRecordWithContext provides a mock function with given fields: ctx, createDnsRecordOptions
+func (_m *mockIbmcloudClientInterface) CreateDNSRecordWithContext(ctx context.Context, createDnsRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (*dnsrecordsv1.DnsrecordResp, *core.DetailedResponse, error) {
 	ret := _m.Called(ctx, createDnsRecordOptions)
 
 	var r0 *dnsrecordsv1.DnsrecordResp
@@ -524,8 +524,8 @@ func (_m *mockIbmcloudClientInterface) CreateResourceRecordWithContext(ctx conte
 	return r0, r1, r2
 }
 
-// DeleteDnsRecordWithContext provides a mock function with given fields: ctx, deleteDnsRecordOptions
-func (_m *mockIbmcloudClientInterface) DeleteDnsRecordWithContext(ctx context.Context, deleteDnsRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (*dnsrecordsv1.DeleteDnsrecordResp, *core.DetailedResponse, error) {
+// DeleteDNSRecordWithContext provides a mock function with given fields: ctx, deleteDnsRecordOptions
+func (_m *mockIbmcloudClientInterface) DeleteDNSRecordWithContext(ctx context.Context, deleteDnsRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (*dnsrecordsv1.DeleteDnsrecordResp, *core.DetailedResponse, error) {
 	ret := _m.Called(ctx, deleteDnsRecordOptions)
 
 	var r0 *dnsrecordsv1.DeleteDnsrecordResp
@@ -611,8 +611,8 @@ func (_m *mockIbmcloudClientInterface) GetDnszoneWithContext(ctx context.Context
 	return r0, r1, r2
 }
 
-// ListAllDnsRecordsWithContext provides a mock function with given fields: ctx, listAllDnsRecordsOptions
-func (_m *mockIbmcloudClientInterface) ListAllDnsRecordsWithContext(ctx context.Context, listAllDnsRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (*dnsrecordsv1.ListDnsrecordsResp, *core.DetailedResponse, error) {
+// ListAllDDNSRecordsWithContext provides a mock function with given fields: ctx, listAllDnsRecordsOptions
+func (_m *mockIbmcloudClientInterface) ListAllDDNSRecordsWithContext(ctx context.Context, listAllDnsRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (*dnsrecordsv1.ListDnsrecordsResp, *core.DetailedResponse, error) {
 	ret := _m.Called(ctx, listAllDnsRecordsOptions)
 
 	var r0 *dnsrecordsv1.ListDnsrecordsResp
@@ -845,8 +845,8 @@ func (_m *mockIbmcloudClientInterface) NewResourceRecordUpdateInputRdataRdataTxt
 	return r0, r1
 }
 
-// UpdateDnsRecordWithContext provides a mock function with given fields: ctx, updateDnsRecordOptions
-func (_m *mockIbmcloudClientInterface) UpdateDnsRecordWithContext(ctx context.Context, updateDnsRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (*dnsrecordsv1.DnsrecordResp, *core.DetailedResponse, error) {
+// UpdateDNSRecordWithContext provides a mock function with given fields: ctx, updateDnsRecordOptions
+func (_m *mockIbmcloudClientInterface) UpdateDNSRecordWithContext(ctx context.Context, updateDnsRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (*dnsrecordsv1.DnsrecordResp, *core.DetailedResponse, error) {
 	ret := _m.Called(ctx, updateDnsRecordOptions)
 
 	var r0 *dnsrecordsv1.DnsrecordResp

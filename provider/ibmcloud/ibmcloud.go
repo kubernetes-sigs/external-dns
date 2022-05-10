@@ -64,10 +64,10 @@ const (
 	// defaultPublicRecordTTL 1 = automatic
 	defaultPublicRecordTTL = 1
 
-	PROXY_FILTER               = "ibmcloud-proxied"
-	VPC_FILTER                 = "ibmcloud-vpc"
-	ZONE_STATE_PENDING_NETWORK = "PENDING_NETWORK_ADD"
-	ZONE_STATE_ACTIVE          = "ACTIVE"
+	proxyFilter             = "ibmcloud-proxied"
+	vpcFilter               = "ibmcloud-vpc"
+	zoneStatePendingNetwork = "PENDING_NETWORK_ADD"
+	zoneStateActive         = "ACTIVE"
 )
 
 // Source shadow the interface source.Source. used primarily for unit testing.
@@ -78,10 +78,10 @@ type Source interface {
 
 // ibmcloudClient is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
 type ibmcloudClient interface {
-	ListAllDnsRecordsWithContext(ctx context.Context, listAllDnsRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (result *dnsrecordsv1.ListDnsrecordsResp, response *core.DetailedResponse, err error)
-	CreateDnsRecordWithContext(ctx context.Context, createDnsRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error)
-	DeleteDnsRecordWithContext(ctx context.Context, deleteDnsRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (result *dnsrecordsv1.DeleteDnsrecordResp, response *core.DetailedResponse, err error)
-	UpdateDnsRecordWithContext(ctx context.Context, updateDnsRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error)
+	ListAllDDNSRecordsWithContext(ctx context.Context, listAllDNSRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (result *dnsrecordsv1.ListDnsrecordsResp, response *core.DetailedResponse, err error)
+	CreateDNSRecordWithContext(ctx context.Context, createDNSRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error)
+	DeleteDNSRecordWithContext(ctx context.Context, deleteDNSRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (result *dnsrecordsv1.DeleteDnsrecordResp, response *core.DetailedResponse, err error)
+	UpdateDNSRecordWithContext(ctx context.Context, updateDNSRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error)
 	ListDnszonesWithContext(ctx context.Context, listDnszonesOptions *dnssvcsv1.ListDnszonesOptions) (result *dnssvcsv1.ListDnszones, response *core.DetailedResponse, err error)
 	GetDnszoneWithContext(ctx context.Context, getDnszoneOptions *dnssvcsv1.GetDnszoneOptions) (result *dnssvcsv1.Dnszone, response *core.DetailedResponse, err error)
 	CreatePermittedNetworkWithContext(ctx context.Context, createPermittedNetworkOptions *dnssvcsv1.CreatePermittedNetworkOptions) (result *dnssvcsv1.PermittedNetwork, response *core.DetailedResponse, err error)
@@ -100,75 +100,75 @@ type ibmcloudClient interface {
 type ibmcloudService struct {
 	publicZonesService   *zonesv1.ZonesV1
 	publicRecordsService *dnsrecordsv1.DnsRecordsV1
-	privateDnsService    *dnssvcsv1.DnsSvcsV1
+	privateDNSService    *dnssvcsv1.DnsSvcsV1
 }
 
-func (i ibmcloudService) ListAllDnsRecordsWithContext(ctx context.Context, listAllDnsRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (result *dnsrecordsv1.ListDnsrecordsResp, response *core.DetailedResponse, err error) {
-	return i.publicRecordsService.ListAllDnsRecordsWithContext(ctx, listAllDnsRecordsOptions)
+func (i ibmcloudService) ListAllDDNSRecordsWithContext(ctx context.Context, listAllDNSRecordsOptions *dnsrecordsv1.ListAllDnsRecordsOptions) (result *dnsrecordsv1.ListDnsrecordsResp, response *core.DetailedResponse, err error) {
+	return i.publicRecordsService.ListAllDnsRecordsWithContext(ctx, listAllDNSRecordsOptions)
 }
 
-func (i ibmcloudService) CreateDnsRecordWithContext(ctx context.Context, createDnsRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error) {
-	return i.publicRecordsService.CreateDnsRecordWithContext(ctx, createDnsRecordOptions)
+func (i ibmcloudService) CreateDNSRecordWithContext(ctx context.Context, createDNSRecordOptions *dnsrecordsv1.CreateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error) {
+	return i.publicRecordsService.CreateDnsRecordWithContext(ctx, createDNSRecordOptions)
 }
 
-func (i ibmcloudService) DeleteDnsRecordWithContext(ctx context.Context, deleteDnsRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (result *dnsrecordsv1.DeleteDnsrecordResp, response *core.DetailedResponse, err error) {
-	return i.publicRecordsService.DeleteDnsRecordWithContext(ctx, deleteDnsRecordOptions)
+func (i ibmcloudService) DeleteDNSRecordWithContext(ctx context.Context, deleteDNSRecordOptions *dnsrecordsv1.DeleteDnsRecordOptions) (result *dnsrecordsv1.DeleteDnsrecordResp, response *core.DetailedResponse, err error) {
+	return i.publicRecordsService.DeleteDnsRecordWithContext(ctx, deleteDNSRecordOptions)
 }
 
-func (i ibmcloudService) UpdateDnsRecordWithContext(ctx context.Context, updateDnsRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error) {
-	return i.publicRecordsService.UpdateDnsRecordWithContext(ctx, updateDnsRecordOptions)
+func (i ibmcloudService) UpdateDNSRecordWithContext(ctx context.Context, updateDNSRecordOptions *dnsrecordsv1.UpdateDnsRecordOptions) (result *dnsrecordsv1.DnsrecordResp, response *core.DetailedResponse, err error) {
+	return i.publicRecordsService.UpdateDnsRecordWithContext(ctx, updateDNSRecordOptions)
 }
 
 func (i ibmcloudService) ListDnszonesWithContext(ctx context.Context, listDnszonesOptions *dnssvcsv1.ListDnszonesOptions) (result *dnssvcsv1.ListDnszones, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.ListDnszonesWithContext(ctx, listDnszonesOptions)
+	return i.privateDNSService.ListDnszonesWithContext(ctx, listDnszonesOptions)
 }
 
 func (i ibmcloudService) GetDnszoneWithContext(ctx context.Context, getDnszoneOptions *dnssvcsv1.GetDnszoneOptions) (result *dnssvcsv1.Dnszone, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.GetDnszoneWithContext(ctx, getDnszoneOptions)
+	return i.privateDNSService.GetDnszoneWithContext(ctx, getDnszoneOptions)
 }
 
 func (i ibmcloudService) CreatePermittedNetworkWithContext(ctx context.Context, createPermittedNetworkOptions *dnssvcsv1.CreatePermittedNetworkOptions) (result *dnssvcsv1.PermittedNetwork, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.CreatePermittedNetworkWithContext(ctx, createPermittedNetworkOptions)
+	return i.privateDNSService.CreatePermittedNetworkWithContext(ctx, createPermittedNetworkOptions)
 }
 
 func (i ibmcloudService) ListResourceRecordsWithContext(ctx context.Context, listResourceRecordsOptions *dnssvcsv1.ListResourceRecordsOptions) (result *dnssvcsv1.ListResourceRecords, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.ListResourceRecordsWithContext(ctx, listResourceRecordsOptions)
+	return i.privateDNSService.ListResourceRecordsWithContext(ctx, listResourceRecordsOptions)
 }
 
 func (i ibmcloudService) CreateResourceRecordWithContext(ctx context.Context, createResourceRecordOptions *dnssvcsv1.CreateResourceRecordOptions) (result *dnssvcsv1.ResourceRecord, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.CreateResourceRecordWithContext(ctx, createResourceRecordOptions)
+	return i.privateDNSService.CreateResourceRecordWithContext(ctx, createResourceRecordOptions)
 }
 
 func (i ibmcloudService) DeleteResourceRecordWithContext(ctx context.Context, deleteResourceRecordOptions *dnssvcsv1.DeleteResourceRecordOptions) (response *core.DetailedResponse, err error) {
-	return i.privateDnsService.DeleteResourceRecordWithContext(ctx, deleteResourceRecordOptions)
+	return i.privateDNSService.DeleteResourceRecordWithContext(ctx, deleteResourceRecordOptions)
 }
 
 func (i ibmcloudService) UpdateResourceRecordWithContext(ctx context.Context, updateResourceRecordOptions *dnssvcsv1.UpdateResourceRecordOptions) (result *dnssvcsv1.ResourceRecord, response *core.DetailedResponse, err error) {
-	return i.privateDnsService.UpdateResourceRecordWithContext(ctx, updateResourceRecordOptions)
+	return i.privateDNSService.UpdateResourceRecordWithContext(ctx, updateResourceRecordOptions)
 }
 
 func (i ibmcloudService) NewResourceRecordInputRdataRdataARecord(ip string) (model *dnssvcsv1.ResourceRecordInputRdataRdataARecord, err error) {
-	return i.privateDnsService.NewResourceRecordInputRdataRdataARecord(ip)
+	return i.privateDNSService.NewResourceRecordInputRdataRdataARecord(ip)
 }
 
 func (i ibmcloudService) NewResourceRecordInputRdataRdataCnameRecord(cname string) (model *dnssvcsv1.ResourceRecordInputRdataRdataCnameRecord, err error) {
-	return i.privateDnsService.NewResourceRecordInputRdataRdataCnameRecord(cname)
+	return i.privateDNSService.NewResourceRecordInputRdataRdataCnameRecord(cname)
 }
 
 func (i ibmcloudService) NewResourceRecordInputRdataRdataTxtRecord(text string) (model *dnssvcsv1.ResourceRecordInputRdataRdataTxtRecord, err error) {
-	return i.privateDnsService.NewResourceRecordInputRdataRdataTxtRecord(text)
+	return i.privateDNSService.NewResourceRecordInputRdataRdataTxtRecord(text)
 }
 
 func (i ibmcloudService) NewResourceRecordUpdateInputRdataRdataARecord(ip string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataARecord, err error) {
-	return i.privateDnsService.NewResourceRecordUpdateInputRdataRdataARecord(ip)
+	return i.privateDNSService.NewResourceRecordUpdateInputRdataRdataARecord(ip)
 }
 
 func (i ibmcloudService) NewResourceRecordUpdateInputRdataRdataCnameRecord(cname string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataCnameRecord, err error) {
-	return i.privateDnsService.NewResourceRecordUpdateInputRdataRdataCnameRecord(cname)
+	return i.privateDNSService.NewResourceRecordUpdateInputRdataRdataCnameRecord(cname)
 }
 
 func (i ibmcloudService) NewResourceRecordUpdateInputRdataRdataTxtRecord(text string) (model *dnssvcsv1.ResourceRecordUpdateInputRdataRdataTxtRecord, err error) {
-	return i.privateDnsService.NewResourceRecordUpdateInputRdataRdataTxtRecord(text)
+	return i.privateDNSService.NewResourceRecordUpdateInputRdataRdataTxtRecord(text)
 }
 
 // IBMCloudProvider is an implementation of Provider for IBM Cloud DNS.
@@ -282,14 +282,14 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 	case strings.Contains(crn.ServiceName, "dns-svcs"):
 		isPrivate = true
 		// Private DNS service
-		service.privateDnsService, err = dnssvcsv1.NewDnsSvcsV1(&dnssvcsv1.DnsSvcsV1Options{
+		service.privateDNSService, err = dnssvcsv1.NewDnsSvcsV1(&dnssvcsv1.DnsSvcsV1Options{
 			Authenticator: authenticator,
 		})
 		if err != nil {
 			return service, isPrivate, fmt.Errorf("failed to initialize ibmcloud private records client: %v", err)
 		}
 		if c.Endpoint != "" {
-			service.privateDnsService.SetServiceURL(c.Endpoint)
+			service.privateDNSService.SetServiceURL(c.Endpoint)
 		}
 	default:
 		return service, isPrivate, fmt.Errorf("IBM Cloud instance crn is not provided or invalid dns crn : %s", c.CRN)
@@ -374,7 +374,6 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 		for _, a := range remove {
 			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, current, a))
 		}
-
 	}
 
 	for _, endpoint := range changes.Delete {
@@ -387,7 +386,7 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 }
 
 func (p *IBMCloudProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == PROXY_FILTER {
+	if name == proxyFilter {
 		return plan.CompareBoolean(p.proxiedByDefault, name, previous, current)
 	}
 
@@ -481,7 +480,6 @@ func (p *IBMCloudProvider) submitChangesForPrivateDNS(ctx context.Context, chang
 		}
 
 		for _, change := range changes {
-
 			logFields := log.Fields{
 				"record": *change.PrivateResourceRecord.Name,
 				"type":   *change.PrivateResourceRecord.Type,
@@ -615,10 +613,10 @@ func (p *IBMCloudProvider) listAllPublicRecords(ctx context.Context) ([]dnsrecor
 	var dnsRecords []dnsrecordsv1.DnsrecordDetails
 	page := 1
 GETRECORDS:
-	listAllDnsRecordsOptions := &dnsrecordsv1.ListAllDnsRecordsOptions{
+	listAllDNSRecordsOptions := &dnsrecordsv1.ListAllDnsRecordsOptions{
 		Page: core.Int64Ptr(int64(page)),
 	}
-	records, _, err := p.Client.ListAllDnsRecordsWithContext(ctx, listAllDnsRecordsOptions)
+	records, _, err := p.Client.ListAllDDNSRecordsWithContext(ctx, listAllDNSRecordsOptions)
 	if err != nil {
 		return dnsRecords, err
 	}
@@ -662,7 +660,7 @@ func (p *IBMCloudProvider) groupPublicRecords(records []dnsrecordsv1.DnsrecordDe
 			*records[0].Name,
 			*records[0].Type,
 			endpoint.TTL(*records[0].TTL),
-			targets...).WithProviderSpecific(PROXY_FILTER, strconv.FormatBool(*records[0].Proxied))
+			targets...).WithProviderSpecific(proxyFilter, strconv.FormatBool(*records[0].Proxied))
 
 		log.Debugf(
 			"Found %s record for '%s' with target '%s'.",
@@ -698,7 +696,7 @@ func (p *IBMCloudProvider) privateRecords(ctx context.Context) ([]*endpoint.Endp
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
-		if len(vpc) > 0 && *zone.State == ZONE_STATE_PENDING_NETWORK {
+		if len(vpc) > 0 && *zone.State == zoneStatePendingNetwork {
 			log.Debugf("active zone: %s", *zone.ID)
 			p.activePrivateZone(ctx, *zone.ID, vpc)
 		}
@@ -888,13 +886,13 @@ func (p *IBMCloudProvider) createRecord(ctx context.Context, zoneID string, chan
 			log.Errorf("failed to create %s type record named %s: %v", *change.PrivateResourceRecord.Type, *change.PrivateResourceRecord.Name, err)
 		}
 	} else {
-		createDnsRecordOptions := &dnsrecordsv1.CreateDnsRecordOptions{
+		createDNSRecordOptions := &dnsrecordsv1.CreateDnsRecordOptions{
 			Name:    change.PublicResourceRecord.Name,
 			Type:    change.PublicResourceRecord.Type,
 			TTL:     change.PublicResourceRecord.TTL,
 			Content: change.PublicResourceRecord.Content,
 		}
-		_, _, err := p.Client.CreateDnsRecordWithContext(ctx, createDnsRecordOptions)
+		_, _, err := p.Client.CreateDNSRecordWithContext(ctx, createDNSRecordOptions)
 		if err != nil {
 			log.Errorf("failed to create %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
 		}
@@ -929,7 +927,7 @@ func (p *IBMCloudProvider) updateRecord(ctx context.Context, zoneID, recordID st
 			log.Errorf("failed to update %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
 		}
 	} else {
-		updateDnsRecordOptions := &dnsrecordsv1.UpdateDnsRecordOptions{
+		updateDNSRecordOptions := &dnsrecordsv1.UpdateDnsRecordOptions{
 			DnsrecordIdentifier: &recordID,
 			Name:                change.PublicResourceRecord.Name,
 			Type:                change.PublicResourceRecord.Type,
@@ -937,7 +935,7 @@ func (p *IBMCloudProvider) updateRecord(ctx context.Context, zoneID, recordID st
 			Content:             change.PublicResourceRecord.Content,
 			Proxied:             change.PublicResourceRecord.Proxied,
 		}
-		_, _, err := p.Client.UpdateDnsRecordWithContext(ctx, updateDnsRecordOptions)
+		_, _, err := p.Client.UpdateDNSRecordWithContext(ctx, updateDNSRecordOptions)
 		if err != nil {
 			log.Errorf("failed to update %s type record named %s: %v", *change.PublicResourceRecord.Type, *change.PublicResourceRecord.Name, err)
 		}
@@ -956,10 +954,10 @@ func (p *IBMCloudProvider) deleteRecord(ctx context.Context, zoneID, recordID st
 			log.Errorf("failed to delete record %s: %v", recordID, err)
 		}
 	} else {
-		deleteDnsRecordOptions := &dnsrecordsv1.DeleteDnsRecordOptions{
+		deleteDNSRecordOptions := &dnsrecordsv1.DeleteDnsRecordOptions{
 			DnsrecordIdentifier: &recordID,
 		}
-		_, _, err := p.Client.DeleteDnsRecordWithContext(ctx, deleteDnsRecordOptions)
+		_, _, err := p.Client.DeleteDNSRecordWithContext(ctx, deleteDNSRecordOptions)
 		if err != nil {
 			log.Errorf("failed to delete record %s: %v", recordID, err)
 		}
@@ -970,10 +968,10 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == PROXY_FILTER {
+		if v.Name == proxyFilter {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", PROXY_FILTER, err)
+				log.Errorf("Failed to parse annotation [%s]: %v", proxyFilter, err)
 			} else {
 				proxied = b
 			}
@@ -990,7 +988,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 func checkVPCAnnotation(endpoint *endpoint.Endpoint) string {
 	var vpc string
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == VPC_FILTER {
+		if v.Name == vpcFilter {
 			vpcCrn, err := crn.Parse(v.Value)
 			if vpcCrn.ResourceType != "vpc" || err != nil {
 				log.Errorf("Failed to parse vpc [%s]: %v", v.Value, err)
