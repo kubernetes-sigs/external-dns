@@ -251,6 +251,7 @@ spec:
   - http:
       paths:
         - path: /apple
+          pathType: Prefix
           backend:
             service:
               name: example-service

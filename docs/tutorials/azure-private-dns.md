@@ -387,9 +387,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: nginx-svc
-          servicePort: 80
-        path: /
+          service:
+            name: nginx-svc
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 When using ExternalDNS with ingress objects it will automatically create DNS records based on host names specified in ingress objects that match the domain-filter argument in the externaldns deployment manifest. When those host names are removed or renamed the corresponding DNS records are also altered.
