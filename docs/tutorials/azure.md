@@ -415,13 +415,16 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: server.example.com
-    http:
-      paths:
-      - backend:
-          serviceName: nginx-svc
-          servicePort: 80
-        path: /
+    - host: server.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nginx-svc
+                port:
+                  number: 80
 ```
 
 When using external-dns with ingress objects it will automatically create DNS records based on host names specified in ingress objects that match the domain-filter argument in the external-dns deployment manifest. When those host names are removed or renamed the corresponding DNS records are also altered.
