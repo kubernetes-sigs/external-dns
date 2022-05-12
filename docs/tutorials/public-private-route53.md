@@ -306,8 +306,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 Then create private Service definition:
@@ -327,8 +330,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 Additionally, you may leverage [cert-manager](https://github.com/jetstack/cert-manager) to automatically issue SSL certificates from [Let's Encrypt](https://letsencrypt.org/). To do that, request a certificate in public service definition:
@@ -352,8 +358,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
   tls:
   - hosts:
     - app.domain.com
@@ -377,8 +386,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
   tls:
   - hosts:
     - app.domain.com
