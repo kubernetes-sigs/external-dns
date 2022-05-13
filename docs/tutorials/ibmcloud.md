@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.10.2
+        image: k8s.gcr.io/external-dns/external-dns:v0.12.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -142,7 +142,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.10.2
+        image: k8s.gcr.io/external-dns/external-dns:v0.12.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -222,12 +222,24 @@ Depending where you run your service it can take a little while for your cloud p
 Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize
 the IBMCloud DNS records.
 
-## Verifying Cloudflare DNS records
+## Verifying IBMCloud DNS records
+Run the following command to view the A records:
 
-Check your [Cloudflare dashboard](https://www.cloudflare.com/a/dns/example.com) to view the records for your Cloudflare DNS zone.
+### Public Zone
+```
+# Get the domain ID with below command on IBMCloud Internet Services instance `external-dns-public`
+$ ibmcloud cis domains -i external-dns-public
+# Get the records with domain ID
+$ ibmcloud cis dns-records DOMAIN_ID  -i external-dns-public
+```
 
-Substitute the zone for the one created above if a different domain was used.
-
+### Private Zone
+```
+# Get the domain ID with below command on IBMCloud DNS Services instance `external-dns-private`
+$ ibmcloud dns zones -i external-dns-private
+# Get the records with domain ID
+$ ibmcloud dns resource-records ZONE_ID  -i external-dns-public
+```
 This should show the external IP address of the service as the A record for your domain.
 
 ## Cleanup
