@@ -179,7 +179,7 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
-* [SafeDNS](docs/tutorials/safedns.md)
+* [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
 
