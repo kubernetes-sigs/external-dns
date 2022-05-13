@@ -884,6 +884,12 @@ func canonicalHostedZone(hostname string) string {
 		}
 	}
 
+	if strings.HasSuffix(hostname, ".amazonaws.com") {
+		// hostname is an AWS hostname, but could not find canonical hosted zone.
+		// This could mean that a new region has been added but is not supported yet.
+		log.Warnf("Could not find canonical hosted zone for domain %s.", hostname)
+	}
+
 	return ""
 }
 
