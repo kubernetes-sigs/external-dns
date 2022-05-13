@@ -234,7 +234,7 @@ func main() {
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
-			infoblox.InfobloxConfig{
+			infoblox.StartupConfig{
 				DomainFilter:  domainFilter,
 				ZoneIDFilter:  zoneIDFilter,
 				Host:          cfg.InfobloxGridHost,
