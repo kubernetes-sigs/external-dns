@@ -32,6 +32,17 @@ type StackPathProvider struct {
 	dryRun bool
 }
 
+type StackPathConfig struct {
+	Context      context.Context
+	DomainFilter endpoint.DomainFilter
+	ZoneIDFilter provider.ZoneIDFilter
+	DryRun       bool
+}
+
+func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
+	return nil, nil
+}
+
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return nil, nil
 }
