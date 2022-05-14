@@ -63,6 +63,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
+	"sigs.k8s.io/external-dns/provider/stackpath"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
@@ -324,6 +325,15 @@ func main() {
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
 	case "safedns":
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
+	case "stackpath":
+		p, err = stackpath.NewStackPathProvider(
+			stackpath.StackPathConfig{
+				Context:      ctx,
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

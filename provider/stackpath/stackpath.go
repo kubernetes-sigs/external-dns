@@ -18,18 +18,25 @@ package stackpath
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"os"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
 	"github.com/wmarchesi123/stackpath-go/pkg/dns"
+	"github.com/wmarchesi123/stackpath-go/pkg/oauth2"
 )
 
 type StackPathProvider struct {
 	provider.BaseProvider
-	client dns.APIClient
-	dryRun bool
+	client       *dns.APIClient
+	context      context.Context
+	domainFilter endpoint.DomainFilter
+	zoneIdFilter provider.ZoneIDFilter
+	dryRun       bool
 }
 
 type StackPathConfig struct {
@@ -40,7 +47,37 @@ type StackPathConfig struct {
 }
 
 func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
-	return nil, nil
+	clientId, ok := os.LookupEnv("STACKPATH_CLIENT_ID")
+	if !ok {
+		return nil, fmt.Errorf("STACKPATH_CLIENT_ID environment variable is not set")
+	}
+
+	clientSecret, ok := os.LookupEnv("STACKPATH_CLIENT_SECRET")
+	if !ok {
+		return nil, fmt.Errorf("STACKPATH_CLIENT_SECRET environment variable is not set")
+	}
+
+	oauthSource := oauth2.NewTokenSource(clientId, clientSecret, oauth2.HTTPClientOption(http.DefaultClient))
+	_, err := oauthSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("Invalid STACKPATH_CLIENT_ID or STACKPATH_CLIENT_SECRET environment variable(s)")
+	}
+
+	authorizedContext := context.WithValue(config.Context, dns.ContextOAuth2, oauthSource)
+
+	clientConfig := dns.NewConfiguration()
+
+	client := dns.NewAPIClient(clientConfig)
+
+	provider := &StackPathProvider{
+		client:       client,
+		context:      authorizedContext,
+		domainFilter: config.DomainFilter,
+		zoneIdFilter: config.ZoneIDFilter,
+		dryRun:       config.DryRun,
+	}
+
+	return provider, nil
 }
 
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
