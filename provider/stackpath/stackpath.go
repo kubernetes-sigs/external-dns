@@ -36,6 +36,7 @@ type StackPathProvider struct {
 	context      context.Context
 	domainFilter endpoint.DomainFilter
 	zoneIdFilter provider.ZoneIDFilter
+	stackId      string
 	dryRun       bool
 }
 
@@ -57,10 +58,15 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		return nil, fmt.Errorf("STACKPATH_CLIENT_SECRET environment variable is not set")
 	}
 
+	stackId, ok := os.LookupEnv("STACKPATH_STACK_ID")
+	if !ok {
+		return nil, fmt.Errorf("STACKPATH_STACK_ID environment variable is not set")
+	}
+
 	oauthSource := oauth2.NewTokenSource(clientId, clientSecret, oauth2.HTTPClientOption(http.DefaultClient))
 	_, err := oauthSource.Token()
 	if err != nil {
-		return nil, fmt.Errorf("Invalid STACKPATH_CLIENT_ID or STACKPATH_CLIENT_SECRET environment variable(s)")
+		return nil, fmt.Errorf("STACKPATH_CLIENT_ID or STACKPATH_CLIENT_SECRET environment variable(s) are invalid")
 	}
 
 	authorizedContext := context.WithValue(config.Context, dns.ContextOAuth2, oauthSource)
@@ -74,13 +80,19 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		context:      authorizedContext,
 		domainFilter: config.DomainFilter,
 		zoneIdFilter: config.ZoneIDFilter,
+		stackId:      stackId,
 		dryRun:       config.DryRun,
 	}
 
 	return provider, nil
 }
 
+//Base Provider Functions
+
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+
+	//p.client.ZonesApi.GetZones(p.context)
+
 	return nil, nil
 }
 
@@ -99,3 +111,9 @@ func (p *StackPathProvider) PropertyValuesEqual(name, previous, current string) 
 func (p *StackPathProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return endpoint.DomainFilter{}
 }
+
+//StackPath Helper Functions
+
+// func (p *StackPathProvider) filteredZones() ([]*dns.Zone, error) {
+
+// }
