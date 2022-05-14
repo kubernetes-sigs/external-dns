@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
@@ -91,8 +92,6 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 
-	//p.client.ZonesApi.GetZones(p.context)
-
 	return nil, nil
 }
 
@@ -114,6 +113,24 @@ func (p *StackPathProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 
 //StackPath Helper Functions
 
-// func (p *StackPathProvider) filteredZones() ([]*dns.Zone, error) {
+func (p *StackPathProvider) filteredZones() ([]dns.ZoneZone, error) {
+	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
+	if err != nil {
+		return nil, err
+	}
 
-// }
+	zones := zoneResponse.GetZones()
+
+	filteredZones := []dns.ZoneZone{}
+
+	for _, zone := range zones {
+		if p.zoneIdFilter.Match(zone.GetId()) && p.domainFilter.Match(zone.GetDomain()) {
+			filteredZones = append(filteredZones, zone)
+			log.Debugf("Matched zone " + zone.GetId())
+		} else {
+			log.Debugf("Filtered zone " + zone.GetId())
+		}
+	}
+
+	return filteredZones, nil
+}
