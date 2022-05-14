@@ -834,6 +834,8 @@ github.com/kr/pty v1.1.5/go.mod h1:9r2w37qlBe7rQ6e1fg1S/9xpWHSnaqNdHD3WcMdbPDA=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/kraney/stackpath v0.0.0-20200916043611-74b3bbc52539 h1:qJt5KDC8b8CtEnNblv8ag2pUg20GFHckQDZO6tKZOW4=
+github.com/kraney/stackpath v0.0.0-20200916043611-74b3bbc52539/go.mod h1:b0p44dg7zc7Xdi3mfGaXUDyFIjBJteL9UdmSzUjreLw=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0/go.mod h1:vmVJ0l/dxyfGW6FmdpVm2joNMFikkuWg0EoCKLGUMNw=
 github.com/leodido/go-urn v1.1.0 h1:Sm1gr51B1kKyfD2BlRcLSiEkffoG96g6TPv6eRoEiB8=
@@ -1239,6 +1241,8 @@ github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556 h1:UbVjBjgJUY
 github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556/go.mod h1:RWc47jtnVuQv6+lY3c768WtXCas/Xi+U5UFc5xULmYg=
 github.com/vultr/govultr/v2 v2.14.1 h1:Z4nd9mXNQ5wd63aw0MZOalFeTkJ8L6Sed3PTqagp4TA=
 github.com/vultr/govultr/v2 v2.14.1/go.mod h1:JjUljQdSZx+MELCAJvZ/JH32bJotmflnsyS0NOjb8Jg=
+github.com/wmarchesi123/stackpath-go v1.0.1 h1:GY95x1gU5chfo9DizaPQYhpnhr1kRfGAKM6xPDo85bs=
+github.com/wmarchesi123/stackpath-go v1.0.1/go.mod h1:OJtL/Z/v8lxMvQyUl51X8lJ/YNbHWzKfjg4xhEGTbdM=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415/go.mod h1:GwrjFmJcFw6At/Gs6z4yjiIwzuJ1/+UwLxMQDVQXShQ=
 github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f/go.mod h1:5yf86TLmAcydyeJq5YvxkGPE2fm/u4myDekKRoLuqhs=

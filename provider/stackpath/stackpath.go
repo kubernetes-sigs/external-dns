@@ -15,3 +15,39 @@ limitations under the License.
 */
 
 package stackpath
+
+import (
+	"context"
+
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
+
+	"github.com/wmarchesi123/stackpath-go/pkg/dns"
+)
+
+type StackPathProvider struct {
+	provider.BaseProvider
+	client dns.APIClient
+	dryRun bool
+}
+
+func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	return nil, nil
+}
+
+func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	return nil
+}
+
+func (p *StackPathProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+	return endpoints
+}
+
+func (p *StackPathProvider) PropertyValuesEqual(name, previous, current string) bool {
+	return previous == current
+}
+
+func (p *StackPathProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+	return endpoint.DomainFilter{}
+}

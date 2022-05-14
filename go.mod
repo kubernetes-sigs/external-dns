@@ -115,6 +115,7 @@ require (
 	github.com/jinzhu/copier v0.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kraney/stackpath v0.0.0-20200916043611-74b3bbc52539 // indirect
 	github.com/leodido/go-urn v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -134,6 +135,7 @@ require (
 	github.com/stretchr/objx v0.3.0 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/ukfast/go-durationstring v1.1.0 // indirect
+	github.com/wmarchesi123/stackpath-go v1.0.1 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
