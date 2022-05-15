@@ -50,6 +50,9 @@ type StackPathConfig struct {
 }
 
 func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
+
+	log.Info("Creating StackPath provider")
+
 	clientId, ok := os.LookupEnv("STACKPATH_CLIENT_ID")
 	if !ok {
 		return nil, fmt.Errorf("STACKPATH_CLIENT_ID environment variable is not set")
@@ -69,6 +72,8 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 	_, err := oauthSource.Token()
 	if err != nil {
 		return nil, fmt.Errorf("STACKPATH_CLIENT_ID or STACKPATH_CLIENT_SECRET environment variable(s) are invalid")
+	} else {
+		log.Info("Successfully authenticated with StackPath")
 	}
 
 	authorizedContext := context.WithValue(config.Context, dns.ContextOAuth2, oauthSource)
@@ -92,6 +97,9 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 //Base Provider Functions
 
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+
+	log.Info("Getting records from StackPath")
+
 	var endpoints []*endpoint.Endpoint
 
 	zones, err := p.zones()
@@ -131,6 +139,8 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
+	log.Info("Applying changes to StackPath")
+
 	zs, err := p.zones()
 	if err != nil {
 		return err
@@ -161,6 +171,9 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 }
 
 func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
+
+	log.Info("Creating targets in StackPath")
+
 	createsByZoneId := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
 	for zoneId, endpoints := range createsByZoneId {
@@ -203,6 +216,9 @@ func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.End
 }
 
 func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
+
+	log.Info("Getting zones from StackPath")
+
 	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
 	if err != nil {
 		return nil, err
