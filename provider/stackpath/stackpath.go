@@ -148,7 +148,8 @@ func (p *StackPathProvider) Zones() ([]dns.ZoneZone, error) {
 	return filteredZones, nil
 }
 
-// Merge Endpoints with the same Name and Type into a single endpoint with multiple Targets.
+// Merge Endpoints with the same Name and Type into a single endpoint with
+// multiple Targets. Borrowed from pkg/digitalocean/provider.go
 func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	endpointsByNameType := map[string][]*endpoint.Endpoint{}
 
