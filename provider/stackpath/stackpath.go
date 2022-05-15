@@ -120,6 +120,11 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 	}
 
+	// Log endpoints
+	log.WithFields(log.Fields{
+		"endpoints": endpoints,
+	}).Debug("Endpoints fetched from StackPath API")
+
 	return mergeEndpointsByNameType(endpoints), nil
 }
 
