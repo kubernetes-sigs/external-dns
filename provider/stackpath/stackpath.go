@@ -154,7 +154,7 @@ func (p *StackPathProvider) Zones() ([]dns.ZoneZone, error) {
 }
 
 // Merge Endpoints with the same Name and Type into a single endpoint with
-// multiple Targets. Borrowed from pkg/digitalocean/provider.go
+// multiple Targets. From pkg/digitalocean/provider.go
 func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	endpointsByNameType := map[string][]*endpoint.Endpoint{}
 
@@ -184,4 +184,20 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 	}
 
 	return result
+}
+
+//From pkg/digitalocean/provider.go
+func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+	endpointsByZone := make(map[string][]*endpoint.Endpoint)
+
+	for _, ep := range endpoints {
+		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
+		if zoneID == "" {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
+			continue
+		}
+		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
+	}
+
+	return endpointsByZone
 }
