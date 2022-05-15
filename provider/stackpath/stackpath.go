@@ -93,7 +93,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	zones, err := p.filteredZones()
+	zones, err := p.Zones()
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 //StackPath Helper Functions
 
-func (p *StackPathProvider) filteredZones() ([]dns.ZoneZone, error) {
+func (p *StackPathProvider) Zones() ([]dns.ZoneZone, error) {
 	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
 	if err != nil {
 		return nil, err
