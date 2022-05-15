@@ -129,6 +129,21 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+
+	//changes.Create
+
+	return nil
+}
+
+func (p *StackPathProvider) Create(endpoints []*endpoint.Endpoint) error {
+	return nil
+}
+
+func (p *StackPathProvider) Delete(endpoints []*endpoint.Endpoint) error {
+	return nil
+}
+
+func (p *StackPathProvider) Update(old []*endpoint.Endpoint, new []*endpoint.Endpoint) error {
 	return nil
 }
 
