@@ -130,20 +130,40 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	//changes.Create
+	zs, err := p.Zones()
+	if err != nil {
+		return err
+	}
+	zones := &zs
+
+	err = p.Create(changes.Create, zones)
+	if err != nil {
+		return err
+	}
+
+	err = p.Delete(changes.Delete, zones)
+	if err != nil {
+		return err
+	}
+
+	err = p.Update(changes.UpdateOld, changes.UpdateNew, zones)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
 
-func (p *StackPathProvider) Create(endpoints []*endpoint.Endpoint) error {
+func (p *StackPathProvider) Create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
+
 	return nil
 }
 
-func (p *StackPathProvider) Delete(endpoints []*endpoint.Endpoint) error {
+func (p *StackPathProvider) Delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
 	return nil
 }
 
-func (p *StackPathProvider) Update(old []*endpoint.Endpoint, new []*endpoint.Endpoint) error {
+func (p *StackPathProvider) Update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
 	return nil
 }
 
@@ -202,17 +222,17 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 }
 
 //From pkg/digitalocean/provider.go
-// func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
-// 	endpointsByZone := make(map[string][]*endpoint.Endpoint)
+func EndpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+	endpointsByZone := make(map[string][]*endpoint.Endpoint)
 
-// 	for _, ep := range endpoints {
-// 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
-// 		if zoneID == "" {
-// 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
-// 			continue
-// 		}
-// 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
-// 	}
+	for _, ep := range endpoints {
+		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
+		if zoneID == "" {
+			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
+			continue
+		}
+		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
+	}
 
-// 	return endpointsByZone
-// }
+	return endpointsByZone
+}
