@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -93,7 +94,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	zones, err := p.Zones()
+	zones, err := p.zones()
 	if err != nil {
 		return nil, err
 	}
@@ -130,23 +131,28 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	zs, err := p.Zones()
+	zs, err := p.zones()
 	if err != nil {
 		return err
 	}
 	zones := &zs
 
-	err = p.Create(changes.Create, zones)
+	zoneIdNameMap := provider.ZoneIDName{}
+	for _, zone := range zs {
+		zoneIdNameMap.Add(zone.GetId(), zone.GetDomain())
+	}
+
+	err = p.create(changes.Create, zones, &zoneIdNameMap)
 	if err != nil {
 		return err
 	}
 
-	err = p.Delete(changes.Delete, zones)
+	err = p.delete(changes.Delete, zones, &zoneIdNameMap)
 	if err != nil {
 		return err
 	}
 
-	err = p.Update(changes.UpdateOld, changes.UpdateNew, zones)
+	err = p.update(changes.UpdateOld, changes.UpdateNew, zones, &zoneIdNameMap)
 	if err != nil {
 		return err
 	}
@@ -154,20 +160,49 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return nil
 }
 
-func (p *StackPathProvider) Create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
+func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
+	createsByZoneId := endpointsByZoneId(*zoneIdNameMap, endpoints)
+
+	for zoneId, endpoints := range createsByZoneId {
+		domain := (*zoneIdNameMap)[zoneId]
+		for _, endpoint := range endpoints {
+			for _, target := range endpoint.Targets {
+
+				p.createTarget(zoneId, domain, endpoint, target)
+
+			}
+		}
+	}
 
 	return nil
 }
 
-func (p *StackPathProvider) Delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
+func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint *endpoint.Endpoint, target string) error {
+
+	msg := dns.NewZoneUpdateZoneRecordMessage()
+	name := strings.TrimSuffix(endpoint.DNSName, domain)
+	if name == "" {
+		name = "@"
+	}
+	msg.SetName(endpoint.DNSName)
+	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
+	msg.SetTtl(int32(endpoint.RecordTTL))
+	msg.SetData(target)
+
+	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+
+	return err
+}
+
+func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
 	return nil
 }
 
-func (p *StackPathProvider) Update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone) error {
+func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
 	return nil
 }
 
-func (p *StackPathProvider) Zones() ([]dns.ZoneZone, error) {
+func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
 	if err != nil {
 		return nil, err
@@ -222,7 +257,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 }
 
 //From pkg/digitalocean/provider.go
-func EndpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
 	endpointsByZone := make(map[string][]*endpoint.Endpoint)
 
 	for _, ep := range endpoints {
