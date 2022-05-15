@@ -127,18 +127,6 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return nil
 }
 
-func (p *StackPathProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	return endpoints
-}
-
-func (p *StackPathProvider) PropertyValuesEqual(name, previous, current string) bool {
-	return previous == current
-}
-
-func (p *StackPathProvider) GetDomainFilter() endpoint.DomainFilterInterface {
-	return endpoint.DomainFilter{}
-}
-
 //StackPath Helper Functions
 
 func (p *StackPathProvider) filteredZones() ([]dns.ZoneZone, error) {
