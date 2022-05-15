@@ -91,8 +91,36 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 //Base Provider Functions
 
 func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	var endpoints []*endpoint.Endpoint
 
-	return nil, nil
+	zones, err := p.filteredZones()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zones {
+
+		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zone.GetId()).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		records := recordsResponse.GetRecords()
+
+		for _, record := range records {
+			if provider.SupportedRecordType(record.GetType()) {
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
+					record.GetName()+"."+zone.GetDomain(),
+					record.GetType(),
+					endpoint.TTL(record.GetTtl()),
+					record.GetData(),
+				),
+				)
+			}
+		}
+	}
+
+	return endpoints, nil
 }
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
@@ -120,7 +148,6 @@ func (p *StackPathProvider) filteredZones() ([]dns.ZoneZone, error) {
 	}
 
 	zones := zoneResponse.GetZones()
-
 	filteredZones := []dns.ZoneZone{}
 
 	for _, zone := range zones {
