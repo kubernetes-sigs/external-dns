@@ -187,17 +187,17 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 }
 
 //From pkg/digitalocean/provider.go
-func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
-	endpointsByZone := make(map[string][]*endpoint.Endpoint)
+// func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+// 	endpointsByZone := make(map[string][]*endpoint.Endpoint)
 
-	for _, ep := range endpoints {
-		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
-		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
-			continue
-		}
-		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
-	}
+// 	for _, ep := range endpoints {
+// 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
+// 		if zoneID == "" {
+// 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
+// 			continue
+// 		}
+// 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
+// 	}
 
-	return endpointsByZone
-}
+// 	return endpointsByZone
+// }
