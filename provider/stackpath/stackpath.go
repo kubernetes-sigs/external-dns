@@ -19,6 +19,7 @@ package stackpath
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -192,6 +193,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 				log.Infof("Creating target for %s in StackPath", endpoint.DNSName)
 				log.Infof("zoneid: %s", zoneID)
 				log.Infof("dnsname: %s", endpoint.DNSName)
+				log.Infof("domain: %s", domain)
 				log.Infof("recordtype: %s", endpoint.RecordType)
 				log.Infof("ttl: %d", endpoint.RecordTTL)
 				log.Infof("target: %s", target)
@@ -212,15 +214,19 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	if name == "" {
 		name = "@"
 	}
+	log.Infof(name)
 	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
 	msg.SetTtl(int32(endpoint.RecordTTL))
-	msg.SetData(target)
+	msg.SetData(strings.Trim(target, "\\\""))
 
-	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	_, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
 	if err != nil {
 		log.Infof(err.Error())
+		r.Body.Close()
+		b, _ := io.ReadAll(r.Body)
+		log.Infof(string(b))
 	}
 
 	return err
