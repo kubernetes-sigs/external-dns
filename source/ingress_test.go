@@ -259,6 +259,22 @@ func testEndpointsFromIngress(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "endpoint with empty targets if no status information in ingress for 2 records",
+			ingress: fakeIngress{
+				dnsnames: []string{"example.com", "example2.com"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.com",
+					Targets: endpoint.Targets{},
+				},
+				{
+					DNSName: "example2.com",
+					Targets: endpoint.Targets{},
+				},
+			},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
