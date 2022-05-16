@@ -147,7 +147,7 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	log.Info("Applying changes to StackPath")
+	//log.Info("Applying changes to StackPath")
 
 	zs, err := p.zones()
 	if err != nil {
@@ -180,7 +180,7 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
 
-	log.Info("Creating records in StackPath")
+	//log.Info("Creating records in StackPath")
 
 	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
@@ -212,7 +212,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	msg.SetTtl(int32(endpoint.RecordTTL))
 	msg.SetData(target)
 
-	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + string(rune(endpoint.RecordTTL)))
+	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + fmt.Sprint(endpoint.RecordTTL))
 
 	a, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
