@@ -210,7 +210,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint *endpoint.Endpoint, target string) error {
 
 	msg := dns.NewZoneUpdateZoneRecordMessage()
-	name := strings.TrimSuffix(endpoint.DNSName, domain)
+	name := strings.TrimSuffix(endpoint.DNSName, "."+domain)
 	if name == "" {
 		name = "@"
 	}
