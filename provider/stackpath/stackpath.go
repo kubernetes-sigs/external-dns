@@ -185,7 +185,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
 	for zoneID, endpoints := range createsByZoneID {
-		log.Infof("Creating %d records in zone %s (%s)", len(endpoints), (*zoneIdNameMap)[zoneID], zoneID)
+		log.Infof("Creating %d records in zone %s (ID:%s)", len(endpoints), (*zoneIdNameMap)[zoneID], zoneID)
 		domain := (*zoneIdNameMap)[zoneID]
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
@@ -224,7 +224,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 		return err
 	}
 
-	log.Infof("Created record" + *a.Record.Id + " " + *a.Record.Name + " " + *a.Record.ZoneId)
+	log.Infof("Created record " + *a.Record.Name + "." + domain + " (ID:" + *a.Record.Id + ")")
 
 	return nil
 }
