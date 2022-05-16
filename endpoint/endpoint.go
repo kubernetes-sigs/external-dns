@@ -170,8 +170,8 @@ func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 }
 
 // EndpointsHaveEmptyTargets checks if an endpoint has no targets
-func EndpointsHaveEmptyTargets(ingEndpoints []*Endpoint) bool {
-	return len(ingEndpoints) == 1 && len(ingEndpoints[0].Targets) == 0
+func EndpointsHaveEmptyTargets(endpoints []*Endpoint) bool {
+	return len(endpoints) == 1 && len(endpoints[0].Targets) == 0
 }
 
 // WithProviderSpecific attaches a key/value pair to the Endpoint and returns the Endpoint.
