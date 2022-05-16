@@ -136,10 +136,11 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	}).Debug("Endpoints fetched from StackPath API")
 
 	merged := mergeEndpointsByNameType(endpoints)
-	log.Infof("Found:")
+	out := "Found:"
 	for _, e := range merged {
-		log.Infof(e.DNSName + " " + e.RecordType + " " + string(rune(len(e.Targets))))
+		out = out + " [" + e.DNSName + " " + e.RecordType + " " + string(rune(len(e.Targets))) + "]"
 	}
+	log.Infof(out)
 
 	return merged, nil
 }
@@ -179,24 +180,15 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
 
-	log.Info("Creating targets in StackPath")
+	log.Info("Creating records in StackPath")
 
 	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
 	for zoneID, endpoints := range createsByZoneID {
-		log.Infof("Creating %d records in zone %s", len(endpoints), zoneID)
+		log.Infof("Creating %d records in zone %s (%s)", len(endpoints), (*zoneIdNameMap)[zoneID], zoneID)
 		domain := (*zoneIdNameMap)[zoneID]
 		for _, endpoint := range endpoints {
-			log.Infof("Creating record %s", endpoint.DNSName)
 			for _, target := range endpoint.Targets {
-
-				log.Infof("Creating target for %s in StackPath", endpoint.DNSName)
-				log.Infof("zoneid: %s", zoneID)
-				log.Infof("dnsname: %s", endpoint.DNSName)
-				log.Infof("domain: %s", domain)
-				log.Infof("recordtype: %s", endpoint.RecordType)
-				log.Infof("ttl: %d", endpoint.RecordTTL)
-				log.Infof("target: %s", target)
 
 				p.createTarget(zoneID, domain, endpoint, target)
 
@@ -214,22 +206,27 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	if name == "" {
 		name = "@"
 	}
-	log.Infof(name)
+
 	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
 	msg.SetTtl(int32(endpoint.RecordTTL))
-	msg.SetData(strings.Trim(target, "\\\""))
+	msg.SetData(target)
 
-	_, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + string(rune(endpoint.RecordTTL)))
+
+	a, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
 	if err != nil {
 		log.Infof(err.Error())
 		r.Body.Close()
 		b, _ := io.ReadAll(r.Body)
 		log.Infof(string(b))
+		return err
 	}
 
-	return err
+	log.Infof("Created record" + *a.Record.Id + " " + *a.Record.Name + " " + *a.Record.ZoneId)
+
+	return nil
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
@@ -241,8 +238,6 @@ func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.End
 }
 
 func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
-
-	log.Info("Getting zones from StackPath")
 
 	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
 	if err != nil {
