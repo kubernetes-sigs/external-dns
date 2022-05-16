@@ -65,6 +65,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		false,
+		false,
 		labels.Everything(),
 	)
 	suite.NoError(err, "should initialize ingress source")
@@ -148,6 +149,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				false,
+				false,
 				labels.Everything(),
 			)
 			if ti.expectError {
@@ -168,6 +170,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ignoreEmptyTargets       bool
 		expected                 []*endpoint.Endpoint
 	}{
 		{
@@ -252,6 +255,7 @@ func testEndpointsFromIngress(t *testing.T) {
 			ingress: fakeIngress{
 				dnsnames: []string{"example.com"},
 			},
+			ignoreEmptyTargets: true,
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.com",
@@ -264,6 +268,7 @@ func testEndpointsFromIngress(t *testing.T) {
 			ingress: fakeIngress{
 				dnsnames: []string{"example.com", "example2.com"},
 			},
+			ignoreEmptyTargets: true,
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName: "example.com",
@@ -275,10 +280,18 @@ func testEndpointsFromIngress(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "endpoint with empty targets if no status information in ingress not ignoring the targets",
+			ingress: fakeIngress{
+				dnsnames: []string{"example.com", "example2.com"},
+			},
+			ignoreEmptyTargets: false,
+			expected:           []*endpoint.Endpoint{},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec, ti.ignoreEmptyTargets), ti.expected)
 		})
 	}
 }
@@ -370,7 +383,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false, false), ti.expected)
 		})
 	}
 }
@@ -391,6 +404,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreHostnameAnnotation bool
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
+		ignoreEmptyTargets       bool
 		ingressLabelSelector     labels.Selector
 	}{
 		{
@@ -1264,6 +1278,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreHostnameAnnotation,
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
+				ti.ignoreEmptyTargets,
 				ti.ingressLabelSelector,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.

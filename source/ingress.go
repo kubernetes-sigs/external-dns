@@ -59,11 +59,12 @@ type ingressSource struct {
 	ingressInformer          netinformers.IngressInformer
 	ignoreIngressTLSSpec     bool
 	ignoreIngressRulesSpec   bool
+	ignoreEmptyTargets       bool
 	labelSelector            labels.Selector
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector) (Source, error) {
+func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ignoreEmptyTargets bool, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -100,6 +101,7 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		ignoreIngressTLSSpec:     ignoreIngressTLSSpec,
 		ignoreIngressRulesSpec:   ignoreIngressRulesSpec,
 		labelSelector:            labelSelector,
+		ignoreEmptyTargets:       ignoreEmptyTargets,
 	}
 	return sc, nil
 }
@@ -127,7 +129,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec, sc.ignoreEmptyTargets)
 
 		// Template configurations are a fallback to determine endpoint targets
 		if sc.fqdnTemplate != nil && endpoint.EndpointsHaveEmptyTargets(ingEndpoints) {
@@ -250,7 +252,7 @@ func endpointsForIngressHostname(hostname string, targets endpoint.Targets, ttl 
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, ignoreEmptyTargets bool) []*endpoint.Endpoint {
 	ttl, err := getTTLFromAnnotations(ing.Annotations)
 	if err != nil {
 		log.Warn(err)
@@ -272,7 +274,11 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForIngressHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			if ignoreEmptyTargets {
+				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForIngressHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			} else {
+				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			}
 		}
 	}
 

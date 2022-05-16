@@ -132,6 +132,7 @@ func main() {
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
+		IgnoreEmptyTargets:             cfg.IgnoreEmptyTargets,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -360,6 +361,7 @@ func main() {
 		DomainFilter:         domainFilter,
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		IgnoreEmptyTargets:   cfg.IgnoreEmptyTargets,
 	}
 
 	if cfg.Once {

@@ -157,6 +157,8 @@ type Controller struct {
 	ManagedRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
+	// Whether endpoints with empty targets should be ignored or not
+	IgnoreEmptyTargets bool
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -192,6 +194,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
 		ManagedRecords:     c.ManagedRecordTypes,
+		IgnoreEmptyTargets: c.IgnoreEmptyTargets,
 	}
 
 	plan = plan.Calculate()

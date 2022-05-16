@@ -87,4 +87,10 @@ func TestEndpointHasEmptyTargets(t *testing.T) {
 	if EndpointsHaveEmptyTargets([]*Endpoint{e2}) {
 		t.Errorf("%#v should have targets", e2)
 	}
+
+	e3 := NewEndpoint("example2.org", "CNAME")
+	if !EndpointsHaveEmptyTargets([]*Endpoint{e, e3}) {
+		t.Errorf("%#v should not have targets", e)
+	}
+
 }

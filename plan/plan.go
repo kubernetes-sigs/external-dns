@@ -48,6 +48,8 @@ type Plan struct {
 	PropertyComparator PropertyComparator
 	// DNS record types that will be considered for management
 	ManagedRecords []string
+	// Whether endpoints with empty targets should be ignored or not
+	IgnoreEmptyTargets bool
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -150,7 +152,7 @@ func (p *Plan) Calculate() *Plan {
 			// intention for the DNS entry, but it is not known where to point them.
 			// This is the case when the status is missing from ingresses because a
 			// failure in the ingress controller.
-			if endpoint.EndpointsHaveEmptyTargets(row.candidates) {
+			if p.IgnoreEmptyTargets && endpoint.EndpointsHaveEmptyTargets(row.candidates) {
 				continue
 			}
 

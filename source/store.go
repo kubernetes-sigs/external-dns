@@ -69,6 +69,7 @@ type Config struct {
 	RequestTimeout                 time.Duration
 	DefaultTargets                 []string
 	OCPRouterName                  string
+	IgnoreEmptyTargets             bool
 }
 
 // ClientGenerator provides clients
@@ -192,7 +193,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
+		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.IgnoreEmptyTargets, cfg.LabelFilter)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
