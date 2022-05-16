@@ -202,7 +202,16 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	msg.SetTtl(int32(endpoint.RecordTTL))
 	msg.SetData(target)
 
-	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	log.Infof("Creating target for %s in StackPath", endpoint.DNSName)
+	log.Infof("dnsname: %s", endpoint.DNSName)
+	log.Infof("recordtype: %s", endpoint.RecordType)
+	log.Infof("ttl: %d", endpoint.RecordTTL)
+	log.Infof("target: %s", target)
+
+	resp, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+
+	log.Infof(*resp.Record.Id)
+	log.Infof(err.Error())
 
 	return err
 }
