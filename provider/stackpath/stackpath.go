@@ -215,7 +215,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
 	msg.SetTtl(int32(endpoint.RecordTTL))
-	msg.SetData(strings.Trim(target, "\\\""))
+	msg.SetData(target)
 
 	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
