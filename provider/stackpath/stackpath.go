@@ -212,7 +212,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	if name == "" {
 		name = "@"
 	}
-	msg.SetName(endpoint.DNSName)
+	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
 	msg.SetTtl(int32(endpoint.RecordTTL))
 	msg.SetData(strings.Trim(target, "\\\""))
@@ -220,7 +220,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
 	//log.Infof(*resp.Record.Id)
-	log.Infof(err.Error())
+	//log.Infof(err.Error())
 
 	return err
 }
