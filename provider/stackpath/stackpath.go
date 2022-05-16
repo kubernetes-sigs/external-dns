@@ -219,8 +219,9 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 
 	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
-	//log.Infof(*resp.Record.Id)
-	//log.Infof(err.Error())
+	if err != nil {
+		log.Infof(err.Error())
+	}
 
 	return err
 }
