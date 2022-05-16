@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes/fake"
@@ -66,6 +67,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 	annotationFilter := ""
 
+	labelSelector :=   labels.Everything()
+
 	host, err := createAmbassadorHost("test-host", "test-service")
 	if err != nil {
 		t.Fatalf("could not create host resource: %v", err)
@@ -78,7 +81,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 		}
 	}
 
-	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace, annotationFilter)
+	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace, annotationFilter,labelSelector)
 	if err != nil {
 		t.Fatalf("could not create ambassador source: %v", err)
 	}
@@ -120,12 +123,15 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		ambassadorHostItems []fakeAmbassadorHost
 		expected            []*endpoint.Endpoint
 		expectError         bool
+		labelSelector       labels.Selector
 	}{
 		{
 			title: "no host",
+			labelSelector:   labels.Everything(),
 		},
 		{
-			title: "two simple hosts",
+			title:         "two simple hosts",
+			labelSelector: labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -170,7 +176,8 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "two simple hosts on different namespaces",
+			title:         "two simple hosts on different namespaces",
+			labelSelector: labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -217,6 +224,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:           "two simple hosts on different namespaces and a target namespace",
 			targetNamespace: "testing1",
+			labelSelector:   labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -253,7 +261,8 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "invalid non matching host ambassador service annotation",
+			title:         "invalid non matching host ambassador service annotation",
+			labelSelector: labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -275,6 +284,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:            "valid matching annotation filter expression",
 			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			labelSelector:    labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -306,6 +316,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:            "valid non-matching annotation filter expression",
 			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			labelSelector:    labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -328,6 +339,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:            "invalid annotation filter expression",
 			annotationFilter: "kubernetes.io/ingress.class in (external ingress)",
+			labelSelector:    labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -351,6 +363,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:            "valid matching annotation filter label",
 			annotationFilter: "kubernetes.io/ingress.class=external-ingress",
+			labelSelector:    labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -382,6 +395,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		{
 			title:            "valid non-matching annotation filter label",
 			annotationFilter: "kubernetes.io/ingress.class=external-ingress",
+			labelSelector:    labels.Everything(),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
 				hostnames: []string{"lb.com"},
@@ -396,6 +410,162 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 					annotations: map[string]string{
 						"external-dns.ambassador-service": "emissary-ingress/emissary",
 						"kubernetes.io/ingress.class":     "internal-ingress",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "valid non-matching label filter expression",
+			labelSelector: labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
+			loadBalancer: fakeAmbassadorLoadBalancerService{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+				name:      "emissary",
+				namespace: "emissary-ingress",
+			},
+			ambassadorHostItems: []fakeAmbassadorHost{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					hostname:  "fake1.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "internal-ingress",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:           "valid matching label filter expression for single host",
+			labelSelector: labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
+			loadBalancer: fakeAmbassadorLoadBalancerService{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+				name:      "emissary",
+				namespace: "emissary-ingress",
+			},
+			ambassadorHostItems: []fakeAmbassadorHost{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					hostname:  "fake1.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "external-ingress",
+					},
+				},
+				{
+					name:      "fake2",
+					namespace: "testing2",
+					hostname:  "fake2.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+						"kubernetes.io/ingress.class":     "internal-ingress",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "internal-ingress",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "fake1.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName: "fake1.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:            "valid matching label filter expression and matching annotation filter",
+			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			labelSelector:    labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
+			loadBalancer: fakeAmbassadorLoadBalancerService{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+				name:      "emissary",
+				namespace: "emissary-ingress",
+			},
+			ambassadorHostItems: []fakeAmbassadorHost{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					hostname:  "fake1.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+						"kubernetes.io/ingress.class":     "external-ingress",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "external-ingress",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "fake1.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+				{
+					DNSName: "fake1.org",
+					Targets: endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:            "valid non matching label filter expression and valid matching annotation filter",
+			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			labelSelector:    labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
+			loadBalancer: fakeAmbassadorLoadBalancerService{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+				name:      "emissary",
+				namespace: "emissary-ingress",
+			},
+			ambassadorHostItems: []fakeAmbassadorHost{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					hostname:  "fake1.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+						"kubernetes.io/ingress.class":     "external-ingress",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "internal-ingress",
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:            "valid matching label filter expression and non matching annotation filter",
+			annotationFilter: "kubernetes.io/ingress.class in (external-ingress)",
+			labelSelector:    labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
+			loadBalancer: fakeAmbassadorLoadBalancerService{
+				ips:       []string{"8.8.8.8"},
+				hostnames: []string{"lb.com"},
+				name:      "emissary",
+				namespace: "emissary-ingress",
+			},
+			ambassadorHostItems: []fakeAmbassadorHost{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					hostname:  "fake1.org",
+					annotations: map[string]string{
+						"external-dns.ambassador-service": "emissary-ingress/emissary",
+						"kubernetes.io/ingress.class":     "internal-ingress",
+					},
+					labels: map[string]string{
+						"kubernetes.io/ingress.class": "external-ingress",
 					},
 				},
 			},
@@ -432,6 +602,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 				fakeKubernetesClient,
 				ti.targetNamespace,
 				ti.annotationFilter,
+				ti.labelSelector,
 			)
 			require.NoError(t, err)
 
@@ -506,6 +677,7 @@ type fakeAmbassadorHost struct {
 	name        string
 	annotations map[string]string
 	hostname    string
+	labels      map[string]string
 }
 
 func (ir fakeAmbassadorHost) Host() *ambassador.Host {
@@ -518,6 +690,7 @@ func (ir fakeAmbassadorHost) Host() *ambassador.Host {
 			Namespace:   ir.namespace,
 			Name:        ir.name,
 			Annotations: ir.annotations,
+			Labels:      ir.labels,
 		},
 		Spec: &spec,
 	}

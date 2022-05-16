@@ -60,6 +60,7 @@ type ambassadorHostSource struct {
 	annotationFilter       string
 	ambassadorHostInformer informers.GenericInformer
 	unstructuredConverter  *unstructuredConverter
+	labelSelector          labels.Selector
 }
 
 // NewAmbassadorHostSource creates a new ambassadorHostSource with the given config.
@@ -69,6 +70,7 @@ func NewAmbassadorHostSource(
 	kubeClient kubernetes.Interface,
 	namespace string,
 	annotationFilter string,
+	labelSelector labels.Selector,
 ) (Source, error) {
 	var err error
 
@@ -104,13 +106,14 @@ func NewAmbassadorHostSource(
 		annotationFilter:       annotationFilter,
 		ambassadorHostInformer: ambassadorHostInformer,
 		unstructuredConverter:  uc,
+		labelSelector:          labelSelector,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all Hosts in the source's namespace(s).
 func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	hosts, err := sc.ambassadorHostInformer.Lister().ByNamespace(sc.namespace).List(labels.Everything())
+	hosts, err := sc.ambassadorHostInformer.Lister().ByNamespace(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
 	}
