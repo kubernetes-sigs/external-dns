@@ -272,7 +272,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForIngressHostame(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForIngressHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
 		}
 	}
 
