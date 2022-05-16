@@ -134,7 +134,13 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		"endpoints": endpoints,
 	}).Debug("Endpoints fetched from StackPath API")
 
-	return mergeEndpointsByNameType(endpoints), nil
+	merged := mergeEndpointsByNameType(endpoints)
+	log.Infof("Found:")
+	for _, e := range merged {
+		log.Infof(e.DNSName + " " + e.RecordType + " " + string(rune(len(e.Targets))))
+	}
+
+	return merged, nil
 }
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
@@ -174,14 +180,23 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 
 	log.Info("Creating targets in StackPath")
 
-	createsByZoneId := endpointsByZoneId(*zoneIdNameMap, endpoints)
+	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
-	for zoneId, endpoints := range createsByZoneId {
-		domain := (*zoneIdNameMap)[zoneId]
+	for zoneID, endpoints := range createsByZoneID {
+		log.Infof("Creating %d records in zone %s", len(endpoints), zoneID)
+		domain := (*zoneIdNameMap)[zoneID]
 		for _, endpoint := range endpoints {
+			log.Infof("Creating record %s", endpoint.DNSName)
 			for _, target := range endpoint.Targets {
 
-				p.createTarget(zoneId, domain, endpoint, target)
+				log.Infof("Creating target for %s in StackPath", endpoint.DNSName)
+				log.Infof("zoneid: %s", zoneID)
+				log.Infof("dnsname: %s", endpoint.DNSName)
+				log.Infof("recordtype: %s", endpoint.RecordType)
+				log.Infof("ttl: %d", endpoint.RecordTTL)
+				log.Infof("target: %s", target)
+
+				p.createTarget(zoneID, domain, endpoint, target)
 
 			}
 		}
@@ -200,17 +215,11 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	msg.SetName(endpoint.DNSName)
 	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
 	msg.SetTtl(int32(endpoint.RecordTTL))
-	msg.SetData(target)
+	msg.SetData(strings.Trim(target, "\\\""))
 
-	log.Infof("Creating target for %s in StackPath", endpoint.DNSName)
-	log.Infof("dnsname: %s", endpoint.DNSName)
-	log.Infof("recordtype: %s", endpoint.RecordType)
-	log.Infof("ttl: %d", endpoint.RecordTTL)
-	log.Infof("target: %s", target)
+	_, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
-	resp, _, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
-
-	log.Infof(*resp.Record.Id)
+	//log.Infof(*resp.Record.Id)
 	log.Infof(err.Error())
 
 	return err
