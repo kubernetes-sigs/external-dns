@@ -253,6 +253,36 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+	deleteByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
+
+	for zoneID, endpoints := range deleteByZoneID {
+		for _, endpoint := range endpoints {
+			for _, target := range endpoint.Targets {
+				recordID, err := recordFromTarget(endpoint, target, records)
+				if err != nil {
+					return err
+				}
+				p.deleteTarget(zoneID, recordID)
+			}
+		}
+	}
+
+	return nil
+}
+
+func (p *StackPathProvider) deleteTarget(zone string, record string) error {
+	resp, err := p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackId, zone, record).Execute()
+
+	if err != nil {
+		log.Infof(err.Error())
+		resp.Body.Close()
+		b, _ := io.ReadAll(resp.Body)
+		log.Infof(string(b))
+		return err
+	}
+
+	log.Infof("Deleted record " + record)
+
 	return nil
 }
 
@@ -331,6 +361,22 @@ func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 	return endpointsByZone
 }
 
-// func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord) (dns.ZoneZoneRecord, error) {
+func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord) (string, error) {
 
-// }
+	var name string
+
+	if endpoint.DNSName == "" {
+		name = "@"
+	} else {
+		name = endpoint.DNSName
+	}
+
+	for _, record := range *records {
+
+		if record.GetName() == name && record.GetType() == endpoint.RecordType && record.GetData() == target && record.GetTtl() == int32(endpoint.RecordTTL) {
+			return *record.Id, nil
+		}
+	}
+
+	return "", fmt.Errorf("record not found")
+}
