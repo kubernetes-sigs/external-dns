@@ -253,6 +253,8 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+	log.Infof("Deleting %s record(s)", len(endpoints))
+
 	deleteByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
 	for zoneID, endpoints := range deleteByZoneID {
