@@ -130,11 +130,6 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		}
 	}
 
-	// Log endpoints
-	log.WithFields(log.Fields{
-		"endpoints": endpoints,
-	}).Debug("Endpoints fetched from StackPath API")
-
 	merged := mergeEndpointsByNameType(endpoints)
 	out := "Found:"
 	for _, e := range merged {
@@ -145,9 +140,32 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return merged, nil
 }
 
-func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error) {
 
-	//log.Info("Applying changes to StackPath")
+	log.Info("Getting records from StackPath")
+
+	var records []dns.ZoneZoneRecord
+
+	zones, err := p.zones()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, zone := range zones {
+
+		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zone.GetId()).Execute()
+		if err != nil {
+			return nil, err
+		}
+
+		records = append(records, recordsResponse.GetRecords()...)
+
+	}
+
+	return records, nil
+}
+
+func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
 	zs, err := p.zones()
 	if err != nil {
@@ -160,17 +178,22 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		zoneIdNameMap.Add(zone.GetId(), zone.GetDomain())
 	}
 
+	records, err := p.StackPathStyleRecords()
+	if err != nil {
+		return err
+	}
+
 	err = p.create(changes.Create, zones, &zoneIdNameMap)
 	if err != nil {
 		return err
 	}
 
-	err = p.delete(changes.Delete, zones, &zoneIdNameMap)
+	err = p.delete(changes.Delete, zones, &zoneIdNameMap, &records)
 	if err != nil {
 		return err
 	}
 
-	err = p.update(changes.UpdateOld, changes.UpdateNew, zones, &zoneIdNameMap)
+	err = p.update(changes.UpdateOld, changes.UpdateNew, zones, &zoneIdNameMap, &records)
 	if err != nil {
 		return err
 	}
@@ -229,11 +252,11 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 	return nil
 }
 
-func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
+func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
 	return nil
 }
 
-func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
+func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
 	return nil
 }
 
@@ -307,3 +330,7 @@ func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 
 	return endpointsByZone
 }
+
+// func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord) (dns.ZoneZoneRecord, error) {
+
+// }
