@@ -296,6 +296,10 @@ func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 }
 
 func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+
+	p.create(new, zones, zoneIdNameMap)
+	p.delete(old, zones, zoneIdNameMap, records)
+
 	return nil
 }
 
