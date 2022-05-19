@@ -162,6 +162,12 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 
 	}
 
+	out := "Found:"
+	for _, e := range records {
+		out = out + " [" + e.GetName() + " " + e.GetType() + " " + e.GetData() + " " + fmt.Sprint(e.GetTtl()) + "]"
+	}
+	log.Infof(out)
+
 	return records, nil
 }
 
@@ -253,14 +259,15 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
-	log.Infof("Deleting %s record(s)", len(endpoints))
+	log.Infof("Deleting %s record(s)", fmt.Sprint(len(endpoints)))
 
 	deleteByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
 	for zoneID, endpoints := range deleteByZoneID {
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
-				recordID, err := recordFromTarget(endpoint, target, records)
+				domain := (*zoneIdNameMap)[zoneID]
+				recordID, err := recordFromTarget(endpoint, target, records, domain)
 				if err != nil {
 					return err
 				}
@@ -363,7 +370,7 @@ func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 	return endpointsByZone
 }
 
-func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord) (string, error) {
+func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord, domain string) (string, error) {
 
 	log.Infof("recordFromTarget")
 
@@ -372,7 +379,7 @@ func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns
 	if endpoint.DNSName == "" {
 		name = "@"
 	} else {
-		name = endpoint.DNSName
+		name = strings.TrimSuffix(endpoint.DNSName, "."+domain)
 	}
 
 	for i, record := range *records {
