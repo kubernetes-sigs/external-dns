@@ -365,6 +365,8 @@ func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 
 func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord) (string, error) {
 
+	log.Infof("recordFromTarget")
+
 	var name string
 
 	if endpoint.DNSName == "" {
@@ -373,7 +375,19 @@ func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns
 		name = endpoint.DNSName
 	}
 
-	for _, record := range *records {
+	for i, record := range *records {
+
+		log.Infof("record " + fmt.Sprint(i))
+		log.Infof("record.GetName() " + record.GetName())
+		log.Infof("name " + name)
+		log.Infof("record.GetType() " + record.GetType())
+		log.Infof("endpoint.RecordType " + endpoint.RecordType)
+		log.Infof("record.GetData() " + record.GetData())
+		log.Infof("target " + target)
+		log.Infof("record.GetId() " + record.GetId())
+		log.Infof("record.GetTtl() " + fmt.Sprint(record.GetTtl()))
+		log.Infof("endpoint.RecordTTL() " + fmt.Sprint(endpoint.RecordTTL))
+		log.Infof("record.GetZoneId() " + record.GetZoneId())
 
 		if record.GetName() == name && record.GetType() == endpoint.RecordType && record.GetData() == target && record.GetTtl() == int32(endpoint.RecordTTL) {
 			return *record.Id, nil
