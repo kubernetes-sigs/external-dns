@@ -205,8 +205,7 @@ kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"defa
   --from-file /local/path/to/credentials.json
 ```
 
-After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name.
-
+After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name. Make sure to uncomment out the section that mounts the secret to the ExternalDNS pods.
 ### Workload Identity
 
 [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) allows workloads in your GKE cluster to impersonate GSA (Google Service Accounts) using KSA (Kubernetes Service Accounts) configured during deployemnt.  These are the steps to use this feature with ExternalDNS.
@@ -268,11 +267,15 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: external-dns
+  labels:
+    app.kubernetes.io/name: external-dns
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: external-dns
+  labels:
+    app.kubernetes.io/name: external-dns
 rules:
   - apiGroups: [""]
     resources: ["services","endpoints","pods","nodes"]
@@ -285,6 +288,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
+  labels:
+    app.kubernetes.io/name: external-dns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -298,16 +303,18 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
+  labels:
+    app.kubernetes.io/name: external-dns  
 spec:
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      app: external-dns
+      app.kubernetes.io/name: external-dns
   template:
     metadata:
       labels:
-        app: external-dns
+        app.kubernetes.io/name: external-dns
     spec:
       serviceAccountName: external-dns
       containers:
@@ -323,6 +330,17 @@ spec:
             - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
             - --registry=txt
             - --txt-owner-id=my-identifier
+      #     # uncomment below if static credentials are used  
+      #     env:
+      #       - name: GOOGLE_APPLICATION_CREDENTIALS
+      #         value: /etc/secrets/service-account/credentials.json
+      #     volumeMounts:
+      #       - name: google-service-account
+      #         mountPath: /etc/secrets/service-account/
+      # volumes:
+      #   - name: google-service-account
+      #     secret:
+      #       secretName: external-dns
 ```
 
 Create the deployment for ExternalDNS:
