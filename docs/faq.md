@@ -88,7 +88,7 @@ ExternalDNS will allow you to opt into any Services and Ingresses that you want 
 
 ### I'm afraid you will mess up my DNS records!
 
-ExternalDNS since v0.3 implements the concept of owning DNS records. This means that ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
+Since v0.3, ExternalDNS can be configured to use an ownership registry. When this option is enabled, ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
 
 For now ExternalDNS uses TXT records to label owned records, and there might be other alternatives coming in the future releases.
 

@@ -222,8 +222,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: nginx
-          servicePort: 80
+          service:
+            name: nginx
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 Again, after roughly two minutes check that a corresponding DNS record for your Ingress was created.
@@ -471,8 +474,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: nginx
-          servicePort: 80
+          service:
+            name: nginx
+            port:
+              number: 80
+        pathType: Prefix
 ---
 apiVersion: v1
 kind: Service

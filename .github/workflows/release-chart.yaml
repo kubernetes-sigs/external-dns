@@ -17,6 +17,29 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Get chart version
+        id: chart_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          chart_version="$(grep -Po "(?<=^version: ).+" charts/external-dns/Chart.yaml)"
+          echo "::set-output name=version::${chart_version}"
+
+      - name: Get changelog entry
+        id: changelog_reader
+        uses: mindsers/changelog-reader-action@v2
+        with:
+          path: charts/external-dns/CHANGELOG.md
+          version: "v${{ steps.chart_version.outputs.version }}"
+
+      - name: Create release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat <<"EOF" > charts/external-dns/_release-notes.md
+          ${{ steps.changelog_reader.outputs.changes }}
+          EOF
+
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
@@ -28,7 +51,8 @@ jobs:
           version: v3.6.3
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.2.1
+        uses: helm/chart-releaser-action@v1.3.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
+          CR_RELEASE_NOTES_FILE: _release-notes.md
