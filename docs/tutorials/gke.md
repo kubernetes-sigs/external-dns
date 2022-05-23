@@ -201,9 +201,7 @@ gcloud iam service-accounts keys create /local/path/to/credentials.json \
 Create a Kubernetes secret with the credentials in the same namespace of ExternalDNS.
 
 ```bash
-EXTENALDNS_NS="default"
-
-kubectl create secret generic "external-dns" --namespace $EXTENALDNS_NS \
+kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"default"} \
   --from-file /local/path/to/credentials.json
 ```
 
@@ -231,7 +229,7 @@ Add an IAM policy binding bewtween the workload identity GSA and ExternalDNS GSA
 ```bash
 gcloud iam service-accounts add-iam-policy-binding $DNS_SA_EMAIL \
   --role "roles/iam.workloadIdentityUser" \
-  --member "serviceAccount:$GKE_PROJECT_ID.svc.id.goog[$EXTENALDNS_NS/external-dns]"
+  --member "serviceAccount:$GKE_PROJECT_ID.svc.id.goog[${EXTERNALDNS_NS:-"default"}/external-dns]"
 ```
 
 #### Deploy External DNS
@@ -244,7 +242,7 @@ Add the proper workload identity annotation to the ExternalDNS KSA.
 
 ```bash
 kubectl annotate serviceaccount "external-dns" \
-  --namespace $EXTENALDNS_NS \
+  --namespace ${EXTERNALDNS_NS:-"default"} \
   "iam.gke.io/gcp-service-account=$DNS_SA_EMAIL"
 ```
 
@@ -254,7 +252,7 @@ Update the Pod spec to schedule the workloads on nodes that use Workload Identit
 
 ```bash
 kubectl patch deployment "external-dns" \
-  --namespace $EXTENALDNS_NS \
+  --namespace ${EXTERNALDNS_NS:-"default"} \
   --patch \
  '{"spec": {"template": {"spec": {"nodeSelector": {"iam.gke.io/gke-metadata-server-enabled": "true"}}}}}'
 ```
