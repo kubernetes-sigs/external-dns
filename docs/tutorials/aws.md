@@ -386,7 +386,7 @@ export EXTERNALDNS_NS="default" # externaldns, kube-addons, etc
 
 # create namespace if it does not yet exist
 kubectl get namespaces | grep -q $EXTERNALDNS_NS || \
-  echo kubectl create namespace $EXTERNALDNS_NS
+  kubectl create namespace $EXTERNALDNS_NS
 ```
 
 ### Manifest (for clusters without RBAC enabled)
