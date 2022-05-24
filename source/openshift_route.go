@@ -23,7 +23,7 @@ import (
 	"text/template"
 
 	routev1 "github.com/openshift/api/route/v1"
-	versioned "github.com/openshift/client-go/route/clientset/versioned"
+	"github.com/openshift/client-go/route/clientset/versioned"
 	extInformers "github.com/openshift/client-go/route/informers/externalversions"
 	routeInformer "github.com/openshift/client-go/route/informers/externalversions/route/v1"
 	log "github.com/sirupsen/logrus"
@@ -189,7 +189,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 	}
 	return endpoints, nil
 }
@@ -249,14 +249,14 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	if host != "" {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, false)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ocpRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 		}
 	}
 	return endpoints

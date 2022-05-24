@@ -229,8 +229,21 @@ func suitableType(target string) string {
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, ignoreEmptyTargets bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
+	if ignoreEmptyTargets && len(targets) == 0 {
+		epNull := &endpoint.Endpoint{
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          targets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
+		}
+		endpoints = append(endpoints, epNull)
+		return endpoints
+	}
 
 	var aTargets endpoint.Targets
 	var cnameTargets endpoint.Targets

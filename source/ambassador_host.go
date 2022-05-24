@@ -173,7 +173,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname
 		if hostname != "" {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 		}
 	}
 

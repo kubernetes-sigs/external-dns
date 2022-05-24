@@ -317,7 +317,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 	}
 	return endpoints, nil
 }
@@ -364,14 +364,14 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		if src == "" {
 			continue
 		}
-		endpoints = append(endpoints, endpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier, false)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(rg.Metadata.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 		}
 	}
 	return endpoints

@@ -218,13 +218,13 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, false)...)
 	}
 
 	if tcpIngress.Spec.Rules != nil {
 		for _, rule := range tcpIngress.Spec.Rules {
 			if rule.Host != "" {
-				endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+				endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, false)...)
 			}
 		}
 	}
