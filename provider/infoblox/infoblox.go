@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	transform "github.com/StackExchange/dnscontrol/pkg/transform"
+	"github.com/StackExchange/dnscontrol/pkg/transform"
 	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 	"github.com/sirupsen/logrus"
 
@@ -45,8 +45,8 @@ func isNotFoundError(err error) bool {
 	return ok
 }
 
-// InfobloxConfig clarifies the method signature
-type InfobloxConfig struct {
+// StartupConfig clarifies the method signature
+type StartupConfig struct {
 	DomainFilter  endpoint.DomainFilter
 	ZoneIDFilter  provider.ZoneIDFilter
 	Host          string
@@ -63,8 +63,8 @@ type InfobloxConfig struct {
 	CacheDuration int
 }
 
-// InfobloxProvider implements the DNS provider for Infoblox.
-type InfobloxProvider struct {
+// ProviderConfig implements the DNS provider for Infoblox.
+type ProviderConfig struct {
 	provider.BaseProvider
 	client        ibclient.IBConnector
 	domainFilter  endpoint.DomainFilter
@@ -117,57 +117,66 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 }
 
 // NewInfobloxProvider creates a new Infoblox provider.
-func NewInfobloxProvider(infobloxConfig InfobloxConfig) (*InfobloxProvider, error) {
-	hostConfig := ibclient.HostConfig{
-		Host:     infobloxConfig.Host,
-		Port:     strconv.Itoa(infobloxConfig.Port),
-		Username: infobloxConfig.Username,
-		Password: infobloxConfig.Password,
-		Version:  infobloxConfig.Version,
+func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
+	hostCfg := ibclient.HostConfig{
+		Host:    ibStartupCfg.Host,
+		Port:    strconv.Itoa(ibStartupCfg.Port),
+		Version: ibStartupCfg.Version,
+	}
+
+	authCfg := ibclient.AuthConfig{
+		Username: ibStartupCfg.Username,
+		Password: ibStartupCfg.Password,
 	}
 
 	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
 	httpRequestTimeout := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT", 60)
 
 	transportConfig := ibclient.NewTransportConfig(
-		strconv.FormatBool(infobloxConfig.SSLVerify),
+		strconv.FormatBool(ibStartupCfg.SSLVerify),
 		httpRequestTimeout,
 		httpPoolConnections,
 	)
 
-	var requestBuilder ibclient.HttpRequestBuilder
-	if infobloxConfig.MaxResults != 0 || infobloxConfig.FQDNRexEx != "" {
+	var (
+		requestBuilder ibclient.HttpRequestBuilder
+		err            error
+	)
+	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRexEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(infobloxConfig.MaxResults, infobloxConfig.FQDNRexEx)
+		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRexEx)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
-		requestBuilder = &ibclient.WapiRequestBuilder{}
+		requestBuilder, err = ibclient.NewWapiRequestBuilder(hostCfg, authCfg)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	requestor := &ibclient.WapiHttpRequestor{}
 
-	client, err := ibclient.NewConnector(hostConfig, transportConfig, requestBuilder, requestor)
+	client, err := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, requestor)
 
 	if err != nil {
 		return nil, err
 	}
 
-	providerCfg := &InfobloxProvider{
+	providerCfg := &ProviderConfig{
 		client:        client,
-		domainFilter:  infobloxConfig.DomainFilter,
-		zoneIDFilter:  infobloxConfig.ZoneIDFilter,
-		dryRun:        infobloxConfig.DryRun,
-		view:          infobloxConfig.View,
-		fqdnRegEx:     infobloxConfig.FQDNRexEx,
-		createPTR:     infobloxConfig.CreatePTR,
-		cacheDuration: infobloxConfig.CacheDuration,
+		domainFilter:  ibStartupCfg.DomainFilter,
+		zoneIDFilter:  ibStartupCfg.ZoneIDFilter,
+		dryRun:        ibStartupCfg.DryRun,
+		view:          ibStartupCfg.View,
+		fqdnRegEx:     ibStartupCfg.FQDNRexEx,
+		createPTR:     ibStartupCfg.CreatePTR,
+		cacheDuration: ibStartupCfg.CacheDuration,
 	}
 
 	return providerCfg, nil
 }
 
 // Records gets the current records.
-func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch zones: %s", err)
@@ -179,26 +188,39 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objA := ibclient.NewEmptyRecordA()
 		objA.View = p.view
 		objA.Zone = zone.Fqdn
-		err = p.client.GetObject(objA, "", ibclient.NewQueryParams(false, nil), &resA)
+		err = p.client.GetObject(objA, "", nil, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
 		for _, res := range resA {
-			newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr)
-			if p.createPTR {
-				newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "false")
-			}
 			// Check if endpoint already exists and add to existing endpoint if it does
 			foundExisting := false
 			for _, ep := range endpoints {
-				if ep.DNSName == newEndpoint.DNSName && ep.RecordType == newEndpoint.RecordType {
-					logrus.Debugf("Adding target '%s' to existing A record '%s'", newEndpoint.Targets[0], ep.DNSName)
-					ep.Targets = append(ep.Targets, newEndpoint.Targets[0])
+				if ep.DNSName == res.Name && ep.RecordType == endpoint.RecordTypeA {
 					foundExisting = true
+					duplicateTarget := false
+
+					for _, t := range ep.Targets {
+						if t == res.Ipv4Addr {
+							duplicateTarget = true
+							break
+						}
+					}
+
+					if duplicateTarget {
+						logrus.Debugf("A duplicate target '%s' found for existing A record '%s'", res.Ipv4Addr, ep.DNSName)
+					} else {
+						logrus.Debugf("Adding target '%s' to existing A record '%s'", res.Ipv4Addr, res.Name)
+						ep.Targets = append(ep.Targets, res.Ipv4Addr)
+					}
 					break
 				}
 			}
 			if !foundExisting {
+				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeA, res.Ipv4Addr)
+				if p.createPTR {
+					newEndpoint.WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true")
+				}
 				endpoints = append(endpoints, newEndpoint)
 			}
 		}
@@ -212,7 +234,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objH := ibclient.NewEmptyHostRecord()
 		objH.View = p.view
 		objH.Zone = zone.Fqdn
-		err = p.client.GetObject(objH, "", ibclient.NewQueryParams(false, nil), &resH)
+		err = p.client.GetObject(objH, "", nil, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -234,7 +256,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 		objC := ibclient.NewEmptyRecordCNAME()
 		objC.View = p.view
 		objC.Zone = zone.Fqdn
-		err = p.client.GetObject(objC, "", ibclient.NewQueryParams(false, nil), &resC)
+		err = p.client.GetObject(objC, "", nil, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -253,7 +275,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				objP := ibclient.NewEmptyRecordPTR()
 				objP.Zone = arpaZone
 				objP.View = p.view
-				err = p.client.GetObject(objP, "", ibclient.NewQueryParams(false, nil), &resP)
+				err = p.client.GetObject(objP, "", nil, &resP)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
 				}
@@ -270,7 +292,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				View: p.view,
 			},
 		)
-		err = p.client.GetObject(objT, "", ibclient.NewQueryParams(false, nil), &resT)
+		err = p.client.GetObject(objT, "", nil, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -281,8 +303,34 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				res.Text = strconv.Quote(res.Text)
 			}
 
-			logrus.Debugf("Record='%s' TXT:'%s'", res.Name, res.Text)
-			endpoints = append(endpoints, endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text))
+			foundExisting := false
+
+			for _, ep := range endpoints {
+				if ep.DNSName == res.Name && ep.RecordType == endpoint.RecordTypeTXT {
+					foundExisting = true
+					duplicateTarget := false
+
+					for _, t := range ep.Targets {
+						if t == res.Text {
+							duplicateTarget = true
+							break
+						}
+					}
+
+					if duplicateTarget {
+						logrus.Debugf("A duplicate target '%s' found for existing TXT record '%s'", res.Text, ep.DNSName)
+					} else {
+						logrus.Debugf("Adding target '%s' to existing TXT record '%s'", res.Text, res.Name)
+						ep.Targets = append(ep.Targets, res.Text)
+					}
+					break
+				}
+			}
+			if !foundExisting {
+				logrus.Debugf("Record='%s' TXT:'%s'", res.Name, res.Text)
+				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text)
+				endpoints = append(endpoints, newEndpoint)
+			}
 		}
 	}
 
@@ -320,7 +368,7 @@ func (p *InfobloxProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 	return endpoints, nil
 }
 
-func (p *InfobloxProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	// Update user specified TTL (0 == disabled)
 	for i := range endpoints {
 		endpoints[i].RecordTTL = endpoint.TTL(p.cacheDuration)
@@ -351,7 +399,7 @@ func (p *InfobloxProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*en
 }
 
 // ApplyChanges applies the given changes.
-func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *ProviderConfig) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.zones()
 	if err != nil {
 		return err
@@ -363,14 +411,14 @@ func (p *InfobloxProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	return nil
 }
 
-func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
+func (p *ProviderConfig) zones() ([]ibclient.ZoneAuth, error) {
 	var res, result []ibclient.ZoneAuth
 	obj := ibclient.NewZoneAuth(
 		ibclient.ZoneAuth{
 			View: p.view,
 		},
 	)
-	err := p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
+	err := p.client.GetObject(obj, "", nil, &res)
 	if err != nil && !isNotFoundError(err) {
 		return nil, err
 	}
@@ -392,7 +440,7 @@ func (p *InfobloxProvider) zones() ([]ibclient.ZoneAuth, error) {
 
 type infobloxChangeMap map[string][]*endpoint.Endpoint
 
-func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Changes) (infobloxChangeMap, infobloxChangeMap) {
+func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Changes) (infobloxChangeMap, infobloxChangeMap) {
 	created := infobloxChangeMap{}
 	deleted := infobloxChangeMap{}
 
@@ -433,7 +481,7 @@ func (p *InfobloxProvider) mapChanges(zones []ibclient.ZoneAuth, changes *plan.C
 	return created, deleted
 }
 
-func (p *InfobloxProvider) findZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
+func (p *ProviderConfig) findZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
 	var result *ibclient.ZoneAuth
 
 	// Go through every zone looking for the longest name (i.e. most specific) as a matching suffix
@@ -452,7 +500,7 @@ func (p *InfobloxProvider) findZone(zones []ibclient.ZoneAuth, name string) *ibc
 	return result
 }
 
-func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
+func (p *ProviderConfig) findReverseZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
 	ip := net.ParseIP(name)
 	networks := map[int]*ibclient.ZoneAuth{}
 	maxMask := 0
@@ -474,7 +522,7 @@ func (p *InfobloxProvider) findReverseZone(zones []ibclient.ZoneAuth, name strin
 	return networks[maxMask]
 }
 
-func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targetIndex int) (recordSet infobloxRecordSet, err error) {
+func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, targetIndex int) (recordSet infobloxRecordSet, err error) {
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
 		var res []ibclient.RecordA
@@ -483,7 +531,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -499,7 +547,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -515,7 +563,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -539,7 +587,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 			},
 		)
 		if getObject {
-			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, nil), &res)
+			err = p.client.GetObject(obj, "", nil, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -552,7 +600,7 @@ func (p *InfobloxProvider) recordSet(ep *endpoint.Endpoint, getObject bool, targ
 	return
 }
 
-func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
+func (p *ProviderConfig) createRecords(created infobloxChangeMap) {
 	for zone, endpoints := range created {
 		for _, ep := range endpoints {
 			for targetIndex := range ep.Targets {
@@ -577,7 +625,7 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 				)
 
 				recordSet, err := p.recordSet(ep, false, targetIndex)
-				if err != nil {
+				if err != nil && !isNotFoundError(err) {
 					logrus.Errorf(
 						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
 						ep.RecordType,
@@ -604,13 +652,13 @@ func (p *InfobloxProvider) createRecords(created infobloxChangeMap) {
 	}
 }
 
-func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
+func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
 			for targetIndex := range ep.Targets {
 				recordSet, err := p.recordSet(ep, true, targetIndex)
-				if err != nil {
+				if err != nil && !isNotFoundError(err) {
 					logrus.Errorf(
 						"Failed to retrieve %s record named '%s' to '%s' for DNS zone '%s': %v",
 						ep.RecordType,
@@ -659,7 +707,7 @@ func (p *InfobloxProvider) deleteRecords(deleted infobloxChangeMap) {
 						}
 					}
 				}
-				if err != nil {
+				if err != nil && !isNotFoundError(err) {
 					logrus.Errorf(
 						"Failed to delete %s record named '%s' to '%s' for Infoblox DNS zone '%s': %v",
 						ep.RecordType,
