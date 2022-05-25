@@ -382,8 +382,8 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *InfobloxProvider {
-	return &InfobloxProvider{
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
+	return &ProviderConfig{
 		client:       client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -689,16 +689,19 @@ func TestInfobloxReverseZones(t *testing.T) {
 }
 
 func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
 		Username: "user",
 		Password: "abcd",
-		Version:  "2.3.1",
 	}
 
 	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
-	requestBuilder.Init(hostConfig)
+	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
 
@@ -712,16 +715,19 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 }
 
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
 		Username: "user",
 		Password: "abcd",
-		Version:  "2.3.1",
 	}
 
 	requestBuilder := NewExtendedRequestBuilder(54321, "")
-	requestBuilder.Init(hostConfig)
+	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewEmptyRecordCNAME()
 	obj.Zone = "foo.bar.com"
