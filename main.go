@@ -113,6 +113,8 @@ func main() {
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		GatewayNamespace:               cfg.GatewayNamespace,
+		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,
 		PublishInternal:                cfg.PublishInternal,
 		PublishHostIP:                  cfg.PublishHostIP,
