@@ -4,17 +4,14 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.50.0
-	git.blindage.org/21h/hcloud-dns v0.0.0-20200807003420-f768ffe03f8d
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.10
 	github.com/Azure/go-autorest/autorest/adal v0.9.5
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.3
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.0.0
-	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
-	github.com/alecthomas/colour v0.1.0 // indirect
+	github.com/alecthomas/assert v1.0.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
-	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.357
 	github.com/aws/aws-sdk-go v1.31.4
 	github.com/cloudflare/cloudflare-go v0.10.1
@@ -29,7 +26,7 @@ require (
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.4.1
 	github.com/gophercloud/gophercloud v0.1.0
-	github.com/gorilla/mux v1.7.4 // indirect
+	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/infobloxopen/infoblox-go-client v0.0.0-20180606155407-61dc5f9b0a65
 	github.com/linki/instrumented_http v0.2.0
 	github.com/linode/linodego v0.19.0
@@ -47,7 +44,7 @@ require (
 	github.com/sanyu/dynectsoap v0.0.0-20181203081243-b83de5edc4e0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.6.0.20200623155123-84df6c4b5301
 	github.com/sirupsen/logrus v1.6.0
-	github.com/stretchr/testify v1.5.1
+	github.com/stretchr/testify v1.6.1
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/transip/gotransip v5.8.2+incompatible
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
