@@ -3,7 +3,7 @@ kind: Kustomization
 
 images:
   - name: k8s.gcr.io/external-dns/external-dns
-    newTag: v0.11.0
+    newTag: v0.12.0
 
 resources:
   - ./external-dns-deployment.yaml
