@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/bodgit/tsig"
-	extendedClient "github.com/bodgit/tsig/client"
 	"github.com/bodgit/tsig/gss"
 	"github.com/miekg/dns"
 
@@ -75,7 +74,9 @@ var (
 	tsigAlgs = map[string]string{
 		"hmac-md5":    dns.HmacMD5,
 		"hmac-sha1":   dns.HmacSHA1,
+		"hmac-sha224": dns.HmacSHA224,
 		"hmac-sha256": dns.HmacSHA256,
+		"hmac-sha384": dns.HmacSHA384,
 		"hmac-sha512": dns.HmacSHA512,
 	}
 )
@@ -127,8 +128,8 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 }
 
 // KeyName will return TKEY name and TSIG handle to use for followon actions with a secure connection
-func (r rfc2136Provider) KeyData() (keyName *string, handle *gss.GSS, err error) {
-	handle, err = gss.New()
+func (r rfc2136Provider) KeyData() (keyName string, handle *gss.Client, err error) {
+	handle, err = gss.NewClient(new(dns.Client))
 	if err != nil {
 		return keyName, handle, err
 	}
@@ -394,7 +395,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 	log.Debugf("SendMessage")
 
-	c := new(extendedClient.Client)
+	c := new(dns.Client)
 	c.SingleInflight = true
 
 	if !r.insecure {
@@ -406,17 +407,11 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			defer handle.Close()
 			defer handle.DeleteContext(keyName)
 
-			c.TsigAlgorithm = map[string]*extendedClient.TsigAlgorithm{
-				tsig.GSS: {
-					Generate: handle.GenerateGSS,
-					Verify:   handle.VerifyGSS,
-				},
-			}
-			c.TsigSecret = map[string]string{*keyName: ""}
+			c.TsigProvider = handle
 
-			msg.SetTsig(*keyName, tsig.GSS, clockSkew, time.Now().Unix())
+			msg.SetTsig(keyName, tsig.GSS, clockSkew, time.Now().Unix())
 		} else {
-			c.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
+			c.TsigProvider = tsig.HMAC{r.tsigKeyName: r.tsigSecret}
 			msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
 	}

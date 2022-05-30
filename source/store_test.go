@@ -33,11 +33,13 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
 )
 
 type MockClientGenerator struct {
 	mock.Mock
 	kubeClient              kubernetes.Interface
+	gatewayClient           gateway.Interface
 	istioClient             istioclient.Interface
 	cloudFoundryClient      *cfclient.Client
 	dynamicKubernetesClient dynamic.Interface
@@ -51,6 +53,15 @@ func (m *MockClientGenerator) KubeClient() (kubernetes.Interface, error) {
 		return m.kubeClient, nil
 	}
 	return nil, args.Error(1)
+}
+
+func (m *MockClientGenerator) GatewayClient() (gateway.Interface, error) {
+	args := m.Called()
+	if args.Error(1) != nil {
+		return nil, args.Error(1)
+	}
+	m.gatewayClient = args.Get(0).(gateway.Interface)
+	return m.gatewayClient, nil
 }
 
 func (m *MockClientGenerator) IstioClient() (istioclient.Interface, error) {
