@@ -33,6 +33,7 @@ require (
 	github.com/gophercloud/gophercloud v0.22.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client/v2 v2.1.2-0.20220407114022-6f4c71443168
+	github.com/ionos-developer/dns-sdk-go v0.0.5
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.32.2
 	github.com/maxatome/go-testdeep v1.11.0
