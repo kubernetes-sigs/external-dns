@@ -134,12 +134,8 @@ func (r rfc2136Provider) KeyData() (keyName string, handle *gss.Client, err erro
 		return keyName, handle, err
 	}
 
-	rawHost, _, err := net.SplitHostPort(r.nameserver)
-	if err != nil {
-		return keyName, handle, err
-	}
+	keyName, _, err = handle.NegotiateContextWithCredentials(r.nameserver, r.krb5Realm, r.krb5Username, r.krb5Password)
 
-	keyName, _, err = handle.NegotiateContextWithCredentials(rawHost, r.krb5Realm, r.krb5Username, r.krb5Password)
 	return keyName, handle, err
 }
 
