@@ -36,6 +36,8 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+
+	"go.uber.org/ratelimit"
 )
 
 const (
@@ -134,6 +136,53 @@ type Route53API interface {
 	ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error)
 }
 
+type RateLimitedRoute53API struct {
+	rateLimiter ratelimit.Limiter
+	client      Route53API
+}
+
+func NewRateLimitedRoute53API(route53api Route53API, rateLimit int) *RateLimitedRoute53API {
+	return &RateLimitedRoute53API{
+		rateLimiter: ratelimit.New(rateLimit),
+		client:      route53api,
+	}
+}
+
+func (r *RateLimitedRoute53API) ListResourceRecordSetsPagesWithContext(ctx context.Context, input *route53.ListResourceRecordSetsInput, fn func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error {
+	r.rateLimiter.Take()
+	fnWithThrottling := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
+		result := fn(resp, lastPage)
+		r.rateLimiter.Take()
+		return result
+	}
+	return r.client.ListResourceRecordSetsPagesWithContext(ctx, input, fnWithThrottling, opts...)
+}
+
+func (r *RateLimitedRoute53API) ChangeResourceRecordSetsWithContext(ctx context.Context, input *route53.ChangeResourceRecordSetsInput, opts ...request.Option) (*route53.ChangeResourceRecordSetsOutput, error) {
+	r.rateLimiter.Take()
+	return r.client.ChangeResourceRecordSetsWithContext(ctx, input, opts...)
+}
+
+func (r *RateLimitedRoute53API) CreateHostedZoneWithContext(ctx context.Context, input *route53.CreateHostedZoneInput, opts ...request.Option) (*route53.CreateHostedZoneOutput, error) {
+	r.rateLimiter.Take()
+	return r.client.CreateHostedZoneWithContext(ctx, input, opts...)
+}
+
+func (r *RateLimitedRoute53API) ListHostedZonesPagesWithContext(ctx context.Context, input *route53.ListHostedZonesInput, fn func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool), opts ...request.Option) error {
+	r.rateLimiter.Take()
+	fnWithThrottling := func(resp *route53.ListHostedZonesOutput, lastPage bool) (shouldContinue bool) {
+		result := fn(resp, lastPage)
+		r.rateLimiter.Take()
+		return result
+	}
+	return r.client.ListHostedZonesPagesWithContext(ctx, input, fnWithThrottling, opts...)
+}
+
+func (r *RateLimitedRoute53API) ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error) {
+	r.rateLimiter.Take()
+	return r.client.ListTagsForResourceWithContext(ctx, input, opts...)
+}
+
 type zonesListCache struct {
 	age      time.Time
 	duration time.Duration
@@ -175,6 +224,7 @@ type AWSConfig struct {
 	PreferCNAME          bool
 	DryRun               bool
 	ZoneCacheDuration    time.Duration
+	RateLimit            int
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -211,7 +261,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	}
 
 	provider := &AWSProvider{
-		client:               route53.New(session),
+		client:               NewRateLimitedRoute53API(route53.New(session), awsConfig.RateLimit),
 		domainFilter:         awsConfig.DomainFilter,
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,

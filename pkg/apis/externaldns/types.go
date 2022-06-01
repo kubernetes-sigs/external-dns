@@ -90,6 +90,7 @@ type Config struct {
 	AWSAPIRetries                     int
 	AWSPreferCNAME                    bool
 	AWSZoneCacheDuration              time.Duration
+	AWSRateLimit                      int
 	AWSSDServiceCleanup               bool
 	AzureConfigFile                   string
 	AzureResourceGroup                string
@@ -242,6 +243,7 @@ var defaultConfig = &Config{
 	AWSAPIRetries:               3,
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
+	AWSRateLimit:                5,
 	AWSSDServiceCleanup:         false,
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
@@ -445,6 +447,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
+	app.Flag("aws-rate-limit", "Maximum requests per second sent to the AWS Route53 API (default: 5)").Default(strconv.Itoa(defaultConfig.AWSRateLimit)).IntVar(&cfg.AWSRateLimit)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)

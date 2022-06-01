@@ -915,11 +915,17 @@ aws iam delete-policy --policy-arn $POLICY_ARN
 ## Throttling
 
 Route53 has a [5 API requests per second per account hard quota](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests-route-53).
-Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:
+By default, each ExternalDNS instances will throttle itself to 5 requests per seconds.
+But running several fast polling ExternalDNS instances in a given account can easily hit that limit.
+Some ways to reduce the request rate include:
+* Setting a lower per-instance rate-limit
+  * `--aws-rate-limit=3`
 * Reduce the polling loop's synchronization interval at the possible cost of slower change propagation (but see `--events` below to reduce the impact).
   * `--interval=5m` (default `1m`)
 * Trigger the polling loop on changes to K8s objects, rather than only at `interval`, to have responsive updates with long poll intervals
   * `--events`
+* Enabling the TXT records cache to avoid fetching Route53 state at every polling loop
+  * `--txt-cache-interval=12h`
 * Limit the [sources watched](https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L364) when the `--events` flag is specified to specific types, namespaces, labels, or annotations
   * `--source=ingress --source=service` - specify multiple times for multiple sources
   * `--namespace=my-app`
