@@ -126,6 +126,7 @@ var (
 		OCPRouterName:               "default",
 		IBMCloudProxied:             false,
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
+		YandexAuthorizationType:     "instance-service-account",
 	}
 
 	overriddenConfig = &Config{
@@ -231,6 +232,7 @@ var (
 		RFC2136BatchChangeSize:      100,
 		IBMCloudProxied:             true,
 		IBMCloudConfigFile:          "ibmcloud.json",
+		YandexAuthorizationType:     "instance-service-account",
 	}
 )
 
