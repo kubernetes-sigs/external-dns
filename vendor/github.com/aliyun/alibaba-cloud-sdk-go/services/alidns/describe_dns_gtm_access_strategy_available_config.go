@@ -82,13 +82,13 @@ type DescribeDnsGtmAccessStrategyAvailableConfigResponse struct {
 	*responses.BaseResponse
 	RequestId             string                                             `json:"RequestId" xml:"RequestId"`
 	SuggestSetDefaultLine bool                                               `json:"SuggestSetDefaultLine" xml:"SuggestSetDefaultLine"`
+	SelectedDomainLines   SelectedDomainLines                                `json:"SelectedDomainLines" xml:"SelectedDomainLines"`
 	SelectedIpv4Lines     SelectedIpv4Lines                                  `json:"SelectedIpv4Lines" xml:"SelectedIpv4Lines"`
 	SelectedIpv6Lines     SelectedIpv6Lines                                  `json:"SelectedIpv6Lines" xml:"SelectedIpv6Lines"`
-	SelectedDomainLines   SelectedDomainLines                                `json:"SelectedDomainLines" xml:"SelectedDomainLines"`
-	Ipv4AddrPools         Ipv4AddrPools                                      `json:"Ipv4AddrPools" xml:"Ipv4AddrPools"`
-	Lines                 LinesInDescribeDnsGtmAccessStrategyAvailableConfig `json:"Lines" xml:"Lines"`
-	Ipv6AddrPools         Ipv6AddrPools                                      `json:"Ipv6AddrPools" xml:"Ipv6AddrPools"`
 	DomainAddrPools       DomainAddrPools                                    `json:"DomainAddrPools" xml:"DomainAddrPools"`
+	Ipv4AddrPools         Ipv4AddrPools                                      `json:"Ipv4AddrPools" xml:"Ipv4AddrPools"`
+	Ipv6AddrPools         Ipv6AddrPools                                      `json:"Ipv6AddrPools" xml:"Ipv6AddrPools"`
+	Lines                 LinesInDescribeDnsGtmAccessStrategyAvailableConfig `json:"Lines" xml:"Lines"`
 }
 
 // CreateDescribeDnsGtmAccessStrategyAvailableConfigRequest creates a request to invoke DescribeDnsGtmAccessStrategyAvailableConfig API

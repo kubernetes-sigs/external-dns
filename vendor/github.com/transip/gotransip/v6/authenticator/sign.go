@@ -28,7 +28,10 @@ func signWithKey(body []byte, key []byte) (string, error) {
 		return "", fmt.Errorf("could not parse private key: %w", err)
 	}
 
-	pkey := parsed.(*rsa.PrivateKey)
+	pkey, ok := parsed.(*rsa.PrivateKey)
+	if !ok {
+		return "", fmt.Errorf("private key was no RSA key: %T", parsed)
+	}
 	digest := sha512.Sum512(body)
 
 	enc, err := rsa.SignPKCS1v15(rand.Reader, pkey, crypto.SHA512, digest[:])

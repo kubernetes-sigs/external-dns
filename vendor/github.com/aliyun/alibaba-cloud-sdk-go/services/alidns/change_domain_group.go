@@ -82,9 +82,9 @@ type ChangeDomainGroupRequest struct {
 // ChangeDomainGroupResponse is the response struct for api ChangeDomainGroup
 type ChangeDomainGroupResponse struct {
 	*responses.BaseResponse
+	GroupName string `json:"GroupName" xml:"GroupName"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	GroupId   string `json:"GroupId" xml:"GroupId"`
-	GroupName string `json:"GroupName" xml:"GroupName"`
 }
 
 // CreateChangeDomainGroupRequest creates a request to invoke ChangeDomainGroup API

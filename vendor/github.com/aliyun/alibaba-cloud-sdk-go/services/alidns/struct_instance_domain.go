@@ -17,7 +17,7 @@ package alidns
 
 // InstanceDomain is a nested struct in alidns response
 type InstanceDomain struct {
-	DomainName      string `json:"DomainName" xml:"DomainName"`
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
+	DomainName      string `json:"DomainName" xml:"DomainName"`
 	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 }

@@ -19,8 +19,8 @@ package alidns
 type Line struct {
 	GroupCode  string `json:"GroupCode" xml:"GroupCode"`
 	LineCode   string `json:"LineCode" xml:"LineCode"`
-	LineName   string `json:"LineName" xml:"LineName"`
 	GroupName  string `json:"GroupName" xml:"GroupName"`
+	LineName   string `json:"LineName" xml:"LineName"`
 	Status     string `json:"Status" xml:"Status"`
 	FatherCode string `json:"FatherCode" xml:"FatherCode"`
 }

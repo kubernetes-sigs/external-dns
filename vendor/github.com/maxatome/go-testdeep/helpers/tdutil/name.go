@@ -16,8 +16,8 @@ import (
 // BuildTestName builds a string from given args.
 //
 // If optional first args is a string containing at least one %, args
-// are passed as is to fmt.Sprintf, else they are passed to fmt.Sprint.
-func BuildTestName(args ...interface{}) string {
+// are passed as is to [fmt.Sprintf], else they are passed to [fmt.Sprint].
+func BuildTestName(args ...any) string {
 	if len(args) == 0 {
 		return ""
 	}
@@ -30,8 +30,8 @@ func BuildTestName(args ...interface{}) string {
 // FbuildTestName builds a string from given args.
 //
 // If optional first args is a string containing at least one %, args
-// are passed as is to fmt.Fprintf, else they are passed to fmt.Fprint.
-func FbuildTestName(w io.Writer, args ...interface{}) {
+// are passed as is to [fmt.Fprintf], else they are passed to [fmt.Fprint].
+func FbuildTestName(w io.Writer, args ...any) {
 	if len(args) == 0 {
 		return
 	}

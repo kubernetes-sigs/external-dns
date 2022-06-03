@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // ZoneCustomSSL represents custom SSL certificate metadata.
@@ -280,7 +278,7 @@ func (api *API) CreateSSL(ctx context.Context, zoneID string, options ZoneCustom
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -296,7 +294,7 @@ func (api *API) ListSSL(ctx context.Context, zoneID string) ([]ZoneCustomSSL, er
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -312,7 +310,7 @@ func (api *API) SSLDetails(ctx context.Context, zoneID, certificateID string) (Z
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -328,7 +326,7 @@ func (api *API) UpdateSSL(ctx context.Context, zoneID, certificateID string, opt
 	}
 	var r zoneCustomSSLResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return ZoneCustomSSL{}, errors.Wrap(err, errUnmarshalError)
+		return ZoneCustomSSL{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -350,7 +348,7 @@ func (api *API) ReprioritizeSSL(ctx context.Context, zoneID string, p []ZoneCust
 	}
 	var r zoneCustomSSLsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -377,4 +375,18 @@ func (api *API) DeleteSSL(ctx context.Context, zoneID, certificateID string) err
 >>>>>>> 4d7e5ad26 (update vendored files)
 	}
 	return nil
+}
+
+// SSLValidationRecord displays Domain Control Validation tokens.
+type SSLValidationRecord struct {
+	CnameTarget string `json:"cname_target,omitempty"`
+	CnameName   string `json:"cname,omitempty"`
+
+	TxtName  string `json:"txt_name,omitempty"`
+	TxtValue string `json:"txt_value,omitempty"`
+
+	HTTPUrl  string `json:"http_url,omitempty"`
+	HTTPBody string `json:"http_body,omitempty"`
+
+	Emails []string `json:"emails,omitempty"`
 }

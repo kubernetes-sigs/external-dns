@@ -74,7 +74,7 @@ func (se ServiceError) Error() string {
 		if err != nil {
 			result += fmt.Sprintf(" Details=%v", se.Details)
 		}
-		result += fmt.Sprintf(" Details=%v", string(d))
+		result += fmt.Sprintf(" Details=%s", d)
 	}
 
 	if se.InnerError != nil {
@@ -82,7 +82,7 @@ func (se ServiceError) Error() string {
 		if err != nil {
 			result += fmt.Sprintf(" InnerError=%v", se.InnerError)
 		}
-		result += fmt.Sprintf(" InnerError=%v", string(d))
+		result += fmt.Sprintf(" InnerError=%s", d)
 	}
 
 	if se.AdditionalInfo != nil {
@@ -90,7 +90,7 @@ func (se ServiceError) Error() string {
 		if err != nil {
 			result += fmt.Sprintf(" AdditionalInfo=%v", se.AdditionalInfo)
 		}
-		result += fmt.Sprintf(" AdditionalInfo=%v", string(d))
+		result += fmt.Sprintf(" AdditionalInfo=%s", d)
 	}
 
 	return result
@@ -341,13 +341,13 @@ func WithErrorUnlessStatusCode(codes ...int) autorest.RespondDecorator {
 				b, decodeErr := autorest.CopyAndDecode(encodedAs, resp.Body, &e)
 				resp.Body = ioutil.NopCloser(&b)
 				if decodeErr != nil {
-					return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b.String(), decodeErr)
+					return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b, decodeErr)
 				}
 				if e.ServiceError == nil {
 					// Check if error is unwrapped ServiceError
 					decoder := autorest.NewDecoder(encodedAs, bytes.NewReader(b.Bytes()))
 					if err := decoder.Decode(&e.ServiceError); err != nil {
-						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b.String(), err)
+						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b, err)
 					}
 
 					// for example, should the API return the literal value `null` as the response
@@ -370,6 +370,7 @@ func WithErrorUnlessStatusCode(codes ...int) autorest.RespondDecorator {
 					rawBody := map[string]interface{}{}
 					decoder := autorest.NewDecoder(encodedAs, bytes.NewReader(b.Bytes()))
 					if err := decoder.Decode(&rawBody); err != nil {
+<<<<<<< HEAD
 						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b.String(), err)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -1391,6 +1392,11 @@ func WithErrorUnlessStatusCode(codes ...int) autorest.RespondDecorator {
 =======
 						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b.String(), err)
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b.String(), err)
+=======
+						return fmt.Errorf("autorest/azure: error response cannot be parsed: %q error: %v", b, err)
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 					}
 
 					e.ServiceError = &ServiceError{

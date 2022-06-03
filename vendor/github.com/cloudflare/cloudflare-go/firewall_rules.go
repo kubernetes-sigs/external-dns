@@ -8,10 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // FirewallRule is the struct of the firewall rule.
@@ -242,6 +239,7 @@ type FirewallRule struct {
 	Priority    interface{} `json:"priority"`
 	Filter      Filter      `json:"filter"`
 	Products    []string    `json:"products,omitempty"`
+	Ref         string      `json:"ref,omitempty"`
 	CreatedOn   time.Time   `json:"created_on,omitempty"`
 	ModifiedOn  time.Time   `json:"modified_on,omitempty"`
 }
@@ -262,44 +260,85 @@ type FirewallRuleResponse struct {
 	Response
 }
 
+// FirewallRuleCreateParams contains required and optional params
+// for creating a firewall rule.
+type FirewallRuleCreateParams struct {
+	ID          string      `json:"id,omitempty"`
+	Paused      bool        `json:"paused"`
+	Description string      `json:"description"`
+	Action      string      `json:"action"`
+	Priority    interface{} `json:"priority"`
+	Filter      Filter      `json:"filter"`
+	Products    []string    `json:"products,omitempty"`
+	Ref         string      `json:"ref,omitempty"`
+}
+
+// FirewallRuleUpdateParams contains required and optional params
+// for updating a firewall rule.
+type FirewallRuleUpdateParams struct {
+	ID          string      `json:"id"`
+	Paused      bool        `json:"paused"`
+	Description string      `json:"description"`
+	Action      string      `json:"action"`
+	Priority    interface{} `json:"priority"`
+	Filter      Filter      `json:"filter"`
+	Products    []string    `json:"products,omitempty"`
+	Ref         string      `json:"ref,omitempty"`
+}
+
+type FirewallRuleListParams struct {
+	ResultInfo
+}
+
 // FirewallRules returns all firewall rules.
 //
+// Automatically paginates all results unless `params.PerPage` and `params.Page`
+// is set.
+//
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/get/#get-all-rules
-func (api *API) FirewallRules(ctx context.Context, zoneID string, pageOpts PaginationOptions) ([]FirewallRule, error) {
-	uri := fmt.Sprintf("/zones/%s/firewall/rules", zoneID)
-	v := url.Values{}
-
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
+func (api *API) FirewallRules(ctx context.Context, rc *ResourceContainer, params FirewallRuleListParams) ([]FirewallRule, *ResultInfo, error) {
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
+	}
+	if params.PerPage < 1 {
+		params.PerPage = 50
+	}
+	if params.Page < 1 {
+		params.Page = 1
 	}
 
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
+	var firewallRules []FirewallRule
+	var fResponse FirewallRulesDetailResponse
+	for {
+		uri := buildURI(fmt.Sprintf("/zones/%s/firewall/rules", rc.Identifier), params)
+
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []FirewallRule{}, &ResultInfo{}, err
+		}
+
+		err = json.Unmarshal(res, &fResponse)
+		if err != nil {
+			return []FirewallRule{}, &ResultInfo{}, fmt.Errorf("failed to unmarshal filters JSON data: %w", err)
+		}
+
+		firewallRules = append(firewallRules, fResponse.Result...)
+		params.ResultInfo = fResponse.ResultInfo.Next()
+
+		if params.ResultInfo.Done() || !autoPaginate {
+			break
+		}
 	}
 
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
-	}
-
-	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
-	if err != nil {
-		return []FirewallRule{}, err
-	}
-
-	var firewallDetailResponse FirewallRulesDetailResponse
-	err = json.Unmarshal(res, &firewallDetailResponse)
-	if err != nil {
-		return []FirewallRule{}, errors.Wrap(err, errUnmarshalError)
-	}
-
-	return firewallDetailResponse.Result, nil
+	return firewallRules, &fResponse.ResultInfo, nil
 }
 
 // FirewallRule returns a single firewall rule based on the ID.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/get/#get-by-rule-id
-func (api *API) FirewallRule(ctx context.Context, zoneID, firewallRuleID string) (FirewallRule, error) {
-	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", zoneID, firewallRuleID)
+func (api *API) FirewallRule(ctx context.Context, rc *ResourceContainer, firewallRuleID string) (FirewallRule, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", rc.Identifier, firewallRuleID)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -309,7 +348,7 @@ func (api *API) FirewallRule(ctx context.Context, zoneID, firewallRuleID string)
 	var firewallRuleResponse FirewallRuleResponse
 	err = json.Unmarshal(res, &firewallRuleResponse)
 	if err != nil {
-		return FirewallRule{}, errors.Wrap(err, errUnmarshalError)
+		return FirewallRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return firewallRuleResponse.Result, nil
@@ -318,10 +357,10 @@ func (api *API) FirewallRule(ctx context.Context, zoneID, firewallRuleID string)
 // CreateFirewallRules creates new firewall rules.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/post/
-func (api *API) CreateFirewallRules(ctx context.Context, zoneID string, firewallRules []FirewallRule) ([]FirewallRule, error) {
-	uri := fmt.Sprintf("/zones/%s/firewall/rules", zoneID)
+func (api *API) CreateFirewallRules(ctx context.Context, rc *ResourceContainer, params []FirewallRuleCreateParams) ([]FirewallRule, error) {
+	uri := fmt.Sprintf("/zones/%s/firewall/rules", rc.Identifier)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, firewallRules)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
 		return []FirewallRule{}, err
 	}
@@ -329,7 +368,7 @@ func (api *API) CreateFirewallRules(ctx context.Context, zoneID string, firewall
 	var firewallRulesDetailResponse FirewallRulesDetailResponse
 	err = json.Unmarshal(res, &firewallRulesDetailResponse)
 	if err != nil {
-		return []FirewallRule{}, errors.Wrap(err, errUnmarshalError)
+		return []FirewallRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return firewallRulesDetailResponse.Result, nil
@@ -338,14 +377,14 @@ func (api *API) CreateFirewallRules(ctx context.Context, zoneID string, firewall
 // UpdateFirewallRule updates a single firewall rule.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/put/#update-a-single-rule
-func (api *API) UpdateFirewallRule(ctx context.Context, zoneID string, firewallRule FirewallRule) (FirewallRule, error) {
-	if firewallRule.ID == "" {
-		return FirewallRule{}, errors.Errorf("firewall rule ID cannot be empty")
+func (api *API) UpdateFirewallRule(ctx context.Context, rc *ResourceContainer, params FirewallRuleUpdateParams) (FirewallRule, error) {
+	if params.ID == "" {
+		return FirewallRule{}, fmt.Errorf("firewall rule ID cannot be empty")
 	}
 
-	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", zoneID, firewallRule.ID)
+	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", rc.Identifier, params.ID)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, firewallRule)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
 		return FirewallRule{}, err
 	}
@@ -353,7 +392,7 @@ func (api *API) UpdateFirewallRule(ctx context.Context, zoneID string, firewallR
 	var firewallRuleResponse FirewallRuleResponse
 	err = json.Unmarshal(res, &firewallRuleResponse)
 	if err != nil {
-		return FirewallRule{}, errors.Wrap(err, errUnmarshalError)
+		return FirewallRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return firewallRuleResponse.Result, nil
@@ -362,16 +401,16 @@ func (api *API) UpdateFirewallRule(ctx context.Context, zoneID string, firewallR
 // UpdateFirewallRules updates a single firewall rule.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/put/#update-multiple-rules
-func (api *API) UpdateFirewallRules(ctx context.Context, zoneID string, firewallRules []FirewallRule) ([]FirewallRule, error) {
-	for _, firewallRule := range firewallRules {
+func (api *API) UpdateFirewallRules(ctx context.Context, rc *ResourceContainer, params []FirewallRuleUpdateParams) ([]FirewallRule, error) {
+	for _, firewallRule := range params {
 		if firewallRule.ID == "" {
-			return []FirewallRule{}, errors.Errorf("firewall ID cannot be empty")
+			return []FirewallRule{}, fmt.Errorf("firewall ID cannot be empty")
 		}
 	}
 
-	uri := fmt.Sprintf("/zones/%s/firewall/rules", zoneID)
+	uri := fmt.Sprintf("/zones/%s/firewall/rules", rc.Identifier)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, firewallRules)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
 		return []FirewallRule{}, err
 	}
@@ -379,7 +418,7 @@ func (api *API) UpdateFirewallRules(ctx context.Context, zoneID string, firewall
 	var firewallRulesDetailResponse FirewallRulesDetailResponse
 	err = json.Unmarshal(res, &firewallRulesDetailResponse)
 	if err != nil {
-		return []FirewallRule{}, errors.Wrap(err, errUnmarshalError)
+		return []FirewallRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return firewallRulesDetailResponse.Result, nil
@@ -388,12 +427,12 @@ func (api *API) UpdateFirewallRules(ctx context.Context, zoneID string, firewall
 // DeleteFirewallRule deletes a single firewall rule.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/delete/#delete-a-single-rule
-func (api *API) DeleteFirewallRule(ctx context.Context, zoneID, firewallRuleID string) error {
+func (api *API) DeleteFirewallRule(ctx context.Context, rc *ResourceContainer, firewallRuleID string) error {
 	if firewallRuleID == "" {
-		return errors.Errorf("firewall rule ID cannot be empty")
+		return fmt.Errorf("firewall rule ID cannot be empty")
 	}
 
-	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", zoneID, firewallRuleID)
+	uri := fmt.Sprintf("/zones/%s/firewall/rules/%s", rc.Identifier, firewallRuleID)
 
 	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
@@ -406,14 +445,14 @@ func (api *API) DeleteFirewallRule(ctx context.Context, zoneID, firewallRuleID s
 // DeleteFirewallRules deletes multiple firewall rules at once.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-firewall-rules/delete/#delete-multiple-rules
-func (api *API) DeleteFirewallRules(ctx context.Context, zoneID string, firewallRuleIDs []string) error {
+func (api *API) DeleteFirewallRules(ctx context.Context, rc *ResourceContainer, firewallRuleIDs []string) error {
 	v := url.Values{}
 
 	for _, ruleID := range firewallRuleIDs {
 		v.Add("id", ruleID)
 	}
 
-	uri := fmt.Sprintf("/zones/%s/firewall/rules?%s", zoneID, v.Encode())
+	uri := fmt.Sprintf("/zones/%s/firewall/rules?%s", rc.Identifier, v.Encode())
 
 	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {

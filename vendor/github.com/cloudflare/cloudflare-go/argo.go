@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 var validSettingValues = []string{"on", "off"}
@@ -44,7 +42,7 @@ func (api *API) ArgoSmartRouting(ctx context.Context, zoneID string) (ArgoFeatur
 	var argoDetailsResponse ArgoDetailsResponse
 	err = json.Unmarshal(res, &argoDetailsResponse)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errUnmarshalError)
+		return ArgoFeatureSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return argoDetailsResponse.Result, nil
 }
@@ -54,7 +52,7 @@ func (api *API) ArgoSmartRouting(ctx context.Context, zoneID string) (ArgoFeatur
 // API reference: https://api.cloudflare.com/#argo-smart-routing-patch-argo-smart-routing-setting
 func (api *API) UpdateArgoSmartRouting(ctx context.Context, zoneID, settingValue string) (ArgoFeatureSetting, error) {
 	if !contains(validSettingValues, settingValue) {
-		return ArgoFeatureSetting{}, errors.New(fmt.Sprintf("invalid setting value '%s'. must be 'on' or 'off'", settingValue))
+		return ArgoFeatureSetting{}, fmt.Errorf("invalid setting value '%s'. must be 'on' or 'off'", settingValue)
 	}
 
 	uri := fmt.Sprintf("/zones/%s/argo/smart_routing", zoneID)
@@ -67,14 +65,14 @@ func (api *API) UpdateArgoSmartRouting(ctx context.Context, zoneID, settingValue
 	var argoDetailsResponse ArgoDetailsResponse
 	err = json.Unmarshal(res, &argoDetailsResponse)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errUnmarshalError)
+		return ArgoFeatureSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return argoDetailsResponse.Result, nil
 }
 
 // ArgoTieredCaching returns the current settings for tiered caching.
 //
-// API reference: TBA
+// API reference: TBA.
 func (api *API) ArgoTieredCaching(ctx context.Context, zoneID string) (ArgoFeatureSetting, error) {
 	uri := fmt.Sprintf("/zones/%s/argo/tiered_caching", zoneID)
 
@@ -86,17 +84,17 @@ func (api *API) ArgoTieredCaching(ctx context.Context, zoneID string) (ArgoFeatu
 	var argoDetailsResponse ArgoDetailsResponse
 	err = json.Unmarshal(res, &argoDetailsResponse)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errUnmarshalError)
+		return ArgoFeatureSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return argoDetailsResponse.Result, nil
 }
 
 // UpdateArgoTieredCaching updates the setting for tiered caching.
 //
-// API reference: TBA
+// API reference: TBA.
 func (api *API) UpdateArgoTieredCaching(ctx context.Context, zoneID, settingValue string) (ArgoFeatureSetting, error) {
 	if !contains(validSettingValues, settingValue) {
-		return ArgoFeatureSetting{}, errors.New(fmt.Sprintf("invalid setting value '%s'. must be 'on' or 'off'", settingValue))
+		return ArgoFeatureSetting{}, fmt.Errorf("invalid setting value '%s'. must be 'on' or 'off'", settingValue)
 	}
 
 	uri := fmt.Sprintf("/zones/%s/argo/tiered_caching", zoneID)
@@ -222,7 +220,7 @@ func (api *API) UpdateArgoTieredCaching(ctx context.Context, zoneID, settingValu
 	var argoDetailsResponse ArgoDetailsResponse
 	err = json.Unmarshal(res, &argoDetailsResponse)
 	if err != nil {
-		return ArgoFeatureSetting{}, errors.Wrap(err, errUnmarshalError)
+		return ArgoFeatureSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return argoDetailsResponse.Result, nil
 }

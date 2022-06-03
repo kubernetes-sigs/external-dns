@@ -4,6 +4,11 @@ coverage:
     project:
       default:
         threshold: 1%
+        informational: true
+    patch:
+      defualt:
+        only_pulls: true
+        informational: true
 
 comment:
 <<<<<<< HEAD
@@ -12,8 +17,14 @@ comment:
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
   layout: 'diff'
+<<<<<<< HEAD
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
   layout: 'diff'
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+
+github_checks: false
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

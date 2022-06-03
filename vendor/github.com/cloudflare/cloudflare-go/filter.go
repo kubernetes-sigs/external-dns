@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
-	"strings"
 
-	"github.com/pkg/errors"
+	"errors"
 )
+
+var ErrNotEnoughFilterIDsProvided = errors.New("at least one filter ID must be provided.")
 
 // Filter holds the structure of the filter type.
 type Filter struct {
@@ -62,11 +62,35 @@ type FilterValidationExpressionMessage struct {
 	Message string `json:"message"`
 }
 
+// FilterCreateParams contains required and optional params
+// for creating a filter.
+type FilterCreateParams struct {
+	ID          string `json:"id,omitempty"`
+	Expression  string `json:"expression"`
+	Paused      bool   `json:"paused"`
+	Description string `json:"description"`
+	Ref         string `json:"ref,omitempty"`
+}
+
+// FilterUpdateParams contains required and optional params
+// for updating a filter.
+type FilterUpdateParams struct {
+	ID          string `json:"id"`
+	Expression  string `json:"expression"`
+	Paused      bool   `json:"paused"`
+	Description string `json:"description"`
+	Ref         string `json:"ref,omitempty"`
+}
+
+type FilterListParams struct {
+	ResultInfo
+}
+
 // Filter returns a single filter in a zone based on the filter ID.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/get/#get-by-filter-id
-func (api *API) Filter(ctx context.Context, zoneID, filterID string) (Filter, error) {
-	uri := fmt.Sprintf("/zones/%s/filters/%s", zoneID, filterID)
+func (api *API) Filter(ctx context.Context, rc *ResourceContainer, filterID string) (Filter, error) {
+	uri := fmt.Sprintf("/zones/%s/filters/%s", rc.Identifier, filterID)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -76,52 +100,63 @@ func (api *API) Filter(ctx context.Context, zoneID, filterID string) (Filter, er
 	var filterResponse FilterDetailResponse
 	err = json.Unmarshal(res, &filterResponse)
 	if err != nil {
-		return Filter{}, errors.Wrap(err, errUnmarshalError)
+		return Filter{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return filterResponse.Result, nil
 }
 
-// Filters returns all filters for a zone.
+// Filters returns filters for a zone.
+//
+// Automatically paginates all results unless `params.PerPage` and `params.Page`
+// is set.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/get/#get-all-filters
-func (api *API) Filters(ctx context.Context, zoneID string, pageOpts PaginationOptions) ([]Filter, error) {
-	uri := fmt.Sprintf("/zones/%s/filters", zoneID)
-	v := url.Values{}
-
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
+func (api *API) Filters(ctx context.Context, rc *ResourceContainer, params FilterListParams) ([]Filter, *ResultInfo, error) {
+	autoPaginate := true
+	if params.PerPage >= 1 || params.Page >= 1 {
+		autoPaginate = false
+	}
+	if params.PerPage < 1 {
+		params.PerPage = 50
+	}
+	if params.Page < 1 {
+		params.Page = 1
 	}
 
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
+	var filters []Filter
+	var fResponse FiltersDetailResponse
+	for {
+		uri := buildURI(fmt.Sprintf("/zones/%s/filters", rc.Identifier), params)
+
+		res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+		if err != nil {
+			return []Filter{}, &ResultInfo{}, err
+		}
+
+		err = json.Unmarshal(res, &fResponse)
+		if err != nil {
+			return []Filter{}, &ResultInfo{}, fmt.Errorf("failed to unmarshal filters JSON data: %w", err)
+		}
+
+		filters = append(filters, fResponse.Result...)
+		params.ResultInfo = fResponse.ResultInfo.Next()
+
+		if params.ResultInfo.Done() || !autoPaginate {
+			break
+		}
 	}
 
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
-	}
-
-	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
-	if err != nil {
-		return []Filter{}, err
-	}
-
-	var filtersResponse FiltersDetailResponse
-	err = json.Unmarshal(res, &filtersResponse)
-	if err != nil {
-		return []Filter{}, errors.Wrap(err, errUnmarshalError)
-	}
-
-	return filtersResponse.Result, nil
+	return filters, &fResponse.ResultInfo, nil
 }
 
 // CreateFilters creates new filters.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/post/
-func (api *API) CreateFilters(ctx context.Context, zoneID string, filters []Filter) ([]Filter, error) {
-	uri := fmt.Sprintf("/zones/%s/filters", zoneID)
+func (api *API) CreateFilters(ctx context.Context, rc *ResourceContainer, params []FilterCreateParams) ([]Filter, error) {
+	uri := fmt.Sprintf("/zones/%s/filters", rc.Identifier)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, filters)
+	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, params)
 	if err != nil {
 		return []Filter{}, err
 	}
@@ -129,7 +164,7 @@ func (api *API) CreateFilters(ctx context.Context, zoneID string, filters []Filt
 	var filtersResponse FiltersDetailResponse
 	err = json.Unmarshal(res, &filtersResponse)
 	if err != nil {
-		return []Filter{}, errors.Wrap(err, errUnmarshalError)
+		return []Filter{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return filtersResponse.Result, nil
@@ -138,14 +173,14 @@ func (api *API) CreateFilters(ctx context.Context, zoneID string, filters []Filt
 // UpdateFilter updates a single filter.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/put/#update-a-single-filter
-func (api *API) UpdateFilter(ctx context.Context, zoneID string, filter Filter) (Filter, error) {
-	if filter.ID == "" {
-		return Filter{}, errors.Errorf("filter ID cannot be empty")
+func (api *API) UpdateFilter(ctx context.Context, rc *ResourceContainer, params FilterUpdateParams) (Filter, error) {
+	if params.ID == "" {
+		return Filter{}, fmt.Errorf("filter ID cannot be empty")
 	}
 
-	uri := fmt.Sprintf("/zones/%s/filters/%s", zoneID, filter.ID)
+	uri := fmt.Sprintf("/zones/%s/filters/%s", rc.Identifier, params.ID)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, filter)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
 		return Filter{}, err
 	}
@@ -153,7 +188,7 @@ func (api *API) UpdateFilter(ctx context.Context, zoneID string, filter Filter) 
 	var filterResponse FilterDetailResponse
 	err = json.Unmarshal(res, &filterResponse)
 	if err != nil {
-		return Filter{}, errors.Wrap(err, errUnmarshalError)
+		return Filter{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return filterResponse.Result, nil
@@ -162,16 +197,16 @@ func (api *API) UpdateFilter(ctx context.Context, zoneID string, filter Filter) 
 // UpdateFilters updates many filters at once.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/put/#update-multiple-filters
-func (api *API) UpdateFilters(ctx context.Context, zoneID string, filters []Filter) ([]Filter, error) {
-	for _, filter := range filters {
+func (api *API) UpdateFilters(ctx context.Context, rc *ResourceContainer, params []FilterUpdateParams) ([]Filter, error) {
+	for _, filter := range params {
 		if filter.ID == "" {
-			return []Filter{}, errors.Errorf("filter ID cannot be empty")
+			return []Filter{}, fmt.Errorf("filter ID cannot be empty")
 		}
 	}
 
-	uri := fmt.Sprintf("/zones/%s/filters", zoneID)
+	uri := fmt.Sprintf("/zones/%s/filters", rc.Identifier)
 
-	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, filters)
+	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, params)
 	if err != nil {
 		return []Filter{}, err
 	}
@@ -179,7 +214,7 @@ func (api *API) UpdateFilters(ctx context.Context, zoneID string, filters []Filt
 	var filtersResponse FiltersDetailResponse
 	err = json.Unmarshal(res, &filtersResponse)
 	if err != nil {
-		return []Filter{}, errors.Wrap(err, errUnmarshalError)
+		return []Filter{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return filtersResponse.Result, nil
@@ -188,12 +223,12 @@ func (api *API) UpdateFilters(ctx context.Context, zoneID string, filters []Filt
 // DeleteFilter deletes a single filter.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/delete/#delete-a-single-filter
-func (api *API) DeleteFilter(ctx context.Context, zoneID, filterID string) error {
+func (api *API) DeleteFilter(ctx context.Context, rc *ResourceContainer, filterID string) error {
 	if filterID == "" {
-		return errors.Errorf("filter ID cannot be empty")
+		return fmt.Errorf("filter ID cannot be empty")
 	}
 
-	uri := fmt.Sprintf("/zones/%s/filters/%s", zoneID, filterID)
+	uri := fmt.Sprintf("/zones/%s/filters/%s", rc.Identifier, filterID)
 
 	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
@@ -206,9 +241,21 @@ func (api *API) DeleteFilter(ctx context.Context, zoneID, filterID string) error
 // DeleteFilters deletes multiple filters.
 //
 // API reference: https://developers.cloudflare.com/firewall/api/cf-filters/delete/#delete-multiple-filters
-func (api *API) DeleteFilters(ctx context.Context, zoneID string, filterIDs []string) error {
-	ids := strings.Join(filterIDs, ",")
-	uri := fmt.Sprintf("/zones/%s/filters?id=%s", zoneID, ids)
+func (api *API) DeleteFilters(ctx context.Context, rc *ResourceContainer, filterIDs []string) error {
+	if len(filterIDs) == 0 {
+		return ErrNotEnoughFilterIDsProvided
+	}
+
+	// Swap this to a typed struct and passing in all parameters together.
+	q := url.Values{}
+	for _, id := range filterIDs {
+		q.Add("id", id)
+	}
+
+	uri := (&url.URL{
+		Path:     fmt.Sprintf("/zones/%s/filters", rc.Identifier),
+		RawQuery: q.Encode(),
+	}).String()
 
 	_, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 	if err != nil {
@@ -230,7 +277,7 @@ func (api *API) ValidateFilterExpression(ctx context.Context, expression string)
 
 		jsonErr := json.Unmarshal([]byte(err.Error()), &filterValidationResponse)
 		if jsonErr != nil {
-			return errors.Wrap(jsonErr, errUnmarshalError)
+			return fmt.Errorf(errUnmarshalError+": %w", jsonErr)
 		}
 
 		if !filterValidationResponse.Success {
@@ -479,7 +526,7 @@ func (api *API) ValidateFilterExpression(ctx context.Context, expression string)
 >>>>>>> 4d7e5ad26 (update vendored files)
 			// Unsure why but the API returns `errors` as an array but it only
 			// ever shows the issue with one problem at a time ¯\_(ツ)_/¯
-			return errors.Errorf(filterValidationResponse.Errors[0].Message)
+			return fmt.Errorf(filterValidationResponse.Errors[0].Message)
 		}
 	}
 

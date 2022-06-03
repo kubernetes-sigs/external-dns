@@ -15,4 +15,4 @@ package core
 // limitations under the License.
 
 // Version of the SDK
-const __VERSION__ = "5.6.5"
+const __VERSION__ = "5.8.0"

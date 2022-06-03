@@ -13,6 +13,7 @@ import (
 
 	"github.com/maxatome/go-testdeep/helpers/tdutil"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
+	"github.com/maxatome/go-testdeep/internal/dark"
 	"github.com/maxatome/go-testdeep/internal/util"
 )
 
@@ -37,13 +38,13 @@ type mapEntryInfo struct {
 	expected reflect.Value
 }
 
-// MapEntries allows to pass map entries to check in function Map. It
-// is a map whose each key is the expected entry key and the
-// corresponding value the expected entry value (which can be a
-// TestDeep operator as well as a zero value.)
-type MapEntries map[interface{}]interface{}
+// MapEntries allows to pass map entries to check in functions [Map],
+// [SubMapOf] and [SuperMapOf]. It is a map whose each key is the
+// expected entry key and the corresponding value the expected entry
+// value (which can be a [TestDeep] operator as well as a zero value.)
+type MapEntries map[any]any
 
-func newMap(model interface{}, entries MapEntries, kind mapKind) *tdMap {
+func newMap(model any, entries MapEntries, kind mapKind) *tdMap {
 	vmodel := reflect.ValueOf(model)
 
 	m := tdMap{
@@ -95,7 +96,7 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 	}
 
 	m.expectedEntries = make([]mapEntryInfo, 0, keysInModel+len(entries))
-	checkedEntries := make(map[interface{}]bool, len(entries))
+	checkedEntries := make(map[any]bool, len(entries))
 
 	keyType := m.expectedType.Key()
 	valueType := m.expectedType.Elem()
@@ -145,7 +146,7 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 
 		entryInfo.key = vkey
 		m.expectedEntries = append(m.expectedEntries, entryInfo)
-		checkedEntries[vkey.Interface()] = true
+		checkedEntries[dark.MustGetInterface(vkey)] = true
 	}
 
 	// Check entries in model
@@ -156,7 +157,7 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 	tdutil.MapEach(expectedModel, func(k, v reflect.Value) bool {
 		entryInfo.expected = v
 
-		if checkedEntries[k.Interface()] {
+		if checkedEntries[dark.MustGetInterface(k)] {
 			m.err = ctxerr.OpBad(
 				m.GetLocation().Func,
 				"%s entry exists in both model & expectedEntries",
@@ -174,33 +175,35 @@ func (m *tdMap) populateExpectedEntries(entries MapEntries, expectedModel reflec
 // input(Map): map,ptr(ptr on map)
 
 // Map operator compares the contents of a map against the non-zero
-// values of "model" (if any) and the values of "expectedEntries".
+// values of model (if any) and the values of expectedEntries.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
 // During a match, all expected entries must be found and all data
 // entries must be expected to succeed.
 //
-//   got := map[string]string{
-//     "foo": "test",
-//     "bar": "wizz",
-//     "zip": "buzz",
-//   }
-//   td.Cmp(t, got, td.Map(
-//     map[string]string{
-//       "foo": "test",
-//       "bar": "wizz",
-//     },
-//     td.MapEntries{
-//       "zip": td.HasSuffix("zz"),
-//     }),
-//   ) // succeeds
+//	got := map[string]string{
+//	  "foo": "test",
+//	  "bar": "wizz",
+//	  "zip": "buzz",
+//	}
+//	td.Cmp(t, got, td.Map(
+//	  map[string]string{
+//	    "foo": "test",
+//	    "bar": "wizz",
+//	  },
+//	  td.MapEntries{
+//	    "zip": td.HasSuffix("zz"),
+//	  }),
+//	) // succeeds
 //
-// TypeBehind method returns the reflect.Type of "model".
-func Map(model interface{}, expectedEntries MapEntries) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+//
+// See also [SubMapOf] and [SuperMapOf].
+func Map(model any, expectedEntries MapEntries) TestDeep {
 	return newMap(model, expectedEntries, allMap)
 }
 
@@ -209,42 +212,44 @@ func Map(model interface{}, expectedEntries MapEntries) TestDeep {
 // input(SubMapOf): map,ptr(ptr on map)
 
 // SubMapOf operator compares the contents of a map against the non-zero
-// values of "model" (if any) and the values of "expectedEntries".
+// values of model (if any) and the values of expectedEntries.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
 // During a match, each map entry should be matched by an expected
 // entry to succeed. But some expected entries can be missing from the
 // compared map.
 //
-//   got := map[string]string{
-//     "foo": "test",
-//     "zip": "buzz",
-//   }
-//   td.Cmp(t, got, td.SubMapOf(
-//     map[string]string{
-//       "foo": "test",
-//       "bar": "wizz",
-//     },
-//     td.MapEntries{
-//       "zip": td.HasSuffix("zz"),
-//     }),
-//   ) // succeeds
+//	got := map[string]string{
+//	  "foo": "test",
+//	  "zip": "buzz",
+//	}
+//	td.Cmp(t, got, td.SubMapOf(
+//	  map[string]string{
+//	    "foo": "test",
+//	    "bar": "wizz",
+//	  },
+//	  td.MapEntries{
+//	    "zip": td.HasSuffix("zz"),
+//	  }),
+//	) // succeeds
 //
-//   td.Cmp(t, got, td.SubMapOf(
-//     map[string]string{
-//       "bar": "wizz",
-//     },
-//     td.MapEntries{
-//       "zip": td.HasSuffix("zz"),
-//     }),
-//   ) // fails, extra {"foo": "test"} in got
+//	td.Cmp(t, got, td.SubMapOf(
+//	  map[string]string{
+//	    "bar": "wizz",
+//	  },
+//	  td.MapEntries{
+//	    "zip": td.HasSuffix("zz"),
+//	  }),
+//	) // fails, extra {"foo": "test"} in got
 //
-// TypeBehind method returns the reflect.Type of "model".
-func SubMapOf(model interface{}, expectedEntries MapEntries) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+//
+// See also [Map] and [SuperMapOf].
+func SubMapOf(model any, expectedEntries MapEntries) TestDeep {
 	return newMap(model, expectedEntries, subMap)
 }
 
@@ -253,41 +258,43 @@ func SubMapOf(model interface{}, expectedEntries MapEntries) TestDeep {
 // input(SuperMapOf): map,ptr(ptr on map)
 
 // SuperMapOf operator compares the contents of a map against the non-zero
-// values of "model" (if any) and the values of "expectedEntries".
+// values of model (if any) and the values of expectedEntries.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
 // During a match, each expected entry should match in the compared
 // map. But some entries in the compared map may not be expected.
 //
-//   got := map[string]string{
-//     "foo": "test",
-//     "bar": "wizz",
-//     "zip": "buzz",
-//   }
-//   td.Cmp(t, got, td.SuperMapOf(
-//     map[string]string{
-//       "foo": "test",
-//     },
-//     td.MapEntries{
-//       "zip": td.HasSuffix("zz"),
-//     }),
-//   ) // succeeds
+//	got := map[string]string{
+//	  "foo": "test",
+//	  "bar": "wizz",
+//	  "zip": "buzz",
+//	}
+//	td.Cmp(t, got, td.SuperMapOf(
+//	  map[string]string{
+//	    "foo": "test",
+//	  },
+//	  td.MapEntries{
+//	    "zip": td.HasSuffix("zz"),
+//	  }),
+//	) // succeeds
 //
-//   td.Cmp(t, got, td.SuperMapOf(
-//     map[string]string{
-//       "foo": "test",
-//     },
-//     td.MapEntries{
-//       "biz": td.HasSuffix("zz"),
-//     }),
-//   ) // fails, missing {"biz": …} in got
+//	td.Cmp(t, got, td.SuperMapOf(
+//	  map[string]string{
+//	    "foo": "test",
+//	  },
+//	  td.MapEntries{
+//	    "biz": td.HasSuffix("zz"),
+//	  }),
+//	) // fails, missing {"biz": …} in got
 //
-// TypeBehind method returns the reflect.Type of "model".
-func SuperMapOf(model interface{}, expectedEntries MapEntries) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+//
+// See also [SuperMapOf] and [SubMapOf].
+func SuperMapOf(model any, expectedEntries MapEntries) TestDeep {
 	return newMap(model, expectedEntries, superMap)
 }
 
@@ -311,7 +318,7 @@ func (m *tdMap) match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 	}
 
 	var notFoundKeys []reflect.Value
-	foundKeys := map[interface{}]bool{}
+	foundKeys := map[any]bool{}
 
 	for _, entryInfo := range m.expectedEntries {
 		gotValue := got.MapIndex(entryInfo.key)
@@ -325,7 +332,7 @@ func (m *tdMap) match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 		if err != nil {
 			return err
 		}
-		foundKeys[entryInfo.key.Interface()] = true
+		foundKeys[dark.MustGetInterface(entryInfo.key)] = true
 	}
 
 	const errorMessage = "comparing hash keys of %%"
@@ -386,7 +393,7 @@ func (m *tdMap) match(ctx ctxerr.Context, got reflect.Value) (err *ctxerr.Error)
 	}
 
 	for _, k := range tdutil.MapSortedKeys(got) {
-		if !foundKeys[k.Interface()] {
+		if !foundKeys[dark.MustGetInterface(k)] {
 			res.Extra = append(res.Extra, k)
 		}
 	}

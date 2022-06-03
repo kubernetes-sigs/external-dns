@@ -9,6 +9,7 @@ package td
 import (
 	"os"
 	"strconv"
+	"testing"
 
 	"github.com/maxatome/go-testdeep/internal/anchors"
 	"github.com/maxatome/go-testdeep/internal/ctxerr"
@@ -24,12 +25,13 @@ import (
 
 // ContextConfig allows to configure finely how tests failures are rendered.
 //
-// See NewT function to use it.
+// See [NewT] function to use it.
 type ContextConfig struct {
 	// RootName is the string used to represent the root of got data. It
 	// defaults to "DATA". For an HTTP response body, it could be "BODY"
 	// for example.
-	RootName string
+	RootName      string
+	forkedFromCtx *ctxerr.Context
 	// MaxErrors is the maximal number of errors to dump in case of Cmp*
 	// failure.
 	//
@@ -81,8 +83,8 @@ type ContextConfig struct {
 	IgnoreUnexported bool
 }
 
-// Equal returns true if both ContextConfig are equal. Only public
-// fields are taken into account to check equality.
+// Equal returns true if both c and o are equal. Only public fields
+// are taken into account to check equality.
 func (c ContextConfig) Equal(o ContextConfig) bool {
 	return c.RootName == o.RootName &&
 		c.MaxErrors == o.MaxErrors &&
@@ -90,6 +92,17 @@ func (c ContextConfig) Equal(o ContextConfig) bool {
 		c.UseEqual == o.UseEqual &&
 		c.BeLax == o.BeLax &&
 		c.IgnoreUnexported == o.IgnoreUnexported
+}
+
+// OriginalPath returns the current path when the [ContextConfig] has
+// been built. It always returns ContextConfig.RootName except if c
+// has been built by [Code] operator. See [Code] documentation for an
+// example of use.
+func (c ContextConfig) OriginalPath() string {
+	if c.forkedFromCtx == nil {
+		return c.RootName
+	}
+	return c.forkedFromCtx.Path.String()
 }
 
 const (
@@ -111,7 +124,7 @@ func getMaxErrorsFromEnv() int {
 
 // DefaultContextConfig is the default configuration used to render
 // tests failures. If overridden, new settings will impact all Cmp*
-// functions and *T methods (if not specifically configured.)
+// functions and [*T] methods (if not specifically configured.)
 var DefaultContextConfig = ContextConfig{
 	RootName:         contextDefaultRootName,
 	MaxErrors:        getMaxErrorsFromEnv(),
@@ -132,13 +145,17 @@ func (c *ContextConfig) sanitize() {
 
 // newContext creates a new ctxerr.Context using DefaultContextConfig
 // configuration.
-func newContext() ctxerr.Context {
-	return newContextWithConfig(DefaultContextConfig)
+func newContext(t TestingT) ctxerr.Context {
+	if tt, ok := t.(*T); ok {
+		return newContextWithConfig(tt, tt.Config)
+	}
+	tb, _ := t.(testing.TB)
+	return newContextWithConfig(tb, DefaultContextConfig)
 }
 
 // newContextWithConfig creates a new ctxerr.Context using a specific
 // configuration.
-func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
+func newContextWithConfig(tb testing.TB, config ContextConfig) (ctx ctxerr.Context) {
 	config.sanitize()
 
 	ctx = ctxerr.Context{
@@ -147,6 +164,7 @@ func newContextWithConfig(config ContextConfig) (ctx ctxerr.Context) {
 		MaxErrors:        config.MaxErrors,
 		Anchors:          config.anchors,
 		Hooks:            config.hooks,
+		OriginalTB:       tb,
 		FailureIsFatal:   config.FailureIsFatal,
 		UseEqual:         config.UseEqual,
 		BeLax:            config.BeLax,

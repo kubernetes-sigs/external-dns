@@ -17,9 +17,9 @@ package alidns
 
 // UserInfo is a nested struct in alidns response
 type UserInfo struct {
-	AvailableService string `json:"AvailableService" xml:"AvailableService"`
-	ServiceType      string `json:"ServiceType" xml:"ServiceType"`
-	State            string `json:"State" xml:"State"`
-	StoppedService   string `json:"StoppedService" xml:"StoppedService"`
 	PdnsId           int64  `json:"PdnsId" xml:"PdnsId"`
+	State            string `json:"State" xml:"State"`
+	ServiceType      string `json:"ServiceType" xml:"ServiceType"`
+	StoppedService   string `json:"StoppedService" xml:"StoppedService"`
+	AvailableService string `json:"AvailableService" xml:"AvailableService"`
 }

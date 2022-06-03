@@ -1,0 +1,22 @@
+# Based on the default .semgrepignore documented here:
+
+# https://semgrep.dev/docs/ignoring-files-folders-code/#understanding-semgrep-defaults
+
+# but not ignoring '\*\_test.go'.
+
+# Ignore git items
+
+.gitignore
+.git/
+:include .gitignore
+
+.semgrep
+.semgrep_logs/
+
+.github/
+.vscode/
+.changelog/
+CHANGELOG.md
+go.mod
+go.sum
+README.md

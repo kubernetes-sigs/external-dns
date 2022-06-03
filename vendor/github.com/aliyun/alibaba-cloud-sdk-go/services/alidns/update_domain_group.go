@@ -82,9 +82,9 @@ type UpdateDomainGroupRequest struct {
 // UpdateDomainGroupResponse is the response struct for api UpdateDomainGroup
 type UpdateDomainGroupResponse struct {
 	*responses.BaseResponse
+	GroupName string `json:"GroupName" xml:"GroupName"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	GroupId   string `json:"GroupId" xml:"GroupId"`
-	GroupName string `json:"GroupName" xml:"GroupName"`
 }
 
 // CreateUpdateDomainGroupRequest creates a request to invoke UpdateDomainGroup API

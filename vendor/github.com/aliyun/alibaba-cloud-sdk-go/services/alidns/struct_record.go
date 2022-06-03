@@ -20,13 +20,13 @@ type Record struct {
 	Value      string `json:"Value" xml:"Value"`
 	TTL        int64  `json:"TTL" xml:"TTL"`
 	Remark     string `json:"Remark" xml:"Remark"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
 	RR         string `json:"RR" xml:"RR"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
 	Priority   int64  `json:"Priority" xml:"Priority"`
 	RecordId   string `json:"RecordId" xml:"RecordId"`
 	Status     string `json:"Status" xml:"Status"`
-	Locked     bool   `json:"Locked" xml:"Locked"`
 	Weight     int    `json:"Weight" xml:"Weight"`
+	Locked     bool   `json:"Locked" xml:"Locked"`
 	Line       string `json:"Line" xml:"Line"`
 	Type       string `json:"Type" xml:"Type"`
 }

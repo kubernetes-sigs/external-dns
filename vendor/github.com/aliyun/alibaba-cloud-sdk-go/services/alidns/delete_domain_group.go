@@ -81,8 +81,8 @@ type DeleteDomainGroupRequest struct {
 // DeleteDomainGroupResponse is the response struct for api DeleteDomainGroup
 type DeleteDomainGroupResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	GroupName string `json:"GroupName" xml:"GroupName"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteDomainGroupRequest creates a request to invoke DeleteDomainGroup API

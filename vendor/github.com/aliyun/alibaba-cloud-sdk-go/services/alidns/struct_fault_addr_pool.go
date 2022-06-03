@@ -18,7 +18,7 @@ package alidns
 // FaultAddrPool is a nested struct in alidns response
 type FaultAddrPool struct {
 	AddrPoolId   string                         `json:"AddrPoolId" xml:"AddrPoolId"`
-	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
 	InstanceId   string                         `json:"InstanceId" xml:"InstanceId"`
+	AddrPoolName string                         `json:"AddrPoolName" xml:"AddrPoolName"`
 	Addrs        AddrsInDescribeGtmRecoveryPlan `json:"Addrs" xml:"Addrs"`
 }

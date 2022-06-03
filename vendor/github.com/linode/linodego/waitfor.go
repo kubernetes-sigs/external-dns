@@ -8,7 +8,12 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"encoding/json"
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	"encoding/json"
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	"fmt"
 	"log"
 	"net/http"
@@ -16,6 +21,15 @@ import (
 	"strings"
 	"time"
 )
+
+type EventPoller struct {
+	EntityID   any
+	EntityType EntityType
+	Action     EventAction
+
+	client         Client
+	previousEvents map[int]bool
+}
 
 // WaitForInstanceStatus waits for the Linode instance to reach the desired state
 // before returning. It will timeout with an error after timeoutSeconds.
@@ -196,6 +210,9 @@ func (client Client) WaitForLKEClusterStatus(ctx context.Context, clusterID int,
 
 // LKEClusterPollOptions configures polls against LKE Clusters.
 type LKEClusterPollOptions struct {
+	// Retry will cause the Poll to ignore interimittent errors
+	Retry bool
+
 	// TimeoutSeconds is the number of Seconds to wait for the poll to succeed
 	// before exiting.
 	TimeoutSeconds int
@@ -244,7 +261,10 @@ func (client Client) WaitForLKEClusterConditions(
 			case <-ticker.C:
 				result, err := condition(ctx, conditionOptions)
 				if err != nil {
-					return err
+					log.Printf("[WARN] Ignoring WaitForLKEClusterConditions conditional error: %s", err)
+					if !options.Retry {
+						return err
+					}
 				}
 
 				if result {
@@ -265,19 +285,12 @@ func (client Client) WaitForLKEClusterConditions(
 // nolint
 func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, entityType EntityType, action EventAction, minStart time.Time, timeoutSeconds int) (*Event, error) {
 	titledEntityType := strings.Title(string(entityType))
-	filterStruct := map[string]interface{}{
-		// Nor is action
-		"action": action,
-
-		"created": map[string]interface{}{
-			// The API uses UTC time, so we need to ensure the time is converted
-			"+gte": minStart.UTC().Format("2006-01-02T15:04:05"),
-		},
-
-		// Float the latest events to page 1
-		"+order_by": "created",
-		"+order":    "desc",
+	filter := Filter{
+		Order:   Descending,
+		OrderBy: "created",
 	}
+	filter.AddField(Eq, "action", action)
+	filter.AddField(Gte, "created", minStart.UTC().Format("2006-01-02T15:04:05"))
 
 	// Optimistically restrict results to page 1.  We should remove this when more
 	// precise filtering options exist.
@@ -286,14 +299,14 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 	// The API has limitted filtering support for Event ID and Event Type
 	// Optimize the list, if possible
 	switch entityType {
-	case EntityDisk, EntityLinode, EntityDomain, EntityNodebalancer:
+	case EntityDisk, EntityDatabase, EntityLinode, EntityDomain, EntityNodebalancer:
 		// All of the filter supported types have int ids
 		filterableEntityID, err := strconv.Atoi(fmt.Sprintf("%v", id))
 		if err != nil {
 			return nil, fmt.Errorf("Error parsing Entity ID %q for optimized WaitForEventFinished EventType %q: %s", id, entityType, err)
 		}
-		filterStruct["entity.id"] = filterableEntityID
-		filterStruct["entity.type"] = entityType
+		filter.AddField(Eq, "entity.id", filterableEntityID)
+		filter.AddField(Eq, "entity.type", entityType)
 
 		// TODO: are we conformatable with pages = 0 with the event type and id filter?
 	}
@@ -318,16 +331,15 @@ func (client Client) WaitForEventFinished(ctx context.Context, id interface{}, e
 		select {
 		case <-ticker.C:
 			if lastEventID > 0 {
-				filterStruct["id"] = map[string]interface{}{
-					"+gte": lastEventID,
-				}
+				filter.AddField(Gte, "id", lastEventID)
 			}
 
-			filter, err := json.Marshal(filterStruct)
+			filterStr, err := filter.MarshalJSON()
 			if err != nil {
 				return nil, err
 			}
-			listOptions := NewListOptions(pages, string(filter))
+
+			listOptions := NewListOptions(pages, string(filterStr))
 
 			events, err := client.ListEvents(ctx, listOptions)
 			if err != nil {
@@ -1700,6 +1712,304 @@ func (client Client) WaitForImageStatus(ctx context.Context, imageID string, sta
 			}
 		case <-ctx.Done():
 			return nil, fmt.Errorf("failed to wait for Image %s status %s: %s", imageID, status, ctx.Err())
+		}
+	}
+}
+
+// WaitForMySQLDatabaseBackup waits for the backup with the given label to be available.
+func (client Client) WaitForMySQLDatabaseBackup(ctx context.Context, dbID int, label string, timeoutSeconds int) (*MySQLDatabaseBackup, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			backups, err := client.ListMySQLDatabaseBackups(ctx, dbID, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, backup := range backups {
+				if backup.Label == label {
+					return &backup, nil
+				}
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for backup %s: %s", label, ctx.Err())
+		}
+	}
+}
+
+// WaitForMongoDatabaseBackup waits for the backup with the given label to be available.
+func (client Client) WaitForMongoDatabaseBackup(ctx context.Context, dbID int, label string, timeoutSeconds int) (*MongoDatabaseBackup, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			backups, err := client.ListMongoDatabaseBackups(ctx, dbID, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, backup := range backups {
+				if backup.Label == label {
+					return &backup, nil
+				}
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for backup %s: %s", label, ctx.Err())
+		}
+	}
+}
+
+// WaitForPostgresDatabaseBackup waits for the backup with the given label to be available.
+func (client Client) WaitForPostgresDatabaseBackup(ctx context.Context, dbID int, label string, timeoutSeconds int) (*PostgresDatabaseBackup, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			backups, err := client.ListPostgresDatabaseBackups(ctx, dbID, nil)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, backup := range backups {
+				if backup.Label == label {
+					return &backup, nil
+				}
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for backup %s: %s", label, ctx.Err())
+		}
+	}
+}
+
+type databaseStatusFunc func(ctx context.Context, client Client, dbID int) (DatabaseStatus, error)
+
+var databaseStatusHandlers = map[DatabaseEngineType]databaseStatusFunc{
+	DatabaseEngineTypeMySQL: func(ctx context.Context, client Client, dbID int) (DatabaseStatus, error) {
+		db, err := client.GetMySQLDatabase(ctx, dbID)
+		if err != nil {
+			return "", err
+		}
+
+		return db.Status, nil
+	},
+	DatabaseEngineTypeMongo: func(ctx context.Context, client Client, dbID int) (DatabaseStatus, error) {
+		db, err := client.GetMongoDatabase(ctx, dbID)
+		if err != nil {
+			return "", err
+		}
+
+		return db.Status, nil
+	},
+	DatabaseEngineTypePostgres: func(ctx context.Context, client Client, dbID int) (DatabaseStatus, error) {
+		db, err := client.GetPostgresDatabase(ctx, dbID)
+		if err != nil {
+			return "", err
+		}
+
+		return db.Status, nil
+	},
+}
+
+// WaitForDatabaseStatus waits for the provided database to have the given status.
+func (client Client) WaitForDatabaseStatus(
+	ctx context.Context, dbID int, dbEngine DatabaseEngineType, status DatabaseStatus, timeoutSeconds int,
+) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			statusHandler, ok := databaseStatusHandlers[dbEngine]
+			if !ok {
+				return fmt.Errorf("invalid db engine: %s", dbEngine)
+			}
+
+			currentStatus, err := statusHandler(ctx, client, dbID)
+			if err != nil {
+				return fmt.Errorf("failed to get db status: %s", err)
+			}
+
+			if currentStatus == status {
+				return nil
+			}
+		case <-ctx.Done():
+			return fmt.Errorf("failed to wait for database %d status: %s", dbID, ctx.Err())
+		}
+	}
+}
+
+// NewEventPoller initializes a new Linode event poller. This should be run before the event is triggered as it stores
+// the previous state of the entity's events.
+func (client Client) NewEventPoller(
+	ctx context.Context, id any, entityType EntityType, action EventAction,
+) (*EventPoller, error) {
+	result := EventPoller{
+		EntityID:   id,
+		EntityType: entityType,
+		Action:     action,
+
+		client: client,
+	}
+
+	if err := result.PreTask(ctx); err != nil {
+		return nil, fmt.Errorf("failed to run pretask: %s", err)
+	}
+
+	return &result, nil
+}
+
+// NewEventPollerWithoutEntity initializes a new Linode event poller without a target entity ID.
+// This is useful for create events where the ID of the entity is not yet known.
+// For example:
+// p, _ := client.NewEventPollerWithoutEntity(...)
+// inst, _ := client.CreateInstance(...)
+// p.EntityID = inst.ID
+// ...
+func (client Client) NewEventPollerWithoutEntity(entityType EntityType, action EventAction) (*EventPoller, error) {
+	result := EventPoller{
+		EntityType:     entityType,
+		Action:         action,
+		EntityID:       0,
+		previousEvents: make(map[int]bool, 0),
+
+		client: client,
+	}
+
+	return &result, nil
+}
+
+// PreTask stores all current events for the given entity to prevent them from being
+// processed on subsequent runs.
+func (p *EventPoller) PreTask(ctx context.Context) error {
+	f := Filter{
+		OrderBy: "created",
+		Order:   Descending,
+	}
+	f.AddField(Eq, "entity.type", p.EntityType)
+	f.AddField(Eq, "entity.id", p.EntityID)
+	f.AddField(Eq, "action", p.Action)
+
+	fBytes, err := f.MarshalJSON()
+	if err != nil {
+		return err
+	}
+
+	events, err := p.client.ListEvents(ctx, &ListOptions{
+		Filter:      string(fBytes),
+		PageOptions: &PageOptions{Page: 1},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to list events: %s", err)
+	}
+
+	eventIDs := make(map[int]bool, len(events))
+	for _, event := range events {
+		eventIDs[event.ID] = true
+	}
+
+	p.previousEvents = eventIDs
+
+	return nil
+}
+
+func (p *EventPoller) WaitForLatestUnknownEvent(ctx context.Context) (*Event, error) {
+	ticker := time.NewTicker(p.client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	f := Filter{
+		OrderBy: "created",
+		Order:   Descending,
+	}
+	f.AddField(Eq, "entity.type", p.EntityType)
+	f.AddField(Eq, "entity.id", p.EntityID)
+	f.AddField(Eq, "action", p.Action)
+
+	fBytes, err := f.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	listOpts := ListOptions{
+		Filter:      string(fBytes),
+		PageOptions: &PageOptions{Page: 1},
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			events, err := p.client.ListEvents(ctx, &listOpts)
+			if err != nil {
+				return nil, fmt.Errorf("failed to list events: %s", err)
+			}
+
+			for _, event := range events {
+				if _, ok := p.previousEvents[event.ID]; !ok {
+					// Store this event so it is no longer picked up
+					// on subsequent jobs
+					p.previousEvents[event.ID] = true
+
+					return &event, nil
+				}
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for event: %s", ctx.Err())
+		}
+	}
+}
+
+// WaitForFinished waits for a new event to be finished.
+func (p *EventPoller) WaitForFinished(
+	ctx context.Context, timeoutSeconds int,
+) (*Event, error) {
+	ctx, cancel := context.WithTimeout(ctx, time.Duration(timeoutSeconds)*time.Second)
+	defer cancel()
+
+	ticker := time.NewTicker(p.client.millisecondsPerPoll * time.Millisecond)
+	defer ticker.Stop()
+
+	event, err := p.WaitForLatestUnknownEvent(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to wait for event: %s", err)
+	}
+
+	for {
+		select {
+		case <-ticker.C:
+			event, err := p.client.GetEvent(ctx, event.ID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get event: %s", err)
+			}
+
+			switch event.Status {
+			case EventFinished, EventNotification:
+				return event, nil
+			case EventFailed:
+				return nil, fmt.Errorf("event %d has failed", event.ID)
+			case EventScheduled, EventStarted:
+				continue
+			}
+		case <-ctx.Done():
+			return nil, fmt.Errorf("failed to wait for event: %s", ctx.Err())
 		}
 	}
 }

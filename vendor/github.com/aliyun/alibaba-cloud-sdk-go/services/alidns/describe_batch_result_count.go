@@ -82,14 +82,14 @@ type DescribeBatchResultCountRequest struct {
 // DescribeBatchResultCountResponse is the response struct for api DescribeBatchResultCount
 type DescribeBatchResultCountResponse struct {
 	*responses.BaseResponse
-	RequestId    string `json:"RequestId" xml:"RequestId"`
 	Status       int    `json:"Status" xml:"Status"`
 	TotalCount   int    `json:"TotalCount" xml:"TotalCount"`
-	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
-	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
-	Reason       string `json:"Reason" xml:"Reason"`
-	BatchType    string `json:"BatchType" xml:"BatchType"`
 	TaskId       int64  `json:"TaskId" xml:"TaskId"`
+	RequestId    string `json:"RequestId" xml:"RequestId"`
+	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
+	BatchType    string `json:"BatchType" xml:"BatchType"`
+	Reason       string `json:"Reason" xml:"Reason"`
 }
 
 // CreateDescribeBatchResultCountRequest creates a request to invoke DescribeBatchResultCount API

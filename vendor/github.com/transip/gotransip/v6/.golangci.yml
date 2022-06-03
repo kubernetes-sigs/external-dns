@@ -19,7 +19,7 @@ linters-settings:
   goconst:
     min-len: 3
     min-occurrences: 2
-  depguard:
+  depguard: {}
   lll:
     line-length: 160
   nakedret:
@@ -27,23 +27,66 @@ linters-settings:
 
 linters:
   enable:
-    - megacheck
-    - govet
-    - golint
-    - gosec
-    - unconvert
+    - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - deadcode
+    - decorder
+    - depguard
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
+    - exportloopref
+    - forcetypeassert
+    - gocognit
     - goconst
+    - gocritic
     - gocyclo
+    - godox
     - gofmt
+    - goheader
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - grouper
+    - ifshort
+    - importas
+    - ineffassign
     - lll
-    - unparam
-    - nakedret
+    - maintidx
+    - makezero
     - misspell
+    - nakedret
+    - nestif
+    - nilerr
+    - nilnil
+    - nolintlint
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - tenv
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - wastedassign
   enable-all: false
   disable-all: false
-  presets:
-    - bugs
-    - unused
   fast: false
 
 issues:
@@ -51,8 +94,13 @@ issues:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
-        - lll
+        - dupl
         - goconst
+        - ifshort
+        - lll
     - path: jwt/token_test.go
       linters:
         - gosec
+    - path: mocks/*
+      linters:
+        - typecheck

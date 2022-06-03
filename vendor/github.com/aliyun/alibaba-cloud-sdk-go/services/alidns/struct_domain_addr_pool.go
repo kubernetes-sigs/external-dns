@@ -17,7 +17,7 @@ package alidns
 
 // DomainAddrPool is a nested struct in alidns response
 type DomainAddrPool struct {
-	Id        string `json:"Id" xml:"Id"`
 	Name      string `json:"Name" xml:"Name"`
 	AddrCount int    `json:"AddrCount" xml:"AddrCount"`
+	Id        string `json:"Id" xml:"Id"`
 }

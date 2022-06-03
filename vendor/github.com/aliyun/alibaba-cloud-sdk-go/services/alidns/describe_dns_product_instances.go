@@ -84,11 +84,11 @@ type DescribeDnsProductInstancesRequest struct {
 // DescribeDnsProductInstancesResponse is the response struct for api DescribeDnsProductInstances
 type DescribeDnsProductInstancesResponse struct {
 	*responses.BaseResponse
-	RequestId   string      `json:"RequestId" xml:"RequestId"`
 	TotalCount  int64       `json:"TotalCount" xml:"TotalCount"`
-	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
-	PageSize    int64       `json:"PageSize" xml:"PageSize"`
 	DomainType  string      `json:"DomainType" xml:"DomainType"`
+	PageSize    int64       `json:"PageSize" xml:"PageSize"`
+	RequestId   string      `json:"RequestId" xml:"RequestId"`
+	PageNumber  int64       `json:"PageNumber" xml:"PageNumber"`
 	DnsProducts DnsProducts `json:"DnsProducts" xml:"DnsProducts"`
 }
 

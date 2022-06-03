@@ -193,9 +193,8 @@ type tokenResponse struct {
 // each time it is called
 func (a *Authenticator) getNonce() (string, error) {
 	randomBytes := make([]byte, 8)
-	_, err := rand.Read(randomBytes)
 
-	if err != nil {
+	if _, err := rand.Read(randomBytes); err != nil {
 		return "", fmt.Errorf("error when getting random data for new nonce: %w", err)
 	}
 

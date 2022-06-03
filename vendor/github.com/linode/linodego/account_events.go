@@ -62,6 +62,16 @@ const (
 	ActionCommunityQuestionReply   EventAction = "community_question_reply"
 	ActionCommunityLike            EventAction = "community_like"
 	ActionCreateCardUpdated        EventAction = "credit_card_updated"
+	ActionDatabaseCreate           EventAction = "database_create"
+	ActionDatabaseDegraded         EventAction = "database_degraded"
+	ActionDatabaseDelete           EventAction = "database_delete"
+	ActionDatabaseFailed           EventAction = "database_failed"
+	ActionDatabaseUpdate           EventAction = "database_update"
+	ActionDatabaseCreateFailed     EventAction = "database_create_failed"
+	ActionDatabaseUpdateFailed     EventAction = "database_update_failed"
+	ActionDatabaseBackupCreate     EventAction = "database_backup_create"
+	ActionDatabaseBackupRestore    EventAction = "database_backup_restore"
+	ActionDatabaseCredentialsReset EventAction = "database_credentials_reset"
 	ActionDiskCreate               EventAction = "disk_create"
 	ActionDiskDelete               EventAction = "disk_delete"
 	ActionDiskUpdate               EventAction = "disk_update"
@@ -147,6 +157,7 @@ type EntityType string
 const (
 	EntityLinode       EntityType = "linode"
 	EntityDisk         EntityType = "disk"
+	EntityDatabase     EntityType = "database"
 	EntityDomain       EntityType = "domain"
 	EntityFirewall     EntityType = "firewall"
 	EntityNodebalancer EntityType = "nodebalancer"
@@ -169,10 +180,11 @@ const (
 // can be used to access it.
 type EventEntity struct {
 	// ID may be a string or int, it depends on the EntityType
-	ID    interface{} `json:"id"`
-	Label string      `json:"label"`
-	Type  EntityType  `json:"type"`
-	URL   string      `json:"url"`
+	ID     interface{} `json:"id"`
+	Label  string      `json:"label"`
+	Type   EntityType  `json:"type"`
+	Status string      `json:"status"`
+	URL    string      `json:"url"`
 }
 
 // EventsPagedResponse represents a paginated Events API response

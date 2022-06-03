@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // AccessMutualTLSCertificate is the structure of a single Access Mutual TLS
@@ -68,7 +66,7 @@ func (api *API) accessMutualTLSCertificates(ctx context.Context, id string, rout
 	var accessMutualTLSCertificateListResponse AccessMutualTLSCertificateListResponse
 	err = json.Unmarshal(res, &accessMutualTLSCertificateListResponse)
 	if err != nil {
-		return []AccessMutualTLSCertificate{}, errors.Wrap(err, errUnmarshalError)
+		return []AccessMutualTLSCertificate{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessMutualTLSCertificateListResponse.Result, nil
@@ -106,7 +104,7 @@ func (api *API) accessMutualTLSCertificate(ctx context.Context, id, certificateI
 	var accessMutualTLSCertificateDetailResponse AccessMutualTLSCertificateDetailResponse
 	err = json.Unmarshal(res, &accessMutualTLSCertificateDetailResponse)
 	if err != nil {
-		return AccessMutualTLSCertificate{}, errors.Wrap(err, errUnmarshalError)
+		return AccessMutualTLSCertificate{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessMutualTLSCertificateDetailResponse.Result, nil
@@ -143,7 +141,7 @@ func (api *API) createAccessMutualTLSCertificate(ctx context.Context, id string,
 	var accessMutualTLSCertificateDetailResponse AccessMutualTLSCertificateDetailResponse
 	err = json.Unmarshal(res, &accessMutualTLSCertificateDetailResponse)
 	if err != nil {
-		return AccessMutualTLSCertificate{}, errors.Wrap(err, errUnmarshalError)
+		return AccessMutualTLSCertificate{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessMutualTLSCertificateDetailResponse.Result, nil
@@ -181,7 +179,7 @@ func (api *API) updateAccessMutualTLSCertificate(ctx context.Context, id string,
 	var accessMutualTLSCertificateDetailResponse AccessMutualTLSCertificateDetailResponse
 	err = json.Unmarshal(res, &accessMutualTLSCertificateDetailResponse)
 	if err != nil {
-		return AccessMutualTLSCertificate{}, errors.Wrap(err, errUnmarshalError)
+		return AccessMutualTLSCertificate{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessMutualTLSCertificateDetailResponse.Result, nil
@@ -219,7 +217,7 @@ func (api *API) deleteAccessMutualTLSCertificate(ctx context.Context, id, certif
 	var accessMutualTLSCertificateDetailResponse AccessMutualTLSCertificateDetailResponse
 	err = json.Unmarshal(res, &accessMutualTLSCertificateDetailResponse)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return nil

@@ -2395,8 +2395,8 @@ func (u tdJSONUnmarshaler) replaceLocation(tdOp TestDeep, posInJSON json.Positio
 	tdOp.replaceLocation(newPos)
 }
 
-// unmarshal unmarshals "expectedJSON" using placeholder parameters "params".
-func (u tdJSONUnmarshaler) unmarshal(expectedJSON interface{}, params []interface{}) (interface{}, *ctxerr.Error) {
+// unmarshal unmarshals expectedJSON using placeholder parameters params.
+func (u tdJSONUnmarshaler) unmarshal(expectedJSON any, params []any) (any, *ctxerr.Error) {
 	var (
 		err error
 		b   []byte
@@ -2432,7 +2432,7 @@ func (u tdJSONUnmarshaler) unmarshal(expectedJSON interface{}, params []interfac
 	}
 
 	params = flat.Interfaces(params...)
-	var byTag map[string]interface{}
+	var byTag map[string]any
 
 	for i, p := range params {
 		switch op := p.(type) {
@@ -2441,7 +2441,7 @@ func (u tdJSONUnmarshaler) unmarshal(expectedJSON interface{}, params []interfac
 				return nil, ctxerr.OpBad(u.Func, `2 params have the same tag "%s"`, op.tag)
 			}
 			if byTag == nil {
-				byTag = map[string]interface{}{}
+				byTag = map[string]any{}
 			}
 			// Don't keep the tag layer
 			p = nil
@@ -2461,7 +2461,6 @@ func (u tdJSONUnmarshaler) unmarshal(expectedJSON interface{}, params []interfac
 		OpShortcutFn:       u.resolveOpShortcut(),
 		OpFn:               u.resolveOp(),
 	})
-
 	if err != nil {
 		return nil, ctxerr.OpBad(u.Func, "JSON unmarshal error: %s", err)
 	}
@@ -2470,8 +2469,8 @@ func (u tdJSONUnmarshaler) unmarshal(expectedJSON interface{}, params []interfac
 }
 
 // resolveOp returns a closure usable as json.ParseOpts.OpFn.
-func (u tdJSONUnmarshaler) resolveOp() func(json.Operator, json.Position) (interface{}, error) {
-	return func(jop json.Operator, posInJSON json.Position) (interface{}, error) {
+func (u tdJSONUnmarshaler) resolveOp() func(json.Operator, json.Position) (any, error) {
+	return func(jop json.Operator, posInJSON json.Position) (any, error) {
 		op, exists := allOperators[jop.Name]
 		if !exists {
 			return nil, fmt.Errorf("unknown operator %s()", jop.Name)
@@ -2535,7 +2534,7 @@ func (u tdJSONUnmarshaler) resolveOp() func(json.Operator, json.Position) (inter
 		default:
 			min = tfn.NumIn()
 			if tfn.IsVariadic() {
-				// for All(expected ...interface{}) → min == 1, as All() is a non-sense
+				// for All(expected ...any) → min == 1, as All() is a non-sense
 				max = -1
 			} else {
 				max = min
@@ -2568,7 +2567,7 @@ func (u tdJSONUnmarshaler) resolveOp() func(json.Operator, json.Position) (inter
 			}
 
 			// If the function is variadic, no need to check each param as all
-			// variadic operators have always a ...interface{}
+			// variadic operators have always a ...any
 			numCheck := len(in)
 			if tfn.IsVariadic() {
 				numCheck = tfn.NumIn() - 1
@@ -2596,8 +2595,8 @@ func (u tdJSONUnmarshaler) resolveOp() func(json.Operator, json.Position) (inter
 }
 
 // resolveOpShortcut returns a closure usable as json.ParseOpts.OpShortcutFn.
-func (u tdJSONUnmarshaler) resolveOpShortcut() func(string, json.Position) (interface{}, bool) {
-	return func(opName string, posInJSON json.Position) (interface{}, bool) {
+func (u tdJSONUnmarshaler) resolveOpShortcut() func(string, json.Position) (any, bool) {
+	return func(opName string, posInJSON json.Position) (any, bool) {
 		opFn := jsonOpShortcuts[opName]
 		if opFn != nil {
 			tdOp := opFn()
@@ -2620,7 +2619,7 @@ func (s *tdJSONSmuggler) Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Er
 	vgot, _ := jsonify(ctx, got) // Cannot fail
 
 	// Here, vgot type is either a bool, float64, string,
-	// []interface{}, a map[string]interface{} or simply nil
+	// []any, a map[string]any or simply nil
 
 	return s.jsonValueEqual(ctx, vgot)
 }
@@ -2639,20 +2638,21 @@ func (s *tdJSONSmuggler) TypeBehind() reflect.Type {
 
 // tdJSONPlaceholder is an internal smuggler operator. It represents a
 // JSON placeholder in an unmarshaled JSON expected data structure. As $1 in:
-//   td.JSON(`{"foo": $1}`, td.Between(12, 34))
+//
+//	td.JSON(`{"foo": $1}`, td.Between(12, 34))
 //
 // It takes the JSON representation of data and compares it to
-// "expectedValue".
+// expectedValue.
 //
 // It does its best to convert back the JSON pointed data to the type
-// of "expectedValue" or to the type behind the "expectedValue".
+// of expectedValue or to the type behind the expectedValue.
 type tdJSONPlaceholder struct {
 	tdJSONSmuggler
 	name string
 	num  uint64
 }
 
-func newJSONNamedPlaceholder(name string, expectedValue interface{}) TestDeep {
+func newJSONNamedPlaceholder(name string, expectedValue any) TestDeep {
 	p := tdJSONPlaceholder{
 		tdJSONSmuggler: tdJSONSmuggler{
 			tdSmugglerBase: newSmugglerBase(expectedValue, 1),
@@ -2666,7 +2666,7 @@ func newJSONNamedPlaceholder(name string, expectedValue interface{}) TestDeep {
 	return &p
 }
 
-func newJSONNumPlaceholder(num uint64, expectedValue interface{}) TestDeep {
+func newJSONNumPlaceholder(num uint64, expectedValue any) TestDeep {
 	p := tdJSONPlaceholder{
 		tdJSONSmuggler: tdJSONSmuggler{
 			tdSmugglerBase: newSmugglerBase(expectedValue, 1),
@@ -2682,7 +2682,7 @@ func newJSONNumPlaceholder(num uint64, expectedValue interface{}) TestDeep {
 
 func (p *tdJSONPlaceholder) MarshalJSON() ([]byte, error) {
 	if !p.isTestDeeper {
-		var expected interface{}
+		var expected any
 		if p.expectedValue.IsValid() {
 			expected = p.expectedValue.Interface()
 		}
@@ -2714,13 +2714,14 @@ func (p *tdJSONPlaceholder) MarshalJSON() ([]byte, error) {
 }
 
 // tdJSONEmbedded represents a MarshalJSON'able operator. As Between() in:
-//   td.JSON(`{"foo": Between(12, 34)}`)
+//
+//	td.JSON(`{"foo": Between(12, 34)}`)
 //
 // tdSmugglerBase always contains a TestDeep operator, newJSONEmbedded()
 // ensures that.
 //
 // It does its best to convert back the JSON pointed data to the type
-// of the type behind the "expectedValue" (which is always a TestDeep
+// of the type behind the expectedValue (which is always a TestDeep
 // operator).
 type tdJSONEmbedded struct {
 	tdJSONSmuggler
@@ -2755,7 +2756,7 @@ func gotViaJSON(ctx ctxerr.Context, pGot *reflect.Value) *ctxerr.Error {
 	return nil
 }
 
-func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error) {
+func jsonify(ctx ctxerr.Context, got reflect.Value) (any, *ctxerr.Error) {
 	gotIf, ok := dark.GetInterface(got, true)
 	if !ok {
 		return nil, ctx.CannotCompareError()
@@ -2772,8 +2773,8 @@ func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error)
 		}
 	}
 
-	// As Marshal succeeded, Unmarshal in an interface{} cannot fail
-	var vgot interface{}
+	// As Marshal succeeded, Unmarshal in an any cannot fail
+	var vgot any
 	ejson.Unmarshal(b, &vgot) //nolint: errcheck
 	return vgot, nil
 }
@@ -2782,37 +2783,37 @@ func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error)
 // input(JSON): nil,bool,str,int,float,array,slice,map,struct,ptr
 
 // JSON operator allows to compare the JSON representation of data
-// against "expectedJSON". "expectedJSON" can be a:
+// against expectedJSON. expectedJSON can be a:
 //
 //   - string containing JSON data like `{"fullname":"Bob","age":42}`
 //   - string containing a JSON filename, ending with ".json" (its
-//     content is ioutil.ReadFile before unmarshaling)
+//     content is [ioutil.ReadFile] before unmarshaling)
 //   - []byte containing JSON data
-//   - io.Reader stream containing JSON data (is ioutil.ReadAll before
-//     unmarshaling)
+//   - [io.Reader] stream containing JSON data (is [ioutil.ReadAll]
+//     before unmarshaling)
 //
-// "expectedJSON" JSON value can contain placeholders. The "params"
-// are for any placeholder parameters in "expectedJSON". "params" can
-// contain TestDeep operators as well as raw values. A placeholder can
+// expectedJSON JSON value can contain placeholders. The params
+// are for any placeholder parameters in expectedJSON. params can
+// contain [TestDeep] operators as well as raw values. A placeholder can
 // be numeric like $2 or named like $name and always references an
-// item in "params".
+// item in params.
 //
 // Numeric placeholders reference the n'th "operators" item (starting
-// at 1). Named placeholders are used with Tag operator as follows:
+// at 1). Named placeholders are used with [Tag] operator as follows:
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`{"fullname": $name, "age": $2, "gender": $3}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`{"fullname": $name, "age": $2, "gender": $3}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // Note that placeholders can be double-quoted as in:
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // It makes no difference whatever the underlying type of the replaced
 // item is (= double quoting a placeholder matching a number is not a
@@ -2825,21 +2826,21 @@ func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error)
 // is an operator, to the type behind the operator. Allowing to do
 // things like:
 //
-//   td.Cmp(t, gotValue, td.JSON(`{"foo":$1}`, []int{1, 2, 3, 4}))
-//   td.Cmp(t, gotValue,
-//     td.JSON(`{"foo":$1}`, []interface{}{1, 2, td.Between(2, 4), 4}))
-//   td.Cmp(t, gotValue, td.JSON(`{"foo":$1}`, td.Between(27, 32)))
+//	td.Cmp(t, gotValue, td.JSON(`{"foo":$1}`, []int{1, 2, 3, 4}))
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`{"foo":$1}`, []any{1, 2, td.Between(2, 4), 4}))
+//	td.Cmp(t, gotValue, td.JSON(`{"foo":$1}`, td.Between(27, 32)))
 //
 // Of course, it does this conversion only if the expected type can be
 // guessed. In the case the conversion cannot occur, data is compared
 // as is, in its freshly unmarshaled JSON form (so as bool, float64,
-// string, []interface{}, map[string]interface{} or simply nil).
+// string, []any, map[string]any or simply nil).
 //
-// Note "expectedJSON" can be a []byte, JSON filename or io.Reader:
+// Note expectedJSON can be a []byte, a JSON filename or a [io.Reader]:
 //
-//   td.Cmp(t, gotValue, td.JSON("file.json", td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.JSON([]byte(`[1, $1, 3]`), td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.JSON(osFile, td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.JSON("file.json", td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.JSON([]byte(`[1, $1, 3]`), td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.JSON(osFile, td.Between(12, 34)))
 //
 // A JSON filename ends with ".json".
 //
@@ -2847,32 +2848,32 @@ func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error)
 // just double it to escape it. Note it is only needed when the "$" is
 // the first character of a string:
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`{"fullname": "$name", "details": "$$info", "age": $2}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`{"fullname": "$name", "details": "$$info", "age": $2}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // For the "details" key, the raw value "$info" is expected, no
 // placeholders are involved here.
 //
-// Note that Lax mode is automatically enabled by JSON operator to
+// Note that [Lax] mode is automatically enabled by JSON operator to
 // simplify numeric tests.
 //
 // Comments can be embedded in JSON data:
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`
-//   {
-//     // A guy properties:
-//     "fullname": "$name",  // The full name of the guy
-//     "details":  "$$info", // Literally "$info", thanks to "$" escape
-//     "age":      $2        /* The age of the guy:
-//                              - placeholder unquoted, but could be without
-//                                any change
-//                              - to demonstrate a multi-lines comment */
-//   }`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`
+//	{
+//	  // A guy properties:
+//	  "fullname": "$name",  // The full name of the guy
+//	  "details":  "$$info", // Literally "$info", thanks to "$" escape
+//	  "age":      $2        /* The age of the guy:
+//	                           - placeholder unquoted, but could be without
+//	                             any change
+//	                           - to demonstrate a multi-lines comment */
+//	}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // Comments, like in go, have 2 forms. To quote the Go language specification:
 //   - line comments start with the character sequence // and stop at the
@@ -2888,67 +2889,70 @@ func jsonify(ctx ctxerr.Context, got reflect.Value) (interface{}, *ctxerr.Error)
 // Most operators can be directly embedded in JSON without requiring
 // any placeholder.
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`
-//   {
-//     "fullname": HasPrefix("Foo"),
-//     "age":      Between(41, 43),
-//     "details":  SuperMapOf({
-//       "address": NotEmpty(),
-//       "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
-//     })
-//   }`))
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`
+//	{
+//	  "fullname": HasPrefix("Foo"),
+//	  "age":      Between(41, 43),
+//	  "details":  SuperMapOf({
+//	    "address": NotEmpty(),
+//	    "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
+//	  })
+//	}`))
 //
 // Placeholders can be used anywhere, even in operators parameters as in:
 //
-//   td.Cmp(t, gotValue, td.JSON(`{"fullname": HasPrefix($1)}`, "Zip"))
+//	td.Cmp(t, gotValue, td.JSON(`{"fullname": HasPrefix($1)}`, "Zip"))
 //
 // A few notes about operators embedding:
-//   - SubMapOf and SuperMapOf take only one parameter, a JSON object;
-//   - the optional 3rd parameter of Between has to be specified as a string
+//   - [SubMapOf] and [SuperMapOf] take only one parameter, a JSON object;
+//   - the optional 3rd parameter of [Between] has to be specified as a string
 //     and can be: "[]" or "BoundsInIn" (default), "[[" or "BoundsInOut",
 //     "]]" or "BoundsOutIn", "][" or "BoundsOutOut";
-//   - not all operators are embeddable only the following are;
-//   - All, Any, ArrayEach, Bag, Between, Contains, ContainsKey, Empty, Gt,
-//     Gte, HasPrefix, HasSuffix, Ignore, JSONPointer, Keys, Len, Lt, Lte,
-//     MapEach, N, NaN, Nil, None, Not, NotAny, NotEmpty, NotNaN, NotNil,
-//     NotZero, Re, ReAll, Set, SubBagOf, SubMapOf, SubSetOf, SuperBagOf,
-//     SuperMapOf, SuperSetOf, Values and Zero.
+//   - not all operators are embeddable only the following are:
+//     [All], [Any], [ArrayEach], [Bag], [Between], [Contains],
+//     [ContainsKey], [Empty], [Gt], [Gte], [HasPrefix], [HasSuffix],
+//     [Ignore], [JSONPointer], [Keys], [Len], [Lt], [Lte], [MapEach],
+//     [N], [NaN], [Nil], [None], [Not], [NotAny], [NotEmpty], [NotNaN],
+//     [NotNil], [NotZero], [Re], [ReAll], [Set], [SubBagOf],
+//     [SubMapOf], [SubSetOf], [SuperBagOf], [SuperMapOf], [SuperSetOf],
+//     [Values] and [Zero].
 //
 // Operators taking no parameters can also be directly embedded in
 // JSON data using $^OperatorName or "$^OperatorName" notation. They
 // are named shortcut operators (they predate the above operators embedding
-// but they subsist for compatibility):
+// but they still subsist for compatibility):
 //
-//   td.Cmp(t, gotValue, td.JSON(`{"id": $1}`, td.NotZero()))
+//	td.Cmp(t, gotValue, td.JSON(`{"id": $1}`, td.NotZero()))
 //
 // can be written as:
 //
-//   td.Cmp(t, gotValue, td.JSON(`{"id": $^NotZero}`))
+//	td.Cmp(t, gotValue, td.JSON(`{"id": $^NotZero}`))
 //
 // or
 //
-//   td.Cmp(t, gotValue, td.JSON(`{"id": "$^NotZero"}`))
+//	td.Cmp(t, gotValue, td.JSON(`{"id": "$^NotZero"}`))
 //
 // As for placeholders, there is no differences between $^NotZero and
 // "$^NotZero".
 //
 // The allowed shortcut operators follow:
-//   - Empty    → $^Empty
-//   - Ignore   → $^Ignore
-//   - NaN      → $^NaN
-//   - Nil      → $^Nil
-//   - NotEmpty → $^NotEmpty
-//   - NotNaN   → $^NotNaN
-//   - NotNil   → $^NotNil
-//   - NotZero  → $^NotZero
-//   - Zero     → $^Zero
+//   - [Empty]    → $^Empty
+//   - [Ignore]   → $^Ignore
+//   - [NaN]      → $^NaN
+//   - [Nil]      → $^Nil
+//   - [NotEmpty] → $^NotEmpty
+//   - [NotNaN]   → $^NotNaN
+//   - [NotNil]   → $^NotNil
+//   - [NotZero]  → $^NotZero
+//   - [Zero]     → $^Zero
 //
-// TypeBehind method returns the reflect.Type of the "expectedJSON"
-// json.Unmarshal'ed. So it can be bool, string, float64,
-// []interface{}, map[string]interface{} or interface{} in case
-// "expectedJSON" is "null".
-func JSON(expectedJSON interface{}, params ...interface{}) TestDeep {
+// TypeBehind method returns the [reflect.Type] of the expectedJSON
+// once JSON unmarshaled. So it can be bool, string, float64, []any,
+// map[string]any or any in case expectedJSON is "null".
+//
+// See also [JSONPointer], [SubJSONOf] and [SuperJSONOf].
+func JSON(expectedJSON any, params ...any) TestDeep {
 	j := &tdJSON{
 		baseOKNil: newBaseOKNil(3),
 	}
@@ -3028,54 +3032,54 @@ var _ TestDeep = &tdMapJSON{}
 // input(SubJSONOf): map,struct,ptr(ptr on map/struct)
 
 // SubJSONOf operator allows to compare the JSON representation of
-// data against "expectedJSON". Unlike JSON operator, marshaled data
-// must be a JSON object/map (aka {…}). "expectedJSON" can be a:
+// data against expectedJSON. Unlike [JSON] operator, marshaled data
+// must be a JSON object/map (aka {…}). expectedJSON can be a:
 //
 //   - string containing JSON data like `{"fullname":"Bob","age":42}`
 //   - string containing a JSON filename, ending with ".json" (its
-//     content is ioutil.ReadFile before unmarshaling)
+//     content is [ioutil.ReadFile] before unmarshaling)
 //   - []byte containing JSON data
-//   - io.Reader stream containing JSON data (is ioutil.ReadAll before
+//   - [io.Reader] stream containing JSON data (is [ioutil.ReadAll] before
 //     unmarshaling)
 //
-// JSON data contained in "expectedJSON" must be a JSON object/map
+// JSON data contained in expectedJSON must be a JSON object/map
 // (aka {…}) too. During a match, each expected entry should match in
 // the compared map. But some expected entries can be missing from the
 // compared map.
 //
-//   type MyStruct struct {
-//     Name string `json:"name"`
-//     Age  int    `json:"age"`
-//   }
-//   got := MyStruct{
-//     Name: "Bob",
-//     Age:  42,
-//   }
-//   td.Cmp(t, got, td.SubJSONOf(`{"name": "Bob", "age": 42, "city": "NY"}`)) // succeeds
-//   td.Cmp(t, got, td.SubJSONOf(`{"name": "Bob", "zip": 666}`))              // fails, extra "age"
+//	type MyStruct struct {
+//	  Name string `json:"name"`
+//	  Age  int    `json:"age"`
+//	}
+//	got := MyStruct{
+//	  Name: "Bob",
+//	  Age:  42,
+//	}
+//	td.Cmp(t, got, td.SubJSONOf(`{"name": "Bob", "age": 42, "city": "NY"}`)) // succeeds
+//	td.Cmp(t, got, td.SubJSONOf(`{"name": "Bob", "zip": 666}`))              // fails, extra "age"
 //
-// "expectedJSON" JSON value can contain placeholders. The "params"
-// are for any placeholder parameters in "expectedJSON". "params" can
-// contain TestDeep operators as well as raw values. A placeholder can
+// expectedJSON JSON value can contain placeholders. The params
+// are for any placeholder parameters in expectedJSON. params can
+// contain [TestDeep] operators as well as raw values. A placeholder can
 // be numeric like $2 or named like $name and always references an
-// item in "params".
+// item in params.
 //
 // Numeric placeholders reference the n'th "operators" item (starting
-// at 1). Named placeholders are used with Tag operator as follows:
+// at 1). Named placeholders are used with [Tag] operator as follows:
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"fullname": $name, "age": $2, "gender": $3}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"fullname": $name, "age": $2, "gender": $3}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // Note that placeholders can be double-quoted as in:
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // It makes no difference whatever the underlying type of the replaced
 // item is (= double quoting a placeholder matching a number is not a
@@ -3088,23 +3092,23 @@ var _ TestDeep = &tdMapJSON{}
 // is an operator, to the type behind the operator. Allowing to do
 // things like:
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"foo":$1, "bar": 12}`, []int{1, 2, 3, 4}))
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"foo":$1, "bar": 12}`, []interface{}{1, 2, td.Between(2, 4), 4}))
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"foo":$1, "bar": 12}`, td.Between(27, 32)))
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"foo":$1, "bar": 12}`, []int{1, 2, 3, 4}))
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"foo":$1, "bar": 12}`, []any{1, 2, td.Between(2, 4), 4}))
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"foo":$1, "bar": 12}`, td.Between(27, 32)))
 //
 // Of course, it does this conversion only if the expected type can be
 // guessed. In the case the conversion cannot occur, data is compared
 // as is, in its freshly unmarshaled JSON form (so as bool, float64,
-// string, []interface{}, map[string]interface{} or simply nil).
+// string, []any, map[string]any or simply nil).
 //
-// Note "expectedJSON" can be a []byte, JSON filename or io.Reader:
+// Note expectedJSON can be a []byte, JSON filename or [io.Reader]:
 //
-//   td.Cmp(t, gotValue, td.SubJSONOf("file.json", td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.SubJSONOf([]byte(`[1, $1, 3]`), td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.SubJSONOf(osFile, td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SubJSONOf("file.json", td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SubJSONOf([]byte(`[1, $1, 3]`), td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SubJSONOf(osFile, td.Between(12, 34)))
 //
 // A JSON filename ends with ".json".
 //
@@ -3112,32 +3116,32 @@ var _ TestDeep = &tdMapJSON{}
 // just double it to escape it. Note it is only needed when the "$" is
 // the first character of a string:
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"fullname": "$name", "details": "$$info", "age": $2}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"fullname": "$name", "details": "$$info", "age": $2}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // For the "details" key, the raw value "$info" is expected, no
 // placeholders are involved here.
 //
-// Note that Lax mode is automatically enabled by SubJSONOf operator to
+// Note that [Lax] mode is automatically enabled by SubJSONOf operator to
 // simplify numeric tests.
 //
 // Comments can be embedded in JSON data:
 //
-//   td.Cmp(t, gotValue,
-//     SubJSONOf(`
-//   {
-//     // A guy properties:
-//     "fullname": "$name",  // The full name of the guy
-//     "details":  "$$info", // Literally "$info", thanks to "$" escape
-//     "age":      $2        /* The age of the guy:
-//                              - placeholder unquoted, but could be without
-//                                any change
-//                              - to demonstrate a multi-lines comment */
-//   }`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  SubJSONOf(`
+//	{
+//	  // A guy properties:
+//	  "fullname": "$name",  // The full name of the guy
+//	  "details":  "$$info", // Literally "$info", thanks to "$" escape
+//	  "age":      $2        /* The age of the guy:
+//	                           - placeholder unquoted, but could be without
+//	                             any change
+//	                           - to demonstrate a multi-lines comment */
+//	}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // Comments, like in go, have 2 forms. To quote the Go language specification:
 //   - line comments start with the character sequence // and stop at the
@@ -3153,70 +3157,74 @@ var _ TestDeep = &tdMapJSON{}
 // Most operators can be directly embedded in SubJSONOf without requiring
 // any placeholder.
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`
-//   {
-//     "fullname": HasPrefix("Foo"),
-//     "age":      Between(41, 43),
-//     "details":  SuperMapOf({
-//       "address": NotEmpty(),
-//       "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
-//     })
-//   }`))
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`
+//	{
+//	  "fullname": HasPrefix("Foo"),
+//	  "age":      Between(41, 43),
+//	  "details":  SuperMapOf({
+//	    "address": NotEmpty(),
+//	    "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
+//	  })
+//	}`))
 //
 // Placeholders can be used anywhere, even in operators parameters as in:
 //
-//   td.Cmp(t, gotValue,
-//     td.SubJSONOf(`{"fullname": HasPrefix($1), "bar": 42}`, "Zip"))
+//	td.Cmp(t, gotValue,
+//	  td.SubJSONOf(`{"fullname": HasPrefix($1), "bar": 42}`, "Zip"))
 //
 // A few notes about operators embedding:
-//   - SubMapOf and SuperMapOf take only one parameter, a JSON object;
-//   - the optional 3rd parameter of Between has to be specified as a string
+//   - [SubMapOf] and [SuperMapOf] take only one parameter, a JSON object;
+//   - the optional 3rd parameter of [Between] has to be specified as a string
 //     and can be: "[]" or "BoundsInIn" (default), "[[" or "BoundsInOut",
 //     "]]" or "BoundsOutIn", "][" or "BoundsOutOut";
-//   - not all operators are embeddable only the following are;
-//   - All, Any, ArrayEach, Bag, Between, Contains, ContainsKey, Empty, Gt,
-//     Gte, HasPrefix, HasSuffix, Ignore, JSONPointer, Keys, Len, Lt, Lte,
-//     MapEach, N, NaN, Nil, None, Not, NotAny, NotEmpty, NotNaN, NotNil,
-//     NotZero, Re, ReAll, Set, SubBagOf, SubMapOf, SubSetOf, SuperBagOf,
-//     SuperMapOf, SuperSetOf, Values and Zero.
+//   - not all operators are embeddable only the following are:
+//     [All], [Any], [ArrayEach], [Bag], [Between], [Contains],
+//     [ContainsKey], [Empty], [Gt], [Gte], [HasPrefix], [HasSuffix],
+//     [Ignore], [JSONPointer], [Keys], [Len], [Lt], [Lte], [MapEach],
+//     [N], [NaN], [Nil], [None], [Not], [NotAny], [NotEmpty], [NotNaN],
+//     [NotNil], [NotZero], [Re], [ReAll], [Set], [SubBagOf],
+//     [SubMapOf], [SubSetOf], [SuperBagOf], [SuperMapOf], [SuperSetOf],
+//     [Values] and [Zero].
 //
 // Operators taking no parameters can also be directly embedded in
 // JSON data using $^OperatorName or "$^OperatorName" notation. They
 // are named shortcut operators (they predate the above operators embedding
 // but they subsist for compatibility):
 //
-//   td.Cmp(t, gotValue, td.SubJSONOf(`{"id": $1, "bar": 42}`, td.NotZero()))
+//	td.Cmp(t, gotValue, td.SubJSONOf(`{"id": $1, "bar": 42}`, td.NotZero()))
 //
 // can be written as:
 //
-//   td.Cmp(t, gotValue, td.SubJSONOf(`{"id": $^NotZero, "bar": 42}`))
+//	td.Cmp(t, gotValue, td.SubJSONOf(`{"id": $^NotZero, "bar": 42}`))
 //
 // or
 //
-//   td.Cmp(t, gotValue, td.SubJSONOf(`{"id": "$^NotZero", "bar": 42}`))
+//	td.Cmp(t, gotValue, td.SubJSONOf(`{"id": "$^NotZero", "bar": 42}`))
 //
 // As for placeholders, there is no differences between $^NotZero and
 // "$^NotZero".
 //
 // The allowed shortcut operators follow:
-//   - Empty    → $^Empty
-//   - Ignore   → $^Ignore
-//   - NaN      → $^NaN
-//   - Nil      → $^Nil
-//   - NotEmpty → $^NotEmpty
-//   - NotNaN   → $^NotNaN
-//   - NotNil   → $^NotNil
-//   - NotZero  → $^NotZero
-//   - Zero     → $^Zero
+//   - [Empty]    → $^Empty
+//   - [Ignore]   → $^Ignore
+//   - [NaN]      → $^NaN
+//   - [Nil]      → $^Nil
+//   - [NotEmpty] → $^NotEmpty
+//   - [NotNaN]   → $^NotNaN
+//   - [NotNil]   → $^NotNil
+//   - [NotZero]  → $^NotZero
+//   - [Zero]     → $^Zero
 //
-// TypeBehind method returns the map[string]interface{} type.
-func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
+// TypeBehind method returns the map[string]any type.
+//
+// See also [JSON], [JSONPointer] and [SuperJSONOf].
+func SubJSONOf(expectedJSON any, params ...any) TestDeep {
 	m := &tdMapJSON{
 		tdMap: tdMap{
 			tdExpectedType: tdExpectedType{
 				base:         newBase(3),
-				expectedType: reflect.TypeOf((map[string]interface{})(nil)),
+				expectedType: reflect.TypeOf((map[string]any)(nil)),
 			},
 			kind: subMap,
 		},
@@ -3228,7 +3236,7 @@ func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 		return m
 	}
 
-	_, ok := v.(map[string]interface{})
+	_, ok := v.(map[string]any)
 	if !ok {
 		m.err = ctxerr.OpBad("SubJSONOf", "SubJSONOf() only accepts JSON objects {…}")
 		return m
@@ -3245,56 +3253,56 @@ func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 // input(SuperJSONOf): map,struct,ptr(ptr on map/struct)
 
 // SuperJSONOf operator allows to compare the JSON representation of
-// data against "expectedJSON". Unlike JSON operator, marshaled data
-// must be a JSON object/map (aka {…}). "expectedJSON" can be a:
+// data against expectedJSON. Unlike JSON operator, marshaled data
+// must be a JSON object/map (aka {…}). expectedJSON can be a:
 //
 //   - string containing JSON data like `{"fullname":"Bob","age":42}`
 //   - string containing a JSON filename, ending with ".json" (its
-//     content is ioutil.ReadFile before unmarshaling)
+//     content is [ioutil.ReadFile] before unmarshaling)
 //   - []byte containing JSON data
-//   - io.Reader stream containing JSON data (is ioutil.ReadAll before
+//   - [io.Reader] stream containing JSON data (is [ioutil.ReadAll] before
 //     unmarshaling)
 //
-// JSON data contained in "expectedJSON" must be a JSON object/map
+// JSON data contained in expectedJSON must be a JSON object/map
 // (aka {…}) too. During a match, each expected entry should match in
 // the compared map. But some entries in the compared map may not be
 // expected.
 //
-//   type MyStruct struct {
-//     Name string `json:"name"`
-//     Age  int    `json:"age"`
-//     City string `json:"city"`
-//   }
-//   got := MyStruct{
-//     Name: "Bob",
-//     Age:  42,
-//     City: "TestCity",
-//   }
-//   td.Cmp(t, got, td.SuperJSONOf(`{"name": "Bob", "age": 42}`))  // succeeds
-//   td.Cmp(t, got, td.SuperJSONOf(`{"name": "Bob", "zip": 666}`)) // fails, miss "zip"
+//	type MyStruct struct {
+//	  Name string `json:"name"`
+//	  Age  int    `json:"age"`
+//	  City string `json:"city"`
+//	}
+//	got := MyStruct{
+//	  Name: "Bob",
+//	  Age:  42,
+//	  City: "TestCity",
+//	}
+//	td.Cmp(t, got, td.SuperJSONOf(`{"name": "Bob", "age": 42}`))  // succeeds
+//	td.Cmp(t, got, td.SuperJSONOf(`{"name": "Bob", "zip": 666}`)) // fails, miss "zip"
 //
-// "expectedJSON" JSON value can contain placeholders. The "params"
-// are for any placeholder parameters in "expectedJSON". "params" can
-// contain TestDeep operators as well as raw values. A placeholder can
-// be numeric like $2 or named like $name and always references an
-// item in "params".
+// expectedJSON JSON value can contain placeholders. The params are
+// for any placeholder parameters in expectedJSON. params can contain
+// [TestDeep] operators as well as raw values. A placeholder can be
+// numeric like $2 or named like $name and always references an item
+// in params.
 //
 // Numeric placeholders reference the n'th "operators" item (starting
-// at 1). Named placeholders are used with Tag operator as follows:
+// at 1). Named placeholders are used with [Tag] operator as follows:
 //
-//   td.Cmp(t, gotValue,
-//     SuperJSONOf(`{"fullname": $name, "age": $2, "gender": $3}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  SuperJSONOf(`{"fullname": $name, "age": $2, "gender": $3}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // Note that placeholders can be double-quoted as in:
 //
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43),                  // matches only $2
-//       "male"))                             // matches only $3
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`{"fullname": "$name", "age": "$2", "gender": "$3"}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43),                  // matches only $2
+//	    "male"))                             // matches only $3
 //
 // It makes no difference whatever the underlying type of the replaced
 // item is (= double quoting a placeholder matching a number is not a
@@ -3307,23 +3315,23 @@ func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 // is an operator, to the type behind the operator. Allowing to do
 // things like:
 //
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`{"foo":$1}`, []int{1, 2, 3, 4}))
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`{"foo":$1}`, []interface{}{1, 2, td.Between(2, 4), 4}))
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`{"foo":$1}`, td.Between(27, 32)))
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`{"foo":$1}`, []int{1, 2, 3, 4}))
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`{"foo":$1}`, []any{1, 2, td.Between(2, 4), 4}))
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`{"foo":$1}`, td.Between(27, 32)))
 //
 // Of course, it does this conversion only if the expected type can be
 // guessed. In the case the conversion cannot occur, data is compared
 // as is, in its freshly unmarshaled JSON form (so as bool, float64,
-// string, []interface{}, map[string]interface{} or simply nil).
+// string, []any, map[string]any or simply nil).
 //
-// Note "expectedJSON" can be a []byte, JSON filename or io.Reader:
+// Note expectedJSON can be a []byte, JSON filename or [io.Reader]:
 //
-//   td.Cmp(t, gotValue, td.SuperJSONOf("file.json", td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.SuperJSONOf([]byte(`[1, $1, 3]`), td.Between(12, 34)))
-//   td.Cmp(t, gotValue, td.SuperJSONOf(osFile, td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SuperJSONOf("file.json", td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SuperJSONOf([]byte(`[1, $1, 3]`), td.Between(12, 34)))
+//	td.Cmp(t, gotValue, td.SuperJSONOf(osFile, td.Between(12, 34)))
 //
 // A JSON filename ends with ".json".
 //
@@ -3331,32 +3339,32 @@ func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 // just double it to escape it. Note it is only needed when the "$" is
 // the first character of a string:
 //
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`{"fullname": "$name", "details": "$$info", "age": $2}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`{"fullname": "$name", "details": "$$info", "age": $2}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // For the "details" key, the raw value "$info" is expected, no
 // placeholders are involved here.
 //
-// Note that Lax mode is automatically enabled by SuperJSONOf operator to
+// Note that [Lax] mode is automatically enabled by SuperJSONOf operator to
 // simplify numeric tests.
 //
 // Comments can be embedded in JSON data:
 //
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`
-//   {
-//     // A guy properties:
-//     "fullname": "$name",  // The full name of the guy
-//     "details":  "$$info", // Literally "$info", thanks to "$" escape
-//     "age":      $2        /* The age of the guy:
-//                              - placeholder unquoted, but could be without
-//                                any change
-//                              - to demonstrate a multi-lines comment */
-//   }`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
-//       td.Between(41, 43)))                 // matches only $2
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`
+//	{
+//	  // A guy properties:
+//	  "fullname": "$name",  // The full name of the guy
+//	  "details":  "$$info", // Literally "$info", thanks to "$" escape
+//	  "age":      $2        /* The age of the guy:
+//	                           - placeholder unquoted, but could be without
+//	                             any change
+//	                           - to demonstrate a multi-lines comment */
+//	}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $1 and $name
+//	    td.Between(41, 43)))                 // matches only $2
 //
 // Comments, like in go, have 2 forms. To quote the Go language specification:
 //   - line comments start with the character sequence // and stop at the
@@ -3372,69 +3380,73 @@ func SubJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 // Most operators can be directly embedded in SuperJSONOf without requiring
 // any placeholder.
 //
-//   td.Cmp(t, gotValue,
-//     td.SuperJSONOf(`
-//   {
-//     "fullname": HasPrefix("Foo"),
-//     "age":      Between(41, 43),
-//     "details":  SuperMapOf({
-//       "address": NotEmpty(),
-//       "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
-//     })
-//   }`))
+//	td.Cmp(t, gotValue,
+//	  td.SuperJSONOf(`
+//	{
+//	  "fullname": HasPrefix("Foo"),
+//	  "age":      Between(41, 43),
+//	  "details":  SuperMapOf({
+//	    "address": NotEmpty(),
+//	    "car":     Any("Peugeot", "Tesla", "Jeep") // any of these
+//	  })
+//	}`))
 //
 // Placeholders can be used anywhere, even in operators parameters as in:
 //
-//   td.Cmp(t, gotValue, td.SuperJSONOf(`{"fullname": HasPrefix($1)}`, "Zip"))
+//	td.Cmp(t, gotValue, td.SuperJSONOf(`{"fullname": HasPrefix($1)}`, "Zip"))
 //
 // A few notes about operators embedding:
-//   - SubMapOf and SuperMapOf take only one parameter, a JSON object;
-//   - the optional 3rd parameter of Between has to be specified as a string
+//   - [SubMapOf] and [SuperMapOf] take only one parameter, a JSON object;
+//   - the optional 3rd parameter of [Between] has to be specified as a string
 //     and can be: "[]" or "BoundsInIn" (default), "[[" or "BoundsInOut",
 //     "]]" or "BoundsOutIn", "][" or "BoundsOutOut";
-//   - not all operators are embeddable only the following are;
-//   - All, Any, ArrayEach, Bag, Between, Contains, ContainsKey, Empty, Gt,
-//     Gte, HasPrefix, HasSuffix, Ignore, JSONPointer, Keys, Len, Lt, Lte,
-//     MapEach, N, NaN, Nil, None, Not, NotAny, NotEmpty, NotNaN, NotNil,
-//     NotZero, Re, ReAll, Set, SubBagOf, SubMapOf, SubSetOf, SuperBagOf,
-//     SuperMapOf, SuperSetOf, Values and Zero.
+//   - not all operators are embeddable only the following are:
+//     [All], [Any], [ArrayEach], [Bag], [Between], [Contains],
+//     [ContainsKey], [Empty], [Gt], [Gte], [HasPrefix], [HasSuffix],
+//     [Ignore], [JSONPointer], [Keys], [Len], [Lt], [Lte], [MapEach],
+//     [N], [NaN], [Nil], [None], [Not], [NotAny], [NotEmpty], [NotNaN],
+//     [NotNil], [NotZero], [Re], [ReAll], [Set], [SubBagOf],
+//     [SubMapOf], [SubSetOf], [SuperBagOf], [SuperMapOf], [SuperSetOf],
+//     [Values] and [Zero].
 //
 // Operators taking no parameters can also be directly embedded in
 // JSON data using $^OperatorName or "$^OperatorName" notation. They
 // are named shortcut operators (they predate the above operators embedding
 // but they subsist for compatibility):
 //
-//   td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": $1}`, td.NotZero()))
+//	td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": $1}`, td.NotZero()))
 //
 // can be written as:
 //
-//   td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": $^NotZero}`))
+//	td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": $^NotZero}`))
 //
 // or
 //
-//   td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": "$^NotZero"}`))
+//	td.Cmp(t, gotValue, td.SuperJSONOf(`{"id": "$^NotZero"}`))
 //
 // As for placeholders, there is no differences between $^NotZero and
 // "$^NotZero".
 //
 // The allowed shortcut operators follow:
-//   - Empty    → $^Empty
-//   - Ignore   → $^Ignore
-//   - NaN      → $^NaN
-//   - Nil      → $^Nil
-//   - NotEmpty → $^NotEmpty
-//   - NotNaN   → $^NotNaN
-//   - NotNil   → $^NotNil
-//   - NotZero  → $^NotZero
-//   - Zero     → $^Zero
+//   - [Empty]    → $^Empty
+//   - [Ignore]   → $^Ignore
+//   - [NaN]      → $^NaN
+//   - [Nil]      → $^Nil
+//   - [NotEmpty] → $^NotEmpty
+//   - [NotNaN]   → $^NotNaN
+//   - [NotNil]   → $^NotNil
+//   - [NotZero]  → $^NotZero
+//   - [Zero]     → $^Zero
 //
-// TypeBehind method returns the map[string]interface{} type.
-func SuperJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
+// TypeBehind method returns the map[string]any type.
+//
+// See also [JSON], [JSONPointer] and [SubJSONOf].
+func SuperJSONOf(expectedJSON any, params ...any) TestDeep {
 	m := &tdMapJSON{
 		tdMap: tdMap{
 			tdExpectedType: tdExpectedType{
 				base:         newBase(3),
-				expectedType: reflect.TypeOf((map[string]interface{})(nil)),
+				expectedType: reflect.TypeOf((map[string]any)(nil)),
 			},
 			kind: superMap,
 		},
@@ -3446,7 +3458,7 @@ func SuperJSONOf(expectedJSON interface{}, params ...interface{}) TestDeep {
 		return m
 	}
 
-	_, ok := v.(map[string]interface{})
+	_, ok := v.(map[string]any)
 	if !ok {
 		m.err = ctxerr.OpBad("SuperJSONOf", "SuperJSONOf() only accepts JSON objects {…}")
 		return m

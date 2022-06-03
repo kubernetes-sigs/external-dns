@@ -86,8 +86,8 @@ type DescribePdnsThreatLogsRequest struct {
 type DescribePdnsThreatLogsResponse struct {
 	*responses.BaseResponse
 	TotalCount int64  `json:"TotalCount" xml:"TotalCount"`
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	PageSize   int64  `json:"PageSize" xml:"PageSize"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 	PageNumber int64  `json:"PageNumber" xml:"PageNumber"`
 	Logs       []Log  `json:"Logs" xml:"Logs"`
 }

@@ -73,11 +73,11 @@ type InstanceAlert struct {
 
 // InstanceBackup represents backup settings for an instance
 type InstanceBackup struct {
-	Enabled  bool `json:"enabled"`
+	Enabled  bool `json:"enabled,omitempty"`
 	Schedule struct {
 		Day    string `json:"day,omitempty"`
 		Window string `json:"window,omitempty"`
-	}
+	} `json:"schedule,omitempty"`
 }
 
 // InstanceTransfer pool stats for a Linode Instance during the current billing month

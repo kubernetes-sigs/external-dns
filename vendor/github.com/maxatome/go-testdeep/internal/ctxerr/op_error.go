@@ -14,7 +14,7 @@ import (
 
 // OpBadUsage returns a string to notice the user he passed a bad
 // parameter to an operator constructor.
-func OpBadUsage(op, usage string, param interface{}, pos int, kind bool) *Error {
+func OpBadUsage(op, usage string, param any, pos int, kind bool) *Error {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "usage: %s%s, but received ", op, usage)
 
@@ -48,7 +48,7 @@ func OpBadUsage(op, usage string, param interface{}, pos int, kind bool) *Error 
 	}
 }
 
-// OpTooManyParams returns an *Error to notice the user he called a
+// OpTooManyParams returns an [*Error] to notice the user he called a
 // variadic operator constructor with too many parameters.
 func OpTooManyParams(op, usage string) *Error {
 	return &Error{
@@ -57,10 +57,10 @@ func OpTooManyParams(op, usage string) *Error {
 	}
 }
 
-// OpBad returns an *Error to notice the user a bad operator
+// OpBad returns an [*Error] to notice the user a bad operator
 // constructor usage. If len(args) is > 0, s and args are given to
-// fmt.Sprintf.
-func OpBad(op, s string, args ...interface{}) *Error {
+// [fmt.Sprintf].
+func OpBad(op, s string, args ...any) *Error {
 	if len(args) > 0 {
 		s = fmt.Sprintf(s, args...)
 	}

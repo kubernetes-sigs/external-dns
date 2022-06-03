@@ -60,6 +60,7 @@ type PriorityClass struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -88,6 +89,10 @@ type PriorityClass struct {
 =======
 	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	// This field is beta-level, gated by the NonPreemptingPriority feature-gate.
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	// +optional
 	PreemptionPolicy *apiv1.PreemptionPolicy `json:"preemptionPolicy,omitempty" protobuf:"bytes,5,opt,name=preemptionPolicy"`
 }

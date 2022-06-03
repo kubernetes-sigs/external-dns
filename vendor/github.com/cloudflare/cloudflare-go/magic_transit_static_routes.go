@@ -4,24 +4,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/http"
 	"time"
+
+	"errors"
 )
 
-// Magic Transit Static Routes Error messages
+// Magic Transit Static Routes Error messages.
 const (
 	errMagicTransitStaticRouteNotModified = "When trying to modify static route, API returned modified: false"
 	errMagicTransitStaticRouteNotDeleted  = "When trying to delete static route, API returned deleted: false"
 )
 
-// MagicTransitStaticRouteScope contains information about a static route's scope
+// MagicTransitStaticRouteScope contains information about a static route's scope.
 type MagicTransitStaticRouteScope struct {
 	ColoRegions []string `json:"colo_regions,omitempty"`
 	ColoNames   []string `json:"colo_names,omitempty"`
 }
 
-// MagicTransitStaticRoute contains information about a static route
+// MagicTransitStaticRoute contains information about a static route.
 type MagicTransitStaticRoute struct {
 	ID          string                       `json:"id,omitempty"`
 	Prefix      string                       `json:"prefix"`
@@ -34,7 +35,7 @@ type MagicTransitStaticRoute struct {
 	Scope       MagicTransitStaticRouteScope `json:"scope,omitempty"`
 }
 
-// ListMagicTransitStaticRoutesResponse contains a response including Magic Transit static routes
+// ListMagicTransitStaticRoutesResponse contains a response including Magic Transit static routes.
 type ListMagicTransitStaticRoutesResponse struct {
 	Response
 	Result struct {
@@ -42,7 +43,7 @@ type ListMagicTransitStaticRoutesResponse struct {
 	} `json:"result"`
 }
 
-// GetMagicTransitStaticRouteResponse contains a response including exactly one static route
+// GetMagicTransitStaticRouteResponse contains a response including exactly one static route.
 type GetMagicTransitStaticRouteResponse struct {
 	Response
 	Result struct {
@@ -50,7 +51,7 @@ type GetMagicTransitStaticRouteResponse struct {
 	} `json:"result"`
 }
 
-// UpdateMagicTransitStaticRouteResponse contains a static route update response
+// UpdateMagicTransitStaticRouteResponse contains a static route update response.
 type UpdateMagicTransitStaticRouteResponse struct {
 	Response
 	Result struct {
@@ -59,7 +60,7 @@ type UpdateMagicTransitStaticRouteResponse struct {
 	} `json:"result"`
 }
 
-// DeleteMagicTransitStaticRouteResponse contains a static route deletion response
+// DeleteMagicTransitStaticRouteResponse contains a static route deletion response.
 type DeleteMagicTransitStaticRouteResponse struct {
 	Response
 	Result struct {
@@ -68,7 +69,7 @@ type DeleteMagicTransitStaticRouteResponse struct {
 	} `json:"result"`
 }
 
-// CreateMagicTransitStaticRoutesRequest is an array of static routes to create
+// CreateMagicTransitStaticRoutesRequest is an array of static routes to create.
 type CreateMagicTransitStaticRoutesRequest struct {
 	Routes []MagicTransitStaticRoute `json:"routes"`
 }
@@ -76,12 +77,8 @@ type CreateMagicTransitStaticRoutesRequest struct {
 // ListMagicTransitStaticRoutes lists all static routes for a given account
 //
 // API reference: https://api.cloudflare.com/#magic-transit-static-routes-list-routes
-func (api *API) ListMagicTransitStaticRoutes(ctx context.Context) ([]MagicTransitStaticRoute, error) {
-	if err := api.checkAccountID(); err != nil {
-		return []MagicTransitStaticRoute{}, err
-	}
-
-	uri := fmt.Sprintf("/accounts/%s/magic/routes", api.AccountID)
+func (api *API) ListMagicTransitStaticRoutes(ctx context.Context, accountID string) ([]MagicTransitStaticRoute, error) {
+	uri := fmt.Sprintf("/accounts/%s/magic/routes", accountID)
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return []MagicTransitStaticRoute{}, err
@@ -89,7 +86,7 @@ func (api *API) ListMagicTransitStaticRoutes(ctx context.Context) ([]MagicTransi
 
 	result := ListMagicTransitStaticRoutesResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return []MagicTransitStaticRoute{}, errors.Wrap(err, errUnmarshalError)
+		return []MagicTransitStaticRoute{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result.Routes, nil
@@ -98,12 +95,8 @@ func (api *API) ListMagicTransitStaticRoutes(ctx context.Context) ([]MagicTransi
 // GetMagicTransitStaticRoute returns exactly one static route
 //
 // API reference: https://api.cloudflare.com/#magic-transit-static-routes-route-details
-func (api *API) GetMagicTransitStaticRoute(ctx context.Context, id string) (MagicTransitStaticRoute, error) {
-	if err := api.checkAccountID(); err != nil {
-		return MagicTransitStaticRoute{}, err
-	}
-
-	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", api.AccountID, id)
+func (api *API) GetMagicTransitStaticRoute(ctx context.Context, accountID, ID string) (MagicTransitStaticRoute, error) {
+	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", accountID, ID)
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
 		return MagicTransitStaticRoute{}, err
@@ -111,7 +104,7 @@ func (api *API) GetMagicTransitStaticRoute(ctx context.Context, id string) (Magi
 
 	result := GetMagicTransitStaticRouteResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return MagicTransitStaticRoute{}, errors.Wrap(err, errUnmarshalError)
+		return MagicTransitStaticRoute{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result.Route, nil
@@ -120,12 +113,8 @@ func (api *API) GetMagicTransitStaticRoute(ctx context.Context, id string) (Magi
 // CreateMagicTransitStaticRoute creates a new static route
 //
 // API reference: https://api.cloudflare.com/#magic-transit-static-routes-create-routes
-func (api *API) CreateMagicTransitStaticRoute(ctx context.Context, route MagicTransitStaticRoute) ([]MagicTransitStaticRoute, error) {
-	if err := api.checkAccountID(); err != nil {
-		return []MagicTransitStaticRoute{}, err
-	}
-
-	uri := fmt.Sprintf("/accounts/%s/magic/routes", api.AccountID)
+func (api *API) CreateMagicTransitStaticRoute(ctx context.Context, accountID string, route MagicTransitStaticRoute) ([]MagicTransitStaticRoute, error) {
+	uri := fmt.Sprintf("/accounts/%s/magic/routes", accountID)
 	res, err := api.makeRequestContext(ctx, http.MethodPost, uri, CreateMagicTransitStaticRoutesRequest{
 		Routes: []MagicTransitStaticRoute{
 			route,
@@ -138,7 +127,7 @@ func (api *API) CreateMagicTransitStaticRoute(ctx context.Context, route MagicTr
 
 	result := ListMagicTransitStaticRoutesResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return []MagicTransitStaticRoute{}, errors.Wrap(err, errUnmarshalError)
+		return []MagicTransitStaticRoute{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result.Routes, nil
@@ -147,12 +136,8 @@ func (api *API) CreateMagicTransitStaticRoute(ctx context.Context, route MagicTr
 // UpdateMagicTransitStaticRoute updates a static route
 //
 // API reference: https://api.cloudflare.com/#magic-transit-static-routes-update-route
-func (api *API) UpdateMagicTransitStaticRoute(ctx context.Context, id string, route MagicTransitStaticRoute) (MagicTransitStaticRoute, error) {
-	if err := api.checkAccountID(); err != nil {
-		return MagicTransitStaticRoute{}, err
-	}
-
-	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", api.AccountID, id)
+func (api *API) UpdateMagicTransitStaticRoute(ctx context.Context, accountID, ID string, route MagicTransitStaticRoute) (MagicTransitStaticRoute, error) {
+	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", accountID, ID)
 	res, err := api.makeRequestContext(ctx, http.MethodPut, uri, route)
 
 	if err != nil {
@@ -161,7 +146,7 @@ func (api *API) UpdateMagicTransitStaticRoute(ctx context.Context, id string, ro
 
 	result := UpdateMagicTransitStaticRouteResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return MagicTransitStaticRoute{}, errors.Wrap(err, errUnmarshalError)
+		return MagicTransitStaticRoute{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !result.Result.Modified {
@@ -174,12 +159,8 @@ func (api *API) UpdateMagicTransitStaticRoute(ctx context.Context, id string, ro
 // DeleteMagicTransitStaticRoute deletes a static route
 //
 // API reference: https://api.cloudflare.com/#magic-transit-static-routes-delete-route
-func (api *API) DeleteMagicTransitStaticRoute(ctx context.Context, id string) (MagicTransitStaticRoute, error) {
-	if err := api.checkAccountID(); err != nil {
-		return MagicTransitStaticRoute{}, err
-	}
-
-	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", api.AccountID, id)
+func (api *API) DeleteMagicTransitStaticRoute(ctx context.Context, accountID, ID string) (MagicTransitStaticRoute, error) {
+	uri := fmt.Sprintf("/accounts/%s/magic/routes/%s", accountID, ID)
 	res, err := api.makeRequestContext(ctx, http.MethodDelete, uri, nil)
 
 	if err != nil {
@@ -188,7 +169,7 @@ func (api *API) DeleteMagicTransitStaticRoute(ctx context.Context, id string) (M
 
 	result := DeleteMagicTransitStaticRouteResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return MagicTransitStaticRoute{}, errors.Wrap(err, errUnmarshalError)
+		return MagicTransitStaticRoute{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !result.Result.Deleted {

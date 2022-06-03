@@ -32,9 +32,9 @@ var _ TestDeep = &tdEmpty{}
 // Note that the compared data can be a pointer (of pointer of pointer
 // etc.) on an array, a channel, a map, a slice or a string.
 //
-//   td.Cmp(t, "", td.Empty())                // succeeds
-//   td.Cmp(t, map[string]bool{}, td.Empty()) // succeeds
-//   td.Cmp(t, []string{"foo"}, td.Empty())   // fails
+//	td.Cmp(t, "", td.Empty())                // succeeds
+//	td.Cmp(t, map[string]bool{}, td.Empty()) // succeeds
+//	td.Cmp(t, []string{"foo"}, td.Empty())   // fails
 func Empty() TestDeep {
 	return &tdEmpty{
 		baseOKNil: newBaseOKNil(3),
@@ -43,9 +43,9 @@ func Empty() TestDeep {
 
 // isEmpty returns (isEmpty, typeError) boolean values with only 3
 // possible cases:
-//  - true, false  → "got" is empty
-//  - false, false → "got" is not empty
-//  - false, true  → "got" type is not compatible with emptiness
+//   - true, false  → "got" is empty
+//   - false, false → "got" is not empty
+//   - false, true  → "got" type is not compatible with emptiness
 func isEmpty(got reflect.Value) (bool, bool) {
 	switch got.Kind() {
 	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
@@ -120,9 +120,9 @@ var _ TestDeep = &tdNotEmpty{}
 // Note that the compared data can be a pointer (of pointer of pointer
 // etc.) on an array, a channel, a map, a slice or a string.
 //
-//   td.Cmp(t, "", td.NotEmpty())                // fails
-//   td.Cmp(t, map[string]bool{}, td.NotEmpty()) // fails
-//   td.Cmp(t, []string{"foo"}, td.NotEmpty())   // succeeds
+//	td.Cmp(t, "", td.NotEmpty())                // fails
+//	td.Cmp(t, map[string]bool{}, td.NotEmpty()) // fails
+//	td.Cmp(t, []string{"foo"}, td.NotEmpty())   // succeeds
 func NotEmpty() TestDeep {
 	return &tdNotEmpty{
 		baseOKNil: newBaseOKNil(3),

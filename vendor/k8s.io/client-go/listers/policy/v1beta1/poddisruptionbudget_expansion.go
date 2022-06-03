@@ -29,7 +29,12 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	"k8s.io/klog/v2"
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	"k8s.io/klog/v2"
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 )
 
 // PodDisruptionBudgetListerExpansion allows custom methods to be added to
@@ -166,8 +171,7 @@ func (s *podDisruptionBudgetLister) GetPodPodDisruptionBudgets(pod *v1.Pod) ([]*
 		pdb := list[i]
 		selector, err = metav1.LabelSelectorAsSelector(pdb.Spec.Selector)
 		if err != nil {
-			klog.Warningf("invalid selector: %v", err)
-			// TODO(mml): add an event to the PDB
+			// This object has an invalid selector, it does not match the pod
 			continue
 		}
 

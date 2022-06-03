@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"time"
 
@@ -14,6 +16,10 @@ import (
 )
 
 const (
+	// APIConfigEnvVar environment var to get path to Linode config
+	APIConfigEnvVar = "LINODE_CONFIG"
+	// APIConfigProfileEnvVar specifies the profile to use when loading from a Linode config
+	APIConfigProfileEnvVar = "LINODE_PROFILE"
 	// APIHost Linode API hostname
 	APIHost = "api.linode.com"
 	// APIHostVar environment var to check for alternate API URL
@@ -52,61 +58,87 @@ type Client struct {
 
 	millisecondsPerPoll time.Duration
 
-	Account                  *Resource
-	AccountSettings          *Resource
-	DomainRecords            *Resource
-	Domains                  *Resource
-	Events                   *Resource
-	Firewalls                *Resource
-	FirewallDevices          *Resource
-	FirewallRules            *Resource
-	IPAddresses              *Resource
-	IPv6Pools                *Resource
-	IPv6Ranges               *Resource
-	Images                   *Resource
-	InstanceConfigs          *Resource
-	InstanceDisks            *Resource
-	InstanceIPs              *Resource
-	InstanceSnapshots        *Resource
-	InstanceStats            *Resource
-	InstanceVolumes          *Resource
-	Instances                *Resource
-	InvoiceItems             *Resource
-	Invoices                 *Resource
-	Kernels                  *Resource
-	LKEClusters              *Resource
-	LKEClusterAPIEndpoints   *Resource
-	LKEClusterPools          *Resource
-	LKEVersions              *Resource
-	Longview                 *Resource
-	LongviewClients          *Resource
-	LongviewSubscriptions    *Resource
-	Managed                  *Resource
-	NodeBalancerConfigs      *Resource
-	NodeBalancerNodes        *Resource
-	NodeBalancerStats        *Resource
-	NodeBalancers            *Resource
-	Notifications            *Resource
-	OAuthClients             *Resource
-	ObjectStorageBuckets     *Resource
-	ObjectStorageBucketCerts *Resource
-	ObjectStorageClusters    *Resource
-	ObjectStorageKeys        *Resource
-	Payments                 *Resource
-	Profile                  *Resource
-	Regions                  *Resource
-	SSHKeys                  *Resource
-	StackScripts             *Resource
-	Tags                     *Resource
-	Tickets                  *Resource
-	Token                    *Resource
-	Tokens                   *Resource
-	Types                    *Resource
-	UserGrants               *Resource
-	Users                    *Resource
-	VLANs                    *Resource
-	Volumes                  *Resource
+	baseURL         string
+	apiVersion      string
+	apiProto        string
+	selectedProfile string
+	loadedProfile   string
+
+	configProfiles map[string]ConfigProfile
+
+	Account                *Resource
+	AccountSettings        *Resource
+	Databases              *Resource
+	DomainRecords          *Resource
+	Domains                *Resource
+	Events                 *Resource
+	Firewalls              *Resource
+	FirewallDevices        *Resource
+	FirewallRules          *Resource
+	IPAddresses            *Resource
+	IPv6Pools              *Resource
+	IPv6Ranges             *Resource
+	Images                 *Resource
+	InstanceConfigs        *Resource
+	InstanceDisks          *Resource
+	InstanceIPs            *Resource
+	InstanceSnapshots      *Resource
+	InstanceStats          *Resource
+	InstanceVolumes        *Resource
+	Instances              *Resource
+	InvoiceItems           *Resource
+	Invoices               *Resource
+	Kernels                *Resource
+	LKEClusters            *Resource
+	LKEClusterAPIEndpoints *Resource
+
+	// Deprecated: Please use LKENodePools
+	LKEClusterPools *Resource
+
+	LKENodePools              *Resource
+	LKEVersions               *Resource
+	Longview                  *Resource
+	LongviewClients           *Resource
+	LongviewSubscriptions     *Resource
+	Managed                   *Resource
+	DatabaseMySQLInstances    *Resource
+	DatabaseMongoInstances    *Resource
+	DatabasePostgresInstances *Resource
+	NodeBalancerConfigs       *Resource
+	NodeBalancerNodes         *Resource
+	NodeBalancerStats         *Resource
+	NodeBalancers             *Resource
+	Notifications             *Resource
+	OAuthClients              *Resource
+	ObjectStorageBuckets      *Resource
+	ObjectStorageBucketCerts  *Resource
+	ObjectStorageClusters     *Resource
+	ObjectStorageKeys         *Resource
+	ObjectStorage             *Resource
+	Payments                  *Resource
+	Profile                   *Resource
+	ProfilePhoneNumber        *Resource
+	ProfileSecurityQuestions  *Resource
+	Regions                   *Resource
+	SSHKeys                   *Resource
+	StackScripts              *Resource
+	Tags                      *Resource
+	Tickets                   *Resource
+	Token                     *Resource
+	Tokens                    *Resource
+	Types                     *Resource
+	UserGrants                *Resource
+	Users                     *Resource
+	VLANs                     *Resource
+	Volumes                   *Resource
 }
+
+type EnvDefaults struct {
+	Token   string
+	Profile string
+}
+
+type Request = resty.Request
 
 func init() {
 	// Wether or not we will enable Resty debugging output
@@ -145,16 +177,52 @@ func (c *Client) SetDebug(debug bool) *Client {
 	return c
 }
 
+// OnBeforeRequest adds a handler to the request body to run before the request is sent
+func (c *Client) OnBeforeRequest(m func(request *Request) error) {
+	c.resty.OnBeforeRequest(func(client *resty.Client, req *resty.Request) error {
+		return m(req)
+	})
+}
+
 // SetBaseURL sets the base URL of the Linode v4 API (https://api.linode.com/v4)
-func (c *Client) SetBaseURL(url string) *Client {
-	c.resty.SetHostURL(url)
+func (c *Client) SetBaseURL(baseURL string) *Client {
+	baseURLPath, _ := url.Parse(baseURL)
+
+	c.baseURL = path.Join(baseURLPath.Host, baseURLPath.Path)
+	c.apiProto = baseURLPath.Scheme
+
+	c.updateHostURL()
+
 	return c
 }
 
 // SetAPIVersion sets the version of the API to interface with
 func (c *Client) SetAPIVersion(apiVersion string) *Client {
-	c.SetBaseURL(fmt.Sprintf("%s://%s/%s", APIProto, APIHost, apiVersion))
+	c.apiVersion = apiVersion
+
+	c.updateHostURL()
+
 	return c
+}
+
+func (c *Client) updateHostURL() {
+	apiProto := APIProto
+	baseURL := APIHost
+	apiVersion := APIVersion
+
+	if c.baseURL != "" {
+		baseURL = c.baseURL
+	}
+
+	if c.apiVersion != "" {
+		apiVersion = c.apiVersion
+	}
+
+	if c.apiProto != "" {
+		apiProto = c.apiProto
+	}
+
+	c.resty.SetHostURL(fmt.Sprintf("%s://%s/%s", apiProto, baseURL, apiVersion))
 }
 
 // SetRootCertificate adds a root certificate to the underlying TLS client config
@@ -179,6 +247,12 @@ func (c *Client) SetRetries() *Client {
 		addRetryConditional(requestTimeoutRetryCondition).
 		SetRetryMaxWaitTime(APIRetryMaxWaitTime)
 	configureRetries(c)
+	return c
+}
+
+// AddRetryCondition adds a RetryConditional function to the Client
+func (c *Client) AddRetryCondition(retryCondition RetryConditional) *Client {
+	c.resty.AddRetryCondition(resty.RetryConditionFunc(retryCondition))
 	return c
 }
 
@@ -219,6 +293,12 @@ func (c *Client) SetPollDelay(delay time.Duration) *Client {
 	return c
 }
 
+// GetPollDelay gets the number of milliseconds to wait between events or status polls.
+// Affects all WaitFor* functions and retries.
+func (c *Client) GetPollDelay() time.Duration {
+	return c.millisecondsPerPoll
+}
+
 // Resource looks up a resource by name
 func (c Client) Resource(resourceName string) *Resource {
 	selectedResource, ok := c.resources[resourceName]
@@ -243,13 +323,12 @@ func NewClient(hc *http.Client) (client Client) {
 
 	if baseURLExists {
 		client.SetBaseURL(baseURL)
+	}
+	apiVersion, apiVersionExists := os.LookupEnv(APIVersionVar)
+	if apiVersionExists {
+		client.SetAPIVersion(apiVersion)
 	} else {
-		apiVersion, apiVersionExists := os.LookupEnv(APIVersionVar)
-		if apiVersionExists {
-			client.SetAPIVersion(apiVersion)
-		} else {
-			client.SetAPIVersion(APIVersion)
-		}
+		client.SetAPIVersion(APIVersion)
 	}
 
 	certPath, certPathExists := os.LookupEnv(APIHostCert)
@@ -278,11 +357,79 @@ func NewClient(hc *http.Client) (client Client) {
 	return
 }
 
+// NewClientFromEnv creates a Client and initializes it with values
+// from the LINODE_CONFIG file and the LINODE_TOKEN environment variable.
+func NewClientFromEnv(hc *http.Client) (*Client, error) {
+	client := NewClient(hc)
+
+	// Users are expected to chain NewClient(...) and LoadConfig(...) to customize these options
+	configPath, err := resolveValidConfigPath()
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate the token from the environment.
+	// Tokens should be first priority to maintain backwards compatibility
+	if token, ok := os.LookupEnv(APIEnvVar); ok && token != "" {
+		client.SetToken(token)
+		return &client, nil
+	}
+
+	if p, ok := os.LookupEnv(APIConfigEnvVar); ok {
+		configPath = p
+	} else if !ok && configPath == "" {
+		return nil, fmt.Errorf("no linode config file or token found")
+	}
+
+	configProfile := DefaultConfigProfile
+
+	if p, ok := os.LookupEnv(APIConfigProfileEnvVar); ok {
+		configProfile = p
+	}
+
+	client.selectedProfile = configProfile
+
+	// We should only load the config if the config file exists
+	if _, err := os.Stat(configPath); err != nil {
+		return nil, fmt.Errorf("error loading config file %s: %s", configPath, err)
+	}
+
+	err = client.preLoadConfig(configPath)
+	return &client, err
+}
+
+func (c *Client) preLoadConfig(configPath string) error {
+	if envDebug {
+		log.Printf("[INFO] Loading profile from %s\n", configPath)
+	}
+
+	if err := c.LoadConfig(&LoadConfigOptions{
+		Path:            configPath,
+		SkipLoadProfile: true,
+	}); err != nil {
+		return err
+	}
+
+	// We don't want to load the profile until the user is actually making requests
+	c.OnBeforeRequest(func(request *Request) error {
+		if c.loadedProfile != c.selectedProfile {
+			if err := c.UseProfile(c.selectedProfile); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return nil
+}
+
 // nolint
 func addResources(client *Client) {
 	resources := map[string]*Resource{
 		accountName:                  NewResource(client, accountName, accountEndpoint, false, Account{}, nil),                         // really?
 		accountSettingsName:          NewResource(client, accountSettingsName, accountSettingsEndpoint, false, AccountSettings{}, nil), // really?
+		databasesName:                NewResource(client, databasesName, databasesEndpoint, false, Database{}, nil),
 		domainRecordsName:            NewResource(client, domainRecordsName, domainRecordsEndpoint, true, DomainRecord{}, DomainRecordsPagedResponse{}),
 		domainsName:                  NewResource(client, domainsName, domainsEndpoint, false, Domain{}, DomainsPagedResponse{}),
 		eventsName:                   NewResource(client, eventsName, eventsEndpoint, false, Event{}, EventsPagedResponse{}),
@@ -306,11 +453,15 @@ func addResources(client *Client) {
 		lkeClusterAPIEndpointsName:   NewResource(client, lkeClusterAPIEndpointsName, lkeClusterAPIEndpointsEndpoint, true, LKEClusterAPIEndpoint{}, LKEClusterAPIEndpointsPagedResponse{}),
 		lkeClustersName:              NewResource(client, lkeClustersName, lkeClustersEndpoint, false, LKECluster{}, LKEClustersPagedResponse{}),
 		lkeClusterPoolsName:          NewResource(client, lkeClusterPoolsName, lkeClusterPoolsEndpoint, true, LKEClusterPool{}, LKEClusterPoolsPagedResponse{}),
+		lkeNodePoolsName:             NewResource(client, lkeNodePoolsName, lkeNodePoolsEndpoint, true, LKENodePool{}, LKENodePoolsPagedResponse{}),
 		lkeVersionsName:              NewResource(client, lkeVersionsName, lkeVersionsEndpoint, false, LKEVersion{}, LKEVersionsPagedResponse{}),
 		longviewName:                 NewResource(client, longviewName, longviewEndpoint, false, nil, nil), // really?
 		longviewclientsName:          NewResource(client, longviewclientsName, longviewclientsEndpoint, false, LongviewClient{}, LongviewClientsPagedResponse{}),
 		longviewsubscriptionsName:    NewResource(client, longviewsubscriptionsName, longviewsubscriptionsEndpoint, false, LongviewSubscription{}, LongviewSubscriptionsPagedResponse{}),
 		managedName:                  NewResource(client, managedName, managedEndpoint, false, nil, nil), // really?
+		mysqlName:                    NewResource(client, mysqlName, mysqlEndpoint, false, MySQLDatabase{}, MySQLDatabasesPagedResponse{}),
+		mongoName:                    NewResource(client, mongoName, mongoEndpoint, false, MongoDatabase{}, MongoDatabasesPagedResponse{}),
+		postgresName:                 NewResource(client, postgresName, postgresEndpoint, false, PostgresDatabase{}, PostgresDatabasesPagedResponse{}),
 		nodebalancerconfigsName:      NewResource(client, nodebalancerconfigsName, nodebalancerconfigsEndpoint, true, NodeBalancerConfig{}, NodeBalancerConfigsPagedResponse{}),
 		nodebalancernodesName:        NewResource(client, nodebalancernodesName, nodebalancernodesEndpoint, true, NodeBalancerNode{}, NodeBalancerNodesPagedResponse{}),
 		nodebalancerStatsName:        NewResource(client, nodebalancerStatsName, nodebalancerStatsEndpoint, true, NodeBalancerStats{}, nil),
@@ -321,8 +472,11 @@ func addResources(client *Client) {
 		objectStorageBucketCertsName: NewResource(client, objectStorageBucketCertsName, objectStorageBucketCertsEndpoint, true, ObjectStorageBucketCert{}, nil),
 		objectStorageClustersName:    NewResource(client, objectStorageClustersName, objectStorageClustersEndpoint, false, ObjectStorageCluster{}, ObjectStorageClustersPagedResponse{}),
 		objectStorageKeysName:        NewResource(client, objectStorageKeysName, objectStorageKeysEndpoint, false, ObjectStorageKey{}, ObjectStorageKeysPagedResponse{}),
+		objectStorageName:            NewResource(client, objectStorageName, objectStorageEndpoint, false, nil, nil),
 		paymentsName:                 NewResource(client, paymentsName, paymentsEndpoint, false, Payment{}, PaymentsPagedResponse{}),
 		profileName:                  NewResource(client, profileName, profileEndpoint, false, nil, nil), // really?
+		profilePhoneNumberName:       NewResource(client, profilePhoneNumberName, profilePhoneNumberEndpoint, false, nil, nil),
+		profileSecurityQuestionsName: NewResource(client, profileSecurityQuestionsName, profileSecurityQuestionsEndpoint, false, nil, nil),
 		regionsName:                  NewResource(client, regionsName, regionsEndpoint, false, Region{}, RegionsPagedResponse{}),
 		sshkeysName:                  NewResource(client, sshkeysName, sshkeysEndpoint, false, SSHKey{}, SSHKeysPagedResponse{}),
 		stackscriptsName:             NewResource(client, stackscriptsName, stackscriptsEndpoint, false, Stackscript{}, StackscriptsPagedResponse{}),
@@ -339,6 +493,7 @@ func addResources(client *Client) {
 	client.resources = resources
 
 	client.Account = resources[accountName]
+	client.Databases = resources[databasesName]
 	client.DomainRecords = resources[domainRecordsName]
 	client.Domains = resources[domainsName]
 	client.Events = resources[eventsName]
@@ -361,10 +516,14 @@ func addResources(client *Client) {
 	client.LKEClusterAPIEndpoints = resources[lkeClusterAPIEndpointsName]
 	client.LKEClusters = resources[lkeClustersName]
 	client.LKEClusterPools = resources[lkeClusterPoolsName]
+	client.LKENodePools = resources[lkeNodePoolsName]
 	client.LKEVersions = resources[lkeVersionsName]
 	client.Longview = resources[longviewName]
 	client.LongviewSubscriptions = resources[longviewsubscriptionsName]
 	client.Managed = resources[managedName]
+	client.DatabaseMySQLInstances = resources[mysqlName]
+	client.DatabaseMongoInstances = resources[mongoName]
+	client.DatabasePostgresInstances = resources[postgresName]
 	client.NodeBalancerConfigs = resources[nodebalancerconfigsName]
 	client.NodeBalancerNodes = resources[nodebalancernodesName]
 	client.NodeBalancerStats = resources[nodebalancerStatsName]
@@ -375,8 +534,11 @@ func addResources(client *Client) {
 	client.ObjectStorageBucketCerts = resources[objectStorageBucketCertsName]
 	client.ObjectStorageClusters = resources[objectStorageClustersName]
 	client.ObjectStorageKeys = resources[objectStorageKeysName]
+	client.ObjectStorage = resources[objectStorageName]
 	client.Payments = resources[paymentsName]
 	client.Profile = resources[profileName]
+	client.ProfilePhoneNumber = resources[profilePhoneNumberName]
+	client.ProfileSecurityQuestions = resources[profileSecurityQuestionsName]
 	client.Regions = resources[regionsName]
 	client.SSHKeys = resources[sshkeysName]
 	client.StackScripts = resources[stackscriptsName]

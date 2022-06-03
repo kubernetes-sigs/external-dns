@@ -342,7 +342,7 @@ func (service *BaseService) Request(req *http.Request, result interface{}) (deta
 	if GetLogger().IsLogLevelEnabled(LevelDebug) {
 		buf, dumpErr := httputil.DumpRequestOut(req, req.Body != nil)
 		if dumpErr == nil {
-			GetLogger().Debug("Request:\n%s\n", string(buf))
+			GetLogger().Debug("Request:\n%s\n", RedactSecrets(string(buf)))
 		} else {
 			GetLogger().Debug("error while attempting to log outbound request: %s", dumpErr.Error())
 		}
@@ -378,7 +378,7 @@ func (service *BaseService) Request(req *http.Request, result interface{}) (deta
 	if GetLogger().IsLogLevelEnabled(LevelDebug) {
 		buf, dumpErr := httputil.DumpResponse(httpResponse, httpResponse.Body != nil)
 		if err == nil {
-			GetLogger().Debug("Response:\n%s\n", string(buf))
+			GetLogger().Debug("Response:\n%s\n", RedactSecrets(string(buf)))
 		} else {
 			GetLogger().Debug("error while attempting to log inbound response: %s", dumpErr.Error())
 		}
@@ -609,7 +609,10 @@ type httpLogger struct {
 }
 
 func (l *httpLogger) Printf(format string, inserts ...interface{}) {
-	GetLogger().Log(LevelDebug, format, inserts...)
+	if GetLogger().IsLogLevelEnabled(LevelDebug) {
+		msg := fmt.Sprintf(format, inserts...)
+		GetLogger().Log(LevelDebug, RedactSecrets(msg))
+	}
 }
 
 // NewRetryableHTTPClient returns a new instance of go-retryablehttp.Client
@@ -687,16 +690,9 @@ func IBMCloudSDKRetryPolicy(ctx context.Context, resp *http.Response, err error)
 	// Now check the status code.
 
 	// A 429 should be retryable.
-	if resp.StatusCode == 429 {
+	// All codes in the 500's range except for 501 (Not Implemented) should be retryable.
+	if resp.StatusCode == 429 || (resp.StatusCode >= 500 && resp.StatusCode <= 599 && resp.StatusCode != 501) {
 		return true, nil
-	}
-
-	// Check the response code. We retry on 500-range responses to allow
-	// the server time to recover, as 500's are typically not permanent
-	// errors and may relate to outages on the server side. This will catch
-	// invalid response codes as well, like 0 and 999.
-	if resp.StatusCode == 0 || (resp.StatusCode >= 500 && resp.StatusCode != 501) {
-		return true, fmt.Errorf(ERRORMSG_UNEXPECTED_STATUS_CODE, resp.StatusCode, resp.Status)
 	}
 
 	return false, nil

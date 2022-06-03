@@ -35,7 +35,10 @@
 // to simplify code generation and to provide more convenient and idiomatic API surfaces.
 package gax
 
+import "github.com/googleapis/gax-go/v2/internal"
+
 // Version specifies the gax-go version being used.
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -70,3 +73,8 @@ const Version = "2.0.4"
 =======
 const Version = "2.2.0"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+const Version = "2.2.0"
+=======
+const Version = internal.Version
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

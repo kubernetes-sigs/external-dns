@@ -401,6 +401,7 @@ func (b *PodSpecApplyConfiguration) WithSetHostnameAsFQDN(value bool) *PodSpecAp
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 	OS                            *PodOSApplyConfiguration                     `json:"os,omitempty"`
+	HostUsers                     *bool                                        `json:"hostUsers,omitempty"`
 }
 
 // PodSpecApplyConfiguration constructs an declarative configuration of the PodSpec type for use with
@@ -1094,5 +1095,13 @@ func (b *PodSpecApplyConfiguration) WithSetHostnameAsFQDN(value bool) *PodSpecAp
 func (b *PodSpecApplyConfiguration) WithOS(value *PodOSApplyConfiguration) *PodSpecApplyConfiguration {
 	b.OS = value
 >>>>>>> 4d7e5ad26 (update vendored files)
+	return b
+}
+
+// WithHostUsers sets the HostUsers field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the HostUsers field is set to the value of the last call.
+func (b *PodSpecApplyConfiguration) WithHostUsers(value bool) *PodSpecApplyConfiguration {
+	b.HostUsers = &value
 	return b
 }

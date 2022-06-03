@@ -551,11 +551,12 @@ func (m *DefaultRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string
 }
 
 // MaybeResetRESTMapper calls Reset() on the mapper if it is a ResettableRESTMapper.
-func MaybeResetRESTMapper(mapper RESTMapper) bool {
+func MaybeResetRESTMapper(mapper RESTMapper) {
 	m, ok := mapper.(ResettableRESTMapper)
 	if ok {
 		m.Reset()
 	}
+<<<<<<< HEAD
 	return ok
 <<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -1014,4 +1015,8 @@ func (m *DefaultRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	return ok
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }

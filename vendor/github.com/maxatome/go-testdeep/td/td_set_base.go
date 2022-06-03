@@ -39,7 +39,7 @@ type tdSetBase struct {
 	expectedItems []reflect.Value
 }
 
-func newSetBase(kind setKind, ignoreDups bool, expectedItems []interface{}) *tdSetBase {
+func newSetBase(kind setKind, ignoreDups bool, expectedItems []any) *tdSetBase {
 	return &tdSetBase{
 		baseOKNil:     newBaseOKNil(4),
 		kind:          kind,

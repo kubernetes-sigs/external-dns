@@ -115,7 +115,7 @@ func (s Stack) IsRelevant() bool {
 	return len(s) > 1 || (len(s) > 0 && strings.ContainsAny(s[0].FileLine, `/\`))
 }
 
-// Dump writes the stack to "w".
+// Dump writes the stack to w.
 func (s Stack) Dump(w io.Writer) {
 	fnMaxLen := 0
 	for _, level := range s {

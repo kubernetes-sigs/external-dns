@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // PageRuleTarget is the target to evaluate on a request.
@@ -571,7 +569,7 @@ func (api *API) CreatePageRule(ctx context.Context, zoneID string, rule PageRule
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return &r.Result, nil
 }
@@ -588,7 +586,7 @@ func (api *API) ListPageRules(ctx context.Context, zoneID string) ([]PageRule, e
 	var r PageRulesResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []PageRule{}, errors.Wrap(err, errUnmarshalError)
+		return []PageRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -605,7 +603,7 @@ func (api *API) PageRule(ctx context.Context, zoneID, ruleID string) (PageRule, 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return PageRule{}, errors.Wrap(err, errUnmarshalError)
+		return PageRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -623,7 +621,7 @@ func (api *API) ChangePageRule(ctx context.Context, zoneID, ruleID string, rule 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }
@@ -641,7 +639,7 @@ func (api *API) UpdatePageRule(ctx context.Context, zoneID, ruleID string, rule 
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }
@@ -665,7 +663,7 @@ func (api *API) DeletePageRule(ctx context.Context, zoneID, ruleID string) error
 	var r PageRuleDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }

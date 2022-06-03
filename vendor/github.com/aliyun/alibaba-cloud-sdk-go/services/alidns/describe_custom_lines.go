@@ -83,11 +83,11 @@ type DescribeCustomLinesRequest struct {
 // DescribeCustomLinesResponse is the response struct for api DescribeCustomLines
 type DescribeCustomLinesResponse struct {
 	*responses.BaseResponse
-	RequestId   string       `json:"RequestId" xml:"RequestId"`
-	TotalItems  int          `json:"TotalItems" xml:"TotalItems"`
-	PageNumber  int          `json:"PageNumber" xml:"PageNumber"`
 	PageSize    int          `json:"PageSize" xml:"PageSize"`
+	RequestId   string       `json:"RequestId" xml:"RequestId"`
+	PageNumber  int          `json:"PageNumber" xml:"PageNumber"`
 	TotalPages  int          `json:"TotalPages" xml:"TotalPages"`
+	TotalItems  int          `json:"TotalItems" xml:"TotalItems"`
 	CustomLines []CustomLine `json:"CustomLines" xml:"CustomLines"`
 }
 

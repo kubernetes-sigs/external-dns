@@ -82,9 +82,9 @@ type AddDomainBackupRequest struct {
 // AddDomainBackupResponse is the response struct for api AddDomainBackup
 type AddDomainBackupResponse struct {
 	*responses.BaseResponse
+	PeriodType string `json:"PeriodType" xml:"PeriodType"`
 	RequestId  string `json:"RequestId" xml:"RequestId"`
 	DomainName string `json:"DomainName" xml:"DomainName"`
-	PeriodType string `json:"PeriodType" xml:"PeriodType"`
 }
 
 // CreateAddDomainBackupRequest creates a request to invoke AddDomainBackup API

@@ -1167,11 +1167,11 @@ func (s *Scheme) generateConvertMeta(in interface{}) *conversion.Meta {
 // Schemes are not expected to change at runtime and are only threadsafe after
 // registration is complete.
 type Scheme struct {
-	// versionMap allows one to figure out the go type of an object with
+	// gvkToType allows one to figure out the go type of an object with
 	// the given version and name.
 	gvkToType map[schema.GroupVersionKind]reflect.Type
 
-	// typeToGroupVersion allows one to find metadata for a given go object.
+	// typeToGVK allows one to find metadata for a given go object.
 	// The reflect.Type we index by should *not* be a pointer.
 	typeToGVK map[reflect.Type][]schema.GroupVersionKind
 
@@ -1187,7 +1187,7 @@ type Scheme struct {
 	// resource field labels in that version to internal version.
 	fieldLabelConversionFuncs map[schema.GroupVersionKind]FieldLabelConversionFunc
 
-	// defaulterFuncs is an array of interfaces to be called with an object to provide defaulting
+	// defaulterFuncs is a map to funcs to be called with an object to provide defaulting
 	// the provided object must be a pointer.
 	defaulterFuncs map[reflect.Type]func(interface{})
 
@@ -1241,7 +1241,8 @@ func (s *Scheme) Converter() *conversion.Converter {
 // API group and version that would never be updated.
 //
 // TODO: there is discussion about removing unversioned and replacing it with objects that are manifest into
-//   every version with particular schemas. Resolve this method at that point.
+//
+//	every version with particular schemas. Resolve this method at that point.
 func (s *Scheme) AddUnversionedTypes(version schema.GroupVersion, types ...Object) {
 	s.addObservedVersion(version)
 	s.AddKnownTypes(version, types...)
@@ -1264,7 +1265,7 @@ func (s *Scheme) AddKnownTypes(gv schema.GroupVersion, types ...Object) {
 	s.addObservedVersion(gv)
 	for _, obj := range types {
 		t := reflect.TypeOf(obj)
-		if t.Kind() != reflect.Ptr {
+		if t.Kind() != reflect.Pointer {
 			panic("All types must be pointers to structs.")
 		}
 		t = t.Elem()
@@ -1282,7 +1283,7 @@ func (s *Scheme) AddKnownTypeWithName(gvk schema.GroupVersionKind, obj Object) {
 	if len(gvk.Version) == 0 {
 		panic(fmt.Sprintf("version is required on all types: %s %v", gvk, t))
 	}
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() != reflect.Pointer {
 		panic("All types must be pointers to structs.")
 	}
 	t = t.Elem()
@@ -1585,7 +1586,7 @@ func (s *Scheme) convertToVersion(copy bool, in Object, target GroupVersioner) (
 	} else {
 		// determine the incoming kinds with as few allocations as possible.
 		t = reflect.TypeOf(in)
-		if t.Kind() != reflect.Ptr {
+		if t.Kind() != reflect.Pointer {
 			return nil, fmt.Errorf("only pointer types may be converted: %v", t)
 		}
 		t = t.Elem()

@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // AccessOrganization represents an Access organization.
@@ -24,8 +22,10 @@ type AccessOrganization struct {
 // AccessOrganizationLoginDesign represents the login design options.
 type AccessOrganizationLoginDesign struct {
 	BackgroundColor string `json:"background_color"`
-	TextColor       string `json:"text_color"`
 	LogoPath        string `json:"logo_path"`
+	TextColor       string `json:"text_color"`
+	HeaderText      string `json:"header_text"`
+	FooterText      string `json:"footer_text"`
 }
 
 // AccessOrganizationListResponse represents the response from the list
@@ -70,7 +70,7 @@ func (api *API) accessOrganization(ctx context.Context, id string, routeRoot Rou
 	var accessOrganizationListResponse AccessOrganizationListResponse
 	err = json.Unmarshal(res, &accessOrganizationListResponse)
 	if err != nil {
-		return AccessOrganization{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationListResponse.Result, accessOrganizationListResponse.ResultInfo, nil
@@ -101,7 +101,7 @@ func (api *API) createAccessOrganization(ctx context.Context, id string, accessO
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse
 	err = json.Unmarshal(res, &accessOrganizationDetailResponse)
 	if err != nil {
-		return AccessOrganization{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationDetailResponse.Result, nil
@@ -268,7 +268,7 @@ func (api *API) updateAccessOrganization(ctx context.Context, id string, accessO
 	var accessOrganizationDetailResponse AccessOrganizationDetailResponse
 	err = json.Unmarshal(res, &accessOrganizationDetailResponse)
 	if err != nil {
-		return AccessOrganization{}, errors.Wrap(err, errUnmarshalError)
+		return AccessOrganization{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessOrganizationDetailResponse.Result, nil

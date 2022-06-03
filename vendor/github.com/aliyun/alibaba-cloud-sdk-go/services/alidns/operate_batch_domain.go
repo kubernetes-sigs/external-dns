@@ -96,8 +96,8 @@ type OperateBatchDomainDomainRecordInfo struct {
 // OperateBatchDomainResponse is the response struct for api OperateBatchDomain
 type OperateBatchDomainResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    int64  `json:"TaskId" xml:"TaskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateOperateBatchDomainRequest creates a request to invoke OperateBatchDomain API

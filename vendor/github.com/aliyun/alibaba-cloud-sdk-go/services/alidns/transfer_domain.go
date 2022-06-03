@@ -83,8 +83,8 @@ type TransferDomainRequest struct {
 // TransferDomainResponse is the response struct for api TransferDomain
 type TransferDomainResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	TaskId    int64  `json:"TaskId" xml:"TaskId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateTransferDomainRequest creates a request to invoke TransferDomain API

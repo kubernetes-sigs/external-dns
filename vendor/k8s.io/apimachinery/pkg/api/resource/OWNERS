@@ -1,6 +1,7 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
+<<<<<<< HEAD
 - thockin
 - lavalamp
 - smarterclayton
@@ -73,3 +74,23 @@ reviewers:
 - david-mcmahon
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- derekwaynecarr
+- mikedanese
+- saad-ali
+- janetkuo
+- xiang90
+=======
+  - thockin
+  - lavalamp
+  - smarterclayton
+  - wojtek-t
+  - derekwaynecarr
+  - mikedanese
+  - saad-ali
+  - janetkuo
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

@@ -17,6 +17,6 @@ package alidns
 
 // ThreatItem is a nested struct in alidns response
 type ThreatItem struct {
-	ThreatLevel string `json:"ThreatLevel" xml:"ThreatLevel"`
 	ThreatType  string `json:"ThreatType" xml:"ThreatType"`
+	ThreatLevel string `json:"ThreatLevel" xml:"ThreatLevel"`
 }

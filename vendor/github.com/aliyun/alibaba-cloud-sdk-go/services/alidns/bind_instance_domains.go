@@ -83,8 +83,8 @@ type BindInstanceDomainsRequest struct {
 type BindInstanceDomainsResponse struct {
 	*responses.BaseResponse
 	RequestId    string `json:"RequestId" xml:"RequestId"`
-	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
 	FailedCount  int    `json:"FailedCount" xml:"FailedCount"`
+	SuccessCount int    `json:"SuccessCount" xml:"SuccessCount"`
 }
 
 // CreateBindInstanceDomainsRequest creates a request to invoke BindInstanceDomains API

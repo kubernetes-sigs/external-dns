@@ -35,32 +35,34 @@ func stringPointer(s string) uintptr {
 // applies on channels, functions (with some restrictions), maps,
 // pointers, slices and strings.
 //
-// During a match, the compared data must be the same as "expectedPtr"
+// During a match, the compared data must be the same as expectedPtr
 // to succeed.
 //
-//   a, b := 123, 123
-//   td.Cmp(t, &a, td.Shallow(&a)) // succeeds
-//   td.Cmp(t, &a, td.Shallow(&b)) // fails even if a == b as &a != &b
+//	a, b := 123, 123
+//	td.Cmp(t, &a, td.Shallow(&a)) // succeeds
+//	td.Cmp(t, &a, td.Shallow(&b)) // fails even if a == b as &a != &b
 //
-//   back := "foobarfoobar"
-//   a, b := back[:6], back[6:]
-//   // a == b but...
-//   td.Cmp(t, &a, td.Shallow(&b)) // fails
+//	back := "foobarfoobar"
+//	a, b := back[:6], back[6:]
+//	// a == b but...
+//	td.Cmp(t, &a, td.Shallow(&b)) // fails
 //
 // Be careful for slices and strings! Shallow can succeed but the
 // slices/strings not be identical because of their different
 // lengths. For example:
 //
-//   a := "foobar yes!"
-//   b := a[:1]                    // aka "f"
-//   td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both strings point to the same area, even if len() differ
+//	a := "foobar yes!"
+//	b := a[:1]                    // aka "f"
+//	td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both strings point to the same area, even if len() differ
 //
 // The same behavior occurs for slices:
 //
-//   a := []int{1, 2, 3, 4, 5, 6}
-//   b := a[:2]                    // aka []int{1, 2}
-//   td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both slices point to the same area, even if len() differ
-func Shallow(expectedPtr interface{}) TestDeep {
+//	a := []int{1, 2, 3, 4, 5, 6}
+//	b := a[:2]                    // aka []int{1, 2}
+//	td.Cmp(t, &a, td.Shallow(&b)) // succeeds as both slices point to the same area, even if len() differ
+//
+// See also [Ptr].
+func Shallow(expectedPtr any) TestDeep {
 	vptr := reflect.ValueOf(expectedPtr)
 
 	shallow := tdShallow{

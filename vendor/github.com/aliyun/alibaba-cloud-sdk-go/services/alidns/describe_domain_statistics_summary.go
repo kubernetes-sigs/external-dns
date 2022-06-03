@@ -89,11 +89,11 @@ type DescribeDomainStatisticsSummaryRequest struct {
 // DescribeDomainStatisticsSummaryResponse is the response struct for api DescribeDomainStatisticsSummary
 type DescribeDomainStatisticsSummaryResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                      `json:"RequestId" xml:"RequestId"`
-	TotalItems int                                         `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                                         `json:"TotalPages" xml:"TotalPages"`
 	PageSize   int                                         `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                      `json:"RequestId" xml:"RequestId"`
 	PageNumber int                                         `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                                         `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                                         `json:"TotalItems" xml:"TotalItems"`
 	Statistics StatisticsInDescribeDomainStatisticsSummary `json:"Statistics" xml:"Statistics"`
 }
 

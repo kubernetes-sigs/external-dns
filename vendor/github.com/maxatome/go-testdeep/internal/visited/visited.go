@@ -16,7 +16,8 @@ import (
 <<<<<<< HEAD
 )
 
-// visitKey is used by Context and its Visited map to handle cyclic references.
+// visitKey is used by ctxerr.Context and its Visited map to handle
+// cyclic references.
 type visitedKey struct {
 	a1  uintptr
 	a2  uintptr
@@ -27,7 +28,7 @@ type visitedKey struct {
 // to not do the same action twice if the couple has already been seen.
 type Visited map[visitedKey]bool
 
-// NewVisited returns a new Visited instance.
+// NewVisited returns a new [Visited] instance.
 func NewVisited() Visited {
 	return Visited{}
 }

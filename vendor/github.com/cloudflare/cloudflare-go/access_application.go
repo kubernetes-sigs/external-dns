@@ -7,11 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // AccessApplicationType represents the application type.
@@ -19,14 +15,19 @@ type AccessApplicationType string
 
 // These constants represent all valid application types.
 const (
-	SelfHosted AccessApplicationType = "self_hosted"
-	SSH        AccessApplicationType = "ssh"
-	VNC        AccessApplicationType = "vnc"
-	File       AccessApplicationType = "file"
+	SelfHosted  AccessApplicationType = "self_hosted"
+	SSH         AccessApplicationType = "ssh"
+	VNC         AccessApplicationType = "vnc"
+	Biso        AccessApplicationType = "biso"
+	AppLauncher AccessApplicationType = "app_launcher"
+	Warp        AccessApplicationType = "warp"
+	Bookmark    AccessApplicationType = "bookmark"
+	Saas        AccessApplicationType = "saas"
 )
 
 // AccessApplication represents an Access application.
 type AccessApplication struct {
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -732,6 +733,52 @@ type AccessApplication struct {
 	CustomDenyURL           string                        `json:"custom_deny_url,omitempty"`
 	HttpOnlyCookieAttribute bool                          `json:"http_only_cookie_attribute,omitempty"`
 	SameSiteCookieAttribute string                        `json:"same_site_cookie_attribute,omitempty"`
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	ID                      string                        `json:"id,omitempty"`
+	CreatedAt               *time.Time                    `json:"created_at,omitempty"`
+	UpdatedAt               *time.Time                    `json:"updated_at,omitempty"`
+	AUD                     string                        `json:"aud,omitempty"`
+	Name                    string                        `json:"name"`
+	Domain                  string                        `json:"domain"`
+	Type                    AccessApplicationType         `json:"type,omitempty"`
+	SessionDuration         string                        `json:"session_duration,omitempty"`
+	AutoRedirectToIdentity  bool                          `json:"auto_redirect_to_identity,omitempty"`
+	EnableBindingCookie     bool                          `json:"enable_binding_cookie,omitempty"`
+	AllowedIdps             []string                      `json:"allowed_idps,omitempty"`
+	CorsHeaders             *AccessApplicationCorsHeaders `json:"cors_headers,omitempty"`
+	CustomDenyMessage       string                        `json:"custom_deny_message,omitempty"`
+	CustomDenyURL           string                        `json:"custom_deny_url,omitempty"`
+	HttpOnlyCookieAttribute bool                          `json:"http_only_cookie_attribute,omitempty"`
+	SameSiteCookieAttribute string                        `json:"same_site_cookie_attribute,omitempty"`
+=======
+	GatewayRules            []AccessApplicationGatewayRule `json:"gateway_rules,omitempty"`
+	AllowedIdps             []string                       `json:"allowed_idps,omitempty"`
+	CustomDenyMessage       string                         `json:"custom_deny_message,omitempty"`
+	LogoURL                 string                         `json:"logo_url,omitempty"`
+	AUD                     string                         `json:"aud,omitempty"`
+	Domain                  string                         `json:"domain"`
+	Type                    AccessApplicationType          `json:"type,omitempty"`
+	SessionDuration         string                         `json:"session_duration,omitempty"`
+	SameSiteCookieAttribute string                         `json:"same_site_cookie_attribute,omitempty"`
+	CustomDenyURL           string                         `json:"custom_deny_url,omitempty"`
+	Name                    string                         `json:"name"`
+	ID                      string                         `json:"id,omitempty"`
+	PrivateAddress          string                         `json:"private_address"`
+	CorsHeaders             *AccessApplicationCorsHeaders  `json:"cors_headers,omitempty"`
+	CreatedAt               *time.Time                     `json:"created_at,omitempty"`
+	UpdatedAt               *time.Time                     `json:"updated_at,omitempty"`
+	SaasApplication         *SaasApplication               `json:"saas_app,omitempty"`
+	AutoRedirectToIdentity  *bool                          `json:"auto_redirect_to_identity,omitempty"`
+	SkipInterstitial        *bool                          `json:"skip_interstitial,omitempty"`
+	AppLauncherVisible      *bool                          `json:"app_launcher_visible,omitempty"`
+	EnableBindingCookie     *bool                          `json:"enable_binding_cookie,omitempty"`
+	HttpOnlyCookieAttribute *bool                          `json:"http_only_cookie_attribute,omitempty"`
+	ServiceAuth401Redirect  *bool                          `json:"service_auth_401_redirect,omitempty"`
+}
+
+type AccessApplicationGatewayRule struct {
+	ID string `json:"id,omitempty"`
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }
 
 // AccessApplicationCorsHeaders represents the CORS HTTP headers for an Access
@@ -764,6 +811,32 @@ type AccessApplicationDetailResponse struct {
 	Result   AccessApplication `json:"result"`
 }
 
+type SourceConfig struct {
+	Name      string            `json:"name,omitempty"`
+	NameByIDP map[string]string `json:"name_by_idp,omitempty"`
+}
+
+type SAMLAttributeConfig struct {
+	Name         string       `json:"name,omitempty"`
+	NameFormat   string       `json:"name_format,omitempty"`
+	FriendlyName string       `json:"friendly_name,omitempty"`
+	Required     bool         `json:"required,omitempty"`
+	Source       SourceConfig `json:"source"`
+}
+
+type SaasApplication struct {
+	AppID              string                `json:"app_id,omitempty"`
+	ConsumerServiceUrl string                `json:"consumer_service_url,omitempty"`
+	SPEntityID         string                `json:"sp_entity_id,omitempty"`
+	PublicKey          string                `json:"public_key,omitempty"`
+	IDPEntityID        string                `json:"idp_entity_id,omitempty"`
+	NameIDFormat       string                `json:"name_id_format,omitempty"`
+	SSOEndpoint        string                `json:"sso_endpoint,omitempty"`
+	UpdatedAt          *time.Time            `json:"updated_at,omitempty"`
+	CreatedAt          *time.Time            `json:"created_at,omitempty"`
+	CustomAttributes   []SAMLAttributeConfig `json:"custom_attributes,omitempty"`
+}
+
 // AccessApplications returns all applications within an account.
 //
 // API reference: https://api.cloudflare.com/#access-applications-list-access-applications
@@ -779,18 +852,7 @@ func (api *API) ZoneLevelAccessApplications(ctx context.Context, zoneID string, 
 }
 
 func (api *API) accessApplications(ctx context.Context, id string, pageOpts PaginationOptions, routeRoot RouteRoot) ([]AccessApplication, ResultInfo, error) {
-	v := url.Values{}
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
-	}
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
-	}
-
-	uri := fmt.Sprintf("/%s/%s/access/apps", routeRoot, id)
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
-	}
+	uri := buildURI(fmt.Sprintf("/%s/%s/access/apps", routeRoot, id), pageOpts)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -800,7 +862,7 @@ func (api *API) accessApplications(ctx context.Context, id string, pageOpts Pagi
 	var accessApplicationListResponse AccessApplicationListResponse
 	err = json.Unmarshal(res, &accessApplicationListResponse)
 	if err != nil {
-		return []AccessApplication{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []AccessApplication{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessApplicationListResponse.Result, accessApplicationListResponse.ResultInfo, nil
@@ -838,7 +900,7 @@ func (api *API) accessApplication(ctx context.Context, id, applicationID string,
 	var accessApplicationDetailResponse AccessApplicationDetailResponse
 	err = json.Unmarshal(res, &accessApplicationDetailResponse)
 	if err != nil {
-		return AccessApplication{}, errors.Wrap(err, errUnmarshalError)
+		return AccessApplication{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessApplicationDetailResponse.Result, nil
@@ -869,7 +931,7 @@ func (api *API) createAccessApplication(ctx context.Context, id string, accessAp
 	var accessApplicationDetailResponse AccessApplicationDetailResponse
 	err = json.Unmarshal(res, &accessApplicationDetailResponse)
 	if err != nil {
-		return AccessApplication{}, errors.Wrap(err, errUnmarshalError)
+		return AccessApplication{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessApplicationDetailResponse.Result, nil
@@ -891,7 +953,7 @@ func (api *API) UpdateZoneLevelAccessApplication(ctx context.Context, zoneID str
 
 func (api *API) updateAccessApplication(ctx context.Context, id string, accessApplication AccessApplication, routeRoot RouteRoot) (AccessApplication, error) {
 	if accessApplication.ID == "" {
-		return AccessApplication{}, errors.Errorf("access application ID cannot be empty")
+		return AccessApplication{}, fmt.Errorf("access application ID cannot be empty")
 	}
 
 	uri := fmt.Sprintf(
@@ -909,7 +971,7 @@ func (api *API) updateAccessApplication(ctx context.Context, id string, accessAp
 	var accessApplicationDetailResponse AccessApplicationDetailResponse
 	err = json.Unmarshal(res, &accessApplicationDetailResponse)
 	if err != nil {
-		return AccessApplication{}, errors.Wrap(err, errUnmarshalError)
+		return AccessApplication{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accessApplicationDetailResponse.Result, nil

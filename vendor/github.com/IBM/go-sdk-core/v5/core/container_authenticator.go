@@ -92,8 +92,8 @@ type ContainerAuthenticator struct {
 }
 
 const (
-	defaultCRTokenFilename = "/var/run/secrets/tokens/vault-token" // #nosec G101
-	iamGrantTypeCRToken = "urn:ibm:params:oauth:grant-type:cr-token" // #nosec G101
+	defaultCRTokenFilename = "/var/run/secrets/tokens/vault-token"      // #nosec G101
+	iamGrantTypeCRToken    = "urn:ibm:params:oauth:grant-type:cr-token" // #nosec G101
 )
 
 var craRequestTokenMutex sync.Mutex
@@ -415,7 +415,7 @@ func (authenticator *ContainerAuthenticator) RequestToken() (*IamTokenServerResp
 	if GetLogger().IsLogLevelEnabled(LevelDebug) {
 		buf, dumpErr := httputil.DumpRequestOut(req, req.Body != nil)
 		if dumpErr == nil {
-			GetLogger().Debug("Request:\n%s\n", string(buf))
+			GetLogger().Debug("Request:\n%s\n", RedactSecrets(string(buf)))
 		} else {
 			GetLogger().Debug(fmt.Sprintf("error while attempting to log outbound request: %s", dumpErr.Error()))
 		}
@@ -432,7 +432,7 @@ func (authenticator *ContainerAuthenticator) RequestToken() (*IamTokenServerResp
 	if GetLogger().IsLogLevelEnabled(LevelDebug) {
 		buf, dumpErr := httputil.DumpResponse(resp, req.Body != nil)
 		if dumpErr == nil {
-			GetLogger().Debug("Response:\n%s\n", string(buf))
+			GetLogger().Debug("Response:\n%s\n", RedactSecrets(string(buf)))
 		} else {
 			GetLogger().Debug(fmt.Sprintf("error while attempting to log inbound response: %s", dumpErr.Error()))
 		}

@@ -7,10 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strconv"
-
-	"github.com/pkg/errors"
+	"time"
 )
 
 // AccountSettings outlines the available options for an account.
@@ -20,10 +17,11 @@ type AccountSettings struct {
 
 // Account represents the root object that owns resources.
 type Account struct {
-	ID       string           `json:"id,omitempty"`
-	Name     string           `json:"name,omitempty"`
-	Type     string           `json:"type,omitempty"`
-	Settings *AccountSettings `json:"settings,omitempty"`
+	ID        string           `json:"id,omitempty"`
+	Name      string           `json:"name,omitempty"`
+	Type      string           `json:"type,omitempty"`
+	CreatedOn time.Time        `json:"created_on,omitempty"`
+	Settings  *AccountSettings `json:"settings,omitempty"`
 }
 
 // AccountResponse represents the response from the accounts endpoint for a
@@ -49,24 +47,18 @@ type AccountDetailResponse struct {
 	Result   Account  `json:"result"`
 }
 
+// AccountsListParams holds the filterable options for Accounts.
+type AccountsListParams struct {
+	Name string `url:"name,omitempty"`
+
+	PaginationOptions
+}
+
 // Accounts returns all accounts the logged in user has access to.
 //
 // API reference: https://api.cloudflare.com/#accounts-list-accounts
-func (api *API) Accounts(ctx context.Context, pageOpts PaginationOptions) ([]Account, ResultInfo, error) {
-	v := url.Values{}
-	if pageOpts.PerPage > 0 {
-		v.Set("per_page", strconv.Itoa(pageOpts.PerPage))
-	}
-	if pageOpts.Page > 0 {
-		v.Set("page", strconv.Itoa(pageOpts.Page))
-	}
-
-	uri := "/accounts"
-	if len(v) > 0 {
-		uri = fmt.Sprintf("%s?%s", uri, v.Encode())
-	}
-
-	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
+func (api *API) Accounts(ctx context.Context, params AccountsListParams) ([]Account, ResultInfo, error) {
+	res, err := api.makeRequestContext(ctx, http.MethodGet, buildURI("/accounts", params), nil)
 	if err != nil {
 		return []Account{}, ResultInfo{}, err
 	}
@@ -74,7 +66,7 @@ func (api *API) Accounts(ctx context.Context, pageOpts PaginationOptions) ([]Acc
 	var accListResponse AccountListResponse
 	err = json.Unmarshal(res, &accListResponse)
 	if err != nil {
-		return []Account{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []Account{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return accListResponse.Result, accListResponse.ResultInfo, nil
 }
@@ -93,7 +85,7 @@ func (api *API) Account(ctx context.Context, accountID string) (Account, ResultI
 	var accResponse AccountResponse
 	err = json.Unmarshal(res, &accResponse)
 	if err != nil {
-		return Account{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return Account{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return accResponse.Result, accResponse.ResultInfo, nil
@@ -113,7 +105,7 @@ func (api *API) UpdateAccount(ctx context.Context, accountID string, account Acc
 	var a AccountDetailResponse
 	err = json.Unmarshal(res, &a)
 	if err != nil {
-		return Account{}, errors.Wrap(err, errUnmarshalError)
+		return Account{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return a.Result, nil
@@ -134,7 +126,7 @@ func (api *API) CreateAccount(ctx context.Context, account Account) (Account, er
 	var a AccountDetailResponse
 	err = json.Unmarshal(res, &a)
 	if err != nil {
-		return Account{}, errors.Wrap(err, errUnmarshalError)
+		return Account{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return a.Result, nil
@@ -146,7 +138,7 @@ func (api *API) CreateAccount(ctx context.Context, account Account) (Account, er
 // API reference: https://developers.cloudflare.com/tenant/tutorial/provisioning-resources#optional-deleting-accounts
 func (api *API) DeleteAccount(ctx context.Context, accountID string) error {
 	if accountID == "" {
-		return errors.New(errMissingAccountID)
+		return ErrMissingAccountID
 	}
 
 	uri := fmt.Sprintf("/accounts/%s", accountID)

@@ -30,13 +30,13 @@ type Info struct {
 	sync.Mutex
 	index   int
 	persist bool
-	anchors map[interface{}]anchor
+	anchors map[any]anchor
 }
 
-// NewInfo returns a new instance of *Info.
+// NewInfo returns a new instance of [*Info].
 func NewInfo() *Info {
 	return &Info{
-		anchors: map[interface{}]anchor{},
+		anchors: map[any]anchor{},
 	}
 }
 
@@ -52,7 +52,7 @@ func (i *Info) AddAnchor(typ reflect.Type, op reflect.Value) (reflect.Value, err
 	}
 
 	if i.anchors == nil {
-		i.anchors = map[interface{}]anchor{}
+		i.anchors = map[any]anchor{}
 	}
 
 	i.anchors[key] = anchor{
@@ -112,7 +112,7 @@ func (i *Info) ResolveAnchor(v reflect.Value) (reflect.Value, bool) {
 		return v, false
 	}
 
-	var key interface{}
+	var key any
 sw:
 	switch v.Kind() {
 	case reflect.Int,
@@ -743,25 +743,25 @@ sw:
 	return v, false
 }
 
-func (i *Info) setInt(typ reflect.Type, min int64) (reflect.Value, interface{}) {
+func (i *Info) setInt(typ reflect.Type, min int64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetInt(min + int64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setUint(typ reflect.Type, max uint64) (reflect.Value, interface{}) {
+func (i *Info) setUint(typ reflect.Type, max uint64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetUint(max - uint64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setFloat(typ reflect.Type, min float64) (reflect.Value, interface{}) {
+func (i *Info) setFloat(typ reflect.Type, min float64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	nvm.SetFloat(min + float64(i.nextIndex()))
 	return nvm, nvm.Interface()
 }
 
-func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, interface{}) {
+func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, any) {
 	nvm := reflect.New(typ).Elem()
 	min += float64(i.nextIndex())
 	nvm.SetComplex(complex(min, min))
@@ -771,11 +771,11 @@ func (i *Info) setComplex(typ reflect.Type, min float64) (reflect.Value, interfa
 // build builds a new value of type "typ" and returns it under two
 // forms:
 //   - the new value itself as a reflect.Value;
-//   - an interface{} usable as a key in an AnchorsSet map.
+//   - an any usable as a key in an AnchorsSet map.
 //
 // It returns an error if "typ" kind is not recognized or if it is a
 // non-anchorable struct.
-func (i *Info) build(typ reflect.Type) (reflect.Value, interface{}, error) {
+func (i *Info) build(typ reflect.Type) (reflect.Value, any, error) {
 	// For each numeric type, anchor the operator on a number close to
 	// the limit of this type, but not at the extreme limit to avoid
 	// edge cases where these limits are used in real world and so avoid

@@ -18,6 +18,7 @@ package td
 // array/slice, and each array/slice item should be matched by an
 // expected item to succeed.
 //
+<<<<<<< HEAD
 //   td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2))    // succeeds
 //   td.Cmp(t, []int{1, 1, 2}, td.Set(2, 1))    // succeeds
 //   td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2, 3)) // fails, 3 is missing
@@ -27,30 +28,41 @@ package td
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+//   td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2))    // succeeds
+//   td.Cmp(t, []int{1, 1, 2}, td.Set(2, 1))    // succeeds
+//   td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2, 3)) // fails, 3 is missing
+=======
+//	td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2))    // succeeds
+//	td.Cmp(t, []int{1, 1, 2}, td.Set(2, 1))    // succeeds
+//	td.Cmp(t, []int{1, 1, 2}, td.Set(1, 2, 3)) // fails, 3 is missing
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 //
-//   // works with slices/arrays of any type
-//   td.Cmp(t, personSlice, td.Set(
-//     Person{Name: "Bob", Age: 32},
-//     Person{Name: "Alice", Age: 26},
-//   ))
+//	// works with slices/arrays of any type
+//	td.Cmp(t, personSlice, td.Set(
+//	  Person{Name: "Bob", Age: 32},
+//	  Person{Name: "Alice", Age: 26},
+//	))
 //
-// To flatten a non-[]interface{} slice/array, use Flatten function
+// To flatten a non-[]any slice/array, use [Flatten] function
 // and so avoid boring and inefficient copies:
 //
-//   expected := []int{2, 1}
-//   td.Cmp(t, []int{1, 1, 2}, td.Set(td.Flatten(expected))) // succeeds
-//   // = td.Cmp(t, []int{1, 1, 2}, td.Set(2, 1))
+//	expected := []int{2, 1}
+//	td.Cmp(t, []int{1, 1, 2}, td.Set(td.Flatten(expected))) // succeeds
+//	// = td.Cmp(t, []int{1, 1, 2}, td.Set(2, 1))
 //
-//   exp1 := []int{2, 1}
-//   exp2 := []int{5, 8}
-//   td.Cmp(t, []int{1, 5, 1, 2, 8, 3, 3},
-//     td.Set(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
-//   // = td.Cmp(t, []int{1, 5, 1, 2, 8, 3, 3}, td.Set(2, 1, 3, 5, 8))
+//	exp1 := []int{2, 1}
+//	exp2 := []int{5, 8}
+//	td.Cmp(t, []int{1, 5, 1, 2, 8, 3, 3},
+//	  td.Set(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
+//	// = td.Cmp(t, []int{1, 5, 1, 2, 8, 3, 3}, td.Set(2, 1, 3, 5, 8))
 //
-// TypeBehind method can return a non-nil reflect.Type if all items
+// TypeBehind method can return a non-nil [reflect.Type] if all items
 // known non-interface types are equal, or if only interface types
-// are found (mostly issued from Isa()) and they are equal.
-func Set(expectedItems ...interface{}) TestDeep {
+// are found (mostly issued from [Isa]) and they are equal.
+//
+// See also [NotAny], [SubSetOf], [SuperSetOf] and [Bag].
+func Set(expectedItems ...any) TestDeep {
 	return newSetBase(allSet, true, expectedItems)
 }
 
@@ -67,32 +79,34 @@ func Set(expectedItems ...interface{}) TestDeep {
 // expected item to succeed. But some expected items can be missing
 // from the compared array/slice.
 //
-//   td.Cmp(t, []int{1, 1}, td.SubSetOf(1, 2))    // succeeds
-//   td.Cmp(t, []int{1, 1, 2}, td.SubSetOf(1, 3)) // fails, 2 is an extra item
+//	td.Cmp(t, []int{1, 1}, td.SubSetOf(1, 2))    // succeeds
+//	td.Cmp(t, []int{1, 1, 2}, td.SubSetOf(1, 3)) // fails, 2 is an extra item
 //
-//   // works with slices/arrays of any type
-//   td.Cmp(t, personSlice, td.SubSetOf(
-//     Person{Name: "Bob", Age: 32},
-//     Person{Name: "Alice", Age: 26},
-//   ))
+//	// works with slices/arrays of any type
+//	td.Cmp(t, personSlice, td.SubSetOf(
+//	  Person{Name: "Bob", Age: 32},
+//	  Person{Name: "Alice", Age: 26},
+//	))
 //
-// To flatten a non-[]interface{} slice/array, use Flatten function
+// To flatten a non-[]any slice/array, use [Flatten] function
 // and so avoid boring and inefficient copies:
 //
-//   expected := []int{2, 1}
-//   td.Cmp(t, []int{1, 1}, td.SubSetOf(td.Flatten(expected))) // succeeds
-//   // = td.Cmp(t, []int{1, 1}, td.SubSetOf(2, 1))
+//	expected := []int{2, 1}
+//	td.Cmp(t, []int{1, 1}, td.SubSetOf(td.Flatten(expected))) // succeeds
+//	// = td.Cmp(t, []int{1, 1}, td.SubSetOf(2, 1))
 //
-//   exp1 := []int{2, 1}
-//   exp2 := []int{5, 8}
-//   td.Cmp(t, []int{1, 5, 1, 3, 3},
-//     td.SubSetOf(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
-//   // = td.Cmp(t, []int{1, 5, 1, 3, 3}, td.SubSetOf(2, 1, 3, 5, 8))
+//	exp1 := []int{2, 1}
+//	exp2 := []int{5, 8}
+//	td.Cmp(t, []int{1, 5, 1, 3, 3},
+//	  td.SubSetOf(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
+//	// = td.Cmp(t, []int{1, 5, 1, 3, 3}, td.SubSetOf(2, 1, 3, 5, 8))
 //
-// TypeBehind method can return a non-nil reflect.Type if all items
+// TypeBehind method can return a non-nil [reflect.Type] if all items
 // known non-interface types are equal, or if only interface types
-// are found (mostly issued from Isa()) and they are equal.
-func SubSetOf(expectedItems ...interface{}) TestDeep {
+// are found (mostly issued from [Isa]) and they are equal.
+//
+// See also [NotAny], [Set] and [SuperSetOf].
+func SubSetOf(expectedItems ...any) TestDeep {
 	return newSetBase(subSet, true, expectedItems)
 }
 
@@ -109,32 +123,34 @@ func SubSetOf(expectedItems ...interface{}) TestDeep {
 // array/slice. But some items in the compared array/slice may not be
 // expected.
 //
-//   td.Cmp(t, []int{1, 1, 2}, td.SuperSetOf(1))    // succeeds
-//   td.Cmp(t, []int{1, 1, 2}, td.SuperSetOf(1, 3)) // fails, 3 is missing
+//	td.Cmp(t, []int{1, 1, 2}, td.SuperSetOf(1))    // succeeds
+//	td.Cmp(t, []int{1, 1, 2}, td.SuperSetOf(1, 3)) // fails, 3 is missing
 //
-//   // works with slices/arrays of any type
-//   td.Cmp(t, personSlice, td.SuperSetOf(
-//     Person{Name: "Bob", Age: 32},
-//     Person{Name: "Alice", Age: 26},
-//   ))
+//	// works with slices/arrays of any type
+//	td.Cmp(t, personSlice, td.SuperSetOf(
+//	  Person{Name: "Bob", Age: 32},
+//	  Person{Name: "Alice", Age: 26},
+//	))
 //
-// To flatten a non-[]interface{} slice/array, use Flatten function
+// To flatten a non-[]any slice/array, use [Flatten] function
 // and so avoid boring and inefficient copies:
 //
-//   expected := []int{2, 1}
-//   td.Cmp(t, []int{1, 1, 2, 8}, td.SuperSetOf(td.Flatten(expected))) // succeeds
-//   // = td.Cmp(t, []int{1, 1, 2, 8}, td.SubSetOf(2, 1))
+//	expected := []int{2, 1}
+//	td.Cmp(t, []int{1, 1, 2, 8}, td.SuperSetOf(td.Flatten(expected))) // succeeds
+//	// = td.Cmp(t, []int{1, 1, 2, 8}, td.SubSetOf(2, 1))
 //
-//   exp1 := []int{2, 1}
-//   exp2 := []int{5, 8}
-//   td.Cmp(t, []int{1, 5, 1, 8, 42, 3, 3},
-//     td.SuperSetOf(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
-//   // = td.Cmp(t, []int{1, 5, 1, 8, 42, 3, 3}, td.SuperSetOf(2, 1, 3, 5, 8))
+//	exp1 := []int{2, 1}
+//	exp2 := []int{5, 8}
+//	td.Cmp(t, []int{1, 5, 1, 8, 42, 3, 3},
+//	  td.SuperSetOf(td.Flatten(exp1), 3, td.Flatten(exp2))) // succeeds
+//	// = td.Cmp(t, []int{1, 5, 1, 8, 42, 3, 3}, td.SuperSetOf(2, 1, 3, 5, 8))
 //
-// TypeBehind method can return a non-nil reflect.Type if all items
+// TypeBehind method can return a non-nil [reflect.Type] if all items
 // known non-interface types are equal, or if only interface types
-// are found (mostly issued from Isa()) and they are equal.
-func SuperSetOf(expectedItems ...interface{}) TestDeep {
+// are found (mostly issued from [Isa]) and they are equal.
+//
+// See also [NotAny], [Set] and [SubSetOf].
+func SuperSetOf(expectedItems ...any) TestDeep {
 	return newSetBase(superSet, true, expectedItems)
 }
 
@@ -145,35 +161,37 @@ func SuperSetOf(expectedItems ...interface{}) TestDeep {
 // NotAny operator checks that the contents of an array or a slice (or
 // a pointer on array/slice) does not contain any of "notExpectedItems".
 //
-//   td.Cmp(t, []int{1}, td.NotAny(1, 2, 3)) // fails
-//   td.Cmp(t, []int{5}, td.NotAny(1, 2, 3)) // succeeds
+//	td.Cmp(t, []int{1}, td.NotAny(1, 2, 3)) // fails
+//	td.Cmp(t, []int{5}, td.NotAny(1, 2, 3)) // succeeds
 //
-//   // works with slices/arrays of any type
-//   td.Cmp(t, personSlice, td.NotAny(
-//     Person{Name: "Bob", Age: 32},
-//     Person{Name: "Alice", Age: 26},
-//   ))
+//	// works with slices/arrays of any type
+//	td.Cmp(t, personSlice, td.NotAny(
+//	  Person{Name: "Bob", Age: 32},
+//	  Person{Name: "Alice", Age: 26},
+//	))
 //
-// To flatten a non-[]interface{} slice/array, use Flatten function
+// To flatten a non-[]any slice/array, use [Flatten] function
 // and so avoid boring and inefficient copies:
 //
-//   notExpected := []int{2, 1}
-//   td.Cmp(t, []int{4, 4, 3, 8}, td.NotAny(td.Flatten(notExpected))) // succeeds
-//   // = td.Cmp(t, []int{4, 4, 3, 8}, td.NotAny(2, 1))
+//	notExpected := []int{2, 1}
+//	td.Cmp(t, []int{4, 4, 3, 8}, td.NotAny(td.Flatten(notExpected))) // succeeds
+//	// = td.Cmp(t, []int{4, 4, 3, 8}, td.NotAny(2, 1))
 //
-//   notExp1 := []int{2, 1}
-//   notExp2 := []int{5, 8}
-//   td.Cmp(t, []int{4, 4, 42, 8},
-//     td.NotAny(td.Flatten(notExp1), 3, td.Flatten(notExp2))) // succeeds
-//   // = td.Cmp(t, []int{4, 4, 42, 8}, td.NotAny(2, 1, 3, 5, 8))
+//	notExp1 := []int{2, 1}
+//	notExp2 := []int{5, 8}
+//	td.Cmp(t, []int{4, 4, 42, 8},
+//	  td.NotAny(td.Flatten(notExp1), 3, td.Flatten(notExp2))) // succeeds
+//	// = td.Cmp(t, []int{4, 4, 42, 8}, td.NotAny(2, 1, 3, 5, 8))
 //
 // Beware that NotAny(…) is not equivalent to Not(Any(…)) but is like
 // Not(SuperSet(…)).
 //
-// TypeBehind method can return a non-nil reflect.Type if all items
+// TypeBehind method can return a non-nil [reflect.Type] if all items
 // known non-interface types are equal, or if only interface types
-// are found (mostly issued from Isa()) and they are equal.
-func NotAny(notExpectedItems ...interface{}) TestDeep {
+// are found (mostly issued from [Isa]) and they are equal.
+//
+// See also [Set], [SubSetOf] and [SuperSetOf].
+func NotAny(notExpectedItems ...any) TestDeep {
 	return newSetBase(noneSet, true, notExpectedItems)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======

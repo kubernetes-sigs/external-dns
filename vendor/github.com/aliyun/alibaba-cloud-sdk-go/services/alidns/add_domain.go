@@ -83,12 +83,12 @@ type AddDomainRequest struct {
 // AddDomainResponse is the response struct for api AddDomain
 type AddDomainResponse struct {
 	*responses.BaseResponse
-	RequestId  string                `json:"RequestId" xml:"RequestId"`
+	GroupName  string                `json:"GroupName" xml:"GroupName"`
 	DomainId   string                `json:"DomainId" xml:"DomainId"`
+	RequestId  string                `json:"RequestId" xml:"RequestId"`
 	DomainName string                `json:"DomainName" xml:"DomainName"`
 	PunyCode   string                `json:"PunyCode" xml:"PunyCode"`
 	GroupId    string                `json:"GroupId" xml:"GroupId"`
-	GroupName  string                `json:"GroupName" xml:"GroupName"`
 	DnsServers DnsServersInAddDomain `json:"DnsServers" xml:"DnsServers"`
 }
 

@@ -12,8 +12,8 @@ import (
 	"github.com/maxatome/go-testdeep/internal/dark"
 )
 
-// NewOrder returns a function able to compare 2 non-nil values of type "t".
-// It returns nil if the type "t" is not comparable.
+// NewOrder returns a function able to compare 2 non-nil values of type t.
+// It returns nil if the type t is not comparable.
 func NewOrder(t reflect.Type) func(a, b reflect.Value) int {
 	// Compare(T) int
 	if m, ok := cmpMethod("Compare", t, Int); ok {

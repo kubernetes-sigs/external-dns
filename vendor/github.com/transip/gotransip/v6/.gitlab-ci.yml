@@ -11,9 +11,9 @@ stages:
 
 analyze:lint:
   stage: analyze
-  image: golangci/golangci-lint:v1.19
+  image: golangci/golangci-lint:v1.45
   script:
-    - golangci-lint run
+    - golangci-lint run -v
   tags:
     - k8s-tbk
 

@@ -83,9 +83,9 @@ type DeleteSubDomainRecordsRequest struct {
 // DeleteSubDomainRecordsResponse is the response struct for api DeleteSubDomainRecords
 type DeleteSubDomainRecordsResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
 	RR         string `json:"RR" xml:"RR"`
 	TotalCount string `json:"TotalCount" xml:"TotalCount"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDeleteSubDomainRecordsRequest creates a request to invoke DeleteSubDomainRecords API

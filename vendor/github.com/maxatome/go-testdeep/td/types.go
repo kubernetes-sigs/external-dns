@@ -23,29 +23,32 @@ import (
 )
 
 var (
+	tType              = reflect.TypeOf((*T)(nil))
 	testDeeper         = reflect.TypeOf((*TestDeep)(nil)).Elem()
 	smuggledGotType    = reflect.TypeOf(SmuggledGot{})
 	smuggledGotPtrType = reflect.TypeOf((*SmuggledGot)(nil))
 )
 
-// TestingT is the minimal interface used by Cmp to report errors. It
-// is commonly implemented by *testing.T and *testing.B.
+// TestingT is the minimal interface used by [Cmp] to report errors. It
+// is commonly implemented by [*testing.T] and [*testing.B].
 type TestingT interface {
-	Error(args ...interface{})
-	Fatal(args ...interface{})
+	Error(args ...any)
+	Fatal(args ...any)
 	Helper()
 }
 
-// TestingFT is a deprecated alias of testing.TB. Use testing.TB
+// TestingFT is a deprecated alias of [testing.TB]. Use [testing.TB]
 // directly in new code.
 type TestingFT = testing.TB
 
-// TestDeep is the representation of a go-testdeep operator. It is not
+// TestDeep is the representation of a [go-testdeep operator]. It is not
 // intended to be used directly, but through Cmp* functions.
+//
+// [go-testdeep operator]: https://go-testdeep.zetta.rocks/operators/
 type TestDeep interface {
 	types.TestDeepStringer
 	location.GetLocationer
-	// Match checks "got" against the operator. It returns nil if it matches.
+	// Match checks got against the operator. It returns nil if it matches.
 	Match(ctx ctxerr.Context, got reflect.Value) *ctxerr.Error
 	setLocation(int)
 	replaceLocation(location.Location)
@@ -87,7 +90,7 @@ func pkgFunc(full string) (string, string) {
 	return full[:dp], full[dp+1:]
 }
 
-// setLocation sets location using the stack trace going "callDepth" levels up.
+// setLocation sets location using the stack trace going callDepth levels up.
 func (t *base) setLocation(callDepth int) {
 	var ok bool
 	t.location, ok = location.New(callDepth)
@@ -114,7 +117,7 @@ func (t *base) setLocation(callDepth int) {
 	}
 }
 
-// replaceLocation replaces the location by "loc".
+// replaceLocation replaces the location by loc.
 func (t *base) replaceLocation(loc location.Location) {
 	t.location = loc
 }
@@ -647,7 +650,7 @@ func (t base) MarshalJSON() ([]byte, error) {
 }
 
 // newBase returns a new base struct with location.Location set to the
-// "callDepth" depth.
+// callDepth depth.
 func newBase(callDepth int) (b base) {
 	b.setLocation(callDepth)
 	return
@@ -666,7 +669,7 @@ func (t baseOKNil) HandleInvalid() bool {
 }
 
 // newBaseOKNil returns a new baseOKNil struct with location.Location set to
-// the "callDepth" depth.
+// the callDepth depth.
 func newBaseOKNil(callDepth int) (b baseOKNil) {
 	b.setLocation(callDepth)
 	return

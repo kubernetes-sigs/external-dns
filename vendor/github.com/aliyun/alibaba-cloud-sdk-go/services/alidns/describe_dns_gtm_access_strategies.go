@@ -82,11 +82,11 @@ type DescribeDnsGtmAccessStrategiesRequest struct {
 // DescribeDnsGtmAccessStrategiesResponse is the response struct for api DescribeDnsGtmAccessStrategies
 type DescribeDnsGtmAccessStrategiesResponse struct {
 	*responses.BaseResponse
-	RequestId  string                                     `json:"RequestId" xml:"RequestId"`
-	TotalItems int                                        `json:"TotalItems" xml:"TotalItems"`
-	TotalPages int                                        `json:"TotalPages" xml:"TotalPages"`
-	PageNumber int                                        `json:"PageNumber" xml:"PageNumber"`
 	PageSize   int                                        `json:"PageSize" xml:"PageSize"`
+	RequestId  string                                     `json:"RequestId" xml:"RequestId"`
+	PageNumber int                                        `json:"PageNumber" xml:"PageNumber"`
+	TotalPages int                                        `json:"TotalPages" xml:"TotalPages"`
+	TotalItems int                                        `json:"TotalItems" xml:"TotalItems"`
 	Strategies StrategiesInDescribeDnsGtmAccessStrategies `json:"Strategies" xml:"Strategies"`
 }
 

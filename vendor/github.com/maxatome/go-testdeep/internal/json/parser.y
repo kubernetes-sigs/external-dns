@@ -14,25 +14,25 @@ type Placeholder struct {
 
 type Operator struct {
 	Name string
-	Params   []interface{}
+	Params   []any
 }
 
 type member struct {
 	key   string
-	value interface{}
+	value any
 }
 
-func finalize(l yyLexer, value interface{}) {
+func finalize(l yyLexer, value any) {
 	l.(*json).value = value
 }
 %}
 
 %union {
-  object map[string]interface{}
+  object map[string]any
   member member
-  array  []interface{}
+  array  []any
   string string
-  value  interface{}
+  value  any
 }
 
 %start json
@@ -67,7 +67,7 @@ value:
 
 object: '{' '}'
                 {
-                  $$ = map[string]interface{}{}
+                  $$ = map[string]any{}
                 }
   | '{' members '}'
                 {
@@ -80,7 +80,7 @@ object: '{' '}'
 
 members: member
                 {
-                  $$ = map[string]interface{}{
+                  $$ = map[string]any{
                     $1.key: $1.value,
                   }
                 }
@@ -100,7 +100,7 @@ member: STRING ':' value
 
 array: '[' ']'
                 {
-                  $$ = []interface{}{}
+                  $$ = []any{}
                 }
   | '[' elements ']'
                 {
@@ -113,7 +113,7 @@ array: '[' ']'
 
 elements: value
                 {
-                  $$ = []interface{}{$1}
+                  $$ = []any{$1}
                 }
   | elements ',' value
                 {
@@ -122,7 +122,7 @@ elements: value
 
 op_params: '(' ')'
                 {
-                  $$ = []interface{}{}
+                  $$ = []any{}
                 }
   | '(' elements ')'
                 {

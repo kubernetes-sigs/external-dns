@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // SplitTunnelResponse represents the response from the get split
@@ -38,7 +36,7 @@ func (api *API) ListSplitTunnels(ctx context.Context, accountID string, mode str
 	var splitTunnelResponse SplitTunnelResponse
 	err = json.Unmarshal(res, &splitTunnelResponse)
 	if err != nil {
-		return []SplitTunnel{}, errors.Wrap(err, errUnmarshalError)
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return splitTunnelResponse.Result, nil
@@ -59,7 +57,7 @@ func (api *API) UpdateSplitTunnel(ctx context.Context, accountID string, mode st
 	var splitTunnelResponse SplitTunnelResponse
 	err = json.Unmarshal(res, &splitTunnelResponse)
 	if err != nil {
-		return []SplitTunnel{}, errors.Wrap(err, errUnmarshalError)
+		return []SplitTunnel{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return splitTunnelResponse.Result, nil

@@ -31,9 +31,11 @@ var _ TestDeep = &tdZero{}
 //
 // Beware that:
 //
-//   td.Cmp(t, AnyStruct{}, td.Zero())          // is true
-//   td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
+//	td.Cmp(t, AnyStruct{}, td.Zero())          // is true
+//	td.Cmp(t, &AnyStruct{}, td.Zero())         // is false, coz pointer ≠ nil
+//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.Zero())) // is true
+//
+// See also [Empty], [Nil] and [NotZero].
 func Zero() TestDeep {
 	return &tdZero{
 		baseOKNil: newBaseOKNil(3),
@@ -71,9 +73,11 @@ var _ TestDeep = &tdNotZero{}
 //
 // Beware that:
 //
-//   td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
-//   td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
-//   td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
+//	td.Cmp(t, AnyStruct{}, td.NotZero())          // is false
+//	td.Cmp(t, &AnyStruct{}, td.NotZero())         // is true, coz pointer ≠ nil
+//	td.Cmp(t, &AnyStruct{}, td.Ptr(td.NotZero())) // is false
+//
+// See also [NotEmpty], [NotNil] and [Zero].
 func NotZero() TestDeep {
 	return &tdNotZero{
 		baseOKNil: newBaseOKNil(3),

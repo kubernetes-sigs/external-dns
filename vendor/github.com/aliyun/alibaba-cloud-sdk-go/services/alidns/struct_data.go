@@ -17,8 +17,8 @@ package alidns
 
 // Data is a nested struct in alidns response
 type Data struct {
-	ThreatCount    int64 `json:"ThreatCount" xml:"ThreatCount"`
 	SubDomainCount int64 `json:"SubDomainCount" xml:"SubDomainCount"`
+	ThreatCount    int64 `json:"ThreatCount" xml:"ThreatCount"`
 	DomainCount    int64 `json:"DomainCount" xml:"DomainCount"`
 	HttpCount      int64 `json:"HttpCount" xml:"HttpCount"`
 	TotalCount     int64 `json:"TotalCount" xml:"TotalCount"`

@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 cmd/flarectl/dist/
 cmd/flarectl/flarectl
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -32,3 +33,7 @@ cmd/flarectl/flarectl
 cmd/flarectl/dist/
 cmd/flarectl/flarectl
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+cmd/flarectl/flarectl.exe
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

@@ -61,7 +61,9 @@ type LoadBalancerReq struct {
 	ProxyProtocol      *bool            `json:"proxy_protocol,omitempty"`
 	BalancingAlgorithm string           `json:"balancing_algorithm,omitempty"`
 	FirewallRules      []LBFirewallRule `json:"firewall_rules"`
-	PrivateNetwork     *string          `json:"private_network,omitempty"`
+	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
+	PrivateNetwork *string `json:"private_network,omitempty"`
+	VPC            *string `json:"vpc,omitempty"`
 }
 
 // InstanceList represents instances that are attached to your load balancer
@@ -86,7 +88,9 @@ type GenericInfo struct {
 	SSLRedirect        *bool           `json:"ssl_redirect,omitempty"`
 	StickySessions     *StickySessions `json:"sticky_sessions,omitempty"`
 	ProxyProtocol      *bool           `json:"proxy_protocol,omitempty"`
-	PrivateNetwork     string          `json:"private_network,omitempty"`
+	// Deprecated:  PrivateNetwork should no longer be used. Instead, use VPC.
+	PrivateNetwork string `json:"private_network,omitempty"`
+	VPC            string `json:"vpc,omitempty"`
 }
 
 // StickySessions represents cookie for your load balancer

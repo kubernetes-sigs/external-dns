@@ -1,15 +1,16 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 approvers:
-- thockin
-- lavalamp
-- smarterclayton
-- wojtek-t
-- deads2k
-- caesarxuchao
-- liggitt
-- ncdc
+  - thockin
+  - lavalamp
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - caesarxuchao
+  - liggitt
+  - ncdc
 reviewers:
+<<<<<<< HEAD
 - thockin
 - lavalamp
 - smarterclayton
@@ -132,3 +133,48 @@ reviewers:
 >>>>>>> 4d7e5ad26 (update vendored files)
 - sdminonne
 - ncdc
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+- thockin
+- lavalamp
+- smarterclayton
+- wojtek-t
+- deads2k
+- brendandburns
+- derekwaynecarr
+- caesarxuchao
+- mikedanese
+- liggitt
+- davidopp
+- pmorie
+- janetkuo
+- justinsb
+- soltysh
+- jsafrane
+- dims
+- hongchaodeng
+- krousey
+- xiang90
+- ingvagabund
+- resouer
+- jessfraz
+- mfojtik
+- sdminonne
+- ncdc
+=======
+  - thockin
+  - lavalamp
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - derekwaynecarr
+  - caesarxuchao
+  - mikedanese
+  - liggitt
+  - janetkuo
+  - justinsb
+  - soltysh
+  - jsafrane
+  - dims
+  - ingvagabund
+  - ncdc
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

@@ -80,9 +80,9 @@ type DescribeDohUserInfoRequest struct {
 type DescribeDohUserInfoResponse struct {
 	*responses.BaseResponse
 	RequestId      string `json:"RequestId" xml:"RequestId"`
+	SubDomainCount int    `json:"SubDomainCount" xml:"SubDomainCount"`
 	PdnsId         int64  `json:"PdnsId" xml:"PdnsId"`
 	DomainCount    int    `json:"DomainCount" xml:"DomainCount"`
-	SubDomainCount int    `json:"SubDomainCount" xml:"SubDomainCount"`
 }
 
 // CreateDescribeDohUserInfoRequest creates a request to invoke DescribeDohUserInfo API

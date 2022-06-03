@@ -46,6 +46,8 @@ type Plan struct {
 	Bandwidth   int      `json:"bandwidth"`
 	MonthlyCost float32  `json:"monthly_cost"`
 	Type        string   `json:"type"`
+	GPUVRAM     int      `json:"gpu_vram_gb,omitempty"`
+	GPUType     string   `json:"gpu_type,omitempty"`
 	Locations   []string `json:"locations"`
 }
 

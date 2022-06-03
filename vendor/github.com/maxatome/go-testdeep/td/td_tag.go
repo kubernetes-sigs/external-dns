@@ -24,18 +24,19 @@ var _ TestDeep = &tdTag{}
 // parameter of JSON operator, to name placeholders
 // input(Tag): all
 
-// Tag is a smuggler operator. It only allows to name "expectedValue",
+// Tag is a smuggler operator. It only allows to name expectedValue,
 // which can be an operator or a value. The data is then compared
-// against "expectedValue" as if Tag was never called. It is only
-// useful as JSON operator parameter, to name placeholders. See JSON
+// against expectedValue as if Tag was never called. It is only useful
+// as [JSON] operator parameter, to name placeholders. See [JSON]
 // operator for more details.
 //
-//   td.Cmp(t, gotValue,
-//     td.JSON(`{"fullname": $name, "age": $age, "gender": $gender}`,
-//       td.Tag("name", td.HasPrefix("Foo")), // matches $name
-//       td.Tag("age", td.Between(41, 43)),   // matches $age
-//       td.Tag("gender", "male")))           // matches $gender
+//	td.Cmp(t, gotValue,
+//	  td.JSON(`{"fullname": $name, "age": $age, "gender": $gender}`,
+//	    td.Tag("name", td.HasPrefix("Foo")), // matches $name
+//	    td.Tag("age", td.Between(41, 43)),   // matches $age
+//	    td.Tag("gender", "male")))           // matches $gender
 //
+<<<<<<< HEAD
 // TypeBehind method is delegated to "expectedValue" one if
 // "expectedValue" is a TestDeep operator, otherwise it returns the
 // type of "expectedValue" (or nil if it is originally untyped nil).
@@ -46,6 +47,17 @@ func Tag(tag string, expectedValue interface{}) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+// TypeBehind method is delegated to "expectedValue" one if
+// "expectedValue" is a TestDeep operator, otherwise it returns the
+// type of "expectedValue" (or nil if it is originally untyped nil).
+func Tag(tag string, expectedValue interface{}) TestDeep {
+=======
+// TypeBehind method is delegated to expectedValue one if
+// expectedValue is a [TestDeep] operator, otherwise it returns the
+// type of expectedValue (or nil if it is originally untyped nil).
+func Tag(tag string, expectedValue any) TestDeep {
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	t := tdTag{
 		tdSmugglerBase: newSmugglerBase(expectedValue),
 		tag:            tag,

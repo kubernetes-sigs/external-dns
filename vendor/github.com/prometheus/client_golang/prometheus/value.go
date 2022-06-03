@@ -27,7 +27,7 @@ import (
 <<<<<<< HEAD
 	//nolint:staticcheck // Ignore SA1019. Need to keep deprecated package for compatibility.
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	dto "github.com/prometheus/client_model/go"
 )
@@ -633,8 +633,8 @@ const ExemplarMaxRunes = 64
 func newExemplar(value float64, ts time.Time, l Labels) (*dto.Exemplar, error) {
 	e := &dto.Exemplar{}
 	e.Value = proto.Float64(value)
-	tsProto, err := ptypes.TimestampProto(ts)
-	if err != nil {
+	tsProto := timestamppb.New(ts)
+	if err := tsProto.CheckValid(); err != nil {
 		return nil, err
 	}
 	e.Timestamp = tsProto

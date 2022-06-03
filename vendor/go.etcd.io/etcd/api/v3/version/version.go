@@ -28,6 +28,7 @@ var (
 	MinClusterVersion = "3.0.0"
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Version           = "3.5.0"
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
@@ -37,6 +38,11 @@ var (
 =======
 	Version           = "3.5.2"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	Version           = "3.5.2"
+=======
+	Version           = "3.5.4"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	APIVersion        = "unknown"
 
 	// Git SHA Value will be set during build

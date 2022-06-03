@@ -25,7 +25,7 @@ import (
 // converted from got contents.
 func getTime(ctx ctxerr.Context, got reflect.Value, mustConvert bool) (time.Time, *ctxerr.Error) {
 	var (
-		gotIf interface{}
+		gotIf any
 		ok    bool
 	)
 	if mustConvert {

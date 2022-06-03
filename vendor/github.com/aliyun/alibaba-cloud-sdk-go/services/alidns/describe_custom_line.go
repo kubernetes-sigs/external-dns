@@ -82,13 +82,13 @@ type DescribeCustomLineRequest struct {
 type DescribeCustomLineResponse struct {
 	*responses.BaseResponse
 	RequestId       string      `json:"RequestId" xml:"RequestId"`
-	Id              int64       `json:"Id" xml:"Id"`
-	Name            string      `json:"Name" xml:"Name"`
 	DomainName      string      `json:"DomainName" xml:"DomainName"`
 	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Id              int64       `json:"Id" xml:"Id"`
 	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
 	Code            string      `json:"Code" xml:"Code"`
+	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Name            string      `json:"Name" xml:"Name"`
 	IpSegmentList   []IpSegment `json:"IpSegmentList" xml:"IpSegmentList"`
 }
 

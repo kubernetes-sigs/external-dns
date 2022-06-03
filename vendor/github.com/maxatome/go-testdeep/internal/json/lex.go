@@ -395,19 +395,19 @@ type json struct {
 	stackPos     []Position
 	curSize      int
 	curRune      rune
-	value        interface{}
+	value        any
 	errs         []*Error
 	opts         ParseOpts
 }
 
 type ParseOpts struct {
-	Placeholders       []interface{}
-	PlaceholdersByName map[string]interface{}
-	OpShortcutFn       func(string, Position) (interface{}, bool)
-	OpFn               func(Operator, Position) (interface{}, error)
+	Placeholders       []any
+	PlaceholdersByName map[string]any
+	OpShortcutFn       func(string, Position) (any, bool)
+	OpFn               func(Operator, Position) (any, error)
 }
 
-func Parse(buf []byte, opts ...ParseOpts) (interface{}, error) {
+func Parse(buf []byte, opts ...ParseOpts) (any, error) {
 	yyErrorVerbose = true
 
 	j := json{
@@ -476,14 +476,14 @@ func (j *json) moveHoriz(bytes int, runes ...int) {
 	j.curSize = 0
 }
 
-func (j *json) getOperatorShortcut(operator string, opPos Position) (interface{}, bool) {
+func (j *json) getOperatorShortcut(operator string, opPos Position) (any, bool) {
 	if j.opts.OpShortcutFn == nil {
 		return nil, false
 	}
 	return j.opts.OpShortcutFn(operator, opPos)
 }
 
-func (j *json) getOperator(operator Operator, opPos Position) (interface{}, error) {
+func (j *json) getOperator(operator Operator, opPos Position) (any, error) {
 	if j.opts.OpFn == nil {
 		return nil, fmt.Errorf("unknown operator %q", operator.Name)
 	}
@@ -1163,7 +1163,7 @@ func (j *json) parseNumber() (float64, bool) {
 // parseDollarToken parses a $123 or $tag or $^Shortcut token.
 // dollarToken is never empty, does not contain '$' and dollarPos
 // is the '$' position.
-func (j *json) parseDollarToken(dollarToken string, dollarPos Position) (int, interface{}) {
+func (j *json) parseDollarToken(dollarToken string, dollarPos Position) (int, any) {
 	firstRune, _ := utf8.DecodeRuneInString(dollarToken)
 
 	// Test for $123

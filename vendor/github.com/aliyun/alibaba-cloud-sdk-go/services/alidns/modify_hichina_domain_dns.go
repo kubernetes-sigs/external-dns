@@ -82,8 +82,8 @@ type ModifyHichinaDomainDNSRequest struct {
 type ModifyHichinaDomainDNSResponse struct {
 	*responses.BaseResponse
 	RequestId          string             `json:"RequestId" xml:"RequestId"`
-	OriginalDnsServers OriginalDnsServers `json:"OriginalDnsServers" xml:"OriginalDnsServers"`
 	NewDnsServers      NewDnsServers      `json:"NewDnsServers" xml:"NewDnsServers"`
+	OriginalDnsServers OriginalDnsServers `json:"OriginalDnsServers" xml:"OriginalDnsServers"`
 }
 
 // CreateModifyHichinaDomainDNSRequest creates a request to invoke ModifyHichinaDomainDNS API

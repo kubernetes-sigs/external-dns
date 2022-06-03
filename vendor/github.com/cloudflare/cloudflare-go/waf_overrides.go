@@ -134,8 +134,6 @@ func (api *API) DeleteWAFOverride(zoneID, overrideID string) error {
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // WAFOverridesResponse represents the response form the WAF overrides endpoint.
@@ -181,7 +179,7 @@ func (api *API) ListWAFOverrides(ctx context.Context, zoneID string) ([]WAFOverr
 	var r WAFOverridesResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return []WAFOverride{}, errors.Wrap(err, errUnmarshalError)
+		return []WAFOverride{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !r.Success {
@@ -208,7 +206,7 @@ func (api *API) WAFOverride(ctx context.Context, zoneID, overrideID string) (WAF
 	var r WAFOverrideResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFOverride{}, errors.Wrap(err, errUnmarshalError)
+		return WAFOverride{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -225,7 +223,7 @@ func (api *API) CreateWAFOverride(ctx context.Context, zoneID string, override W
 	}
 	var r WAFOverrideResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return WAFOverride{}, errors.Wrap(err, errUnmarshalError)
+		return WAFOverride{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -244,7 +242,7 @@ func (api *API) UpdateWAFOverride(ctx context.Context, zoneID, overrideID string
 	var r WAFOverrideResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFOverride{}, errors.Wrap(err, errUnmarshalError)
+		return WAFOverride{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -394,7 +392,7 @@ func (api *API) DeleteWAFOverride(ctx context.Context, zoneID, overrideID string
 	var r WAFOverrideResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return nil
 }

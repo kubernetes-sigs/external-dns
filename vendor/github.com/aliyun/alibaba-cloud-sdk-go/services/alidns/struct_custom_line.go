@@ -17,11 +17,11 @@ package alidns
 
 // CustomLine is a nested struct in alidns response
 type CustomLine struct {
-	Id              int64       `json:"Id" xml:"Id"`
-	Name            string      `json:"Name" xml:"Name"`
 	CreateTime      string      `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
 	Code            string      `json:"Code" xml:"Code"`
+	Name            string      `json:"Name" xml:"Name"`
+	IpSegments      string      `json:"IpSegments" xml:"IpSegments"`
+	Id              int64       `json:"Id" xml:"Id"`
+	CreateTimestamp int64       `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	IpSegmentList   []IpSegment `json:"IpSegmentList" xml:"IpSegmentList"`
 }

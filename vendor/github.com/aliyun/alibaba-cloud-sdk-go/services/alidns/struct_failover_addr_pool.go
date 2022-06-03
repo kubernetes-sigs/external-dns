@@ -17,8 +17,8 @@ package alidns
 
 // FailoverAddrPool is a nested struct in alidns response
 type FailoverAddrPool struct {
-	Id        string `json:"Id" xml:"Id"`
+	LbaWeight int    `json:"LbaWeight" xml:"LbaWeight"`
 	Name      string `json:"Name" xml:"Name"`
 	AddrCount int    `json:"AddrCount" xml:"AddrCount"`
-	LbaWeight int    `json:"LbaWeight" xml:"LbaWeight"`
+	Id        string `json:"Id" xml:"Id"`
 }

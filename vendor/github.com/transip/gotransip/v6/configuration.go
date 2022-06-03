@@ -1,13 +1,15 @@
 package gotransip
 
 import (
-	"github.com/transip/gotransip/v6/authenticator"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/transip/gotransip/v6/authenticator"
 )
 
 const (
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -42,6 +44,11 @@ const (
 =======
 	libraryVersion  = "6.14.0"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	libraryVersion  = "6.14.0"
+=======
+	libraryVersion  = "6.17.0"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	defaultBasePath = "https://api.transip.nl/v6"
 	userAgent       = "go-client-gotransip/" + libraryVersion
 )

@@ -160,6 +160,7 @@ type Database struct {
 	CreatedAt          time.Time                  `json:"created_at,omitempty"`
 	PrivateNetworkUUID string                     `json:"private_network_uuid,omitempty"`
 	Tags               []string                   `json:"tags,omitempty"`
+	ProjectID          string                     `json:"project_id,omitempty"`
 }
 
 // DatabaseCA represents a database ca.
@@ -223,6 +224,7 @@ type DatabaseCreateRequest struct {
 	PrivateNetworkUUID string                 `json:"private_network_uuid"`
 	Tags               []string               `json:"tags,omitempty"`
 	BackupRestore      *DatabaseBackupRestore `json:"backup_restore,omitempty"`
+	ProjectID          string                 `json:"project_id"`
 }
 
 // DatabaseResizeRequest can be used to initiate a database resize operation.

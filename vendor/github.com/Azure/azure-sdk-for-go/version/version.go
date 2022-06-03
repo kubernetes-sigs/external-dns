@@ -10,6 +10,7 @@ package version
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const Number = "v46.4.0"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -78,3 +79,8 @@ const Number = "v45.1.0"
 =======
 const Number = "v61.5.0"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+const Number = "v61.5.0"
+=======
+const Number = "v66.0.0"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

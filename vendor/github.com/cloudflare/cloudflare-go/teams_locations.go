@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 type TeamsLocationsListResponse struct {
@@ -55,7 +53,7 @@ func (api *API) TeamsLocations(ctx context.Context, accountID string) ([]TeamsLo
 	var teamsLocationsListResponse TeamsLocationsListResponse
 	err = json.Unmarshal(res, &teamsLocationsListResponse)
 	if err != nil {
-		return []TeamsLocation{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []TeamsLocation{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsLocationsListResponse.Result, teamsLocationsListResponse.ResultInfo, nil
@@ -80,7 +78,7 @@ func (api *API) TeamsLocation(ctx context.Context, accountID, locationID string)
 	var teamsLocationDetailResponse TeamsLocationDetailResponse
 	err = json.Unmarshal(res, &teamsLocationDetailResponse)
 	if err != nil {
-		return TeamsLocation{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsLocation{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsLocationDetailResponse.Result, nil
@@ -100,7 +98,7 @@ func (api *API) CreateTeamsLocation(ctx context.Context, accountID string, teams
 	var teamsLocationDetailResponse TeamsLocationDetailResponse
 	err = json.Unmarshal(res, &teamsLocationDetailResponse)
 	if err != nil {
-		return TeamsLocation{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsLocation{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsLocationDetailResponse.Result, nil
@@ -111,7 +109,7 @@ func (api *API) CreateTeamsLocation(ctx context.Context, accountID string, teams
 // API reference: https://api.cloudflare.com/#teams-locations-update-teams-location
 func (api *API) UpdateTeamsLocation(ctx context.Context, accountID string, teamsLocation TeamsLocation) (TeamsLocation, error) {
 	if teamsLocation.ID == "" {
-		return TeamsLocation{}, errors.Errorf("teams location ID cannot be empty")
+		return TeamsLocation{}, fmt.Errorf("teams location ID cannot be empty")
 	}
 
 	uri := fmt.Sprintf(
@@ -129,7 +127,7 @@ func (api *API) UpdateTeamsLocation(ctx context.Context, accountID string, teams
 	var teamsLocationDetailResponse TeamsLocationDetailResponse
 	err = json.Unmarshal(res, &teamsLocationDetailResponse)
 	if err != nil {
-		return TeamsLocation{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsLocation{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsLocationDetailResponse.Result, nil

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 const (
@@ -57,7 +57,7 @@ func (api *API) GetSecondaryDNSZone(ctx context.Context, zoneID string) (Seconda
 	var r SecondaryDNSZoneDetailResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return SecondaryDNSZone{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSZone{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -85,7 +85,7 @@ func (api *API) CreateSecondaryDNSZone(ctx context.Context, zoneID string, zone 
 
 	result := SecondaryDNSZoneDetailResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return SecondaryDNSZone{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSZone{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result, nil
@@ -114,7 +114,7 @@ func (api *API) UpdateSecondaryDNSZone(ctx context.Context, zoneID string, zone 
 
 	result := SecondaryDNSZoneDetailResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return SecondaryDNSZone{}, errors.Wrap(err, errUnmarshalError)
+		return SecondaryDNSZone{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result.Result, nil
@@ -147,7 +147,7 @@ func (api *API) ForceSecondaryDNSZoneAXFR(ctx context.Context, zoneID string) er
 
 	result := SecondaryDNSZoneAXFRResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return errors.Wrap(err, errUnmarshalError)
+		return fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return nil

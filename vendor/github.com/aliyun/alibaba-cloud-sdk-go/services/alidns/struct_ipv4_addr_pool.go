@@ -17,7 +17,7 @@ package alidns
 
 // Ipv4AddrPool is a nested struct in alidns response
 type Ipv4AddrPool struct {
-	Id        string `json:"Id" xml:"Id"`
 	Name      string `json:"Name" xml:"Name"`
 	AddrCount int    `json:"AddrCount" xml:"AddrCount"`
+	Id        string `json:"Id" xml:"Id"`
 }

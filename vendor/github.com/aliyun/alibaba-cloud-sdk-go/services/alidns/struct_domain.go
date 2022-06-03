@@ -23,8 +23,8 @@ type Domain struct {
 	CreateTimestamp  int64                 `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	ExpireTimestamp  int64                 `json:"ExpireTimestamp" xml:"ExpireTimestamp"`
 	InstanceEndTime  string                `json:"InstanceEndTime" xml:"InstanceEndTime"`
-	CreateTime       string                `json:"CreateTime" xml:"CreateTime"`
 	SourceProtocol   string                `json:"SourceProtocol" xml:"SourceProtocol"`
+	CreateTime       string                `json:"CreateTime" xml:"CreateTime"`
 	GroupName        string                `json:"GroupName" xml:"GroupName"`
 	VersionCode      string                `json:"VersionCode" xml:"VersionCode"`
 	DomainId         string                `json:"DomainId" xml:"DomainId"`

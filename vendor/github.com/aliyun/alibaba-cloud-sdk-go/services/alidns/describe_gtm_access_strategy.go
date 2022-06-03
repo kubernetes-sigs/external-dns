@@ -82,20 +82,20 @@ type DescribeGtmAccessStrategyRequest struct {
 type DescribeGtmAccessStrategyResponse struct {
 	*responses.BaseResponse
 	RequestId                     string                           `json:"RequestId" xml:"RequestId"`
-	StrategyId                    string                           `json:"StrategyId" xml:"StrategyId"`
-	StrategyName                  string                           `json:"StrategyName" xml:"StrategyName"`
-	DefultAddrPoolId              string                           `json:"DefultAddrPoolId" xml:"DefultAddrPoolId"`
-	DefaultAddrPoolName           string                           `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
-	FailoverAddrPoolId            string                           `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
-	FailoverAddrPoolName          string                           `json:"FailoverAddrPoolName" xml:"FailoverAddrPoolName"`
-	StrategyMode                  string                           `json:"StrategyMode" xml:"StrategyMode"`
-	AccessMode                    string                           `json:"AccessMode" xml:"AccessMode"`
-	AccessStatus                  string                           `json:"AccessStatus" xml:"AccessStatus"`
 	InstanceId                    string                           `json:"InstanceId" xml:"InstanceId"`
+	StrategyId                    string                           `json:"StrategyId" xml:"StrategyId"`
 	DefaultAddrPoolStatus         string                           `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
-	FailoverAddrPoolStatus        string                           `json:"FailoverAddrPoolStatus" xml:"FailoverAddrPoolStatus"`
+	FailoverAddrPoolId            string                           `json:"FailoverAddrPoolId" xml:"FailoverAddrPoolId"`
+	AccessStatus                  string                           `json:"AccessStatus" xml:"AccessStatus"`
 	DefaultAddrPoolMonitorStatus  string                           `json:"DefaultAddrPoolMonitorStatus" xml:"DefaultAddrPoolMonitorStatus"`
+	DefaultAddrPoolName           string                           `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
+	DefultAddrPoolId              string                           `json:"DefultAddrPoolId" xml:"DefultAddrPoolId"`
+	StrategyName                  string                           `json:"StrategyName" xml:"StrategyName"`
+	FailoverAddrPoolStatus        string                           `json:"FailoverAddrPoolStatus" xml:"FailoverAddrPoolStatus"`
+	AccessMode                    string                           `json:"AccessMode" xml:"AccessMode"`
+	StrategyMode                  string                           `json:"StrategyMode" xml:"StrategyMode"`
 	FailoverAddrPoolMonitorStatus string                           `json:"FailoverAddrPoolMonitorStatus" xml:"FailoverAddrPoolMonitorStatus"`
+	FailoverAddrPoolName          string                           `json:"FailoverAddrPoolName" xml:"FailoverAddrPoolName"`
 	Lines                         LinesInDescribeGtmAccessStrategy `json:"Lines" xml:"Lines"`
 }
 

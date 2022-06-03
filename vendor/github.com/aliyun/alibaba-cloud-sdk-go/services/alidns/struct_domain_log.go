@@ -17,11 +17,11 @@ package alidns
 
 // DomainLog is a nested struct in alidns response
 type DomainLog struct {
-	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
-	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
-	DomainName      string `json:"DomainName" xml:"DomainName"`
 	Action          string `json:"Action" xml:"Action"`
-	Message         string `json:"Message" xml:"Message"`
-	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ZoneId          string `json:"ZoneId" xml:"ZoneId"`
+	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	Message         string `json:"Message" xml:"Message"`
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
+	DomainName      string `json:"DomainName" xml:"DomainName"`
 }

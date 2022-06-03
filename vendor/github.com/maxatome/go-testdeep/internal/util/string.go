@@ -26,7 +26,7 @@ import (
 )
 
 // ToString does its best to stringify val.
-func ToString(val interface{}) string {
+func ToString(val any) string {
 	if val == nil {
 		return "nil"
 	}
@@ -69,7 +69,9 @@ func IndentString(str, indent string) string {
 }
 
 // IndentStringIn indents str lines (from 2nd one = 1st line is not
-// indented) by indent and write it to w. Before each end of line, colOff is inserted, and after each indent on new line, colOn is inserted.
+// indented) by indent and write it to w. Before each end of line,
+// colOff is inserted, and after each indent on new line, colOn is
+// inserted.
 func IndentStringIn(w io.Writer, str, indent, colOn, colOff string) {
 	repl := strings.NewReplacer("\n", colOff+"\n"+indent+colOn)
 	repl.WriteString(w, str) //nolint: errcheck

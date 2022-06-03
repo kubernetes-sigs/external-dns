@@ -1,6 +1,7 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
+<<<<<<< HEAD
 - thockin
 - smarterclayton
 - caesarxuchao
@@ -62,3 +63,36 @@ reviewers:
 - asalkeld
 - juanvallejo
 - lojies
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+- thockin
+- smarterclayton
+- caesarxuchao
+- wojtek-t
+- deads2k
+- brendandburns
+- liggitt
+- sttts
+- luxas
+- dims
+- errordeveloper
+- hongchaodeng
+- krousey
+- resouer
+- cjcullen
+- rmmh
+- asalkeld
+- juanvallejo
+- lojies
+=======
+  - thockin
+  - smarterclayton
+  - caesarxuchao
+  - wojtek-t
+  - deads2k
+  - liggitt
+  - sttts
+  - luxas
+  - dims
+  - cjcullen
+  - lojies
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

@@ -4,9 +4,7 @@
 
 package unix
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
 // IoctlRetInt performs an ioctl operation specified by req on a device
 // associated with opened file descriptor fd, and returns a non-negative
@@ -221,6 +219,7 @@ func IoctlKCMAttach(fd int, info KCMAttach) error {
 func IoctlKCMUnattach(fd int, info KCMUnattach) error {
 	return ioctlPtr(fd, SIOCKCMUNATTACH, unsafe.Pointer(&info))
 }
+<<<<<<< HEAD
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4d7e5ad26 (update vendored files)
 =======
@@ -248,3 +247,22 @@ func IoctlKCMUnattach(fd int, info KCMUnattach) error {
 	return ioctlPtr(fd, SIOCKCMUNATTACH, unsafe.Pointer(&info))
 }
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+
+// IoctlLoopGetStatus64 gets the status of the loop device associated with the
+// file descriptor fd using the LOOP_GET_STATUS64 operation.
+func IoctlLoopGetStatus64(fd int) (*LoopInfo64, error) {
+	var value LoopInfo64
+	if err := ioctlPtr(fd, LOOP_GET_STATUS64, unsafe.Pointer(&value)); err != nil {
+		return nil, err
+	}
+	return &value, nil
+}
+
+// IoctlLoopSetStatus64 sets the status of the loop device associated with the
+// file descriptor fd using the LOOP_SET_STATUS64 operation.
+func IoctlLoopSetStatus64(fd int, value *LoopInfo64) error {
+	return ioctlPtr(fd, LOOP_SET_STATUS64, unsafe.Pointer(value))
+}
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

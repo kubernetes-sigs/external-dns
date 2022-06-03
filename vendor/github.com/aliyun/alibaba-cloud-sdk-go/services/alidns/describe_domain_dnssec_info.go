@@ -81,16 +81,16 @@ type DescribeDomainDnssecInfoRequest struct {
 // DescribeDomainDnssecInfoResponse is the response struct for api DescribeDomainDnssecInfo
 type DescribeDomainDnssecInfoResponse struct {
 	*responses.BaseResponse
-	RequestId  string `json:"RequestId" xml:"RequestId"`
-	DomainName string `json:"DomainName" xml:"DomainName"`
 	Status     string `json:"Status" xml:"Status"`
-	DsRecord   string `json:"DsRecord" xml:"DsRecord"`
+	RequestId  string `json:"RequestId" xml:"RequestId"`
 	Digest     string `json:"Digest" xml:"Digest"`
-	DigestType string `json:"DigestType" xml:"DigestType"`
-	Algorithm  string `json:"Algorithm" xml:"Algorithm"`
+	DomainName string `json:"DomainName" xml:"DomainName"`
 	PublicKey  string `json:"PublicKey" xml:"PublicKey"`
+	DigestType string `json:"DigestType" xml:"DigestType"`
+	DsRecord   string `json:"DsRecord" xml:"DsRecord"`
 	KeyTag     string `json:"KeyTag" xml:"KeyTag"`
 	Flags      string `json:"Flags" xml:"Flags"`
+	Algorithm  string `json:"Algorithm" xml:"Algorithm"`
 }
 
 // CreateDescribeDomainDnssecInfoRequest creates a request to invoke DescribeDomainDnssecInfo API

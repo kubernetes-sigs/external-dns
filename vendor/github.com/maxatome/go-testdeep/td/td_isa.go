@@ -34,26 +34,26 @@ var _ TestDeep = &tdIsa{}
 //
 // Typical type checks:
 //
-//   td.Cmp(t, time.Now(), td.Isa(time.Time{}))  // succeeds
-//   td.Cmp(t, time.Now(), td.Isa(&time.Time{})) // fails, as not a *time.Time
-//   td.Cmp(t, got, td.Isa(map[string]time.Time{}))
+//	td.Cmp(t, time.Now(), td.Isa(time.Time{}))  // succeeds
+//	td.Cmp(t, time.Now(), td.Isa(&time.Time{})) // fails, as not a *time.Time
+//	td.Cmp(t, got, td.Isa(map[string]time.Time{}))
 //
 // For interfaces, it is a bit more complicated, as:
 //
-//   fmt.Stringer(nil)
+//	fmt.Stringer(nil)
 //
 // is not an interface, but just nil… To bypass this golang
 // limitation, Isa accepts pointers on interfaces. So checking that
-// data implements fmt.Stringer interface should be written as:
+// data implements [fmt.Stringer] interface should be written as:
 //
-//   td.Cmp(t, bytes.Buffer{}, td.Isa((*fmt.Stringer)(nil))) // succeeds
+//	td.Cmp(t, bytes.Buffer{}, td.Isa((*fmt.Stringer)(nil))) // succeeds
 //
 // Of course, in the latter case, if checked data type is
-// *fmt.Stringer, Isa will match too (in fact before checking whether
-// it implements fmt.Stringer or not).
+// [*fmt.Stringer], Isa will match too (in fact before checking whether
+// it implements [fmt.Stringer] or not).
 //
-// TypeBehind method returns the reflect.Type of "model".
-func Isa(model interface{}) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+func Isa(model any) TestDeep {
 	modelType := reflect.TypeOf(model)
 	i := tdIsa{
 		tdExpectedType: tdExpectedType{

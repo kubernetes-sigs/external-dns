@@ -6,6 +6,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [v1.69.1] - 2021-10-06
 
 - #484 - @sunny-b - k8s/godo: remove ha field from update request
@@ -399,6 +400,40 @@
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+## [v1.81.0] - 2022-06-15
+
+- #532 - @senorprogrammer - Add support for Reserved IP addresses
+- #538 - @bentranter - util: update droplet create example
+- #537 - @rpmoore - Adding project_id to databases
+- #536 - @andrewsomething - account: Now may include info on current team.
+- #535 - @ElanHasson - APPS-5636 Update App Platform for functions and Starter Tier App Proposals.
+
+## [v1.80.0] - 2022-05-23
+
+- #533 - @ElanHasson - APPS-5636 - App Platform updates
+
+## [v1.79.0] - 2022-04-29
+
+- #530 - @anitgandhi - monitoring: alerts for Load Balancers TLS conns/s utilization
+- #529 - @ChiefMateStarbuck - Test against Go 1.18
+- #528 - @senorprogrammer - Remove DisablePublicNetworking option from the Create path
+- #527 - @senorprogrammer - Remove the WithFloatingIPAddress create option
+
+## [v1.78.0] - 2022-03-31
+
+- #522 - @jcodybaker - app platform: add support for features field
+
+## [v1.77.0] - 2022-03-16
+
+- #518 - @rcj4747 - apps: Update apps protos
+
+## [v1.76.0] - 2022-03-09
+
+- #516 - @CollinShoop - Add registry region support
+
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 ## [v1.75.0] - 2022-01-27
 
 - #508 - @ElanHasson - Synchronize public protos and add multiple specs

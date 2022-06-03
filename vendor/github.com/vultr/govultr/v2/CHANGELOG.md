@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## [v2.9.0](https://github.com/vultr/govultr/compare/v2.8.1..v2.9.0) (2021-09-27)
 ### Breaking Change
 * Kubernetes : PlanID is now Plan and Count is now NodeQuantity to follow API pattern [161](https://github.com/vultr/govultr/pull/161)
@@ -87,6 +88,68 @@
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+## [v2.17.2](https://github.com/vultr/govultr/compare/v2.17.1...v2.17.2) (2022-06-13)
+
+### Enhancement
+* Reserved IP: Add support for updating label [227](https://github.com/vultr/govultr/pull/227)
+
+## [v2.17.1](https://github.com/vultr/govultr/compare/v2.17.0...v2.17.1) (2022-06-02)
+* Plans: Add GPU specific fields to plan struct [224](https://github.com/vultr/govultr/pull/224)
+
+## [v2.17.0](https://github.com/vultr/govultr/compare/v2.16.0..v2.17.0) (2022-05-17)
+
+### Enhancement
+* Kubernetes: allow `tag` update to delete existing value [222](https://github.com/vultr/govultr/pull/222)
+* Baremetal: allow `tag` update to delete existing value [222](https://github.com/vultr/govultr/pull/222)
+* Instance: allow `tag` update to delete existing value [222](https://github.com/vultr/govultr/pull/222)
+
+### Bug fixes
+* Kubernetes: fix data type for `auto_scaler` to avoid sending null values in requests when not set [222](https://github.com/vultr/govultr/pull/222)
+
+### Breaking Change
+* Kubernetes: change data type for `Tag` in node pool update requirements struct [222](https://github.com/vultr/govultr/pull/222)
+* Kubernetes: change data type for `AutoScaler` in node pool update requirements struct [222](https://github.com/vultr/govultr/pull/222)
+* Baremetal: change data type for `Tag` in update requirements struct [222](https://github.com/vultr/govultr/pull/222)
+* Instance: change data type for `Tag` in update requirements struct [222](https://github.com/vultr/govultr/pull/222)
+
+
+## [v2.16.0](https://github.com/vultr/govultr/compare/v2.15.1..v2.16.0) (2022-05-04)
+
+### Enhancement
+* Kubernetes: added auto scaler options to node pools [215](https://github.com/vultr/govultr/pull/215)
+* Firewall rules: added new field `ip_type` in get/list responses to be consistent with the create calls [216](https://github.com/vultr/govultr/pull/216)
+* Kubernetes: Upgrade support [217](https://github.com/vultr/govultr/pull/217)
+* Baremetal: Added support for new `tags` field. This field allows multiple string tags to be associated with an instance [218](https://github.com/vultr/govultr/pull/218) 
+* Instance: Added support for new `tags` field. This field allows multiple string tags to be associated with an instance [218](https://github.com/vultr/govultr/pull/218)
+
+### Deprecations
+* Instance: The `tag` field has been deprecated in favor for `tags` [218](https://github.com/vultr/govultr/pull/218)
+* Baremetal: The `tag` field has been deprecated in favor for `tags` [218](https://github.com/vultr/govultr/pull/218)
+* Firewall rules: The `type` field has been deprecated in favor for `ip_type` [216](https://github.com/vultr/govultr/pull/216)
+
+### Dependency Update
+* Bump github.com/hashicorp/go-retryablehttp from 0.7.0 to 0.7.1 [214](https://github.com/vultr/govultr/pull/214)
+
+## [v2.15.1](https://github.com/vultr/govultr/compare/v2.15.0..v2.15.1) (2022-04-12)
+### Bug fixes
+* Block : add `omityempty` to `block_type` to prevent deploy issues [212](https://github.com/vultr/govultr/pull/212)
+
+## [v2.15.0](https://github.com/vultr/govultr/compare/v2.14.2..v2.15.0) (2022-04-12)
+### Enhancement 
+* Block : New optional field `block_type`. This new field is currently optional but may become required at a later release [209](https://github.com/vultr/govultr/pull/209)
+* VPC : New API endpoints that will be replacing `network` [210](https://github.com/vultr/govultr/pull/210)
+* Updated Go version from 1.16 to 1.17 [208](https://github.com/vultr/govultr/pull/208)
+
+### Deprecations
+* Network : The network resource and all related private network fields on structs are deprecated. You should now be using the VPC provided replacements [210](https://github.com/vultr/govultr/pull/210)
+
+## [v2.14.2](https://github.com/vultr/govultr/compare/v2.14.1..v2.14.2) (2022-03-23)
+### Bug Fix
+* Instances : restore support requestBody [206](https://github.com/vultr/govultr/pull/206) Thanks @andrake81
+
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 ## [v2.14.1](https://github.com/vultr/govultr/compare/v2.14.0..v2.14.1) (2022-02-02)
 ### Enhancement
 * Improved retry error response [204](https://github.com/vultr/govultr/pull/204)

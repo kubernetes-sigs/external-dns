@@ -81,9 +81,9 @@ type GetMainDomainNameRequest struct {
 // GetMainDomainNameResponse is the response struct for api GetMainDomainName
 type GetMainDomainNameResponse struct {
 	*responses.BaseResponse
+	RR          string `json:"RR" xml:"RR"`
 	RequestId   string `json:"RequestId" xml:"RequestId"`
 	DomainName  string `json:"DomainName" xml:"DomainName"`
-	RR          string `json:"RR" xml:"RR"`
 	DomainLevel int64  `json:"DomainLevel" xml:"DomainLevel"`
 }
 

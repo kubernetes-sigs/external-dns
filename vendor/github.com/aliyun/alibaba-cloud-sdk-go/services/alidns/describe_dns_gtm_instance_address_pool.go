@@ -80,17 +80,17 @@ type DescribeDnsGtmInstanceAddressPoolRequest struct {
 type DescribeDnsGtmInstanceAddressPoolResponse struct {
 	*responses.BaseResponse
 	RequestId       string                                   `json:"RequestId" xml:"RequestId"`
-	AddrPoolId      string                                   `json:"AddrPoolId" xml:"AddrPoolId"`
+	LbaStrategy     string                                   `json:"LbaStrategy" xml:"LbaStrategy"`
 	CreateTime      string                                   `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp int64                                    `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime      string                                   `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp int64                                    `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	AddrCount       int                                      `json:"AddrCount" xml:"AddrCount"`
-	MonitorConfigId string                                   `json:"MonitorConfigId" xml:"MonitorConfigId"`
-	MonitorStatus   string                                   `json:"MonitorStatus" xml:"MonitorStatus"`
 	Name            string                                   `json:"Name" xml:"Name"`
 	Type            string                                   `json:"Type" xml:"Type"`
-	LbaStrategy     string                                   `json:"LbaStrategy" xml:"LbaStrategy"`
+	UpdateTime      string                                   `json:"UpdateTime" xml:"UpdateTime"`
+	AddrPoolId      string                                   `json:"AddrPoolId" xml:"AddrPoolId"`
+	UpdateTimestamp int64                                    `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	MonitorConfigId string                                   `json:"MonitorConfigId" xml:"MonitorConfigId"`
+	MonitorStatus   string                                   `json:"MonitorStatus" xml:"MonitorStatus"`
+	CreateTimestamp int64                                    `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	Addrs           AddrsInDescribeDnsGtmInstanceAddressPool `json:"Addrs" xml:"Addrs"`
 }
 

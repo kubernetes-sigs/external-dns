@@ -30,6 +30,8 @@ func Headers(headers http.Header) Option {
 
 // UsingAccount allows you to apply account-level changes (Load Balancing,
 // Railguns) to an account instead.
+//
+// Deprecated: Resources should define the `AccountID` parameter explicitly.
 func UsingAccount(accountID string) Option {
 	return func(api *API) error {
 		api.AccountID = accountID
@@ -38,7 +40,7 @@ func UsingAccount(accountID string) Option {
 }
 
 // UsingRateLimit applies a non-default rate limit to client API requests
-// If not specified the default of 4rps will be applied
+// If not specified the default of 4rps will be applied.
 func UsingRateLimit(rps float64) Option {
 	return func(api *API) error {
 		// because ratelimiter doesnt do any windowing
@@ -51,7 +53,7 @@ func UsingRateLimit(rps float64) Option {
 }
 
 // UsingRetryPolicy applies a non-default number of retries and min/max retry delays
-// This will be used when the client exponentially backs off after errored requests
+// This will be used when the client exponentially backs off after errored requests.
 func UsingRetryPolicy(maxRetries int, minRetryDelaySecs int, maxRetryDelaySecs int) Option {
 	// seconds is very granular for a minimum delay - but this is only in case of failure
 	return func(api *API) error {
@@ -65,7 +67,7 @@ func UsingRetryPolicy(maxRetries int, minRetryDelaySecs int, maxRetryDelaySecs i
 }
 
 // UsingLogger can be set if you want to get log output from this API instance
-// By default no log output is emitted
+// By default no log output is emitted.
 func UsingLogger(logger Logger) Option {
 	return func(api *API) error {
 		api.logger = logger
@@ -94,6 +96,7 @@ func BaseURL(baseURL string) Option {
 	}
 }
 
+<<<<<<< HEAD
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -108,6 +111,16 @@ func BaseURL(baseURL string) Option {
 }
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+func Debug(debug bool) Option {
+	return func(api *API) error {
+		api.Debug = debug
+		return nil
+	}
+}
+
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 // parseOptions parses the supplied options functions and returns a configured
 // *API instance.
 func (api *API) parseOptions(opts ...Option) error {

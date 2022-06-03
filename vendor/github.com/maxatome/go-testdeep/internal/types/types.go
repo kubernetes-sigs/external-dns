@@ -34,12 +34,12 @@ type TestDeepStringer interface {
 }
 
 // TestDeepStamp is a useful type providing the _TestDeep() method
-// needed to implement TestDeepStringer interface.
+// needed to implement [TestDeepStringer] interface.
 type TestDeepStamp struct{}
 
 func (t TestDeepStamp) _TestDeep() {}
 
-// RawString implements TestDeepStringer interface.
+// RawString implements [TestDeepStringer] interface.
 type RawString string
 
 func (s RawString) _TestDeep() {}
@@ -48,7 +48,7 @@ func (s RawString) String() string {
 	return string(s)
 }
 
-// RawInt implements TestDeepStringer interface.
+// RawInt implements [TestDeepStringer] interface.
 type RawInt int
 
 func (i RawInt) _TestDeep() {}
@@ -61,7 +61,7 @@ var _ = []TestDeepStringer{RawString(""), RawInt(0)}
 
 // OperatorNotJSONMarshallableError implements error interface. It
 // is returned by (*td.TestDeep).MarshalJSON() to notice the user an
-// operator cannot be JSON Marshal'led.
+// operator cannot be JSON Marshal'ed.
 type OperatorNotJSONMarshallableError string
 
 // Error implements error interface.
@@ -75,7 +75,7 @@ func (e OperatorNotJSONMarshallableError) Operator() string {
 }
 
 // AsOperatorNotJSONMarshallableError checks that err is or contains
-// an OperatorNotJSONMarshallableError and if yes, returns it and
+// an [OperatorNotJSONMarshallableError] and if yes, returns it and
 // true.
 func AsOperatorNotJSONMarshallableError(err error) (OperatorNotJSONMarshallableError, bool) {
 	switch err := err.(type) {

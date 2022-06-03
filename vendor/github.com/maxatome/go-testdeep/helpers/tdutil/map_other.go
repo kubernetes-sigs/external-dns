@@ -23,7 +23,7 @@ import (
 	"sort"
 )
 
-// MapEach calls "fn" for each key/value pair of map "m". If "fn"
+// MapEach calls fn for each key/value pair of map m. If fn
 // returns false, it will not be called again.
 func MapEach(m reflect.Value, fn func(k, v reflect.Value) bool) bool {
 	ks := MapSortedKeys(m)
@@ -35,7 +35,7 @@ func MapEach(m reflect.Value, fn func(k, v reflect.Value) bool) bool {
 	return true
 }
 
-// MapEachValue calls "fn" for each value of map "m". If "fn" returns
+// MapEachValue calls fn for each value of map m. If fn returns
 // false, it will not be called again.
 func MapEachValue(m reflect.Value, fn func(k reflect.Value) bool) bool {
 	for _, vkey := range m.MapKeys() {
@@ -46,8 +46,8 @@ func MapEachValue(m reflect.Value, fn func(k reflect.Value) bool) bool {
 	return true
 }
 
-// MapSortedValues returns a slice of all sorted values of map "m". It
-// panics if "m"'s reflect.Kind is not reflect.Map.
+// MapSortedValues returns a slice of all sorted values of map m. It
+// panics if m's [reflect.Kind] is not [reflect.Map].
 func MapSortedValues(m reflect.Value) []reflect.Value {
 	vs := make([]reflect.Value, 0, m.Len())
 	for _, vkey := range m.MapKeys() {

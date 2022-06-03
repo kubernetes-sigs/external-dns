@@ -3,6 +3,7 @@ package linodego
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/linode/linodego/internal/parseabletime"
@@ -62,4 +63,28 @@ func (c *Client) ListVLANs(ctx context.Context, opts *ListOptions) ([]VLAN, erro
 	}
 
 	return response.Data, nil
+}
+
+// GetVLANIPAMAddress returns the IPAM Address for a given VLAN Label as a string (10.0.0.1/24)
+func (c *Client) GetVLANIPAMAddress(ctx context.Context, linodeID int, vlanLabel string) (string, error) {
+	f := Filter{}
+	f.AddField(Eq, "interfaces", vlanLabel)
+	vlanFilter, err := f.MarshalJSON()
+	if err != nil {
+		return "", fmt.Errorf("Unable to convert VLAN label: %s to a filterable object: %s", vlanLabel, err)
+	}
+
+	cfgs, err := c.ListInstanceConfigs(ctx, linodeID, &ListOptions{Filter: string(vlanFilter)})
+	if err != nil {
+		return "", fmt.Errorf("Fetching configs for instance %v failed: %s", linodeID, err)
+	}
+
+	interfaces := cfgs[0].Interfaces
+	for _, face := range interfaces {
+		if face.Label == vlanLabel {
+			return face.IPAMAddress, nil
+		}
+	}
+
+	return "", fmt.Errorf("Failed to find IPAMAddress for VLAN: %s", vlanLabel)
 }

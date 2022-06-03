@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"github.com/transip/gotransip/v6/rest"
 	"net"
+
+	"github.com/transip/gotransip/v6/rest"
 )
 
 // PerformAction List of available actions to perform on this domain.
@@ -259,6 +260,8 @@ type Domain struct {
 	RegistrationDate rest.Date `json:"registrationDate,omitempty"`
 	// Next renewal date of the domain, in YYYY-mm-dd format.
 	RenewalDate rest.Date `json:"renewalDate,omitempty"`
+	// Status of the domain
+	Status string `json:"status,omitempty"`
 }
 
 // Branding struct for a Branding, this information is shown in the whois information

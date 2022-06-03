@@ -17,9 +17,9 @@ package alidns
 
 // RecordLog is a nested struct in alidns response
 type RecordLog struct {
-	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
-	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	Action          string `json:"Action" xml:"Action"`
-	Message         string `json:"Message" xml:"Message"`
+	ActionTimestamp int64  `json:"ActionTimestamp" xml:"ActionTimestamp"`
 	ClientIp        string `json:"ClientIp" xml:"ClientIp"`
+	Message         string `json:"Message" xml:"Message"`
+	ActionTime      string `json:"ActionTime" xml:"ActionTime"`
 }

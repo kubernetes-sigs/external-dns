@@ -36,8 +36,8 @@ type Strategy struct {
 	EffectiveAddrPoolType         string                                `json:"EffectiveAddrPoolType" xml:"EffectiveAddrPoolType"`
 	EffectiveAddrPoolGroupType    string                                `json:"EffectiveAddrPoolGroupType" xml:"EffectiveAddrPoolGroupType"`
 	DefaultAddrPoolId             string                                `json:"DefaultAddrPoolId" xml:"DefaultAddrPoolId"`
-	DefaultAddrPoolName           string                                `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
 	DefaultAddrPoolStatus         string                                `json:"DefaultAddrPoolStatus" xml:"DefaultAddrPoolStatus"`
+	DefaultAddrPoolName           string                                `json:"DefaultAddrPoolName" xml:"DefaultAddrPoolName"`
 	EffectiveAddrPools            EffectiveAddrPools                    `json:"EffectiveAddrPools" xml:"EffectiveAddrPools"`
 	Lines                         LinesInDescribeDnsGtmAccessStrategies `json:"Lines" xml:"Lines"`
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

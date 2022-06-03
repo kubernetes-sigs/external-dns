@@ -17,37 +17,38 @@ package alidns
 
 // DnsProduct is a nested struct in alidns response
 type DnsProduct struct {
-	InstanceId            string `json:"InstanceId" xml:"InstanceId"`
-	VersionCode           string `json:"VersionCode" xml:"VersionCode"`
-	VersionName           string `json:"VersionName" xml:"VersionName"`
-	StartTime             string `json:"StartTime" xml:"StartTime"`
-	EndTime               string `json:"EndTime" xml:"EndTime"`
-	StartTimestamp        int64  `json:"StartTimestamp" xml:"StartTimestamp"`
-	EndTimestamp          int64  `json:"EndTimestamp" xml:"EndTimestamp"`
-	Domain                string `json:"Domain" xml:"Domain"`
-	BindCount             int64  `json:"BindCount" xml:"BindCount"`
-	BindUsedCount         int64  `json:"BindUsedCount" xml:"BindUsedCount"`
-	TTLMinValue           int64  `json:"TTLMinValue" xml:"TTLMinValue"`
-	SubDomainLevel        int64  `json:"SubDomainLevel" xml:"SubDomainLevel"`
-	DnsSLBCount           int64  `json:"DnsSLBCount" xml:"DnsSLBCount"`
-	URLForwardCount       int64  `json:"URLForwardCount" xml:"URLForwardCount"`
-	DDosDefendFlow        int64  `json:"DDosDefendFlow" xml:"DDosDefendFlow"`
-	DDosDefendQuery       int64  `json:"DDosDefendQuery" xml:"DDosDefendQuery"`
-	OverseaDDosDefendFlow int64  `json:"OverseaDDosDefendFlow" xml:"OverseaDDosDefendFlow"`
-	SearchEngineLines     string `json:"SearchEngineLines" xml:"SearchEngineLines"`
-	ISPLines              string `json:"ISPLines" xml:"ISPLines"`
-	ISPRegionLines        string `json:"ISPRegionLines" xml:"ISPRegionLines"`
 	OverseaLine           string `json:"OverseaLine" xml:"OverseaLine"`
+	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
 	MonitorNodeCount      int64  `json:"MonitorNodeCount" xml:"MonitorNodeCount"`
-	MonitorFrequency      int64  `json:"MonitorFrequency" xml:"MonitorFrequency"`
+	InBlackHole           bool   `json:"InBlackHole" xml:"InBlackHole"`
+	BindDomainUsedCount   int64  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
+	ISPRegionLines        string `json:"ISPRegionLines" xml:"ISPRegionLines"`
+	TTLMinValue           int64  `json:"TTLMinValue" xml:"TTLMinValue"`
+	ISPLines              string `json:"ISPLines" xml:"ISPLines"`
+	SearchEngineLines     string `json:"SearchEngineLines" xml:"SearchEngineLines"`
+	EndTimestamp          int64  `json:"EndTimestamp" xml:"EndTimestamp"`
+	VersionName           string `json:"VersionName" xml:"VersionName"`
+	VersionCode           string `json:"VersionCode" xml:"VersionCode"`
 	MonitorTaskCount      int64  `json:"MonitorTaskCount" xml:"MonitorTaskCount"`
+	BindUsedCount         int64  `json:"BindUsedCount" xml:"BindUsedCount"`
+	Domain                string `json:"Domain" xml:"Domain"`
+	MonitorFrequency      int64  `json:"MonitorFrequency" xml:"MonitorFrequency"`
+	InClean               bool   `json:"InClean" xml:"InClean"`
+	URLForwardCount       int64  `json:"URLForwardCount" xml:"URLForwardCount"`
+	StartTimestamp        int64  `json:"StartTimestamp" xml:"StartTimestamp"`
+	DDosDefendQuery       int64  `json:"DDosDefendQuery" xml:"DDosDefendQuery"`
+	InstanceId            string `json:"InstanceId" xml:"InstanceId"`
+	DDosDefendFlow        int64  `json:"DDosDefendFlow" xml:"DDosDefendFlow"`
+	BindCount             int64  `json:"BindCount" xml:"BindCount"`
+	SubDomainLevel        int64  `json:"SubDomainLevel" xml:"SubDomainLevel"`
+	BindDomainCount       int64  `json:"BindDomainCount" xml:"BindDomainCount"`
+	EndTime               string `json:"EndTime" xml:"EndTime"`
+	StartTime             string `json:"StartTime" xml:"StartTime"`
+	OverseaDDosDefendFlow int64  `json:"OverseaDDosDefendFlow" xml:"OverseaDDosDefendFlow"`
 	RegionLines           bool   `json:"RegionLines" xml:"RegionLines"`
 	Gslb                  bool   `json:"Gslb" xml:"Gslb"`
-	InClean               bool   `json:"InClean" xml:"InClean"`
-	InBlackHole           bool   `json:"InBlackHole" xml:"InBlackHole"`
-	BindDomainCount       int64  `json:"BindDomainCount" xml:"BindDomainCount"`
-	BindDomainUsedCount   int64  `json:"BindDomainUsedCount" xml:"BindDomainUsedCount"`
 	DnsSecurity           string `json:"DnsSecurity" xml:"DnsSecurity"`
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
@@ -58,4 +59,9 @@ type DnsProduct struct {
 =======
 	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	PaymentType           string `json:"PaymentType" xml:"PaymentType"`
+=======
+	DnsSLBCount           int64  `json:"DnsSLBCount" xml:"DnsSLBCount"`
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }

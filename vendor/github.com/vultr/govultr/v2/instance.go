@@ -35,9 +35,16 @@ type InstanceService interface {
 	GetBandwidth(ctx context.Context, instanceID string) (*Bandwidth, error)
 	GetNeighbors(ctx context.Context, instanceID string) (*Neighbors, error)
 
+	// Deprecated: ListPrivateNetworks should no longer be used. Instead, use ListVPCInfo.
 	ListPrivateNetworks(ctx context.Context, instanceID string, options *ListOptions) ([]PrivateNetwork, *Meta, error)
+	// Deprecated: AttachPrivateNetwork should no longer be used. Instead, use AttachVPC.
 	AttachPrivateNetwork(ctx context.Context, instanceID, networkID string) error
+	// Deprecated: DetachPrivateNetwork should no longer be used. Instead, use DetachVPC.
 	DetachPrivateNetwork(ctx context.Context, instanceID, networkID string) error
+
+	ListVPCInfo(ctx context.Context, instanceID string, options *ListOptions) ([]VPCInfo, *Meta, error)
+	AttachVPC(ctx context.Context, instanceID, vpcID string) error
+	DetachVPC(ctx context.Context, instanceID, vpcID string) error
 
 	ISOStatus(ctx context.Context, instanceID string) (*Iso, error)
 	AttachISO(ctx context.Context, instanceID, isoID string) error
@@ -70,6 +77,7 @@ type InstanceServiceHandler struct {
 
 // Instance represents a VPS
 type Instance struct {
+<<<<<<< HEAD
 	ID               string   `json:"id"`
 	Os               string   `json:"os"`
 	RAM              int      `json:"ram"`
@@ -800,6 +808,69 @@ type Instance struct {
 	FirewallGroupID  string   `json:"firewall_group_id"`
 	Features         []string `json:"features"`
 	Hostname         string   `json:"hostname"`
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	ID               string   `json:"id"`
+	Os               string   `json:"os"`
+	RAM              int      `json:"ram"`
+	Disk             int      `json:"disk"`
+	Plan             string   `json:"plan"`
+	MainIP           string   `json:"main_ip"`
+	VCPUCount        int      `json:"vcpu_count"`
+	Region           string   `json:"region"`
+	DefaultPassword  string   `json:"default_password,omitempty"`
+	DateCreated      string   `json:"date_created"`
+	Status           string   `json:"status"`
+	AllowedBandwidth int      `json:"allowed_bandwidth"`
+	NetmaskV4        string   `json:"netmask_v4"`
+	GatewayV4        string   `json:"gateway_v4"`
+	PowerStatus      string   `json:"power_status"`
+	ServerStatus     string   `json:"server_status"`
+	V6Network        string   `json:"v6_network"`
+	V6MainIP         string   `json:"v6_main_ip"`
+	V6NetworkSize    int      `json:"v6_network_size"`
+	Label            string   `json:"label"`
+	InternalIP       string   `json:"internal_ip"`
+	KVM              string   `json:"kvm"`
+	Tag              string   `json:"tag"`
+	OsID             int      `json:"os_id"`
+	AppID            int      `json:"app_id"`
+	ImageID          string   `json:"image_id"`
+	FirewallGroupID  string   `json:"firewall_group_id"`
+	Features         []string `json:"features"`
+	Hostname         string   `json:"hostname"`
+=======
+	ID               string `json:"id"`
+	Os               string `json:"os"`
+	RAM              int    `json:"ram"`
+	Disk             int    `json:"disk"`
+	Plan             string `json:"plan"`
+	MainIP           string `json:"main_ip"`
+	VCPUCount        int    `json:"vcpu_count"`
+	Region           string `json:"region"`
+	DefaultPassword  string `json:"default_password,omitempty"`
+	DateCreated      string `json:"date_created"`
+	Status           string `json:"status"`
+	AllowedBandwidth int    `json:"allowed_bandwidth"`
+	NetmaskV4        string `json:"netmask_v4"`
+	GatewayV4        string `json:"gateway_v4"`
+	PowerStatus      string `json:"power_status"`
+	ServerStatus     string `json:"server_status"`
+	V6Network        string `json:"v6_network"`
+	V6MainIP         string `json:"v6_main_ip"`
+	V6NetworkSize    int    `json:"v6_network_size"`
+	Label            string `json:"label"`
+	InternalIP       string `json:"internal_ip"`
+	KVM              string `json:"kvm"`
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag             string   `json:"tag"`
+	OsID            int      `json:"os_id"`
+	AppID           int      `json:"app_id"`
+	ImageID         string   `json:"image_id"`
+	FirewallGroupID string   `json:"firewall_group_id"`
+	Features        []string `json:"features"`
+	Hostname        string   `json:"hostname"`
+	Tags            []string `json:"tags"`
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }
 
 type instanceBase struct {
@@ -834,8 +905,21 @@ type privateNetworksBase struct {
 }
 
 // PrivateNetwork information for a given instance.
+// Deprecated: PrivateNetwork should no longer be used. Instead, use VPCInfo.
 type PrivateNetwork struct {
 	NetworkID  string `json:"network_id"`
+	MacAddress string `json:"mac_address"`
+	IPAddress  string `json:"ip_address"`
+}
+
+type vpcInfoBase struct {
+	VPCs []VPCInfo `json:"vpcs"`
+	Meta *Meta     `json:"meta"`
+}
+
+// VPCInfo information for a given instance.
+type VPCInfo struct {
+	ID         string `json:"id"`
 	MacAddress string `json:"mac_address"`
 	IPAddress  string `json:"ip_address"`
 }
@@ -912,22 +996,28 @@ type Upgrades struct {
 
 // InstanceCreateReq struct used to create an instance.
 type InstanceCreateReq struct {
-	Region               string   `json:"region,omitempty"`
-	Plan                 string   `json:"plan,omitempty"`
-	Label                string   `json:"label,omitempty"`
-	Tag                  string   `json:"tag,omitempty"`
-	OsID                 int      `json:"os_id,omitempty"`
-	ISOID                string   `json:"iso_id,omitempty"`
-	AppID                int      `json:"app_id,omitempty"`
-	ImageID              string   `json:"image_id,omitempty"`
-	FirewallGroupID      string   `json:"firewall_group_id,omitempty"`
-	Hostname             string   `json:"hostname,omitempty"`
-	IPXEChainURL         string   `json:"ipxe_chain_url,omitempty"`
-	ScriptID             string   `json:"script_id,omitempty"`
-	SnapshotID           string   `json:"snapshot_id,omitempty"`
-	EnableIPv6           *bool    `json:"enable_ipv6,omitempty"`
-	EnablePrivateNetwork *bool    `json:"enable_private_network,omitempty"`
+	Region string `json:"region,omitempty"`
+	Plan   string `json:"plan,omitempty"`
+	Label  string `json:"label,omitempty"`
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag             string   `json:"tag,omitempty"`
+	Tags            []string `json:"tags"`
+	OsID            int      `json:"os_id,omitempty"`
+	ISOID           string   `json:"iso_id,omitempty"`
+	AppID           int      `json:"app_id,omitempty"`
+	ImageID         string   `json:"image_id,omitempty"`
+	FirewallGroupID string   `json:"firewall_group_id,omitempty"`
+	Hostname        string   `json:"hostname,omitempty"`
+	IPXEChainURL    string   `json:"ipxe_chain_url,omitempty"`
+	ScriptID        string   `json:"script_id,omitempty"`
+	SnapshotID      string   `json:"snapshot_id,omitempty"`
+	EnableIPv6      *bool    `json:"enable_ipv6,omitempty"`
+	// Deprecated:  EnablePrivateNetwork should no longer be used. Instead, use EnableVPC.
+	EnablePrivateNetwork *bool `json:"enable_private_network,omitempty"`
+	// Deprecated:  AttachPrivateNetwork should no longer be used. Instead, use AttachVPC.
 	AttachPrivateNetwork []string `json:"attach_private_network,omitempty"`
+	EnableVPC            *bool    `json:"enable_vpc,omitempty"`
+	AttachVPC            []string `json:"attach_vpc,omitempty"`
 	SSHKeys              []string `json:"sshkey_id,omitempty"`
 	Backups              string   `json:"backups,omitempty"`
 	DDOSProtection       *bool    `json:"ddos_protection,omitempty"`
@@ -938,16 +1028,24 @@ type InstanceCreateReq struct {
 
 // InstanceUpdateReq struct used to update an instance.
 type InstanceUpdateReq struct {
-	Plan                 string   `json:"plan,omitempty"`
-	Label                string   `json:"label,omitempty"`
-	Tag                  string   `json:"tag,omitempty"`
-	OsID                 int      `json:"os_id,omitempty"`
-	AppID                int      `json:"app_id,omitempty"`
-	ImageID              string   `json:"image_id,omitempty"`
-	EnableIPv6           *bool    `json:"enable_ipv6,omitempty"`
-	EnablePrivateNetwork *bool    `json:"enable_private_network,omitempty"`
+	Plan  string `json:"plan,omitempty"`
+	Label string `json:"label,omitempty"`
+	// Deprecated: Tag should no longer be used. Instead, use Tags.
+	Tag        *string  `json:"tag,omitempty"`
+	Tags       []string `json:"tags"`
+	OsID       int      `json:"os_id,omitempty"`
+	AppID      int      `json:"app_id,omitempty"`
+	ImageID    string   `json:"image_id,omitempty"`
+	EnableIPv6 *bool    `json:"enable_ipv6,omitempty"`
+	// Deprecated:  EnablePrivateNetwork should no longer be used. Instead, use EnableVPC.
+	EnablePrivateNetwork *bool `json:"enable_private_network,omitempty"`
+	// Deprecated:  AttachPrivateNetwork should no longer be used. Instead, use AttachVPC.
 	AttachPrivateNetwork []string `json:"attach_private_network,omitempty"`
+	// Deprecated:  DetachPrivateNetwork should no longer be used. Instead, use DetachVPC.
 	DetachPrivateNetwork []string `json:"detach_private_network,omitempty"`
+	EnableVPC            *bool    `json:"enable_vpc,omitempty"`
+	AttachVPC            []string `json:"attach_vpc,omitempty"`
+	DetachVPC            []string `json:"detach_vpc,omitempty"`
 	Backups              string   `json:"backups,omitempty"`
 	DDOSProtection       *bool    `json:"ddos_protection"`
 	UserData             string   `json:"user_data,omitempty"`
@@ -1146,7 +1244,7 @@ func (i *InstanceServiceHandler) MassReboot(ctx context.Context, instanceList []
 func (i *InstanceServiceHandler) Restore(ctx context.Context, instanceID string, restoreReq *RestoreReq) error {
 	uri := fmt.Sprintf("%s/%s/restore", instancePath, instanceID)
 
-	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, nil)
+	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, restoreReq)
 	if err != nil {
 		return err
 	}
@@ -1187,6 +1285,7 @@ func (i *InstanceServiceHandler) GetNeighbors(ctx context.Context, instanceID st
 }
 
 // ListPrivateNetworks currently attached to an instance.
+// Deprecated: ListPrivateNetworks should no longer be used. Instead, use ListVPCInfo
 func (i *InstanceServiceHandler) ListPrivateNetworks(ctx context.Context, instanceID string, options *ListOptions) ([]PrivateNetwork, *Meta, error) {
 	uri := fmt.Sprintf("%s/%s/private-networks", instancePath, instanceID)
 	req, err := i.client.NewRequest(ctx, http.MethodGet, uri, nil)
@@ -1210,6 +1309,7 @@ func (i *InstanceServiceHandler) ListPrivateNetworks(ctx context.Context, instan
 }
 
 // AttachPrivateNetwork to an instance
+// Deprecated: AttachPrivateNetwork should no longer be used. Instead, use AttachVPC
 func (i *InstanceServiceHandler) AttachPrivateNetwork(ctx context.Context, instanceID, networkID string) error {
 	uri := fmt.Sprintf("%s/%s/private-networks/attach", instancePath, instanceID)
 	body := RequestBody{"network_id": networkID}
@@ -1223,9 +1323,59 @@ func (i *InstanceServiceHandler) AttachPrivateNetwork(ctx context.Context, insta
 }
 
 // DetachPrivateNetwork from an instance.
+// Deprecated: DetachPrivateNetwork should no longer be used. Instead, use DetachVPC
 func (i *InstanceServiceHandler) DetachPrivateNetwork(ctx context.Context, instanceID, networkID string) error {
 	uri := fmt.Sprintf("%s/%s/private-networks/detach", instancePath, instanceID)
 	body := RequestBody{"network_id": networkID}
+
+	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, body)
+	if err != nil {
+		return err
+	}
+
+	return i.client.DoWithContext(ctx, req, nil)
+}
+
+// ListVPCInfo currently attached to an instance.
+func (i *InstanceServiceHandler) ListVPCInfo(ctx context.Context, instanceID string, options *ListOptions) ([]VPCInfo, *Meta, error) {
+	uri := fmt.Sprintf("%s/%s/vpcs", instancePath, instanceID)
+	req, err := i.client.NewRequest(ctx, http.MethodGet, uri, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	newValues, err := query.Values(options)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req.URL.RawQuery = newValues.Encode()
+
+	vpcs := new(vpcInfoBase)
+	if err = i.client.DoWithContext(ctx, req, vpcs); err != nil {
+		return nil, nil, err
+	}
+
+	return vpcs.VPCs, vpcs.Meta, nil
+}
+
+// AttachVPC to an instance
+func (i *InstanceServiceHandler) AttachVPC(ctx context.Context, instanceID, vpcID string) error {
+	uri := fmt.Sprintf("%s/%s/vpcs/attach", instancePath, instanceID)
+	body := RequestBody{"vpc_id": vpcID}
+
+	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, body)
+	if err != nil {
+		return err
+	}
+
+	return i.client.DoWithContext(ctx, req, nil)
+}
+
+// DetachVPC from an instance.
+func (i *InstanceServiceHandler) DetachVPC(ctx context.Context, instanceID, vpcID string) error {
+	uri := fmt.Sprintf("%s/%s/vpcs/detach", instancePath, instanceID)
+	body := RequestBody{"vpc_id": vpcID}
 
 	req, err := i.client.NewRequest(ctx, http.MethodPost, uri, body)
 	if err != nil {

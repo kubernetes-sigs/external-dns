@@ -14,10 +14,20 @@ func New() UUID {
 	return Must(NewRandom())
 }
 
+// NewString creates a new random UUID and returns it as a string or panics.
+// NewString is equivalent to the expression
+//
+//    uuid.New().String()
+func NewString() string {
+	return Must(NewRandom()).String()
+}
+
 // NewRandom returns a Random (Version 4) UUID.
 //
 // The strength of the UUIDs is based on the strength of the crypto/rand
 // package.
+//
+// Uses the randomness pool if it was enabled with EnableRandPool.
 //
 // A note about uniqueness derived from the UUID Wikipedia entry:
 //
@@ -33,7 +43,16 @@ func NewRandom() (UUID, error) {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return NewRandomFromReader(rander)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	return NewRandomFromReader(rander)
+=======
+	if !poolEnabled {
+		return NewRandomFromReader(rander)
+	}
+	return newRandomFromPool()
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }
 
 // NewRandomFromReader returns a UUID based on bytes read from a given io.Reader.
@@ -100,6 +119,26 @@ func NewRandomFromReader(r io.Reader) (UUID, error) {
 	if err != nil {
 		return Nil, err
 	}
+	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
+	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
+	return uuid, nil
+}
+
+func newRandomFromPool() (UUID, error) {
+	var uuid UUID
+	poolMu.Lock()
+	if poolPos == randPoolSize {
+		_, err := io.ReadFull(rander, pool[:])
+		if err != nil {
+			poolMu.Unlock()
+			return Nil, err
+		}
+		poolPos = 0
+	}
+	copy(uuid[:], pool[poolPos:(poolPos+16)])
+	poolPos += 16
+	poolMu.Unlock()
+
 	uuid[6] = (uuid[6] & 0x0f) | 0x40 // Version 4
 	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
 	return uuid, nil

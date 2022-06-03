@@ -19,8 +19,14 @@ package alidns
 type IpSegment struct {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Name       string `json:"Name" xml:"Name"`
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	Name       string `json:"Name" xml:"Name"`
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	EndIp      string `json:"EndIp" xml:"EndIp"`
+	Name       string `json:"Name" xml:"Name"`
 	CreateDate string `json:"CreateDate" xml:"CreateDate"`
 	State      string `json:"State" xml:"State"`
 	Ip         string `json:"Ip" xml:"Ip"`

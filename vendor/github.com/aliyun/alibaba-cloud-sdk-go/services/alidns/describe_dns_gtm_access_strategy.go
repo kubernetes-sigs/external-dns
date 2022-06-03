@@ -79,32 +79,32 @@ type DescribeDnsGtmAccessStrategyRequest struct {
 // DescribeDnsGtmAccessStrategyResponse is the response struct for api DescribeDnsGtmAccessStrategy
 type DescribeDnsGtmAccessStrategyResponse struct {
 	*responses.BaseResponse
-	RequestId                   string                              `json:"RequestId" xml:"RequestId"`
-	StrategyId                  string                              `json:"StrategyId" xml:"StrategyId"`
-	StrategyName                string                              `json:"StrategyName" xml:"StrategyName"`
-	StrategyMode                string                              `json:"StrategyMode" xml:"StrategyMode"`
-	InstanceId                  string                              `json:"InstanceId" xml:"InstanceId"`
+	FailoverMinAvailableAddrNum int                                 `json:"FailoverMinAvailableAddrNum" xml:"FailoverMinAvailableAddrNum"`
 	DefaultAddrPoolType         string                              `json:"DefaultAddrPoolType" xml:"DefaultAddrPoolType"`
-	DefaultLbaStrategy          string                              `json:"DefaultLbaStrategy" xml:"DefaultLbaStrategy"`
-	DefaultMinAvailableAddrNum  int                                 `json:"DefaultMinAvailableAddrNum" xml:"DefaultMinAvailableAddrNum"`
+	DefaultAvailableAddrNum     int                                 `json:"DefaultAvailableAddrNum" xml:"DefaultAvailableAddrNum"`
+	StrategyId                  string                              `json:"StrategyId" xml:"StrategyId"`
+	FailoverAddrPoolGroupStatus string                              `json:"FailoverAddrPoolGroupStatus" xml:"FailoverAddrPoolGroupStatus"`
+	FailoverAvailableAddrNum    int                                 `json:"FailoverAvailableAddrNum" xml:"FailoverAvailableAddrNum"`
+	FailoverLbaStrategy         string                              `json:"FailoverLbaStrategy" xml:"FailoverLbaStrategy"`
 	DefaultMaxReturnAddrNum     int                                 `json:"DefaultMaxReturnAddrNum" xml:"DefaultMaxReturnAddrNum"`
-	DefaultLatencyOptimization  string                              `json:"DefaultLatencyOptimization" xml:"DefaultLatencyOptimization"`
+	StrategyMode                string                              `json:"StrategyMode" xml:"StrategyMode"`
+	CreateTimestamp             int64                               `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	DefaultLbaStrategy          string                              `json:"DefaultLbaStrategy" xml:"DefaultLbaStrategy"`
 	DefaultAddrPoolGroupStatus  string                              `json:"DefaultAddrPoolGroupStatus" xml:"DefaultAddrPoolGroupStatus"`
 	FailoverAddrPoolType        string                              `json:"FailoverAddrPoolType" xml:"FailoverAddrPoolType"`
-	FailoverLbaStrategy         string                              `json:"FailoverLbaStrategy" xml:"FailoverLbaStrategy"`
-	FailoverMinAvailableAddrNum int                                 `json:"FailoverMinAvailableAddrNum" xml:"FailoverMinAvailableAddrNum"`
-	FailoverMaxReturnAddrNum    int                                 `json:"FailoverMaxReturnAddrNum" xml:"FailoverMaxReturnAddrNum"`
-	FailoverLatencyOptimization string                              `json:"FailoverLatencyOptimization" xml:"FailoverLatencyOptimization"`
-	FailoverAddrPoolGroupStatus string                              `json:"FailoverAddrPoolGroupStatus" xml:"FailoverAddrPoolGroupStatus"`
-	AccessMode                  string                              `json:"AccessMode" xml:"AccessMode"`
+	RequestId                   string                              `json:"RequestId" xml:"RequestId"`
+	InstanceId                  string                              `json:"InstanceId" xml:"InstanceId"`
+	DefaultLatencyOptimization  string                              `json:"DefaultLatencyOptimization" xml:"DefaultLatencyOptimization"`
 	EffectiveAddrPoolGroupType  string                              `json:"EffectiveAddrPoolGroupType" xml:"EffectiveAddrPoolGroupType"`
 	CreateTime                  string                              `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp             int64                               `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	DefaultAvailableAddrNum     int                                 `json:"DefaultAvailableAddrNum" xml:"DefaultAvailableAddrNum"`
-	FailoverAvailableAddrNum    int                                 `json:"FailoverAvailableAddrNum" xml:"FailoverAvailableAddrNum"`
-	Lines                       LinesInDescribeDnsGtmAccessStrategy `json:"Lines" xml:"Lines"`
-	DefaultAddrPools            DefaultAddrPools                    `json:"DefaultAddrPools" xml:"DefaultAddrPools"`
+	DefaultMinAvailableAddrNum  int                                 `json:"DefaultMinAvailableAddrNum" xml:"DefaultMinAvailableAddrNum"`
+	FailoverLatencyOptimization string                              `json:"FailoverLatencyOptimization" xml:"FailoverLatencyOptimization"`
+	StrategyName                string                              `json:"StrategyName" xml:"StrategyName"`
+	FailoverMaxReturnAddrNum    int                                 `json:"FailoverMaxReturnAddrNum" xml:"FailoverMaxReturnAddrNum"`
+	AccessMode                  string                              `json:"AccessMode" xml:"AccessMode"`
 	FailoverAddrPools           FailoverAddrPools                   `json:"FailoverAddrPools" xml:"FailoverAddrPools"`
+	DefaultAddrPools            DefaultAddrPools                    `json:"DefaultAddrPools" xml:"DefaultAddrPools"`
+	Lines                       LinesInDescribeDnsGtmAccessStrategy `json:"Lines" xml:"Lines"`
 }
 
 // CreateDescribeDnsGtmAccessStrategyRequest creates a request to invoke DescribeDnsGtmAccessStrategy API

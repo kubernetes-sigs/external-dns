@@ -16,7 +16,7 @@ var sliceType = reflect.TypeOf(Slice{})
 
 // Slice allows to flatten any slice, array or map.
 type Slice struct {
-	Slice interface{}
+	Slice any
 }
 
 // isFlat returns true if no flat.Slice items can be contained in
@@ -106,7 +106,7 @@ func (f Slice) appendValuesTo(sv []reflect.Value) []reflect.Value {
 	return sv
 }
 
-func subAppendTo(si []interface{}, v reflect.Value) []interface{} {
+func subAppendTo(si []any, v reflect.Value) []any {
 	if v.Kind() == reflect.Interface {
 		v = v.Elem()
 	}
@@ -117,7 +117,7 @@ func subAppendTo(si []interface{}, v reflect.Value) []interface{} {
 	return append(si, i)
 }
 
-func (f Slice) appendTo(si []interface{}) []interface{} {
+func (f Slice) appendTo(si []any) []any {
 	fv := reflect.ValueOf(f.Slice)
 
 	if fv.Kind() == reflect.Map {
@@ -154,8 +154,8 @@ func (f Slice) appendTo(si []interface{}) []interface{} {
 
 // Len returns the number of items contained in items. Nested Slice
 // items are counted as if they are flattened. It returns true if at
-// least one Slice item is found, false otherwise.
-func Len(items []interface{}) (int, bool) {
+// least one [Slice] item is found, false otherwise.
+func Len(items []any) (int, bool) {
 	l := len(items)
 	flattened := true
 
@@ -168,9 +168,9 @@ func Len(items []interface{}) (int, bool) {
 	return l, flattened
 }
 
-// Values returns the items values as a slice of reflect.Value. Nested
-// Slice items are flattened.
-func Values(items []interface{}) []reflect.Value {
+// Values returns the items values as a slice of
+// [reflect.Value]. Nested [Slice] items are flattened.
+func Values(items []any) []reflect.Value {
 	l, flattened := Len(items)
 	if flattened {
 		sv := make([]reflect.Value, l)
@@ -192,14 +192,14 @@ func Values(items []interface{}) []reflect.Value {
 }
 
 // Interfaces returns the items values as a slice of
-// interface{}. Nested Slice items are flattened.
-func Interfaces(items ...interface{}) []interface{} {
+// any. Nested [Slice] items are flattened.
+func Interfaces(items ...any) []any {
 	l, flattened := Len(items)
 	if flattened {
 		return items
 	}
 
-	si := make([]interface{}, 0, l)
+	si := make([]any, 0, l)
 	for _, item := range items {
 		if f, ok := item.(Slice); ok {
 			si = f.appendTo(si)

@@ -1,5 +1,4 @@
 run:
-
   # timeout for analysis, e.g. 30s, 5m, default is 1m
   timeout: 1m
 
@@ -14,6 +13,20 @@ run:
   skip-dirs-use-default: true
 
   modules-download-mode: readonly
+
+linters:
+  enable:
+    - bodyclose    # ensure HTTP response bodies are successfully closed.
+    - contextcheck # check we are passing context an inherited context.
+    - gofmt        # checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification.
+    - errname      # checks that sentinel errors are prefixed with the `Err`` and error types are suffixed with the `Error``.
+    - errorlint    # used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13.
+    - godot        # check if comments end in a period.
+    - misspell     # finds commonly misspelled English words in comments.
+    - nilerr       # checks that there is no simultaneous return of nil error and an invalid value.
+    - tparallel    # detects inappropriate usage of t.Parallel() method in your Go test codes.
+    - unparam      # reports unused function parameters.
+    - whitespace   # detection of leading and trailing whitespace.
 
 output:
   format: colored-line-number

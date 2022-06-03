@@ -7,8 +7,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 )
+
+var ErrMissingListID = errors.New("required missing list ID")
 
 // TeamsList represents a Teams List.
 type TeamsList struct {
@@ -58,6 +60,13 @@ type TeamsListDetailResponse struct {
 	Result TeamsList `json:"result"`
 }
 
+type TeamsListItemsParams struct {
+	AccountID string `url:"-"`
+	ListID    string `url:"-"`
+
+	PaginationOptions
+}
+
 // TeamsLists returns all lists within an account.
 //
 // API reference: https://api.cloudflare.com/#teams-lists-list-teams-lists
@@ -72,7 +81,7 @@ func (api *API) TeamsLists(ctx context.Context, accountID string) ([]TeamsList, 
 	var teamsListListResponse TeamsListListResponse
 	err = json.Unmarshal(res, &teamsListListResponse)
 	if err != nil {
-		return []TeamsList{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []TeamsList{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListListResponse.Result, teamsListListResponse.ResultInfo, nil
@@ -97,7 +106,7 @@ func (api *API) TeamsList(ctx context.Context, accountID, listID string) (TeamsL
 	var teamsListDetailResponse TeamsListDetailResponse
 	err = json.Unmarshal(res, &teamsListDetailResponse)
 	if err != nil {
-		return TeamsList{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsList{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListDetailResponse.Result, nil
@@ -106,8 +115,19 @@ func (api *API) TeamsList(ctx context.Context, accountID, listID string) (TeamsL
 // TeamsListItems returns all list items for a list.
 //
 // API reference: https://api.cloudflare.com/#teams-lists-teams-list-items
-func (api *API) TeamsListItems(ctx context.Context, accountID, listID string) ([]TeamsListItem, ResultInfo, error) {
-	uri := fmt.Sprintf("/%s/%s/gateway/lists/%s/items", AccountRouteRoot, accountID, listID)
+func (api *API) TeamsListItems(ctx context.Context, params TeamsListItemsParams) ([]TeamsListItem, ResultInfo, error) {
+	if params.AccountID == "" {
+		return []TeamsListItem{}, ResultInfo{}, ErrMissingAccountID
+	}
+
+	if params.ListID == "" {
+		return []TeamsListItem{}, ResultInfo{}, ErrMissingListID
+	}
+
+	uri := buildURI(
+		fmt.Sprintf("/%s/%s/gateway/lists/%s/items", AccountRouteRoot, params.AccountID, params.ListID),
+		params,
+	)
 
 	res, err := api.makeRequestContext(ctx, http.MethodGet, uri, nil)
 	if err != nil {
@@ -117,7 +137,7 @@ func (api *API) TeamsListItems(ctx context.Context, accountID, listID string) ([
 	var teamsListItemsListResponse TeamsListItemsListResponse
 	err = json.Unmarshal(res, &teamsListItemsListResponse)
 	if err != nil {
-		return []TeamsListItem{}, ResultInfo{}, errors.Wrap(err, errUnmarshalError)
+		return []TeamsListItem{}, ResultInfo{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListItemsListResponse.Result, teamsListItemsListResponse.ResultInfo, nil
@@ -137,7 +157,7 @@ func (api *API) CreateTeamsList(ctx context.Context, accountID string, teamsList
 	var teamsListDetailResponse TeamsListDetailResponse
 	err = json.Unmarshal(res, &teamsListDetailResponse)
 	if err != nil {
-		return TeamsList{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsList{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListDetailResponse.Result, nil
@@ -148,7 +168,7 @@ func (api *API) CreateTeamsList(ctx context.Context, accountID string, teamsList
 // API reference: https://api.cloudflare.com/#teams-lists-update-teams-list
 func (api *API) UpdateTeamsList(ctx context.Context, accountID string, teamsList TeamsList) (TeamsList, error) {
 	if teamsList.ID == "" {
-		return TeamsList{}, errors.Errorf("teams list ID cannot be empty")
+		return TeamsList{}, fmt.Errorf("teams list ID cannot be empty")
 	}
 
 	uri := fmt.Sprintf(
@@ -166,7 +186,7 @@ func (api *API) UpdateTeamsList(ctx context.Context, accountID string, teamsList
 	var teamsListDetailResponse TeamsListDetailResponse
 	err = json.Unmarshal(res, &teamsListDetailResponse)
 	if err != nil {
-		return TeamsList{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsList{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListDetailResponse.Result, nil
@@ -177,7 +197,7 @@ func (api *API) UpdateTeamsList(ctx context.Context, accountID string, teamsList
 // API reference: https://api.cloudflare.com/#teams-lists-patch-teams-list
 func (api *API) PatchTeamsList(ctx context.Context, accountID string, listPatch PatchTeamsList) (TeamsList, error) {
 	if listPatch.ID == "" {
-		return TeamsList{}, errors.Errorf("teams list ID cannot be empty")
+		return TeamsList{}, fmt.Errorf("teams list ID cannot be empty")
 	}
 
 	uri := fmt.Sprintf(
@@ -195,7 +215,7 @@ func (api *API) PatchTeamsList(ctx context.Context, accountID string, listPatch 
 	var teamsListDetailResponse TeamsListDetailResponse
 	err = json.Unmarshal(res, &teamsListDetailResponse)
 	if err != nil {
-		return TeamsList{}, errors.Wrap(err, errUnmarshalError)
+		return TeamsList{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return teamsListDetailResponse.Result, nil

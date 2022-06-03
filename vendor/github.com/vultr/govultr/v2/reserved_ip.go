@@ -14,6 +14,7 @@ const ripPath = "/v2/reserved-ips"
 // Link : https://www.vultr.com/api/#tag/reserved-ip
 type ReservedIPService interface {
 	Create(ctx context.Context, ripCreate *ReservedIPReq) (*ReservedIP, error)
+	Update(ctx context.Context, id string, ripUpdate *ReservedIPUpdateReq) (*ReservedIP, error)
 	Get(ctx context.Context, id string) (*ReservedIP, error)
 	Delete(ctx context.Context, id string) error
 	List(ctx context.Context, options *ListOptions) ([]ReservedIP, *Meta, error)
@@ -48,6 +49,11 @@ type ReservedIPReq struct {
 	InstanceID string `json:"instance_id,omitempty"`
 }
 
+// ReservedIPUpdateReq represents the parameters for updating a Reserved IP on Vultr
+type ReservedIPUpdateReq struct {
+	Label *string `json:"label"`
+}
+
 type reservedIPsBase struct {
 	ReservedIPs []ReservedIP `json:"reserved_ips"`
 	Meta        *Meta        `json:"meta"`
@@ -66,6 +72,22 @@ type ReservedIPConvertReq struct {
 // Create adds the specified reserved IP to your Vultr account
 func (r *ReservedIPServiceHandler) Create(ctx context.Context, ripCreate *ReservedIPReq) (*ReservedIP, error) {
 	req, err := r.client.NewRequest(ctx, http.MethodPost, ripPath, ripCreate)
+	if err != nil {
+		return nil, err
+	}
+
+	rip := new(reservedIPBase)
+	if err = r.client.DoWithContext(ctx, req, rip); err != nil {
+		return nil, err
+	}
+
+	return rip.ReservedIP, nil
+}
+
+// Update updates label on the Reserved IP
+func (r *ReservedIPServiceHandler) Update(ctx context.Context, id string, ripUpdate *ReservedIPUpdateReq) (*ReservedIP, error) {
+	uri := fmt.Sprintf("%s/%s", ripPath, id)
+	req, err := r.client.NewRequest(ctx, http.MethodPatch, uri, ripUpdate)
 	if err != nil {
 		return nil, err
 	}

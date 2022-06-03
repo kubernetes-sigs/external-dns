@@ -19,6 +19,7 @@ type tdKVBase struct {
 	tdSmugglerBase
 }
 
+<<<<<<< HEAD
 func (b *tdKVBase) initKVBase(val interface{}) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -26,6 +27,11 @@ func (b *tdKVBase) initKVBase(val interface{}) bool {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+func (b *tdKVBase) initKVBase(val interface{}) bool {
+=======
+func (b *tdKVBase) initKVBase(val any) bool {
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	b.tdSmugglerBase = newSmugglerBase(val, 1)
 
 	if vval := reflect.ValueOf(val); vval.IsValid() {
@@ -51,20 +57,22 @@ var _ TestDeep = &tdKeys{}
 // input(Keys): map
 
 // Keys is a smuggler operator. It takes a map and compares its
-// ordered keys to "val".
+// ordered keys to val.
 //
-// "val" can be a slice of items of the same type as the map keys:
+// val can be a slice of items of the same type as the map keys:
 //
-//   got := map[string]bool{"c": true, "a": false, "b": true}
-//   td.Cmp(t, got, td.Keys([]string{"a", "b", "c"})) // succeeds, keys sorted
-//   td.Cmp(t, got, td.Keys([]string{"c", "a", "b"})) // fails as not sorted
+//	got := map[string]bool{"c": true, "a": false, "b": true}
+//	td.Cmp(t, got, td.Keys([]string{"a", "b", "c"})) // succeeds, keys sorted
+//	td.Cmp(t, got, td.Keys([]string{"c", "a", "b"})) // fails as not sorted
 //
-// as well as an other operator as Bag, for example, to test keys in
+// as well as an other operator as [Bag], for example, to test keys in
 // an unsorted manner:
 //
-//   got := map[string]bool{"c": true, "a": false, "b": true}
-//   td.Cmp(t, got, td.Keys(td.Bag("c", "a", "b"))) // succeeds
-func Keys(val interface{}) TestDeep {
+//	got := map[string]bool{"c": true, "a": false, "b": true}
+//	td.Cmp(t, got, td.Keys(td.Bag("c", "a", "b"))) // succeeds
+//
+// See also [Values] and [ContainsKey].
+func Keys(val any) TestDeep {
 	k := tdKeys{}
 	if !k.initKVBase(val) {
 		k.err = ctxerr.OpBadUsage("Keys", "(TESTDEEP_OPERATOR|SLICE)", val, 1, true)
@@ -117,20 +125,22 @@ var _ TestDeep = &tdValues{}
 // input(Values): map
 
 // Values is a smuggler operator. It takes a map and compares its
-// ordered values to "val".
+// ordered values to val.
 //
-// "val" can be a slice of items of the same type as the map values:
+// val can be a slice of items of the same type as the map values:
 //
-//   got := map[int]string{3: "c", 1: "a", 2: "b"}
-//   td.Cmp(t, got, td.Values([]string{"a", "b", "c"})) // succeeds, values sorted
-//   td.Cmp(t, got, td.Values([]string{"c", "a", "b"})) // fails as not sorted
+//	got := map[int]string{3: "c", 1: "a", 2: "b"}
+//	td.Cmp(t, got, td.Values([]string{"a", "b", "c"})) // succeeds, values sorted
+//	td.Cmp(t, got, td.Values([]string{"c", "a", "b"})) // fails as not sorted
 //
-// as well as an other operator as Bag, for example, to test values in
+// as well as an other operator as [Bag], for example, to test values in
 // an unsorted manner:
 //
-//   got := map[int]string{3: "c", 1: "a", 2: "b"}
-//   td.Cmp(t, got, td.Values(td.Bag("c", "a", "b"))) // succeeds
-func Values(val interface{}) TestDeep {
+//	got := map[int]string{3: "c", 1: "a", 2: "b"}
+//	td.Cmp(t, got, td.Values(td.Bag("c", "a", "b"))) // succeeds
+//
+// See also [Keys].
+func Values(val any) TestDeep {
 	v := tdValues{}
 	if !v.initKVBase(val) {
 		v.err = ctxerr.OpBadUsage("Values", "(TESTDEEP_OPERATOR|SLICE)", val, 1, true)

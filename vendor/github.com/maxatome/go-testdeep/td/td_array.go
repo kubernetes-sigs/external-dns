@@ -32,10 +32,11 @@ type tdArray struct {
 var _ TestDeep = &tdArray{}
 
 // ArrayEntries allows to pass array or slice entries to check in
-// functions Array, Slice and SuperSliceOf. It is a map whose each key
-// is the item index and the corresponding value the expected item
-// value (which can be a TestDeep operator as well as a zero value).
-type ArrayEntries map[int]interface{}
+// functions [Array], [Slice] and [SuperSliceOf]. It is a map whose
+// each key is the item index and the corresponding value the expected
+// item value (which can be a [TestDeep] operator as well as a zero
+// value).
+type ArrayEntries map[int]any
 
 const (
 	arrayArray uint = iota
@@ -43,7 +44,7 @@ const (
 	arraySuper
 )
 
-func newArray(kind uint, model interface{}, expectedEntries ArrayEntries) *tdArray {
+func newArray(kind uint, model any, expectedEntries ArrayEntries) *tdArray {
 	vmodel := reflect.ValueOf(model)
 
 	a := tdArray{
@@ -108,26 +109,28 @@ func newArray(kind uint, model interface{}, expectedEntries ArrayEntries) *tdArr
 // input(Array): array,ptr(ptr on array)
 
 // Array operator compares the contents of an array or a pointer on an
-// array against the values of "model" and the values of
-// "expectedEntries". Entries with zero values of "model" are ignored
-// if the same entry is present in "expectedEntries", otherwise they
-// are taken into account. An entry cannot be present in both "model"
-// and "expectedEntries", except if it is a zero-value in "model". At
+// array against the values of model and the values of
+// expectedEntries. Entries with zero values of model are ignored
+// if the same entry is present in expectedEntries, otherwise they
+// are taken into account. An entry cannot be present in both model
+// and expectedEntries, except if it is a zero-value in model. At
 // the end, all entries are checked. To check only some entries of an
-// array, see SuperSliceOf operator.
+// array, see [SuperSliceOf] operator.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
-//   got := [3]int{12, 14, 17}
-//   td.Cmp(t, got, td.Array([3]int{0, 14}, td.ArrayEntries{0: 12, 2: 17})) // succeeds
-//   td.Cmp(t, &got,
-//     td.Array(&[3]int{0, 14}, td.ArrayEntries{0: td.Gt(10), 2: td.Gt(15)})) // succeeds
+//	got := [3]int{12, 14, 17}
+//	td.Cmp(t, got, td.Array([3]int{0, 14}, td.ArrayEntries{0: 12, 2: 17})) // succeeds
+//	td.Cmp(t, &got,
+//	  td.Array(&[3]int{0, 14}, td.ArrayEntries{0: td.Gt(10), 2: td.Gt(15)})) // succeeds
 //
-// TypeBehind method returns the reflect.Type of "model".
-func Array(model interface{}, expectedEntries ArrayEntries) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+//
+// See also [Slice] and [SuperSliceOf].
+func Array(model any, expectedEntries ArrayEntries) TestDeep {
 	return newArray(arrayArray, model, expectedEntries)
 }
 
@@ -135,26 +138,28 @@ func Array(model interface{}, expectedEntries ArrayEntries) TestDeep {
 // input(Slice): slice,ptr(ptr on slice)
 
 // Slice operator compares the contents of a slice or a pointer on a
-// slice against the values of "model" and the values of
-// "expectedEntries". Entries with zero values of "model" are ignored
-// if the same entry is present in "expectedEntries", otherwise they
-// are taken into account. An entry cannot be present in both "model"
-// and "expectedEntries", except if it is a zero-value in "model". At
+// slice against the values of model and the values of
+// expectedEntries. Entries with zero values of model are ignored
+// if the same entry is present in expectedEntries, otherwise they
+// are taken into account. An entry cannot be present in both model
+// and expectedEntries, except if it is a zero-value in model. At
 // the end, all entries are checked. To check only some entries of a
-// slice, see SuperSliceOf operator.
+// slice, see [SuperSliceOf] operator.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
-//   got := []int{12, 14, 17}
-//   td.Cmp(t, got, td.Slice([]int{0, 14}, td.ArrayEntries{0: 12, 2: 17})) // succeeds
-//   td.Cmp(t, &got,
-//     td.Slice(&[]int{0, 14}, td.ArrayEntries{0: td.Gt(10), 2: td.Gt(15)})) // succeeds
+//	got := []int{12, 14, 17}
+//	td.Cmp(t, got, td.Slice([]int{0, 14}, td.ArrayEntries{0: 12, 2: 17})) // succeeds
+//	td.Cmp(t, &got,
+//	  td.Slice(&[]int{0, 14}, td.ArrayEntries{0: td.Gt(10), 2: td.Gt(15)})) // succeeds
 //
-// TypeBehind method returns the reflect.Type of "model".
-func Slice(model interface{}, expectedEntries ArrayEntries) TestDeep {
+// TypeBehind method returns the [reflect.Type] of model.
+//
+// See also [Array] and [SuperSliceOf].
+func Slice(model any, expectedEntries ArrayEntries) TestDeep {
 	return newArray(arraySlice, model, expectedEntries)
 }
 
@@ -165,35 +170,37 @@ func Slice(model interface{}, expectedEntries ArrayEntries) TestDeep {
 
 // SuperSliceOf operator compares the contents of an array, a pointer
 // on an array, a slice or a pointer on a slice against the non-zero
-// values of "model" (if any) and the values of "expectedEntries". So
-// entries with zero value of "model" are always ignored. If a zero
+// values of model (if any) and the values of expectedEntries. So
+// entries with zero value of model are always ignored. If a zero
 // value check is needed, this zero value has to be set in
-// "expectedEntries". An entry cannot be present in both "model" and
-// "expectedEntries", except if it is a zero-value in "model". At the
-// end, only entries present in "expectedEntries" and non-zero ones
-// present in "model" are checked. To check all entries of an array
-// see Array operator. To check all entries of a slice see Slice
+// expectedEntries. An entry cannot be present in both model and
+// expectedEntries, except if it is a zero-value in model. At the
+// end, only entries present in expectedEntries and non-zero ones
+// present in model are checked. To check all entries of an array
+// see [Array] operator. To check all entries of a slice see [Slice]
 // operator.
 //
-// "model" must be the same type as compared data.
+// model must be the same type as compared data.
 //
-// "expectedEntries" can be nil, if no zero entries are expected and
-// no TestDeep operator are involved.
+// expectedEntries can be nil, if no zero entries are expected and
+// no [TestDeep] operators are involved.
 //
 // Works with slices:
 //
-//   got := []int{12, 14, 17}
-//   td.Cmp(t, got, td.SuperSliceOf([]int{12}, nil))                                // succeeds
-//   td.Cmp(t, got, td.SuperSliceOf([]int{12}, td.ArrayEntries{2: 17}))             // succeeds
-//   td.Cmp(t, &got, td.SuperSliceOf(&[]int{0, 14}, td.ArrayEntries{2: td.Gt(16)})) // succeeds
+//	got := []int{12, 14, 17}
+//	td.Cmp(t, got, td.SuperSliceOf([]int{12}, nil))                                // succeeds
+//	td.Cmp(t, got, td.SuperSliceOf([]int{12}, td.ArrayEntries{2: 17}))             // succeeds
+//	td.Cmp(t, &got, td.SuperSliceOf(&[]int{0, 14}, td.ArrayEntries{2: td.Gt(16)})) // succeeds
 //
 // and arrays:
 //
-//   got := [5]int{12, 14, 17, 26, 56}
-//   td.Cmp(t, got, td.SuperSliceOf([5]int{12}, nil))                                // succeeds
-//   td.Cmp(t, got, td.SuperSliceOf([5]int{12}, td.ArrayEntries{2: 17}))             // succeeds
-//   td.Cmp(t, &got, td.SuperSliceOf(&[5]int{0, 14}, td.ArrayEntries{2: td.Gt(16)})) // succeeds
-func SuperSliceOf(model interface{}, expectedEntries ArrayEntries) TestDeep {
+//	got := [5]int{12, 14, 17, 26, 56}
+//	td.Cmp(t, got, td.SuperSliceOf([5]int{12}, nil))                                // succeeds
+//	td.Cmp(t, got, td.SuperSliceOf([5]int{12}, td.ArrayEntries{2: 17}))             // succeeds
+//	td.Cmp(t, &got, td.SuperSliceOf(&[5]int{0, 14}, td.ArrayEntries{2: td.Gt(16)})) // succeeds
+//
+// See also [Array] and [Slice].
+func SuperSliceOf(model any, expectedEntries ArrayEntries) TestDeep {
 	return newArray(arraySuper, model, expectedEntries)
 }
 

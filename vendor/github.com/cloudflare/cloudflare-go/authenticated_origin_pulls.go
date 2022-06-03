@@ -65,8 +65,6 @@ func (api *API) SetAuthenticatedOriginPullsStatus(zoneID string, enable bool) (A
 	"fmt"
 	"net/http"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // AuthenticatedOriginPulls represents global AuthenticatedOriginPulls (tls_client_auth) metadata.
@@ -94,7 +92,7 @@ func (api *API) GetAuthenticatedOriginPullsStatus(ctx context.Context, zoneID st
 	}
 	var r AuthenticatedOriginPullsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return AuthenticatedOriginPulls{}, errors.Wrap(err, errUnmarshalError)
+		return AuthenticatedOriginPulls{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -183,7 +181,7 @@ func (api *API) SetAuthenticatedOriginPullsStatus(ctx context.Context, zoneID st
 	}
 	var r AuthenticatedOriginPullsResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return AuthenticatedOriginPulls{}, errors.Wrap(err, errUnmarshalError)
+		return AuthenticatedOriginPulls{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }

@@ -1053,8 +1053,6 @@ func (api *API) UpdateWAFRule(ctx context.Context, zoneID, packageID, ruleID, mo
 	"net/http"
 	"net/url"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 // WAFPackage represents a WAF package configuration.
@@ -1174,7 +1172,7 @@ func (api *API) ListWAFPackages(ctx context.Context, zoneID string) ([]WAFPackag
 		var p WAFPackagesResponse
 		err = json.Unmarshal(res, &p)
 		if err != nil {
-			return []WAFPackage{}, errors.Wrap(err, errUnmarshalError)
+			return []WAFPackage{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 		}
 
 		if !p.Success {
@@ -1207,7 +1205,7 @@ func (api *API) WAFPackage(ctx context.Context, zoneID, packageID string) (WAFPa
 	var r WAFPackageResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFPackage{}, errors.Wrap(err, errUnmarshalError)
+		return WAFPackage{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -1226,7 +1224,7 @@ func (api *API) UpdateWAFPackage(ctx context.Context, zoneID, packageID string, 
 	var r WAFPackageResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFPackage{}, errors.Wrap(err, errUnmarshalError)
+		return WAFPackage{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -1257,7 +1255,7 @@ func (api *API) ListWAFGroups(ctx context.Context, zoneID, packageID string) ([]
 		var r WAFGroupsResponse
 		err = json.Unmarshal(res, &r)
 		if err != nil {
-			return []WAFGroup{}, errors.Wrap(err, errUnmarshalError)
+			return []WAFGroup{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 		}
 
 		if !r.Success {
@@ -1289,7 +1287,7 @@ func (api *API) WAFGroup(ctx context.Context, zoneID, packageID, groupID string)
 	var r WAFGroupResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFGroup{}, errors.Wrap(err, errUnmarshalError)
+		return WAFGroup{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -1309,7 +1307,7 @@ func (api *API) UpdateWAFGroup(ctx context.Context, zoneID, packageID, groupID, 
 	var r WAFGroupResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFGroup{}, errors.Wrap(err, errUnmarshalError)
+		return WAFGroup{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -1340,7 +1338,7 @@ func (api *API) ListWAFRules(ctx context.Context, zoneID, packageID string) ([]W
 		var r WAFRulesResponse
 		err = json.Unmarshal(res, &r)
 		if err != nil {
-			return []WAFRule{}, errors.Wrap(err, errUnmarshalError)
+			return []WAFRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 		}
 
 		if !r.Success {
@@ -1373,7 +1371,7 @@ func (api *API) WAFRule(ctx context.Context, zoneID, packageID, ruleID string) (
 	var r WAFRuleResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFRule{}, errors.Wrap(err, errUnmarshalError)
+		return WAFRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return r.Result, nil
@@ -1400,7 +1398,7 @@ func (api *API) UpdateWAFRule(ctx context.Context, zoneID, packageID, ruleID, mo
 	var r WAFRuleResponse
 	err = json.Unmarshal(res, &r)
 	if err != nil {
-		return WAFRule{}, errors.Wrap(err, errUnmarshalError)
+		return WAFRule{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }

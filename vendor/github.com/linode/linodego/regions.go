@@ -7,8 +7,17 @@ import (
 
 // Region represents a linode region object
 type Region struct {
-	ID      string `json:"id"`
-	Country string `json:"country"`
+	ID           string          `json:"id"`
+	Country      string          `json:"country"`
+	Capabilities []string        `json:"capabilities"`
+	Status       string          `json:"status"`
+	Resolvers    RegionResolvers `json:"resolvers"`
+}
+
+// RegionResolvers contains the DNS resolvers of a region
+type RegionResolvers struct {
+	IPv4 string `json:"ipv4"`
+	IPv6 string `json:"ipv6"`
 }
 
 // RegionsPagedResponse represents a linode API response for listing

@@ -82,9 +82,9 @@ type SetDomainRecordStatusRequest struct {
 // SetDomainRecordStatusResponse is the response struct for api SetDomainRecordStatus
 type SetDomainRecordStatusResponse struct {
 	*responses.BaseResponse
+	Status    string `json:"Status" xml:"Status"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	RecordId  string `json:"RecordId" xml:"RecordId"`
-	Status    string `json:"Status" xml:"Status"`
 }
 
 // CreateSetDomainRecordStatusRequest creates a request to invoke SetDomainRecordStatus API

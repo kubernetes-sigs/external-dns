@@ -23,23 +23,24 @@ var _ TestDeep = &tdPtr{}
 // input(Ptr): ptr
 
 // Ptr is a smuggler operator. It takes the address of data and
-// compares it to "val".
+// compares it to val.
 //
-// "val" depends on data type. For example, if the compared data is an
+// val depends on data type. For example, if the compared data is an
 // *int, one can have:
 //
-//   num := 12
-//   td.Cmp(t, &num, td.Ptr(12)) // succeeds
+//	num := 12
+//	td.Cmp(t, &num, td.Ptr(12)) // succeeds
 //
 // as well as an other operator:
 //
-//   num := 3
-//   td.Cmp(t, &num, td.Ptr(td.Between(3, 4)))
+//	num := 3
+//	td.Cmp(t, &num, td.Ptr(td.Between(3, 4)))
 //
-// TypeBehind method returns the reflect.Type of a pointer on "val",
-// except if "val" is a TestDeep operator. In this case, it delegates
-// TypeBehind() to the operator and returns the reflect.Type of a
+// TypeBehind method returns the [reflect.Type] of a pointer on val,
+// except if val is a [TestDeep] operator. In this case, it delegates
+// TypeBehind() to the operator and returns the [reflect.Type] of a
 // pointer on the returned value (if non-nil of course).
+<<<<<<< HEAD
 func Ptr(val interface{}) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -47,6 +48,13 @@ func Ptr(val interface{}) TestDeep {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+func Ptr(val interface{}) TestDeep {
+=======
+//
+// See also [PPtr] and [Shallow].
+func Ptr(val any) TestDeep {
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	p := tdPtr{
 		tdSmugglerBase: newSmugglerBase(val),
 	}
@@ -124,31 +132,33 @@ var _ TestDeep = &tdPPtr{}
 // input(PPtr): ptr
 
 // PPtr is a smuggler operator. It takes the address of the address of
-// data and compares it to "val".
+// data and compares it to val.
 //
-// "val" depends on data type. For example, if the compared data is an
+// val depends on data type. For example, if the compared data is an
 // **int, one can have:
 //
-//   num := 12
-//   pnum = &num
-//   td.Cmp(t, &pnum, td.PPtr(12)) // succeeds
+//	num := 12
+//	pnum = &num
+//	td.Cmp(t, &pnum, td.PPtr(12)) // succeeds
 //
 // as well as an other operator:
 //
-//   num := 3
-//   pnum = &num
-//   td.Cmp(t, &pnum, td.PPtr(td.Between(3, 4))) // succeeds
+//	num := 3
+//	pnum = &num
+//	td.Cmp(t, &pnum, td.PPtr(td.Between(3, 4))) // succeeds
 //
 // It is more efficient and shorter to write than:
 //
-//   td.Cmp(t, &pnum, td.Ptr(td.Ptr(val))) // succeeds too
+//	td.Cmp(t, &pnum, td.Ptr(td.Ptr(val))) // succeeds too
 //
-// TypeBehind method returns the reflect.Type of a pointer on a
-// pointer on "val", except if "val" is a TestDeep operator. In this
+// TypeBehind method returns the [reflect.Type] of a pointer on a
+// pointer on val, except if val is a [TestDeep] operator. In this
 // case, it delegates TypeBehind() to the operator and returns the
-// reflect.Type of a pointer on a pointer on the returned value (if
+// [reflect.Type] of a pointer on a pointer on the returned value (if
 // non-nil of course).
-func PPtr(val interface{}) TestDeep {
+//
+// See also [Ptr].
+func PPtr(val any) TestDeep {
 	p := tdPPtr{
 		tdSmugglerBase: newSmugglerBase(val),
 	}

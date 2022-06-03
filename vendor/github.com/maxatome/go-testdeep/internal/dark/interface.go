@@ -15,8 +15,8 @@ import (
 // package.
 //
 // It returns (nil, false) if the data behind val can not be retrieved
-// as an interface{} (aka struct private + non-copyable field).
-var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
+// as an any interface (aka struct private + non-copyable field).
+var GetInterface = func(val reflect.Value, force bool) (any, bool) {
 	if !val.IsValid() {
 		return nil, true
 	}
@@ -45,7 +45,7 @@ var GetInterface = func(val reflect.Value, force bool) (interface{}, bool) {
 
 // MustGetInterface does its best to return the data behind val. If it
 // fails (struct private + non-copyable field), it panics.
-func MustGetInterface(val reflect.Value) interface{} {
+func MustGetInterface(val reflect.Value) any {
 	ret, ok := GetInterface(val, true)
 	if ok {
 		return ret

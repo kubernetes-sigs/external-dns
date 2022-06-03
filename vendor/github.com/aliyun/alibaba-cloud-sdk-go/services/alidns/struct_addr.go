@@ -21,14 +21,14 @@ type Addr struct {
 <<<<<<< HEAD
 	UpdateTime      string `json:"UpdateTime" xml:"UpdateTime"`
 	AlertStatus     string `json:"AlertStatus" xml:"AlertStatus"`
-	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	Remark          string `json:"Remark" xml:"Remark"`
+	CreateTimestamp int64  `json:"CreateTimestamp" xml:"CreateTimestamp"`
 	CreateTime      string `json:"CreateTime" xml:"CreateTime"`
 	Id              int64  `json:"Id" xml:"Id"`
 	UpdateTimestamp int64  `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
+	AttributeInfo   string `json:"AttributeInfo" xml:"AttributeInfo"`
 	LbaWeight       int    `json:"LbaWeight" xml:"LbaWeight"`
 	Mode            string `json:"Mode" xml:"Mode"`
-	AttributeInfo   string `json:"AttributeInfo" xml:"AttributeInfo"`
 	Value           string `json:"Value" xml:"Value"`
 	Addr            string `json:"Addr" xml:"Addr"`
 	AddrId          int64  `json:"AddrId" xml:"AddrId"`

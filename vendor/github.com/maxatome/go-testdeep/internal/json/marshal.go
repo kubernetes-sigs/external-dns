@@ -22,12 +22,12 @@ type marshaler struct {
 	tmp    []byte
 }
 
-// Marshal returns the JSON encoding of "v". It differs from
-// encoding/json.Marshal() as it only handles map[string]interface{},
-// []interface{}, bool, float64, string, nil and
-// encoding/json.Marshaler values. It also accepts "invalid" JSON data
+// Marshal returns the JSON encoding of v. It differs from
+// [encoding/json.Marshal] as it only handles map[string]any,
+// []any, bool, float64, string, nil and
+// [encoding/json.Marshaler] values. It also accepts "invalid" JSON data
 // returned by MarshalJSON method.
-func Marshal(v interface{}, indent int) ([]byte, error) {
+func Marshal(v any, indent int) ([]byte, error) {
 	m := marshaler{
 		indent: indent,
 		buf:    &bytes.Buffer{},
@@ -39,9 +39,9 @@ func Marshal(v interface{}, indent int) ([]byte, error) {
 	return m.buf.Bytes(), nil
 }
 
-// AppendMarshal does the same as Marshal but appends the JSON
-// encoding to "buf".
-func AppendMarshal(buf *bytes.Buffer, v interface{}, indent int) error {
+// AppendMarshal does the same as [Marshal] but appends the JSON
+// encoding to buf.
+func AppendMarshal(buf *bytes.Buffer, v any, indent int) error {
 	m := marshaler{
 		indent: indent,
 		buf:    buf,
@@ -49,14 +49,14 @@ func AppendMarshal(buf *bytes.Buffer, v interface{}, indent int) error {
 	return m.marshal(v)
 }
 
-func (m *marshaler) marshal(v interface{}) error {
+func (m *marshaler) marshal(v any) error {
 	if v == nil {
 		m.buf.WriteString("null")
 		return nil
 	}
 
 	switch vt := v.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		if len(vt) == 0 {
 			if vt == nil {
 				m.buf.WriteString("null")
@@ -87,7 +87,7 @@ func (m *marshaler) marshal(v interface{}) error {
 		m.indent -= 2
 		fmt.Fprintf(m.buf, "\n%*s}", m.indent, "")
 
-	case []interface{}:
+	case []any:
 		if len(vt) == 0 {
 			if vt == nil {
 				m.buf.WriteString("null")

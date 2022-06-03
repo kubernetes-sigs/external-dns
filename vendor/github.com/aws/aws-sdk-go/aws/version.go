@@ -11,6 +11,7 @@ const SDKName = "aws-sdk-go"
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const SDKVersion = "1.40.53"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -39,3 +40,8 @@ const SDKVersion = "1.31.4"
 =======
 const SDKVersion = "1.42.52"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+const SDKVersion = "1.42.52"
+=======
+const SDKVersion = "1.44.119"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

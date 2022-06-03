@@ -25,7 +25,7 @@ type tdLenCapBase struct {
 	tdSmugglerBase
 }
 
-func (b *tdLenCapBase) initLenCapBase(val interface{}) {
+func (b *tdLenCapBase) initLenCapBase(val any) {
 	b.tdSmugglerBase = newSmugglerBase(val, 1)
 
 	// math.MaxInt appeared in go1.17
@@ -100,18 +100,20 @@ var _ TestDeep = &tdLen{}
 // input(Len): array,slice,map,chan
 
 // Len is a smuggler operator. It takes data, applies len() function
-// on it and compares its result to "expectedLen". Of course, the
+// on it and compares its result to expectedLen. Of course, the
 // compared value must be an array, a channel, a map, a slice or a
 // string.
 //
-// "expectedLen" can be an int value:
+// expectedLen can be an int value:
 //
-//   td.Cmp(t, gotSlice, td.Len(12))
+//	td.Cmp(t, gotSlice, td.Len(12))
 //
 // as well as an other operator:
 //
-//   td.Cmp(t, gotSlice, td.Len(td.Between(3, 4)))
-func Len(expectedLen interface{}) TestDeep {
+//	td.Cmp(t, gotSlice, td.Len(td.Between(3, 4)))
+//
+// See also [Cap].
+func Len(expectedLen any) TestDeep {
 	l := tdLen{}
 	l.initLenCapBase(expectedLen)
 	return &l
@@ -169,17 +171,19 @@ var _ TestDeep = &tdCap{}
 // input(Cap): array,slice,chan
 
 // Cap is a smuggler operator. It takes data, applies cap() function
-// on it and compares its result to "expectedCap". Of course, the
+// on it and compares its result to expectedCap. Of course, the
 // compared value must be an array, a channel or a slice.
 //
-// "expectedCap" can be an int value:
+// expectedCap can be an int value:
 //
-//   td.Cmp(t, gotSlice, td.Cap(12))
+//	td.Cmp(t, gotSlice, td.Cap(12))
 //
 // as well as an other operator:
 //
-//   td.Cmp(t, gotSlice, td.Cap(td.Between(3, 4)))
-func Cap(expectedCap interface{}) TestDeep {
+//	td.Cmp(t, gotSlice, td.Cap(td.Between(3, 4)))
+//
+// See also [Len].
+func Cap(expectedCap any) TestDeep {
 	c := tdCap{}
 	c.initLenCapBase(expectedCap)
 	return &c

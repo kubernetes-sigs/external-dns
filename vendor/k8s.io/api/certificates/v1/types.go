@@ -103,8 +103,6 @@ type CertificateSigningRequestSpec struct {
 	//
 	// The minimum valid value for expirationSeconds is 600, i.e. 10 minutes.
 	//
-	// As of v1.22, this field is beta and is controlled via the CSRDuration feature gate.
-	//
 	// +optional
 	ExpirationSeconds *int32 `json:"expirationSeconds,omitempty" protobuf:"varint,8,opt,name=expirationSeconds"`
 
@@ -216,6 +214,7 @@ type CertificateSigningRequestStatus struct {
 // RequestConditionType is the type of a CertificateSigningRequestCondition
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 type RequestConditionType string
 
 // Well-known condition types for certificate requests.
@@ -283,6 +282,10 @@ type CertificateSigningRequestList struct {
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
 // +enum
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+// +enum
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 type RequestConditionType string
 
 // Well-known condition types for certificate requests.
@@ -346,7 +349,9 @@ type CertificateSigningRequestList struct {
 
 // KeyUsage specifies valid usage contexts for keys.
 // See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
-//      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+//
+//	https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+//
 // +enum
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4d7e5ad26 (update vendored files)

@@ -25,7 +25,7 @@ type tdList struct {
 	items []reflect.Value
 }
 
-func newList(items ...interface{}) tdList {
+func newList(items ...any) tdList {
 	return tdList{
 		baseOKNil: newBaseOKNil(4),
 		items:     flat.Values(items),

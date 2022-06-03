@@ -56,6 +56,7 @@ type LoadBalancer struct {
 	EnableBackendKeepalive       bool             `json:"enable_backend_keepalive,omitempty"`
 	VPCUUID                      string           `json:"vpc_uuid,omitempty"`
 	DisableLetsEncryptDNSRecords *bool            `json:"disable_lets_encrypt_dns_records,omitempty"`
+	ValidateOnly                 bool             `json:"validate_only,omitempty"`
 }
 
 // String creates a human-readable description of a LoadBalancer.
@@ -85,6 +86,7 @@ func (l LoadBalancer) AsRequest() *LoadBalancerRequest {
 		HealthCheck:                  l.HealthCheck,
 		VPCUUID:                      l.VPCUUID,
 		DisableLetsEncryptDNSRecords: l.DisableLetsEncryptDNSRecords,
+		ValidateOnly:                 l.ValidateOnly,
 	}
 
 	if l.DisableLetsEncryptDNSRecords != nil {
@@ -168,6 +170,7 @@ type LoadBalancerRequest struct {
 	EnableBackendKeepalive       bool             `json:"enable_backend_keepalive,omitempty"`
 	VPCUUID                      string           `json:"vpc_uuid,omitempty"`
 	DisableLetsEncryptDNSRecords *bool            `json:"disable_lets_encrypt_dns_records,omitempty"`
+<<<<<<< HEAD
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
 // See: https://developers.digitalocean.com/documentation/v2#load-balancers
@@ -732,6 +735,10 @@ type LoadBalancerRequest struct {
 	VPCUUID                      string           `json:"vpc_uuid,omitempty"`
 	DisableLetsEncryptDNSRecords *bool            `json:"disable_lets_encrypt_dns_records,omitempty"`
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+=======
+	ValidateOnly                 bool             `json:"validate_only,omitempty"`
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 }
 
 // String creates a human-readable description of a LoadBalancerRequest.

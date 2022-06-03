@@ -81,9 +81,9 @@ type AddDomainGroupRequest struct {
 // AddDomainGroupResponse is the response struct for api AddDomainGroup
 type AddDomainGroupResponse struct {
 	*responses.BaseResponse
+	GroupName string `json:"GroupName" xml:"GroupName"`
 	RequestId string `json:"RequestId" xml:"RequestId"`
 	GroupId   string `json:"GroupId" xml:"GroupId"`
-	GroupName string `json:"GroupName" xml:"GroupName"`
 }
 
 // CreateAddDomainGroupRequest creates a request to invoke AddDomainGroup API

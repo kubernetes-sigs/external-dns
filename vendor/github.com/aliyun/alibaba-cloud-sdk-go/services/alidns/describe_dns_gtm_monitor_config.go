@@ -80,16 +80,16 @@ type DescribeDnsGtmMonitorConfigRequest struct {
 type DescribeDnsGtmMonitorConfigResponse struct {
 	*responses.BaseResponse
 	RequestId         string                                    `json:"RequestId" xml:"RequestId"`
-	MonitorConfigId   string                                    `json:"MonitorConfigId" xml:"MonitorConfigId"`
-	CreateTime        string                                    `json:"CreateTime" xml:"CreateTime"`
-	CreateTimestamp   int64                                     `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	UpdateTime        string                                    `json:"UpdateTime" xml:"UpdateTime"`
-	UpdateTimestamp   int64                                     `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
-	ProtocolType      string                                    `json:"ProtocolType" xml:"ProtocolType"`
-	Interval          int                                       `json:"Interval" xml:"Interval"`
-	EvaluationCount   int                                       `json:"EvaluationCount" xml:"EvaluationCount"`
 	Timeout           int                                       `json:"Timeout" xml:"Timeout"`
+	ProtocolType      string                                    `json:"ProtocolType" xml:"ProtocolType"`
+	CreateTime        string                                    `json:"CreateTime" xml:"CreateTime"`
+	UpdateTime        string                                    `json:"UpdateTime" xml:"UpdateTime"`
+	EvaluationCount   int                                       `json:"EvaluationCount" xml:"EvaluationCount"`
+	UpdateTimestamp   int64                                     `json:"UpdateTimestamp" xml:"UpdateTimestamp"`
 	MonitorExtendInfo string                                    `json:"MonitorExtendInfo" xml:"MonitorExtendInfo"`
+	MonitorConfigId   string                                    `json:"MonitorConfigId" xml:"MonitorConfigId"`
+	CreateTimestamp   int64                                     `json:"CreateTimestamp" xml:"CreateTimestamp"`
+	Interval          int                                       `json:"Interval" xml:"Interval"`
 	IspCityNodes      IspCityNodesInDescribeDnsGtmMonitorConfig `json:"IspCityNodes" xml:"IspCityNodes"`
 }
 

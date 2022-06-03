@@ -268,45 +268,47 @@ var _ TestDeep = &tdCatch{}
 // summary(Catch): catches data on the fly before comparing it
 // input(Catch): all
 
-// Catch is a smuggler operator. It allows to copy data in "target" on
-// the fly before comparing it as usual against "expectedValue".
+// Catch is a smuggler operator. It allows to copy data in target on
+// the fly before comparing it as usual against expectedValue.
 //
-// "target" must be a non-nil pointer and data should be assignable to
-// its pointed type. If BeLax config flag is true or called under Lax
-// (and so JSON) operator, data should be convertible to its pointer
+// target must be a non-nil pointer and data should be assignable to
+// its pointed type. If BeLax config flag is true or called under [Lax]
+// (and so [JSON]) operator, data should be convertible to its pointer
 // type.
 //
-//   var id int64
-//   if td.Cmp(t, CreateRecord("test"),
-//     td.JSON(`{"id": $1, "name": "test"}`, td.Catch(&id, td.NotZero()))) {
-//     t.Logf("Created record ID is %d", id)
-//   }
+//	var id int64
+//	if td.Cmp(t, CreateRecord("test"),
+//	  td.JSON(`{"id": $1, "name": "test"}`, td.Catch(&id, td.NotZero()))) {
+//	  t.Logf("Created record ID is %d", id)
+//	}
 //
-// It is really useful when used with JSON operator and/or tdhttp helper.
+// It is really useful when used with [JSON] operator and/or [tdhttp] helper.
 //
-//   var id int64
-//   ta := tdhttp.NewTestAPI(t, api.Handler).
-//     PostJSON("/item", `{"name":"foo"}`).
-//     CmpStatus(http.StatusCreated).
-//     CmpJSONBody(td.JSON(`{"id": $1, "name": "foo"}`, td.Catch(&id, td.Gt(0))))
-//   if !ta.Failed() {
-//     t.Logf("Created record ID is %d", id)
-//   }
+//	var id int64
+//	ta := tdhttp.NewTestAPI(t, api.Handler).
+//	  PostJSON("/item", `{"name":"foo"}`).
+//	  CmpStatus(http.StatusCreated).
+//	  CmpJSONBody(td.JSON(`{"id": $1, "name": "foo"}`, td.Catch(&id, td.Gt(0))))
+//	if !ta.Failed() {
+//	  t.Logf("Created record ID is %d", id)
+//	}
 //
-// If you need to only catch data without comparing it, use Ignore
-// operator as "expectedValue" as in:
+// If you need to only catch data without comparing it, use [Ignore]
+// operator as expectedValue as in:
 //
-//   var id int64
-//   if td.Cmp(t, CreateRecord("test"),
-//     td.JSON(`{"id": $1, "name": "test"}`, td.Catch(&id, td.Ignore()))) {
-//     t.Logf("Created record ID is %d", id)
-//   }
+//	var id int64
+//	if td.Cmp(t, CreateRecord("test"),
+//	  td.JSON(`{"id": $1, "name": "test"}`, td.Catch(&id, td.Ignore()))) {
+//	  t.Logf("Created record ID is %d", id)
+//	}
 //
-// TypeBehind method returns the reflect.Type of "expectedValue",
-// except if "expectedValue" is a TestDeep operator. In this case, it
+// TypeBehind method returns the [reflect.Type] of expectedValue,
+// except if expectedValue is a [TestDeep] operator. In this case, it
 // delegates TypeBehind() to the operator, but if nil is returned by
-// this call, the dereferenced reflect.Type of "target" is returned.
-func Catch(target, expectedValue interface{}) TestDeep {
+// this call, the dereferenced [reflect.Type] of target is returned.
+//
+// [tdhttp]: https://pkg.go.dev/github.com/maxatome/go-testdeep/helpers/tdhttp
+func Catch(target, expectedValue any) TestDeep {
 	vt := reflect.ValueOf(target)
 	c := tdCatch{
 		tdSmugglerBase: newSmugglerBase(expectedValue),

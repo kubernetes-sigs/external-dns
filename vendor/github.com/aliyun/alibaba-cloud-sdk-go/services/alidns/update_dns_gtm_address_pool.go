@@ -81,11 +81,11 @@ type UpdateDnsGtmAddressPoolRequest struct {
 
 // UpdateDnsGtmAddressPoolAddr is a repeated param struct in UpdateDnsGtmAddressPoolRequest
 type UpdateDnsGtmAddressPoolAddr struct {
-	Mode          string `name:"Mode"`
 	AttributeInfo string `name:"AttributeInfo"`
+	Mode          string `name:"Mode"`
 	Remark        string `name:"Remark"`
-	Addr          string `name:"Addr"`
 	LbaWeight     string `name:"LbaWeight"`
+	Addr          string `name:"Addr"`
 }
 
 // UpdateDnsGtmAddressPoolResponse is the response struct for api UpdateDnsGtmAddressPool

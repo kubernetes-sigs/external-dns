@@ -4,9 +4,25 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## unreleased
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+## unreleased
+=======
+## 1.4.3
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 
-* Fix regression where `*time.Time` value would be set to empty and not be sent 
+* Fix cases where `json.Number` didn't decode properly [GH-261]
+
+## 1.4.2
+
+* Custom name matchers to support any sort of casing, formatting, etc. for
+  field names. [GH-250]
+* Fix possible panic in ComposeDecodeHookFunc [GH-251]
+
+## 1.4.1
+
+* Fix regression where `*time.Time` value would be set to empty and not be sent
   to decode hooks properly [GH-232]
 
 ## 1.4.0

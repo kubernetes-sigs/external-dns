@@ -82,26 +82,26 @@ type DescribeDomainInfoRequest struct {
 // DescribeDomainInfoResponse is the response struct for api DescribeDomainInfo
 type DescribeDomainInfoResponse struct {
 	*responses.BaseResponse
-	RequestId          string                          `json:"RequestId" xml:"RequestId"`
-	DomainId           string                          `json:"DomainId" xml:"DomainId"`
-	DomainName         string                          `json:"DomainName" xml:"DomainName"`
-	PunyCode           string                          `json:"PunyCode" xml:"PunyCode"`
+	RecordLineTreeJson string                          `json:"RecordLineTreeJson" xml:"RecordLineTreeJson"`
+	GroupName          string                          `json:"GroupName" xml:"GroupName"`
+	InBlackHole        bool                            `json:"InBlackHole" xml:"InBlackHole"`
+	RegionLines        bool                            `json:"RegionLines" xml:"RegionLines"`
+	SlaveDns           bool                            `json:"SlaveDns" xml:"SlaveDns"`
 	AliDomain          bool                            `json:"AliDomain" xml:"AliDomain"`
+	RequestId          string                          `json:"RequestId" xml:"RequestId"`
+	ResourceGroupId    string                          `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	InstanceId         string                          `json:"InstanceId" xml:"InstanceId"`
+	DomainName         string                          `json:"DomainName" xml:"DomainName"`
+	CreateTime         string                          `json:"CreateTime" xml:"CreateTime"`
+	PunyCode           string                          `json:"PunyCode" xml:"PunyCode"`
 	Remark             string                          `json:"Remark" xml:"Remark"`
 	GroupId            string                          `json:"GroupId" xml:"GroupId"`
-	GroupName          string                          `json:"GroupName" xml:"GroupName"`
-	InstanceId         string                          `json:"InstanceId" xml:"InstanceId"`
 	VersionCode        string                          `json:"VersionCode" xml:"VersionCode"`
-	VersionName        string                          `json:"VersionName" xml:"VersionName"`
+	DomainId           string                          `json:"DomainId" xml:"DomainId"`
 	MinTtl             int64                           `json:"MinTtl" xml:"MinTtl"`
-	RecordLineTreeJson string                          `json:"RecordLineTreeJson" xml:"RecordLineTreeJson"`
-	LineType           string                          `json:"LineType" xml:"LineType"`
-	RegionLines        bool                            `json:"RegionLines" xml:"RegionLines"`
-	InBlackHole        bool                            `json:"InBlackHole" xml:"InBlackHole"`
 	InClean            bool                            `json:"InClean" xml:"InClean"`
-	SlaveDns           bool                            `json:"SlaveDns" xml:"SlaveDns"`
-	ResourceGroupId    string                          `json:"ResourceGroupId" xml:"ResourceGroupId"`
-	CreateTime         string                          `json:"CreateTime" xml:"CreateTime"`
+	VersionName        string                          `json:"VersionName" xml:"VersionName"`
+	LineType           string                          `json:"LineType" xml:"LineType"`
 	DnsServers         DnsServersInDescribeDomainInfo  `json:"DnsServers" xml:"DnsServers"`
 	AvailableTtls      AvailableTtls                   `json:"AvailableTtls" xml:"AvailableTtls"`
 	RecordLines        RecordLinesInDescribeDomainInfo `json:"RecordLines" xml:"RecordLines"`

@@ -82,9 +82,9 @@ type GetTxtRecordForVerifyRequest struct {
 // GetTxtRecordForVerifyResponse is the response struct for api GetTxtRecordForVerify
 type GetTxtRecordForVerifyResponse struct {
 	*responses.BaseResponse
+	RR         string `json:"RR" xml:"RR"`
 	RequestId  string `json:"RequestId" xml:"RequestId"`
 	DomainName string `json:"DomainName" xml:"DomainName"`
-	RR         string `json:"RR" xml:"RR"`
 	Value      string `json:"Value" xml:"Value"`
 }
 

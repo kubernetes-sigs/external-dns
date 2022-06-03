@@ -27,7 +27,7 @@ type tdSmugglerBase struct {
 	isTestDeeper  bool
 }
 
-func newSmugglerBase(val interface{}, depth ...int) (ret tdSmugglerBase) {
+func newSmugglerBase(val any, depth ...int) (ret tdSmugglerBase) {
 	callDepth := 4
 	if len(depth) > 0 {
 		callDepth += depth[0]
@@ -57,7 +57,7 @@ func (s *tdSmugglerBase) internalTypeBehind() reflect.Type {
 // jsonValueEqual compares "got" to expectedValue, trying to do it
 // using a JSON point of view. It is the caller responsibility to
 // ensure that "got" value is either a bool, float64, string,
-// []interface{}, a map[string]interface{} or simply nil.
+// []any, a map[string]any or simply nil.
 //
 // If the type behind expectedValue can be determined and is different
 // from "got" type, "got" value is JSON marshaled, then unmarshaled
@@ -65,7 +65,7 @@ func (s *tdSmugglerBase) internalTypeBehind() reflect.Type {
 // expectedValue.
 //
 // Otherwise, "got" value is compared as-is to expectedValue.
-func (s *tdSmugglerBase) jsonValueEqual(ctx ctxerr.Context, got interface{}) *ctxerr.Error {
+func (s *tdSmugglerBase) jsonValueEqual(ctx ctxerr.Context, got any) *ctxerr.Error {
 	expectedType := s.internalTypeBehind()
 
 	// Unknown expected type (operator with nil TypeBehind() result or

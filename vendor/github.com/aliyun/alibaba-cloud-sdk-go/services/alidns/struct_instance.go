@@ -17,7 +17,7 @@ package alidns
 
 // Instance is a nested struct in alidns response
 type Instance struct {
-	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
 	InstanceName string                                            `json:"InstanceName" xml:"InstanceName"`
+	InstanceId   string                                            `json:"InstanceId" xml:"InstanceId"`
 	AddrPools    AddrPoolsInDescribeGtmRecoveryPlanAvailableConfig `json:"AddrPools" xml:"AddrPools"`
 }

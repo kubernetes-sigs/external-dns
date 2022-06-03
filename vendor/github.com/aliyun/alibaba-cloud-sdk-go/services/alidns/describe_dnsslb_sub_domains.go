@@ -84,10 +84,10 @@ type DescribeDNSSLBSubDomainsRequest struct {
 // DescribeDNSSLBSubDomainsResponse is the response struct for api DescribeDNSSLBSubDomains
 type DescribeDNSSLBSubDomainsResponse struct {
 	*responses.BaseResponse
-	RequestId     string        `json:"RequestId" xml:"RequestId"`
 	TotalCount    int64         `json:"TotalCount" xml:"TotalCount"`
-	PageNumber    int64         `json:"PageNumber" xml:"PageNumber"`
 	PageSize      int64         `json:"PageSize" xml:"PageSize"`
+	RequestId     string        `json:"RequestId" xml:"RequestId"`
+	PageNumber    int64         `json:"PageNumber" xml:"PageNumber"`
 	SlbSubDomains SlbSubDomains `json:"SlbSubDomains" xml:"SlbSubDomains"`
 }
 

@@ -80,8 +80,8 @@ type DescribePdnsUdpIpSegmentsRequest struct {
 type DescribePdnsUdpIpSegmentsResponse struct {
 	*responses.BaseResponse
 	TotalCount int64       `json:"TotalCount" xml:"TotalCount"`
-	RequestId  string      `json:"RequestId" xml:"RequestId"`
 	PageSize   int64       `json:"PageSize" xml:"PageSize"`
+	RequestId  string      `json:"RequestId" xml:"RequestId"`
 	PageNumber int64       `json:"PageNumber" xml:"PageNumber"`
 	IpSegments []IpSegment `json:"IpSegments" xml:"IpSegments"`
 }

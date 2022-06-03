@@ -22,6 +22,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	version     = "2.9.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
@@ -460,6 +461,11 @@ func (c *Client) vultrErrorHandler(resp *http.Response, err error, numTries int)
 =======
 	version     = "2.14.1"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+	version     = "2.14.1"
+=======
+	version     = "2.17.2"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
 	rateLimit   = 500 * time.Millisecond
@@ -501,16 +507,18 @@ type Client struct {
 	ISO             ISOService
 	Kubernetes      KubernetesService
 	LoadBalancer    LoadBalancerService
-	Network         NetworkService
-	ObjectStorage   ObjectStorageService
-	OS              OSService
-	Plan            PlanService
-	Region          RegionService
-	ReservedIP      ReservedIPService
-	Snapshot        SnapshotService
-	SSHKey          SSHKeyService
-	StartupScript   StartupScriptService
-	User            UserService
+	// Deprecated: Network should no longer be used. Instead, use VPC.
+	Network       NetworkService
+	ObjectStorage ObjectStorageService
+	OS            OSService
+	Plan          PlanService
+	Region        RegionService
+	ReservedIP    ReservedIPService
+	Snapshot      SnapshotService
+	SSHKey        SSHKeyService
+	StartupScript StartupScriptService
+	User          UserService
+	VPC           VPCService
 
 	// Optional function called after every successful request made to the Vultr API
 	onRequestCompleted RequestCompletionCallback
@@ -564,6 +572,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.SSHKey = &SSHKeyServiceHandler{client}
 	client.StartupScript = &StartupScriptServiceHandler{client}
 	client.User = &UserServiceHandler{client}
+	client.VPC = &VPCServiceHandler{client}
 
 	return client
 }

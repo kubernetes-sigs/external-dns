@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/pkg/errors"
+	"errors"
 )
 
 // OriginCACertificate represents a Cloudflare-issued certificate.
@@ -362,7 +362,7 @@ func (api *API) CreateOriginCertificate(ctx context.Context, certificate OriginC
 	err = json.Unmarshal(res, &originResponse)
 
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !originResponse.Success {
@@ -394,7 +394,7 @@ func (api *API) OriginCertificates(ctx context.Context, options OriginCACertific
 	err = json.Unmarshal(res, &originResponse)
 
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !originResponse.Success {
@@ -422,7 +422,7 @@ func (api *API) OriginCertificate(ctx context.Context, certificateID string) (*O
 	err = json.Unmarshal(res, &originResponse)
 
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !originResponse.Success {
@@ -450,7 +450,7 @@ func (api *API) RevokeOriginCertificate(ctx context.Context, certificateID strin
 	err = json.Unmarshal(res, &originResponse)
 
 	if err != nil {
-		return nil, errors.Wrap(err, errUnmarshalError)
+		return nil, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	if !originResponse.Success {
@@ -477,14 +477,19 @@ func OriginCARootCertificate(algorithm string) ([]byte, error) {
 		return nil, fmt.Errorf("invalid algorithm: must be one of ['ecc', 'rsa']")
 	}
 
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
-		return nil, errors.Wrap(err, "HTTP request failed")
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(errRequestNotSuccessful)
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "Response body could not be read")
+		return nil, fmt.Errorf("Response body could not be read: %w", err)
 	}
 
 	return body, nil

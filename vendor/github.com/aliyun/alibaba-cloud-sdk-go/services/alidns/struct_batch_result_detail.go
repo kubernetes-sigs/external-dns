@@ -17,20 +17,20 @@ package alidns
 
 // BatchResultDetail is a nested struct in alidns response
 type BatchResultDetail struct {
-	Domain         string `json:"Domain" xml:"Domain"`
-	Type           string `json:"Type" xml:"Type"`
-	Rr             string `json:"Rr" xml:"Rr"`
-	Value          string `json:"Value" xml:"Value"`
 	Status         bool   `json:"Status" xml:"Status"`
-	Reason         string `json:"Reason" xml:"Reason"`
-	NewRr          string `json:"NewRr" xml:"NewRr"`
-	NewValue       string `json:"NewValue" xml:"NewValue"`
-	BatchType      string `json:"BatchType" xml:"BatchType"`
-	OperateDateStr string `json:"OperateDateStr" xml:"OperateDateStr"`
-	Line           string `json:"Line" xml:"Line"`
-	Priority       string `json:"Priority" xml:"Priority"`
-	Ttl            string `json:"Ttl" xml:"Ttl"`
-	RecordId       string `json:"RecordId" xml:"RecordId"`
+	Type           string `json:"Type" xml:"Type"`
+	Domain         string `json:"Domain" xml:"Domain"`
 	Remark         string `json:"Remark" xml:"Remark"`
+	RecordId       string `json:"RecordId" xml:"RecordId"`
+	Rr             string `json:"Rr" xml:"Rr"`
+	Priority       string `json:"Priority" xml:"Priority"`
 	RrStatus       string `json:"RrStatus" xml:"RrStatus"`
+	OperateDateStr string `json:"OperateDateStr" xml:"OperateDateStr"`
+	NewValue       string `json:"NewValue" xml:"NewValue"`
+	Value          string `json:"Value" xml:"Value"`
+	Ttl            string `json:"Ttl" xml:"Ttl"`
+	BatchType      string `json:"BatchType" xml:"BatchType"`
+	Line           string `json:"Line" xml:"Line"`
+	NewRr          string `json:"NewRr" xml:"NewRr"`
+	Reason         string `json:"Reason" xml:"Reason"`
 }

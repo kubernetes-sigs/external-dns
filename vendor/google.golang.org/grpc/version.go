@@ -25,6 +25,7 @@ package grpc
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const Version = "1.40.0"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -53,3 +54,8 @@ const Version = "1.26.0"
 =======
 const Version = "1.45.0"
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+const Version = "1.45.0"
+=======
+const Version = "1.48.0"
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

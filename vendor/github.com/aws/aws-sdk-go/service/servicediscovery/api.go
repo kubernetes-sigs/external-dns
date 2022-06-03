@@ -29,14 +29,13 @@ const opCreateHttpNamespace = "CreateHttpNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the CreateHttpNamespaceRequest method.
+//	req, resp := client.CreateHttpNamespaceRequest(params)
 //
-//    // Example sending a request using the CreateHttpNamespaceRequest method.
-//    req, resp := client.CreateHttpNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreateHttpNamespace
 func (c *ServiceDiscovery) CreateHttpNamespaceRequest(input *CreateHttpNamespaceInput) (req *request.Request, output *CreateHttpNamespaceOutput) {
@@ -68,7 +67,7 @@ func (c *ServiceDiscovery) CreateHttpNamespaceRequest(input *CreateHttpNamespace
 // using DNS.
 //
 // For the current quota on the number of namespaces that you can create using
-// the same account, see Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
+// the same Amazon Web Services account, see Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
 // in the Cloud Map Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -79,24 +78,25 @@ func (c *ServiceDiscovery) CreateHttpNamespaceRequest(input *CreateHttpNamespace
 // API operation CreateHttpNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceAlreadyExists
-//   The namespace that you're trying to create already exists.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceLimitExceeded
-//   The resource can't be created because you've reached the quota on the number
-//   of resources.
+//   - NamespaceAlreadyExists
+//     The namespace that you're trying to create already exists.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceLimitExceeded
+//     The resource can't be created because you've reached the quota on the number
+//     of resources.
 //
-//   * TooManyTagsException
-//   The list of tags on the resource is over the quota. The maximum number of
-//   tags that can be applied to a resource is 50.
+//   - DuplicateRequest
+//     The operation is already in progress.
+//
+//   - TooManyTagsException
+//     The list of tags on the resource is over the quota. The maximum number of
+//     tags that can be applied to a resource is 50.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreateHttpNamespace
 func (c *ServiceDiscovery) CreateHttpNamespace(input *CreateHttpNamespaceInput) (*CreateHttpNamespaceOutput, error) {
@@ -136,14 +136,13 @@ const opCreatePrivateDnsNamespace = "CreatePrivateDnsNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the CreatePrivateDnsNamespaceRequest method.
+//	req, resp := client.CreatePrivateDnsNamespaceRequest(params)
 //
-//    // Example sending a request using the CreatePrivateDnsNamespaceRequest method.
-//    req, resp := client.CreatePrivateDnsNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreatePrivateDnsNamespace
 func (c *ServiceDiscovery) CreatePrivateDnsNamespaceRequest(input *CreatePrivateDnsNamespaceInput) (req *request.Request, output *CreatePrivateDnsNamespaceOutput) {
@@ -170,8 +169,8 @@ func (c *ServiceDiscovery) CreatePrivateDnsNamespaceRequest(input *CreatePrivate
 // the resulting DNS name for the service is backend.example.com. Service instances
 // that are registered using a private DNS namespace can be discovered using
 // either a DiscoverInstances request or using DNS. For the current quota on
-// the number of namespaces that you can create using the same account, see
-// Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
+// the number of namespaces that you can create using the same Amazon Web Services
+// account, see Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
 // in the Cloud Map Developer Guide.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
@@ -182,24 +181,25 @@ func (c *ServiceDiscovery) CreatePrivateDnsNamespaceRequest(input *CreatePrivate
 // API operation CreatePrivateDnsNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceAlreadyExists
-//   The namespace that you're trying to create already exists.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceLimitExceeded
-//   The resource can't be created because you've reached the quota on the number
-//   of resources.
+//   - NamespaceAlreadyExists
+//     The namespace that you're trying to create already exists.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceLimitExceeded
+//     The resource can't be created because you've reached the quota on the number
+//     of resources.
 //
-//   * TooManyTagsException
-//   The list of tags on the resource is over the quota. The maximum number of
-//   tags that can be applied to a resource is 50.
+//   - DuplicateRequest
+//     The operation is already in progress.
+//
+//   - TooManyTagsException
+//     The list of tags on the resource is over the quota. The maximum number of
+//     tags that can be applied to a resource is 50.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreatePrivateDnsNamespace
 func (c *ServiceDiscovery) CreatePrivateDnsNamespace(input *CreatePrivateDnsNamespaceInput) (*CreatePrivateDnsNamespaceOutput, error) {
@@ -239,14 +239,13 @@ const opCreatePublicDnsNamespace = "CreatePublicDnsNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the CreatePublicDnsNamespaceRequest method.
+//	req, resp := client.CreatePublicDnsNamespaceRequest(params)
 //
-//    // Example sending a request using the CreatePublicDnsNamespaceRequest method.
-//    req, resp := client.CreatePublicDnsNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreatePublicDnsNamespace
 func (c *ServiceDiscovery) CreatePublicDnsNamespaceRequest(input *CreatePublicDnsNamespaceInput) (req *request.Request, output *CreatePublicDnsNamespaceOutput) {
@@ -273,8 +272,12 @@ func (c *ServiceDiscovery) CreatePublicDnsNamespaceRequest(input *CreatePublicDn
 // name for the service is backend.example.com. You can discover instances that
 // were registered with a public DNS namespace by using either a DiscoverInstances
 // request or using DNS. For the current quota on the number of namespaces that
-// you can create using the same account, see Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
+// you can create using the same Amazon Web Services account, see Cloud Map
+// quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
 // in the Cloud Map Developer Guide.
+//
+// The CreatePublicDnsNamespace API operation is not supported in the Amazon
+// Web Services GovCloud (US) Regions.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -284,24 +287,25 @@ func (c *ServiceDiscovery) CreatePublicDnsNamespaceRequest(input *CreatePublicDn
 // API operation CreatePublicDnsNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceAlreadyExists
-//   The namespace that you're trying to create already exists.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceLimitExceeded
-//   The resource can't be created because you've reached the quota on the number
-//   of resources.
+//   - NamespaceAlreadyExists
+//     The namespace that you're trying to create already exists.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceLimitExceeded
+//     The resource can't be created because you've reached the quota on the number
+//     of resources.
 //
-//   * TooManyTagsException
-//   The list of tags on the resource is over the quota. The maximum number of
-//   tags that can be applied to a resource is 50.
+//   - DuplicateRequest
+//     The operation is already in progress.
+//
+//   - TooManyTagsException
+//     The list of tags on the resource is over the quota. The maximum number of
+//     tags that can be applied to a resource is 50.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreatePublicDnsNamespace
 func (c *ServiceDiscovery) CreatePublicDnsNamespace(input *CreatePublicDnsNamespaceInput) (*CreatePublicDnsNamespaceOutput, error) {
@@ -341,14 +345,13 @@ const opCreateService = "CreateService"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the CreateServiceRequest method.
+//	req, resp := client.CreateServiceRequest(params)
 //
-//    // Example sending a request using the CreateServiceRequest method.
-//    req, resp := client.CreateServiceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreateService
 func (c *ServiceDiscovery) CreateServiceRequest(input *CreateServiceInput) (req *request.Request, output *CreateServiceOutput) {
@@ -372,10 +375,10 @@ func (c *ServiceDiscovery) CreateServiceRequest(input *CreateServiceInput) (req 
 // Creates a service. This action defines the configuration for the following
 // entities:
 //
-//    * For public and private DNS namespaces, one of the following combinations
-//    of DNS records in Amazon Route 53: A AAAA A and AAAA SRV CNAME
+//   - For public and private DNS namespaces, one of the following combinations
+//     of DNS records in Amazon Route 53: A AAAA A and AAAA SRV CNAME
 //
-//    * Optionally, a health check
+//   - Optionally, a health check
 //
 // After you create the service, you can submit a RegisterInstance (https://docs.aws.amazon.com/cloud-map/latest/api/API_RegisterInstance.html)
 // request, and Cloud Map uses the values in the configuration to create the
@@ -393,25 +396,26 @@ func (c *ServiceDiscovery) CreateServiceRequest(input *CreateServiceInput) (req 
 // API operation CreateService for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * ResourceLimitExceeded
-//   The resource can't be created because you've reached the quota on the number
-//   of resources.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - ResourceLimitExceeded
+//     The resource can't be created because you've reached the quota on the number
+//     of resources.
 //
-//   * ServiceAlreadyExists
-//   The service can't be created because a service with the same name already
-//   exists.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * TooManyTagsException
-//   The list of tags on the resource is over the quota. The maximum number of
-//   tags that can be applied to a resource is 50.
+//   - ServiceAlreadyExists
+//     The service can't be created because a service with the same name already
+//     exists.
+//
+//   - TooManyTagsException
+//     The list of tags on the resource is over the quota. The maximum number of
+//     tags that can be applied to a resource is 50.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/CreateService
 func (c *ServiceDiscovery) CreateService(input *CreateServiceInput) (*CreateServiceOutput, error) {
@@ -451,14 +455,13 @@ const opDeleteNamespace = "DeleteNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the DeleteNamespaceRequest method.
+//	req, resp := client.DeleteNamespaceRequest(params)
 //
-//    // Example sending a request using the DeleteNamespaceRequest method.
-//    req, resp := client.DeleteNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeleteNamespace
 func (c *ServiceDiscovery) DeleteNamespaceRequest(input *DeleteNamespaceInput) (req *request.Request, output *DeleteNamespaceOutput) {
@@ -490,20 +493,21 @@ func (c *ServiceDiscovery) DeleteNamespaceRequest(input *DeleteNamespaceInput) (
 // API operation DeleteNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
+//
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeleteNamespace
 func (c *ServiceDiscovery) DeleteNamespace(input *DeleteNamespaceInput) (*DeleteNamespaceOutput, error) {
@@ -543,14 +547,13 @@ const opDeleteService = "DeleteService"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the DeleteServiceRequest method.
+//	req, resp := client.DeleteServiceRequest(params)
 //
-//    // Example sending a request using the DeleteServiceRequest method.
-//    req, resp := client.DeleteServiceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeleteService
 func (c *ServiceDiscovery) DeleteServiceRequest(input *DeleteServiceInput) (req *request.Request, output *DeleteServiceOutput) {
@@ -583,17 +586,18 @@ func (c *ServiceDiscovery) DeleteServiceRequest(input *DeleteServiceInput) (req 
 // API operation DeleteService for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - ServiceNotFound
+//     No service exists with the specified ID.
+//
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeleteService
 func (c *ServiceDiscovery) DeleteService(input *DeleteServiceInput) (*DeleteServiceOutput, error) {
@@ -633,14 +637,13 @@ const opDeregisterInstance = "DeregisterInstance"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the DeregisterInstanceRequest method.
+//	req, resp := client.DeregisterInstanceRequest(params)
 //
-//    // Example sending a request using the DeregisterInstanceRequest method.
-//    req, resp := client.DeregisterInstanceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeregisterInstance
 func (c *ServiceDiscovery) DeregisterInstanceRequest(input *DeregisterInstanceInput) (req *request.Request, output *DeregisterInstanceOutput) {
@@ -672,24 +675,25 @@ func (c *ServiceDiscovery) DeregisterInstanceRequest(input *DeregisterInstanceIn
 // API operation DeregisterInstance for usage and error information.
 //
 // Returned Error Types:
-//   * DuplicateRequest
-//   The operation is already in progress.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
-//   * InstanceNotFound
-//   No instance exists with the specified ID, or the instance was recently registered,
-//   and information about the instance hasn't propagated yet.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - InstanceNotFound
+//     No instance exists with the specified ID, or the instance was recently registered,
+//     and information about the instance hasn't propagated yet.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DeregisterInstance
 func (c *ServiceDiscovery) DeregisterInstance(input *DeregisterInstanceInput) (*DeregisterInstanceOutput, error) {
@@ -729,14 +733,13 @@ const opDiscoverInstances = "DiscoverInstances"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the DiscoverInstancesRequest method.
+//	req, resp := client.DiscoverInstancesRequest(params)
 //
-//    // Example sending a request using the DiscoverInstancesRequest method.
-//    req, resp := client.DiscoverInstancesRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DiscoverInstances
 func (c *ServiceDiscovery) DiscoverInstancesRequest(input *DiscoverInstancesInput) (req *request.Request, output *DiscoverInstancesOutput) {
@@ -772,22 +775,23 @@ func (c *ServiceDiscovery) DiscoverInstancesRequest(input *DiscoverInstancesInpu
 // API operation DiscoverInstances for usage and error information.
 //
 // Returned Error Types:
-//   * ServiceNotFound
-//   No service exists with the specified ID.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * RequestLimitExceeded
-//   The operation can't be completed because you've reached the quota for the
-//   number of requests. For more information, see Cloud Map API request throttling
-//   quota (https://docs.aws.amazon.com/cloud-map/latest/dg/throttling.html) in
-//   the Cloud Map Developer Guide.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - RequestLimitExceeded
+//     The operation can't be completed because you've reached the quota for the
+//     number of requests. For more information, see Cloud Map API request throttling
+//     quota (https://docs.aws.amazon.com/cloud-map/latest/dg/throttling.html) in
+//     the Cloud Map Developer Guide.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/DiscoverInstances
 func (c *ServiceDiscovery) DiscoverInstances(input *DiscoverInstancesInput) (*DiscoverInstancesOutput, error) {
@@ -827,14 +831,13 @@ const opGetInstance = "GetInstance"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the GetInstanceRequest method.
+//	req, resp := client.GetInstanceRequest(params)
 //
-//    // Example sending a request using the GetInstanceRequest method.
-//    req, resp := client.GetInstanceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetInstance
 func (c *ServiceDiscovery) GetInstanceRequest(input *GetInstanceInput) (req *request.Request, output *GetInstanceOutput) {
@@ -865,17 +868,18 @@ func (c *ServiceDiscovery) GetInstanceRequest(input *GetInstanceInput) (req *req
 // API operation GetInstance for usage and error information.
 //
 // Returned Error Types:
-//   * InstanceNotFound
-//   No instance exists with the specified ID, or the instance was recently registered,
-//   and information about the instance hasn't propagated yet.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - InstanceNotFound
+//     No instance exists with the specified ID, or the instance was recently registered,
+//     and information about the instance hasn't propagated yet.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetInstance
 func (c *ServiceDiscovery) GetInstance(input *GetInstanceInput) (*GetInstanceOutput, error) {
@@ -915,14 +919,13 @@ const opGetInstancesHealthStatus = "GetInstancesHealthStatus"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the GetInstancesHealthStatusRequest method.
+//	req, resp := client.GetInstancesHealthStatusRequest(params)
 //
-//    // Example sending a request using the GetInstancesHealthStatusRequest method.
-//    req, resp := client.GetInstancesHealthStatusRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetInstancesHealthStatus
 func (c *ServiceDiscovery) GetInstancesHealthStatusRequest(input *GetInstancesHealthStatusInput) (req *request.Request, output *GetInstancesHealthStatusOutput) {
@@ -963,17 +966,18 @@ func (c *ServiceDiscovery) GetInstancesHealthStatusRequest(input *GetInstancesHe
 // API operation GetInstancesHealthStatus for usage and error information.
 //
 // Returned Error Types:
-//   * InstanceNotFound
-//   No instance exists with the specified ID, or the instance was recently registered,
-//   and information about the instance hasn't propagated yet.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - InstanceNotFound
+//     No instance exists with the specified ID, or the instance was recently registered,
+//     and information about the instance hasn't propagated yet.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetInstancesHealthStatus
 func (c *ServiceDiscovery) GetInstancesHealthStatus(input *GetInstancesHealthStatusInput) (*GetInstancesHealthStatusOutput, error) {
@@ -1005,15 +1009,14 @@ func (c *ServiceDiscovery) GetInstancesHealthStatusWithContext(ctx aws.Context, 
 //
 // Note: This operation can generate multiple requests to a service.
 //
-//    // Example iterating over at most 3 pages of a GetInstancesHealthStatus operation.
-//    pageNum := 0
-//    err := client.GetInstancesHealthStatusPages(params,
-//        func(page *servicediscovery.GetInstancesHealthStatusOutput, lastPage bool) bool {
-//            pageNum++
-//            fmt.Println(page)
-//            return pageNum <= 3
-//        })
-//
+//	// Example iterating over at most 3 pages of a GetInstancesHealthStatus operation.
+//	pageNum := 0
+//	err := client.GetInstancesHealthStatusPages(params,
+//	    func(page *servicediscovery.GetInstancesHealthStatusOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
 func (c *ServiceDiscovery) GetInstancesHealthStatusPages(input *GetInstancesHealthStatusInput, fn func(*GetInstancesHealthStatusOutput, bool) bool) error {
 	return c.GetInstancesHealthStatusPagesWithContext(aws.BackgroundContext(), input, fn)
 }
@@ -1065,14 +1068,13 @@ const opGetNamespace = "GetNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the GetNamespaceRequest method.
+//	req, resp := client.GetNamespaceRequest(params)
 //
-//    // Example sending a request using the GetNamespaceRequest method.
-//    req, resp := client.GetNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetNamespace
 func (c *ServiceDiscovery) GetNamespaceRequest(input *GetNamespaceInput) (req *request.Request, output *GetNamespaceOutput) {
@@ -1103,13 +1105,14 @@ func (c *ServiceDiscovery) GetNamespaceRequest(input *GetNamespaceInput) (req *r
 // API operation GetNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetNamespace
 func (c *ServiceDiscovery) GetNamespace(input *GetNamespaceInput) (*GetNamespaceOutput, error) {
@@ -1149,14 +1152,13 @@ const opGetOperation = "GetOperation"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the GetOperationRequest method.
+//	req, resp := client.GetOperationRequest(params)
 //
-//    // Example sending a request using the GetOperationRequest method.
-//    req, resp := client.GetOperationRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetOperation
 func (c *ServiceDiscovery) GetOperationRequest(input *GetOperationInput) (req *request.Request, output *GetOperationOutput) {
@@ -1191,13 +1193,14 @@ func (c *ServiceDiscovery) GetOperationRequest(input *GetOperationInput) (req *r
 // API operation GetOperation for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * OperationNotFound
-//   No operation exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - OperationNotFound
+//     No operation exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetOperation
 func (c *ServiceDiscovery) GetOperation(input *GetOperationInput) (*GetOperationOutput, error) {
@@ -1237,14 +1240,13 @@ const opGetService = "GetService"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the GetServiceRequest method.
+//	req, resp := client.GetServiceRequest(params)
 //
-//    // Example sending a request using the GetServiceRequest method.
-//    req, resp := client.GetServiceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetService
 func (c *ServiceDiscovery) GetServiceRequest(input *GetServiceInput) (req *request.Request, output *GetServiceOutput) {
@@ -1275,13 +1277,14 @@ func (c *ServiceDiscovery) GetServiceRequest(input *GetServiceInput) (req *reque
 // API operation GetService for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/GetService
 func (c *ServiceDiscovery) GetService(input *GetServiceInput) (*GetServiceOutput, error) {
@@ -1321,14 +1324,13 @@ const opListInstances = "ListInstances"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the ListInstancesRequest method.
+//	req, resp := client.ListInstancesRequest(params)
 //
-//    // Example sending a request using the ListInstancesRequest method.
-//    req, resp := client.ListInstancesRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListInstances
 func (c *ServiceDiscovery) ListInstancesRequest(input *ListInstancesInput) (req *request.Request, output *ListInstancesOutput) {
@@ -1366,13 +1368,14 @@ func (c *ServiceDiscovery) ListInstancesRequest(input *ListInstancesInput) (req 
 // API operation ListInstances for usage and error information.
 //
 // Returned Error Types:
-//   * ServiceNotFound
-//   No service exists with the specified ID.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - ServiceNotFound
+//     No service exists with the specified ID.
+//
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListInstances
 func (c *ServiceDiscovery) ListInstances(input *ListInstancesInput) (*ListInstancesOutput, error) {
@@ -1404,15 +1407,14 @@ func (c *ServiceDiscovery) ListInstancesWithContext(ctx aws.Context, input *List
 //
 // Note: This operation can generate multiple requests to a service.
 //
-//    // Example iterating over at most 3 pages of a ListInstances operation.
-//    pageNum := 0
-//    err := client.ListInstancesPages(params,
-//        func(page *servicediscovery.ListInstancesOutput, lastPage bool) bool {
-//            pageNum++
-//            fmt.Println(page)
-//            return pageNum <= 3
-//        })
-//
+//	// Example iterating over at most 3 pages of a ListInstances operation.
+//	pageNum := 0
+//	err := client.ListInstancesPages(params,
+//	    func(page *servicediscovery.ListInstancesOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
 func (c *ServiceDiscovery) ListInstancesPages(input *ListInstancesInput, fn func(*ListInstancesOutput, bool) bool) error {
 	return c.ListInstancesPagesWithContext(aws.BackgroundContext(), input, fn)
 }
@@ -1464,14 +1466,13 @@ const opListNamespaces = "ListNamespaces"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the ListNamespacesRequest method.
+//	req, resp := client.ListNamespacesRequest(params)
 //
-//    // Example sending a request using the ListNamespacesRequest method.
-//    req, resp := client.ListNamespacesRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListNamespaces
 func (c *ServiceDiscovery) ListNamespacesRequest(input *ListNamespacesInput) (req *request.Request, output *ListNamespacesOutput) {
@@ -1499,7 +1500,7 @@ func (c *ServiceDiscovery) ListNamespacesRequest(input *ListNamespacesInput) (re
 // ListNamespaces API operation for AWS Cloud Map.
 //
 // Lists summary information about the namespaces that were created by the current
-// account.
+// Amazon Web Services account.
 //
 // Returns awserr.Error for service API and SDK errors. Use runtime type assertions
 // with awserr.Error's Code and Message methods to get detailed information about
@@ -1509,10 +1510,10 @@ func (c *ServiceDiscovery) ListNamespacesRequest(input *ListNamespacesInput) (re
 // API operation ListNamespaces for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListNamespaces
 func (c *ServiceDiscovery) ListNamespaces(input *ListNamespacesInput) (*ListNamespacesOutput, error) {
@@ -1544,15 +1545,14 @@ func (c *ServiceDiscovery) ListNamespacesWithContext(ctx aws.Context, input *Lis
 //
 // Note: This operation can generate multiple requests to a service.
 //
-//    // Example iterating over at most 3 pages of a ListNamespaces operation.
-//    pageNum := 0
-//    err := client.ListNamespacesPages(params,
-//        func(page *servicediscovery.ListNamespacesOutput, lastPage bool) bool {
-//            pageNum++
-//            fmt.Println(page)
-//            return pageNum <= 3
-//        })
-//
+//	// Example iterating over at most 3 pages of a ListNamespaces operation.
+//	pageNum := 0
+//	err := client.ListNamespacesPages(params,
+//	    func(page *servicediscovery.ListNamespacesOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
 func (c *ServiceDiscovery) ListNamespacesPages(input *ListNamespacesInput, fn func(*ListNamespacesOutput, bool) bool) error {
 	return c.ListNamespacesPagesWithContext(aws.BackgroundContext(), input, fn)
 }
@@ -1604,14 +1604,13 @@ const opListOperations = "ListOperations"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the ListOperationsRequest method.
+//	req, resp := client.ListOperationsRequest(params)
 //
-//    // Example sending a request using the ListOperationsRequest method.
-//    req, resp := client.ListOperationsRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListOperations
 func (c *ServiceDiscovery) ListOperationsRequest(input *ListOperationsInput) (req *request.Request, output *ListOperationsOutput) {
@@ -1648,10 +1647,10 @@ func (c *ServiceDiscovery) ListOperationsRequest(input *ListOperationsInput) (re
 // API operation ListOperations for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListOperations
 func (c *ServiceDiscovery) ListOperations(input *ListOperationsInput) (*ListOperationsOutput, error) {
@@ -1683,15 +1682,14 @@ func (c *ServiceDiscovery) ListOperationsWithContext(ctx aws.Context, input *Lis
 //
 // Note: This operation can generate multiple requests to a service.
 //
-//    // Example iterating over at most 3 pages of a ListOperations operation.
-//    pageNum := 0
-//    err := client.ListOperationsPages(params,
-//        func(page *servicediscovery.ListOperationsOutput, lastPage bool) bool {
-//            pageNum++
-//            fmt.Println(page)
-//            return pageNum <= 3
-//        })
-//
+//	// Example iterating over at most 3 pages of a ListOperations operation.
+//	pageNum := 0
+//	err := client.ListOperationsPages(params,
+//	    func(page *servicediscovery.ListOperationsOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
 func (c *ServiceDiscovery) ListOperationsPages(input *ListOperationsInput, fn func(*ListOperationsOutput, bool) bool) error {
 	return c.ListOperationsPagesWithContext(aws.BackgroundContext(), input, fn)
 }
@@ -1743,14 +1741,13 @@ const opListServices = "ListServices"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the ListServicesRequest method.
+//	req, resp := client.ListServicesRequest(params)
 //
-//    // Example sending a request using the ListServicesRequest method.
-//    req, resp := client.ListServicesRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListServices
 func (c *ServiceDiscovery) ListServicesRequest(input *ListServicesInput) (req *request.Request, output *ListServicesOutput) {
@@ -1788,10 +1785,10 @@ func (c *ServiceDiscovery) ListServicesRequest(input *ListServicesInput) (req *r
 // API operation ListServices for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListServices
 func (c *ServiceDiscovery) ListServices(input *ListServicesInput) (*ListServicesOutput, error) {
@@ -1823,15 +1820,14 @@ func (c *ServiceDiscovery) ListServicesWithContext(ctx aws.Context, input *ListS
 //
 // Note: This operation can generate multiple requests to a service.
 //
-//    // Example iterating over at most 3 pages of a ListServices operation.
-//    pageNum := 0
-//    err := client.ListServicesPages(params,
-//        func(page *servicediscovery.ListServicesOutput, lastPage bool) bool {
-//            pageNum++
-//            fmt.Println(page)
-//            return pageNum <= 3
-//        })
-//
+//	// Example iterating over at most 3 pages of a ListServices operation.
+//	pageNum := 0
+//	err := client.ListServicesPages(params,
+//	    func(page *servicediscovery.ListServicesOutput, lastPage bool) bool {
+//	        pageNum++
+//	        fmt.Println(page)
+//	        return pageNum <= 3
+//	    })
 func (c *ServiceDiscovery) ListServicesPages(input *ListServicesInput, fn func(*ListServicesOutput, bool) bool) error {
 	return c.ListServicesPagesWithContext(aws.BackgroundContext(), input, fn)
 }
@@ -1883,14 +1879,13 @@ const opListTagsForResource = "ListTagsForResource"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the ListTagsForResourceRequest method.
+//	req, resp := client.ListTagsForResourceRequest(params)
 //
-//    // Example sending a request using the ListTagsForResourceRequest method.
-//    req, resp := client.ListTagsForResourceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListTagsForResource
 func (c *ServiceDiscovery) ListTagsForResourceRequest(input *ListTagsForResourceInput) (req *request.Request, output *ListTagsForResourceOutput) {
@@ -1921,13 +1916,14 @@ func (c *ServiceDiscovery) ListTagsForResourceRequest(input *ListTagsForResource
 // API operation ListTagsForResource for usage and error information.
 //
 // Returned Error Types:
-//   * ResourceNotFoundException
-//   The operation can't be completed because the resource was not found.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - ResourceNotFoundException
+//     The operation can't be completed because the resource was not found.
+//
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/ListTagsForResource
 func (c *ServiceDiscovery) ListTagsForResource(input *ListTagsForResourceInput) (*ListTagsForResourceOutput, error) {
@@ -1967,14 +1963,13 @@ const opRegisterInstance = "RegisterInstance"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the RegisterInstanceRequest method.
+//	req, resp := client.RegisterInstanceRequest(params)
 //
-//    // Example sending a request using the RegisterInstanceRequest method.
-//    req, resp := client.RegisterInstanceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/RegisterInstance
 func (c *ServiceDiscovery) RegisterInstanceRequest(input *RegisterInstanceInput) (req *request.Request, output *RegisterInstanceOutput) {
@@ -1999,15 +1994,15 @@ func (c *ServiceDiscovery) RegisterInstanceRequest(input *RegisterInstanceInput)
 // check based on the settings in a specified service. When you submit a RegisterInstance
 // request, the following occurs:
 //
-//    * For each DNS record that you define in the service that's specified
-//    by ServiceId, a record is created or updated in the hosted zone that's
-//    associated with the corresponding namespace.
+//   - For each DNS record that you define in the service that's specified
+//     by ServiceId, a record is created or updated in the hosted zone that's
+//     associated with the corresponding namespace.
 //
-//    * If the service includes HealthCheckConfig, a health check is created
-//    based on the settings in the health check configuration.
+//   - If the service includes HealthCheckConfig, a health check is created
+//     based on the settings in the health check configuration.
 //
-//    * The health check, if any, is associated with each of the new or updated
-//    records.
+//   - The health check, if any, is associated with each of the new or updated
+//     records.
 //
 // One RegisterInstance request must complete before you can submit another
 // request and specify the same service ID and instance ID.
@@ -2017,13 +2012,13 @@ func (c *ServiceDiscovery) RegisterInstanceRequest(input *RegisterInstanceInput)
 // When Cloud Map receives a DNS query for the specified DNS name, it returns
 // the applicable value:
 //
-//    * If the health check is healthy: returns all the records
+//   - If the health check is healthy: returns all the records
 //
-//    * If the health check is unhealthy: returns the applicable value for the
-//    last healthy instance
+//   - If the health check is unhealthy: returns the applicable value for the
+//     last healthy instance
 //
-//    * If you didn't specify a health check configuration: returns all the
-//    records
+//   - If you didn't specify a health check configuration: returns all the
+//     records
 //
 // For the current quota on the number of instances that you can register using
 // the same namespace and using the same service, see Cloud Map quotas (https://docs.aws.amazon.com/cloud-map/latest/dg/cloud-map-limits.html)
@@ -2037,24 +2032,25 @@ func (c *ServiceDiscovery) RegisterInstanceRequest(input *RegisterInstanceInput)
 // API operation RegisterInstance for usage and error information.
 //
 // Returned Error Types:
-//   * DuplicateRequest
-//   The operation is already in progress.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceLimitExceeded
-//   The resource can't be created because you've reached the quota on the number
-//   of resources.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - ResourceLimitExceeded
+//     The resource can't be created because you've reached the quota on the number
+//     of resources.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/RegisterInstance
 func (c *ServiceDiscovery) RegisterInstance(input *RegisterInstanceInput) (*RegisterInstanceOutput, error) {
@@ -2094,14 +2090,13 @@ const opTagResource = "TagResource"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the TagResourceRequest method.
+//	req, resp := client.TagResourceRequest(params)
 //
-//    // Example sending a request using the TagResourceRequest method.
-//    req, resp := client.TagResourceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/TagResource
 func (c *ServiceDiscovery) TagResourceRequest(input *TagResourceInput) (req *request.Request, output *TagResourceOutput) {
@@ -2133,17 +2128,18 @@ func (c *ServiceDiscovery) TagResourceRequest(input *TagResourceInput) (req *req
 // API operation TagResource for usage and error information.
 //
 // Returned Error Types:
-//   * ResourceNotFoundException
-//   The operation can't be completed because the resource was not found.
 //
-//   * TooManyTagsException
-//   The list of tags on the resource is over the quota. The maximum number of
-//   tags that can be applied to a resource is 50.
+//   - ResourceNotFoundException
+//     The operation can't be completed because the resource was not found.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - TooManyTagsException
+//     The list of tags on the resource is over the quota. The maximum number of
+//     tags that can be applied to a resource is 50.
+//
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/TagResource
 func (c *ServiceDiscovery) TagResource(input *TagResourceInput) (*TagResourceOutput, error) {
@@ -2183,14 +2179,13 @@ const opUntagResource = "UntagResource"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UntagResourceRequest method.
+//	req, resp := client.UntagResourceRequest(params)
 //
-//    // Example sending a request using the UntagResourceRequest method.
-//    req, resp := client.UntagResourceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UntagResource
 func (c *ServiceDiscovery) UntagResourceRequest(input *UntagResourceInput) (req *request.Request, output *UntagResourceOutput) {
@@ -2222,13 +2217,14 @@ func (c *ServiceDiscovery) UntagResourceRequest(input *UntagResourceInput) (req 
 // API operation UntagResource for usage and error information.
 //
 // Returned Error Types:
-//   * ResourceNotFoundException
-//   The operation can't be completed because the resource was not found.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - ResourceNotFoundException
+//     The operation can't be completed because the resource was not found.
+//
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UntagResource
 func (c *ServiceDiscovery) UntagResource(input *UntagResourceInput) (*UntagResourceOutput, error) {
@@ -2268,14 +2264,13 @@ const opUpdateHttpNamespace = "UpdateHttpNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UpdateHttpNamespaceRequest method.
+//	req, resp := client.UpdateHttpNamespaceRequest(params)
 //
-//    // Example sending a request using the UpdateHttpNamespaceRequest method.
-//    req, resp := client.UpdateHttpNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateHttpNamespace
 func (c *ServiceDiscovery) UpdateHttpNamespaceRequest(input *UpdateHttpNamespaceInput) (req *request.Request, output *UpdateHttpNamespaceOutput) {
@@ -2306,20 +2301,21 @@ func (c *ServiceDiscovery) UpdateHttpNamespaceRequest(input *UpdateHttpNamespace
 // API operation UpdateHttpNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
+//
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateHttpNamespace
 func (c *ServiceDiscovery) UpdateHttpNamespace(input *UpdateHttpNamespaceInput) (*UpdateHttpNamespaceOutput, error) {
@@ -2359,14 +2355,13 @@ const opUpdateInstanceCustomHealthStatus = "UpdateInstanceCustomHealthStatus"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UpdateInstanceCustomHealthStatusRequest method.
+//	req, resp := client.UpdateInstanceCustomHealthStatusRequest(params)
 //
-//    // Example sending a request using the UpdateInstanceCustomHealthStatusRequest method.
-//    req, resp := client.UpdateInstanceCustomHealthStatusRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateInstanceCustomHealthStatus
 func (c *ServiceDiscovery) UpdateInstanceCustomHealthStatusRequest(input *UpdateInstanceCustomHealthStatusInput) (req *request.Request, output *UpdateInstanceCustomHealthStatusOutput) {
@@ -2406,21 +2401,22 @@ func (c *ServiceDiscovery) UpdateInstanceCustomHealthStatusRequest(input *Update
 // API operation UpdateInstanceCustomHealthStatus for usage and error information.
 //
 // Returned Error Types:
-//   * InstanceNotFound
-//   No instance exists with the specified ID, or the instance was recently registered,
-//   and information about the instance hasn't propagated yet.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InstanceNotFound
+//     No instance exists with the specified ID, or the instance was recently registered,
+//     and information about the instance hasn't propagated yet.
 //
-//   * CustomHealthNotFound
-//   The health check for the instance that's specified by ServiceId and InstanceId
-//   isn't a custom health check.
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - CustomHealthNotFound
+//     The health check for the instance that's specified by ServiceId and InstanceId
+//     isn't a custom health check.
+//
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateInstanceCustomHealthStatus
 func (c *ServiceDiscovery) UpdateInstanceCustomHealthStatus(input *UpdateInstanceCustomHealthStatusInput) (*UpdateInstanceCustomHealthStatusOutput, error) {
@@ -2460,14 +2456,13 @@ const opUpdatePrivateDnsNamespace = "UpdatePrivateDnsNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UpdatePrivateDnsNamespaceRequest method.
+//	req, resp := client.UpdatePrivateDnsNamespaceRequest(params)
 //
-//    // Example sending a request using the UpdatePrivateDnsNamespaceRequest method.
-//    req, resp := client.UpdatePrivateDnsNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdatePrivateDnsNamespace
 func (c *ServiceDiscovery) UpdatePrivateDnsNamespaceRequest(input *UpdatePrivateDnsNamespaceInput) (req *request.Request, output *UpdatePrivateDnsNamespaceOutput) {
@@ -2498,20 +2493,21 @@ func (c *ServiceDiscovery) UpdatePrivateDnsNamespaceRequest(input *UpdatePrivate
 // API operation UpdatePrivateDnsNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
+//
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdatePrivateDnsNamespace
 func (c *ServiceDiscovery) UpdatePrivateDnsNamespace(input *UpdatePrivateDnsNamespaceInput) (*UpdatePrivateDnsNamespaceOutput, error) {
@@ -2551,14 +2547,13 @@ const opUpdatePublicDnsNamespace = "UpdatePublicDnsNamespace"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UpdatePublicDnsNamespaceRequest method.
+//	req, resp := client.UpdatePublicDnsNamespaceRequest(params)
 //
-//    // Example sending a request using the UpdatePublicDnsNamespaceRequest method.
-//    req, resp := client.UpdatePublicDnsNamespaceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdatePublicDnsNamespace
 func (c *ServiceDiscovery) UpdatePublicDnsNamespaceRequest(input *UpdatePublicDnsNamespaceInput) (req *request.Request, output *UpdatePublicDnsNamespaceOutput) {
@@ -2589,20 +2584,21 @@ func (c *ServiceDiscovery) UpdatePublicDnsNamespaceRequest(input *UpdatePublicDn
 // API operation UpdatePublicDnsNamespace for usage and error information.
 //
 // Returned Error Types:
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
 //
-//   * NamespaceNotFound
-//   No namespace exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
 //
-//   * ResourceInUse
-//   The specified resource can't be deleted because it contains other resources.
-//   For example, you can't delete a service that contains any instances.
+//   - NamespaceNotFound
+//     No namespace exists with the specified ID.
 //
-//   * DuplicateRequest
-//   The operation is already in progress.
+//   - ResourceInUse
+//     The specified resource can't be deleted because it contains other resources.
+//     For example, you can't delete a service that contains any instances.
+//
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdatePublicDnsNamespace
 func (c *ServiceDiscovery) UpdatePublicDnsNamespace(input *UpdatePublicDnsNamespaceInput) (*UpdatePublicDnsNamespaceOutput, error) {
@@ -2642,14 +2638,13 @@ const opUpdateService = "UpdateService"
 // This method is useful when you want to inject custom logic or configuration
 // into the SDK's request lifecycle. Such as custom headers, or retry logic.
 //
+//	// Example sending a request using the UpdateServiceRequest method.
+//	req, resp := client.UpdateServiceRequest(params)
 //
-//    // Example sending a request using the UpdateServiceRequest method.
-//    req, resp := client.UpdateServiceRequest(params)
-//
-//    err := req.Send()
-//    if err == nil { // resp is now filled
-//        fmt.Println(resp)
-//    }
+//	err := req.Send()
+//	if err == nil { // resp is now filled
+//	    fmt.Println(resp)
+//	}
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateService
 func (c *ServiceDiscovery) UpdateServiceRequest(input *UpdateServiceInput) (req *request.Request, output *UpdateServiceOutput) {
@@ -2672,19 +2667,19 @@ func (c *ServiceDiscovery) UpdateServiceRequest(input *UpdateServiceInput) (req 
 //
 // Submits a request to perform the following operations:
 //
-//    * Update the TTL setting for existing DnsRecords configurations
+//   - Update the TTL setting for existing DnsRecords configurations
 //
-//    * Add, update, or delete HealthCheckConfig for a specified service You
-//    can't add, update, or delete a HealthCheckCustomConfig configuration.
+//   - Add, update, or delete HealthCheckConfig for a specified service You
+//     can't add, update, or delete a HealthCheckCustomConfig configuration.
 //
 // For public and private DNS namespaces, note the following:
 //
-//    * If you omit any existing DnsRecords or HealthCheckConfig configurations
-//    from an UpdateService request, the configurations are deleted from the
-//    service.
+//   - If you omit any existing DnsRecords or HealthCheckConfig configurations
+//     from an UpdateService request, the configurations are deleted from the
+//     service.
 //
-//    * If you omit an existing HealthCheckCustomConfig configuration from an
-//    UpdateService request, the configuration isn't deleted from the service.
+//   - If you omit an existing HealthCheckCustomConfig configuration from an
+//     UpdateService request, the configuration isn't deleted from the service.
 //
 // When you update settings for a service, Cloud Map also updates the corresponding
 // settings in all the records and health checks that were created by using
@@ -2698,16 +2693,17 @@ func (c *ServiceDiscovery) UpdateServiceRequest(input *UpdateServiceInput) (req 
 // API operation UpdateService for usage and error information.
 //
 // Returned Error Types:
-//   * DuplicateRequest
-//   The operation is already in progress.
 //
-//   * InvalidInput
-//   One or more specified values aren't valid. For example, a required value
-//   might be missing, a numeric value might be outside the allowed range, or
-//   a string value might exceed length constraints.
+//   - DuplicateRequest
+//     The operation is already in progress.
 //
-//   * ServiceNotFound
-//   No service exists with the specified ID.
+//   - InvalidInput
+//     One or more specified values aren't valid. For example, a required value
+//     might be missing, a numeric value might be outside the allowed range, or
+//     a string value might exceed length constraints.
+//
+//   - ServiceNotFound
+//     No service exists with the specified ID.
 //
 // See also, https://docs.aws.amazon.com/goto/WebAPI/servicediscovery-2017-03-14/UpdateService
 func (c *ServiceDiscovery) UpdateService(input *UpdateServiceInput) (*UpdateServiceOutput, error) {
@@ -3012,6 +3008,9 @@ type CreatePublicDnsNamespaceInput struct {
 
 	// The name that you want to assign to this namespace.
 	//
+	// Do not include sensitive information in the name. The name is publicly available
+	// using DNS queries.
+	//
 	// Name is a required field
 	Name *string `type:"string" required:"true"`
 
@@ -3170,6 +3169,9 @@ type CreateServiceInput struct {
 	HealthCheckCustomConfig *HealthCheckCustomConfig `type:"structure"`
 
 	// The name that you want to assign to the service.
+	//
+	// Do not include sensitive information in the name if the namespace is discoverable
+	// by public DNS queries.
 	//
 	// If you want Cloud Map to create an SRV record when you register an instance
 	// and you're using a system that requires a specific SRV format, such as HAProxy
@@ -3816,6 +3818,9 @@ func (s *DiscoverInstancesOutput) SetInstances(v []*HttpInstanceSummary) *Discov
 
 // A complex type that contains information about the Amazon Route 53 DNS records
 // that you want Cloud Map to create when you register an instance.
+//
+// The record types of a service can only be changed by deleting the service
+// and recreating it with a new Dnsconfig.
 type DnsConfig struct {
 	_ struct{} `type:"structure"`
 
@@ -3825,6 +3830,9 @@ type DnsConfig struct {
 	// DnsRecords is a required field
 	DnsRecords []*DnsRecord `type:"list" required:"true"`
 
+	// Use NamespaceId in Service (https://docs.aws.amazon.com/cloud-map/latest/api/API_Service.html)
+	// instead.
+	//
 	// The ID of the namespace to use for DNS configuration.
 	//
 	// Deprecated: Top level attribute in request should be used to reference namespace-id
@@ -4726,20 +4734,20 @@ func (s *GetServiceOutput) SetService(v *Service) *GetServiceOutput {
 //
 // Note the following about configuring health checks.
 //
-// A and AAAA records
+// # A and AAAA records
 //
 // If DnsConfig includes configurations for both A and AAAA records, Cloud Map
 // creates a health check that uses the IPv4 address to check the health of
 // the resource. If the endpoint tthat's specified by the IPv4 address is unhealthy,
 // Route 53 considers both the A and AAAA records to be unhealthy.
 //
-// CNAME records
+// # CNAME records
 //
 // You can't specify settings for HealthCheckConfig when the DNSConfig includes
 // CNAME for the value of Type. If you do, the CreateService request will fail
 // with an InvalidInput error.
 //
-// Request interval
+// # Request interval
 //
 // A Route 53 health checker in each health-checking Amazon Web Services Region
 // sends a health check request to an endpoint every 30 seconds. On average,
@@ -4748,26 +4756,26 @@ func (s *GetServiceOutput) SetService(v *Service) *GetServiceOutput {
 // see several requests in one second that's followed by a few seconds with
 // no health checks at all.
 //
-// Health checking regions
+// # Health checking regions
 //
 // Health checkers perform checks from all Route 53 health-checking Regions.
 // For a list of the current Regions, see Regions (https://docs.aws.amazon.com/Route53/latest/APIReference/API_HealthCheckConfig.html#Route53-Type-HealthCheckConfig-Regions).
 //
-// Alias records
+// # Alias records
 //
 // When you register an instance, if you include the AWS_ALIAS_DNS_NAME attribute,
 // Cloud Map creates a Route 53 alias record. Note the following:
 //
-//    * Route 53 automatically sets EvaluateTargetHealth to true for alias records.
-//    When EvaluateTargetHealth is true, the alias record inherits the health
-//    of the referenced Amazon Web Services resource. such as an ELB load balancer.
-//    For more information, see EvaluateTargetHealth (https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html#Route53-Type-AliasTarget-EvaluateTargetHealth).
+//   - Route 53 automatically sets EvaluateTargetHealth to true for alias records.
+//     When EvaluateTargetHealth is true, the alias record inherits the health
+//     of the referenced Amazon Web Services resource. such as an ELB load balancer.
+//     For more information, see EvaluateTargetHealth (https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html#Route53-Type-AliasTarget-EvaluateTargetHealth).
 //
-//    * If you include HealthCheckConfig and then use the service to register
-//    an instance that creates an alias record, Route 53 doesn't create the
-//    health check.
+//   - If you include HealthCheckConfig and then use the service to register
+//     an instance that creates an alias record, Route 53 doesn't create the
+//     health check.
 //
-// Charges for health checks
+// # Charges for health checks
 //
 // Health checks are basic Route 53 health checks that monitor an Amazon Web
 // Services endpoint. For information about pricing for health checks, see Amazon
@@ -4876,14 +4884,14 @@ func (s *HealthCheckConfig) SetType(v string) *HealthCheckConfig {
 // checker to evaluate the health of your resources, is useful in the following
 // circumstances:
 //
-//    * You can't use a health check that's defined by HealthCheckConfig because
-//    the resource isn't available over the internet. For example, you can use
-//    a custom health check when the instance is in an Amazon VPC. (To check
-//    the health of resources in a VPC, the health checker must also be in the
-//    VPC.)
+//   - You can't use a health check that's defined by HealthCheckConfig because
+//     the resource isn't available over the internet. For example, you can use
+//     a custom health check when the instance is in an Amazon VPC. (To check
+//     the health of resources in a VPC, the health checker must also be in the
+//     VPC.)
 //
-//    * You want to use a third-party health checker regardless of where your
-//    resources are located.
+//   - You want to use a third-party health checker regardless of where your
+//     resources are located.
 //
 // If you specify a health check configuration, you can specify either HealthCheckCustomConfig
 // or HealthCheckConfig but not both.
@@ -5135,6 +5143,9 @@ type Instance struct {
 	//    * The attributes that apply to the records that are defined in the service.
 	//
 	//    * For each attribute, the applicable value.
+	//
+	// Do not include sensitive information in the attributes if the namespace is
+	// discoverable by public DNS queries.
 	//
 	// Supported attribute keys include the following:
 	//
@@ -6301,34 +6312,37 @@ func (s *NamespaceAlreadyExists) RequestID() string {
 type NamespaceFilter struct {
 	_ struct{} `type:"structure"`
 
-	// The operator that you want to use to determine whether ListNamespaces returns
-	// a namespace. Valid values for condition include:
+	// Specify the operator that you want to use to determine whether a namespace
+	// matches the specified value. Valid values for Condition are one of the following.
 	//
-	// EQ
+	//    * EQ: When you specify EQ for Condition, you can specify only one value.
+	//    EQ is supported for TYPE, NAME, and HTTP_NAME. EQ is the default condition
+	//    and can be omitted.
 	//
-	// When you specify EQ for the condition, you can choose to list only public
-	// namespaces or private namespaces, but not both. EQ is the default condition
-	// and can be omitted.
-	//
-	// IN
-	//
-	// When you specify IN for the condition, you can choose to list public namespaces,
-	// private namespaces, or both.
-	//
-	// BETWEEN
-	//
-	// Not applicable
+	//    * BEGINS_WITH: When you specify BEGINS_WITH for Condition, you can specify
+	//    only one value. BEGINS_WITH is supported for TYPE, NAME, and HTTP_NAME.
 	Condition *string `type:"string" enum:"FilterCondition"`
 
-	// Specify TYPE.
+	// Specify the namespaces that you want to get using one of the following.
+	//
+	//    * TYPE: Gets the namespaces of the specified type.
+	//
+	//    * NAME: Gets the namespaces with the specified name.
+	//
+	//    * HTTP_NAME: Gets the namespaces with the specified HTTP name.
 	//
 	// Name is a required field
 	Name *string `type:"string" required:"true" enum:"NamespaceFilterName"`
 
-	// If you specify EQ for Condition, specify either DNS_PUBLIC or DNS_PRIVATE.
+	// Specify the values that are applicable to the value that you specify for
+	// Name.
 	//
-	// If you specify IN for Condition, you can specify DNS_PUBLIC, DNS_PRIVATE,
-	// or both.
+	//    * TYPE: Specify HTTP, DNS_PUBLIC, or DNS_PRIVATE.
+	//
+	//    * NAME: Specify the name of the namespace, which is found in Namespace.Name.
+	//
+	//    * HTTP_NAME: Specify the HTTP name of the namespace, which is found in
+	//    Namespace.Properties.HttpProperties.HttpName.
 	//
 	// Values is a required field
 	Values []*string `type:"list" required:"true"`
@@ -7499,6 +7513,9 @@ type RegisterInstanceInput struct {
 	//
 	//    * For each attribute, the applicable value.
 	//
+	// Do not include sensitive information in the attributes if the namespace is
+	// discoverable by public DNS queries.
+	//
 	// Supported attribute keys include the following:
 	//
 	// AWS_ALIAS_DNS_NAME
@@ -7615,6 +7632,10 @@ type RegisterInstanceInput struct {
 	//    Cloud Map deletes the old health check and creates a new one. The health
 	//    check isn't deleted immediately, so it will still appear for a while if
 	//    you submit a ListHealthChecks request, for example.
+	//
+	// Do not include sensitive information in InstanceId if the namespace is discoverable
+	// by public DNS queries and any Type member of DnsRecord for the service contains
+	// SRV because the InstanceId is discoverable by public DNS queries.
 	//
 	// InstanceId is a required field
 	InstanceId *string `type:"string" required:"true"`
@@ -8097,6 +8118,9 @@ type Service struct {
 
 	// A complex type that contains information about the Route 53 DNS records that
 	// you want Cloud Map to create when you register an instance.
+	//
+	// The record types of a service can only be changed by deleting the service
+	// and recreating it with a new Dnsconfig.
 	DnsConfig *DnsConfig `type:"structure"`
 
 	// Public DNS and HTTP namespaces only. A complex type that contains settings
@@ -8392,11 +8416,6 @@ type ServiceFilter struct {
 	//
 	//    * EQ: When you specify EQ, specify one namespace ID for Values. EQ is
 	//    the default condition and can be omitted.
-	//
-	//    * IN: When you specify IN, specify a list of the IDs for the namespaces
-	//    that you want ListServices to return a list of services for.
-	//
-	//    * BETWEEN: Not applicable.
 	Condition *string `type:"string" enum:"FilterCondition"`
 
 	// Specify NAMESPACE_ID.
@@ -9536,6 +9555,9 @@ const (
 
 	// FilterConditionBetween is a FilterCondition enum value
 	FilterConditionBetween = "BETWEEN"
+
+	// FilterConditionBeginsWith is a FilterCondition enum value
+	FilterConditionBeginsWith = "BEGINS_WITH"
 )
 
 // FilterCondition_Values returns all elements of the FilterCondition enum
@@ -9544,6 +9566,7 @@ func FilterCondition_Values() []string {
 		FilterConditionEq,
 		FilterConditionIn,
 		FilterConditionBetween,
+		FilterConditionBeginsWith,
 	}
 }
 
@@ -9614,12 +9637,20 @@ func HealthStatusFilter_Values() []string {
 const (
 	// NamespaceFilterNameType is a NamespaceFilterName enum value
 	NamespaceFilterNameType = "TYPE"
+
+	// NamespaceFilterNameName is a NamespaceFilterName enum value
+	NamespaceFilterNameName = "NAME"
+
+	// NamespaceFilterNameHttpName is a NamespaceFilterName enum value
+	NamespaceFilterNameHttpName = "HTTP_NAME"
 )
 
 // NamespaceFilterName_Values returns all elements of the NamespaceFilterName enum
 func NamespaceFilterName_Values() []string {
 	return []string{
 		NamespaceFilterNameType,
+		NamespaceFilterNameName,
+		NamespaceFilterNameHttpName,
 	}
 }
 

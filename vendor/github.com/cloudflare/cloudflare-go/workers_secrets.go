@@ -5,30 +5,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
-// WorkersPutSecretRequest provides parameters for creating and updating secrets
+// WorkersPutSecretRequest provides parameters for creating and updating secrets.
 type WorkersPutSecretRequest struct {
 	Name string            `json:"name"`
 	Text string            `json:"text"`
 	Type WorkerBindingType `json:"type"`
 }
 
-// WorkersSecret contains the name and type of the secret
+// WorkersSecret contains the name and type of the secret.
 type WorkersSecret struct {
 	Name string `json:"name"`
 	Type string `json:"secret_text"`
 }
 
-// WorkersPutSecretResponse is the response received when creating or updating a secret
+// WorkersPutSecretResponse is the response received when creating or updating a secret.
 type WorkersPutSecretResponse struct {
 	Response
 	Result WorkersSecret `json:"result"`
 }
 
-// WorkersListSecretsResponse is the response received when listing secrets
+// WorkersListSecretsResponse is the response received when listing secrets.
 type WorkersListSecretsResponse struct {
 	Response
 	Result []WorkersSecret `json:"result"`
@@ -84,7 +82,7 @@ func (api *API) ListWorkersSecrets(ctx context.Context, script string) (WorkersL
 
 	result := WorkersPutSecretResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return result, errors.Wrap(err, errUnmarshalError)
+		return result, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result, err
@@ -101,7 +99,7 @@ func (api *API) DeleteWorkersSecret(ctx context.Context, script, secretName stri
 
 	result := Response{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return result, errors.Wrap(err, errUnmarshalError)
+		return result, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result, err
@@ -157,7 +155,7 @@ func (api *API) ListWorkersSecrets(ctx context.Context, script string) (WorkersL
 
 	result := WorkersListSecretsResponse{}
 	if err := json.Unmarshal(res, &result); err != nil {
-		return result, errors.Wrap(err, errUnmarshalError)
+		return result, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return result, err

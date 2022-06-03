@@ -1,6 +1,6 @@
 run:
   tests: false
-  
+
 linters-settings:
   errcheck:
     check-type-assertions: true
@@ -30,19 +30,28 @@ linters:
   enable-all: true
   disable:
     - vetshadow
+    - errname
+    - forcetypeassert
     - gocyclo
     - unparam
     - nakedret
     - lll
+    - golint
+    - maligned
+    - scopelint
     - dupl
     - gosec
     - gochecknoinits
     - gochecknoglobals
+    - exhaustruct
+    - nonamedreturns
     - errcheck
     - staticcheck
     - stylecheck
     - wsl
     - interfacer
+    - varnamelen
+    - tagliatelle
     - gomnd
 <<<<<<< HEAD
 <<<<<<< HEAD

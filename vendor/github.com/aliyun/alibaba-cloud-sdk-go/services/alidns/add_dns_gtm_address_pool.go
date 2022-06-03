@@ -89,11 +89,11 @@ type AddDnsGtmAddressPoolRequest struct {
 
 // AddDnsGtmAddressPoolAddr is a repeated param struct in AddDnsGtmAddressPoolRequest
 type AddDnsGtmAddressPoolAddr struct {
-	Mode          string `name:"Mode"`
 	AttributeInfo string `name:"AttributeInfo"`
+	Mode          string `name:"Mode"`
 	Remark        string `name:"Remark"`
-	Addr          string `name:"Addr"`
 	LbaWeight     string `name:"LbaWeight"`
+	Addr          string `name:"Addr"`
 }
 
 // AddDnsGtmAddressPoolIspCityNode is a repeated param struct in AddDnsGtmAddressPoolRequest

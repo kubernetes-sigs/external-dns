@@ -8,9 +8,18 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
 // +build darwin dragonfly freebsd linux netbsd openbsd solaris
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+//go:build (darwin || dragonfly || freebsd || linux || netbsd || openbsd || solaris) && gc && !ppc64le && !ppc64
+// +build darwin dragonfly freebsd linux netbsd openbsd solaris
+=======
+//go:build (darwin || dragonfly || freebsd || (linux && !ppc64 && !ppc64le) || netbsd || openbsd || solaris) && gc
+// +build darwin dragonfly freebsd linux,!ppc64,!ppc64le netbsd openbsd solaris
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 // +build gc
+<<<<<<< HEAD
 // +build !ppc64le
 // +build !ppc64
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -64,6 +73,11 @@
 // +build !ppc64le
 // +build !ppc64
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+// +build !ppc64le
+// +build !ppc64
+=======
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 
 package unix
 

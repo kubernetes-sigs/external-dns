@@ -83,8 +83,8 @@ type AddGtmRecoveryPlanRequest struct {
 // AddGtmRecoveryPlanResponse is the response struct for api AddGtmRecoveryPlan
 type AddGtmRecoveryPlanResponse struct {
 	*responses.BaseResponse
-	RequestId      string `json:"RequestId" xml:"RequestId"`
 	RecoveryPlanId string `json:"RecoveryPlanId" xml:"RecoveryPlanId"`
+	RequestId      string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateAddGtmRecoveryPlanRequest creates a request to invoke AddGtmRecoveryPlan API

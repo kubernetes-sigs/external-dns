@@ -144,4 +144,8 @@ const (
 	// and removed when node has enough pid.
 >>>>>>> 4d7e5ad26 (update vendored files)
 	TaintNodePIDPressure = "node.kubernetes.io/pid-pressure"
+
+	// TaintNodeOutOfService can be added when node is out of service in case of
+	// a non-graceful shutdown
+	TaintNodeOutOfService = "node.kubernetes.io/out-of-service"
 )

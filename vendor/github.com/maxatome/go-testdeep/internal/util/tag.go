@@ -11,14 +11,15 @@ import (
 	"unicode"
 )
 
-var (
-	// ErrTagEmpty is the error returned by CheckTag for an empty tag.
-	ErrTagEmpty = errors.New("A tag cannot be empty")
-	// ErrTagInvalid is the error returned by CheckTag for an invalid tag.
-	ErrTagInvalid = errors.New("Invalid tag, should match (Letter|_)(Letter|_|Number)*")
-)
+// ErrTagEmpty is the error returned by [CheckTag] for an empty tag.
+var ErrTagEmpty = errors.New("A tag cannot be empty")
 
-// CheckTag checks that tag is a valid tag (see operator Tag) or not.
+// ErrTagInvalid is the error returned by [CheckTag] for an invalid tag.
+var ErrTagInvalid = errors.New("Invalid tag, should match (Letter|_)(Letter|_|Number)*")
+
+// CheckTag checks that tag is a valid tag (see operator [Tag]) or not.
+//
+// [Tag]: https://go-testdeep.zetta.rocks/operators/tag/
 func CheckTag(tag string) error {
 	if tag == "" {
 		return ErrTagEmpty

@@ -17,24 +17,24 @@ package alidns
 
 // DomainInDescribeDomains is a nested struct in alidns response
 type DomainInDescribeDomains struct {
-	DomainId        string                      `json:"DomainId" xml:"DomainId"`
-	DomainName      string                      `json:"DomainName" xml:"DomainName"`
-	PunyCode        string                      `json:"PunyCode" xml:"PunyCode"`
-	AliDomain       bool                        `json:"AliDomain" xml:"AliDomain"`
-	RecordCount     int64                       `json:"RecordCount" xml:"RecordCount"`
-	RegistrantEmail string                      `json:"RegistrantEmail" xml:"RegistrantEmail"`
 	Remark          string                      `json:"Remark" xml:"Remark"`
+	CreateTime      string                      `json:"CreateTime" xml:"CreateTime"`
+	RecordCount     int64                       `json:"RecordCount" xml:"RecordCount"`
+	InstanceId      string                      `json:"InstanceId" xml:"InstanceId"`
+	DomainName      string                      `json:"DomainName" xml:"DomainName"`
+	DomainId        string                      `json:"DomainId" xml:"DomainId"`
+	AliDomain       bool                        `json:"AliDomain" xml:"AliDomain"`
 	GroupId         string                      `json:"GroupId" xml:"GroupId"`
 	GroupName       string                      `json:"GroupName" xml:"GroupName"`
-	InstanceId      string                      `json:"InstanceId" xml:"InstanceId"`
-	VersionCode     string                      `json:"VersionCode" xml:"VersionCode"`
-	VersionName     string                      `json:"VersionName" xml:"VersionName"`
+	ResourceGroupId string                      `json:"ResourceGroupId" xml:"ResourceGroupId"`
 	InstanceEndTime string                      `json:"InstanceEndTime" xml:"InstanceEndTime"`
 	InstanceExpired bool                        `json:"InstanceExpired" xml:"InstanceExpired"`
-	Starmark        bool                        `json:"Starmark" xml:"Starmark"`
-	CreateTime      string                      `json:"CreateTime" xml:"CreateTime"`
+	VersionName     string                      `json:"VersionName" xml:"VersionName"`
+	VersionCode     string                      `json:"VersionCode" xml:"VersionCode"`
+	PunyCode        string                      `json:"PunyCode" xml:"PunyCode"`
+	RegistrantEmail string                      `json:"RegistrantEmail" xml:"RegistrantEmail"`
 	CreateTimestamp int64                       `json:"CreateTimestamp" xml:"CreateTimestamp"`
-	ResourceGroupId string                      `json:"ResourceGroupId" xml:"ResourceGroupId"`
+	Starmark        bool                        `json:"Starmark" xml:"Starmark"`
 	DnsServers      DnsServersInDescribeDomains `json:"DnsServers" xml:"DnsServers"`
 	Tags            TagsInDescribeDomains       `json:"Tags" xml:"Tags"`
 }

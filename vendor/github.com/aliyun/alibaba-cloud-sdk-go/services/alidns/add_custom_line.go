@@ -89,8 +89,8 @@ type AddCustomLineIpSegment struct {
 // AddCustomLineResponse is the response struct for api AddCustomLine
 type AddCustomLineResponse struct {
 	*responses.BaseResponse
-	RequestId string `json:"RequestId" xml:"RequestId"`
 	LineId    int64  `json:"LineId" xml:"LineId"`
+	RequestId string `json:"RequestId" xml:"RequestId"`
 	LineCode  string `json:"LineCode" xml:"LineCode"`
 }
 

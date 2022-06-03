@@ -16,25 +16,25 @@ type Placeholder struct {
 
 type Operator struct {
 	Name   string
-	Params []interface{}
+	Params []any
 }
 
 type member struct {
 	key   string
-	value interface{}
+	value any
 }
 
-func finalize(l yyLexer, value interface{}) {
+func finalize(l yyLexer, value any) {
 	l.(*json).value = value
 }
 
 type yySymType struct {
 	yys    int
-	object map[string]interface{}
+	object map[string]any
 	member member
-	array  []interface{}
+	array  []any
 	string string
-	value  interface{}
+	value  any
 }
 
 const TRUE = 57346
@@ -521,7 +521,7 @@ yydefault:
 	case 11:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
-			yyVAL.object = map[string]interface{}{}
+			yyVAL.object = map[string]any{}
 		}
 	case 12:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -536,7 +536,7 @@ yydefault:
 	case 14:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.object = map[string]interface{}{
+			yyVAL.object = map[string]any{
 				yyDollar[1].member.key: yyDollar[1].member.value,
 			}
 		}
@@ -557,7 +557,7 @@ yydefault:
 	case 17:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
-			yyVAL.array = []interface{}{}
+			yyVAL.array = []any{}
 		}
 	case 18:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -572,7 +572,7 @@ yydefault:
 	case 20:
 		yyDollar = yyS[yypt-1 : yypt+1]
 		{
-			yyVAL.array = []interface{}{yyDollar[1].value}
+			yyVAL.array = []any{yyDollar[1].value}
 		}
 	case 21:
 		yyDollar = yyS[yypt-3 : yypt+1]
@@ -582,7 +582,7 @@ yydefault:
 	case 22:
 		yyDollar = yyS[yypt-2 : yypt+1]
 		{
-			yyVAL.array = []interface{}{}
+			yyVAL.array = []any{}
 		}
 	case 23:
 		yyDollar = yyS[yypt-3 : yypt+1]

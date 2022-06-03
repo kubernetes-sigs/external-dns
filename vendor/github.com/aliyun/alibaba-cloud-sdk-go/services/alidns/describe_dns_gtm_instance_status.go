@@ -79,12 +79,12 @@ type DescribeDnsGtmInstanceStatusRequest struct {
 // DescribeDnsGtmInstanceStatusResponse is the response struct for api DescribeDnsGtmInstanceStatus
 type DescribeDnsGtmInstanceStatusResponse struct {
 	*responses.BaseResponse
-	RequestId                    string `json:"RequestId" xml:"RequestId"`
-	AddrNotAvailableNum          int    `json:"AddrNotAvailableNum" xml:"AddrNotAvailableNum"`
-	AddrPoolGroupNotAvailableNum int    `json:"AddrPoolGroupNotAvailableNum" xml:"AddrPoolGroupNotAvailableNum"`
-	SwitchToFailoverStrategyNum  int    `json:"SwitchToFailoverStrategyNum" xml:"SwitchToFailoverStrategyNum"`
 	StrategyNotAvailableNum      int    `json:"StrategyNotAvailableNum" xml:"StrategyNotAvailableNum"`
 	AddrAvailableNum             int    `json:"AddrAvailableNum" xml:"AddrAvailableNum"`
+	RequestId                    string `json:"RequestId" xml:"RequestId"`
+	SwitchToFailoverStrategyNum  int    `json:"SwitchToFailoverStrategyNum" xml:"SwitchToFailoverStrategyNum"`
+	AddrNotAvailableNum          int    `json:"AddrNotAvailableNum" xml:"AddrNotAvailableNum"`
+	AddrPoolGroupNotAvailableNum int    `json:"AddrPoolGroupNotAvailableNum" xml:"AddrPoolGroupNotAvailableNum"`
 }
 
 // CreateDescribeDnsGtmInstanceStatusRequest creates a request to invoke DescribeDnsGtmInstanceStatus API

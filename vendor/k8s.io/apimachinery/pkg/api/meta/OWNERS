@@ -1,6 +1,7 @@
 # See the OWNERS docs at https://go.k8s.io/owners
 
 reviewers:
+<<<<<<< HEAD
 - thockin
 - smarterclayton
 - wojtek-t
@@ -88,3 +89,32 @@ reviewers:
 - jianhuiz
 =======
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+- thockin
+- smarterclayton
+- wojtek-t
+- deads2k
+- brendandburns
+- derekwaynecarr
+- caesarxuchao
+- mikedanese
+- liggitt
+- janetkuo
+- ncdc
+- dims
+- krousey
+- resouer
+- mfojtik
+=======
+  - thockin
+  - smarterclayton
+  - wojtek-t
+  - deads2k
+  - derekwaynecarr
+  - caesarxuchao
+  - mikedanese
+  - liggitt
+  - janetkuo
+  - ncdc
+  - dims
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)

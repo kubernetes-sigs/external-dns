@@ -693,6 +693,9 @@ func yaml_parser_parse_node(parser *yaml_parser_t, event *yaml_event_t, block, i
 func yaml_parser_parse_block_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+		if token == nil {
+			return false
+		}
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}
@@ -792,7 +795,7 @@ func yaml_parser_split_stem_comment(parser *yaml_parser_t, stem_len int) {
 	}
 
 	token := peek_token(parser)
-	if token.typ != yaml_BLOCK_SEQUENCE_START_TOKEN && token.typ != yaml_BLOCK_MAPPING_START_TOKEN {
+	if token == nil || token.typ != yaml_BLOCK_SEQUENCE_START_TOKEN && token.typ != yaml_BLOCK_MAPPING_START_TOKEN {
 		return
 	}
 
@@ -1287,6 +1290,9 @@ func yaml_parser_split_stem_comment(parser *yaml_parser_t, stem_len int) {
 func yaml_parser_parse_block_mapping_key(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+		if token == nil {
+			return false
+		}
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}
@@ -1396,6 +1402,9 @@ func yaml_parser_parse_block_mapping_value(parser *yaml_parser_t, event *yaml_ev
 func yaml_parser_parse_flow_sequence_entry(parser *yaml_parser_t, event *yaml_event_t, first bool) bool {
 	if first {
 		token := peek_token(parser)
+		if token == nil {
+			return false
+		}
 		parser.marks = append(parser.marks, token.start_mark)
 		skip_token(parser)
 	}

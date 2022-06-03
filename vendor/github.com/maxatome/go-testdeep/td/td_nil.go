@@ -24,18 +24,20 @@ var _ TestDeep = &tdNil{}
 // Nil operator checks that data is nil (or is a non-nil interface,
 // but containing a nil pointer.)
 //
-//   var got *int
-//   td.Cmp(t, got, td.Nil())    // succeeds
-//   td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
-//   td.Cmp(t, got, (*int)(nil)) // succeeds
+//	var got *int
+//	td.Cmp(t, got, td.Nil())    // succeeds
+//	td.Cmp(t, got, nil)         // fails as (*int)(nil) ≠ untyped nil
+//	td.Cmp(t, got, (*int)(nil)) // succeeds
 //
 // but:
 //
-//   var got fmt.Stringer = (*bytes.Buffer)(nil)
-//   td.Cmp(t, got, td.Nil()) // succeeds
-//   td.Cmp(t, got, nil)      // fails, as the interface is not nil
-//   got = nil
-//   td.Cmp(t, got, nil) // succeeds
+//	var got fmt.Stringer = (*bytes.Buffer)(nil)
+//	td.Cmp(t, got, td.Nil()) // succeeds
+//	td.Cmp(t, got, nil)      // fails, as the interface is not nil
+//	got = nil
+//	td.Cmp(t, got, nil) // succeeds
+//
+// See also [Empty], [NotNil] and [Zero].
 func Nil() TestDeep {
 	return &tdNil{
 		baseOKNil: newBaseOKNil(3),
@@ -81,16 +83,18 @@ var _ TestDeep = &tdNotNil{}
 // NotNil operator checks that data is not nil (or is a non-nil
 // interface, containing a non-nil pointer.)
 //
-//   got := &Person{}
-//   td.Cmp(t, got, td.NotNil()) // succeeds
-//   td.Cmp(t, got, td.Not(nil)) // succeeds too, but be careful it is first
-//   // because of got type *Person ≠ untyped nil so prefer NotNil()
+//	got := &Person{}
+//	td.Cmp(t, got, td.NotNil()) // succeeds
+//	td.Cmp(t, got, td.Not(nil)) // succeeds too, but be careful it is first
+//	// because of got type *Person ≠ untyped nil so prefer NotNil()
 //
 // but:
 //
-//   var got fmt.Stringer = (*bytes.Buffer)(nil)
-//   td.Cmp(t, got, td.NotNil()) // fails
-//   td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
+//	var got fmt.Stringer = (*bytes.Buffer)(nil)
+//	td.Cmp(t, got, td.NotNil()) // fails
+//	td.Cmp(t, got, td.Not(nil)) // succeeds, as the interface is not nil
+//
+// See also [Nil], [NotEmpty] and [NotZero].
 func NotNil() TestDeep {
 	return &tdNotNil{
 		baseOKNil: newBaseOKNil(3),

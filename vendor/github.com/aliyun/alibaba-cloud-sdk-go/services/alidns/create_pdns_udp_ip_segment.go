@@ -79,8 +79,8 @@ type CreatePdnsUdpIpSegmentRequest struct {
 // CreatePdnsUdpIpSegmentResponse is the response struct for api CreatePdnsUdpIpSegment
 type CreatePdnsUdpIpSegmentResponse struct {
 	*responses.BaseResponse
-	ValidMessage string `json:"ValidMessage" xml:"ValidMessage"`
 	RequestId    string `json:"RequestId" xml:"RequestId"`
+	ValidMessage string `json:"ValidMessage" xml:"ValidMessage"`
 }
 
 // CreateCreatePdnsUdpIpSegmentRequest creates a request to invoke CreatePdnsUdpIpSegment API

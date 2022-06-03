@@ -32,12 +32,12 @@ type GetLocationer interface {
 	GetLocation() Location
 }
 
-// New returns a new Location. "callDepth" is the number of
+// New returns a new [Location]. callDepth is the number of
 // stack frames to ascend to get the calling function (Func field),
 // added to 1 to get the File & Line fields.
 //
-// If the location can not be determined, false is returned and
-// the Location is not valid.
+// If the location can not be determined, ok is false and location is
+// not valid.
 func New(callDepth int) (loc Location, ok bool) {
 	_, loc.File, loc.Line, ok = runtime.Caller(callDepth + 1)
 	if !ok {
@@ -57,13 +57,13 @@ func New(callDepth int) (loc Location, ok bool) {
 	return
 }
 
-// IsInitialized returns true if the Location is initialized
-// (e.g. NewLocation() called without an error), false otherwise.
+// IsInitialized returns true if l is initialized
+// (e.g. [NewLocation] called without an error), false otherwise.
 func (l Location) IsInitialized() bool {
 	return l.File != ""
 }
 
-// Implements fmt.Stringer.
+// Implements [fmt.Stringer].
 func (l Location) String() string {
 	return fmt.Sprintf("%s %sat %s:%d", l.Func, l.Inside, l.File, l.Line)
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)

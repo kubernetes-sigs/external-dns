@@ -27,10 +27,10 @@ type StatisticItem struct {
 	V6HttpCount      int64        `json:"V6HttpCount" xml:"V6HttpCount"`
 	SubDomain        string       `json:"SubDomain" xml:"SubDomain"`
 	MaxThreatLevel   string       `json:"MaxThreatLevel" xml:"MaxThreatLevel"`
-	V4HttpCount      int64        `json:"V4HttpCount" xml:"V4HttpCount"`
 	V6HttpsCount     int64        `json:"V6HttpsCount" xml:"V6HttpsCount"`
-	IpCount          int64        `json:"IpCount" xml:"IpCount"`
+	V4HttpCount      int64        `json:"V4HttpCount" xml:"V4HttpCount"`
 	HttpsCount       int64        `json:"HttpsCount" xml:"HttpsCount"`
+	IpCount          int64        `json:"IpCount" xml:"IpCount"`
 	LatestThreatTime int64        `json:"LatestThreatTime" xml:"LatestThreatTime"`
 	DohTotalCount    int64        `json:"DohTotalCount" xml:"DohTotalCount"`
 	SourceIp         string       `json:"SourceIp" xml:"SourceIp"`

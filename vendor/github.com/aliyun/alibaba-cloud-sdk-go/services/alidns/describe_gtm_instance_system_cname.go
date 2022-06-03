@@ -81,8 +81,8 @@ type DescribeGtmInstanceSystemCnameRequest struct {
 // DescribeGtmInstanceSystemCnameResponse is the response struct for api DescribeGtmInstanceSystemCname
 type DescribeGtmInstanceSystemCnameResponse struct {
 	*responses.BaseResponse
-	RequestId   string `json:"RequestId" xml:"RequestId"`
 	SystemCname string `json:"SystemCname" xml:"SystemCname"`
+	RequestId   string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeGtmInstanceSystemCnameRequest creates a request to invoke DescribeGtmInstanceSystemCname API

@@ -79,8 +79,8 @@ type DescribeDnsGtmInstanceSystemCnameRequest struct {
 // DescribeDnsGtmInstanceSystemCnameResponse is the response struct for api DescribeDnsGtmInstanceSystemCname
 type DescribeDnsGtmInstanceSystemCnameResponse struct {
 	*responses.BaseResponse
-	RequestId   string `json:"RequestId" xml:"RequestId"`
 	SystemCname string `json:"SystemCname" xml:"SystemCname"`
+	RequestId   string `json:"RequestId" xml:"RequestId"`
 }
 
 // CreateDescribeDnsGtmInstanceSystemCnameRequest creates a request to invoke DescribeDnsGtmInstanceSystemCname API

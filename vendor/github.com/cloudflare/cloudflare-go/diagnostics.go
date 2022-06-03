@@ -97,8 +97,6 @@ func (api *API) PerformTraceroute(accountID string, targets, colos []string, tra
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // DiagnosticsTracerouteConfiguration is the overarching structure of the
@@ -282,7 +280,7 @@ func (api *API) PerformTraceroute(ctx context.Context, accountID string, targets
 	var diagnosticsResponse DiagnosticsTracerouteResponse
 	err = json.Unmarshal(res, &diagnosticsResponse)
 	if err != nil {
-		return []DiagnosticsTracerouteResponseResult{}, errors.Wrap(err, errUnmarshalError)
+		return []DiagnosticsTracerouteResponseResult{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 
 	return diagnosticsResponse.Result, nil

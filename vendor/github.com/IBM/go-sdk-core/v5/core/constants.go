@@ -22,6 +22,7 @@ const (
 	AUTHTYPE_IAM          = "iam"
 	AUTHTYPE_CP4D         = "cp4d"
 	AUTHTYPE_CONTAINER    = "container"
+	AUTHTYPE_VPC          = "vpc"
 
 	// Names of properties that can be defined as part of an external configuration (credential file, env vars, etc.).
 	// Example:  export MYSERVICE_URL=https://myurl
@@ -46,6 +47,7 @@ const (
 	PROPNAME_CLIENT_SECRET    = "CLIENT_SECRET"
 	PROPNAME_SCOPE            = "SCOPE"
 	PROPNAME_CRTOKEN_FILENAME = "CR_TOKEN_FILENAME" // #nosec G101
+	PROPNAME_IAM_PROFILE_CRN  = "IAM_PROFILE_CRN"
 	PROPNAME_IAM_PROFILE_NAME = "IAM_PROFILE_NAME"
 	PROPNAME_IAM_PROFILE_ID   = "IAM_PROFILE_ID"
 
@@ -57,6 +59,7 @@ const (
 	ERRORMSG_PROP_INVALID            = "The %s property is invalid. Please remove any surrounding {, }, or \" characters."
 	ERRORMSG_EXCLUSIVE_PROPS_ERROR   = "Exactly one of %s or %s must be specified."
 	ERRORMSG_ATLEAST_ONE_PROP_ERROR  = "At least one of %s or %s must be specified."
+	ERRORMSG_ATMOST_ONE_PROP_ERROR   = "At most one of %s or %s may be specified."
 	ERRORMSG_NO_AUTHENTICATOR        = "Authentication information was not properly configured."
 	ERRORMSG_AUTHTYPE_UNKNOWN        = "Unrecognized authentication type: %s"
 	ERRORMSG_PROPS_MAP_NIL           = "The 'properties' map cannot be nil."
@@ -77,4 +80,6 @@ const (
 	ERRORMSG_UNMARSHAL_AUTH_RESPONSE = "error unmarshalling authentication response: %s"
 	ERRORMSG_UNABLE_RETRIEVE_CRTOKEN = "unable to retrieve compute resource token value: %s"          // #nosec G101
 	ERRORMSG_IAM_GETTOKEN_ERROR      = "IAM 'get token' error, status code %d received from '%s': %s" // #nosec G101
+	ERRORMSG_UNABLE_RETRIEVE_IITOKEN = "unable to retrieve instance identity token value: %s"         // #nosec G101
+	ERRORMSG_VPCMDS_OPERATION_ERROR  = "VPC metadata service error, status code %d received from '%s': %s"
 )

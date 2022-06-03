@@ -81,13 +81,13 @@ type DescribeGtmInstanceStatusRequest struct {
 // DescribeGtmInstanceStatusResponse is the response struct for api DescribeGtmInstanceStatus
 type DescribeGtmInstanceStatusResponse struct {
 	*responses.BaseResponse
+	Status                      string `json:"Status" xml:"Status"`
+	StrategyNotAvailableNum     int    `json:"StrategyNotAvailableNum" xml:"StrategyNotAvailableNum"`
 	RequestId                   string `json:"RequestId" xml:"RequestId"`
+	SwitchToFailoverStrategyNum int    `json:"SwitchToFailoverStrategyNum" xml:"SwitchToFailoverStrategyNum"`
+	StatusReason                string `json:"StatusReason" xml:"StatusReason"`
 	AddrNotAvailableNum         int    `json:"AddrNotAvailableNum" xml:"AddrNotAvailableNum"`
 	AddrPoolNotAvailableNum     int    `json:"AddrPoolNotAvailableNum" xml:"AddrPoolNotAvailableNum"`
-	SwitchToFailoverStrategyNum int    `json:"SwitchToFailoverStrategyNum" xml:"SwitchToFailoverStrategyNum"`
-	StrategyNotAvailableNum     int    `json:"StrategyNotAvailableNum" xml:"StrategyNotAvailableNum"`
-	Status                      string `json:"Status" xml:"Status"`
-	StatusReason                string `json:"StatusReason" xml:"StatusReason"`
 }
 
 // CreateDescribeGtmInstanceStatusRequest creates a request to invoke DescribeGtmInstanceStatus API

@@ -122,9 +122,15 @@ func getKey(s string) (string, string) {
 func access(current interface{}, selector string, value interface{}, isSet bool) interface{} {
 	thisSel, nextSel := getKey(selector)
 
-	index := -1
-	if strings.Contains(thisSel, "[") {
+	indexes := []int{}
+	for strings.Contains(thisSel, "[") {
+		prevSel := thisSel
+		index := -1
 		index, thisSel = getIndex(thisSel)
+		indexes = append(indexes, index)
+		if prevSel == thisSel {
+			break
+		}
 	}
 
 	if curMap, ok := current.(Map); ok {
@@ -140,7 +146,11 @@ func access(current interface{}, selector string, value interface{}, isSet bool)
 		}
 
 		_, ok := curMSI[thisSel].(map[string]interface{})
-		if (curMSI[thisSel] == nil || !ok) && index == -1 && isSet {
+		if !ok {
+			_, ok = curMSI[thisSel].(Map)
+		}
+
+		if (curMSI[thisSel] == nil || !ok) && len(indexes) == 0 && isSet {
 			curMSI[thisSel] = map[string]interface{}{}
 		}
 
@@ -150,15 +160,23 @@ func access(current interface{}, selector string, value interface{}, isSet bool)
 	}
 
 	// do we need to access the item of an array?
-	if index > -1 {
-		if array, ok := interSlice(current); ok {
-			if index < len(array) {
-				current = array[index]
-			} else {
-				current = nil
+	if len(indexes) > 0 {
+		num := len(indexes)
+		for num > 0 {
+			num--
+			index := indexes[num]
+			indexes = indexes[:num]
+			if array, ok := interSlice(current); ok {
+				if index < len(array) {
+					current = array[index]
+				} else {
+					current = nil
+					break
+				}
 			}
 		}
 	}
+
 	if nextSel != "" {
 		current = access(current, nextSel, value, isSet)
 	}

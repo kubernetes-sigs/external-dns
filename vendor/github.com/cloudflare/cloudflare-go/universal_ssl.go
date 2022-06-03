@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/pkg/errors"
 )
 
 // UniversalSSLSetting represents a universal ssl setting's properties.
@@ -282,19 +280,13 @@ type universalSSLSettingResponse struct {
 
 // UniversalSSLVerificationDetails represents a universal ssl verification's properties.
 type UniversalSSLVerificationDetails struct {
-	CertificateStatus  string                       `json:"certificate_status"`
-	VerificationType   string                       `json:"verification_type"`
-	ValidationMethod   string                       `json:"validation_method"`
-	CertPackUUID       string                       `json:"cert_pack_uuid"`
-	VerificationStatus bool                         `json:"verification_status"`
-	BrandCheck         bool                         `json:"brand_check"`
-	VerificationInfo   UniversalSSLVerificationInfo `json:"verification_info"`
-}
-
-// UniversalSSLVerificationInfo represents DCV record.
-type UniversalSSLVerificationInfo struct {
-	RecordName   string `json:"record_name"`
-	RecordTarget string `json:"record_target"`
+	CertificateStatus  string                `json:"certificate_status"`
+	VerificationType   string                `json:"verification_type"`
+	ValidationMethod   string                `json:"validation_method"`
+	CertPackUUID       string                `json:"cert_pack_uuid"`
+	VerificationStatus bool                  `json:"verification_status"`
+	BrandCheck         bool                  `json:"brand_check"`
+	VerificationInfo   []SSLValidationRecord `json:"verification_info"`
 }
 
 type universalSSLVerificationResponse struct {
@@ -322,7 +314,7 @@ func (api *API) UniversalSSLSettingDetails(ctx context.Context, zoneID string) (
 	}
 	var r universalSSLSettingResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return UniversalSSLSetting{}, errors.Wrap(err, errUnmarshalError)
+		return UniversalSSLSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }
@@ -338,10 +330,9 @@ func (api *API) EditUniversalSSLSetting(ctx context.Context, zoneID string, sett
 	}
 	var r universalSSLSettingResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return UniversalSSLSetting{}, errors.Wrap(err, errUnmarshalError)
+		return UniversalSSLSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
-
 }
 
 // UniversalSSLVerificationDetails returns the details for a universal ssl verification
@@ -355,8 +346,14 @@ func (api *API) UniversalSSLVerificationDetails(ctx context.Context, zoneID stri
 	}
 	var r universalSSLVerificationResponse
 	if err := json.Unmarshal(res, &r); err != nil {
+<<<<<<< HEAD
 		return []UniversalSSLVerificationDetails{}, errors.Wrap(err, errUnmarshalError)
 >>>>>>> 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
+||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+		return []UniversalSSLVerificationDetails{}, errors.Wrap(err, errUnmarshalError)
+=======
+		return []UniversalSSLVerificationDetails{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
+>>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	}
 	return r.Result, nil
 }
@@ -372,7 +369,7 @@ func (api *API) UpdateUniversalSSLCertificatePackValidationMethod(ctx context.Co
 	}
 	var r universalSSLCertificatePackValidationMethodSettingResponse
 	if err := json.Unmarshal(res, &r); err != nil {
-		return UniversalSSLCertificatePackValidationMethodSetting{}, errors.Wrap(err, errUnmarshalError)
+		return UniversalSSLCertificatePackValidationMethodSetting{}, fmt.Errorf("%s: %w", errUnmarshalError, err)
 	}
 	return r.Result, nil
 }

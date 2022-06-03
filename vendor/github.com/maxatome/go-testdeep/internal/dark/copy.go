@@ -14,7 +14,7 @@ import (
 	"github.com/maxatome/go-testdeep/helpers/tdutil"
 )
 
-// CopyValue does its best to copy val in a new reflect.Value instance.
+// CopyValue does its best to copy val in a new [reflect.Value] instance.
 func CopyValue(val reflect.Value) (reflect.Value, bool) {
 	if val.Kind() == reflect.Ptr {
 		if val.IsNil() {
