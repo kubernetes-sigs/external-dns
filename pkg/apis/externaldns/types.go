@@ -189,6 +189,9 @@ type Config struct {
 	OCPRouterName                     string
 	IBMCloudProxied                   bool
 	IBMCloudConfigFile                string
+	YandexAuthorizationType           string
+	YandexAuthorizationOAuthToken     string
+	YandexAuthorizationKeyFile        string
 }
 
 var defaultConfig = &Config{
@@ -320,6 +323,7 @@ var defaultConfig = &Config{
 	GoDaddyOTE:                  false,
 	IBMCloudProxied:             false,
 	IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
+	YandexAuthorizationType:     "instance-service-account",
 }
 
 // NewConfig returns new Config object
