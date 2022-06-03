@@ -27,9 +27,9 @@ const (
 type YandexConfig struct {
 	DomainFilter            endpoint.DomainFilter
 	ZoneNameFilter          endpoint.DomainFilter
-	ZoneIdFilter            provider.ZoneIDFilter
+	ZoneIDFilter            provider.ZoneIDFilter
 	DryRun                  bool
-	FolderId                string
+	FolderID                string
 	AuthorizationType       string
 	AuthorizationOAuthToken string
 	AuthorizationKeyFile    string
@@ -40,15 +40,15 @@ type YandexProvider struct {
 
 	DomainFilter   endpoint.DomainFilter
 	ZoneNameFilter endpoint.DomainFilter
-	ZoneIdFilter   provider.ZoneIDFilter
+	ZoneIDFilter   provider.ZoneIDFilter
 	DryRun         bool
-	FolderId       string
+	FolderID       string
 
 	client DNSZoneClient
 }
 
 type upsertBatch struct {
-	ZoneId   string
+	ZoneID   string
 	ZoneName string
 	Deletes  []*dnsInt.RecordSet
 	Updates  []*dnsInt.RecordSet
@@ -86,16 +86,16 @@ func NewYandexProvider(ctx context.Context, cfg *YandexConfig) (*YandexProvider,
 	if err != nil {
 		return nil, err
 	}
-	if cfg.FolderId == "" {
+	if cfg.FolderID == "" {
 		return nil, errors.New("empty folderId specified")
 	}
 
 	return &YandexProvider{
 		DomainFilter:   cfg.DomainFilter,
 		ZoneNameFilter: cfg.ZoneNameFilter,
-		ZoneIdFilter:   cfg.ZoneIdFilter,
+		ZoneIDFilter:   cfg.ZoneIDFilter,
 		DryRun:         cfg.DryRun,
-		FolderId:       cfg.FolderId,
+		FolderID:       cfg.FolderID,
 
 		client: sdk.DNS().DnsZone(),
 	}, nil
@@ -155,19 +155,19 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	zoneId := provider.ZoneIDName{}
+	zoneIDMapper := provider.ZoneIDName{}
 	for _, z := range zones {
-		zoneId.Add(z.Id, strings.TrimSuffix(z.Zone, "."))
+		zoneIDMapper.Add(z.Id, strings.TrimSuffix(z.Zone, "."))
 	}
 
 	batchMap := make(upsertBatchMap)
-	batchMap.ApplyChanges(zoneId, changes.Delete, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+	batchMap.ApplyChanges(zoneIDMapper, changes.Delete, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
 		batch.Deletes = append(batch.Deletes, rs)
 	})
-	batchMap.ApplyChanges(zoneId, changes.Create, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+	batchMap.ApplyChanges(zoneIDMapper, changes.Create, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
 		batch.Creates = append(batch.Creates, rs)
 	})
-	batchMap.ApplyChanges(zoneId, changes.UpdateNew, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
+	batchMap.ApplyChanges(zoneIDMapper, changes.UpdateNew, func(batch *upsertBatch, rs *dnsInt.RecordSet) {
 		batch.Updates = append(batch.Updates, rs)
 	})
 
@@ -194,10 +194,10 @@ func (p *YandexProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 }
 
 func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
-	log.Debugf("Retrieving Yandex DNS zones for folder: %s.", p.FolderId)
+	log.Debugf("Retrieving Yandex DNS zones for folder: %s.", p.FolderID)
 
 	iterator := p.client.DnsZoneIterator(ctx, &dnsInt.ListDnsZonesRequest{
-		FolderId: p.FolderId,
+		FolderId: p.FolderID,
 	})
 
 	zones := make([]*dnsInt.DnsZone, 0)
@@ -205,7 +205,7 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	for iterator.Next() {
 		zone := iterator.Value()
 
-		if !p.DomainFilter.Match(zone.Zone) || !p.ZoneIdFilter.Match(zone.Id) {
+		if !p.DomainFilter.Match(zone.Zone) || !p.ZoneIDFilter.Match(zone.Id) {
 			log.Debugf("Skipping zone '%s' because of Domain And ZoneId filters", zone.Zone)
 			continue
 		}
@@ -222,11 +222,11 @@ func (p *YandexProvider) zones(ctx context.Context) ([]*dnsInt.DnsZone, error) {
 	return zones, nil
 }
 
-func (p *YandexProvider) records(ctx context.Context, zoneName, zoneId string) ([]*dnsInt.RecordSet, error) {
+func (p *YandexProvider) records(ctx context.Context, zoneName, zoneID string) ([]*dnsInt.RecordSet, error) {
 	log.Debugf("Retrieving Yandex DNS records for zone '%s'.", zoneName)
 
 	iterator := p.client.DnsZoneRecordSetsIterator(ctx, &dnsInt.ListDnsZoneRecordSetsRequest{
-		DnsZoneId: zoneId,
+		DnsZoneId: zoneID,
 	})
 
 	records := make([]*dnsInt.RecordSet, 0)
@@ -275,7 +275,7 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 
 	_, err := p.client.UpsertRecordSets(ctx,
 		&dnsInt.UpsertRecordSetsRequest{
-			DnsZoneId:    batch.ZoneId,
+			DnsZoneId:    batch.ZoneID,
 			Deletions:    batch.Deletes,
 			Replacements: batch.Updates,
 			Merges:       batch.Creates,
@@ -289,31 +289,31 @@ func (p *YandexProvider) upsertRecords(ctx context.Context, batch *upsertBatch) 
 	return nil
 }
 
-func (m upsertBatchMap) GetOrCreate(zoneId, zoneName string) *upsertBatch {
-	batch, ok := m[zoneId]
+func (m upsertBatchMap) GetOrCreate(zoneID, zoneName string) *upsertBatch {
+	batch, ok := m[zoneID]
 
 	if !ok {
 		batch = &upsertBatch{
-			ZoneId:   zoneId,
+			ZoneID:   zoneID,
 			ZoneName: zoneName,
 			Creates:  make([]*dnsInt.RecordSet, 0),
 			Deletes:  make([]*dnsInt.RecordSet, 0),
 			Updates:  make([]*dnsInt.RecordSet, 0),
 		}
-		m[zoneId] = batch
+		m[zoneID] = batch
 	}
 
 	return batch
 }
 
-func (m upsertBatchMap) ApplyChanges(zoneId provider.ZoneIDName, changes []*endpoint.Endpoint, handler func(*upsertBatch, *dnsInt.RecordSet)) {
+func (m upsertBatchMap) ApplyChanges(mapper provider.ZoneIDName, changes []*endpoint.Endpoint, handler func(*upsertBatch, *dnsInt.RecordSet)) {
 	for _, change := range changes {
-		zoneId, zoneName := zoneId.FindZone(change.DNSName)
-		if zoneId == "" || zoneName == "" {
+		zoneID, zoneName := mapper.FindZone(change.DNSName)
+		if zoneID == "" || zoneName == "" {
 			continue
 		}
 
-		batch := m.GetOrCreate(zoneId, zoneName)
+		batch := m.GetOrCreate(zoneID, zoneName)
 		handler(batch, toRecordSet(change))
 	}
 }

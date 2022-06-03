@@ -189,7 +189,7 @@ type Config struct {
 	OCPRouterName                     string
 	IBMCloudProxied                   bool
 	IBMCloudConfigFile                string
-	YandexFolderId                    string
+	YandexFolderID                    string
 	YandexAuthorizationType           string
 	YandexAuthorizationOAuthToken     string
 	YandexAuthorizationKeyFile        string

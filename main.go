@@ -336,9 +336,9 @@ func main() {
 			&yandex.YandexConfig{
 				DomainFilter:            domainFilter,
 				ZoneNameFilter:          zoneNameFilter,
-				ZoneIdFilter:            zoneIDFilter,
+				ZoneIDFilter:            zoneIDFilter,
 				DryRun:                  cfg.DryRun,
-				FolderId:                cfg.YandexFolderId,
+				FolderID:                cfg.YandexFolderID,
 				AuthorizationType:       cfg.YandexAuthorizationType,
 				AuthorizationOAuthToken: cfg.YandexAuthorizationOAuthToken,
 				AuthorizationKeyFile:    cfg.YandexAuthorizationKeyFile,
