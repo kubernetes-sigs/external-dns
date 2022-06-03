@@ -1,9 +1,3 @@
----
-hide:
-  - toc
-  - navigation
----
-
 <p align="center">
 	<img src="docs/img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
 </p>
