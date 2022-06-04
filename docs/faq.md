@@ -331,7 +331,7 @@ kind: Ingress
 metadata:
   name: foo
   annotations:
-    "external-dns.alpha.kubernetes.io/exclude": true # use the one that exclude your ingress
+    "external-dns.alpha.kubernetes.io/exclude: true # use the one that exclude your ingress
 spec:
   rules:
   - host: via-ingress.example.com
