@@ -44,6 +44,8 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for specifying whether the public or private interface address is used
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
+	// The annotation used for specifying exclude the object.
+	excludeAnnotationKey = "external-dns.alpha.kubernetes.io/exclude"
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress target
@@ -152,6 +154,11 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 		return nil
 	}
 	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+}
+
+func getExcludeAnnotations(annotations map[string]string) bool {
+	excludeAnnotation, exists := annotations[excludeAnnotationKey]
+	return exists && excludeAnnotation == "true"
 }
 
 func getAccessFromAnnotations(annotations map[string]string) string {

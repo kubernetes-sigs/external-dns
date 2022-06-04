@@ -492,6 +492,70 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:            "Exclude matching annotation as true expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class":              "nginx",
+						"external-dns.alpha.kubernetes.io/exclude": "true",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected:    []*endpoint.Endpoint{},
+		},
+		{
+			title:            "Exclude matching annotation as true expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class":              "nginx",
+						"external-dns.alpha.kubernetes.io/exclude": "false",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title:            "Exclude matching annotation as in-vaild expression",
+			targetNamespace:  "",
+			annotationFilter: "kubernetes.io/ingress.class in (nginx)",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class":              "nginx",
+						"external-dns.alpha.kubernetes.io/exclude": "test",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName: "example.org",
+					Targets: endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
 			title:            "valid non-matching annotation filter expression",
 			targetNamespace:  "",
 			annotationFilter: "kubernetes.io/ingress.class in (alb, nginx)",

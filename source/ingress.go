@@ -111,6 +111,12 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	if err != nil {
 		return nil, err
 	}
+
+	ingresses, err = sc.filterByExclude(ingresses)
+	if err != nil {
+		return nil, err
+	}
+
 	ingresses, err = sc.filterByAnnotations(ingresses)
 	if err != nil {
 		return nil, err
@@ -184,6 +190,24 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 	return endpoints, nil
+}
+
+func (sc *ingressSource) filterByExclude(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
+
+	filteredList := []*networkv1.Ingress{}
+
+	for _, ingress := range ingresses {
+		// include ingress if its annotations match the annotations 
+		if !getExcludeAnnotations(ingress.Annotations) {
+			filteredList = append(filteredList, ingress)
+		} else {
+			log.Debugf("Skipping ingress %s/%s because the 'external-dns.alpha.kubernetes.io/exclude' equal to 'true' value ",
+			ingress.Namespace, ingress.Name)
+		}
+
+	}
+
+	return filteredList, nil
 }
 
 // filterByAnnotations filters a list of ingresses by a given annotation selector.

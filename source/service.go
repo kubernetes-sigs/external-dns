@@ -146,6 +146,12 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	if err != nil {
 		return nil, err
 	}
+	
+	services, err = sc.filterByExclude(services)
+	if err != nil {
+		return nil, err
+	}
+
 	services, err = sc.filterByAnnotations(services)
 	if err != nil {
 		return nil, err
@@ -389,6 +395,22 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 		}
 	}
 	return endpoints
+}
+
+func (sc *serviceSource) filterByExclude(services []*v1.Service) ([]*v1.Service, error) {
+	filteredList := []*v1.Service{}
+
+	for _, service := range services {
+		// include ingress if its annotations match the annotations 
+		if !getExcludeAnnotations(service.Annotations) {
+			filteredList = append(filteredList, service)
+		} else {
+			log.Debugf("Skipping service %s/%s because the 'external-dns.alpha.kubernetes.io/exclude' equal to 'true' value ",
+			service.Namespace, service.Name)
+		}
+	}
+
+	return filteredList, nil
 }
 
 // filterByAnnotations filters a list of services by a given annotation selector.

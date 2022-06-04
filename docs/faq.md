@@ -321,3 +321,26 @@ FATA[0060] failed to sync cache: timed out waiting for the condition
 ```
 
 You may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a `namespace` that you don't have these permissions in. By default, commands are run against the `default` namespace. Try changing this to your particular namespace to see if that fixes the issue.
+
+### How to exclude service or ingress in Kubernetes?
+Add the `external-dns.alpha.kubernetes.io/exclude` annotation with `true` vaule \
+For example:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: foo
+  annotations:
+    "external-dns.alpha.kubernetes.io/exclude": true # use the one that exclude your ingress
+spec:
+  rules:
+  - host: via-ingress.example.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: "nginx"
+            port:
+              number: 80
+        pathType: Prefix
+```

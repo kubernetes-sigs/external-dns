@@ -2982,3 +2982,134 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		require.NoError(b, err)
 	}
 }
+
+func TestServicesEndpoints(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		title                    string
+		targetNamespace          string
+		svcNamespace             string
+		svcName                  string
+		svcType                  v1.ServiceType
+		compatibility            string
+		fqdnTemplate             string
+		ignoreHostnameAnnotation bool
+		labels                   map[string]string
+		annotations              map[string]string
+		externalName             string
+		expected                 []*endpoint.Endpoint
+		expectError              bool
+	}{
+		{
+			title: "external services return an A endpoint for the external name that is an IP address",
+			targetNamespace: "",
+			svcNamespace: "testing",
+			svcName: "foo",
+			svcType: v1.ServiceTypeExternalName,
+			compatibility: "",
+			fqdnTemplate: "",
+			ignoreHostnameAnnotation: false,
+			labels: map[string]string{"component": "foo"},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+				excludeAnnotationKey: "true",
+			},
+			externalName: "111.111.111.111",
+			expected: []*endpoint.Endpoint{},
+			expectError: false,
+		},
+		{
+			title: "external services return an A endpoint for the external name that is an IP address",
+			targetNamespace: "",
+			svcNamespace: "testing",
+			svcName: "foo",
+			svcType: v1.ServiceTypeExternalName,
+			compatibility: "",
+			fqdnTemplate: "",
+			ignoreHostnameAnnotation: false,
+			labels: map[string]string{"component": "foo"},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+				excludeAnnotationKey: "false",
+			},
+			externalName: "111.111.111.111",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
+			},
+			expectError: false,
+		},
+		{
+			title: "external services return an A endpoint for the external name that is an IP address",
+			targetNamespace: "",
+			svcNamespace: "testing",
+			svcName: "foo",
+			svcType: v1.ServiceTypeExternalName,
+			compatibility: "",
+			fqdnTemplate: "",
+			ignoreHostnameAnnotation: false,
+			labels: map[string]string{"component": "foo"},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+				excludeAnnotationKey: "test",
+			},
+			externalName: "111.111.111.111",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
+			},
+			expectError: false,
+		},
+	} {
+		tc := tc
+		t.Run(tc.title, func(t *testing.T) {
+			t.Parallel()
+
+			// Create a Kubernetes testing client
+			kubernetes := fake.NewSimpleClientset()
+
+			service := &v1.Service{
+				Spec: v1.ServiceSpec{
+					Type:         tc.svcType,
+					ExternalName: tc.externalName,
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   tc.svcNamespace,
+					Name:        tc.svcName,
+					Labels:      tc.labels,
+					Annotations: tc.annotations,
+				},
+				Status: v1.ServiceStatus{},
+			}
+			_, err := kubernetes.CoreV1().Services(service.Namespace).Create(context.Background(), service, metav1.CreateOptions{})
+			require.NoError(t, err)
+
+			// Create our object under test and get the endpoints.
+			client, _ := NewServiceSource(
+				context.TODO(),
+				kubernetes,
+				tc.targetNamespace,
+				"",
+				tc.fqdnTemplate,
+				false,
+				tc.compatibility,
+				true,
+				false,
+				false,
+				[]string{},
+				tc.ignoreHostnameAnnotation,
+				labels.Everything(),
+			)
+			require.NoError(t, err)
+
+			endpoints, err := client.Endpoints(context.Background())
+			if tc.expectError {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			// Validate returned endpoints against desired endpoints.
+			validateEndpoints(t, endpoints, tc.expected)
+		})
+	}
+}
