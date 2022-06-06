@@ -33,7 +33,10 @@ import (
 	"github.com/wmarchesi123/stackpath-go/pkg/oauth2"
 )
 
+type StackPathProviderI interface{}
+
 type StackPathProvider struct {
+	StackPathProviderI
 	provider.BaseProvider
 	client       *dns.APIClient
 	context      context.Context
@@ -41,6 +44,7 @@ type StackPathProvider struct {
 	zoneIdFilter provider.ZoneIDFilter
 	stackId      string
 	dryRun       bool
+	testing      bool
 }
 
 type StackPathConfig struct {
@@ -48,6 +52,7 @@ type StackPathConfig struct {
 	DomainFilter endpoint.DomainFilter
 	ZoneIDFilter provider.ZoneIDFilter
 	DryRun       bool
+	Testing      bool
 }
 
 func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
@@ -90,6 +95,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		zoneIdFilter: config.ZoneIDFilter,
 		stackId:      stackId,
 		dryRun:       config.DryRun,
+		testing:      config.Testing,
 	}
 
 	return provider, nil
@@ -110,7 +116,7 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 	for _, zone := range zones {
 
-		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zone.GetId()).Execute()
+		recordsResponse, _, err := p.getZoneRecords(zone.GetId())
 		if err != nil {
 			return nil, err
 		}
@@ -138,6 +144,15 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	log.Infof(out)
 
 	return merged, nil
+}
+
+func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecordsResponse, *http.Response, error) {
+
+	if p.testing {
+		return dns.ZoneGetZoneRecordsResponse{}, nil, nil
+	}
+
+	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zoneID).Execute()
 }
 
 func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error) {
@@ -308,7 +323,7 @@ func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.End
 
 func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 
-	zoneResponse, _, err := p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
+	zoneResponse, _, err := p.getZones()
 	if err != nil {
 		return nil, err
 	}
@@ -326,6 +341,15 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 	}
 
 	return filteredZones, nil
+}
+
+func (p *StackPathProvider) getZones() (dns.ZoneGetZonesResponse, *http.Response, error) {
+
+	if p.testing {
+		return dns.ZoneGetZonesResponse{}, nil, nil
+	}
+
+	return p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
 }
 
 // Merge Endpoints with the same Name and Type into a single endpoint with
