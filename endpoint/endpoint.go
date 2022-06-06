@@ -22,6 +22,8 @@ import (
 	"sort"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -110,9 +112,28 @@ func (t Targets) IsLess(o Targets) bool {
 		if e != o[i] {
 			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
 			// This prevents behavior like `1-2-3-4.example.com` being "less" than `1.2.3.4` when doing lexicographical string comparison.
-			ipA, _ := netip.ParseAddr(e)
-			ipB, _ := netip.ParseAddr(o[i])
+			ipA, err := netip.ParseAddr(e)
+			if err != nil {
+				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
+				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
+				// non-obvious issues with the records being created.
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
 
+			ipB, err := netip.ParseAddr(o[i])
+			if err != nil {
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
+
+			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
+			// If one is a valid IP and the other is not, prefer the IP address (consider it "less").
+			// If neither is a valid IP, use lexicographical string comparison to determine which string sorts first alphabetically.
 			switch {
 			case ipA.IsValid() && ipB.IsValid():
 				return ipA.Less(ipB)
