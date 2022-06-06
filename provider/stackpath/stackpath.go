@@ -72,7 +72,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 	oauthSource := oauth2.NewTokenSource(clientId, clientSecret, oauth2.HTTPClientOption(http.DefaultClient))
 	_, err := oauthSource.Token()
 	if err != nil {
-		return nil, fmt.Errorf("STACKPATH_CLIENT_ID or STACKPATH_CLIENT_SECRET environment variable(s) are invalid")
+		return nil, err
 	} else {
 		log.Info("Successfully authenticated with StackPath")
 	}
@@ -219,7 +219,10 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
 
-				p.createTarget(zoneID, domain, endpoint, target)
+				err := p.createTarget(zoneID, domain, endpoint, target)
+				if err != nil {
+					return err
+				}
 
 			}
 		}
