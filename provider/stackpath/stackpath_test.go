@@ -61,6 +61,14 @@ func TestNewStackPathProvider(t *testing.T) {
 	}
 }
 
+func TestZones(t *testing.T) {
+	zones, err := testProvider.zones()
+	assert.NoError(t, err)
+	assert.Equal(t, len(zones), 3)
+	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
+	assert.Equal(t, zones[2].GetDisabled(), true)
+}
+
 func TestGetZones(t *testing.T) {
 	zoneGetZonesResponse, _, err := testProvider.getZones()
 
