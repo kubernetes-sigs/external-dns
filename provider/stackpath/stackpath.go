@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -33,16 +34,13 @@ import (
 	"github.com/wmarchesi123/stackpath-go/pkg/oauth2"
 )
 
-type StackPathProviderI interface{}
-
 type StackPathProvider struct {
-	StackPathProviderI
 	provider.BaseProvider
 	client       *dns.APIClient
 	context      context.Context
 	domainFilter endpoint.DomainFilter
-	zoneIdFilter provider.ZoneIDFilter
-	stackId      string
+	zoneIDFilter provider.ZoneIDFilter
+	stackID      string
 	dryRun       bool
 	testing      bool
 }
@@ -92,8 +90,8 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		client:       client,
 		context:      authorizedContext,
 		domainFilter: config.DomainFilter,
-		zoneIdFilter: config.ZoneIDFilter,
-		stackId:      stackId,
+		zoneIDFilter: config.ZoneIDFilter,
+		stackID:      stackId,
 		dryRun:       config.DryRun,
 		testing:      config.Testing,
 	}
@@ -152,7 +150,7 @@ func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecord
 		return dns.ZoneGetZoneRecordsResponse{}, nil, nil
 	}
 
-	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zoneID).Execute()
+	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zoneID).Execute()
 }
 
 func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error) {
@@ -168,7 +166,7 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 
 	for _, zone := range zones {
 
-		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackId, zone.GetId()).Execute()
+		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zone.GetId()).Execute()
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +244,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 	return nil
 }
 
-func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint *endpoint.Endpoint, target string) error {
+func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint *endpoint.Endpoint, target string) error {
 
 	msg := dns.NewZoneUpdateZoneRecordMessage()
 	name := strings.TrimSuffix(endpoint.DNSName, "."+domain)
@@ -261,7 +259,7 @@ func (p *StackPathProvider) createTarget(zoneId string, domain string, endpoint 
 
 	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + fmt.Sprint(endpoint.RecordTTL))
 
-	a, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackId, zoneId).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	a, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackID, zoneID).ZoneUpdateZoneRecordMessage(*msg).Execute()
 
 	if err != nil {
 		log.Infof(err.Error())
@@ -298,7 +296,7 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 }
 
 func (p *StackPathProvider) deleteTarget(zone string, record string) error {
-	resp, err := p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackId, zone, record).Execute()
+	resp, err := p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackID, zone, record).Execute()
 
 	if err != nil {
 		log.Infof(err.Error())
@@ -332,7 +330,7 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 	filteredZones := []dns.ZoneZone{}
 
 	for _, zone := range zones {
-		if p.zoneIdFilter.Match(zone.GetId()) && p.domainFilter.Match(zone.GetDomain()) {
+		if p.zoneIDFilter.Match(zone.GetId()) && p.domainFilter.Match(zone.GetDomain()) {
 			filteredZones = append(filteredZones, zone)
 			log.Debugf("Matched zone " + zone.GetId())
 		} else {
@@ -346,10 +344,10 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 func (p *StackPathProvider) getZones() (dns.ZoneGetZonesResponse, *http.Response, error) {
 
 	if p.testing {
-		return dns.ZoneGetZonesResponse{}, nil, nil
+		return testGetZones, nil, nil
 	}
 
-	return p.client.ZonesApi.GetZones(p.context, p.stackId).Execute()
+	return p.client.ZonesApi.GetZones(p.context, p.stackID).Execute()
 }
 
 // Merge Endpoints with the same Name and Type into a single endpoint with
@@ -419,3 +417,83 @@ func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns
 
 	return "", fmt.Errorf("record not found")
 }
+
+var (
+	testStackID     = "TEST_STACK_ID"
+	testAccountID   = "TEST_ACCOUNT_ID"
+	testNameservers = []string{"ns1.example.com", "ns2.example.com"}
+
+	testZoneID1                          = "TEST_ZONE_ID1"
+	testZoneDomain1                      = "TEST_ZONE_DOMAIN1"
+	testZoneVersion1                     = "TEST_ZONE_VERSION1"
+	testZoneLabels1                      = make(map[string]string)
+	testZoneDisabled1                    = false
+	testZoneID2                          = "TEST_ZONE_ID2"
+	testZoneDomain2                      = "TEST_ZONE_DOMAIN2"
+	testZoneVersion2                     = "TEST_ZONE_VERSION2"
+	testZoneLabels2                      = make(map[string]string)
+	testZoneDisabled2                    = false
+	testZoneID3                          = "TEST_ZONE_ID3"
+	testZoneDomain3                      = "TEST_ZONE_DOMAIN3"
+	testZoneVersion3                     = "TEST_ZONE_VERSION3"
+	testZoneLabels3                      = make(map[string]string)
+	testZoneDisabled3                    = true
+	testZoneStatus    dns.ZoneZoneStatus = "ACTIVE"
+	testGetZonesZones                    = []dns.ZoneZone{
+		{
+			StackId:     &testStackID,
+			AccountId:   &testAccountID,
+			Id:          &testZoneID1,
+			Domain:      &testZoneDomain1,
+			Version:     &testZoneVersion1,
+			Labels:      &testZoneLabels1,
+			Created:     &time.Time{},
+			Updated:     &time.Time{},
+			Nameservers: &testNameservers,
+			Verified:    &time.Time{},
+			Status:      &testZoneStatus,
+			Disabled:    &testZoneDisabled1,
+		},
+		{
+			StackId:     &testStackID,
+			AccountId:   &testAccountID,
+			Id:          &testZoneID2,
+			Domain:      &testZoneDomain2,
+			Version:     &testZoneVersion2,
+			Labels:      &testZoneLabels2,
+			Created:     &time.Time{},
+			Updated:     &time.Time{},
+			Nameservers: &testNameservers,
+			Verified:    &time.Time{},
+			Status:      &testZoneStatus,
+			Disabled:    &testZoneDisabled2,
+		},
+		{
+			StackId:     &testStackID,
+			AccountId:   &testAccountID,
+			Id:          &testZoneID3,
+			Domain:      &testZoneDomain3,
+			Version:     &testZoneVersion3,
+			Labels:      &testZoneLabels3,
+			Created:     &time.Time{},
+			Updated:     &time.Time{},
+			Nameservers: &testNameservers,
+			Verified:    &time.Time{},
+			Status:      &testZoneStatus,
+			Disabled:    &testZoneDisabled3,
+		},
+	}
+	testGetZonesTotalCount      = "3"
+	testGetZonesHasPreviousPage = false
+	testGetZonesHasNextPage     = false
+	testGetZonesEndCursor       = "2"
+	testGetZones                = dns.ZoneGetZonesResponse{
+		PageInfo: &dns.PaginationPageInfo{
+			TotalCount:      &testGetZonesTotalCount,
+			HasPreviousPage: &testGetZonesHasPreviousPage,
+			HasNextPage:     &testGetZonesHasNextPage,
+			EndCursor:       &testGetZonesEndCursor,
+		},
+		Zones: &testGetZonesZones,
+	}
+)
