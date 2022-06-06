@@ -232,9 +232,13 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
 
-				err := p.createTarget(zoneID, domain, endpoint, target)
-				if err != nil {
-					return err
+				if !p.dryRun {
+					err := p.createTarget(zoneID, domain, endpoint, target)
+					if err != nil {
+						return err
+					}
+				} else {
+					log.Infof("Would have created record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, endpoint.RecordTTL)
 				}
 
 			}
@@ -282,12 +286,16 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 	for zoneID, endpoints := range deleteByZoneID {
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
-				domain := (*zoneIdNameMap)[zoneID]
-				recordID, err := recordFromTarget(endpoint, target, records, domain)
-				if err != nil {
-					return err
+				if !p.dryRun {
+					domain := (*zoneIdNameMap)[zoneID]
+					recordID, err := recordFromTarget(endpoint, target, records, domain)
+					if err != nil {
+						return err
+					}
+					p.deleteTarget(zoneID, recordID)
+				} else {
+					log.Infof("Would have deleted record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, endpoint.RecordTTL)
 				}
-				p.deleteTarget(zoneID, recordID)
 			}
 		}
 	}
