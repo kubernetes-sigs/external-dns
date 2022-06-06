@@ -313,8 +313,15 @@ func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 
 func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
 
-	p.create(new, zones, zoneIdNameMap)
-	p.delete(old, zones, zoneIdNameMap, records)
+	err := p.create(new, zones, zoneIdNameMap)
+	if err != nil {
+		return err
+	}
+
+	err = p.delete(old, zones, zoneIdNameMap, records)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -344,7 +351,7 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 func (p *StackPathProvider) getZones() (dns.ZoneGetZonesResponse, *http.Response, error) {
 
 	if p.testing {
-		return testGetZones, nil, nil
+		return testGetZoneRecords, nil, nil
 	}
 
 	return p.client.ZonesApi.GetZones(p.context, p.stackID).Execute()
@@ -487,7 +494,7 @@ var (
 	testGetZonesHasPreviousPage = false
 	testGetZonesHasNextPage     = false
 	testGetZonesEndCursor       = "2"
-	testGetZones                = dns.ZoneGetZonesResponse{
+	testGetZoneRecords          = dns.ZoneGetZonesResponse{
 		PageInfo: &dns.PaginationPageInfo{
 			TotalCount:      &testGetZonesTotalCount,
 			HasPreviousPage: &testGetZonesHasPreviousPage,
