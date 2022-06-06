@@ -21,9 +21,21 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/wmarchesi123/stackpath-go/pkg/dns"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/provider"
 )
+
+var testProvider = StackPathProvider{
+	client:       &dns.APIClient{},
+	context:      context.Background(),
+	domainFilter: endpoint.DomainFilter{},
+	zoneIDFilter: provider.ZoneIDFilter{},
+	stackID:      "TEST_STACK_ID",
+	dryRun:       false,
+	testing:      true,
+}
 
 func TestNewStackPathProvider(t *testing.T) {
 	stackPathConfig := &StackPathConfig{
@@ -49,39 +61,13 @@ func TestNewStackPathProvider(t *testing.T) {
 	}
 }
 
-// func TestTestTest(t *testing.T) {
-// 	provider := &StackPathProvider{
-// 		client:       &dns.APIClient{},
-// 		context:      context.Background(),
-// 		domainFilter: endpoint.DomainFilter{},
-// 		zoneIdFilter: provider.ZoneIDFilter{},
-// 		stackId:      "",
-// 		dryRun:       true,
-//      testing:      true
-// 	}
+func TestGetZones(t *testing.T) {
+	zoneGetZonesResponse, _, err := testProvider.getZones()
 
-// 	a, b, c := provider.getZoneRecords("test.com")
-
-// 	if a != dns.ZoneGetZoneRecordsResponse {
-// 	}
-// 	{
-// 		t.Fatalf("Expected empty response")
-// 	}
-// 	spew.Dump(b)
-// 	spew.Dump(c)
-
-// }
-
-// func TestStackPathRecords(t *testing.T) {
-// 	mocked := mockStackPathProvider{}
-
-// 	provider := &StackPathProvider{
-// 		client: mocked,
-// 	}
-
-// 	_, err := provider.zones()
-// 	if err != nil {
-// 		t.Fatalf("%v", err)
-// 	}
-
-// }
+	assert.NoError(t, err)
+	assert.Equal(t, zoneGetZonesResponse.HasZones(), true)
+	zones := zoneGetZonesResponse.GetZones()
+	assert.Equal(t, len(zones), 3)
+	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
+	assert.Equal(t, zones[2].GetDisabled(), true)
+}
