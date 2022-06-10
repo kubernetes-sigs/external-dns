@@ -207,7 +207,6 @@ external-dns.alpha.kubernetes.io/endpoints-type: HostIP
 ```
 
 external-dns will now publish the value of the `.status.hostIP` field of the pods backing your `Service`.
-```
 
 #### Using node external IPs as targets
 
