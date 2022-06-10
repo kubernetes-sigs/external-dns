@@ -24,7 +24,7 @@ serviceAccount:
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
-  additionalPermissions: {}
+  additionalPermissions: []
 
 # Annotations to add to the Deployment
 deploymentAnnotations: {}
