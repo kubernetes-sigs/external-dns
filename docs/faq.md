@@ -34,7 +34,7 @@ As stated in the README, we are currently looking for stable maintainers for tho
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
+Services exposed via `type=LoadBalancer`, `type=ExternalName`, `type=NodePort`, and for the hostnames defined in Ingress objects as well as [headless hostPort](tutorials/hostport.md) services.
 
 ### How do I specify a DNS name for my Kubernetes objects?
 
