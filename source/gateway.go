@@ -235,7 +235,7 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 			log.Warn(err)
 		}
 		for host, targets := range hostTargets {
-			eps := endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)
+			eps := endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, false)
 			for _, ep := range eps {
 				ep.Labels[endpoint.ResourceLabelKey] = resourceKey
 			}
