@@ -27,7 +27,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -67,7 +66,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -107,8 +106,7 @@ func NewServiceSource(kubeClient kubernetes.Interface, namespace, annotationFilt
 		},
 	)
 
-	// TODO informer is not explicitly stopped since controller is not passing in its channel.
-	informerFactory.Start(wait.NeverStop)
+	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
 	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
@@ -261,11 +259,13 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
-		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
+		log.Errorf("List pods of service[%s] error: %v", svc.GetName(), err)
 		return endpoints
 	}
 
-	targetsByHeadlessDomain := make(map[string][]string)
+	endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
+
+	targetsByHeadlessDomain := make(map[string]endpoint.Targets)
 	for _, subset := range endpointsObject.Subsets {
 		addresses := subset.Addresses
 		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
@@ -296,15 +296,29 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 
 			for _, headlessDomain := range headlessDomains {
-				var ep string
-				if sc.publishHostIP {
-					ep = pod.Status.HostIP
-					log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, ep)
-				} else {
-					ep = address.IP
-					log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, ep)
+				targets := getTargetsFromTargetAnnotation(pod.Annotations)
+				if len(targets) == 0 {
+					if endpointsType == EndpointsTypeNodeExternalIP {
+						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+						if err != nil {
+							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
+							return endpoints
+						}
+						for _, address := range node.Status.Addresses {
+							if address.Type == v1.NodeExternalIP {
+								targets = endpoint.Targets{address.Address}
+								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
+							}
+						}
+					} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
+						targets = endpoint.Targets{pod.Status.HostIP}
+						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
+					} else {
+						targets = endpoint.Targets{address.IP}
+						log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, address.IP)
+					}
 				}
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ep)
+				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], targets...)
 			}
 		}
 	}

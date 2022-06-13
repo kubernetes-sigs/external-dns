@@ -2,12 +2,14 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.7.1
-appVersion: 0.10.2
+version: 1.9.0
+appVersion: 0.11.0
 keywords:
   - kubernetes
   - external-dns
   - dns
+  - service
+  - ingress
 home: https://github.com/kubernetes-sigs/external-dns/
 icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
 sources:
@@ -17,9 +19,5 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
-    - kind: added
-      description: "Allow custom ClusterRole rules to be specified for sources without defaults."
     - kind: changed
-      description: "Update ExternalDNS version to v0.10.2."
-    - kind: changed
-      description: "Set ClusterRole rules based more enabled sources."
+      description: "Update ExternalDNS version to v0.11.0"

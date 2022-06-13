@@ -24,7 +24,7 @@ import (
 	"strings"
 	"testing"
 
-	ibclient "github.com/infobloxopen/infoblox-go-client"
+	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 	"github.com/miekg/dns"
 	"github.com/stretchr/testify/assert"
 
@@ -113,7 +113,7 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 	return ref, nil
 }
 
-func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, res interface{}) (err error) {
+func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, queryParams *ibclient.QueryParams, res interface{}) (err error) {
 	switch obj.ObjectType() {
 	case "record:a":
 		var result []ibclient.RecordA
@@ -208,12 +208,9 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	switch result[1] {
 	case "record:a":
 		var records []ibclient.RecordA
-		obj := ibclient.NewRecordA(
-			ibclient.RecordA{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyRecordA()
+		obj.Name = result[2]
+		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -226,12 +223,9 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:cname":
 		var records []ibclient.RecordCNAME
-		obj := ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyRecordCNAME()
+		obj.Name = result[2]
+		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -244,12 +238,9 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:host":
 		var records []ibclient.HostRecord
-		obj := ibclient.NewHostRecord(
-			ibclient.HostRecord{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyHostRecord()
+		obj.Name = result[2]
+		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -267,7 +258,7 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 				Name: result[2],
 			},
 		)
-		client.GetObject(obj, ref, &records)
+		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -280,12 +271,9 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:ptr":
 		var records []ibclient.RecordPTR
-		obj := ibclient.NewRecordPTR(
-			ibclient.RecordPTR{
-				Name: result[2],
-			},
-		)
-		client.GetObject(obj, ref, &records)
+		obj := ibclient.NewEmptyRecordPTR()
+		obj.Name = result[2]
+		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
@@ -354,21 +342,17 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	ref := fmt.Sprintf("record:%s/%s:%s/default", strings.ToLower(recordType), base64.StdEncoding.EncodeToString([]byte(name)), name)
 	switch recordType {
 	case endpoint.RecordTypeA:
-		return ibclient.NewRecordA(
-			ibclient.RecordA{
-				Ref:      ref,
-				Name:     name,
-				Ipv4Addr: value,
-			},
-		)
+		obj := ibclient.NewEmptyRecordA()
+		obj.Name = name
+		obj.Ref = ref
+		obj.Ipv4Addr = value
+		return obj
 	case endpoint.RecordTypeCNAME:
-		return ibclient.NewRecordCNAME(
-			ibclient.RecordCNAME{
-				Ref:       ref,
-				Name:      name,
-				Canonical: value,
-			},
-		)
+		obj := ibclient.NewEmptyRecordCNAME()
+		obj.Name = name
+		obj.Ref = ref
+		obj.Canonical = value
+		return obj
 	case endpoint.RecordTypeTXT:
 		return ibclient.NewRecordTXT(
 			ibclient.RecordTXT{
@@ -378,31 +362,28 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 			},
 		)
 	case "HOST":
-		return ibclient.NewHostRecord(
-			ibclient.HostRecord{
-				Ref:  ref,
-				Name: name,
-				Ipv4Addrs: []ibclient.HostRecordIpv4Addr{
-					{
-						Ipv4Addr: value,
-					},
-				},
-			},
-		)
-	case endpoint.RecordTypePTR:
-		return ibclient.NewRecordPTR(
-			ibclient.RecordPTR{
-				Ref:      ref,
-				PtrdName: name,
+		obj := ibclient.NewEmptyHostRecord()
+		obj.Name = name
+		obj.Ref = ref
+		obj.Ipv4Addrs = []ibclient.HostRecordIpv4Addr{
+			{
 				Ipv4Addr: value,
 			},
-		)
+		}
+		return obj
+	case endpoint.RecordTypePTR:
+		obj := ibclient.NewEmptyRecordPTR()
+		obj.PtrdName = name
+		obj.Ref = ref
+		obj.Ipv4Addr = value
+		return obj
 	}
+
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *InfobloxProvider {
-	return &InfobloxProvider{
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
+	return &ProviderConfig{
 		client:       client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -435,8 +416,8 @@ func TestInfobloxRecords(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
-	actual, err := provider.Records(context.Background())
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	actual, err := providerCfg.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -472,12 +453,12 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
-	actual, err := provider.Records(context.Background())
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
+	actual, err := providerCfg.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	provider.AdjustEndpoints(actual)
+	providerCfg.AdjustEndpoints(actual)
 
 	expected := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122").WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true"),
@@ -501,8 +482,8 @@ func TestInfobloxRecordsReverse(t *testing.T) {
 		},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
-	actual, err := provider.Records(context.Background())
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
+	actual, err := providerCfg.Records(context.Background())
 
 	if err != nil {
 		t.Fatal(err)
@@ -606,7 +587,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun, createPTR bool, clie
 		createMockInfobloxObject("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 	}
 
-	provider := newInfobloxProvider(
+	providerCfg := newInfobloxProvider(
 		endpoint.NewDomainFilter([]string{""}),
 		provider.NewZoneIDFilter([]string{""}),
 		dryRun,
@@ -658,7 +639,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun, createPTR bool, clie
 		Delete:    deleteRecords,
 	}
 
-	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+	if err := providerCfg.ApplyChanges(context.Background(), changes); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -674,18 +655,18 @@ func TestInfobloxZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
-	zones, _ := provider.zones()
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	zones, _ := providerCfg.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
-	assert.Equal(t, provider.findZone(zones, "example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "nomatch-example.com"), emptyZoneAuth)
-	assert.Equal(t, provider.findZone(zones, "nginx.example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl1-2.example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-1.lvl1-1.example.com").Fqdn, "lvl2-1.lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
-	assert.Equal(t, provider.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
-	assert.Equal(t, provider.findZone(zones, "1.2.3.0/24").Fqdn, "1.2.3.0/24")
+	assert.Equal(t, providerCfg.findZone(zones, "example.com").Fqdn, "example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "nomatch-example.com"), emptyZoneAuth)
+	assert.Equal(t, providerCfg.findZone(zones, "nginx.example.com").Fqdn, "example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "lvl1-2.example.com").Fqdn, "example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "lvl2-1.lvl1-1.example.com").Fqdn, "lvl2-1.lvl1-1.example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "lvl2-2.lvl1-1.example.com").Fqdn, "lvl1-1.example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "lvl2-2.lvl1-2.example.com").Fqdn, "example.com")
+	assert.Equal(t, providerCfg.findZone(zones, "1.2.3.0/24").Fqdn, "1.2.3.0/24")
 }
 
 func TestInfobloxReverseZones(t *testing.T) {
@@ -698,32 +679,35 @@ func TestInfobloxReverseZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	provider := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24", "10.0.0.0/8"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
-	zones, _ := provider.zones()
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24", "10.0.0.0/8"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	zones, _ := providerCfg.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
-	assert.Equal(t, provider.findReverseZone(zones, "nomatch-example.com"), emptyZoneAuth)
-	assert.Equal(t, provider.findReverseZone(zones, "192.168.0.1"), emptyZoneAuth)
-	assert.Equal(t, provider.findReverseZone(zones, "1.2.3.4").Fqdn, "1.2.3.0/24")
-	assert.Equal(t, provider.findReverseZone(zones, "10.28.29.30").Fqdn, "10.0.0.0/8")
+	assert.Equal(t, providerCfg.findReverseZone(zones, "nomatch-example.com"), emptyZoneAuth)
+	assert.Equal(t, providerCfg.findReverseZone(zones, "192.168.0.1"), emptyZoneAuth)
+	assert.Equal(t, providerCfg.findReverseZone(zones, "1.2.3.4").Fqdn, "1.2.3.0/24")
+	assert.Equal(t, providerCfg.findReverseZone(zones, "10.28.29.30").Fqdn, "10.0.0.0/8")
 }
 
 func TestExtendedRequestZoneFilterBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
 		Username: "user",
 		Password: "abcd",
-		Version:  "2.3.1",
 	}
 
 	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
-	requestBuilder.Init(hostConfig)
+	requestBuilder.Init(hostCfg, authCfg)
 
 	checks := []map[string]interface{}{
 		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.GET, "result": "^staging.*test.com$"},
 		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.CREATE, "result": ""},
-		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.GET, "result": ""},
-		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewEmptyRecordA(), "requestType": ibclient.GET, "result": ""},
+		{"obj": ibclient.NewEmptyRecordA(), "requestType": ibclient.CREATE, "result": ""},
 		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.GET, "result": ""},
 		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.CREATE, "result": ""},
 	}
@@ -731,7 +715,8 @@ func TestExtendedRequestZoneFilterBuilder(t *testing.T) {
 	for _, test := range checks {
 		obj := test["obj"]
 		requestType := test["requestType"]
-		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", ibclient.QueryParams{})
+		queryParams := ibclient.QueryParams{}
+		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", &queryParams)
 		assert.True(t, req.URL.Query().Get("fqdn~") == test["result"], "obj: %T, requestType: %T", obj, requestType)
 	}
 
@@ -740,21 +725,19 @@ func TestExtendedRequestZoneFilterBuilder(t *testing.T) {
 
 func TestExtendedRequestRecordFilterBuilder(t *testing.T) {
 	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
-		Username: "user",
-		Password: "abcd",
-		Version:  "2.3.1",
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
 	}
 
 	requestBuilder := NewExtendedRequestBuilder(0, "", ".*example.*")
-	requestBuilder.Init(hostConfig)
+	requestBuilder.Init(hostConfig, ibclient.AuthConfig{})
 
 	checks := []map[string]interface{}{
 		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.GET, "result": ""},
 		{"obj": ibclient.NewZoneAuth(ibclient.ZoneAuth{}), "requestType": ibclient.CREATE, "result": ""},
-		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.GET, "result": ".*example.*"},
-		{"obj": ibclient.NewRecordA(ibclient.RecordA{}), "requestType": ibclient.CREATE, "result": ""},
+		{"obj": ibclient.NewEmptyRecordA(), "requestType": ibclient.GET, "result": ".*example.*"},
+		{"obj": ibclient.NewEmptyRecordA(), "requestType": ibclient.CREATE, "result": ""},
 		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.GET, "result": ".*example.*"},
 		{"obj": ibclient.NewRecordTXT(ibclient.RecordTXT{}), "requestType": ibclient.CREATE, "result": ""},
 	}
@@ -762,7 +745,8 @@ func TestExtendedRequestRecordFilterBuilder(t *testing.T) {
 	for _, test := range checks {
 		obj := test["obj"]
 		requestType := test["requestType"]
-		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", ibclient.QueryParams{})
+		queryParams := ibclient.QueryParams{}
+		req, _ := requestBuilder.BuildRequest(requestType.(ibclient.RequestType), obj.(ibclient.IBObject), "", &queryParams)
 		assert.True(t, req.URL.Query().Get("name~") == test["result"], "obj: %T, requestType: %T", obj, requestType)
 	}
 
@@ -770,24 +754,28 @@ func TestExtendedRequestRecordFilterBuilder(t *testing.T) {
 }
 
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
 		Username: "user",
 		Password: "abcd",
-		Version:  "2.3.1",
 	}
 
 	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
-	requestBuilder.Init(hostConfig)
+	requestBuilder.Init(hostCfg, authCfg)
 
-	obj := ibclient.NewRecordCNAME(ibclient.RecordCNAME{Zone: "foo.bar.com"})
+	obj := ibclient.NewEmptyRecordCNAME()
+	obj.Zone = "foo.bar.com"
 
-	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", ibclient.QueryParams{})
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "54321")
 
-	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", ibclient.QueryParams{})
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
 }
