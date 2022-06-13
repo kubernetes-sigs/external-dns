@@ -9,8 +9,11 @@ image:
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
+
 nameOverride: ""
 fullnameOverride: ""
+
+commonLabels: {}
 
 serviceAccount:
   # Specifies whether a service account should be created
