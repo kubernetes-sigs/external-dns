@@ -167,6 +167,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		deprecatedRegistryErrors.Inc()
 		return err
 	}
+
+	missingRecords := c.Registry.MissingRecords()
+
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords := filterARecords(records)
 	registryARecords.Set(float64(len(regARecords)))
@@ -189,6 +192,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Policies:           []plan.Policy{c.Policy},
 		Current:            records,
 		Desired:            endpoints,
+		Missing:            missingRecords,
 		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
 		ManagedRecords:     c.ManagedRecordTypes,

@@ -45,6 +45,11 @@ func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 	return im.provider.Records(ctx)
 }
 
+// MissingRecords returns nil because there is no missing records for Noop registry
+func (im *NoopRegistry) MissingRecords() []*endpoint.Endpoint {
+	return nil
+}
+
 // ApplyChanges propagates changes to the dns provider
 func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	return im.provider.ApplyChanges(ctx, changes)
