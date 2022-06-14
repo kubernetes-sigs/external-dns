@@ -67,7 +67,34 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce(ctx context.Context) error {
+<<<<<<< HEAD
 	lastReconcileTimestamp.Gauge.SetToCurrentTime()
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+	records, err := c.Registry.Records(ctx)
+	if err != nil {
+		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
+		return err
+	}
+	registryEndpointsTotal.Set(float64(len(records)))
+	regARecords := filterARecords(records)
+	registryARecords.Set(float64(len(regARecords)))
+	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
+=======
+	records, err := c.Registry.Records(ctx)
+	if err != nil {
+		registryErrorsTotal.Inc()
+		deprecatedRegistryErrors.Inc()
+		return err
+	}
+
+	missingRecords := c.Registry.MissingRecords()
+
+	registryEndpointsTotal.Set(float64(len(records)))
+	regARecords := filterARecords(records)
+	registryARecords.Set(float64(len(regARecords)))
+	ctx = context.WithValue(ctx, provider.RecordsContextKey, records)
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 
 	c.runAtMutex.Lock()
 	c.lastRunAt = time.Now()
@@ -105,6 +132,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	registryFilter := c.Registry.GetDomainFilter()
 
 	plan := &plan.Plan{
+<<<<<<< HEAD
 		Policies:       []plan.Policy{c.Policy},
 		Current:        regRecords,
 		Desired:        endpoints,
@@ -113,6 +141,22 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
 		OldOwnerID:     c.TXTOwnerOld,
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+		Policies:           []plan.Policy{c.Policy},
+		Current:            records,
+		Desired:            endpoints,
+		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+		PropertyComparator: c.Registry.PropertyValuesEqual,
+		ManagedRecords:     c.ManagedRecordTypes,
+=======
+		Policies:           []plan.Policy{c.Policy},
+		Current:            records,
+		Desired:            endpoints,
+		Missing:            missingRecords,
+		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+		PropertyComparator: c.Registry.PropertyValuesEqual,
+		ManagedRecords:     c.ManagedRecordTypes,
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 	}
 
 	plan = plan.Calculate()

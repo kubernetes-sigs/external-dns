@@ -36,6 +36,8 @@ type Plan struct {
 	// List of desired records
 	// Records that should exist based on Kubernetes resources (Ingress, Service, etc.). These are computed from the source.
 	Desired []*endpoint.Endpoint
+	// List of missing records to be created, use for the migrations (e.g. old-new TXT format)
+	Missing []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
@@ -197,6 +199,7 @@ func (p *Plan) Calculate() *Plan {
 		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
 	}
 
+<<<<<<< HEAD
 >>>>>>> e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
 ||||||| parent of 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
 	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
@@ -206,6 +209,14 @@ func (p *Plan) Calculate() *Plan {
 
 =======
 >>>>>>> 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+=======
+	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
+	if len(p.Missing) > 0 {
+		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
+	}
+
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,
@@ -387,7 +398,13 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Ma
 			log.Debugf("ignoring record %s that does not match domain filter", record.DNSName)
 			continue
 		}
+<<<<<<< HEAD
 		if IsManagedRecord(record.RecordType, managedRecords, excludeRecords) {
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+		if isManagedRecord(record.RecordType, managedRecords) {
+=======
+		if IsManagedRecord(record.RecordType, managedRecords) {
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 			filtered = append(filtered, record)
 		}
 	}
@@ -399,5 +416,79 @@ func IsManagedRecord(record string, managedRecords, excludeRecords []string) boo
 	if slices.Contains(excludeRecords, record) {
 		return false
 	}
+<<<<<<< HEAD
 	return slices.Contains(managedRecords, record)
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+	return s
+}
+
+// CompareBoolean is an implementation of PropertyComparator for comparing boolean-line values
+// For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+// If value doesn't parse as boolean, the defaultValue is used
+func CompareBoolean(defaultValue bool, name, current, previous string) bool {
+	var err error
+
+	v1, v2 := defaultValue, defaultValue
+
+	if previous != "" {
+		v1, err = strconv.ParseBool(previous)
+		if err != nil {
+			v1 = defaultValue
+		}
+	}
+
+	if current != "" {
+		v2, err = strconv.ParseBool(current)
+		if err != nil {
+			v2 = defaultValue
+		}
+	}
+
+	return v1 == v2
+}
+
+func isManagedRecord(record string, managedRecords []string) bool {
+	for _, r := range managedRecords {
+		if record == r {
+			return true
+		}
+	}
+	return false
+=======
+	return s
+}
+
+// CompareBoolean is an implementation of PropertyComparator for comparing boolean-line values
+// For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
+// If value doesn't parse as boolean, the defaultValue is used
+func CompareBoolean(defaultValue bool, name, current, previous string) bool {
+	var err error
+
+	v1, v2 := defaultValue, defaultValue
+
+	if previous != "" {
+		v1, err = strconv.ParseBool(previous)
+		if err != nil {
+			v1 = defaultValue
+		}
+	}
+
+	if current != "" {
+		v2, err = strconv.ParseBool(current)
+		if err != nil {
+			v2 = defaultValue
+		}
+	}
+
+	return v1 == v2
+}
+
+func IsManagedRecord(record string, managedRecords []string) bool {
+	for _, r := range managedRecords {
+		if record == r {
+			return true
+		}
+	}
+	return false
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 }

@@ -35,9 +35,14 @@ type Registry interface {
 	GetDomainFilter() endpoint.DomainFilterInterface
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// OwnerID returns the owner identifier used to claim DNS records.
 	OwnerID() string
 ||||||| parent of e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
+||||||| parent of 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
+=======
+	MissingRecords() []*endpoint.Endpoint
+>>>>>>> 8fa7f7d99 (UPSTREAM 2811: Handle the migration to the new TXT format: create missing records)
 }
 
 //TODO(ideahitme): consider moving this to Plan
