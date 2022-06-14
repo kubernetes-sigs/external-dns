@@ -57,6 +57,9 @@ type PlanTestSuite struct {
 	domainFilterFiltered2            *endpoint.Endpoint
 	domainFilterFiltered3            *endpoint.Endpoint
 	domainFilterExcluded             *endpoint.Endpoint
+	domainFilterFilteredTXT1         *endpoint.Endpoint
+	domainFilterFilteredTXT2         *endpoint.Endpoint
+	domainFilterExcludedTXT          *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -248,6 +251,21 @@ func (suite *PlanTestSuite) SetupTest() {
 		DNSName:    "foo.ex.domain.tld",
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
+	}
+	suite.domainFilterFilteredTXT1 = &endpoint.Endpoint{
+		DNSName:    "a-foo.domain.tld",
+		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+		RecordType: "TXT",
+	}
+	suite.domainFilterFilteredTXT2 = &endpoint.Endpoint{
+		DNSName:    "cname-bar.domain.tld",
+		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+		RecordType: "TXT",
+	}
+	suite.domainFilterExcludedTXT = &endpoint.Endpoint{
+		DNSName:    "cname-bar.otherdomain.tld",
+		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+		RecordType: "TXT",
 	}
 }
 

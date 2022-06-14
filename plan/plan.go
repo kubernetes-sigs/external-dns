@@ -36,6 +36,8 @@ type Plan struct {
 	// List of desired records
 	// Records that should exist based on Kubernetes resources (Ingress, Service, etc.). These are computed from the source.
 	Desired []*endpoint.Endpoint
+	// List of missing records to be created, use for the migrations (e.g. old-new TXT format)
+	Missing []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
@@ -182,12 +184,21 @@ func (p *Plan) Calculate() *Plan {
 	}
 	changes := p.calculateChanges(t)
 
+<<<<<<< HEAD
 	// Return a minimal plan with only the fields relevant to callers.
 	// ManagedRecords is reset to the canonical defaults (A/AAAA/CNAME) —
 	// this is intentional: it restores the default managed set regardless
 	// of what was passed in, preventing callers that chain off Calculate()
 	// from accidentally inheriting a non-default managed record configuration.
 	// See: https://github.com/kubernetes-sigs/external-dns/pull/1915
+||||||| parent of e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
+=======
+	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
+	if len(p.Missing) > 0 {
+		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
+	}
+
+>>>>>>> e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,

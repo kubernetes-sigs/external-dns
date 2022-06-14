@@ -33,6 +33,37 @@ type Registry interface {
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	// GetDomainFilter returns the domain filter configured for the underlying provider.
 	GetDomainFilter() endpoint.DomainFilterInterface
+<<<<<<< HEAD
 	// OwnerID returns the owner identifier used to claim DNS records.
 	OwnerID() string
+||||||| parent of e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
+}
+
+//TODO(ideahitme): consider moving this to Plan
+func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := []*endpoint.Endpoint{}
+	for _, ep := range eps {
+		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+			continue
+		}
+		filtered = append(filtered, ep)
+	}
+	return filtered
+=======
+	MissingRecords() []*endpoint.Endpoint
+}
+
+//TODO(ideahitme): consider moving this to Plan
+func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
+	filtered := []*endpoint.Endpoint{}
+	for _, ep := range eps {
+		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+			continue
+		}
+		filtered = append(filtered, ep)
+	}
+	return filtered
+>>>>>>> e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
 }
