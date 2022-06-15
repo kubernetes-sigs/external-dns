@@ -513,7 +513,8 @@ func TestCloudflareSetProxied(t *testing.T) {
 		{"NS", "bar.com", notProxied},
 		{"SPF", "bar.com", notProxied},
 		{"SRV", "bar.com", notProxied},
-		{"A", "*.bar.com", notProxied},
+		{"A", "*.bar.com", proxied},
+		{"CNAME", "*.docs.bar.com", proxied},
 	}
 
 	for _, testCase := range testCases {
