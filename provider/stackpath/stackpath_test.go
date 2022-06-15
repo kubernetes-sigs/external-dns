@@ -1,0 +1,81 @@
+/*
+Copyright 2020 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package stackpath
+
+import (
+	"context"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/wmarchesi123/stackpath-go/pkg/dns"
+	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
+)
+
+var testProvider = StackPathProvider{
+	client:       &dns.APIClient{},
+	context:      context.Background(),
+	domainFilter: endpoint.DomainFilter{},
+	zoneIDFilter: provider.ZoneIDFilter{},
+	stackID:      "TEST_STACK_ID",
+	dryRun:       false,
+	testing:      true,
+}
+
+func TestNewStackPathProvider(t *testing.T) {
+	stackPathConfig := &StackPathConfig{
+		Context:      context.Background(),
+		DomainFilter: endpoint.NewDomainFilter(nil),
+		ZoneIDFilter: provider.NewZoneIDFilter(nil),
+		DryRun:       false,
+		Testing:      true,
+	}
+
+	_, err := NewStackPathProvider(*stackPathConfig)
+	if err == nil {
+		t.Fatalf("Expected to fail without a valid CLIENT_ID, CLIENT_SECRET, and STACK_ID")
+	}
+
+	_ = os.Setenv("STACKPATH_CLIENT_ID", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+	_ = os.Setenv("STACKPATH_CLIENT_SECRET", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+	_ = os.Setenv("STACKPATH_STACK_ID", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+
+	_, err = NewStackPathProvider(*stackPathConfig)
+	if err.Error() != "Error obtaining oauth2 token: 404 Not Found" {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestZones(t *testing.T) {
+	zones, err := testProvider.zones()
+	assert.NoError(t, err)
+	assert.Equal(t, len(zones), 3)
+	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
+	assert.Equal(t, zones[2].GetDisabled(), true)
+}
+
+func TestGetZones(t *testing.T) {
+	zoneGetZonesResponse, _, err := testProvider.getZones()
+
+	assert.NoError(t, err)
+	assert.Equal(t, zoneGetZonesResponse.HasZones(), true)
+	zones := zoneGetZonesResponse.GetZones()
+	assert.Equal(t, len(zones), 3)
+	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
+	assert.Equal(t, zones[2].GetDisabled(), true)
+}
