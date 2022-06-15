@@ -144,15 +144,6 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return merged, nil
 }
 
-func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecordsResponse, *http.Response, error) {
-
-	if p.testing {
-		return dns.ZoneGetZoneRecordsResponse{}, nil, nil
-	}
-
-	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zoneID).Execute()
-}
-
 func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error) {
 
 	log.Info("Getting records from StackPath")
@@ -166,7 +157,7 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 
 	for _, zone := range zones {
 
-		recordsResponse, _, err := p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zone.GetId()).Execute()
+		recordsResponse, _, err := p.getZoneRecords(zone.GetId())
 		if err != nil {
 			return nil, err
 		}
@@ -182,6 +173,15 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 	log.Infof(out)
 
 	return records, nil
+}
+
+func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecordsResponse, *http.Response, error) {
+
+	if p.testing {
+		return dns.ZoneGetZoneRecordsResponse{}, nil, nil
+	}
+
+	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zoneID).Execute()
 }
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
@@ -238,7 +238,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 						return err
 					}
 				} else {
-					log.Infof("Would have created record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, endpoint.RecordTTL)
+					log.Infof("Would have created record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
 				}
 
 			}
@@ -294,7 +294,7 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 					}
 					p.deleteTarget(zoneID, recordID)
 				} else {
-					log.Infof("Would have deleted record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, endpoint.RecordTTL)
+					log.Infof("Would have deleted record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
 				}
 			}
 		}
