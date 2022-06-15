@@ -438,64 +438,54 @@ var (
 	testAccountID   = "TEST_ACCOUNT_ID"
 	testNameservers = []string{"ns1.example.com", "ns2.example.com"}
 
-	testZoneID1                          = "TEST_ZONE_ID1"
-	testZoneDomain1                      = "TEST_ZONE_DOMAIN1"
-	testZoneVersion1                     = "TEST_ZONE_VERSION1"
-	testZoneLabels1                      = make(map[string]string)
-	testZoneDisabled1                    = false
-	testZoneID2                          = "TEST_ZONE_ID2"
-	testZoneDomain2                      = "TEST_ZONE_DOMAIN2"
-	testZoneVersion2                     = "TEST_ZONE_VERSION2"
-	testZoneLabels2                      = make(map[string]string)
-	testZoneDisabled2                    = false
-	testZoneID3                          = "TEST_ZONE_ID3"
-	testZoneDomain3                      = "TEST_ZONE_DOMAIN3"
-	testZoneVersion3                     = "TEST_ZONE_VERSION3"
-	testZoneLabels3                      = make(map[string]string)
-	testZoneDisabled3                    = true
+	testZoneID                           = []string{"TEST_ZONE_ID1", "TEST_ZONE_ID2", "TEST_ZONE_ID3"}
+	testZoneDomain                       = []string{"TEST_ZONE_DOMAIN1", "TEST_ZONE_DOMAIN2", "TEST_ZONE_DOMAIN3"}
+	testZoneVersion                      = []string{"TEST_ZONE_VERSION1", "TEST_ZONE_VERSION2", "TEST_ZONE_VERSION3"}
+	testZoneLabels                       = make(map[string]string)
+	testZoneDisabled                     = []bool{false, false, true}
 	testZoneStatus    dns.ZoneZoneStatus = "ACTIVE"
 	testGetZonesZones                    = []dns.ZoneZone{
 		{
 			StackId:     &testStackID,
 			AccountId:   &testAccountID,
-			Id:          &testZoneID1,
-			Domain:      &testZoneDomain1,
-			Version:     &testZoneVersion1,
-			Labels:      &testZoneLabels1,
+			Id:          &testZoneID[0],
+			Domain:      &testZoneDomain[0],
+			Version:     &testZoneVersion[0],
+			Labels:      &testZoneLabels,
 			Created:     &time.Time{},
 			Updated:     &time.Time{},
 			Nameservers: &testNameservers,
 			Verified:    &time.Time{},
 			Status:      &testZoneStatus,
-			Disabled:    &testZoneDisabled1,
+			Disabled:    &testZoneDisabled[0],
 		},
 		{
 			StackId:     &testStackID,
 			AccountId:   &testAccountID,
-			Id:          &testZoneID2,
-			Domain:      &testZoneDomain2,
-			Version:     &testZoneVersion2,
-			Labels:      &testZoneLabels2,
+			Id:          &testZoneID[1],
+			Domain:      &testZoneDomain[1],
+			Version:     &testZoneVersion[1],
+			Labels:      &testZoneLabels,
 			Created:     &time.Time{},
 			Updated:     &time.Time{},
 			Nameservers: &testNameservers,
 			Verified:    &time.Time{},
 			Status:      &testZoneStatus,
-			Disabled:    &testZoneDisabled2,
+			Disabled:    &testZoneDisabled[1],
 		},
 		{
 			StackId:     &testStackID,
 			AccountId:   &testAccountID,
-			Id:          &testZoneID3,
-			Domain:      &testZoneDomain3,
-			Version:     &testZoneVersion3,
-			Labels:      &testZoneLabels3,
+			Id:          &testZoneID[2],
+			Domain:      &testZoneDomain[2],
+			Version:     &testZoneVersion[2],
+			Labels:      &testZoneLabels,
 			Created:     &time.Time{},
 			Updated:     &time.Time{},
 			Nameservers: &testNameservers,
 			Verified:    &time.Time{},
 			Status:      &testZoneStatus,
-			Disabled:    &testZoneDisabled3,
+			Disabled:    &testZoneDisabled[2],
 		},
 	}
 	testGetZonesTotalCount      = "3"
@@ -510,5 +500,57 @@ var (
 			EndCursor:       &testGetZonesEndCursor,
 		},
 		Zones: &testGetZonesZones,
+	}
+
+	testZoneZoneRecordID     = []string{"TEST_ZONE_ZONE_RECORD_ID1", "TEST_ZONE_ZONE_RECORD_ID2", "TEST_ZONE_ZONE_RECORD_ID3"}
+	testZoneZoneRecordZoneID = []string{"TEST_ZONE_ZONE_RECORD_ZONE_ID1", "TEST_ZONE_ZONE_RECORD_ZONE_ID2", "TEST_ZONE_ZONE_RECORD_ZONE_ID3"}
+	testZoneZoneRecordName   = []string{"TEST_ZONE_ZONE_RECORD_NAME1", "TEST_ZONE_ZONE_RECORD_NAME2", "TEST_ZONE_ZONE_RECORD_NAME3"}
+	testZoneZoneRecordType   = []string{"TEST_ZONE_ZONE_RECORD_TYPE1", "TEST_ZONE_ZONE_RECORD_TYPE2", "TEST_ZONE_ZONE_RECORD_TYPE3"}
+	testZoneZoneRecordClass  = []string{"TEST_ZONE_ZONE_RECORD_CLASS1", "TEST_ZONE_ZONE_RECORD_CLASS2", "TEST_ZONE_ZONE_RECORD_CLASS3"}
+	testZoneZoneRecordTTL    = []int32{int32(60), int32(120), int32(180)}
+	testZoneZoneRecordData   = []string{"TEST_ZONE_ZONE_RECORD_DATA1,", "TEST_ZONE_ZONE_RECORD_DATA2,", "TEST_ZONE_ZONE_RECORD_DATA3"}
+	testZoneZoneRecordWeight = []int32{int32(1), int32(2), int32(3)}
+	testZoneZoneRecordLabels = make(map[string]string)
+
+	testGetZoneZoneRecords = []dns.ZoneZoneRecord{
+		{
+			Id:      &testZoneZoneRecordID[0],
+			ZoneId:  &testZoneZoneRecordZoneID[0],
+			Name:    &testZoneZoneRecordName[0],
+			Type:    &testZoneZoneRecordType[0],
+			Class:   &testZoneZoneRecordClass[0],
+			Ttl:     &testZoneZoneRecordTTL[0],
+			Data:    &testZoneZoneRecordData[0],
+			Weight:  &testZoneZoneRecordWeight[0],
+			Labels:  &testZoneZoneRecordLabels,
+			Created: &time.Time{},
+			Updated: &time.Time{},
+		},
+		{
+			Id:      &testZoneZoneRecordID[1],
+			ZoneId:  &testZoneZoneRecordZoneID[1],
+			Name:    &testZoneZoneRecordName[1],
+			Type:    &testZoneZoneRecordType[1],
+			Class:   &testZoneZoneRecordClass[1],
+			Ttl:     &testZoneZoneRecordTTL[1],
+			Data:    &testZoneZoneRecordData[1],
+			Weight:  &testZoneZoneRecordWeight[1],
+			Labels:  &testZoneZoneRecordLabels,
+			Created: &time.Time{},
+			Updated: &time.Time{},
+		},
+		{
+			Id:      &testZoneZoneRecordID[2],
+			ZoneId:  &testZoneZoneRecordZoneID[2],
+			Name:    &testZoneZoneRecordName[2],
+			Type:    &testZoneZoneRecordType[2],
+			Class:   &testZoneZoneRecordClass[2],
+			Ttl:     &testZoneZoneRecordTTL[2],
+			Data:    &testZoneZoneRecordData[2],
+			Weight:  &testZoneZoneRecordWeight[2],
+			Labels:  &testZoneZoneRecordLabels,
+			Created: &time.Time{},
+			Updated: &time.Time{},
+		},
 	}
 )
