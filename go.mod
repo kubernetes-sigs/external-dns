@@ -1,15 +1,20 @@
 module sigs.k8s.io/external-dns
 
-go 1.17
+go 1.18
 
 require (
 	cloud.google.com/go/compute v1.5.0
 	github.com/Azure/azure-sdk-for-go v61.5.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.21
-	github.com/Azure/go-autorest/autorest/adal v0.9.16
+	github.com/Azure/go-autorest/autorest/adal v0.9.20
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.8.1
+	github.com/IBM/go-sdk-core/v5 v5.6.5
+	github.com/IBM/networking-go-sdk v0.24.0
 	github.com/StackExchange/dnscontrol v0.2.8
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.1.1
+	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
+	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1483
 	github.com/aws/aws-sdk-go v1.42.52
@@ -27,13 +32,14 @@ require (
 	github.com/google/go-cmp v0.5.7
 	github.com/gophercloud/gophercloud v0.22.0
 	github.com/hooklift/gowsdl v0.5.0
-	github.com/infobloxopen/infoblox-go-client/v2 v2.1.1
+	github.com/infobloxopen/infoblox-go-client/v2 v2.1.2-0.20220407114022-6f4c71443168
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.32.2
 	github.com/maxatome/go-testdeep v1.11.0
 	github.com/miekg/dns v1.1.48
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
+	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
@@ -50,7 +56,7 @@ require (
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.14.1
 	github.com/wmarchesi123/stackpath-go v1.0.2
-	go.etcd.io/etcd/api/v3 v3.5.2
+	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.2
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
@@ -73,13 +79,12 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
-	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
-	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/repr v0.0.0-20200325044227-4184120f674c // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
+	github.com/asaskevich/govalidator v0.0.0-20200907205600-7a23bdc65eef // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
@@ -87,10 +92,14 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/fatih/structs v1.1.0 // indirect
+	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-logr/logr v1.2.0 // indirect
-	github.com/go-playground/locales v0.12.1 // indirect
-	github.com/go-playground/universal-translator v0.16.0 // indirect
+	github.com/go-openapi/errors v0.19.8 // indirect
+	github.com/go-openapi/strfmt v0.20.1 // indirect
+	github.com/go-playground/locales v0.13.0 // indirect
+	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-resty/resty/v2 v2.1.1-0.20191201195748-d7b97669fe48 // indirect
+	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
@@ -116,13 +125,15 @@ require (
 	github.com/jinzhu/copier v0.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/leodido/go-urn v1.1.0 // indirect
+	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/nxadm/tail v1.4.8 // indirect
+	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -136,6 +147,7 @@ require (
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/ukfast/go-durationstring v1.1.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2 // indirect
+	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
@@ -152,16 +164,18 @@ require (
 	google.golang.org/genproto v0.0.0-20220324131243-acbaeb5b85eb // indirect
 	google.golang.org/grpc v1.45.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/go-playground/validator.v9 v9.27.0 // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/resty.v1 v1.12.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v3 v3.0.0 // indirect
 	istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
 	k8s.io/utils v0.0.0-20211116205334-6203023598ed // indirect
 	sigs.k8s.io/controller-runtime v0.11.0 // indirect
+	sigs.k8s.io/gateway-api v0.4.1
 	sigs.k8s.io/json v0.0.0-20211020170558-c049b76a60c6 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect

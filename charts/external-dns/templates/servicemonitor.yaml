@@ -3,11 +3,12 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "external-dns.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
-    {{- with .Values.serviceMonitor.additionalLabels }}
+  {{- with .Values.serviceMonitor.additionalLabels }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
+  {{- end }}
 spec:
   jobLabel: {{ .Release.Name }}
   namespaceSelector:
