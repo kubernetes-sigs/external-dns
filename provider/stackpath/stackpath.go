@@ -178,7 +178,7 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecordsResponse, *http.Response, error) {
 
 	if p.testing {
-		return dns.ZoneGetZoneRecordsResponse{}, nil, nil
+		return testGetZoneZoneRecordsResponse, nil, nil
 	}
 
 	return p.client.ResourceRecordsApi.GetZoneRecords(p.context, p.stackID, zoneID).Execute()
@@ -221,8 +221,6 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 }
 
 func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
-
-	//log.Info("Creating records in StackPath")
 
 	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
 
@@ -425,7 +423,7 @@ func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns
 	}
 
 	for _, record := range *records {
-		if record.GetName() == name && record.GetType() == endpoint.RecordType && record.GetData() == strings.Trim(target, "\\\"") /*&& record.GetTtl() == int32(endpoint.RecordTTL)*/ {
+		if record.GetName() == name && record.GetType() == endpoint.RecordType && record.GetData() == strings.Trim(target, "\\\"") {
 			return *record.Id, nil
 		}
 	}
@@ -552,5 +550,19 @@ var (
 			Created: &time.Time{},
 			Updated: &time.Time{},
 		},
+	}
+
+	testGetZoneZoneRecordsTotalCount      = "3"
+	testGetZoneZoneRecordsHasPreviousPage = false
+	testGetZoneZoneRecordsHasNextPage     = false
+	testGetZoneZoneRecordsEndCursor       = "2"
+	testGetZoneZoneRecordsResponse        = dns.ZoneGetZoneRecordsResponse{
+		PageInfo: &dns.PaginationPageInfo{
+			TotalCount:      &testGetZoneZoneRecordsTotalCount,
+			HasPreviousPage: &testGetZoneZoneRecordsHasPreviousPage,
+			HasNextPage:     &testGetZoneZoneRecordsHasNextPage,
+			EndCursor:       &testGetZoneZoneRecordsEndCursor,
+		},
+		Records: &testGetZoneZoneRecords,
 	}
 )
