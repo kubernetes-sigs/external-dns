@@ -55,7 +55,7 @@ require (
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.14.1
-	go.etcd.io/etcd/api/v3 v3.5.2
+	go.etcd.io/etcd/api/v3 v3.5.4
 	go.etcd.io/etcd/client/v3 v3.5.2
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.0.0-20220412020605-290c469a71a5
