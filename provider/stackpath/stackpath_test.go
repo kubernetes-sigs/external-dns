@@ -64,18 +64,38 @@ func TestNewStackPathProvider(t *testing.T) {
 func TestZones(t *testing.T) {
 	zones, err := testProvider.zones()
 	assert.NoError(t, err)
-	assert.Equal(t, len(zones), 3)
+	assert.Equal(t, 1, len(zones))
 	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
-	assert.Equal(t, zones[2].GetDisabled(), true)
+	assert.Equal(t, false, zones[0].GetDisabled())
 }
 
 func TestGetZones(t *testing.T) {
 	zoneGetZonesResponse, _, err := testProvider.getZones()
 
 	assert.NoError(t, err)
-	assert.Equal(t, zoneGetZonesResponse.HasZones(), true)
+	assert.Equal(t, true, zoneGetZonesResponse.HasZones())
 	zones := zoneGetZonesResponse.GetZones()
-	assert.Equal(t, len(zones), 3)
+	assert.Equal(t, 1, len(zones))
 	assert.Contains(t, zones[0].GetNameservers(), "ns1.example.com")
-	assert.Equal(t, zones[2].GetDisabled(), true)
+	assert.Equal(t, false, zones[0].GetDisabled())
+}
+
+func TestGetZoneRecords(t *testing.T) {
+	zoneGetZoneRecordsResponse, _, err := testProvider.getZoneRecords("")
+	assert.NoError(t, err)
+	assert.Equal(t, true, zoneGetZoneRecordsResponse.HasRecords())
+	records := zoneGetZoneRecordsResponse.GetRecords()
+	assert.Equal(t, 3, len(records))
+	assert.Equal(t, "www", records[0].GetName())
+	assert.Equal(t, "3.3.3.3", records[2].GetData())
+}
+
+func TestRecords(t *testing.T) {
+	endpoints, err := testProvider.Records(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(endpoints))
+	assert.Equal(t, 2, len(endpoints[0].Targets))
+	assert.Equal(t, 1, len(endpoints[1].Targets))
+	assert.Equal(t, "www.one.com", endpoints[0].DNSName)
+
 }

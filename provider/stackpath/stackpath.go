@@ -436,9 +436,9 @@ var (
 	testAccountID   = "TEST_ACCOUNT_ID"
 	testNameservers = []string{"ns1.example.com", "ns2.example.com"}
 
-	testZoneID                           = []string{"TEST_ZONE_ID1", "TEST_ZONE_ID2", "TEST_ZONE_ID3"}
-	testZoneDomain                       = []string{"TEST_ZONE_DOMAIN1", "TEST_ZONE_DOMAIN2", "TEST_ZONE_DOMAIN3"}
-	testZoneVersion                      = []string{"TEST_ZONE_VERSION1", "TEST_ZONE_VERSION2", "TEST_ZONE_VERSION3"}
+	testZoneID                           = []string{"TEST_ZONE_ID1"}
+	testZoneDomain                       = []string{"one.com"}
+	testZoneVersion                      = []string{"TEST_ZONE_VERSION1"}
 	testZoneLabels                       = make(map[string]string)
 	testZoneDisabled                     = []bool{false, false, true}
 	testZoneStatus    dns.ZoneZoneStatus = "ACTIVE"
@@ -457,39 +457,11 @@ var (
 			Status:      &testZoneStatus,
 			Disabled:    &testZoneDisabled[0],
 		},
-		{
-			StackId:     &testStackID,
-			AccountId:   &testAccountID,
-			Id:          &testZoneID[1],
-			Domain:      &testZoneDomain[1],
-			Version:     &testZoneVersion[1],
-			Labels:      &testZoneLabels,
-			Created:     &time.Time{},
-			Updated:     &time.Time{},
-			Nameservers: &testNameservers,
-			Verified:    &time.Time{},
-			Status:      &testZoneStatus,
-			Disabled:    &testZoneDisabled[1],
-		},
-		{
-			StackId:     &testStackID,
-			AccountId:   &testAccountID,
-			Id:          &testZoneID[2],
-			Domain:      &testZoneDomain[2],
-			Version:     &testZoneVersion[2],
-			Labels:      &testZoneLabels,
-			Created:     &time.Time{},
-			Updated:     &time.Time{},
-			Nameservers: &testNameservers,
-			Verified:    &time.Time{},
-			Status:      &testZoneStatus,
-			Disabled:    &testZoneDisabled[2],
-		},
 	}
-	testGetZonesTotalCount      = "3"
+	testGetZonesTotalCount      = "1"
 	testGetZonesHasPreviousPage = false
 	testGetZonesHasNextPage     = false
-	testGetZonesEndCursor       = "2"
+	testGetZonesEndCursor       = "0"
 	testGetZoneRecords          = dns.ZoneGetZonesResponse{
 		PageInfo: &dns.PaginationPageInfo{
 			TotalCount:      &testGetZonesTotalCount,
@@ -501,12 +473,12 @@ var (
 	}
 
 	testZoneZoneRecordID     = []string{"TEST_ZONE_ZONE_RECORD_ID1", "TEST_ZONE_ZONE_RECORD_ID2", "TEST_ZONE_ZONE_RECORD_ID3"}
-	testZoneZoneRecordZoneID = []string{"TEST_ZONE_ZONE_RECORD_ZONE_ID1", "TEST_ZONE_ZONE_RECORD_ZONE_ID2", "TEST_ZONE_ZONE_RECORD_ZONE_ID3"}
-	testZoneZoneRecordName   = []string{"TEST_ZONE_ZONE_RECORD_NAME1", "TEST_ZONE_ZONE_RECORD_NAME2", "TEST_ZONE_ZONE_RECORD_NAME3"}
-	testZoneZoneRecordType   = []string{"TEST_ZONE_ZONE_RECORD_TYPE1", "TEST_ZONE_ZONE_RECORD_TYPE2", "TEST_ZONE_ZONE_RECORD_TYPE3"}
+	testZoneZoneRecordZoneID = []string{"TEST_ZONE_ID1", "TEST_ZONE_ID1", "TEST_ZONE_ID1"}
+	testZoneZoneRecordName   = []string{"www", "www", "@"}
+	testZoneZoneRecordType   = []string{"A", "A", "CNAME"}
 	testZoneZoneRecordClass  = []string{"TEST_ZONE_ZONE_RECORD_CLASS1", "TEST_ZONE_ZONE_RECORD_CLASS2", "TEST_ZONE_ZONE_RECORD_CLASS3"}
-	testZoneZoneRecordTTL    = []int32{int32(60), int32(120), int32(180)}
-	testZoneZoneRecordData   = []string{"TEST_ZONE_ZONE_RECORD_DATA1,", "TEST_ZONE_ZONE_RECORD_DATA2,", "TEST_ZONE_ZONE_RECORD_DATA3"}
+	testZoneZoneRecordTTL    = []int32{int32(60), int32(60), int32(180)}
+	testZoneZoneRecordData   = []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"}
 	testZoneZoneRecordWeight = []int32{int32(1), int32(2), int32(3)}
 	testZoneZoneRecordLabels = make(map[string]string)
 
