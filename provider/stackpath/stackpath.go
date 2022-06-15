@@ -478,7 +478,7 @@ var (
 	testZoneZoneRecordType   = []string{"A", "A", "CNAME"}
 	testZoneZoneRecordClass  = []string{"TEST_ZONE_ZONE_RECORD_CLASS1", "TEST_ZONE_ZONE_RECORD_CLASS2", "TEST_ZONE_ZONE_RECORD_CLASS3"}
 	testZoneZoneRecordTTL    = []int32{int32(60), int32(60), int32(180)}
-	testZoneZoneRecordData   = []string{"1.1.1.1", "2.2.2.2", "3.3.3.3"}
+	testZoneZoneRecordData   = []string{"1.1.1.1", "2.2.2.2", "testing.com"}
 	testZoneZoneRecordWeight = []int32{int32(1), int32(2), int32(3)}
 	testZoneZoneRecordLabels = make(map[string]string)
 

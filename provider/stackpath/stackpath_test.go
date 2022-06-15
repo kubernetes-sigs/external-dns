@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/wmarchesi123/stackpath-go/pkg/dns"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
 
@@ -87,7 +88,7 @@ func TestGetZoneRecords(t *testing.T) {
 	records := zoneGetZoneRecordsResponse.GetRecords()
 	assert.Equal(t, 3, len(records))
 	assert.Equal(t, "www", records[0].GetName())
-	assert.Equal(t, "3.3.3.3", records[2].GetData())
+	assert.Equal(t, "testing", records[2].GetData())
 }
 
 func TestRecords(t *testing.T) {
@@ -97,5 +98,37 @@ func TestRecords(t *testing.T) {
 	assert.Equal(t, 2, len(endpoints[0].Targets))
 	assert.Equal(t, 1, len(endpoints[1].Targets))
 	assert.Equal(t, "www.one.com", endpoints[0].DNSName)
+}
 
+func TestStackPathStyleRecords(t *testing.T) {
+	records, err := testProvider.StackPathStyleRecords()
+	assert.NoError(t, err)
+	assert.Equal(t, 3, len(records))
+}
+
+func TestApplyChanges(t *testing.T) {
+	err := testProvider.ApplyChanges(context.Background(), &plan.Changes{})
+	assert.NoError(t, err)
+}
+
+func TestRecordFromTarget(t *testing.T) {
+	endpoint := &endpoint.Endpoint{
+		DNSName:          "www.one.com",
+		Targets:          []string{"1.1.1.1"},
+		RecordType:       "A",
+		SetIdentifier:    "test",
+		RecordTTL:        endpoint.TTL(60),
+		Labels:           endpoint.Labels{},
+		ProviderSpecific: endpoint.ProviderSpecific{},
+	}
+
+	record, err := recordFromTarget(endpoint, "1.1.1.1", &testGetZoneZoneRecords, "one.com")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "TEST_ZONE_ZONE_RECORD_ID1", record)
+
+	record, err = recordFromTarget(endpoint, "2.2.2.2", &testGetZoneZoneRecords, "one.com")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "TEST_ZONE_ZONE_RECORD_ID2", record)
 }
