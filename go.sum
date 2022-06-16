@@ -1286,6 +1286,8 @@ github.com/wmarchesi123/stackpath-go v1.0.1 h1:GY95x1gU5chfo9DizaPQYhpnhr1kRfGAK
 github.com/wmarchesi123/stackpath-go v1.0.1/go.mod h1:OJtL/Z/v8lxMvQyUl51X8lJ/YNbHWzKfjg4xhEGTbdM=
 github.com/wmarchesi123/stackpath-go v1.0.2 h1:fGs2dT/UhH8Y7LHXRp6F1nBPb1eqFsVvt9Ld1RRWf4s=
 github.com/wmarchesi123/stackpath-go v1.0.2/go.mod h1:OJtL/Z/v8lxMvQyUl51X8lJ/YNbHWzKfjg4xhEGTbdM=
+github.com/wmarchesi123/stackpath-go v1.0.3 h1:9/+tgA5tbtYI/CQ43N0EYKcdRTOD4wtnUTQc732hEIs=
+github.com/wmarchesi123/stackpath-go v1.0.3/go.mod h1:OJtL/Z/v8lxMvQyUl51X8lJ/YNbHWzKfjg4xhEGTbdM=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.0.2/go.mod h1:1WAq6h33pAW+iRreB34OORO2Nf7qel3VV3fjBj+hCSs=
 github.com/xdg-go/stringprep v1.0.2/go.mod h1:8F9zXuvzgwmyT5DUm4GUfZGDdT3W+LCvS6+da4O5kxM=
