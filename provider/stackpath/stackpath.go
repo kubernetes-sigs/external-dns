@@ -383,6 +383,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 	for _, endpoints := range endpointsByNameType {
 		dnsName := endpoints[0].DNSName
 		recordType := endpoints[0].RecordType
+		ttl := endpoints[0].RecordTTL
 
 		targets := make([]string, len(endpoints))
 		for i, e := range endpoints {
@@ -390,6 +391,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 		}
 
 		e := endpoint.NewEndpoint(dnsName, recordType, targets...)
+		e.RecordTTL = ttl
 		result = append(result, e)
 	}
 
@@ -536,5 +538,50 @@ var (
 			EndCursor:       &testGetZoneZoneRecordsEndCursor,
 		},
 		Records: &testGetZoneZoneRecords,
+	}
+
+	thirdTestEndpoint = &endpoint.Endpoint{
+		DNSName:          "@.one.com",
+		Targets:          endpoint.Targets{"testing.com"},
+		RecordType:       endpoint.RecordTypeCNAME,
+		SetIdentifier:    "",
+		RecordTTL:        endpoint.TTL(180),
+		Labels:           testZoneZoneRecordLabels,
+		ProviderSpecific: nil,
+	}
+
+	testEndpoints = []*endpoint.Endpoint{
+		{
+			DNSName:          "www.one.com",
+			Targets:          endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(60),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "www.one.com",
+			Targets:          endpoint.Targets{"2.2.2.2"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(60),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		thirdTestEndpoint,
+	}
+
+	testMergedEndpoints = []*endpoint.Endpoint{
+		thirdTestEndpoint,
+		{
+			DNSName:          "www.one.com",
+			Targets:          endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(60),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
 	}
 )
