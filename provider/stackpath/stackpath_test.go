@@ -19,6 +19,7 @@ package stackpath
 import (
 	"context"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -130,4 +131,24 @@ func TestRecordFromTarget(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, "TEST_ZONE_ZONE_RECORD_ID2", record)
+}
+
+func TestMergeEndpointsByNameType(t *testing.T) {
+	endpoints := mergeEndpointsByNameType(testEndpoints)
+
+	sort.Slice(endpoints, func(i, j int) bool {
+		if endpoints[i].DNSName < endpoints[j].DNSName {
+			return true
+		} else {
+			return false
+		}
+	})
+
+	assert.Equal(t, 2, len(endpoints))
+	assert.Equal(t, testMergedEndpoints[0].DNSName, endpoints[0].DNSName)
+	assert.Contains(t, endpoints[0].Targets, testMergedEndpoints[0].Targets[0])
+	assert.Contains(t, endpoints[1].Targets, testMergedEndpoints[1].Targets[0])
+	assert.Contains(t, endpoints[1].Targets, testMergedEndpoints[1].Targets[1])
+
+	assert.Equal(t, testMergedEndpoints[0], endpoints[0])
 }
