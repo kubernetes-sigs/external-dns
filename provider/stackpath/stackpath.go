@@ -57,7 +57,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 
 	log.Info("Creating StackPath provider")
 
-	clientId, ok := os.LookupEnv("STACKPATH_CLIENT_ID")
+	clientID, ok := os.LookupEnv("STACKPATH_CLIENT_ID")
 	if !ok {
 		return nil, fmt.Errorf("STACKPATH_CLIENT_ID environment variable is not set")
 	}
@@ -67,12 +67,12 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		return nil, fmt.Errorf("STACKPATH_CLIENT_SECRET environment variable is not set")
 	}
 
-	stackId, ok := os.LookupEnv("STACKPATH_STACK_ID")
+	stackID, ok := os.LookupEnv("STACKPATH_STACK_ID")
 	if !ok {
 		return nil, fmt.Errorf("STACKPATH_STACK_ID environment variable is not set")
 	}
 
-	oauthSource := oauth2.NewTokenSource(clientId, clientSecret, oauth2.HTTPClientOption(http.DefaultClient))
+	oauthSource := oauth2.NewTokenSource(clientID, clientSecret, oauth2.HTTPClientOption(http.DefaultClient))
 	_, err := oauthSource.Token()
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		context:      authorizedContext,
 		domainFilter: config.DomainFilter,
 		zoneIDFilter: config.ZoneIDFilter,
-		stackID:      stackId,
+		stackID:      stackID,
 		dryRun:       config.DryRun,
 		testing:      config.Testing,
 	}
@@ -192,9 +192,9 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 	zones := &zs
 
-	zoneIdNameMap := provider.ZoneIDName{}
+	zoneIDNameMap := provider.ZoneIDName{}
 	for _, zone := range zs {
-		zoneIdNameMap.Add(zone.GetId(), zone.GetDomain())
+		zoneIDNameMap.Add(zone.GetId(), zone.GetDomain())
 	}
 
 	records, err := p.StackPathStyleRecords()
@@ -202,17 +202,17 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		return err
 	}
 
-	err = p.create(changes.Create, zones, &zoneIdNameMap)
+	err = p.create(changes.Create, zones, &zoneIDNameMap)
 	if err != nil {
 		return err
 	}
 
-	err = p.delete(changes.Delete, zones, &zoneIdNameMap, &records)
+	err = p.delete(changes.Delete, zones, &zoneIDNameMap, &records)
 	if err != nil {
 		return err
 	}
 
-	err = p.update(changes.UpdateOld, changes.UpdateNew, zones, &zoneIdNameMap, &records)
+	err = p.update(changes.UpdateOld, changes.UpdateNew, zones, &zoneIDNameMap, &records)
 	if err != nil {
 		return err
 	}
@@ -220,13 +220,13 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 	return nil
 }
 
-func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName) error {
+func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName) error {
 
-	createsByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
+	createsByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range createsByZoneID {
-		log.Infof("Creating %d records in zone %s (ID:%s)", len(endpoints), (*zoneIdNameMap)[zoneID], zoneID)
-		domain := (*zoneIdNameMap)[zoneID]
+		log.Infof("Creating %d records in zone %s (ID:%s)", len(endpoints), (*zoneIDNameMap)[zoneID], zoneID)
+		domain := (*zoneIDNameMap)[zoneID]
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
 
@@ -276,16 +276,16 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 	return nil
 }
 
-func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
 	log.Infof("Deleting %s record(s)", fmt.Sprint(len(endpoints)))
 
-	deleteByZoneID := endpointsByZoneId(*zoneIdNameMap, endpoints)
+	deleteByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range deleteByZoneID {
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
 				if !p.dryRun {
-					domain := (*zoneIdNameMap)[zoneID]
+					domain := (*zoneIDNameMap)[zoneID]
 					recordID, err := recordFromTarget(endpoint, target, records, domain)
 					if err != nil {
 						return err
@@ -317,14 +317,14 @@ func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 	return nil
 }
 
-func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIdNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
 
-	err := p.create(new, zones, zoneIdNameMap)
+	err := p.create(new, zones, zoneIDNameMap)
 	if err != nil {
 		return err
 	}
 
-	err = p.delete(old, zones, zoneIdNameMap, records)
+	err = p.delete(old, zones, zoneIDNameMap, records)
 	if err != nil {
 		return err
 	}
@@ -399,7 +399,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 }
 
 //From pkg/digitalocean/provider.go
-func endpointsByZoneId(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+func endpointsByZoneID(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
 	endpointsByZone := make(map[string][]*endpoint.Endpoint)
 
 	for _, ep := range endpoints {
