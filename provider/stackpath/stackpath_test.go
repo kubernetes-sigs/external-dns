@@ -85,6 +85,7 @@ func TestZones(t *testing.T) {
 	testProvider.zoneIDFilter = provider.NewZoneIDFilter([]string{"TEST_ZONE_ID"})
 	_, err = testProvider.zones()
 	testProvider.zoneIDFilter = provider.NewZoneIDFilter(nil)
+	assert.NoError(t, err)
 }
 
 func TestGetZones(t *testing.T) {
@@ -145,6 +146,14 @@ func TestApplyChanges(t *testing.T) {
 	err = testProvider.ApplyChanges(context.Background(), &plan.Changes{})
 	assert.Equal(t, fmt.Errorf("testing"), err)
 	testProvider.dryRun = false
+
+	err = testProvider.ApplyChanges(context.Background(), testChanges)
+	assert.Equal(t, fmt.Errorf("record not found"), err)
+
+	testProvider.dryRun = true
+	err = testProvider.ApplyChanges(context.Background(), testChanges)
+	assert.Equal(t, fmt.Errorf("testing"), err)
+	testProvider.dryRun = false
 }
 
 func TestRecordFromTarget(t *testing.T) {
@@ -172,7 +181,7 @@ func TestRecordFromTarget(t *testing.T) {
 }
 
 func TestMergeEndpointsByNameType(t *testing.T) {
-	endpoints := mergeEndpointsByNameType(testEndpoints)
+	endpoints := mergeEndpointsByNameType(threeTestEndpoints)
 
 	sort.Slice(endpoints, func(i, j int) bool {
 		if endpoints[i].DNSName < endpoints[j].DNSName {
@@ -205,6 +214,6 @@ func TestEndpointsByZoneID(t *testing.T) {
 		zoneIDNameMap.Add(zone.GetId(), zone.GetDomain())
 	}
 
-	endpointByZoneIDMap := endpointsByZoneID(zoneIDNameMap, testEndpoints)
+	endpointByZoneIDMap := endpointsByZoneID(zoneIDNameMap, threeTestEndpoints)
 	assert.Equal(t, 1, len(endpointByZoneIDMap))
 }
