@@ -217,3 +217,43 @@ func TestEndpointsByZoneID(t *testing.T) {
 	endpointByZoneIDMap := endpointsByZoneID(zoneIDNameMap, threeTestEndpoints)
 	assert.Equal(t, 1, len(endpointByZoneIDMap))
 }
+
+func TestCreate(t *testing.T) {
+	zoneIDNameMap := provider.ZoneIDName{}
+
+	zoneResponse, _, err := testProvider.getZones()
+	assert.NoError(t, err)
+	zones := append(zoneResponse.GetZones(), badZone)
+
+	for _, zone := range zones {
+		zoneIDNameMap.Add(zone.GetId(), zone.GetDomain())
+	}
+
+	err = testProvider.create(allTestEndpoints[7:9], &zones, &zoneIDNameMap)
+	assert.NoError(t, err)
+
+	testProvider.dryRun = true
+	err = testProvider.create(allTestEndpoints[7:9], &zones, &zoneIDNameMap)
+	assert.NoError(t, err)
+	testProvider.dryRun = false
+}
+
+func TestCreateTarget(t *testing.T) {
+	err := testProvider.createTarget("TEST_ZONE_ID1", "one.com", allTestEndpoints[8], "8.8.8.8")
+	assert.NoError(t, err)
+
+	testProvider.dryRun = true
+	err = testProvider.createTarget("TEST_ZONE_ID1", "one.com", allTestEndpoints[8], "8.8.8.8")
+	assert.Equal(t, fmt.Errorf("testing"), err)
+	testProvider.dryRun = false
+}
+
+func TestDeleteTarget(t *testing.T) {
+	err := testProvider.deleteTarget("one.com", allTestEndpoints[8].Targets[0])
+	assert.NoError(t, err)
+
+	testProvider.dryRun = true
+	err = testProvider.deleteTarget("one.com", allTestEndpoints[8].Targets[0])
+	assert.Equal(t, fmt.Errorf("testing"), err)
+	testProvider.dryRun = false
+}

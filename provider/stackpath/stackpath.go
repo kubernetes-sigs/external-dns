@@ -252,7 +252,7 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 
 	msg := dns.NewZoneUpdateZoneRecordMessage()
 	name := strings.TrimSuffix(endpoint.DNSName, "."+domain)
-	if name == "" {
+	if name == "" || name == "@" {
 		name = "@"
 	}
 
@@ -265,11 +265,15 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 
 	a, r, err := p.createCall(zoneID, domain, endpoint, target, msg)
 
+	s := &http.Response{}
+
 	if err != nil {
 		log.Infof(err.Error())
-		r.Body.Close()
-		b, _ := io.ReadAll(r.Body)
-		log.Infof(string(b))
+		if r == s {
+			r.Body.Close()
+			b, _ := io.ReadAll(r.Body)
+			log.Infof(string(b))
+		}
 		return err
 	}
 
@@ -283,7 +287,9 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 }
 
 func (p *StackPathProvider) createCall(zoneID string, domain string, endpoint *endpoint.Endpoint, target string, msg *dns.ZoneUpdateZoneRecordMessage) (dns.ZoneCreateZoneRecordResponse, *http.Response, error) {
-	if p.testing {
+	if p.testing && p.dryRun {
+		return dns.ZoneCreateZoneRecordResponse{}, nil, fmt.Errorf("testing")
+	} else if p.testing {
 		return dns.ZoneCreateZoneRecordResponse{}, nil, nil
 	} else {
 		return p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackID, zoneID).ZoneUpdateZoneRecordMessage(*msg).Execute()
@@ -318,11 +324,15 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 	resp, err := p.deleteCall(zone, record)
 
+	s := &http.Response{}
+
 	if err != nil {
 		log.Infof(err.Error())
-		resp.Body.Close()
-		b, _ := io.ReadAll(resp.Body)
-		log.Infof(string(b))
+		if resp == s {
+			resp.Body.Close()
+			b, _ := io.ReadAll(resp.Body)
+			log.Infof(string(b))
+		}
 		return err
 	}
 
