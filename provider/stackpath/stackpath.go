@@ -158,7 +158,7 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 	for _, zone := range zones {
 
 		recordsResponse, _, err := p.getZoneRecords(zone.GetId())
-		if err != nil {
+		if err != nil || (p.testing && p.dryRun) {
 			return nil, err
 		}
 
@@ -273,15 +273,17 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 		return err
 	}
 
-	log.Infof("Created record " + *a.Record.Name + "." + domain + " (ID:" + *a.Record.Id + ")")
+	b := dns.ZoneCreateZoneRecordResponse{}
+
+	if a != b {
+		log.Infof("Created record " + *a.Record.Name + "." + domain + " (ID:" + *a.Record.Id + ")")
+	}
 
 	return nil
 }
 
 func (p *StackPathProvider) createCall(zoneID string, domain string, endpoint *endpoint.Endpoint, target string, msg *dns.ZoneUpdateZoneRecordMessage) (dns.ZoneCreateZoneRecordResponse, *http.Response, error) {
-	if p.testing && p.dryRun {
-		return dns.ZoneCreateZoneRecordResponse{}, nil, fmt.Errorf("testing")
-	} else if p.testing {
+	if p.testing {
 		return dns.ZoneCreateZoneRecordResponse{}, nil, nil
 	} else {
 		return p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackID, zoneID).ZoneUpdateZoneRecordMessage(*msg).Execute()
@@ -579,20 +581,10 @@ var (
 		Records: &testGetZoneZoneRecords,
 	}
 
-	thirdTestEndpoint = &endpoint.Endpoint{
-		DNSName:          "@.two.com",
-		Targets:          endpoint.Targets{"testing.com"},
-		RecordType:       endpoint.RecordTypeCNAME,
-		SetIdentifier:    "",
-		RecordTTL:        endpoint.TTL(180),
-		Labels:           testZoneZoneRecordLabels,
-		ProviderSpecific: nil,
-	}
-
-	testEndpoints = []*endpoint.Endpoint{
+	allTestEndpoints = []*endpoint.Endpoint{
 		{
 			DNSName:          "www.one.com",
-			Targets:          endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+			Targets:          endpoint.Targets{"1.1.1.1"},
 			RecordType:       endpoint.RecordTypeA,
 			SetIdentifier:    "",
 			RecordTTL:        endpoint.TTL(60),
@@ -608,11 +600,75 @@ var (
 			Labels:           testZoneZoneRecordLabels,
 			ProviderSpecific: nil,
 		},
-		thirdTestEndpoint,
+		{
+			DNSName:          "@.two.com",
+			Targets:          endpoint.Targets{"testing.com"},
+			RecordType:       endpoint.RecordTypeCNAME,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "three.one.com",
+			Targets:          endpoint.Targets{"3.3.3.3"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "four.one.com",
+			Targets:          endpoint.Targets{"4.4.4.4"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "five.one.com",
+			Targets:          endpoint.Targets{"5.5.5.5"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "six.one.com",
+			Targets:          endpoint.Targets{"6.6.6.6"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "seven.one.com",
+			Targets:          endpoint.Targets{"7.7.7.7"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
+		{
+			DNSName:          "eight.one.com",
+			Targets:          endpoint.Targets{"8.8.8.8"},
+			RecordType:       endpoint.RecordTypeA,
+			SetIdentifier:    "",
+			RecordTTL:        endpoint.TTL(180),
+			Labels:           testZoneZoneRecordLabels,
+			ProviderSpecific: nil,
+		},
 	}
 
+	threeTestEndpoints = allTestEndpoints[0:3]
+
 	testMergedEndpoints = []*endpoint.Endpoint{
-		thirdTestEndpoint,
+		allTestEndpoints[2],
 		{
 			DNSName:          "www.one.com",
 			Targets:          endpoint.Targets{"1.1.1.1", "2.2.2.2"},
@@ -622,5 +678,12 @@ var (
 			Labels:           testZoneZoneRecordLabels,
 			ProviderSpecific: nil,
 		},
+	}
+
+	testChanges = &plan.Changes{
+		Create:    allTestEndpoints[3:5],
+		UpdateOld: allTestEndpoints[5:7],
+		UpdateNew: allTestEndpoints[7:9],
+		Delete:    allTestEndpoints[0:3],
 	}
 )
