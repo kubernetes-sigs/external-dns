@@ -177,7 +177,9 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 
 func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecordsResponse, *http.Response, error) {
 
-	if p.testing {
+	if p.testing && p.dryRun {
+		return testGetZoneZoneRecordsResponse, nil, fmt.Errorf("testing")
+	} else if p.testing {
 		return testGetZoneZoneRecordsResponse, nil, nil
 	}
 
@@ -261,7 +263,7 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 
 	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + fmt.Sprint(endpoint.RecordTTL))
 
-	a, r, err := p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackID, zoneID).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	a, r, err := p.createCall(zoneID, domain, endpoint, target, msg)
 
 	if err != nil {
 		log.Infof(err.Error())
@@ -274,6 +276,16 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint 
 	log.Infof("Created record " + *a.Record.Name + "." + domain + " (ID:" + *a.Record.Id + ")")
 
 	return nil
+}
+
+func (p *StackPathProvider) createCall(zoneID string, domain string, endpoint *endpoint.Endpoint, target string, msg *dns.ZoneUpdateZoneRecordMessage) (dns.ZoneCreateZoneRecordResponse, *http.Response, error) {
+	if p.testing && p.dryRun {
+		return dns.ZoneCreateZoneRecordResponse{}, nil, fmt.Errorf("testing")
+	} else if p.testing {
+		return dns.ZoneCreateZoneRecordResponse{}, nil, nil
+	} else {
+		return p.client.ResourceRecordsApi.CreateZoneRecord(p.context, p.stackID, zoneID).ZoneUpdateZoneRecordMessage(*msg).Execute()
+	}
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
@@ -302,7 +314,7 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 }
 
 func (p *StackPathProvider) deleteTarget(zone string, record string) error {
-	resp, err := p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackID, zone, record).Execute()
+	resp, err := p.deleteCall(zone, record)
 
 	if err != nil {
 		log.Infof(err.Error())
@@ -315,6 +327,16 @@ func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 	log.Infof("Deleted record " + record)
 
 	return nil
+}
+
+func (p *StackPathProvider) deleteCall(zone string, record string) (*http.Response, error) {
+	if p.testing && p.dryRun {
+		return nil, fmt.Errorf("testing")
+	} else if p.testing {
+		return nil, nil
+	} else {
+		return p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackID, zone, record).Execute()
+	}
 }
 
 func (p *StackPathProvider) update(old []*endpoint.Endpoint, new []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
@@ -355,12 +377,13 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 }
 
 func (p *StackPathProvider) getZones() (dns.ZoneGetZonesResponse, *http.Response, error) {
-
-	if p.testing {
+	if p.testing && !p.dryRun {
 		return testGetZoneRecords, nil, nil
+	} else if p.testing {
+		return testGetZoneRecords, nil, fmt.Errorf("testing")
+	} else {
+		return p.client.ZonesApi.GetZones(p.context, p.stackID).Execute()
 	}
-
-	return p.client.ZonesApi.GetZones(p.context, p.stackID).Execute()
 }
 
 // Merge Endpoints with the same Name and Type into a single endpoint with
@@ -438,11 +461,11 @@ var (
 	testAccountID   = "TEST_ACCOUNT_ID"
 	testNameservers = []string{"ns1.example.com", "ns2.example.com"}
 
-	testZoneID                           = []string{"TEST_ZONE_ID1"}
-	testZoneDomain                       = []string{"one.com"}
-	testZoneVersion                      = []string{"TEST_ZONE_VERSION1"}
+	testZoneID                           = []string{"TEST_ZONE_ID1", ""}
+	testZoneDomain                       = []string{"one.com", "two.com"}
+	testZoneVersion                      = []string{"TEST_ZONE_VERSION1", ""}
 	testZoneLabels                       = make(map[string]string)
-	testZoneDisabled                     = []bool{false, false, true}
+	testZoneDisabled                     = []bool{false, false}
 	testZoneStatus    dns.ZoneZoneStatus = "ACTIVE"
 	testGetZonesZones                    = []dns.ZoneZone{
 		{
@@ -460,6 +483,22 @@ var (
 			Disabled:    &testZoneDisabled[0],
 		},
 	}
+
+	badZone = dns.ZoneZone{
+		StackId:     &testStackID,
+		AccountId:   &testAccountID,
+		Id:          &testZoneID[1],
+		Domain:      &testZoneDomain[1],
+		Version:     &testZoneVersion[1],
+		Labels:      &testZoneLabels,
+		Created:     &time.Time{},
+		Updated:     &time.Time{},
+		Nameservers: &testNameservers,
+		Verified:    &time.Time{},
+		Status:      &testZoneStatus,
+		Disabled:    &testZoneDisabled[1],
+	}
+
 	testGetZonesTotalCount      = "1"
 	testGetZonesHasPreviousPage = false
 	testGetZonesHasNextPage     = false
@@ -541,7 +580,7 @@ var (
 	}
 
 	thirdTestEndpoint = &endpoint.Endpoint{
-		DNSName:          "@.one.com",
+		DNSName:          "@.two.com",
 		Targets:          endpoint.Targets{"testing.com"},
 		RecordType:       endpoint.RecordTypeCNAME,
 		SetIdentifier:    "",
