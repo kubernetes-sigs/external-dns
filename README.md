@@ -52,6 +52,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
+* [Stackpath](https://www.stackpath.com/)
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 * [GoDaddy](https://www.godaddy.com)
 * [Gandi](https://www.gandi.net)
@@ -109,6 +110,7 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
+| Stackpath | Alpha | @wmarchesi123 |
 | Vultr | Alpha | |
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
@@ -176,6 +178,7 @@ The following tutorials are provided:
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
 * [Scaleway](docs/tutorials/scaleway.md)
+* [Stackpath](docs/tutorials/stackpath.md)
 * [Vultr](docs/tutorials/vultr.md)
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
