@@ -137,7 +137,7 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	merged := mergeEndpointsByNameType(endpoints)
 	out := "Found:"
 	for _, e := range merged {
-		out = out + " [" + e.DNSName + " " + e.RecordType + " " + string(rune(len(e.Targets))) + "]"
+		out = out + " [" + e.DNSName + " " + e.RecordType + " " + e.Targets[0] + " " + fmt.Sprint(e.RecordTTL) + "]"
 	}
 	log.Infof(out)
 
@@ -145,8 +145,6 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error) {
-
-	log.Info("Getting records from StackPath")
 
 	var records []dns.ZoneZoneRecord
 
@@ -165,12 +163,6 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 		records = append(records, recordsResponse.GetRecords()...)
 
 	}
-
-	out := "Found:"
-	for _, e := range records {
-		out = out + " [" + e.GetName() + " " + e.GetType() + " " + e.GetData() + " " + fmt.Sprint(e.GetTtl()) + "]"
-	}
-	log.Infof(out)
 
 	return records, nil
 }
