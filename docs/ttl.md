@@ -32,59 +32,59 @@ Both examples result in the same value of 60 seconds TTL.
 
 TTL must be a positive value.
 
-Providers
+Provider TTL Defaults
 =========
 
-- [x] AWS (Route53)
-- [x] Azure
-- [ ] Cloudflare
-- [x] DigitalOcean
-- [x] DNSimple
-- [x] Google
-- [ ] InMemory
-- [x] Linode
-- [x] TransIP
-- [x] RFC2136
-- [x] Vultr
-- [x] UltraDNS
+- [AWS (Route53)](#aws-route53)
+- [Azure](#azure)
+- [DigitalOcean](#digitalocean)
+- [DNSimple](#dnsimple)
+- [Google](#google)
+- [Linode](#linode)
+- [Stackpath](#stackpath)
+- [TransIP](#transip)
+- [UltraDNS](#ultradns)
+- [Vultr](#vultr)
 
 PRs welcome!
 
-Notes
-=====
+## Default
 When the `external-dns.alpha.kubernetes.io/ttl` annotation is not provided, the TTL will default to 0 seconds and `endpoint.TTL.isConfigured()` will be false.
-
-### AWS Provider
+***
+## AWS Route53
 The AWS Provider overrides the value to 300s when the TTL is 0.
-This value is a constant in the provider code.
-
+This value is a constant in the Provider code.
+***
 ## Azure
 TTL value should be between 1 and 2,147,483,647 seconds.
 By default it will be 300s.
-
-### DigitalOcean Provider
+***
+## DigitalOcean
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.
-This value is a constant in the provider code.
-
-### DNSimple Provider
+This value is a constant in the Provider code.
+***
+## DNSimple
 The DNSimple Provider default TTL is used when the TTL is 0. The default TTL is 3600s.
-
-### Google Provider
+***
+## Google
 Previously with the Google Provider, TTL's were hard-coded to 300s.
 For safety, the Google Provider overrides the value to 300s when the TTL is 0.
-This value is a constant in the provider code.
+This value is a constant in the Provider code.
 
 For the moment, it is impossible to use a TTL value of 0 with the AWS, DigitalOcean, or Google Providers.
 This behavior may change in the future.
-
-### Linode Provider
+***
+## Linode
 The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
-
-### TransIP Provider
+***
+## Stackpath
+The Stackpath Provider default TTL is used when the TTL is undefined in the source annotation. The default TTL used is 2 minutes (120 seconds).
+***
+## TransIP
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
-
-### Vultr Provider
-The Vultr provider minimal TTL is used when the TTL is 0. The default is 1 hour.
-
-### UltraDNS
-The UltraDNS provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.
+***
+## UltraDNS
+The UltraDNS Provider minimal TTL is used when the TTL is not provided. The default TTL is account level default TTL, if defined, otherwise 24 hours.
+***
+## Vultr
+The Vultr Provider minimal TTL is used when the TTL is 0. The default is 1 hour.
