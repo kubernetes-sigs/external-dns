@@ -7,11 +7,13 @@
 - [Deploy external-DNS](#deploy-external-dns)
   - [Manifest without RBAC Enabled](#manifest-without-rbac-enabled)
   - [Manifest with RBAC Enabled](#manifest-with-rbac-enabled)
-- Annotate a Service or Ingress
-  - [Annotation Example]
-  - [Nginx Example]
-  
+- [Annotate a Service or Ingress](#annotate-a-service-or-ingress)
+  - [Annotation Example](#annotation-example)
+  - [Nginx Example](#nginx-example)
+- [Logging](#logging)
+- [Issues](#issues)
 
+***
 ## Introduction 
 
 This file describes the basic steps to use external-DNS to advertise your
@@ -41,9 +43,9 @@ Management](https://control.stackpath.com/account/api-management).
 Copying and modifying the proper YAML manifest below, then modify it with your
 Stack ID, Client ID, and Client Secret. Then, use the following command to
 install external-DNS on your cluster:
-  ```
-  $ kubectl apply -f externalDnsManifest.yaml
-  ```
+```
+$ kubectl apply -f externalDnsManifest.yaml
+```
 
 ### Manifest without RBAC Enabled
 
@@ -93,14 +95,20 @@ metadata:
   name: external-dns
 rules:
 - apiGroups: [""]
-  resources: ["services","endpoints","pods"]
+  resources: ["services"]
   verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get","watch","list"]
+- apiGroups: ["networking","networking.k8s.io"]
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list", "watch"]
+  verbs: ["get","watch","list"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -147,16 +155,21 @@ spec:
           value: "YOUR_STACKPATH_STACK_ID"
 ```
 
-# Annotate a Service or Ingress
+## Annotate a Service or Ingress
 
-## Annotation Example
+### Annotation Example
 
 Adding the below annotation to any Service or Ingress will cause external-DNS to
 create the appropriate records in Stackpath:
 ```yaml
+metadata:
+  name: SERVICE_OR_INGRESS_NAME
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: NAME.YOURDOMAIN
+    external-dns.alpha.kubernetes.io/ttl: "120" #OPTIONAL LINE
 ```
 
-## Nginx Example
+### Nginx Example
 
 Create a file named nginx.yaml containing the following:
 ```yaml
@@ -198,6 +211,22 @@ spec:
 
 Use the below command to install the nginx service on your cluster and advertise
 it to Stackpath using external-DNS:
-  ```
-  $ kubectl apply -f nginx.yaml
-  ```
+```
+$ kubectl apply -f nginx.yaml
+```
+In a few minutes, check your Stackpath console or run the `kubectl logs` command
+explained in the [next section](#logging). You should see the relevent records have been
+created, along with two TXT records each to track ownership of the record.
+
+## Logging
+Using the below command, you can open a live stream of the logs from
+external-DNS, and read what calls are being made to your Stackpath account from
+external-DNS:
+```
+$ kubectl logs -f <external-dns-pod>
+```
+**The `-f` flag in the above command allows you to follow the logs live.** Omit this
+flag to print the logs up to the time of execution and quit.
+## Issues
+
+If you have an issue, find a bug, or want to suggest a feature create a new issue [here](https://github.com/kubernetes-sigs/external-dns/issues/new/choose).
