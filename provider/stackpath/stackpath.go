@@ -248,22 +248,27 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 	return nil
 }
 
-func (p *StackPathProvider) createTarget(zoneID string, domain string, endpoint *endpoint.Endpoint, target string) error {
+func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpoint.Endpoint, target string) error {
 
 	msg := dns.NewZoneUpdateZoneRecordMessage()
-	name := strings.TrimSuffix(endpoint.DNSName, "."+domain)
+	name := strings.TrimSuffix(ep.DNSName, domain)
+	name = strings.TrimSuffix(name, ".")
 	if name == "" || name == "@" {
 		name = "@"
 	}
 
+	if !ep.RecordTTL.IsConfigured() {
+		ep.RecordTTL = endpoint.TTL(120)
+	}
+
 	msg.SetName(name)
-	msg.SetType(dns.ZoneRecordType(endpoint.RecordType))
-	msg.SetTtl(int32(endpoint.RecordTTL))
+	msg.SetType(dns.ZoneRecordType(ep.RecordType))
+	msg.SetTtl(int32(ep.RecordTTL))
 	msg.SetData(target)
 
-	log.Infof("Creating record " + name + "." + domain + " " + endpoint.RecordType + " " + target + " " + fmt.Sprint(endpoint.RecordTTL))
+	log.Infof("Creating record " + name + "." + domain + " " + ep.RecordType + " " + target + " " + fmt.Sprint(ep.RecordTTL))
 
-	a, r, err := p.createCall(zoneID, domain, endpoint, target, msg)
+	a, r, err := p.createCall(zoneID, domain, ep, target, msg)
 
 	s := &http.Response{}
 
