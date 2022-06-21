@@ -467,30 +467,34 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
 
-	switch svc.Spec.Type {
-	case v1.ServiceTypeLoadBalancer:
-		if useClusterIP {
-			targets = append(targets, extractServiceIps(svc)...)
-		} else {
-			targets = append(targets, extractLoadBalancerTargets(svc)...)
+	targets = getTargetsFromTargetAnnotation(svc.Annotations)
+
+	if len(targets) == 0 {
+		switch svc.Spec.Type {
+		case v1.ServiceTypeLoadBalancer:
+			if useClusterIP {
+				targets = append(targets, extractServiceIps(svc)...)
+			} else {
+				targets = append(targets, extractLoadBalancerTargets(svc)...)
+			}
+		case v1.ServiceTypeClusterIP:
+			if sc.publishInternal {
+				targets = append(targets, extractServiceIps(svc)...)
+			}
+			if svc.Spec.ClusterIP == v1.ClusterIPNone {
+				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
+			}
+		case v1.ServiceTypeNodePort:
+			// add the nodeTargets and extract an SRV endpoint
+			targets, err = sc.extractNodePortTargets(svc)
+			if err != nil {
+				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
+				return endpoints
+			}
+			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
+		case v1.ServiceTypeExternalName:
+			targets = append(targets, extractServiceExternalName(svc)...)
 		}
-	case v1.ServiceTypeClusterIP:
-		if sc.publishInternal {
-			targets = append(targets, extractServiceIps(svc)...)
-		}
-		if svc.Spec.ClusterIP == v1.ClusterIPNone {
-			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-		}
-	case v1.ServiceTypeNodePort:
-		// add the nodeTargets and extract an SRV endpoint
-		targets, err = sc.extractNodePortTargets(svc)
-		if err != nil {
-			log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
-			return endpoints
-		}
-		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
-	case v1.ServiceTypeExternalName:
-		targets = append(targets, extractServiceExternalName(svc)...)
 	}
 
 	for _, t := range targets {
