@@ -19,9 +19,11 @@ package infoblox
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,6 +42,16 @@ const (
 	providerSpecificInfobloxPtrRecord = "infoblox-ptr-record-exists"
 )
 
+// Regular expression for domain name validation. In compliance with https://datatracker.ietf.org/doc/html/rfc1035
+const dnsLabel = "[a-z]+(([a-z0-9-]*[a-z0-9]+))?"
+
+var domainRegexpTemplate = fmt.Sprintf("^(?i)%s(\\.%s)*\\.?$", dnsLabel, dnsLabel)
+var domainRegexp = regexp.MustCompile(domainRegexpTemplate)
+
+func isDomainValid(name string) bool {
+	return domainRegexp.MatchString(name)
+}
+
 func isNotFoundError(err error) bool {
 	_, ok := err.(*ibclient.NotFoundError)
 	return ok
@@ -55,10 +67,12 @@ type StartupConfig struct {
 	Password      string
 	Version       string
 	SSLVerify     bool
+	ClientCert    string
+	ClientKey     string
 	DryRun        bool
 	View          string
 	MaxResults    int
-	FQDNRexEx     string
+	FQDNRegEx     string
 	CreatePTR     bool
 	CacheDuration int
 }
@@ -118,6 +132,14 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 
 // NewInfobloxProvider creates a new Infoblox provider.
 func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
+	var (
+		authMethodNamePass bool
+		authMethodCert     bool
+	)
+	if strings.Trim(ibStartupCfg.View, " \a\b\t\n\r\f\v") == "" {
+		return nil, fmt.Errorf("non-empty DNS view's name is required")
+	}
+
 	hostCfg := ibclient.HostConfig{
 		Host:    ibStartupCfg.Host,
 		Port:    strconv.Itoa(ibStartupCfg.Port),
@@ -125,8 +147,14 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	}
 
 	authCfg := ibclient.AuthConfig{
-		Username: ibStartupCfg.Username,
-		Password: ibStartupCfg.Password,
+		Username:   ibStartupCfg.Username,
+		Password:   ibStartupCfg.Password,
+		ClientCert: nil,
+		ClientKey:  nil,
+	}
+
+	if authCfg.Username != "" {
+		authMethodNamePass = true
 	}
 
 	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
@@ -142,15 +170,30 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		requestBuilder ibclient.HttpRequestBuilder
 		err            error
 	)
-	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRexEx != "" {
+	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRegEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRexEx)
+		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRegEx)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder, err = ibclient.NewWapiRequestBuilder(hostCfg, authCfg)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if ibStartupCfg.ClientCert != "" && ibStartupCfg.ClientKey != "" {
+		if certBody, err := ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
+			return nil, err
+		} else {
+			authCfg.ClientCert = certBody
+		}
+
+		if certKey, err := ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
+			return nil, err
+		} else {
+			authCfg.ClientKey = certKey
+		}
+		authMethodCert = true
 	}
 
 	requestor := &ibclient.WapiHttpRequestor{}
@@ -167,9 +210,19 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		zoneIDFilter:  ibStartupCfg.ZoneIDFilter,
 		dryRun:        ibStartupCfg.DryRun,
 		view:          ibStartupCfg.View,
-		fqdnRegEx:     ibStartupCfg.FQDNRexEx,
+		fqdnRegEx:     ibStartupCfg.FQDNRegEx,
 		createPTR:     ibStartupCfg.CreatePTR,
 		cacheDuration: ibStartupCfg.CacheDuration,
+	}
+
+	if authMethodCert && authMethodNamePass {
+		logrus.Infof("Both client-certificate and password-based authentication methods are used for connecting to Infoblox NIOS server.")
+	} else if authMethodCert {
+		logrus.Infof("client-certificate authentication method is used for connecting to Infoblox NIOS server.")
+	} else if authMethodNamePass {
+		logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server.")
+	} else {
+		return nil, fmt.Errorf("neither client-certificate nor username and password are specified for authentication to Infoblox NIOS server")
 	}
 
 	return providerCfg, nil
@@ -184,11 +237,19 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, zone := range zones {
 		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
+
+		// Query params for the majority of records are the same
+		queryParams := ibclient.NewQueryParams(
+			false,
+			map[string]string{
+				"view": p.view,
+				"zone": zone.Fqdn,
+			},
+		)
+
 		var resA []ibclient.RecordA
 		objA := ibclient.NewEmptyRecordA()
-		objA.View = p.view
-		objA.Zone = zone.Fqdn
-		err = p.client.GetObject(objA, "", nil, &resA)
+		err = p.client.GetObject(objA, "", queryParams, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -232,9 +293,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		// Include Host records since they should be treated synonymously with A records
 		var resH []ibclient.HostRecord
 		objH := ibclient.NewEmptyHostRecord()
-		objH.View = p.view
-		objH.Zone = zone.Fqdn
-		err = p.client.GetObject(objH, "", nil, &resH)
+		err = p.client.GetObject(objH, "", queryParams, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -254,9 +313,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resC []ibclient.RecordCNAME
 		objC := ibclient.NewEmptyRecordCNAME()
-		objC.View = p.view
-		objC.Zone = zone.Fqdn
-		err = p.client.GetObject(objC, "", nil, &resC)
+		err = p.client.GetObject(objC, "", queryParams, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -271,28 +328,38 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 			// example: 10.196.38.0/24 becomes 38.196.10.in-addr.arpa
 			arpaZone, err := transform.ReverseDomainName(zone.Fqdn)
 			if err == nil {
-				var resP []ibclient.RecordPTR
+				var resPtrStatic, resPtrDynamic []ibclient.RecordPTR
 				objP := ibclient.NewEmptyRecordPTR()
-				objP.Zone = arpaZone
-				objP.View = p.view
-				err = p.client.GetObject(objP, "", nil, &resP)
+				qp := ibclient.NewQueryParams(false, map[string]string{
+					"view":    p.view,
+					"zone":    arpaZone,
+					"creator": "STATIC",
+				})
+				err = p.client.GetObject(objP, "", qp, &resPtrStatic)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
 				}
-				for _, res := range resP {
+				qp = ibclient.NewQueryParams(false, map[string]string{
+					"view":    p.view,
+					"zone":    arpaZone,
+					"creator": "DYNAMIC",
+				})
+				err = p.client.GetObject(objP, "", qp, &resPtrDynamic)
+				if err != nil && !isNotFoundError(err) {
+					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
+				}
+				for _, res := range resPtrStatic {
+					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
+				}
+				for _, res := range resPtrDynamic {
 					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
 				}
 			}
 		}
 
 		var resT []ibclient.RecordTXT
-		objT := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Zone: zone.Fqdn,
-				View: p.view,
-			},
-		)
-		err = p.client.GetObject(objT, "", nil, &resT)
+		objT := ibclient.NewEmptyRecordTXT()
+		err = p.client.GetObject(objT, "", queryParams, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -331,6 +398,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text)
 				endpoints = append(endpoints, newEndpoint)
 			}
+
 		}
 	}
 
@@ -364,7 +432,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 			}
 		}
 	}
-	logrus.Debugf("fetched %d records from infoblox", len(endpoints))
+	logrus.Debugf("fetched %d records from NIOS", len(endpoints))
 	return endpoints, nil
 }
 
@@ -413,17 +481,20 @@ func (p *ProviderConfig) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 func (p *ProviderConfig) zones() ([]ibclient.ZoneAuth, error) {
 	var res, result []ibclient.ZoneAuth
-	obj := ibclient.NewZoneAuth(
-		ibclient.ZoneAuth{
-			View: p.view,
-		},
-	)
-	err := p.client.GetObject(obj, "", nil, &res)
+	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
+	qp := ibclient.NewQueryParams(
+		false, map[string]string{"view": p.view})
+	err := p.client.GetObject(obj, "", qp, &res)
 	if err != nil && !isNotFoundError(err) {
 		return nil, err
 	}
 
 	for _, zone := range res {
+		fqdnRE := regexp.MustCompile(p.fqdnRegEx)
+		if !fqdnRE.MatchString(zone.Fqdn) {
+			continue
+		}
+
 		if !p.domainFilter.Match(zone.Fqdn) {
 			continue
 		}
@@ -447,7 +518,10 @@ func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Cha
 	mapChange := func(changeMap infobloxChangeMap, change *endpoint.Endpoint) {
 		zone := p.findZone(zones, change.DNSName)
 		if zone == nil {
-			logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found.", change.DNSName)
+			logrus.Debugf(
+				"Ignoring changes to '%s' because a suitable Infoblox DNS zone was not found; "+
+					"check the zone’s existence at the DNS server and domain filters in the eDNS configuration",
+				change.DNSName)
 			return
 		}
 		// Ensure the record type is suitable
@@ -456,7 +530,9 @@ func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Cha
 		if p.createPTR && change.RecordType == endpoint.RecordTypeA {
 			reverseZone := p.findReverseZone(zones, change.Targets[0])
 			if reverseZone == nil {
-				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found.", change.Targets[0])
+				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found; "+
+					              "check the zone’s existence at the DNS server and domain filters in the eDNS configuration",
+					      change.Targets[0])
 				return
 			}
 			changecopy := *change
@@ -481,17 +557,22 @@ func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Cha
 	return created, deleted
 }
 
+func isDirectZoneRecord(zoneFqdn, recFqdn string) bool {
+	parts := strings.SplitN(recFqdn, ".", 2)
+	if parts == nil || len(parts) != 2 {
+		return false
+	}
+
+	return parts[1] == zoneFqdn
+}
+
 func (p *ProviderConfig) findZone(zones []ibclient.ZoneAuth, name string) *ibclient.ZoneAuth {
 	var result *ibclient.ZoneAuth
 
 	// Go through every zone looking for the longest name (i.e. most specific) as a matching suffix
 	for idx := range zones {
 		zone := &zones[idx]
-		if strings.HasSuffix(name, "."+zone.Fqdn) {
-			if result == nil || len(zone.Fqdn) > len(result.Fqdn) {
-				result = zone
-			}
-		} else if strings.EqualFold(name, zone.Fqdn) {
+		if isDirectZoneRecord(zone.Fqdn, name) || strings.EqualFold(name, zone.Fqdn) {
 			if result == nil || len(zone.Fqdn) > len(result.Fqdn) {
 				result = zone
 			}
@@ -508,7 +589,9 @@ func (p *ProviderConfig) findReverseZone(zones []ibclient.ZoneAuth, name string)
 	for i, zone := range zones {
 		_, rZoneNet, err := net.ParseCIDR(zone.Fqdn)
 		if err != nil {
-			logrus.WithError(err).Debugf("fqdn %s is no cidr", zone.Fqdn)
+			if !isDomainValid(zone.Fqdn) {
+				logrus.Debugf("FQDN '%s' is neither a valid network address nor a valid domain name", zone.Fqdn)
+			}
 		} else {
 			if rZoneNet.Contains(ip) {
 				_, mask := rZoneNet.Mask.Size()
@@ -530,8 +613,14 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		sf := map[string]string{
+			"view":     obj.View,
+			"name":     obj.Name,
+			"ipv4addr": obj.Ipv4Addr,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(
+				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -546,11 +635,26 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.PtrdName = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		sf := map[string]string{
+			"view":     obj.View,
+			"ptrdname": obj.PtrdName,
+			"ipv4addr": obj.Ipv4Addr,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			var staticPtrs, dynamicPtrs []ibclient.RecordPTR
+			sf["creator"] = "STATIC"
+			err = p.client.GetObject(
+				obj, "", ibclient.NewQueryParams(false, sf), &staticPtrs)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
+			sf["creator"] = "DYNAMIC"
+			err = p.client.GetObject(
+				obj, "", ibclient.NewQueryParams(false, sf), &dynamicPtrs)
+			if err != nil && !isNotFoundError(err) {
+				return
+			}
+			res = append(staticPtrs, dynamicPtrs...)
 		}
 		recordSet = infobloxRecordSet{
 			obj: obj,
@@ -562,8 +666,14 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
+		sf := map[string]string{
+			"view":      obj.View,
+			"name":      obj.Name,
+			"canonical": obj.Canonical,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(
+				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -580,14 +690,16 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			ep.Targets = endpoint.Targets{target}
 		}
 		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: ep.DNSName,
-				Text: ep.Targets[0],
-				View: p.view,
-			},
-		)
+			p.view,
+			"", ep.DNSName, ep.Targets[0], 0, false, "", nil)
+		sf := map[string]string{
+			"view": obj.View,
+			"name": obj.Name,
+			"text": obj.Text,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(
+				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -636,6 +748,45 @@ func (p *ProviderConfig) createRecords(created infobloxChangeMap) {
 					)
 					continue
 				}
+				expTypeA := ibclient.NewEmptyRecordA().ObjectType()
+				expTypeTXT := ibclient.NewEmptyRecordTXT().ObjectType()
+				expTypePTR := ibclient.NewEmptyRecordPTR().ObjectType()
+				expTypeCNAME := ibclient.NewEmptyRecordCNAME().ObjectType()
+				actType := recordSet.obj.ObjectType()
+				if actType == expTypeA {
+					recA := recordSet.obj.(*ibclient.RecordA)
+					if !isDomainValid(recA.Name) {
+						logrus.Errorf("cannot create an A-record with name '%s', which is invalid", recA.Name)
+						continue
+					}
+				} else if actType == expTypeTXT {
+					recTXT := recordSet.obj.(*ibclient.RecordTXT)
+					if !isDomainValid(recTXT.Name) {
+						logrus.Errorf("cannot create a TXT-record with name '%s', which is invalid", recTXT.Name)
+						continue
+					}
+				} else if actType == expTypePTR {
+					recPTR := recordSet.obj.(*ibclient.RecordPTR)
+					if recPTR.Name != "" && !isDomainValid(recPTR.Name) {
+						logrus.Errorf("cannot create a PTR-record with name '%s', which is invalid", recPTR.Name)
+						continue
+					}
+					if !isDomainValid(recPTR.PtrdName) {
+						logrus.Errorf("cannot create a PTR-record with ptrdname '%s', which is invalid", recPTR.PtrdName)
+						continue
+					}
+				} else if actType == expTypeCNAME {
+					recCNAME := recordSet.obj.(*ibclient.RecordCNAME)
+					if !isDomainValid(recCNAME.Name) {
+						logrus.Errorf("cannot create a CNAME-record with name '%s', which is invalid", recCNAME.Name)
+						continue
+					}
+					if !isDomainValid(recCNAME.Canonical) {
+						logrus.Errorf("cannot create a CNAME-record with canonical name '%s', which is invalid", recCNAME.Canonical)
+						continue
+					}
+				}
+
 				_, err = p.client.CreateObject(recordSet.obj)
 				if err != nil {
 					logrus.Errorf(
@@ -653,7 +804,6 @@ func (p *ProviderConfig) createRecords(created infobloxChangeMap) {
 }
 
 func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
-	// Delete records first
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
 			for targetIndex := range ep.Targets {
@@ -675,7 +825,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -684,7 +834,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -693,7 +843,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -702,7 +852,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}

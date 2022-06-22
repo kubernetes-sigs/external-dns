@@ -66,8 +66,8 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		if cfg.InfobloxGridHost == "" {
 			return errors.New("no Infoblox Grid Manager host specified")
 		}
-		if cfg.InfobloxWapiPassword == "" {
-			return errors.New("no Infoblox WAPI password specified")
+		if cfg.InfobloxWapiPassword == "" && cfg.InfobloxClientKey == "" && cfg.InfobloxClientCert == "" {
+			return errors.New("neither Infoblox WAPI password nor paths to public/private parts of TLS client certificate specified")
 		}
 	}
 

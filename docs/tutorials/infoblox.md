@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage with Infoblox.
 
-Make sure to use **>=0.4.6** version of ExternalDNS for this tutorial. The only WAPI version that
+Make sure to use **>=0.10.2** version of ExternalDNS for this tutorial. The only WAPI version that
 has been validated is **v2.3.1**. It is assumed that the API user has rights to create objects of
 the following types: `zone_auth`, `record:a`, `record:cname`, `record:txt`.
 
@@ -15,6 +15,8 @@ export WAPI_VERSION=2.3.1
 export WAPI_USERNAME=admin
 export WAPI_PASSWORD=infoblox
 ```
+
+**Warning**: Grid's Cloud platform member is not supported yet as a target host to be used by eDNS plugin.
 
 ## Creating an Infoblox DNS zone
 
@@ -265,16 +267,64 @@ $ curl -kl \
 
 ## Ability to filter results from the zone auth API using a regular expression
 
-There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature for the zone_auth service, set the parameter infoblox-fqdn-regex for external-dns to a regular expression that makes sense for you.  For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
+There is also the ability to filter results from the Infoblox zone_auth service
+based upon a regular expression.
+See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf)
+for examples. To use this feature for the zone_auth service,
+set the parameter 'infoblox-fqdn-regex' for external-dns to a regular expression that
+makes sense for you.  For instance, to only return hosted zones that start with
+'staging' in the 'test.com' domain (like staging.beta.test.com, or staging.test.com),
+use the following command line option when starting external-dns:
 
 ```
---infoblox-fqdn-regex=^staging.*test.com$
+--infoblox-fqdn-regex='^staging.*test.com$'
 ```
+
+The regular expression must take into account all the zones (including reverse-mapping)
+which are to be populated by the plugin. Any zone which does not match the regular
+expression will be ignored, no matter if it is a forward- or reverse-mapping zone.
+This note is specifically for the case when 'infoblox-create-ptr' is in use. 
+
+To select one forward-mapping zone and all of reverse-mapping zones,
+you may use the following CLI option:
+```
+--infoblox-fqdn-regex='(^example\.org$)|(^(\d{1,3}\.){3}\d{1,3}(\/\d{1,3})?$)'
+```
+
+The option 'infoblox-fqdn-regex' is similar to 'domain-filter' but works on NIOS side,
+only zones which match the regular expression are returned by NIOS server.
+You may use both 'infoblox-fqdn-regex' and 'domain-filter' when it makes sense for you;
+but remember that if a zone matches only the regular expression from 'infoblox-fqdn-regex'
+option but not any of values from 'domain-filter' options or vise versa,
+then the zone will not be impacted or taken into account by Infoblox provider for External DNS.
 
 ## Infoblox PTR record support
 
-There is an option to enable PTR records support for infoblox provider. PTR records allow to do reverse dns search. To enable PTR records support, add following into arguments for external-dns:  
+There is an option to enable PTR records support for infoblox provider.
+PTR records allow to do reverse dns search. To enable PTR records support,
+add following into arguments for external-dns:  
 `--infoblox-create-ptr` to allow management of PTR records.  
-You can also add a filter for reverse dns zone to limit PTR records to specific zones only:  
-`--domain-filter=10.196.0.0/16` change this to the reverse zone(s) as defined in your infoblox.  
+You can also add a filter for reverse DNS zone to limit PTR records
+to specific zones only:  
+```--domain-filter=10.0.0.0/8```
 Now external-dns will manage PTR records for you.
+
+**Important note 1**: you may expect that the reverse-mapping zone must be in the
+form of a subdomain of the 'in-addr.arpa' domain, but in case of eDNS's Infoblox provider and
+'domain-filter' option you must specify the subnet, with its network mask,
+in CIDR-form as in the example above.
+
+**Important note 2**: if Infoblox provider was in use without 'infoblox-create-ptr' option but
+you change this eventually, new PTR-records will be created only for newly created A-records.
+Already existing A-records will be left without PTR-records unless endpoints which
+were the sources for the A-records will be changed in the Kubernetes cluster. 
+
+## TXT-records
+
+If '--registry txt' option is used to configure External DNS plugin, then TXT-records
+will be created along with corresponding A-records to indicate that this A-record is
+managed by eDNS plugin.
+
+Even more, starting from the version released on 12th of April, 2022,
+an additional TXT-record will be created, prefixed by record-type ('a-' for A-records).
+This is for transitional period of time. For details, see [registry.md](../registry.md) document.
