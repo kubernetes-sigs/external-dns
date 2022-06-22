@@ -11,7 +11,15 @@ jobs:
       - name: Build an image from Dockerfile
         run: |
           make build.docker
+      - name: Get tag
+        id: tag
+        run: echo "::set-output name=TAG::$(git describe --tags --always --dirty)"
       - name: Run trivy
-        run: |
-          ./scripts/run-trivy.sh 
-            
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'us.gcr.io/k8s-artifacts-prod/external-dns/external-dns:${{ steps.tag.outputs.TAG }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
