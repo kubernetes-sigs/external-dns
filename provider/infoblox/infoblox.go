@@ -182,17 +182,14 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	}
 
 	if ibStartupCfg.ClientCert != "" && ibStartupCfg.ClientKey != "" {
-		if certBody, err := ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
+		if authCfg.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
 			return nil, err
-		} else {
-			authCfg.ClientCert = certBody
 		}
 
-		if certKey, err := ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
+		if authCfg.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
 			return nil, err
-		} else {
-			authCfg.ClientKey = certKey
 		}
+
 		authMethodCert = true
 	}
 
@@ -398,7 +395,6 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 				newEndpoint := endpoint.NewEndpoint(res.Name, endpoint.RecordTypeTXT, res.Text)
 				endpoints = append(endpoints, newEndpoint)
 			}
-
 		}
 	}
 
@@ -531,8 +527,8 @@ func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Cha
 			reverseZone := p.findReverseZone(zones, change.Targets[0])
 			if reverseZone == nil {
 				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found; "+
-					              "check the zone’s existence at the DNS server and domain filters in the eDNS configuration",
-					      change.Targets[0])
+					"check the zone’s existence at the DNS server and domain filters in the eDNS configuration",
+					change.Targets[0])
 				return
 			}
 			changecopy := *change
