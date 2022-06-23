@@ -22,9 +22,9 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	ukfClient "github.com/ukfast/sdk-go/pkg/client"
-	ukfConnection "github.com/ukfast/sdk-go/pkg/connection"
-	"github.com/ukfast/sdk-go/pkg/service/safedns"
+	ukfClient "github.com/ans-group/sdk-go/pkg/client"
+	ukfConnection "github.com/ans-group/sdk-go/pkg/connection"
+	"github.com/ans-group/sdk-go/pkg/service/safedns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
