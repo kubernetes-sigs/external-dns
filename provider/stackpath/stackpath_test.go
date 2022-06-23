@@ -144,7 +144,7 @@ func TestApplyChanges(t *testing.T) {
 
 	testProvider.dryRun = true
 	err = testProvider.ApplyChanges(context.Background(), &plan.Changes{})
-	assert.Equal(t, fmt.Errorf("testing"), err)
+	assert.Equal(t, nil, err)
 	testProvider.dryRun = false
 
 	err = testProvider.ApplyChanges(context.Background(), testChanges)
@@ -248,12 +248,14 @@ func TestCreateTarget(t *testing.T) {
 	testProvider.dryRun = false
 }
 
+//p.deleteTarget(endpoint, domain, target, zoneID, recordID)
+
 func TestDeleteTarget(t *testing.T) {
-	err := testProvider.deleteTarget("one.com", allTestEndpoints[8].Targets[0])
+	err := testProvider.deleteTarget(allTestEndpoints[8], "one.com", allTestEndpoints[8].Targets[0], "TEST_ZONE_ID1", "TEST_ZONE_ZONE_RECORD_ID1")
 	assert.NoError(t, err)
 
 	testProvider.dryRun = true
-	err = testProvider.deleteTarget("one.com", allTestEndpoints[8].Targets[0])
+	err = testProvider.deleteTarget(allTestEndpoints[8], "one.com", allTestEndpoints[8].Targets[0], "TEST_ZONE_ID1", "TEST_ZONE_ZONE_RECORD_ID1")
 	assert.Equal(t, fmt.Errorf("testing"), err)
 	testProvider.dryRun = false
 }

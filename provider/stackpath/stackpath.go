@@ -137,6 +137,9 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	merged := mergeEndpointsByNameType(endpoints)
 	out := "Found:"
 	for _, e := range merged {
+		if e.RecordType == endpoint.RecordTypeTXT {
+			break
+		}
 		out = out + " [" + e.DNSName + " " + e.RecordType + " " + e.Targets[0] + " " + fmt.Sprint(e.RecordTTL) + "]"
 	}
 	log.Infof(out)
@@ -180,6 +183,17 @@ func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecord
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
+	infoString := "Creating " + fmt.Sprint((changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
+
+	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 && len(changes.UpdateOld) == 0 {
+		log.Info("No Changes")
+		return nil
+	} else if p.dryRun {
+		log.Info("DRY RUN: " + infoString)
+	} else {
+		log.Info(infoString)
+	}
+
 	zs, err := p.zones()
 	if err != nil {
 		return err
@@ -219,20 +233,17 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 	createsByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range createsByZoneID {
-		log.Infof("Creating %d records in zone %s (ID:%s)", len(endpoints), (*zoneIDNameMap)[zoneID], zoneID)
 		domain := (*zoneIDNameMap)[zoneID]
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
-
 				if !p.dryRun {
 					err := p.createTarget(zoneID, domain, endpoint, target)
 					if err != nil {
 						return err
 					}
 				} else {
-					log.Infof("Would have created record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
+					log.Infof("DRY RUN: CREATE %s.%s %s %s %s", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
 				}
-
 			}
 		}
 	}
@@ -258,8 +269,6 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpo
 	msg.SetTtl(int32(ep.RecordTTL))
 	msg.SetData(target)
 
-	log.Infof("Creating record " + name + "." + domain + " " + ep.RecordType + " " + target + " " + fmt.Sprint(ep.RecordTTL))
-
 	a, r, err := p.createCall(zoneID, domain, ep, target, msg)
 
 	s := &http.Response{}
@@ -277,7 +286,7 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpo
 	b := dns.ZoneCreateZoneRecordResponse{}
 
 	if a != b {
-		log.Infof("Created record " + *a.Record.Name + "." + domain + " (ID:" + *a.Record.Id + ")")
+		log.Infof("CREATE %s.%s %s %s %s (ID: %s)", *a.Record.Name, domain, ep.RecordType, target, fmt.Sprint(ep.RecordTTL), *a.Record.Id)
 	}
 
 	return nil
@@ -294,22 +303,20 @@ func (p *StackPathProvider) createCall(zoneID string, domain string, endpoint *e
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
-	log.Infof("Deleting %s record(s)", fmt.Sprint(len(endpoints)))
-
 	deleteByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range deleteByZoneID {
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
+				domain := (*zoneIDNameMap)[zoneID]
+				recordID, err := recordFromTarget(endpoint, target, records, domain)
+				if err != nil {
+					return err
+				}
 				if !p.dryRun {
-					domain := (*zoneIDNameMap)[zoneID]
-					recordID, err := recordFromTarget(endpoint, target, records, domain)
-					if err != nil {
-						return err
-					}
-					p.deleteTarget(zoneID, recordID)
+					p.deleteTarget(endpoint, domain, target, zoneID, recordID)
 				} else {
-					log.Infof("Would have deleted record: %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
+					log.Infof("DRY RUN: DELETE %s.%s %s %s %s (ID: %s)", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
 				}
 			}
 		}
@@ -318,8 +325,8 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 	return nil
 }
 
-func (p *StackPathProvider) deleteTarget(zone string, record string) error {
-	resp, err := p.deleteCall(zone, record)
+func (p *StackPathProvider) deleteTarget(endpoint *endpoint.Endpoint, domain string, target string, zoneID string, recordID string) error {
+	resp, err := p.deleteCall(zoneID, recordID)
 
 	s := &http.Response{}
 
@@ -333,18 +340,18 @@ func (p *StackPathProvider) deleteTarget(zone string, record string) error {
 		return err
 	}
 
-	log.Infof("Deleted record " + record)
+	log.Infof("DELETE %s.%s %s %s %s (ID: %s)", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
 
 	return nil
 }
 
-func (p *StackPathProvider) deleteCall(zone string, record string) (*http.Response, error) {
+func (p *StackPathProvider) deleteCall(zoneID string, recordID string) (*http.Response, error) {
 	if p.testing && p.dryRun {
 		return nil, fmt.Errorf("testing")
 	} else if p.testing {
 		return nil, nil
 	} else {
-		return p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackID, zone, record).Execute()
+		return p.client.ResourceRecordsApi.DeleteZoneRecord(p.context, p.stackID, zoneID, recordID).Execute()
 	}
 }
 
@@ -376,10 +383,10 @@ func (p *StackPathProvider) zones() ([]dns.ZoneZone, error) {
 	for _, zone := range zones {
 		if p.zoneIDFilter.Match(zone.GetId()) && p.domainFilter.Match(zone.GetDomain()) {
 			filteredZones = append(filteredZones, zone)
-			log.Debugf("Matched zone " + zone.GetId())
-		} else {
-			log.Debugf("Filtered zone " + zone.GetId())
-		}
+			//log.Debugf("MATCHED: " + zone.GetId())
+		} /* else {
+			log.Debugf("FILTERED: " + zone.GetId())
+		}*/
 	}
 
 	return filteredZones, nil
@@ -437,7 +444,7 @@ func endpointsByZoneID(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
 		if zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
+			//log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
 		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
