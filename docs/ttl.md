@@ -78,7 +78,8 @@ This behavior may change in the future.
 The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
 ***
 ## Stackpath
-The Stackpath Provider default TTL is used when the TTL is undefined in the source annotation. The default TTL used is 2 minutes (120 seconds).
+The Stackpath Provider default TTL is used when the TTL is undefined in the
+source annotation. The default TTL used is 1 day (86400 seconds).
 ***
 ## TransIP
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
