@@ -123,8 +123,18 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 		for _, record := range records {
 			if provider.SupportedRecordType(record.GetType()) {
+				name := record.GetName()
+				if strings.HasSuffix(name, "-at") {
+					name = strings.TrimSuffix(name, "-at")
+					name = name + "-" + zone.GetDomain()
+				} else if record.GetName() == "@" {
+					name = zone.GetDomain()
+				} else {
+					name = name + "." + zone.GetDomain()
+				}
+
 				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
-					record.GetName()+"."+zone.GetDomain(),
+					name,
 					record.GetType(),
 					endpoint.TTL(record.GetTtl()),
 					record.GetData(),
@@ -137,10 +147,9 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	merged := mergeEndpointsByNameType(endpoints)
 	out := "Found:"
 	for _, e := range merged {
-		if e.RecordType == endpoint.RecordTypeTXT {
-			break
+		if e.RecordType != endpoint.RecordTypeTXT {
+			out = out + " [" + e.DNSName + " " + e.RecordType + " " + e.Targets[0] + " " + fmt.Sprint(e.RecordTTL) + "]"
 		}
-		out = out + " [" + e.DNSName + " " + e.RecordType + " " + e.Targets[0] + " " + fmt.Sprint(e.RecordTTL) + "]"
 	}
 	log.Infof(out)
 
@@ -183,7 +192,9 @@ func (p *StackPathProvider) getZoneRecords(zoneID string) (dns.ZoneGetZoneRecord
 
 func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	infoString := "Creating " + fmt.Sprint((changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
+	infoString := "Creating " + fmt.Sprint(len(changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
+
+	log.Infof(fmt.Sprint(changes))
 
 	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 && len(changes.UpdateOld) == 0 {
 		log.Info("No Changes")
@@ -230,6 +241,12 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName) error {
 
+	for _, endpoint := range endpoints {
+		for _, zone := range *zones {
+			endpoint.DNSName = strings.Replace(endpoint.DNSName, "-"+zone.GetDomain(), "-at."+zone.GetDomain(), -1)
+		}
+	}
+
 	createsByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range createsByZoneID {
@@ -242,7 +259,7 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 						return err
 					}
 				} else {
-					log.Infof("DRY RUN: CREATE %s.%s %s %s %s", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL))
+					log.Infof("DRY RUN: CREATE %s %s %s %s", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(len(createsByZoneID)))
 				}
 			}
 		}
@@ -260,13 +277,14 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpo
 		name = "@"
 	}
 
+	recTTL := int32(ep.RecordTTL)
 	if !ep.RecordTTL.IsConfigured() {
-		ep.RecordTTL = endpoint.TTL(120)
+		recTTL = 86400
 	}
 
 	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(ep.RecordType))
-	msg.SetTtl(int32(ep.RecordTTL))
+	msg.SetTtl(recTTL)
 	msg.SetData(target)
 
 	a, r, err := p.createCall(zoneID, domain, ep, target, msg)
@@ -303,6 +321,14 @@ func (p *StackPathProvider) createCall(zoneID string, domain string, endpoint *e
 }
 
 func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.ZoneZone, zoneIDNameMap *provider.ZoneIDName, records *[]dns.ZoneZoneRecord) error {
+	for _, endpoint := range endpoints {
+		for _, zone := range *zones {
+
+			endpoint.DNSName = strings.Replace(endpoint.DNSName, "-"+zone.GetDomain(), "-at."+zone.GetDomain(), -1)
+
+		}
+	}
+
 	deleteByZoneID := endpointsByZoneID(*zoneIDNameMap, endpoints)
 
 	for zoneID, endpoints := range deleteByZoneID {
@@ -316,7 +342,7 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 				if !p.dryRun {
 					p.deleteTarget(endpoint, domain, target, zoneID, recordID)
 				} else {
-					log.Infof("DRY RUN: DELETE %s.%s %s %s %s (ID: %s)", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
+					log.Infof("DRY RUN: DELETE %s %s %s %s (ID: %s)", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
 				}
 			}
 		}
@@ -340,7 +366,7 @@ func (p *StackPathProvider) deleteTarget(endpoint *endpoint.Endpoint, domain str
 		return err
 	}
 
-	log.Infof("DELETE %s.%s %s %s %s (ID: %s)", endpoint.DNSName, domain, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
+	log.Infof("DELETE %s %s %s %s (ID: %s)", endpoint.DNSName, endpoint.RecordType, target, fmt.Sprint(endpoint.RecordTTL), recordID)
 
 	return nil
 }
@@ -455,16 +481,22 @@ func endpointsByZoneID(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 
 func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord, domain string) (string, error) {
 
-	var name string
+	name := endpoint.DNSName
 
-	if endpoint.DNSName == "" {
-		name = "@"
+	if name == domain {
+		name = ""
 	} else {
 		name = strings.TrimSuffix(endpoint.DNSName, "."+domain)
+		name = strings.ReplaceAll(name, "-@", "-at")
 	}
 
 	for _, record := range *records {
-		if record.GetName() == name && record.GetType() == endpoint.RecordType && record.GetData() == strings.Trim(target, "\\\"") {
+		recordName := record.GetName()
+		if recordName == "@" {
+			recordName = ""
+		}
+
+		if recordName == name && record.GetType() == endpoint.RecordType && record.GetData() == strings.Trim(target, "\\\"") {
 			return *record.Id, nil
 		}
 	}
