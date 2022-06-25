@@ -509,12 +509,6 @@ spec:
       containers:
         - name: external-dns
           image: k8s.gcr.io/external-dns/external-dns:v0.11.0
-          env:
-            - name: AWS_DEFAULT_REGION
-              value: us-east-1 # change to region where EKS is installed
-            # Uncommend below if using static credentials
-            - name: AWS_SHARED_CREDENTIALS_FILE
-              value: /.aws/credentials
           args:
             - --source=service
             - --source=ingress
