@@ -170,7 +170,7 @@ type AWSConfig struct {
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
 	AssumeRole           string
-	AssumeRoleExternalId string
+	AssumeRoleExternalID string
 	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
