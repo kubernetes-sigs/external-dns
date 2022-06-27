@@ -158,7 +158,7 @@ var (
 		AWSZoneType:                 "private",
 		AWSZoneTagFilter:            []string{"tag=foo"},
 		AWSAssumeRole:               "some-other-role",
-		AWSAssumeRoleExternalId:     "pg2000",
+		AWSAssumeRoleExternalID:     "pg2000",
 		AWSBatchChangeSize:          100,
 		AWSBatchChangeInterval:      time.Second * 2,
 		AWSEvaluateTargetHealth:     false,
