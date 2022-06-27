@@ -83,7 +83,7 @@ type Config struct {
 	AWSZoneType                       string
 	AWSZoneTagFilter                  []string
 	AWSAssumeRole                     string
-	AWSAssumeRoleExternalId           string
+	AWSAssumeRoleExternalID           string
 	AWSBatchChangeSize                int
 	AWSBatchChangeInterval            time.Duration
 	AWSEvaluateTargetHealth           bool
