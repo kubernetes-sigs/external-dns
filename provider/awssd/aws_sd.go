@@ -109,10 +109,10 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 	}
 
 	if assumeRole != "" {
-		if assumeRoleExternalId != "" {
-			log.Infof("Assuming role: %s with external id", assumeRole)
+		if assumeRoleExternalID != "" {
+			log.Infof("Assuming role %q with external ID %q", assumeRole, assumeRoleExternalID)
 			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole, func(p *stscreds.AssumeRoleProvider) {
-				p.ExternalID = &assumeRoleExternalId
+				p.ExternalID = &assumeRoleExternalID
 			}))
 		} else {
 			log.Infof("Assuming role: %s", assumeRole)
