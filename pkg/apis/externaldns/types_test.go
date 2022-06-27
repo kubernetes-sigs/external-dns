@@ -57,7 +57,7 @@ var (
 		AWSZoneType:                 "",
 		AWSZoneTagFilter:            []string{""},
 		AWSAssumeRole:               "",
-		AWSAssumeRoleExternalId:     "",
+		AWSAssumeRoleExternalID:     "",
 		AWSBatchChangeSize:          1000,
 		AWSBatchChangeInterval:      time.Second,
 		AWSEvaluateTargetHealth:     true,
