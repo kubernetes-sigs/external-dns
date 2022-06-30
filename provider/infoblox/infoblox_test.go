@@ -386,51 +386,112 @@ func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 	}
 }
 
+// TestInfobloxRecords function checks if the current records
+// are fetched properly by the ProviderConfig.Records method.
 func TestInfobloxRecords(t *testing.T) {
-	client := mockIBConnector{
-		mockInfobloxZones: &[]ibclient.ZoneAuth{
-			createMockInfobloxZone("example.com"),
-			createMockInfobloxZone("other.com"),
+	testCases := map[string]struct {
+		client            mockIBConnector
+		domainFilter      endpoint.DomainFilter
+		createPtr         bool
+		expectedEndpoints []*endpoint.Endpoint
+	}{
+		// A couple of CNAME/A records match the domain filter. Create PTR is disabled.
+		"CNAMEAndARecordsMatchDomainFilter": {
+			client: mockIBConnector{
+				mockInfobloxZones: &[]ibclient.ZoneAuth{
+					createMockInfobloxZone("example.com"),
+					createMockInfobloxZone("other.com"),
+				},
+				mockInfobloxObjects: &[]ibclient.IBObject{
+					createMockInfobloxObject("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+					createMockInfobloxObject("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+					createMockInfobloxObject("nginx.example.com", endpoint.RecordTypeA, "123.123.123.123"),
+					createMockInfobloxObject("nginx.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+					createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
+					createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=white space"),
+					createMockInfobloxObject("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+					createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122"),
+					createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.121"),
+					createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+					createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.1"),
+					createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.2"),
+					createMockInfobloxObject("existing.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=existing"),
+					createMockInfobloxObject("host.example.com", "HOST", "125.1.1.1"),
+				},
+			},
+			domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+			createPtr:    false,
+			expectedEndpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
+				endpoint.NewEndpoint("nginx.example.com", endpoint.RecordTypeA, "123.123.123.123"),
+				endpoint.NewEndpoint("nginx.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
+				endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
+				endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=white space\""),
+				endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
+				endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122", "123.123.123.121"),
+				endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
+				endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeA, "124.1.1.1", "124.1.1.2"),
+				endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=existing\""),
+				endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1"),
+			},
 		},
-		mockInfobloxObjects: &[]ibclient.IBObject{
-			createMockInfobloxObject("example.com", endpoint.RecordTypeA, "123.123.123.122"),
-			createMockInfobloxObject("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createMockInfobloxObject("nginx.example.com", endpoint.RecordTypeA, "123.123.123.123"),
-			createMockInfobloxObject("nginx.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
-			createMockInfobloxObject("whitespace.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=white space"),
-			createMockInfobloxObject("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
-			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122"),
-			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeA, "123.123.123.121"),
-			createMockInfobloxObject("multiple.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
-			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.1"),
-			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeA, "124.1.1.2"),
-			createMockInfobloxObject("existing.example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=existing"),
-			createMockInfobloxObject("host.example.com", "HOST", "125.1.1.1"),
+		// PTR Records match the domain filter, and the reverse-mapping zone exists.
+		"PTRRecordsMatchDomainFilter": {
+			client: mockIBConnector{
+				mockInfobloxZones: &[]ibclient.ZoneAuth{
+					createMockInfobloxZone("10.0.0.0/24"),
+					createMockInfobloxZone("10.0.1.0/24"),
+				},
+				mockInfobloxObjects: &[]ibclient.IBObject{
+					createMockInfobloxObject("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
+					createMockInfobloxObject("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
+				},
+			},
+			domainFilter: endpoint.NewDomainFilter([]string{"10.0.0.0/24"}),
+			createPtr:    true,
+			expectedEndpoints: []*endpoint.Endpoint{
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
+				endpoint.NewEndpoint("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
+
+				// A scafold for the test case to pass,
+				// because the test framework lacks some abilities so far :-( ...
+				endpoint.NewEndpoint("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
+				endpoint.NewEndpoint("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
+			},
+		},
+		// Reverse-mapping zone exists, but PTR record doesn't match the domain filter.
+		"NoPTRRecordsMatchDomainFilter": {
+			client: mockIBConnector{
+				mockInfobloxZones: &[]ibclient.ZoneAuth{
+					createMockInfobloxZone("10.0.0.0/24"),
+				},
+				mockInfobloxObjects: &[]ibclient.IBObject{
+					createMockInfobloxObject("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
+				},
+			},
+			domainFilter:      endpoint.NewDomainFilter([]string{"20.0.0.0/24"}),
+			createPtr:         true,
+			expectedEndpoints: []*endpoint.Endpoint{},
 		},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
-	actual, err := providerCfg.Records(context.Background())
-
-	if err != nil {
-		t.Fatal(err)
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			providerCfg := &ProviderConfig{
+				domainFilter: tc.domainFilter,
+				zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+				dryRun:       true,
+				createPTR:    tc.createPtr,
+				client:       &tc.client,
+			}
+			actualEndpoints, err := providerCfg.Records(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			validateEndpoints(t, actualEndpoints, tc.expectedEndpoints)
+		})
 	}
-	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
-		endpoint.NewEndpoint("nginx.example.com", endpoint.RecordTypeA, "123.123.123.123"),
-		endpoint.NewEndpoint("nginx.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
-		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124"),
-		endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=white space\""),
-		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
-		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeA, "123.123.123.122", "123.123.123.121"),
-		endpoint.NewEndpoint("multiple.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
-		endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeA, "124.1.1.1", "124.1.1.2"),
-		endpoint.NewEndpoint("existing.example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=existing\""),
-		endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1"),
-	}
-	validateEndpoints(t, actual, expected)
 }
 
 func TestInfobloxAdjustEndpoints(t *testing.T) {
@@ -459,37 +520,6 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "\"heritage=external-dns,external-dns/owner=default\""),
 		endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "cerberus.infoblox.com"),
 		endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1").WithProviderSpecific(providerSpecificInfobloxPtrRecord, "true"),
-	}
-	validateEndpoints(t, actual, expected)
-}
-
-func TestInfobloxRecordsReverse(t *testing.T) {
-
-	client := mockIBConnector{
-		mockInfobloxZones: &[]ibclient.ZoneAuth{
-			createMockInfobloxZone("10.0.0.0/24"),
-			createMockInfobloxZone("10.0.1.0/24"),
-		},
-		mockInfobloxObjects: &[]ibclient.IBObject{
-			createMockInfobloxObject("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
-			createMockInfobloxObject("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
-		},
-	}
-
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
-	actual, err := providerCfg.Records(context.Background())
-
-	if err != nil {
-		t.Fatal(err)
-	}
-	expected := []*endpoint.Endpoint{
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
-		endpoint.NewEndpoint("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
-
-		// A scafold for the test case to pass,
-		// because the test framework lacks some abilities so far :-( ...
-		endpoint.NewEndpoint("example.com", endpoint.RecordTypePTR, "10.0.0.1"),
-		endpoint.NewEndpoint("example2.com", endpoint.RecordTypePTR, "10.0.0.2"),
 	}
 	validateEndpoints(t, actual, expected)
 }
