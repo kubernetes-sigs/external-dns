@@ -22,8 +22,6 @@ In a broader sense, ExternalDNS allows you to control DNS records dynamically vi
 
 The [FAQ](docs/faq.md) contains additional information and addresses several questions about key concepts of ExternalDNS.
 
-[CLI Usage](docs/cli-usage.md) lists the supported command line flags, and documents their operation.
-
 [Annotations](docs/annotations.md) enumerates the Kubernetes annotations supported by ExternalDNS, and explains their function.
 
 To see ExternalDNS in action, have a look at this [video](https://www.youtube.com/watch?v=9HQ2XgL9YVI) or read this [blogpost](https://codemine.be/posts/20190125-devops-eks-externaldns/).
