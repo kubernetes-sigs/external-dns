@@ -2,12 +2,14 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.8.0
-appVersion: 0.10.2
+version: 1.10.0
+appVersion: 0.12.0
 keywords:
   - kubernetes
   - external-dns
   - dns
+  - service
+  - ingress
 home: https://github.com/kubernetes-sigs/external-dns/
 icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
 sources:
@@ -18,6 +20,26 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: added
+<<<<<<< HEAD
       description: "Add annotations to Deployment."
     - kind: changed
       description: "Fix RBAC for istio-virtualservice source when istio-gateway isn't also added."
+=======
+      description: "Added commonLabels value to allow the addition of labels to all resources."
+    - kind: added
+      description: "Added support for Process Namespace Sharing via the shareProcessNamespace value."
+      links:
+        - name: GitHub Issue #2715
+          url: https://github.com/kubernetes-sigs/external-dns/pull/2715
+        - name: Process Namespace Sharing
+          url: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+    - kind: changed
+      description: "Update ExternalDNS version to v0.12.0"
+    - kind: changed
+      description: "Set resource namespaces to {{ .Release.Namespace }} in the templates instead of waiting until apply time for inference."
+    - kind: fixed
+      description: "Fixed rbac.additionalPermissions default value."
+      links:
+        - name: GitHub Issue #2796
+          url: https://github.com/kubernetes-sigs/external-dns/pull/2796
+>>>>>>> c588f848d6856ba0e537ded87749df8a70dc8e1f

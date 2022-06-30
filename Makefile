@@ -105,7 +105,7 @@ build.push/multiarch:
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
 		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
 		docker pull $${arch}/alpine:3.14 ;\
-		docker pull golang:1.17 ;\
+		docker pull golang:1.18 ;\
 		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
 		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\

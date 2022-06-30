@@ -44,6 +44,8 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for specifying whether the public or private interface address is used
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
+	// The annotation used for specifying the type of endpoints to use for headless services
+	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
@@ -57,6 +59,11 @@ const (
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+)
+
+const (
+	EndpointsTypeNodeExternalIP = "NodeExternalIP"
+	EndpointsTypeHostIP         = "HostIP"
 )
 
 // Provider-specific annotations
@@ -151,6 +158,10 @@ func getAccessFromAnnotations(annotations map[string]string) string {
 	return annotations[accessAnnotationKey]
 }
 
+func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
+	return annotations[endpointsTypeAnnotationKey]
+}
+
 func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
 	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
 	if !exists {
@@ -194,6 +205,12 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 				Name:  fmt.Sprintf("scw/%s", attr),
+				Value: v,
+			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("ibmcloud-%s", attr),
 				Value: v,
 			})
 		}
