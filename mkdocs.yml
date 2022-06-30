@@ -1,0 +1,86 @@
+site_name: external-dns
+site_author: external-dns maintainers
+
+repo_name: kubernetes-sigs/external-dns
+repo_url: https://github.com/kubernetes-sigs/external-dns/
+
+nav:
+  - index.md
+  - Tutorials: tutorials/
+  - Advanced Topics:
+      - Initial Design: initial-design.md
+      - TTL: ttl.md
+  - Contributing:
+      - Kubernetes Contributions: CONTRIBUTING.md
+      - Release: release.md
+      - contributing/*
+  - About:
+      - FAQ: faq.md
+      - Out of Incubator: 20190708-external-dns-incubator.md
+      - Code of Conduct: code-of-conduct.md
+      - License: LICENSE.md
+
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - navigation.top
+    - navigation.tracking
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+
+extra:
+  version:
+    provider: mike
+
+markdown_extensions:
+  - meta
+  - tables
+  - toc:
+      permalink: true
+  - abbr
+  - extra
+  - admonition
+  - smarty
+  - sane_lists
+  - nl2br
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight:
+      use_pygments: true
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tilde
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search
+  - literate-nav
+  - git-revision-date-localized:
+      type: date
+      fallback_to_build_date: true

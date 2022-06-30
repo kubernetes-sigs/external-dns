@@ -1,4 +1,3 @@
-@@ -0,0 +1,187 @@
 # Setting up ExternalDNS for Services on Civo
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Civo DNS Manager.

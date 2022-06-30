@@ -241,8 +241,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: foo
-          servicePort: 80
+          service:
+            name: foo
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 ## Verify ExternalDNS works (Service example)
