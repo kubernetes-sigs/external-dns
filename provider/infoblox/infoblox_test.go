@@ -524,6 +524,167 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 	validateEndpoints(t, actual, expected)
 }
 
+// TestInfobloxApplyChangesTableTest function use table-driven
+// tests to validate ApplyChanges functionality
+func TestInfobloxApplyChangesTableTest(t *testing.T) {
+	// Helper struct to differ between endpoints
+	type expectedEndpoints struct {
+		created []*endpoint.Endpoint
+		deleted []*endpoint.Endpoint
+		updated []*endpoint.Endpoint
+	}
+
+	// Test cases definitions
+	testCases := map[string]struct {
+		providerConfig    ProviderConfig
+		changes           *plan.Changes
+		expectedEndpoints expectedEndpoints
+	}{
+		// ApplyChanges method should create both A and PTR records,
+		// because they both are in the plan and match the domain filter
+		"ReverseMappingZoneExistPTRMatchDomainFilter": {
+			providerConfig: ProviderConfig{
+				client: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
+				domainFilter: endpoint.NewDomainFilter([]string{"example.com", "22.22.22.0/24"}),
+				createPTR:    true,
+			},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "a.example.com",
+						Targets:    endpoint.Targets{"22.22.22.5"},
+						RecordType: endpoint.RecordTypeA,
+						ProviderSpecific: endpoint.ProviderSpecific{{
+							Name:  "infoblox-ptr-record-exists",
+							Value: "true",
+						}},
+					},
+				},
+			},
+			expectedEndpoints: expectedEndpoints{
+				created: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "22.22.22.5"),
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypePTR, "22.22.22.5"),
+				},
+			},
+		},
+		// Both A and PTR records are in the plan, but provider should only
+		// create an A record, because reverse mapping zone for the PTR record
+		// doesn't match the domain filter
+		"ReverseMappingZoneExistDoesntMatchDomainFilter": {
+			providerConfig: ProviderConfig{
+				client: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
+				domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+				createPTR:    true,
+			},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "a.example.com",
+						Targets:    endpoint.Targets{"22.22.22.5"},
+						RecordType: endpoint.RecordTypeA,
+						ProviderSpecific: endpoint.ProviderSpecific{{
+							Name:  "infoblox-ptr-record-exists",
+							Value: "true",
+						}},
+					},
+				},
+			},
+			expectedEndpoints: expectedEndpoints{
+				created: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "22.22.22.5"),
+				},
+			},
+		},
+		// Reverse-mapping zone doesn't exist, so the PTR record for the A record will not be created
+		"ReverseMappingZoneDoesntExist": {
+			providerConfig: ProviderConfig{
+				client: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
+				domainFilter: endpoint.NewDomainFilter([]string{"example.com", "22.22.22.0/24"}),
+				createPTR:    true,
+			},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "a.example.com",
+						Targets:    endpoint.Targets{"22.22.22.5"},
+						RecordType: endpoint.RecordTypeA,
+						ProviderSpecific: endpoint.ProviderSpecific{{
+							Name:  "infoblox-ptr-record-exists",
+							Value: "true",
+						}},
+					},
+				},
+			},
+			expectedEndpoints: expectedEndpoints{
+				created: []*endpoint.Endpoint{
+					endpoint.NewEndpoint("a.example.com", endpoint.RecordTypeA, "22.22.22.5"),
+				},
+			},
+		},
+		// Auth zone for the A record doesn't exist, so no A/PTR records will be created
+		"AuthZoneForARecordDoesntExist": {
+			providerConfig: ProviderConfig{
+				client: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
+				domainFilter: endpoint.NewDomainFilter([]string{"example.com", "22.22.22.0/24"}),
+				createPTR:    true,
+			},
+			changes: &plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:    "a.example.com",
+						Targets:    endpoint.Targets{"22.22.22.5"},
+						RecordType: endpoint.RecordTypeA,
+						ProviderSpecific: endpoint.ProviderSpecific{{
+							Name:  "infoblox-ptr-record-exists",
+							Value: "true",
+						}},
+					},
+				},
+			},
+			expectedEndpoints: expectedEndpoints{
+				created: []*endpoint.Endpoint{},
+			},
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			if err := tc.providerConfig.ApplyChanges(context.Background(), tc.changes); err != nil {
+				t.Fatal(err)
+			}
+			// Validate created endpoints
+			validateEndpoints(t, tc.providerConfig.client.(*mockIBConnector).createdEndpoints, tc.expectedEndpoints.created)
+			// Validate deleted endpoints
+			validateEndpoints(t, tc.providerConfig.client.(*mockIBConnector).deletedEndpoints, tc.expectedEndpoints.deleted)
+			// Validate updated endpoints
+			validateEndpoints(t, tc.providerConfig.client.(*mockIBConnector).updatedEndpoints, tc.expectedEndpoints.updated)
+		})
+	}
+}
+
 func TestInfobloxApplyChanges(t *testing.T) {
 	client := mockIBConnector{}
 
