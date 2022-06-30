@@ -40,15 +40,15 @@ type CivoProvider struct {
 
 // CivoChanges All API calls calculated from the plan
 type CivoChanges struct {
-	Creates []CivoChangeCreate
-	Deletes []CivoChangeDelete
-	Updates []CivoChangeUpdate
+	Creates []*CivoChangeCreate
+	Deletes []*CivoChangeDelete
+	Updates []*CivoChangeUpdate
 }
 
 // CivoChangeCreate Civo Domain Record Creates
 type CivoChangeCreate struct {
 	Domain  civogo.DNSDomain
-	Options civogo.DNSRecordConfig
+	Options *civogo.DNSRecordConfig
 }
 
 // CivoChangeUpdate Civo Domain Record Updates
@@ -171,7 +171,7 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 
 		if p.DryRun {
 			log.WithFields(logFields).Info("Would create record.")
-		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, &change.Options); err != nil {
+		} else if _, err := p.Client.CreateDNSRecord(change.Domain.ID, change.Options); err != nil {
 			log.WithFields(logFields).Errorf(
 				"Failed to Create record: %v",
 				err,
@@ -226,8 +226,205 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 	return nil
 }
 
+// processCreateActions return a list of changes to create records.
+func processCreateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID map[string][]civogo.DNSRecord, createsByZone map[string][]*endpoint.Endpoint, civoChange *CivoChanges) error {
+	for zoneID, creates := range createsByZone {
+		zone := zonesByID[zoneID]
+
+		if len(creates) == 0 {
+			log.WithFields(log.Fields{
+				"zoneID":   zoneID,
+				"zoneName": zone.Name,
+			}).Debug("Skipping Zone, no creates found.")
+			continue
+		}
+
+		records := recordsByZoneID[zoneID]
+
+		// Generate Create
+		for _, ep := range creates {
+			matchedRecords := getRecordID(records, zone, *ep)
+
+			if len(matchedRecords) != 0 {
+				log.WithFields(log.Fields{
+					"zoneID":     zoneID,
+					"zoneName":   zone.Name,
+					"dnsName":    ep.DNSName,
+					"recordType": ep.RecordType,
+				}).Warn("Records found which should not exist")
+			}
+
+			recordType, err := convertRecordType(ep.RecordType)
+			if err != nil {
+				return err
+			}
+
+			for _, target := range ep.Targets {
+				civoChange.Creates = append(civoChange.Creates, &CivoChangeCreate{
+					Domain: zone,
+					Options: &civogo.DNSRecordConfig{
+						Value:    target,
+						Name:     getStrippedRecordName(zone, *ep),
+						Type:     recordType,
+						Priority: 0,
+						TTL:      int(ep.RecordTTL),
+					},
+				})
+			}
+		}
+	}
+
+	return nil
+}
+
+// processUpdateActions return a list of changes to update records.
+func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID map[string][]civogo.DNSRecord, updatesByZone map[string][]*endpoint.Endpoint, civoChange *CivoChanges) error {
+	for zoneID, updates := range updatesByZone {
+		zone := zonesByID[zoneID]
+
+		if len(updates) == 0 {
+			log.WithFields(log.Fields{
+				"zoneID":   zoneID,
+				"zoneName": zone.Name,
+			}).Debug("Skipping Zone, no updates found.")
+			continue
+		}
+
+		records := recordsByZoneID[zoneID]
+
+		for _, ep := range updates {
+			matchedRecords := getRecordID(records, zone, *ep)
+
+			if len(matchedRecords) == 0 {
+				log.WithFields(log.Fields{
+					"zoneID":     zoneID,
+					"dnsName":    ep.DNSName,
+					"zoneName":   zone.Name,
+					"recordType": ep.RecordType,
+				}).Warn("Update Records not found.")
+			}
+
+			recordType, err := convertRecordType(ep.RecordType)
+
+			if err != nil {
+				return err
+			}
+
+			matchedRecordsByTarget := make(map[string]civogo.DNSRecord)
+
+			for _, record := range matchedRecords {
+				matchedRecordsByTarget[record.Value] = record
+			}
+
+			for _, target := range ep.Targets {
+				if record, ok := matchedRecordsByTarget[target]; ok {
+					log.WithFields(log.Fields{
+						"zoneID":     zoneID,
+						"dnsName":    ep.DNSName,
+						"zoneName":   zone.Name,
+						"recordType": ep.RecordType,
+						"target":     target,
+					}).Warn("Updating Existing Target")
+
+					civoChange.Updates = append(civoChange.Updates, &CivoChangeUpdate{
+						Domain:       zone,
+						DomainRecord: record,
+						Options: civogo.DNSRecordConfig{
+							Value:    target,
+							Name:     getStrippedRecordName(zone, *ep),
+							Type:     recordType,
+							Priority: 0,
+							TTL:      int(ep.RecordTTL),
+						},
+					})
+
+					delete(matchedRecordsByTarget, target)
+				} else {
+					// Record did not previously exist, create new 'target'
+					log.WithFields(log.Fields{
+						"zoneID":     zoneID,
+						"dnsName":    ep.DNSName,
+						"zoneName":   zone.Name,
+						"recordType": ep.RecordType,
+						"target":     target,
+					}).Warn("Creating New Target")
+
+					civoChange.Creates = append(civoChange.Creates, &CivoChangeCreate{
+						Domain: zone,
+						Options: &civogo.DNSRecordConfig{
+							Value:    target,
+							Name:     getStrippedRecordName(zone, *ep),
+							Type:     recordType,
+							Priority: 0,
+							TTL:      int(ep.RecordTTL),
+						},
+					})
+				}
+			}
+
+			// Any remaining records have been removed, delete them
+			for _, record := range matchedRecordsByTarget {
+				log.WithFields(log.Fields{
+					"zoneID":     zoneID,
+					"dnsName":    ep.DNSName,
+					"recordType": ep.RecordType,
+					"target":     record.Value,
+				}).Warn("Deleting target")
+
+				civoChange.Deletes = append(civoChange.Deletes, &CivoChangeDelete{
+					Domain:       zone,
+					DomainRecord: record,
+				})
+			}
+
+		}
+	}
+
+	return nil
+}
+
+// processDeleteActions return a list of changes to delete records.
+func processDeleteActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID map[string][]civogo.DNSRecord, deletesByZone map[string][]*endpoint.Endpoint, civoChange *CivoChanges) error {
+	for zoneID, deletes := range deletesByZone {
+		zone := zonesByID[zoneID]
+
+		if len(deletes) == 0 {
+			log.WithFields(log.Fields{
+				"zoneID":   zoneID,
+				"zoneName": zone.Name,
+			}).Debug("Skipping Zone, no deletes found.")
+			continue
+		}
+
+		records := recordsByZoneID[zoneID]
+
+		for _, ep := range deletes {
+			matchedRecords := getRecordID(records, zone, *ep)
+
+			if len(matchedRecords) == 0 {
+				log.WithFields(log.Fields{
+					"zoneID":     zoneID,
+					"dnsName":    ep.DNSName,
+					"zoneName":   zone.Name,
+					"recordType": ep.RecordType,
+				}).Warn("Records to Delete not found.")
+			}
+
+			for _, record := range matchedRecords {
+				civoChange.Deletes = append(civoChange.Deletes, &CivoChangeDelete{
+					Domain:       zone,
+					DomainRecord: record,
+				})
+			}
+		}
+	}
+	return nil
+}
+
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	var civoChange CivoChanges 
 	recordsByZoneID := make(map[string][]civogo.DNSRecord)
 
 	zones, err := p.fetchZones(ctx)
@@ -260,187 +457,29 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	updatesByZone := endpointsByZone(zoneNameIDMapper, changes.UpdateNew)
 	deletesByZone := endpointsByZone(zoneNameIDMapper, changes.Delete)
 
-	var civoCreates []CivoChangeCreate
-	var civoUpdates []CivoChangeUpdate
-	var civoDeletes []CivoChangeDelete
-
 	// Generate Creates
-	for zoneID, creates := range createsByZone {
-		zone := zonesByID[zoneID]
-
-		if len(creates) == 0 {
-			log.WithFields(log.Fields{
-				"zoneID":   zoneID,
-				"zoneName": zone.Name,
-			}).Debug("Skipping Zone, no creates found.")
-			continue
-		}
-
-		records := recordsByZoneID[zoneID]
-
-		// Generate Create
-		for _, ep := range creates {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) != 0 {
-				log.WithFields(log.Fields{
-					"zoneID":     zoneID,
-					"zoneName":   zone.Name,
-					"dnsName":    ep.DNSName,
-					"recordType": ep.RecordType,
-				}).Warn("Records found which should not exist")
-			}
-
-			recordType, err := convertRecordType(ep.RecordType)
-			if err != nil {
-				return err
-			}
-
-			for _, target := range ep.Targets {
-				civoCreates = append(civoCreates, CivoChangeCreate{
-					Domain: zone,
-					Options: civogo.DNSRecordConfig{
-						Value:    target,
-						Name:     getStrippedRecordName(zone, ep),
-						Type:     recordType,
-						Priority: 0,
-						TTL:      int(ep.RecordTTL),
-					},
-				})
-			}
-		}
+	err = processCreateActions(zonesByID, recordsByZoneID, createsByZone, &civoChange)
+	if err != nil {
+		return err
 	}
 
 	// Generate Updates
-	for zoneID, updates := range updatesByZone {
-		zone := zonesByID[zoneID]
-
-		if len(updates) == 0 {
-			log.WithFields(log.Fields{
-				"zoneID":   zoneID,
-				"zoneName": zone.Name,
-			}).Debug("Skipping Zone, no updates found.")
-			continue
-		}
-
-		records := recordsByZoneID[zoneID]
-
-		for _, ep := range updates {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) == 0 {
-				log.WithFields(log.Fields{
-					"zoneID":     zoneID,
-					"dnsName":    ep.DNSName,
-					"zoneName":   zone.Name,
-					"recordType": ep.RecordType,
-				}).Warn("Update Records not found.")
-			}
-
-			recordType, err := convertRecordType(ep.RecordType)
-
-			if err != nil {
-				return err
-			}
-
-			matchedRecordsByTarget := make(map[string]civogo.DNSRecord)
-
-			for _, record := range matchedRecords {
-				matchedRecordsByTarget[record.DNSDomainID] = record
-			}
-
-			for _, target := range ep.Targets {
-				if record, ok := matchedRecordsByTarget[target]; ok {
-					log.WithFields(log.Fields{
-						"zoneID":     zoneID,
-						"dnsName":    ep.DNSName,
-						"zoneName":   zone.Name,
-						"recordType": ep.RecordType,
-						"target":     target,
-					}).Warn("Updating Existing Target")
-
-					civoUpdates = append(civoUpdates, CivoChangeUpdate{
-						Domain:       zone,
-						DomainRecord: record,
-						Options: civogo.DNSRecordConfig{
-							Value:    target,
-							Name:     getStrippedRecordName(zone, ep),
-							Type:     recordType,
-							Priority: 0,
-							TTL:      int(ep.RecordTTL),
-						},
-					})
-
-					delete(matchedRecordsByTarget, target)
-				} else {
-					// Record did not previously exist, create new 'target'
-					log.WithFields(log.Fields{
-						"zoneID":     zoneID,
-						"dnsName":    ep.DNSName,
-						"zoneName":   zone.Name,
-						"recordType": ep.RecordType,
-						"target":     target,
-					}).Warn("Creating New Target")
-
-					civoCreates = append(civoCreates, CivoChangeCreate{
-						Domain: zone,
-						Options: civogo.DNSRecordConfig{
-							Value:    target,
-							Name:     getStrippedRecordName(zone, ep),
-							Type:     recordType,
-							Priority: 0,
-							TTL:      int(ep.RecordTTL),
-						},
-					})
-				}
-			}
-		}
+	err = processUpdateActions(zonesByID, recordsByZoneID, updatesByZone, &civoChange)
+	if err != nil {
+		return err
 	}
-
+	
 	// Generate Deletes
-	for zoneID, deletes := range deletesByZone {
-		zone := zonesByID[zoneID]
+	err = processDeleteActions(zonesByID, recordsByZoneID, deletesByZone, &civoChange)
+	if err != nil {
+		return err
+	}	
 
-		if len(deletes) == 0 {
-			log.WithFields(log.Fields{
-				"zoneID":   zoneID,
-				"zoneName": zone.Name,
-			}).Debug("Skipping Zone, no deletes found.")
-			continue
-		}
-
-		records := recordsByZoneID[zoneID]
-
-		for _, ep := range deletes {
-			matchedRecords := getRecordID(records, zone, ep)
-
-			if len(matchedRecords) == 0 {
-				log.WithFields(log.Fields{
-					"zoneID":     zoneID,
-					"dnsName":    ep.DNSName,
-					"zoneName":   zone.Name,
-					"recordType": ep.RecordType,
-				}).Warn("Records to Delete not found.")
-			}
-
-			for _, record := range matchedRecords {
-				civoDeletes = append(civoDeletes, CivoChangeDelete{
-					Domain:       zone,
-					DomainRecord: record,
-				})
-			}
-		}
-	}
-
-	return p.submitChanges(ctx, CivoChanges{
-		Creates: civoCreates,
-		Deletes: civoDeletes,
-		Updates: civoUpdates,
-	})
+	return p.submitChanges(ctx, civoChange)
 }
 
-func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]endpoint.Endpoint {
-	endpointsByZone := make(map[string][]endpoint.Endpoint)
+func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+	endpointsByZone := make(map[string][]*endpoint.Endpoint)
 
 	for _, ep := range endpoints {
 		zoneID, _ := zoneNameIDMapper.FindZone(ep.DNSName)
@@ -448,7 +487,7 @@ func endpointsByZone(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoint
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
-		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], *ep)
+		endpointsByZone[zoneID] = append(endpointsByZone[zoneID], ep)
 	}
 
 	return endpointsByZone
