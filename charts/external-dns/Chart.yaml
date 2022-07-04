@@ -20,11 +20,6 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: added
-<<<<<<< HEAD
-      description: "Add annotations to Deployment."
-    - kind: changed
-      description: "Fix RBAC for istio-virtualservice source when istio-gateway isn't also added."
-=======
       description: "Added commonLabels value to allow the addition of labels to all resources."
     - kind: added
       description: "Added support for Process Namespace Sharing via the shareProcessNamespace value."
@@ -42,4 +37,3 @@ annotations:
       links:
         - name: GitHub Issue #2796
           url: https://github.com/kubernetes-sigs/external-dns/pull/2796
->>>>>>> c588f848d6856ba0e537ded87749df8a70dc8e1f
