@@ -52,7 +52,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/transip/gotransip/v6 v6.14.0
 	github.com/ukfast/sdk-go v1.4.34
-	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
+	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.14.1
 	go.etcd.io/etcd/api/v3 v3.5.4

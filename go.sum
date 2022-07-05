@@ -1385,6 +1385,8 @@ github.com/ukfast/sdk-go v1.4.34/go.mod h1:vxlI1IHy2pp04AYqRMm0MHWSWOF0lwTkPJXHx
 github.com/ulikunitz/xz v0.5.6/go.mod h1:2bypXElzHzzJZwzH67Y6wb67pO62Rzfn7BSiF4ABRW8=
 github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60 h1:n7unetnX8WWTc0U85h/0+dJoLWLqoaJwowXB9RkBdxU=
 github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60/go.mod h1:43vmy6GEvRuVMpGEWfJ/JoEM6RIqUQI1/tb8JqZR1zI=
+github.com/ultradns/ultradns-sdk-go v1.3.7 h1:P4CaM+npeXIybbLL27ezR316NnyILI1Y8IvfZtNE+Co=
+github.com/ultradns/ultradns-sdk-go v1.3.7/go.mod h1:43vmy6GEvRuVMpGEWfJ/JoEM6RIqUQI1/tb8JqZR1zI=
 github.com/urfave/cli v0.0.0-20171014202726-7bc6a0acffa5/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.20.0/go.mod h1:70zkFmudgCuE/ngEzBv17Jvp/497gISqfk5gWijbERA=
 github.com/urfave/cli v1.22.1/go.mod h1:Gos4lmkARVdJ6EkW0WaNv/tZAAMe9V7XWyB60NtXRu0=
