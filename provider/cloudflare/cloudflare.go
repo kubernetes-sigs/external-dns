@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -52,7 +51,7 @@ var proxyEnabled *bool = boolPtr(true)
 // proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
 var proxyDisabled *bool = boolPtr(false)
 
-var cloudFlareTypeNotSupported = map[string]bool{
+var recordTypeProxyNotSupported = map[string]bool{
 	"LOC": true,
 	"MX":  true,
 	"NS":  true,
@@ -414,7 +413,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		}
 	}
 
-	if cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*") {
+	if recordTypeProxyNotSupported[endpoint.RecordType] {
 		proxied = false
 	}
 	return proxied
