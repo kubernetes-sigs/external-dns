@@ -3,6 +3,51 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Added commonLabels value to allow the addition of labels to all resources."
+        - kind: added
+          description: "Added support for Process Namespace Sharing via the shareProcessNamespace value."
+          links:
+            - name: GitHub Issue #2715
+              url: https://github.com/kubernetes-sigs/external-dns/pull/2715
+            - name: Process Namespace Sharing
+              url: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+        - kind: changed
+          description: "Update ExternalDNS version to v0.12.0"
+        - kind: changed
+          description: "Set resource namespaces to {{ .Release.Namespace }} in the templates instead of waiting until apply time for inference."
+        - kind: fixed
+          description: "Fixed rbac.additionalPermissions default value."
+          links:
+            - name: GitHub Issue #2796
+              url: https://github.com/kubernetes-sigs/external-dns/pull/2796
+    apiVersion: v2
+    appVersion: 0.12.0
+    created: "2022-07-08T19:46:10.627359208Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 07ef213e0ce5bd61fdde57fcbeed98f9e535bebca623eff7bd057aa10d140634
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.10.0/external-dns-1.10.0.tgz
+    version: 1.10.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: changed
           description: "Update ExternalDNS version to v0.11.0"
     apiVersion: v2
@@ -322,4 +367,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2022-04-19T08:43:46.484312407Z"
+generated: "2022-07-08T19:46:10.627442309Z"
