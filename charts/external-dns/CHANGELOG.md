@@ -10,10 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <!-- ## [UNRELEASED]
 ### Added
 ### Changed
+### Fixed
 ### Deprecated
 ### Removed -->
 
-## [v1.10.0] - 2022-07-04
+## [v1.10.1] - 2022-07-11
+
+### Fixed
+
+- Fixed incorrect addition of `namespace` to `ClusterRole` & `ClusterRoleBinding`. [@stevehipwell](https://github.com/stevehipwell)
+
+## [v1.10.0] - 2022-07-08
 
 ### Added
 
