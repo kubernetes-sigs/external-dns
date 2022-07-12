@@ -340,9 +340,11 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				log.Debugf("Removing duplicate target %s", target)
 				continue
 			}
+
 			deduppedTargets[target] = struct{}{}
 			targets = append(targets, target)
 		}
+
 		if ttl.IsConfigured() {
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
 		} else {
