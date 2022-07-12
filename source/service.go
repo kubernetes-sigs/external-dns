@@ -368,7 +368,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 
 		endpointName := fmt.Sprintf("%s.%s", svc.Name, hostname)
-		log.Debugf("Has headless-root-domain-record annotations, adding endpoint name: %s", endpointName)
+		log.Debugf("Has headless-root-domain-record annotations, adding endpoint name: %s ", endpointName)
 		endpoints = append(endpoints, endpoint.NewEndpoint(endpointName, endpoint.RecordTypeA, rootEndPoints...))
 	}
 
