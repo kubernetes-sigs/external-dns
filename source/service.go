@@ -328,7 +328,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		headlessDomains = append(headlessDomains, headlessDomain)
 	}
 	sort.Strings(headlessDomains)
-	
+
 	allTargetsRoot := make([]string, 0)
 	for _, headlessDomain := range headlessDomains {
 		allTargets := targetsByHeadlessDomain[headlessDomain]
