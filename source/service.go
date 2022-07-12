@@ -328,6 +328,8 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		headlessDomains = append(headlessDomains, headlessDomain)
 	}
 	sort.Strings(headlessDomains)
+	
+	allTargetsRoot := make([]string, 0)
 	for _, headlessDomain := range headlessDomains {
 		allTargets := targetsByHeadlessDomain[headlessDomain]
 		targets := []string{}
@@ -348,6 +350,26 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		} else {
 			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
 		}
+
+		allTargetsRoot = append(allTargetsRoot, targets...)
+	}
+
+	if _, ok := svc.Annotations["external-dns.alpha.kubernetes.io/headless-root-domain-record"]; ok {
+		rootEndPoints := []string{}
+		deddupedEndpoints := map[string]struct{}{}
+		for _, target := range allTargetsRoot {
+			if _, ok := deddupedEndpoints[target]; ok {
+				log.Debugf("Removing duplicate target %s", target)
+				continue
+			}
+
+			deddupedEndpoints[target] = struct{}{}
+			rootEndPoints = append(rootEndPoints, target)
+		}
+
+		endpointName := fmt.Sprintf("%s.%s", svc.Name, hostname)
+		log.Debugf("Has headless-root-domain-record annotations, adding endpoint name: %s", endpointName)
+		endpoints = append(endpoints, endpoint.NewEndpoint(endpointName, endpoint.RecordTypeA, rootEndPoints...))
 	}
 
 	return endpoints
