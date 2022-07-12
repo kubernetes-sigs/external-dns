@@ -232,10 +232,27 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	}
 
 	for _, ep := range endpoints {
+		deduplicateTargets(ep)
 		sort.Sort(ep.Targets)
 	}
 
 	return endpoints, nil
+}
+
+func deduplicateTargets(ep *endpoint.Endpoint) *endpoint.Endpoint {
+	deduppedTargets := map[string]struct{}{}
+	targets := []string{}
+	for _, target := range ep.Targets {
+		if _, ok := deduppedTargets[target]; ok {
+			log.Debugf(">>Removing duplicate target %s", target)
+			continue
+		}
+
+		deduppedTargets[target] = struct{}{}
+		targets = append(targets, target)
+	}
+	ep.Targets = targets
+	return ep
 }
 
 // extractHeadlessEndpoints extracts endpoints from a headless service using the "Endpoints" Kubernetes API resource
