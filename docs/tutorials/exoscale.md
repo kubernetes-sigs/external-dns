@@ -48,7 +48,7 @@ spec:
         - --domain-filter={{ my-domain }}
         - --policy=sync # if you want DNS entries to get deleted as well
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
-        - --exoscale-endpoint={{ endpoint }} # usually https://api.exoscale.ch/dns
+        - --exoscale-endpoint={{ endpoint }} # usually https://api.exoscale.com/v2
         - --exoscale-apikey={{ api-key}}
         - --exoscale-apisecret={{ api-secret }}
 ```
@@ -121,6 +121,7 @@ spec:
             name: "nginx"
             port:
               number: 80
+        path: /
         pathType: Prefix
 
 ---

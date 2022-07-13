@@ -164,6 +164,7 @@ type Config struct {
 	ExoscaleEndpoint                   string
 	ExoscaleAPIKey                     string `secure:"yes"`
 	ExoscaleAPISecret                  string `secure:"yes"`
+	ExoscaleAPIZone                    string
 	CRDSourceAPIVersion                string
 	CRDSourceKind                      string
 	ServiceTypeFilter                  []string
@@ -310,9 +311,10 @@ var defaultConfig = &Config{
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
 	LogLevel:                    logrus.InfoLevel.String(),
-	ExoscaleEndpoint:            "https://api.exoscale.ch/dns",
+	ExoscaleEndpoint:            "https://api.exoscale.com/v2",
 	ExoscaleAPIKey:              "",
 	ExoscaleAPISecret:           "",
+	ExoscaleAPIZone:             "ch-gva-2",
 	CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
 	CRDSourceKind:               "DNSEndpoint",
 	ServiceTypeFilter:           []string{},
@@ -537,6 +539,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default(defaultConfig.ExoscaleEndpoint).StringVar(&cfg.ExoscaleEndpoint)
 	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default(defaultConfig.ExoscaleAPIKey).StringVar(&cfg.ExoscaleAPIKey)
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
+	app.Flag("exoscale-apizone", "Provide API Zone for Exoscale provider").Default(defaultConfig.ExoscaleAPIZone).StringVar(&cfg.ExoscaleAPIZone)
 
 	// Flags related to RFC2136 provider
 	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server").Default(defaultConfig.RFC2136Host).StringVar(&cfg.RFC2136Host)

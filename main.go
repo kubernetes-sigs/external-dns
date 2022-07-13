@@ -309,7 +309,15 @@ func main() {
 			},
 		)
 	case "exoscale":
-		p, err = exoscale.NewExoscaleProvider(cfg.ExoscaleEndpoint, cfg.ExoscaleAPIKey, cfg.ExoscaleAPISecret, cfg.DryRun, exoscale.ExoscaleWithDomain(domainFilter), exoscale.ExoscaleWithLogging()), nil
+		p, err = exoscale.NewExoscaleProvider(
+			cfg.ExoscaleEndpoint,
+			cfg.ExoscaleAPIKey,
+			cfg.ExoscaleAPISecret,
+			cfg.ExoscaleAPIZone,
+			cfg.DryRun,
+			exoscale.ExoscaleWithDomain(domainFilter),
+			exoscale.ExoscaleWithLogging(),
+		)
 	case "inmemory":
 		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
 	case "designate":
