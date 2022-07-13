@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"os"
 
+	ansClient "github.com/ans-group/sdk-go/pkg/client"
+	ansConnection "github.com/ans-group/sdk-go/pkg/connection"
+	"github.com/ans-group/sdk-go/pkg/service/safedns"
 	log "github.com/sirupsen/logrus"
-	ukfClient "github.com/ukfast/sdk-go/pkg/client"
-	ukfConnection "github.com/ukfast/sdk-go/pkg/connection"
-	"github.com/ukfast/sdk-go/pkg/service/safedns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -38,8 +38,8 @@ type SafeDNS interface {
 	DeleteZoneRecord(zoneName string, recordID int) error
 	GetZone(zoneName string) (safedns.Zone, error)
 	GetZoneRecord(zoneName string, recordID int) (safedns.Record, error)
-	GetZoneRecords(zoneName string, parameters ukfConnection.APIRequestParameters) ([]safedns.Record, error)
-	GetZones(parameters ukfConnection.APIRequestParameters) ([]safedns.Zone, error)
+	GetZoneRecords(zoneName string, parameters ansConnection.APIRequestParameters) ([]safedns.Record, error)
+	GetZones(parameters ansConnection.APIRequestParameters) ([]safedns.Zone, error)
 	PatchZoneRecord(zoneName string, recordID int, patch safedns.PatchRecordRequest) (int, error)
 	UpdateZoneRecord(zoneName string, record safedns.Record) (int, error)
 }
@@ -51,7 +51,7 @@ type SafeDNSProvider struct {
 	// Only consider hosted zones managing domains ending in this suffix
 	domainFilter     endpoint.DomainFilter
 	DryRun           bool
-	APIRequestParams ukfConnection.APIRequestParameters
+	APIRequestParams ansConnection.APIRequestParameters
 }
 
 // ZoneRecord is a datatype to simplify management of a record in a zone.
@@ -70,15 +70,15 @@ func NewSafeDNSProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*SafeD
 		return nil, fmt.Errorf("no SAFEDNS_TOKEN found in environment")
 	}
 
-	ukfAPIConnection := ukfConnection.NewAPIKeyCredentialsAPIConnection(token)
-	ukfClient := ukfClient.NewClient(ukfAPIConnection)
-	safeDNS := ukfClient.SafeDNSService()
+	ukfAPIConnection := ansConnection.NewAPIKeyCredentialsAPIConnection(token)
+	ansClient := ansClient.NewClient(ukfAPIConnection)
+	safeDNS := ansClient.SafeDNSService()
 
 	provider := &SafeDNSProvider{
 		Client:           safeDNS,
 		domainFilter:     domainFilter,
 		DryRun:           dryRun,
-		APIRequestParams: *ukfConnection.NewAPIRequestParameters(),
+		APIRequestParams: *ansConnection.NewAPIRequestParameters(),
 	}
 	return provider, nil
 }

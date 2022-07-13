@@ -1,4 +1,4 @@
-# Setting up ExternalDNS for Services on UKFast's SafeDNS
+# Setting up ExternalDNS for Services on ANS Group's SafeDNS
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using SafeDNS.
 
@@ -9,14 +9,14 @@ Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial.
 If you want to learn about how to use the SafeDNS service read the following tutorials:
 To learn more about the use of SafeDNS in general, see the following page:
 
-[UKFast's SafeDNS documentation](https://docs.ukfast.co.uk/domains/safedns/index.html).
+[ANS Group's SafeDNS documentation](https://docs.ukfast.co.uk/domains/safedns/index.html).
 
 ## Creating SafeDNS credentials
 
 Generate a fresh API token for use with ExternalDNS, following the instructions
-at the UKFast developer [Getting-Started](https://developers.ukfast.io/getting-started)
+at the ANS Group developer [Getting-Started](https://developers.ukfast.io/getting-started)
 page. You will need to grant read/write access to the SafeDNS API. No access to
-any other UKFast service is required.
+any other ANS Group service is required.
 
 The environment variable `SAFEDNS_TOKEN` must have a value of this token to run
 ExternalDNS with SafeDNS integration.
