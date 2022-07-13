@@ -27,7 +27,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/fake"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -47,14 +47,14 @@ func gatewayStatus(ips ...string) v1alpha2.GatewayStatus {
 	return v1alpha2.GatewayStatus{Addresses: addrs}
 }
 
-func routeStatus(refs ...v1alpha2.ParentRef) v1alpha2.RouteStatus {
+func routeStatus(refs ...v1alpha2.ParentReference) v1alpha2.RouteStatus {
 	var v v1alpha2.RouteStatus
 	for _, ref := range refs {
 		v.Parents = append(v.Parents, v1alpha2.RouteParentStatus{
 			ParentRef: ref,
 			Conditions: []metav1.Condition{
 				{
-					Type:   string(v1alpha2.ConditionRouteAccepted),
+					Type:   string(v1alpha2.RouteConditionAccepted),
 					Status: metav1.ConditionTrue,
 				},
 			},
@@ -63,19 +63,33 @@ func routeStatus(refs ...v1alpha2.ParentRef) v1alpha2.RouteStatus {
 	return v
 }
 
-func httpRouteStatus(refs ...v1alpha2.ParentRef) v1alpha2.HTTPRouteStatus {
+func httpRouteStatus(refs ...v1alpha2.ParentReference) v1alpha2.HTTPRouteStatus {
 	return v1alpha2.HTTPRouteStatus{RouteStatus: routeStatus(refs...)}
 }
 
-func gatewayParentRef(namespace, name string) v1alpha2.ParentRef {
+type parentRefOption func(*v1alpha2.ParentReference)
+
+func withSectionName(name v1alpha2.SectionName) parentRefOption {
+	return func(ref *v1alpha2.ParentReference) { ref.SectionName = &name }
+}
+
+func withPortNumber(port v1alpha2.PortNumber) parentRefOption {
+	return func(ref *v1alpha2.ParentReference) { ref.Port = &port }
+}
+
+func gatewayParentRef(namespace, name string, options ...parentRefOption) v1alpha2.ParentReference {
 	group := v1alpha2.Group("gateway.networking.k8s.io")
 	kind := v1alpha2.Kind("Gateway")
-	return v1alpha2.ParentRef{
+	ref := v1alpha2.ParentReference{
 		Group:     &group,
 		Kind:      &kind,
 		Name:      v1alpha2.ObjectName(name),
 		Namespace: (*v1alpha2.Namespace)(&namespace),
 	}
+	for _, opt := range options {
+		opt(&ref)
+	}
+	return ref
 }
 
 func newTestEndpoint(dnsName, recordType string, targets ...string) *endpoint.Endpoint {
@@ -415,6 +429,86 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				},
 				Status: httpRouteStatus(
 					gatewayParentRef("default", "one"),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+				newTestEndpoint("bar.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			title:      "SectionNameMatch",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("foo.example.internal"),
+						},
+						{
+							Name:     "bar",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("bar.example.internal"),
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+				},
+				Status: httpRouteStatus(
+					gatewayParentRef("default", "test", withSectionName("foo")),
+				),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+			},
+		},
+		{
+			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
+			title:      "PortNumberMatch",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1alpha2.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.GatewaySpec{
+					Listeners: []v1alpha2.Listener{
+						{
+							Name:     "foo",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("foo.example.internal"),
+							Port:     80,
+						},
+						{
+							Name:     "bar",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("bar.example.internal"),
+							Port:     80,
+						},
+						{
+							Name:     "qux",
+							Protocol: v1alpha2.HTTPProtocolType,
+							Hostname: hostnamePtr("qux.example.internal"),
+							Port:     8080,
+						},
+					},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1alpha2.HTTPRoute{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1alpha2.HTTPRouteSpec{
+					Hostnames: hostnames("*.example.internal"),
+				},
+				Status: httpRouteStatus(
+					gatewayParentRef("default", "test", withPortNumber(80)),
 				),
 			}},
 			endpoints: []*endpoint.Endpoint{
