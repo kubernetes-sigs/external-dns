@@ -26,7 +26,7 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/fake"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 )
 
 func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {

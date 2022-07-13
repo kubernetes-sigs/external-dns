@@ -33,9 +33,9 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions/apis/v1alpha2"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -321,9 +321,18 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		section := sectionVal(ref.SectionName, "")
 		listeners := gw.listeners[section]
 		for i := range listeners {
-			// Confirm that the protocols match and the Listener allows the Route (based on namespace and kind).
 			lis := &listeners[i]
-			if !gwProtocolMatches(rt.Protocol(), lis.Protocol) || !c.routeIsAllowed(gw.gateway, lis, rt) {
+			// Confirm that the Listener and Route protocols match.
+			if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
+				continue
+			}
+			// Confirm that the Listener and Route ports match, if specified.
+			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
+			if ref.Port != nil && *ref.Port != lis.Port {
+				continue
+			}
+			// Confirm that the Listener allows the Route (based on namespace and kind).
+			if !c.routeIsAllowed(gw.gateway, lis, rt) {
 				continue
 			}
 			// Find all overlapping hostnames between the Route and Listener.
@@ -442,7 +451,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1alpha2.Gateway, lis *v1alpha
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
 	for _, c := range conds {
-		if v1alpha2.RouteConditionType(c.Type) == v1alpha2.ConditionRouteAccepted {
+		if v1alpha2.RouteConditionType(c.Type) == v1alpha2.RouteConditionAccepted {
 			return c.Status == metav1.ConditionTrue
 		}
 	}

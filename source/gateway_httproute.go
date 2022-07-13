@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions/apis/v1alpha2"
+	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 )
 
 // NewGatewayHTTPRouteSource creates a new Gateway HTTPRoute source with the given config.
