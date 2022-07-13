@@ -55,7 +55,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 * [GoDaddy](https://www.godaddy.com)
 * [Gandi](https://www.gandi.net)
-* [UKFast SafeDNS](https://my.ukfast.co.uk/safedns/)
+* [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
 * [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
