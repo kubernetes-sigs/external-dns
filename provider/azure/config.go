@@ -19,6 +19,7 @@ package azure
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -39,6 +40,7 @@ type config struct {
 	ClientSecret                string            `json:"aadClientSecret" yaml:"aadClientSecret"`
 	UseManagedIdentityExtension bool              `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
 	UserAssignedIdentityID      string            `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	UseWorkloadIdentity         bool              `json:"useWorkloadIdentity" yaml:"useWorkloadIdentity"`
 }
 
 func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (*config, error) {
@@ -97,6 +99,31 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		if err != nil {
 			return nil, fmt.Errorf("failed to create service principal token: %v", err)
 		}
+		return token, nil
+	}
+
+	// Try to retrieve token with AWI
+	if cfg.UseWorkloadIdentity {
+		log.Info("Using token provided by Workload Identity.")
+
+		resource := "https://management.azure.com"
+		awiClientId := os.Getenv("AZURE_CLIENT_ID")
+		awiTenantId := os.Getenv("AZURE_TENANT_ID")
+
+		jwtBytes, err := ioutil.ReadFile(os.Getenv("AZURE_FEDERATED_TOKEN_FILE"))
+		if err != nil {
+			return nil, fmt.Errorf("Failed to get Azure Workload Identity token for file: %v", err)
+		}
+
+		jwt := string(jwtBytes)
+
+		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, awiTenantId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+		}
+
+		token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, awiClientId, jwt, resource)
+
 		return token, nil
 	}
 
