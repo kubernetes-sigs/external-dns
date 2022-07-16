@@ -22,8 +22,8 @@ import (
 	"strings"
 	"time"
 
+	udnssdk "github.com/shettyvaishak/ultradns-sdk-go"
 	log "github.com/sirupsen/logrus"
-	udnssdk "github.com/ultradns/ultradns-sdk-go"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -243,7 +243,7 @@ func (p *UltraDNSProvider) fetchRecords(ctx context.Context, k udnssdk.RRSetKey)
 
 func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.ZoneKey) ([]udnssdk.Zone, error) {
 	// Logic to paginate through all available results
-	offset := 0
+	page := ""
 	limit := 1000
 	maxerrs := 5
 	waittime := 5 * time.Second
@@ -253,7 +253,7 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 	errcnt := 0
 
 	for {
-		reqZones, ri, res, err := p.client.Zone.SelectWithOffsetWithLimit(zoneKey, offset, limit)
+		reqZones, ri, res, err := p.client.Zone.SelectWithOffsetWithLimit(zoneKey, page, limit)
 		if err != nil {
 			if res != nil && res.StatusCode >= 500 {
 				errcnt = errcnt + 1
@@ -266,11 +266,13 @@ func (p *UltraDNSProvider) fetchZones(ctx context.Context, zoneKey *udnssdk.Zone
 		}
 
 		zones = append(zones, reqZones...)
-		if ri.ReturnedCount+ri.Offset >= ri.TotalCount {
+
+		if ri.Next == "" {
 			return zones, nil
 		}
-		offset = ri.ReturnedCount + ri.Offset
+		page = ri.Next
 		continue
+
 	}
 }
 

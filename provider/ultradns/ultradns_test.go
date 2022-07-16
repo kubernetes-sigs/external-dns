@@ -27,8 +27,8 @@ import (
 	_ "strings"
 	"testing"
 
+	udnssdk "github.com/shettyvaishak/ultradns-sdk-go"
 	"github.com/stretchr/testify/assert"
-	udnssdk "github.com/ultradns/ultradns-sdk-go"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -37,7 +37,7 @@ type mockUltraDNSZone struct {
 	client *udnssdk.Client
 }
 
-func (m *mockUltraDNSZone) SelectWithOffsetWithLimit(k *udnssdk.ZoneKey, offset int, limit int) (zones []udnssdk.Zone, ResultInfo udnssdk.ResultInfo, resp *http.Response, err error) {
+func (m *mockUltraDNSZone) SelectWithOffsetWithLimit(k *udnssdk.ZoneKey, page string, limit int) (zones []udnssdk.Zone, CursorInfo udnssdk.CursorInfo, resp *http.Response, err error) {
 	zones = []udnssdk.Zone{}
 	zone := udnssdk.Zone{}
 	zoneJson := `
@@ -58,7 +58,7 @@ func (m *mockUltraDNSZone) SelectWithOffsetWithLimit(k *udnssdk.ZoneKey, offset 
 	}
 
 	zones = append(zones, zone)
-	return zones, udnssdk.ResultInfo{}, nil, nil
+	return zones, udnssdk.CursorInfo{}, nil, nil
 }
 
 type mockUltraDNSRecord struct {
@@ -131,7 +131,7 @@ func TestUltraDNSProvider_Zones(t *testing.T) {
 		AccountName: "teamrest",
 	}
 
-	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, "", 1000)
 	assert.Nil(t, err)
 	zones, err := provider.Zones(context.Background())
 	assert.Nil(t, err)
@@ -731,7 +731,7 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 	}
 
 	// When AccountName not given
-	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	expected, _, _, err := provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, "", 1000)
 	assert.Nil(t, err)
 	zones, err := provider.Zones(context.Background())
 	assert.Nil(t, err)
@@ -750,7 +750,7 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 		AccountName: "teamrest",
 	}
 
-	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, "", 1000)
 	assert.Nil(t, err)
 	zones, err = provider.Zones(context.Background())
 	assert.Nil(t, err)
@@ -767,7 +767,7 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 		AccountName: "teamrest",
 	}
 
-	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, 0, 1000)
+	expected, _, _, err = provider.client.Zone.SelectWithOffsetWithLimit(zoneKey, "", 1000)
 	assert.Nil(t, err)
 	zones, err = provider.Zones(context.Background())
 	assert.Nil(t, err)
