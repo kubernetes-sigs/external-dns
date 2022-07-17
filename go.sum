@@ -129,6 +129,8 @@ github.com/StackExchange/dnscontrol v0.2.8/go.mod h1:BH+5nX50JxHDdb3+AD/z/UfYMCc
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/Yamashou/gqlgenc v0.11.0 h1:y6I7CDrUdY4JBxfwss9168HTP5k/CdExLV5+YPG/3nY=
 github.com/Yamashou/gqlgenc v0.11.0/go.mod h1:OeQhghEgvGWvRwzx9XjMeg3FUQOHnTo5/12iuJSJxLg=
+github.com/aellwein/netcup-dns-api v1.0.3 h1:4tdq2k4Rhb124PdjHV4mWN/eVE7uUtoE+24yUGdOpe0=
+github.com/aellwein/netcup-dns-api v1.0.3/go.mod h1:CPCLCm+QlSObPNH4KfFqfCtzVF3Wj03SsHq/vp4E/pE=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
 github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.1 h1:5BIsppVPdWJA29Yb5cYawQYeh5geN413WxAgBZvEtdA=
