@@ -1,8 +1,7 @@
 Annotations
 ===========
 
-Unless otherwise noted, these annotations can be applied to any supported source type
-(e.g. service, ingress, etc.). For the full list, see the [CLI Usage](cli-usage.md) documentation.
+Unless otherwise noted, these annotations can be applied to any supported source type (e.g. service, ingress, etc.).
 
 | Annotation                                      | Type                             | Description |
 | ----------------------------------------------- | -------------------------------- | ----------- |
