@@ -52,10 +52,11 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Vultr](https://www.vultr.com)
 * [OVH](https://www.ovh.com)
 * [Scaleway](https://www.scaleway.com)
+* [Stackpath](https://www.stackpath.com/)
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 * [GoDaddy](https://www.godaddy.com)
 * [Gandi](https://www.gandi.net)
-* [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
+* [UKFast SafeDNS](https://my.ukfast.co.uk/safedns/)
 * [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
@@ -109,6 +110,7 @@ The following table clarifies the current status of the providers according to t
 | RancherDNS | Alpha | |
 | OVH | Alpha | |
 | Scaleway DNS | Alpha | @Sh4d1 |
+| Stackpath | Alpha | @wmarchesi123 |
 | Vultr | Alpha | |
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
@@ -176,6 +178,7 @@ The following tutorials are provided:
 * [VinylDNS](docs/tutorials/vinyldns.md)
 * [OVH](docs/tutorials/ovh.md)
 * [Scaleway](docs/tutorials/scaleway.md)
+* [Stackpath](docs/tutorials/stackpath.md)
 * [Vultr](docs/tutorials/vultr.md)
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
