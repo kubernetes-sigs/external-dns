@@ -402,13 +402,20 @@ func (p *dmeProvider) submitChanges(ctx context.Context, changes []*dmeChange) e
 			continue
 		}
 
-		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
-
 		if change.ResourceRecordSet.Name == zone.Name {
 			change.ResourceRecordSet.Name = "" // Apex records have an empty name
 		} else {
 			change.ResourceRecordSet.Name = strings.TrimSuffix(change.ResourceRecordSet.Name, fmt.Sprintf(".%s", zone.Name))
 		}
+
+		if change.ResourceRecordSet.Type == "CNAME" {
+			// If the Value contains a '.', but does not end with the zone name, add a '.' to the end
+			if strings.Contains(change.ResourceRecordSet.Value, ".") {
+				change.ResourceRecordSet.Value = change.ResourceRecordSet.Value + "."
+			}
+		}
+
+		log.Infof("Changing records: %s %v in zone: %s", change.Action, change.ResourceRecordSet, zone.Name)
 
 		recordAttributes := Record{
 			ManagedDNSRecordActions: models.ManagedDNSRecordActions{

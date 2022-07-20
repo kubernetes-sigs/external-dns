@@ -104,8 +104,19 @@ func TestDnsMadeEasyServices(t *testing.T) {
 			Priority: "0",
 		},
 	}
+	fifthRecord := Record{
+		Id:   "5",
+		Zone: &firstZone,
+		ManagedDNSRecordActions: models.ManagedDNSRecordActions{
+			Name:     "cname-target",
+			Value:    "target.anotherdomain.com.",
+			Type:     "CNAME",
+			Ttl:      "1800",
+			Priority: "0",
+		},
+	}
 
-	records := []Record{firstRecord, secondRecord, thirdRecord, fourthRecord}
+	records := []Record{firstRecord, secondRecord, thirdRecord, fourthRecord, fifthRecord}
 
 	dnsMadeEasyListRecordsResponse = dmeListRecordResponse{
 		Records: records,
@@ -181,6 +192,7 @@ func testDnsMadeEasyProviderApplyChanges(t *testing.T) {
 	changes.Create = []*endpoint.Endpoint{
 		{DNSName: "example.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
 		{DNSName: "custom-ttl.example.com", RecordTTL: 60, Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "cname-target.example.com", Targets: endpoint.Targets{"target.anotherdomain.com"}, RecordType: endpoint.RecordTypeCNAME},
 	}
 	changes.Delete = []*endpoint.Endpoint{
 		{DNSName: "example-beta.example.com", Targets: endpoint.Targets{"127.0.0.1"}, RecordType: endpoint.RecordTypeA},
