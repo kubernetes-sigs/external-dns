@@ -122,7 +122,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 			continue
 		}
 
-		// API does not except 0 as default TTL but wants nil pointer instead
+		// API does not accept 0 as default TTL but wants nil pointer instead
 		var ttl *int64
 		if epoint.RecordTTL != 0 {
 			t := int64(epoint.RecordTTL)
