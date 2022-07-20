@@ -9,8 +9,11 @@ image:
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
+
 nameOverride: ""
 fullnameOverride: ""
+
+commonLabels: {}
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -24,7 +27,7 @@ serviceAccount:
 rbac:
   # Specifies whether RBAC resources should be created
   create: true
-  additionalPermissions: {}
+  additionalPermissions: []
 
 # Annotations to add to the Deployment
 deploymentAnnotations: {}
