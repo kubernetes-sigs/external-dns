@@ -47,10 +47,15 @@ type TXTRegistry struct {
 	// registry TXT records corresponding to wildcard records will be invalid (and rejected by most providers), due to
 	// having a '*' appear (not as the first character) - see https://tools.ietf.org/html/rfc1034#section-4.3.3
 	wildcardReplacement string
+
+	managedRecordTypes []string
+
+	// missingTXTRecords stores TXT records which are missing after the migration to the new format
+	missingTXTRecords []*endpoint.Endpoint
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -67,6 +72,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		mapper:              mapper,
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
+		managedRecordTypes:  managedRecordTypes,
 	}, nil
 }
 
@@ -95,8 +101,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	endpoints := []*endpoint.Endpoint{}
+	missingEndpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[string]endpoint.Labels{}
+	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
 		if record.RecordType != endpoint.RecordTypeTXT {
@@ -117,6 +125,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 		key := fmt.Sprintf("%s::%s", im.mapper.toEndpointName(record.DNSName), record.SetIdentifier)
 		labelMap[key] = labels
+		txtRecordsMap[record.DNSName] = struct{}{}
 	}
 
 	for _, ep := range endpoints {
@@ -135,6 +144,26 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 				ep.Labels[k] = v
 			}
 		}
+
+		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
+		// The migration is done for the TXT records owned by this instance only.
+		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
+			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes) {
+				// Get desired TXT records and detect the missing ones
+				desiredTXTs := im.generateTXTRecord(ep)
+				missingDesiredTXTs := []*endpoint.Endpoint{}
+				for _, desiredTXT := range desiredTXTs {
+					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
+						missingDesiredTXTs = append(missingDesiredTXTs, desiredTXT)
+					}
+				}
+				if len(desiredTXTs) > len(missingDesiredTXTs) {
+					// Add missing TXT records only if those are managed (by externaldns) ones.
+					// The unmanaged record has both of the desired TXT records missing.
+					missingEndpoints = append(missingEndpoints, missingDesiredTXTs...)
+				}
+			}
+		}
 	}
 
 	// Update the cache.
@@ -143,12 +172,25 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		im.recordsCacheRefreshTime = time.Now()
 	}
 
+	im.missingTXTRecords = missingEndpoints
+
 	return endpoints, nil
+}
+
+// MissingRecords returns the TXT record to be created.
+// The missing records are collected during the run of Records method.
+func (im *TXTRegistry) MissingRecords() []*endpoint.Endpoint {
+	return im.missingTXTRecords
 }
 
 // generateTXTRecord generates both "old" and "new" TXT records.
 // Once we decide to drop old format we need to drop toTXTName() and rename toNewTXTName
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
+	// Missing TXT records are added to the set of changes.
+	// Obviously, we don't need any other TXT record for them.
+	if r.RecordType == endpoint.RecordTypeTXT {
+		return nil
+	}
 	// old TXT record format
 	txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
 	txt.ProviderSpecific = r.ProviderSpecific
