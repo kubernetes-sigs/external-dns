@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [UNRELEASED]
 ### Added
+
+- Add support to configure dnsPolicy on the Helm chart deployment. [@michelzanini](https://github.com/michelzanini)
+
 ### Changed
 ### Fixed
 ### Deprecated
