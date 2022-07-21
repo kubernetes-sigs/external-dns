@@ -336,6 +336,7 @@ func main() {
 				Context:      ctx,
 				DomainFilter: domainFilter,
 				ZoneIDFilter: zoneIDFilter,
+				OwnerID:      cfg.TXTOwnerID,
 				DryRun:       cfg.DryRun,
 			},
 		)

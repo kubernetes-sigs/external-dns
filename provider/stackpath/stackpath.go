@@ -40,6 +40,7 @@ type StackPathProvider struct {
 	context      context.Context
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
+	ownerID      string
 	stackID      string
 	dryRun       bool
 	testing      bool
@@ -49,6 +50,7 @@ type StackPathConfig struct {
 	Context      context.Context
 	DomainFilter endpoint.DomainFilter
 	ZoneIDFilter provider.ZoneIDFilter
+	OwnerID      string
 	DryRun       bool
 	Testing      bool
 }
@@ -91,6 +93,7 @@ func NewStackPathProvider(config StackPathConfig) (*StackPathProvider, error) {
 		context:      authorizedContext,
 		domainFilter: config.DomainFilter,
 		zoneIDFilter: config.ZoneIDFilter,
+		ownerID:      config.OwnerID,
 		stackID:      stackID,
 		dryRun:       config.DryRun,
 		testing:      config.Testing,
@@ -133,13 +136,17 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 					name = name + "." + zone.GetDomain()
 				}
 
-				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
-					name,
-					record.GetType(),
-					endpoint.TTL(record.GetTtl()),
-					record.GetData(),
-				),
-				)
+				if label, ok := record.GetLabels()["external-dns-owner"]; ok {
+					if label == p.ownerID {
+						endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
+							name,
+							record.GetType(),
+							endpoint.TTL(record.GetTtl()),
+							record.GetData(),
+						),
+						)
+					}
+				}
 			}
 		}
 	}
@@ -172,7 +179,13 @@ func (p *StackPathProvider) StackPathStyleRecords() ([]dns.ZoneZoneRecord, error
 			return nil, err
 		}
 
-		records = append(records, recordsResponse.GetRecords()...)
+		for _, record := range recordsResponse.GetRecords() {
+			if label, ok := record.GetLabels()["external-dns-owner"]; ok {
+				if label == p.ownerID {
+					records = append(records, record)
+				}
+			}
+		}
 
 	}
 
@@ -194,7 +207,7 @@ func (p *StackPathProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	infoString := "Creating " + fmt.Sprint(len(changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
 
-	log.Infof(fmt.Sprint(changes))
+	//log.Infof(fmt.Sprint(changes))
 
 	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 && len(changes.UpdateOld) == 0 {
 		log.Info("No Changes")
@@ -282,10 +295,14 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpo
 		recTTL = 86400
 	}
 
+	ownerLabel := make(map[string]string)
+	ownerLabel["external-dns-owner"] = p.ownerID
+
 	msg.SetName(name)
 	msg.SetType(dns.ZoneRecordType(ep.RecordType))
 	msg.SetTtl(recTTL)
 	msg.SetData(target)
+	msg.SetLabels(ownerLabel)
 
 	a, r, err := p.createCall(zoneID, domain, ep, target, msg)
 
@@ -335,7 +352,7 @@ func (p *StackPathProvider) delete(endpoints []*endpoint.Endpoint, zones *[]dns.
 		for _, endpoint := range endpoints {
 			for _, target := range endpoint.Targets {
 				domain := (*zoneIDNameMap)[zoneID]
-				recordID, err := recordFromTarget(endpoint, target, records, domain)
+				recordID, err := recordFromTarget(endpoint, target, records, domain, p.ownerID)
 				if err != nil {
 					return err
 				}
@@ -446,17 +463,20 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 	// Otherwise, construct a new list of endpoints with the endpoints merged.
 	var result []*endpoint.Endpoint
 	for _, endpoints := range endpointsByNameType {
+		labels := make(map[string]string)
 		dnsName := endpoints[0].DNSName
 		recordType := endpoints[0].RecordType
 		ttl := endpoints[0].RecordTTL
 
 		targets := make([]string, len(endpoints))
-		for i, e := range endpoints {
-			targets[i] = e.Targets[0]
+		for i, ep := range endpoints {
+			labels["external-dns-owner"] = ep.Labels["external-dns-owner"]
+			targets[i] = ep.Targets[0]
 		}
 
 		e := endpoint.NewEndpoint(dnsName, recordType, targets...)
 		e.RecordTTL = ttl
+		e.Labels = labels
 		result = append(result, e)
 	}
 
@@ -479,7 +499,7 @@ func endpointsByZoneID(zoneNameIDMapper provider.ZoneIDName, endpoints []*endpoi
 	return endpointsByZone
 }
 
-func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord, domain string) (string, error) {
+func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns.ZoneZoneRecord, domain string, ownerID string) (string, error) {
 
 	name := endpoint.DNSName
 
@@ -497,7 +517,11 @@ func recordFromTarget(endpoint *endpoint.Endpoint, target string, records *[]dns
 		}
 
 		if recordName == name && record.GetType() == endpoint.RecordType && record.GetData() == strings.Trim(target, "\\\"") {
-			return *record.Id, nil
+			if recordLabel, ok := record.GetLabels()["external-dns-owner"]; ok {
+				if recordLabel == ownerID {
+					return *record.Id, nil
+				}
+			}
 		}
 	}
 
@@ -569,7 +593,9 @@ var (
 	testZoneZoneRecordTTL    = []int32{int32(60), int32(60), int32(180)}
 	testZoneZoneRecordData   = []string{"1.1.1.1", "2.2.2.2", "testing.com"}
 	testZoneZoneRecordWeight = []int32{int32(1), int32(2), int32(3)}
-	testZoneZoneRecordLabels = make(map[string]string)
+	testZoneZoneRecordLabels = map[string]string{
+		"external-dns-owner": "test",
+	}
 
 	testGetZoneZoneRecords = []dns.ZoneZoneRecord{
 		{

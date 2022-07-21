@@ -35,6 +35,7 @@ var testProvider = StackPathProvider{
 	context:      context.Background(),
 	domainFilter: endpoint.DomainFilter{},
 	zoneIDFilter: provider.ZoneIDFilter{},
+	ownerID:      "test",
 	stackID:      "TEST_STACK_ID",
 	dryRun:       false,
 	testing:      true,
@@ -45,6 +46,7 @@ func TestNewStackPathProvider(t *testing.T) {
 		Context:      context.Background(),
 		DomainFilter: endpoint.NewDomainFilter(nil),
 		ZoneIDFilter: provider.NewZoneIDFilter(nil),
+		OwnerID:      "test",
 		DryRun:       false,
 		Testing:      true,
 	}
@@ -163,20 +165,20 @@ func TestRecordFromTarget(t *testing.T) {
 		RecordType:       "A",
 		SetIdentifier:    "test",
 		RecordTTL:        endpoint.TTL(60),
-		Labels:           endpoint.Labels{},
+		Labels:           testZoneZoneRecordLabels,
 		ProviderSpecific: endpoint.ProviderSpecific{},
 	}
 
-	record, err := recordFromTarget(endpoint, "1.1.1.1", &testGetZoneZoneRecords, "one.com")
+	record, err := recordFromTarget(endpoint, "1.1.1.1", &testGetZoneZoneRecords, "one.com", "test")
 	assert.NoError(t, err)
 	assert.Equal(t, "TEST_ZONE_ZONE_RECORD_ID1", record)
 
-	record, err = recordFromTarget(endpoint, "2.2.2.2", &testGetZoneZoneRecords, "one.com")
+	record, err = recordFromTarget(endpoint, "2.2.2.2", &testGetZoneZoneRecords, "one.com", "test")
 	assert.NoError(t, err)
 	assert.Equal(t, "TEST_ZONE_ZONE_RECORD_ID2", record)
 
 	endpoint.DNSName = ""
-	_, err = recordFromTarget(endpoint, "3.3.3.3", &testGetZoneZoneRecords, "one.com")
+	_, err = recordFromTarget(endpoint, "3.3.3.3", &testGetZoneZoneRecords, "one.com", "test")
 	assert.Equal(t, fmt.Errorf("record not found"), err)
 }
 
