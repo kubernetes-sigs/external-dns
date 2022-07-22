@@ -51,7 +51,7 @@ securityContext:
 
 # Defaults to `ClusterFirst`.
 # Valid values are: `ClusterFirstWithHostNet`, `ClusterFirst`, `Default` or `None`.
-dnsPolicy: ClusterFirst
+dnsPolicy:
 
 priorityClassName: ""
 

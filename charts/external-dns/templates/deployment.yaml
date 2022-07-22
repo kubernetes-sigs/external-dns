@@ -44,8 +44,8 @@ spec:
       {{- with .Values.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ . }}
       {{- end }}
-      {{- if .Values.dnsPolicy }}
-      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
       {{- end }}
       containers:
         - name: external-dns
