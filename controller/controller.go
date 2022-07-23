@@ -242,7 +242,7 @@ func filterARecords(endpoints []*endpoint.Endpoint) []string {
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
-	// Shedule only if a reconciliation is not already planned
+	// schedule only if a reconciliation is not already planned
 	// to happen in the following c.MinEventSyncInterval
 	if !c.nextRunAt.Before(now.Add(c.MinEventSyncInterval)) {
 		c.nextRunAt = now.Add(c.MinEventSyncInterval)
