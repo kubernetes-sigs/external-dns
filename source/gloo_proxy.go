@@ -56,6 +56,15 @@ type proxySpec struct {
 }
 
 type proxySpecListener struct {
+	HTTPListener   proxySpecHTTPListener   `json:"httpListener,omitempty"`
+	HybridListener proxySpecHybridListener `json:"hybridListener,omitempty"`
+}
+
+type proxySpecHybridListener struct {
+	MatchedListeners []proxyMatchedListeners `json:"matchedListeners,omitempty"`
+}
+
+type proxyMatchedListeners struct {
 	HTTPListener proxySpecHTTPListener `json:"httpListener,omitempty"`
 }
 
@@ -64,16 +73,31 @@ type proxySpecHTTPListener struct {
 }
 
 type proxyVirtualHost struct {
-	Domains  []string                 `json:"domains,omitempty"`
-	Metadata proxyVirtualHostMetadata `json:"metadata,omitempty"`
+	Domains        []string                       `json:"domains,omitempty"`
+	Metadata       proxyVirtualHostMetadata       `json:"metadata,omitempty"`
+	MetadataStatic proxyVirtualHostMetadataStatic `json:"metadataStatic,omitempty"`
 }
 
 type proxyVirtualHostMetadata struct {
 	Source []proxyVirtualHostMetadataSource `json:"sources,omitempty"`
 }
 
+type proxyVirtualHostMetadataStatic struct {
+	Source []proxyVirtualHostMetadataSourceStatic `json:"sources,omitempty"`
+}
+
 type proxyVirtualHostMetadataSource struct {
 	Kind      string `json:"kind,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+}
+
+type proxyVirtualHostMetadataSourceStatic struct {
+	Kind        string      `json:"resourceKind,omitempty"`
+	ResourceRef resourceRef `json:"resourceRef,omitempty"`
+}
+
+type resourceRef struct {
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 }
@@ -91,6 +115,32 @@ func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.In
 		kubeClient,
 		glooNamespace,
 	}, nil
+}
+
+// virtualHosts aggregates all virtual hosts from the available listener types.
+// Only 1 of HybridListener or HTTPListener will be set
+func (l proxySpecListener) virtualHosts() []proxyVirtualHost {
+	virtualHosts := l.HTTPListener.VirtualHosts
+	for _, hybridMatchedListener := range l.HybridListener.MatchedListeners {
+		virtualHosts = append(virtualHosts, hybridMatchedListener.HTTPListener.VirtualHosts...)
+	}
+	return virtualHosts
+}
+
+// sources aggregates all sources within a proxyVirtualHost.
+// Only 1 of Metadata for MetadataStatic will be set
+func (vh proxyVirtualHost) sources() []proxyVirtualHostMetadataSource {
+	sources := vh.Metadata.Source
+	for _, srcStatic := range vh.MetadataStatic.Source {
+		// Use the same struct type as proxyVirtualHostMetadataSource to enable reuse
+		// and remove additional logic branches due to object property layout differences only
+		sources = append(sources, proxyVirtualHostMetadataSource{
+			Kind:      srcStatic.Kind,
+			Name:      srcStatic.ResourceRef.Name,
+			Namespace: srcStatic.ResourceRef.Namespace,
+		})
+	}
+	return sources
 }
 
 func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
@@ -133,7 +183,7 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 	for _, listener := range proxy.Spec.Listeners {
-		for _, virtualHost := range listener.HTTPListener.VirtualHosts {
+		for _, virtualHost := range listener.virtualHosts() {
 			annotations, err := gs.annotationsFromProxySource(ctx, virtualHost)
 			if err != nil {
 				return nil, err
@@ -153,7 +203,7 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 
 func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHost proxyVirtualHost) (map[string]string, error) {
 	annotations := map[string]string{}
-	for _, src := range virtualHost.Metadata.Source {
+	for _, src := range virtualHost.sources() {
 		kind := sourceKind(src.Kind)
 		if kind != nil {
 			source, err := gs.dynamicKubeClient.Resource(*kind).Namespace(src.Namespace).Get(ctx, src.Name, metav1.GetOptions{})
