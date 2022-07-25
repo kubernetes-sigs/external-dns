@@ -57,9 +57,6 @@ type PlanTestSuite struct {
 	domainFilterFiltered2            *endpoint.Endpoint
 	domainFilterFiltered3            *endpoint.Endpoint
 	domainFilterExcluded             *endpoint.Endpoint
-	domainFilterFilteredTXT1         *endpoint.Endpoint
-	domainFilterFilteredTXT2         *endpoint.Endpoint
-	domainFilterExcludedTXT          *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -251,21 +248,6 @@ func (suite *PlanTestSuite) SetupTest() {
 		DNSName:    "foo.ex.domain.tld",
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
-	}
-	suite.domainFilterFilteredTXT1 = &endpoint.Endpoint{
-		DNSName:    "a-foo.domain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
-	}
-	suite.domainFilterFilteredTXT2 = &endpoint.Endpoint{
-		DNSName:    "cname-bar.domain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
-	}
-	suite.domainFilterExcludedTXT = &endpoint.Endpoint{
-		DNSName:    "cname-bar.otherdomain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
 	}
 }
 
@@ -971,6 +953,7 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+<<<<<<< HEAD
 func (suite *PlanTestSuite) TestAAAARecords() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooAAAA}
@@ -1077,6 +1060,25 @@ func (suite *PlanTestSuite) TestRecordOwnerIdMigration() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+||||||| parent of 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
+func (suite *PlanTestSuite) TestMissing() {
+
+	missing := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2, suite.domainFilterExcludedTXT}
+	expectedCreate := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Missing:        missing,
+		DomainFilter:   endpoint.NewDomainFilter([]string{"domain.tld"}),
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+}
+
+=======
+>>>>>>> 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
 func TestPlan(t *testing.T) {
 	suite.Run(t, new(PlanTestSuite))
 }

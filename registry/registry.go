@@ -34,6 +34,7 @@ type Registry interface {
 	// GetDomainFilter returns the domain filter configured for the underlying provider.
 	GetDomainFilter() endpoint.DomainFilterInterface
 <<<<<<< HEAD
+<<<<<<< HEAD
 	// OwnerID returns the owner identifier used to claim DNS records.
 	OwnerID() string
 ||||||| parent of e93f1e928 (UPSTREAM 2811: Handle the migration to the new TXT format - create missing records)
@@ -52,6 +53,10 @@ func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.En
 	return filtered
 =======
 	MissingRecords() []*endpoint.Endpoint
+||||||| parent of 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
+	MissingRecords() []*endpoint.Endpoint
+=======
+>>>>>>> 959bf0129 (Revert "UPSTREAM 2811: Handle the migration to the new TXT format - create missing records")
 }
 
 //TODO(ideahitme): consider moving this to Plan
