@@ -188,11 +188,33 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	verifiedARecords.Set(float64(len(vRecords)))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
 
+	if len(missingRecords) > 0 {
+		// Add missing records before the actual plan is applied.
+		// This prevents the problems when the missing TXT record needs to be
+		// created and deleted/upserted in the same batch.
+		missingRecordsPlan := &plan.Plan{
+			Policies:           []plan.Policy{c.Policy},
+			Missing:            missingRecords,
+			DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+			PropertyComparator: c.Registry.PropertyValuesEqual,
+			ManagedRecords:     c.ManagedRecordTypes,
+		}
+		missingRecordsPlan = missingRecordsPlan.Calculate()
+		if missingRecordsPlan.Changes.HasChanges() {
+			err = c.Registry.ApplyChanges(ctx, missingRecordsPlan.Changes)
+			if err != nil {
+				registryErrorsTotal.Inc()
+				deprecatedRegistryErrors.Inc()
+				return err
+			}
+			log.Info("All missing records are created")
+		}
+	}
+
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
 		Current:            records,
 		Desired:            endpoints,
-		Missing:            missingRecords,
 		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		PropertyComparator: c.Registry.PropertyValuesEqual,
 		ManagedRecords:     c.ManagedRecordTypes,
