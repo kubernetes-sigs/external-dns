@@ -132,7 +132,6 @@ func TestExoscaleGetRecords(t *testing.T) {
 	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", false)
 
 	recs, err := provider.Records(context.Background())
-	t.Log(recs)
 	if err == nil {
 		assert.Equal(t, 3, len(recs))
 		assert.True(t, contains(recs, "v1.foo.com"))
