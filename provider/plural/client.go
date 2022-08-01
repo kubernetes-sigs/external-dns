@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package plural
 
 import (
@@ -20,6 +36,12 @@ func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return t.wrapped.RoundTrip(req)
 }
 
+type Client interface {
+	DnsRecords() ([]*DnsRecord, error)
+	CreateRecord(record *DnsRecord) (*DnsRecord, error)
+	DeleteRecord(name, ttype string) error
+}
+
 type Config struct {
 	Token    string
 	Endpoint string
@@ -27,7 +49,7 @@ type Config struct {
 	Provider string
 }
 
-type Client struct {
+type client struct {
 	ctx          context.Context
 	pluralClient *gqlclient.Client
 	config       *Config
@@ -39,7 +61,7 @@ type DnsRecord struct {
 	Records []string
 }
 
-func NewClient(conf *Config) *Client {
+func NewClient(conf *Config) Client {
 	base := conf.BaseUrl()
 	httpClient := http.Client{
 		Transport: &authedTransport{
@@ -48,7 +70,7 @@ func NewClient(conf *Config) *Client {
 		},
 	}
 	endpoint := base + "/gql"
-	return &Client{
+	return &client{
 		ctx:          context.Background(),
 		pluralClient: gqlclient.NewClient(&httpClient, endpoint),
 		config:       conf,
@@ -63,7 +85,7 @@ func (c *Config) BaseUrl() string {
 	return host
 }
 
-func (client *Client) DnsRecords() ([]*DnsRecord, error) {
+func (client *client) DnsRecords() ([]*DnsRecord, error) {
 	resp, err := client.pluralClient.GetDNSRecords(client.ctx, client.config.Cluster, gqlclient.Provider(strings.ToUpper(client.config.Provider)))
 	if err != nil {
 		return nil, err
@@ -83,7 +105,7 @@ func (client *Client) DnsRecords() ([]*DnsRecord, error) {
 	return records, nil
 }
 
-func (client *Client) CreateRecord(record *DnsRecord) (*DnsRecord, error) {
+func (client *client) CreateRecord(record *DnsRecord) (*DnsRecord, error) {
 	provider := gqlclient.Provider(strings.ToUpper(client.config.Provider))
 	cluster := client.config.Cluster
 	attr := gqlclient.DNSRecordAttributes{
@@ -108,7 +130,7 @@ func (client *Client) CreateRecord(record *DnsRecord) (*DnsRecord, error) {
 	}, nil
 }
 
-func (client *Client) DeleteRecord(name, ttype string) error {
+func (client *client) DeleteRecord(name, ttype string) error {
 	if _, err := client.pluralClient.DeleteDNSRecord(client.ctx, name, gqlclient.DNSRecordType(ttype)); err != nil {
 		return err
 	}

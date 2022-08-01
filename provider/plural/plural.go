@@ -1,3 +1,19 @@
+/*
+Copyright 2022 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package plural
 
 import (
@@ -18,7 +34,7 @@ const (
 
 type PluralProvider struct {
 	provider.BaseProvider
-	Client *Client
+	Client Client
 }
 
 type RecordChange struct {
@@ -47,7 +63,7 @@ func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 	return prov, nil
 }
 
-func (p *PluralProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
+func (p *PluralProvider) Records(_ context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	records, err := p.Client.DnsRecords()
 	if err != nil {
 		return
@@ -68,8 +84,8 @@ func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endp
 	return endpoints
 }
 
-func (p *PluralProvider) ApplyChanges(ctx context.Context, diffs *plan.Changes) error {
-	changes := []*RecordChange{}
+func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) error {
+	var changes []*RecordChange
 	for _, endpoint := range diffs.Create {
 		changes = append(changes, makeChange(CreateAction, endpoint.Targets, endpoint))
 	}
