@@ -310,10 +310,10 @@ func main() {
 		)
 	case "exoscale":
 		p, err = exoscale.NewExoscaleProvider(
-			cfg.ExoscaleEndpoint,
+			cfg.ExoscaleAPIEnvironment,
+			cfg.ExoscaleAPIZone,
 			cfg.ExoscaleAPIKey,
 			cfg.ExoscaleAPISecret,
-			cfg.ExoscaleAPIZone,
 			cfg.DryRun,
 			exoscale.ExoscaleWithDomain(domainFilter),
 			exoscale.ExoscaleWithLogging(),

@@ -13,7 +13,6 @@ Additionally you will have to provide the Exoscale...:
 
 * API Key
 * API Secret
-* API Endpoint
 * Elastic IP address, to access the workers
 
 ## Deployment
@@ -48,7 +47,6 @@ spec:
         - --domain-filter={{ my-domain }}
         - --policy=sync # if you want DNS entries to get deleted as well
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
-        - --exoscale-endpoint={{ endpoint }} # usually https://api.exoscale.com/v2
         - --exoscale-apikey={{ api-key}}
         - --exoscale-apisecret={{ api-secret }}
 ```

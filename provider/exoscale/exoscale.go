@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	egoscale "github.com/exoscale/egoscale/v2"
+	exoapi "github.com/exoscale/egoscale/v2/api"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -43,6 +44,7 @@ type ExoscaleProvider struct {
 	provider.BaseProvider
 	domain         endpoint.DomainFilter
 	client         EgoscaleClientI
+	apiEnv         string
 	apiZone        string
 	filter         *zoneFilter
 	OnApplyChanges func(changes *plan.Changes)
@@ -53,27 +55,27 @@ type ExoscaleProvider struct {
 type ExoscaleOption func(*ExoscaleProvider)
 
 // NewExoscaleProvider returns ExoscaleProvider DNS provider interface implementation
-func NewExoscaleProvider(endpoint, apiKey, apiSecret, apiZone string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
+func NewExoscaleProvider(env, zone, key, secret string, dryRun bool, opts ...ExoscaleOption) (*ExoscaleProvider, error) {
 	client, err := egoscale.NewClient(
-		apiKey,
-		apiSecret,
-		egoscale.ClientOptWithAPIEndpoint(endpoint),
+		key,
+		secret,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewExoscaleProviderWithClient(client, apiZone, dryRun, opts...), nil
+	return NewExoscaleProviderWithClient(client, env, zone, dryRun, opts...), nil
 }
 
 // NewExoscaleProviderWithClient returns ExoscaleProvider DNS provider interface implementation (Client provided)
-func NewExoscaleProviderWithClient(client EgoscaleClientI, apiZone string, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
+func NewExoscaleProviderWithClient(client EgoscaleClientI, env, zone string, dryRun bool, opts ...ExoscaleOption) *ExoscaleProvider {
 	ep := &ExoscaleProvider{
 		filter:         &zoneFilter{},
 		OnApplyChanges: func(changes *plan.Changes) {},
 		domain:         endpoint.NewDomainFilter([]string{""}),
 		client:         client,
-		apiZone:        apiZone,
+		apiEnv:         env,
+		apiZone:        zone,
 		dryRun:         dryRun,
 	}
 	for _, opt := range opts {
@@ -83,6 +85,7 @@ func NewExoscaleProviderWithClient(client EgoscaleClientI, apiZone string, dryRu
 }
 
 func (ep *ExoscaleProvider) getZones(ctx context.Context) (map[string]string, error) {
+	ctx = exoapi.WithEndpoint(ctx, exoapi.NewReqEndpoint(ep.apiEnv, ep.apiZone))
 	domains, err := ep.client.ListDNSDomains(ctx, ep.apiZone)
 	if err != nil {
 		return nil, err
@@ -106,6 +109,8 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		log.Infof("Will NOT update these records: %+v", merge(changes.UpdateOld, changes.UpdateNew))
 		return nil
 	}
+
+	ctx = exoapi.WithEndpoint(ctx, exoapi.NewReqEndpoint(ep.apiEnv, ep.apiZone))
 
 	zones, err := ep.getZones(ctx)
 	if err != nil {
@@ -221,6 +226,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 // Records returns the list of endpoints
 func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	ctx = exoapi.WithEndpoint(ctx, exoapi.NewReqEndpoint(ep.apiEnv, ep.apiZone))
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	domains, err := ep.client.ListDNSDomains(ctx, ep.apiZone)
