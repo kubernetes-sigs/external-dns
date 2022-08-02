@@ -284,6 +284,9 @@ Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=pub
 
 If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
 
+Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`.
+
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
 Yes, give it the correct cross-account/assume-role permissions and use the `--aws-assume-role` flag https://github.com/kubernetes-sigs/external-dns/pull/524#issue-181256561
