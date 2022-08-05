@@ -530,8 +530,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		searchFields := map[string]string{
+			"name":     obj.Name,
+			"ipv4addr": obj.Ipv4Addr,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, searchFields), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -546,8 +550,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.PtrdName = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		searchFields := map[string]string{
+			"ptrdname": obj.PtrdName,
+			"ipv4addr": obj.Ipv4Addr,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, searchFields), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -562,8 +570,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
+		searchFields := map[string]string{
+			"name":      obj.Name,
+			"canonical": obj.Canonical,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, searchFields), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -586,8 +598,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 				View: p.view,
 			},
 		)
+		searchFields := map[string]string{
+			"name": obj.Name,
+			"text": obj.Text,
+		}
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			err = p.client.GetObject(obj, "", ibclient.NewQueryParams(false, searchFields), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
