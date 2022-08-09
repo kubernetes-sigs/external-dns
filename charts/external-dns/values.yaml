@@ -51,7 +51,7 @@ securityContext:
 
 priorityClassName: ""
 
-terminationGracePeriodSeconds:
+terminationGracePeriodSeconds: null 
 
 serviceMonitor:
   enabled: false
