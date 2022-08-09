@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -195,7 +196,6 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 
 	log.Debugln("no zoneIDFilter configured, looking at all zones registered in k8s")
 
-
 	zonesResponse, err := p.Client.ListZonesContext(ctx)
 	if err != nil {
 		return nil, err
@@ -204,22 +204,22 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 	for _, zone := range zonesResponse.Result {
 		skipZone := true
 
-			for _, domainDNSName := range registeredDomains {
-				if strings.Contains(domainDNSName, zone.Name) {
-					skipZone = false
-				}
+		for _, domainDNSName := range registeredDomains {
+			if strings.Contains(domainDNSName, zone.Name) {
+				skipZone = false
 			}
+		}
 
-			if skipZone {
-				continue
-			}
+		if skipZone {
+			continue
+		}
 
-			if !p.domainFilter.Match(zone.Name) {
-				log.Debugf("zone %s not in domain filter", zone.Name)
-				continue
-			}
+		if !p.domainFilter.Match(zone.Name) {
+			log.Debugf("zone %s not in domain filter", zone.Name)
+			continue
+		}
 
-			log.Debugf("Keep zone: %s (%s)", zone.Name, zone.ID)
+		log.Debugf("Keep zone: %s (%s)", zone.Name, zone.ID)
 		result = append(result, zone)
 	}
 
