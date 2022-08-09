@@ -1,13 +1,17 @@
+---
+hide:
+  - toc
+  - navigation
+---
+
 <p align="center">
-	<img src="img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
+	<img src="docs/img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
 </p>
 
 # ExternalDNS
-[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions)
-[![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns)
-[![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases)
-[![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns)
-[![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns)
+
+[![Build Status](https://github.com/kubernetes-sigs/external-dns/workflows/Go/badge.svg)](https://github.com/kubernetes-sigs/external-dns/actions) [![Coverage Status](https://coveralls.io/repos/github/kubernetes-sigs/external-dns/badge.svg)](https://coveralls.io/github/kubernetes-sigs/external-dns) [![GitHub release](https://img.shields.io/github/release/kubernetes-sigs/external-dns.svg)](https://github.com/kubernetes-sigs/external-dns/releases) [![go-doc](https://godoc.org/github.com/kubernetes-sigs/external-dns?status.svg)](https://godoc.org/github.com/kubernetes-sigs/external-dns) [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes-sigs/external-dns)](https://goreportcard.com/report/github.com/kubernetes-sigs/external-dns) [![ExternalDNS docs](https://img.shields.io/badge/docs-external--dns-blue)](https://kubernetes-sigs.github.io/external-dns/)
+
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
@@ -23,7 +27,7 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
-ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` in various cloud providers:
+ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -32,7 +36,6 @@ ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchroni
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
-* [Hetzner](https://hetzner.com/)
 * [DNSimple](https://dnsimple.com/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
@@ -52,6 +55,8 @@ ExternalDNS' allows you to keep selected zones (via `--domain-filter`) synchroni
 * [Akamai Edge DNS](https://learn.akamai.com/en-us/products/cloud_security/edge_dns.html)
 * [GoDaddy](https://www.godaddy.com)
 * [Gandi](https://www.gandi.net)
+* [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
+* [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -88,7 +93,6 @@ The following table clarifies the current status of the providers according to t
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
-| Hetzner | Alpha | @21h |
 | DNSimple | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
 | Dyn | Alpha | |
@@ -109,13 +113,18 @@ The following table clarifies the current status of the providers according to t
 | UltraDNS | Alpha | |
 | GoDaddy | Alpha | |
 | Gandi | Alpha | @packi |
+| SafeDNS | Alpha | @assureddt |
+| IBMCloud | Alpha | @hughhuangzh |
 
 ## Kubernetes version compatibility
 
-| ExternalDNS        |      <= 0.9.x      |     >= 0.10.0      |
-| ------------------ | :----------------: | :----------------: |
-| Kubernetes <= 1.18 | :white_check_mark: |        :x:         |
-| Kubernetes >= 1.19 |        :x:         | :white_check_mark: |
+A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0. 
+
+| ExternalDNS                    |      <= 0.9.x      |     >= 0.10.0      |
+| ------------------------------ | :----------------: | :----------------: |
+| Kubernetes <= 1.18             | :white_check_mark: |        :x:         |
+| Kubernetes >= 1.19 and <= 1.21 | :white_check_mark: | :white_check_mark: |
+| Kubernetes >= 1.22             |        :x:         | :white_check_mark: |
 
 ## Running ExternalDNS:
 
@@ -128,6 +137,7 @@ The are two ways of running ExternalDNS:
 
 The following tutorials are provided:
 
+* [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * AWS
 	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
@@ -141,7 +151,6 @@ The following tutorials are provided:
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
-* [Hetzner](docs/tutorials/hetzner.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
@@ -171,6 +180,9 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
+* [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
+* [IBM Cloud](docs/tutorials/ibmcloud.md)
+* [Nodes as source](docs/tutorials/nodes.md)
 
 ### Running Locally
 

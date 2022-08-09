@@ -119,6 +119,8 @@ var (
 		"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
 		// Global Accelerator
 		"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
+		// Cloudfront
+		"cloudfront.net": "Z2FDTNDATAQYW2",
 	}
 )
 
@@ -290,10 +292,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 // wildcardUnescape converts \\052.abc back to *.abc
 // Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
 func wildcardUnescape(s string) string {
-	if strings.Contains(s, "\\052") {
-		s = strings.Replace(s, "\\052", "*", 1)
-	}
-	return s
+	return strings.Replace(s, "\\052", "*", 1)
 }
 
 // Records returns the list of records in a given hosted zone.
@@ -311,9 +310,6 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
 			newEndpoints := make([]*endpoint.Endpoint, 0)
-
-			// TODO(linki, ownership): Remove once ownership system is in place.
-			// See: https://github.com/kubernetes-sigs/external-dns/pull/122/files/74e2c3d3e237411e619aefc5aab694742001cdec#r109863370
 
 			if !provider.SupportedRecordType(aws.StringValue(r.Type)) {
 				continue
@@ -889,8 +885,5 @@ func canonicalHostedZone(hostname string) string {
 
 // cleanZoneID removes the "/hostedzone/" prefix
 func cleanZoneID(id string) string {
-	if strings.HasPrefix(id, "/hostedzone/") {
-		id = strings.TrimPrefix(id, "/hostedzone/")
-	}
-	return id
+	return strings.TrimPrefix(id, "/hostedzone/")
 }

@@ -43,7 +43,7 @@ type VirtualServiceSuite struct {
 	source     Source
 	lbServices []*v1.Service
 	gwconfig   networkingv1alpha3.Gateway
-	vsconfig   networkingv1alpha3.VirtualService
+	vsconfig   *networkingv1alpha3.VirtualService
 }
 
 func (suite *VirtualServiceSuite) SetupTest() {
@@ -85,10 +85,11 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		gateways:  []string{"istio-system/foo-gateway-with-targets"},
 		dnsnames:  []string{"foo"},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), &suite.vsconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -165,6 +166,7 @@ func TestNewIstioVirtualServiceSource(t *testing.T) {
 			t.Parallel()
 
 			_, err := NewIstioVirtualServiceSource(
+				context.TODO(),
 				fake.NewSimpleClientset(),
 				istiofake.NewSimpleClientset(),
 				"",
@@ -360,7 +362,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
 			gwconfig := ti.gwconfig.Config()
-			require.Equal(t, ti.expected, virtualServiceBindsToGateway(&vsconfig, &gwconfig, ti.vsHost))
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, &gwconfig, ti.vsHost))
 		})
 	}
 }
@@ -1452,7 +1454,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			t.Parallel()
 
 			var gateways []networkingv1alpha3.Gateway
-			var virtualservices []networkingv1alpha3.VirtualService
+			var virtualservices []*networkingv1alpha3.VirtualService
 
 			for _, gwItem := range ti.gwConfigs {
 				gateways = append(gateways, gwItem.Config())
@@ -1477,11 +1479,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			}
 
 			for _, virtualservice := range virtualservices {
-				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), &virtualservice, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), virtualservice, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
 			virtualServiceSource, err := NewIstioVirtualServiceSource(
+				context.TODO(),
 				fakeKubernetesClient,
 				fakeIstioClient,
 				ti.targetNamespace,
@@ -1557,6 +1560,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 	}
 
 	src, err := NewIstioVirtualServiceSource(
+		context.TODO(),
 		fakeKubernetesClient,
 		fakeIstioClient,
 		"",
@@ -1586,7 +1590,7 @@ type fakeVirtualServiceConfig struct {
 	exportTo    string
 }
 
-func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
+func (c fakeVirtualServiceConfig) Config() *networkingv1alpha3.VirtualService {
 	vs := istionetworking.VirtualService{
 		Gateways: c.gateways,
 		Hosts:    c.dnsnames,
@@ -1595,7 +1599,7 @@ func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
 		vs.ExportTo = []string{c.exportTo}
 	}
 
-	config := networkingv1alpha3.VirtualService{
+	return &networkingv1alpha3.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
@@ -1603,6 +1607,4 @@ func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
 		},
 		Spec: vs,
 	}
-
-	return config
 }

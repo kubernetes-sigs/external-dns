@@ -198,3 +198,34 @@ kafka-1.ksvc.example.org
 kafka-2.ksvc.example.org
 ```
 
+#### Using pods' HostIPs as targets
+
+Add the following annotation to your `Service`:
+
+```yaml
+external-dns.alpha.kubernetes.io/endpoints-type: HostIP
+```
+
+external-dns will now publish the value of the `.status.hostIP` field of the pods backing your `Service`.
+
+#### Using node external IPs as targets
+
+Add the following annotation to your `Service`:
+
+```yaml
+external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP
+```
+
+external-dns will now publish the node external IP (`.status.addresses` entries of with `type: NodeExternalIP`) of the nodes on which the pods backing your `Service` are running.
+
+#### Using pod annotations to specify target IPs
+
+Add the following annotation to the **pods** backing your `Service`:
+
+```yaml
+external-dns.alpha.kubernetes.io/target: "1.2.3.4"
+```
+
+external-dns will publish the IP specified in the annotation of each pod instead of using the podIP advertised by Kubernetes.
+
+This can be useful e.g. if you are NATing public IPs onto your pod IPs and want to publish these in DNS.

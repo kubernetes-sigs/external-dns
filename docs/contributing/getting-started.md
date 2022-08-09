@@ -1,7 +1,7 @@
 # Quick Start
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.16+](https://golang.org/dl/)
+- [Go 1.18+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [Docker](https://docs.docker.com/install/)
