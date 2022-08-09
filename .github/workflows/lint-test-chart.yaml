@@ -9,33 +9,36 @@ jobs:
   lint-test:
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           fetch-depth: 0
 
       - name: Run Artifact Hub lint
-        shell: bash
         run: |
           set -euo pipefail
-          curl -Lo ah_linux_amd64.tar.gz https://github.com/artifacthub/hub/releases/download/v1.6.0/ah_1.6.0_linux_amd64.tar.gz
+          curl -Lo ah_linux_amd64.tar.gz https://github.com/artifacthub/hub/releases/download/v1.9.0/ah_1.9.0_linux_amd64.tar.gz
           tar -xzvf ah_linux_amd64.tar.gz ah
           ./ah lint --kind helm || exit 1
           rm -f ./ah ./ah_linux_amd64.tar.gz
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v1
+      - name: Set-up Helm
+        uses: azure/setup-helm@b5b231a831f96336bbfeccc1329990f0005c5bb1
         with:
-          version: 3.*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - name: Set-up Python
+        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
         with:
-          python-version: 3.7
+          python-version: "3.x"
 
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.2.1
+      - name: Set-up chart-testing
+        uses: helm/chart-testing-action@dae259e86a35ff09145c0805e2d7dd3f7207064a
 
       - name: Run chart-testing (list-changed)
         id: list-changed
@@ -48,8 +51,8 @@ jobs:
       - name: Run chart-testing (lint)
         run: ct lint --check-version-increment=false
 
-      - name: Create Kind cluster
-        uses: helm/kind-action@v1.2.0
+      - name: Set-up Kind cluster
+        uses: helm/kind-action@d08cf6ff1575077dee99962540d77ce91c62387d
         with:
           wait: 120s
         if: steps.list-changed.outputs.changed == 'true'
