@@ -33,7 +33,7 @@ jobs:
           version: latest
 
       - name: Set-up Python
-        uses: actions/setup-python@b55428b1882923874294fa556849718a1d7f2ca5
+        uses: actions/setup-python@v4
         with:
           python-version: "3.x"
 
