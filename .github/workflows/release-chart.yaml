@@ -11,15 +11,17 @@ jobs:
   release:
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           fetch-depth: 0
 
       - name: Get chart version
         id: chart_version
-        shell: bash
         run: |
           set -euo pipefail
           chart_version="$(grep -Po "(?<=^version: ).+" charts/external-dns/Chart.yaml)"
@@ -27,13 +29,12 @@ jobs:
 
       - name: Get changelog entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@v2
+        uses: mindsers/changelog-reader-action@5bfb30f7871d5c4cde50cd897314f37578043394
         with:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
 
       - name: Create release notes
-        shell: bash
         run: |
           set -euo pipefail
           cat <<"EOF" > charts/external-dns/_release-notes.md
@@ -45,13 +46,14 @@ jobs:
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
-      - name: Install Helm
-        uses: azure/setup-helm@v1
+      - name: Set-up Helm
+        uses: azure/setup-helm@b5b231a831f96336bbfeccc1329990f0005c5bb1
         with:
-          version: v3.6.3
+          token: ${{ secrets.GITHUB_TOKEN }}
+          version: latest
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.3.0
+        uses: helm/chart-releaser-action@a3454e46a6f5ac4811069a381e646961dda2e1bf
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
