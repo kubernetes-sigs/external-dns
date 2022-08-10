@@ -4,6 +4,41 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Added support to configure dnsPolicy on the Helm chart deployment."
+        - kind: added
+          description: "Added ability to customise the deployment strategy."
+        - kind: changed
+          description: "Updated ExternalDNS version to v0.12.2."
+        - kind: changed
+          description: "Changed default deployment strategy to Recreate."
+    apiVersion: v2
+    appVersion: 0.12.2
+    created: "2022-08-10T15:30:54.628579427Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: ff1c046e9f0493cba5992af0d430a2e2df0f6d5c642aaa978aededd375e12149
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.11.0/external-dns-1.11.0.tgz
+    version: 1.11.0
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Added commonLabels value to allow the addition of labels to all resources."
         - kind: added
           description: "Added support for Process Namespace Sharing via the shareProcessNamespace value."
@@ -405,4 +440,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2022-07-13T07:58:02.846061892Z"
+generated: "2022-08-10T15:30:54.628755128Z"
