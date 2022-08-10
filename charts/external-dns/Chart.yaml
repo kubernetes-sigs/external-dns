@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.10.1
-appVersion: 0.12.0
+version: 1.11.0
+appVersion: 0.12.2
 keywords:
   - kubernetes
   - externaldns
@@ -21,13 +21,10 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: added
-      description: "Added commonLabels value to allow the addition of labels to all resources."
+      description: "Added support to configure dnsPolicy on the Helm chart deployment."
     - kind: added
-      description: "Added support for Process Namespace Sharing via the shareProcessNamespace value."
-      links:
-        - name: GitHub Issue #2715
-          url: https://github.com/kubernetes-sigs/external-dns/pull/2715
-        - name: Process Namespace Sharing
-          url: https://kubernetes.io/docs/tasks/configure-pod-container/share-process-namespace/
+      description: "Added ability to customise the deployment strategy."
     - kind: changed
-      description: "Fixed incorrect addition of `namespace` to `ClusterRole` & `ClusterRoleBinding`."
+      description: "Updated ExternalDNS version to v0.12.2."
+    - kind: changed
+      description: "Changed default deployment strategy to Recreate."
