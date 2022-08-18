@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -739,6 +740,38 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
+}
+
+func TestGetObject(t *testing.T) {
+	hostCfg := ibclient.HostConfig{}
+	authCfg := ibclient.AuthConfig{}
+	transportConfig := ibclient.TransportConfig{}
+	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com")
+	requestor := mockRequestor{}
+	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
+
+	providerConfig := newInfobloxProvider(endpoint.NewDomainFilter([]string{"mysite.com"}), provider.NewZoneIDFilter([]string{""}), true, true, client)
+
+	providerConfig.deleteRecords(infobloxChangeMap{
+		"myzone.com": []*endpoint.Endpoint{
+			endpoint.NewEndpoint("deletethisrecord.com", endpoint.RecordTypeA, "1.2.3.4"),
+		},
+	})
+
+	requestQuery := requestor.request.URL.Query()
+	assert.True(t, requestQuery.Has("name"), "Expected the request to filter objects by name")
+}
+
+// Mock requestor that doesn't send request
+type mockRequestor struct {
+	request *http.Request
+}
+
+func (r *mockRequestor) Init(ibclient.AuthConfig, ibclient.TransportConfig) {}
+func (r *mockRequestor) SendRequest(req *http.Request) (res []byte, err error) {
+	res = []byte("[{}]")
+	r.request = req
+	return
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {

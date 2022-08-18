@@ -531,7 +531,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -547,7 +548,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.PtrdName})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -563,7 +565,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -587,7 +590,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			},
 		)
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
