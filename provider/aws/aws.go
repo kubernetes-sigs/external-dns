@@ -205,7 +205,7 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 				p.ExternalID = &awsConfig.AssumeRoleExternalID
 			}))
 		} else {
-                        log.Infof("Assuming role: %s", awsConfig.AssumeRole)
+			log.Infof("Assuming role: %s", awsConfig.AssumeRole)
 			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
 		}
 	}
