@@ -167,6 +167,9 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		deprecatedRegistryErrors.Inc()
 		return err
 	}
+
+	missingRecords := c.Registry.MissingRecords()
+
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords := filterARecords(records)
 	registryARecords.Set(float64(len(regARecords)))
@@ -184,6 +187,29 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	vRecords := fetchMatchingARecords(endpoints, records)
 	verifiedARecords.Set(float64(len(vRecords)))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
+
+	if len(missingRecords) > 0 {
+		// Add missing records before the actual plan is applied.
+		// This prevents the problems when the missing TXT record needs to be
+		// created and deleted/upserted in the same batch.
+		missingRecordsPlan := &plan.Plan{
+			Policies:           []plan.Policy{c.Policy},
+			Missing:            missingRecords,
+			DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+			PropertyComparator: c.Registry.PropertyValuesEqual,
+			ManagedRecords:     c.ManagedRecordTypes,
+		}
+		missingRecordsPlan = missingRecordsPlan.Calculate()
+		if missingRecordsPlan.Changes.HasChanges() {
+			err = c.Registry.ApplyChanges(ctx, missingRecordsPlan.Changes)
+			if err != nil {
+				registryErrorsTotal.Inc()
+				deprecatedRegistryErrors.Inc()
+				return err
+			}
+			log.Info("All missing records are created")
+		}
+	}
 
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
@@ -242,7 +268,11 @@ func filterARecords(endpoints []*endpoint.Endpoint) []string {
 func (c *Controller) ScheduleRunOnce(now time.Time) {
 	c.nextRunAtMux.Lock()
 	defer c.nextRunAtMux.Unlock()
-	c.nextRunAt = now.Add(c.MinEventSyncInterval)
+	// schedule only if a reconciliation is not already planned
+	// to happen in the following c.MinEventSyncInterval
+	if !c.nextRunAt.Before(now.Add(c.MinEventSyncInterval)) {
+		c.nextRunAt = now.Add(c.MinEventSyncInterval)
+	}
 }
 
 func (c *Controller) ShouldRunOnce(now time.Time) bool {
