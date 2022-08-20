@@ -21,11 +21,11 @@ import (
 	"os"
 	"testing"
 
+	ansConnection "github.com/ans-group/sdk-go/pkg/connection"
+	"github.com/ans-group/sdk-go/pkg/service/safedns"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	ukfConnection "github.com/ukfast/sdk-go/pkg/connection"
-	"github.com/ukfast/sdk-go/pkg/service/safedns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -56,12 +56,12 @@ func (m *MockSafeDNSService) GetZoneRecord(zoneName string, recordID int) (safed
 	return args.Get(0).(safedns.Record), args.Error(1)
 }
 
-func (m *MockSafeDNSService) GetZoneRecords(zoneName string, parameters ukfConnection.APIRequestParameters) ([]safedns.Record, error) {
+func (m *MockSafeDNSService) GetZoneRecords(zoneName string, parameters ansConnection.APIRequestParameters) ([]safedns.Record, error) {
 	args := m.Called(zoneName, parameters)
 	return args.Get(0).([]safedns.Record), args.Error(1)
 }
 
-func (m *MockSafeDNSService) GetZones(parameters ukfConnection.APIRequestParameters) ([]safedns.Zone, error) {
+func (m *MockSafeDNSService) GetZones(parameters ansConnection.APIRequestParameters) ([]safedns.Zone, error) {
 	args := m.Called(parameters)
 	return args.Get(0).([]safedns.Zone), args.Error(1)
 }

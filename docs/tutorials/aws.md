@@ -426,7 +426,7 @@ spec:
           env:
             - name: AWS_DEFAULT_REGION
               value: us-east-1 # change to region where EKS is installed
-      # # Uncommend below if using static credentials
+      # # Uncomment below if using static credentials
       #       - name: AWS_SHARED_CREDENTIALS_FILE
       #        value: /.aws/credentials
       #     volumeMounts:

@@ -2,8 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 images:
-  - name: k8s.gcr.io/external-dns/external-dns
-    newTag: v0.12.0
+  - name: registry.k8s.io/external-dns/external-dns
+    newTag: v0.12.2
 
 resources:
   - ./external-dns-deployment.yaml

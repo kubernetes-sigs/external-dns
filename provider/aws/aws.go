@@ -170,6 +170,7 @@ type AWSConfig struct {
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
 	AssumeRole           string
+	AssumeRoleExternalID string
 	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
@@ -198,8 +199,15 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	}
 
 	if awsConfig.AssumeRole != "" {
-		log.Infof("Assuming role: %s", awsConfig.AssumeRole)
-		session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
+		if awsConfig.AssumeRoleExternalID != "" {
+			log.Infof("Assuming role: %s with external id %s", awsConfig.AssumeRole, awsConfig.AssumeRoleExternalID)
+			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole, func(p *stscreds.AssumeRoleProvider) {
+				p.ExternalID = &awsConfig.AssumeRoleExternalID
+			}))
+		} else {
+			log.Infof("Assuming role: %s", awsConfig.AssumeRole)
+			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
+		}
 	}
 
 	provider := &AWSProvider{

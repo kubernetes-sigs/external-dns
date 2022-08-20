@@ -7,7 +7,8 @@ It contains record type it manages, e.g.:
 
 Prefix and suffix are extended with %{record_type} template where the user can control how prefixed/suffixed records should look like.
 
-In order to maintain compatibility, both records will be maintained for some time, in order to have downgrade possibility.
+In order to maintain compatibility, both records will be maintained for some time, in order to have downgrade possibility.  
+The controller will try to create the "new format" TXT records if they are not present to ease the migration from the versions < 0.12.0.
 
 Later on, the old format will be dropped and only the new format will be kept (<record_type>-<endpoint_name>).
 
