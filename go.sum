@@ -1358,6 +1358,8 @@ github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1
 github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/transip/gotransip/v6 v6.14.0 h1:TOZYH+9W64ZqH2S/7MoPXGcJ3EyBSjBoMUsLMsA59JA=
 github.com/transip/gotransip/v6 v6.14.0/go.mod h1:pQZ36hWWRahCUXkFWlx9Hs711gLd8J4qdgLdRzmtY+g=
+github.com/transip/gotransip/v6 v6.17.0 h1:2RCyqYqz5+Ej8z96EyE4sf6tQrrfEBaFDO0LliSl6+8=
+github.com/transip/gotransip/v6 v6.17.0/go.mod h1:pQZ36hWWRahCUXkFWlx9Hs711gLd8J4qdgLdRzmtY+g=
 github.com/tsaarni/certyaml v0.6.2/go.mod h1:fMHgNcBc7APv85tYQQ5186Qx+OeUDmLbGHZTRI988RM=
 github.com/tsaarni/x500dn v0.0.0-20210331182804-14283c7f5a16/go.mod h1:RquKZ5rERbzqRQDFuh2zsgR1W1FH006YRw2pHIuMzvw=
 github.com/tv42/httpunix v0.0.0-20150427012821-b75d8614f926/go.mod h1:9ESjWnEqriFuLhtthL60Sar/7RFoluCcXsuvEwTV5KM=
