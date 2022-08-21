@@ -18,7 +18,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.5+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1483
 	github.com/ans-group/sdk-go v1.7.0
-	github.com/aws/aws-sdk-go v1.42.52
+	github.com/aws/aws-sdk-go v1.44.81
 	github.com/bodgit/tsig v1.2.0
 	github.com/cloudflare/cloudflare-go v0.25.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
