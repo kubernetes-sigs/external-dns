@@ -119,8 +119,12 @@ github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.11.0 h1:75KEvjN+5lXcFzvW7RBoZY1YALJSNc
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.11.0/go.mod h1:+GAqrO/rFsYnhzTIxYLXCHxHVZyrtzBLyKjV6hi73YQ=
 github.com/IBM/go-sdk-core/v5 v5.6.5 h1:zXlt5x/udqZTD617SKUQzPDON4x5y0+22vNxsdCGYpg=
 github.com/IBM/go-sdk-core/v5 v5.6.5/go.mod h1:tt/B9rxLkRtglE7pvqLuYikgCXaZFL3btdruJaoUeek=
+github.com/IBM/go-sdk-core/v5 v5.8.0 h1:Bn9BxTaKYKWpd+BDpVsL6XOOJl4QDgxux4gSdWi31vE=
+github.com/IBM/go-sdk-core/v5 v5.8.0/go.mod h1:+YbdhrjCHC84ls4MeBp+Hj4NZCni+tDAc0XQUqRO9Jc=
 github.com/IBM/networking-go-sdk v0.24.0 h1:3AE23TBbcsB/2c15kuHuAnXlUom5FHMqxGxBRA94WS8=
 github.com/IBM/networking-go-sdk v0.24.0/go.mod h1:vX/4URo6J6e6QCDhsntk6OAA4G27jp+v3+ZMb9WyBQY=
+github.com/IBM/networking-go-sdk v0.32.0 h1:QWd7CxC+Wzap+zWFfXMjbqB5LpvrB1KvNtIbKrWIkhA=
+github.com/IBM/networking-go-sdk v0.32.0/go.mod h1:tVxXclpQs8nQJYPTr9ZPNC1voaPNQLy8iy/72oVfFtM=
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/MakeNowJust/heredoc v0.0.0-20170808103936-bb23615498cd/go.mod h1:64YHyfSL2R96J44Nlwm39UHepQbyR5q10x7iYa1ks2E=
 github.com/Masterminds/goutils v1.1.0/go.mod h1:8cTjp+g8YejhMuvIA5y2vz3BpJxksy863GQaJW2MFNU=
@@ -529,6 +533,8 @@ github.com/go-openapi/strfmt v0.19.3/go.mod h1:0yX7dbo8mKIvc3XSKp7MNfxw4JytCfCD6
 github.com/go-openapi/strfmt v0.19.5/go.mod h1:eftuHTlB/dI8Uq8JJOyRlieZf+WkkxUuk0dgdHXr2Qk=
 github.com/go-openapi/strfmt v0.20.1 h1:1VgxvehFne1mbChGeCmZ5pc0LxUf6yaACVSIYAR91Xc=
 github.com/go-openapi/strfmt v0.20.1/go.mod h1:43urheQI9dNtE5lTZQfuFJvjYJKPrxicATpEfZwHUNk=
+github.com/go-openapi/strfmt v0.20.2 h1:6XZL+fF4VZYFxKQGLAUB358hOrRh/wS51uWEtlONADE=
+github.com/go-openapi/strfmt v0.20.2/go.mod h1:43urheQI9dNtE5lTZQfuFJvjYJKPrxicATpEfZwHUNk=
 github.com/go-openapi/swag v0.0.0-20160704191624-1d0bd113de87/go.mod h1:DXUve3Dpr1UfpPtxFw+EFuQ41HhCWZfha5jSVRG7C7I=
 github.com/go-openapi/swag v0.17.0/go.mod h1:AByQ+nYG6gQg71GINrmuDXCPWdL640yX49/kXLo40Tg=
 github.com/go-openapi/swag v0.18.0/go.mod h1:AByQ+nYG6gQg71GINrmuDXCPWdL640yX49/kXLo40Tg=
