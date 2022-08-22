@@ -36,7 +36,7 @@ require (
 	github.com/infobloxopen/infoblox-go-client/v2 v2.1.2-0.20220407114022-6f4c71443168
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v0.32.2
-	github.com/maxatome/go-testdeep v1.11.0
+	github.com/maxatome/go-testdeep v1.12.0
 	github.com/miekg/dns v1.1.48
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
