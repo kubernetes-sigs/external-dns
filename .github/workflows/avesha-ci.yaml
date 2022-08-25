@@ -2,9 +2,15 @@ name: Go
 
 on:
   push:
-    branches: [ avesha*, stackpath*, ns1* ]
+    branches:
+      - 'avesha*'
+      - 'stackpath*'
+      - 'ns1*'
   pull_request:
-    branches: [ avesha*, stackpath*, ns1* ]
+    branches:
+      - 'avesha*'
+      - 'stackpath*'
+      - 'ns1*'
 
 jobs:
 

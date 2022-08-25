@@ -2,10 +2,16 @@ name: "CodeQL analysis"
 
 on:
   push:
-    branches: [ avesha*, stackpath*, ns1* ]
+    branches:
+      - 'avesha*'
+      - 'stackpath*'
+      - 'ns1*'
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ avesha*, stackpath*, ns1* ]
+    branches:
+      - 'avesha*'
+      - 'stackpath*'
+      - 'ns1*'
   schedule:
     - cron: '35 13 * * 5'
   workflow_dispatch:
