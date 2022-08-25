@@ -178,7 +178,7 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-require github.com/wmarchesi123/stackpath-go v1.0.3
+require github.com/kubeslice/stackpath v0.1.0
 
 require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
