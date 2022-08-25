@@ -27,8 +27,8 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
-	"github.com/wmarchesi123/stackpath-go/pkg/dns"
-	"github.com/wmarchesi123/stackpath-go/pkg/oauth2"
+	"github.com/kubeslice/stackpath/pkg/dns"
+	"github.com/kubeslice/stackpath/pkg/oauth2"
 )
 
 type StackPathProvider struct {

@@ -922,6 +922,8 @@ github.com/kr/pty v1.1.5/go.mod h1:9r2w37qlBe7rQ6e1fg1S/9xpWHSnaqNdHD3WcMdbPDA=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
+github.com/kubeslice/stackpath v0.1.0 h1:O9Ezq5d1wU0JjNtZQi86JIycBYh5KzGihnnlkI4Nr9g=
+github.com/kubeslice/stackpath v0.1.0/go.mod h1:Vhhoz2hyHR8Ms0+av3eXKMzh8guUqTKVpLQFTITdci0=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0/go.mod h1:vmVJ0l/dxyfGW6FmdpVm2joNMFikkuWg0EoCKLGUMNw=
 github.com/leodido/go-urn v1.2.0 h1:hpXL4XnriNwQ/ABnpepYM/1vCLWNDfUNts8dX3xTG6Y=
@@ -1359,8 +1361,6 @@ github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556 h1:UbVjBjgJUY
 github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556/go.mod h1:RWc47jtnVuQv6+lY3c768WtXCas/Xi+U5UFc5xULmYg=
 github.com/vultr/govultr/v2 v2.14.1 h1:Z4nd9mXNQ5wd63aw0MZOalFeTkJ8L6Sed3PTqagp4TA=
 github.com/vultr/govultr/v2 v2.14.1/go.mod h1:JjUljQdSZx+MELCAJvZ/JH32bJotmflnsyS0NOjb8Jg=
-github.com/wmarchesi123/stackpath-go v1.0.3 h1:9/+tgA5tbtYI/CQ43N0EYKcdRTOD4wtnUTQc732hEIs=
-github.com/wmarchesi123/stackpath-go v1.0.3/go.mod h1:OJtL/Z/v8lxMvQyUl51X8lJ/YNbHWzKfjg4xhEGTbdM=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.0.2/go.mod h1:1WAq6h33pAW+iRreB34OORO2Nf7qel3VV3fjBj+hCSs=
 github.com/xdg-go/stringprep v1.0.2/go.mod h1:8F9zXuvzgwmyT5DUm4GUfZGDdT3W+LCvS6+da4O5kxM=

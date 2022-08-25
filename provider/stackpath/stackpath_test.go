@@ -20,8 +20,8 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/kubeslice/stackpath/pkg/dns"
 	"github.com/stretchr/testify/assert"
-	"github.com/wmarchesi123/stackpath-go/pkg/dns"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
