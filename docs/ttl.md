@@ -43,6 +43,7 @@ Providers
 - [x] Google
 - [ ] InMemory
 - [x] Linode
+- [x] StackPath
 - [x] TransIP
 - [x] RFC2136
 - [x] Vultr
@@ -79,6 +80,10 @@ This behavior may change in the future.
 
 ### Linode Provider
 The Linode Provider default TTL is used when the TTL is 0. The default is 24 hours
+
+### StackPath Provider
+The Stackpath Provider default TTL is used when the TTL is undefined in the
+source annotation. The default TTL used is 1 day (86400 seconds).
 
 ### TransIP Provider
 The TransIP Provider minimal TTL is used when the TTL is 0. The minimal TTL is 60s.
