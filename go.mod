@@ -28,7 +28,7 @@ require (
 	github.com/dnsimple/dnsimple-go v0.71.1
 	github.com/exoscale/egoscale v1.19.0
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
-	github.com/go-gandi/go-gandi v0.0.0-20200921091836-0d8a64b9cc09
+	github.com/go-gandi/go-gandi v0.4.0
 	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.5.8
 	github.com/gophercloud/gophercloud v0.25.0
@@ -200,6 +200,8 @@ require (
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/schollz/progressbar/v3 v3.8.6 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.0 // indirect
+	github.com/peterhellberg/link v1.1.0 // indirect
+	moul.io/http2curl v1.0.0 // indirect
 )
 
 replace k8s.io/klog/v2 => github.com/Raffo/knolog v0.0.0-20211016155154-e4d5e0cc970a
