@@ -16,7 +16,7 @@ require (
 	github.com/alecthomas/assert v0.0.0-20170929043011-405dbfeb8e38 // indirect
 	github.com/alecthomas/colour v0.1.0 // indirect
 	github.com/alecthomas/kingpin v2.2.5+incompatible
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1483
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1742
 	github.com/ans-group/sdk-go v1.8.1
 	github.com/aws/aws-sdk-go v1.44.81
 	github.com/bodgit/tsig v1.2.0
