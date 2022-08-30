@@ -315,6 +315,7 @@ func main() {
 				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
 				DryRun:        cfg.DryRun,
 				MinTTLSeconds: cfg.NS1MinTTLSeconds,
+				OwnerID:       cfg.TXTOwnerID,
 			},
 		)
 	case "transip":
