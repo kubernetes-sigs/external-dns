@@ -87,14 +87,16 @@ type ExtendedRequestBuilder struct {
 	fqdnRegEx  string
 	maxResults int
 	ibclient.WapiRequestBuilder
+	viewFilter string
 }
 
 // NewExtendedRequestBuilder returns a ExtendedRequestBuilder which adds
 // _max_results query parameter to all GET requests
-func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedRequestBuilder {
+func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string, viewFilter string) *ExtendedRequestBuilder {
 	return &ExtendedRequestBuilder{
 		fqdnRegEx:  fqdnRegEx,
 		maxResults: maxResults,
+		viewFilter: viewFilter,
 	}
 }
 
@@ -110,6 +112,9 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 		_, ok := obj.(*ibclient.ZoneAuth)
 		if ok && t == ibclient.GET && mrb.fqdnRegEx != "" {
 			query.Set("fqdn~", mrb.fqdnRegEx)
+		}
+		if !query.Has("view") && len(mrb.viewFilter) > 0 {
+			query.Set("view", mrb.viewFilter)
 		}
 		req.URL.RawQuery = query.Encode()
 	}
@@ -142,9 +147,9 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		requestBuilder ibclient.HttpRequestBuilder
 		err            error
 	)
-	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRexEx != "" {
+	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRexEx != "" || ibStartupCfg.View != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRexEx)
+		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRexEx, ibStartupCfg.View)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder, err = ibclient.NewWapiRequestBuilder(hostCfg, authCfg)

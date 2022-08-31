@@ -701,7 +701,7 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
@@ -727,7 +727,7 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(54321, "")
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewEmptyRecordCNAME()
@@ -742,11 +742,36 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
 }
 
+func TestExtendedRequestViewResultsBuilder(t *testing.T) {
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	viewName := "mycompany-internal"
+
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "mycompany-internal")
+	requestBuilder.Init(hostCfg, authCfg)
+
+	obj := ibclient.NewEmptyRecordCNAME()
+	obj.Zone = "foo.bar.com"
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("view") == viewName)
+}
+
 func TestGetObject(t *testing.T) {
 	hostCfg := ibclient.HostConfig{}
 	authCfg := ibclient.AuthConfig{}
 	transportConfig := ibclient.TransportConfig{}
-	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com")
+	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com", "")
 	requestor := mockRequestor{}
 	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
 
