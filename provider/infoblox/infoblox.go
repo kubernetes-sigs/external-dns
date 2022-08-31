@@ -22,6 +22,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -188,7 +189,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objA := ibclient.NewEmptyRecordA()
 		objA.View = p.view
 		objA.Zone = zone.Fqdn
-		err = p.client.GetObject(objA, "", nil, &resA)
+		err = PagingGetObject(p.client, objA, "", nil, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -234,7 +235,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objH := ibclient.NewEmptyHostRecord()
 		objH.View = p.view
 		objH.Zone = zone.Fqdn
-		err = p.client.GetObject(objH, "", nil, &resH)
+		err = PagingGetObject(p.client, objH, "", nil, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -256,7 +257,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objC := ibclient.NewEmptyRecordCNAME()
 		objC.View = p.view
 		objC.Zone = zone.Fqdn
-		err = p.client.GetObject(objC, "", nil, &resC)
+		err = PagingGetObject(p.client, objC, "", nil, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -292,7 +293,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 				View: p.view,
 			},
 		)
-		err = p.client.GetObject(objT, "", nil, &resT)
+		err = PagingGetObject(p.client, objT, "", nil, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -738,4 +739,62 @@ func lookupEnvAtoi(key string, fallback int) (i int) {
 		return
 	}
 	return
+}
+
+func PagingGetObject[T any](
+	c ibclient.IBConnector,
+	obj ibclient.IBObject,
+	ref string,
+	queryParams map[string]string,
+	res *[]T,
+) (err error) {
+
+	pagingResponse := pagingResponseStruct[T]{
+		NextPageId: "",
+		Result:     *res,
+	}
+
+	//copy query params and update them
+	queryParamsCopy := map[string]string{}
+	for k, v := range queryParams {
+		queryParamsCopy[k] = v
+	}
+
+	queryParamsCopy["_return_as_object"] = "1"
+	queryParamsCopy["_paging"] = "1"
+
+	var pagingResult []T
+
+	err = c.GetObject(obj, ref, ibclient.NewQueryParams(false, queryParamsCopy), &pagingResponse)
+	if err != nil {
+		logrus.Errorf("could not fetch object: %s", err)
+		return err
+	} else {
+		pagingResult = append(pagingResult, pagingResponse.Result...)
+	}
+
+	for {
+		if pagingResponse.NextPageId == "" {
+			break
+		}
+		queryParamsCopy["_page_id"] = pagingResponse.NextPageId
+		pagingResponse.NextPageId = ""
+		err = c.GetObject(obj, "", ibclient.NewQueryParams(false, queryParamsCopy), &pagingResponse)
+		if err != nil {
+			logrus.Errorf("could not fetch object: %s", err)
+			return err
+		}
+
+		pagingResult = append(pagingResult, pagingResponse.Result...)
+		logrus.Debugf("Paging to retrieve %s %d", reflect.TypeOf(obj), len(pagingResult))
+	}
+
+	*res = pagingResult
+
+	return
+}
+
+type pagingResponseStruct[T any] struct {
+	NextPageId string `json:"next_page_id,omitempty"`
+	Result     []T    `json:"result,omitempty"`
 }

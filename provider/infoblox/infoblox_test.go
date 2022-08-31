@@ -115,6 +115,19 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 }
 
 func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, queryParams *ibclient.QueryParams, res interface{}) (err error) {
+	isPagingType := false
+	switch res.(type) {
+	case *pagingResponseStruct[ibclient.RecordA]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.HostRecord]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordTXT]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordPTR]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordCNAME]:
+		isPagingType = true
+	}
 	switch obj.ObjectType() {
 	case "record:a":
 		var result []ibclient.RecordA
@@ -131,7 +144,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordA))
 			}
 		}
-		*res.(*[]ibclient.RecordA) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordA]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordA) = result
+		}
 	case "record:cname":
 		var result []ibclient.RecordCNAME
 		for _, object := range *client.mockInfobloxObjects {
@@ -147,7 +164,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordCNAME))
 			}
 		}
-		*res.(*[]ibclient.RecordCNAME) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordCNAME]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordCNAME) = result
+		}
 	case "record:host":
 		var result []ibclient.HostRecord
 		for _, object := range *client.mockInfobloxObjects {
@@ -163,7 +184,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.HostRecord))
 			}
 		}
-		*res.(*[]ibclient.HostRecord) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.HostRecord]).Result = result
+		} else {
+			*res.(*[]ibclient.HostRecord) = result
+		}
 	case "record:txt":
 		var result []ibclient.RecordTXT
 		for _, object := range *client.mockInfobloxObjects {
@@ -179,7 +204,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordTXT))
 			}
 		}
-		*res.(*[]ibclient.RecordTXT) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordTXT]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordTXT) = result
+		}
 	case "record:ptr":
 		var result []ibclient.RecordPTR
 		for _, object := range *client.mockInfobloxObjects {
@@ -195,7 +224,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordPTR))
 			}
 		}
-		*res.(*[]ibclient.RecordPTR) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordPTR]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordPTR) = result
+		}
 	case "zone_auth":
 		*res.(*[]ibclient.ZoneAuth) = *client.mockInfobloxZones
 	}
