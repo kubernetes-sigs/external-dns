@@ -748,7 +748,6 @@ func PagingGetObject[T any](
 	queryParams map[string]string,
 	res *[]T,
 ) (err error) {
-
 	pagingResponse := pagingResponseStruct[T]{
 		NextPageId: "",
 		Result:     *res,
@@ -769,9 +768,9 @@ func PagingGetObject[T any](
 	if err != nil {
 		logrus.Errorf("could not fetch object: %s", err)
 		return err
-	} else {
-		pagingResult = append(pagingResult, pagingResponse.Result...)
 	}
+
+	pagingResult = append(pagingResult, pagingResponse.Result...)
 
 	for {
 		if pagingResponse.NextPageId == "" {
