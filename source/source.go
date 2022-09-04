@@ -213,6 +213,11 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 				Name:  fmt.Sprintf("ibmcloud-%s", attr),
 				Value: v,
 			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/weight") {
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  "weight",
+				Value: v,
+			})
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier
