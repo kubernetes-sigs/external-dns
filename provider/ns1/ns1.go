@@ -47,7 +47,6 @@ const (
 // NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
-	GetRecord(zone string, domain string, t string) (*dns.Record, *http.Response, error)
 	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
 	UpdateRecord(r *dns.Record) (*http.Response, error)
 	GetZone(zone string) (*dns.Zone, *http.Response, error)
@@ -62,11 +61,6 @@ type NS1DomainService struct {
 // CreateRecord wraps the Create method of the API's Record service
 func (n NS1DomainService) CreateRecord(r *dns.Record) (*http.Response, error) {
 	return n.service.Records.Create(r)
-}
-
-// GetRecord wraps the Get method of the API's Record service
-func (n NS1DomainService) GetRecord(zone string, domain string, t string) (*dns.Record, *http.Response, error) {
-	return n.service.Records.Get(zone, domain, t)
 }
 
 // DeleteRecord wraps the Delete method of the API's Record service
@@ -97,7 +91,6 @@ type NS1Config struct {
 	NS1IgnoreSSL  bool
 	DryRun        bool
 	MinTTLSeconds int
-	OwnerID       string
 }
 
 // NS1Provider is the NS1 provider
@@ -108,10 +101,7 @@ type NS1Provider struct {
 	zoneIDFilter  provider.ZoneIDFilter
 	dryRun        bool
 	minTTLSeconds int
-	OwnerID       string
 }
-
-type EmptyStruct struct{}
 
 // NewNS1Provider creates a new NS1 Provider
 func NewNS1Provider(config NS1Config) (*NS1Provider, error) {
@@ -151,7 +141,6 @@ func newNS1ProviderWithHTTPClient(config NS1Config, client *http.Client) (*NS1Pr
 		domainFilter:  config.DomainFilter,
 		zoneIDFilter:  config.ZoneIDFilter,
 		minTTLSeconds: config.MinTTLSeconds,
-		OwnerID:       config.OwnerID,
 	}
 	return provider, nil
 }
@@ -174,53 +163,16 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 		for _, record := range zoneData.Records {
 			if provider.SupportedRecordType(record.Type) {
-
-				// Fetch the complete record object from NS1
-				// This is required to get weight and note metadata
-				r, _, err := p.client.GetRecord(zone.Zone, record.Domain, record.Type)
-				if err != nil {
-					return nil, err
-				}
-
-				var targets []string
-				var weight string
-
-				// Discard the answers which are not owned by this OwnerID
-				for i, e := range r.Answers {
-					if e.Meta != nil {
-						if checkOwnerNote(p.OwnerID, e.Meta.Note) {
-							targets = append(targets, record.ShortAns[i])
-							if e.Meta.Weight != nil {
-								weight = fmt.Sprintf("%v", e.Meta.Weight)
-							}
-						}
-					}
-				}
-
-				// Assume that the record doesnt exist if the target list is empty
-				// Otherwise registry will throw out of bonds error when TXT record is empty
-				if len(targets) == 0 {
-					continue
-				}
-
-				ep := endpoint.NewEndpointWithTTL(
+				endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
 					record.Domain,
 					record.Type,
 					endpoint.TTL(record.TTL),
-					targets...,
+					record.ShortAns...,
+				),
 				)
-
-				// If weight meta is available, add it to endpoint
-				if weight != "" {
-					ep = ep.WithProviderSpecific("weight", weight)
-				}
-
-				endpoints = append(endpoints, ep)
 			}
 		}
 	}
-
-	log.Info(endpoints)
 
 	return endpoints, nil
 }
@@ -229,14 +181,7 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType)
 	for _, v := range change.Endpoint.Targets {
-		a := dns.NewAnswer(strings.Split(v, " "))
-		// Add weight and ownerId meta for the endpoint
-		w, exists := change.Endpoint.GetProviderSpecificProperty("weight")
-		if exists && record.Type == "A" {
-			a.Meta.Weight = w.Value
-		}
-		a.Meta.Note = ownerNote(p.OwnerID)
-		record.AddAnswer(a)
+		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
 	var ttl = ns1DefaultTTL
@@ -249,58 +194,6 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 	record.TTL = ttl
 
 	return record
-}
-
-func (p *NS1Provider) reconcileRecordChanges(record *dns.Record, action string) (*dns.Record, string) {
-	r, _, err := p.client.GetRecord(record.Zone, record.Domain, record.Type)
-
-	// Add the filters back to the posting object
-	// method ns1BuildRecord creats a new record object, which discards the original filters available at ns1
-	if r != nil {
-		record.Filters = r.Filters
-	}
-
-	switch action {
-	case ns1Create:
-		// If the record itself doesn't exist, trigger a create action
-		if err == api.ErrRecordMissing {
-			return record, ns1Create
-		}
-		// If the record already exists at ns1 and external-dns triggers a create action,
-		// it means that all the answers in the record are owned by other instances
-		// add the new answers to the list and trigger an update action
-		record.Answers = append(record.Answers, r.Answers...)
-
-		return record, ns1Update
-	case ns1Update:
-		// Copy over the answers from other instances to the record before triggering the update
-		// Thus we can ensure that we will only modify the answers specific to this instance
-		for _, a := range r.Answers {
-			if a.Meta != nil {
-				if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
-					record.Answers = append(record.Answers, a)
-				}
-			}
-		}
-		return record, ns1Update
-	case ns1Delete:
-		if len(record.Answers) == len(r.Answers) {
-			// All the answers are owned by this instance. Just delete the whole record
-			return record, ns1Delete
-		}
-
-		// Trigger an update by removing answers corresponding to this instance
-		record.Answers = []*dns.Answer{}
-		for _, a := range r.Answers {
-			if a.Meta != nil {
-				if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
-					record.Answers = append(record.Answers, a)
-				}
-			}
-		}
-	}
-
-	return record, action
 }
 
 // ns1SubmitChanges takes an array of changes and sends them to NS1
@@ -321,37 +214,20 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 		for _, change := range changes {
 			record := p.ns1BuildRecord(zoneName, change)
 			logFields := log.Fields{
-				"record":  record.Domain,
-				"type":    record.Type,
-				"ttl":     record.TTL,
-				"action":  change.Action,
-				"zone":    zoneName,
-				"Answers": record.Answers,
+				"record": record.Domain,
+				"type":   record.Type,
+				"ttl":    record.TTL,
+				"action": change.Action,
+				"zone":   zoneName,
 			}
 
-			log.WithFields(logFields).Info("record changes as per external-dns registry")
-
-			// external-dns triggers an action based on it's 'view' of the answers
-			// but in reality, there might be other answers which are owned by different external-dns instances
-			// So we need to update the records properly while making sure that we are not changing records owned by
-			// other instances
-			record, action := p.reconcileRecordChanges(record, change.Action)
-
-			logFields = log.Fields{
-				"record":  record.Domain,
-				"type":    record.Type,
-				"ttl":     record.TTL,
-				"action":  change.Action,
-				"zone":    zoneName,
-				"Answers": record.Answers,
-			}
-			log.WithFields(logFields).Info("record changes after reconcile")
+			log.WithFields(logFields).Info("Changing record.")
 
 			if p.dryRun {
 				continue
 			}
 
-			switch action {
+			switch change.Action {
 			case ns1Create:
 				_, err := p.client.CreateRecord(record)
 				if err != nil {
@@ -446,15 +322,4 @@ func ns1ChangesByZone(zones []*dns.Zone, changeSets []*ns1Change) map[string][]*
 	}
 
 	return changes
-}
-
-// ownerNote returns the string representation of owner information to be added as a note to the record
-func ownerNote(ownerId string) string {
-	return fmt.Sprintf("ownerId:%s", ownerId)
-}
-
-// check if the owner specified in the note is matching the current instance
-func checkOwnerNote(ownerID string, metaNote interface{}) bool {
-	n := fmt.Sprintf("%s", metaNote)
-	return n == ownerNote(ownerID)
 }
