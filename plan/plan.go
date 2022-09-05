@@ -37,6 +37,8 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
+	// List of missing records to be created, use for the migrations (e.g. old-new TXT format)
+	Missing []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
@@ -170,6 +172,11 @@ func (p *Plan) Calculate() *Plan {
 		changes = pol.Apply(changes)
 	}
 
+	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
+	if len(p.Missing) > 0 {
+		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
+	}
+
 	plan := &Plan{
 		Current:        p.Current,
 		Desired:        p.Desired,
@@ -250,7 +257,7 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 			log.Debugf("ignoring record %s that does not match domain filter", record.DNSName)
 			continue
 		}
-		if isManagedRecord(record.RecordType, managedRecords) {
+		if IsManagedRecord(record.RecordType, managedRecords) {
 			filtered = append(filtered, record)
 		}
 	}
@@ -293,7 +300,7 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	return v1 == v2
 }
 
-func isManagedRecord(record string, managedRecords []string) bool {
+func IsManagedRecord(record string, managedRecords []string) bool {
 	for _, r := range managedRecords {
 		if record == r {
 			return true

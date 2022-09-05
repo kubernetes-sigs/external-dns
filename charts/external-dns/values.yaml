@@ -49,6 +49,10 @@ securityContext:
   capabilities:
     drop: ["ALL"]
 
+# Defaults to `ClusterFirst`.
+# Valid values are: `ClusterFirstWithHostNet`, `ClusterFirst`, `Default` or `None`.
+dnsPolicy:
+
 priorityClassName: ""
 
 terminationGracePeriodSeconds:
@@ -121,3 +125,6 @@ domainFilters: []
 provider: aws
 
 extraArgs: []
+
+deploymentStrategy:
+  type: Recreate

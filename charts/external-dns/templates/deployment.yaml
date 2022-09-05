@@ -14,6 +14,8 @@ spec:
   selector:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
+  strategy:
+    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -43,6 +45,9 @@ spec:
       {{- end }}
       {{- with .Values.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
       {{- end }}
       containers:
         - name: external-dns
