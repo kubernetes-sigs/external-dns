@@ -111,6 +111,8 @@ type NS1Provider struct {
 	OwnerID       string
 }
 
+type EmptyStruct struct{}
+
 // NewNS1Provider creates a new NS1 Provider
 func NewNS1Provider(config NS1Config) (*NS1Provider, error) {
 	return newNS1ProviderWithHTTPClient(config, http.DefaultClient)
@@ -185,10 +187,12 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 
 				// Discard the answers which are not owned by this OwnerID
 				for i, e := range r.Answers {
-					if checkOwnerNote(p.OwnerID, e.Meta.Note) {
-						targets = append(targets, record.ShortAns[i])
-						if e.Meta.Weight != nil {
-							weight = fmt.Sprintf("%v", e.Meta.Weight)
+					if e.Meta != nil {
+						if checkOwnerNote(p.OwnerID, e.Meta.Note) {
+							targets = append(targets, record.ShortAns[i])
+							if e.Meta.Weight != nil {
+								weight = fmt.Sprintf("%v", e.Meta.Weight)
+							}
 						}
 					}
 				}
@@ -265,16 +269,17 @@ func (p *NS1Provider) reconcileRecordChanges(record *dns.Record, action string) 
 		// If the record already exists at ns1 and external-dns triggers a create action,
 		// it means that all the answers in the record are owned by other instances
 		// add the new answers to the list and trigger an update action
-		for _, a := range r.Answers {
-			record.Answers = append(record.Answers, a)
-		}
+		record.Answers = append(record.Answers, r.Answers...)
+
 		return record, ns1Update
 	case ns1Update:
 		// Copy over the answers from other instances to the record before triggering the update
 		// Thus we can ensure that we will only modify the answers specific to this instance
 		for _, a := range r.Answers {
-			if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
-				record.Answers = append(record.Answers, a)
+			if a.Meta != nil {
+				if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
+					record.Answers = append(record.Answers, a)
+				}
 			}
 		}
 		return record, ns1Update
@@ -287,8 +292,10 @@ func (p *NS1Provider) reconcileRecordChanges(record *dns.Record, action string) 
 		// Trigger an update by removing answers corresponding to this instance
 		record.Answers = []*dns.Answer{}
 		for _, a := range r.Answers {
-			if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
-				record.Answers = append(record.Answers, a)
+			if a.Meta != nil {
+				if !checkOwnerNote(p.OwnerID, a.Meta.Note) {
+					record.Answers = append(record.Answers, a)
+				}
 			}
 		}
 	}
