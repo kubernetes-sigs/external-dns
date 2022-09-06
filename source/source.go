@@ -313,8 +313,12 @@ type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
 }
 
-func waitForCacheSync(ctx context.Context, factory informerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+func waitForCacheSync(ctx context.Context, factory informerFactory, cacheSyncTimeout time.Duration) error {
+	if cacheSyncTimeout == 0 {
+		cacheSyncTimeout = 60 * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, cacheSyncTimeout)
 	defer cancel()
 	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
 		if !done {

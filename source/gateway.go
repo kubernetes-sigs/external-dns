@@ -147,14 +147,14 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := waitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := waitForCacheSync(ctx, rtInformerFactory, config.CacheSyncTimeout); err != nil {
 			return nil, err
 		}
 	}
-	if err := waitForCacheSync(ctx, informerFactory); err != nil {
+	if err := waitForCacheSync(ctx, informerFactory, config.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := waitForCacheSync(ctx, kubeInformerFactory, config.CacheSyncTimeout); err != nil {
 		return nil, err
 	}
 

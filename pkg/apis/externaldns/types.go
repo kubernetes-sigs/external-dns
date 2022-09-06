@@ -197,6 +197,7 @@ type Config struct {
 	PiholeTLSInsecureSkipVerify       bool
 	PluralCluster                     string
 	PluralProvider                    string
+	CacheSyncTimeout                  time.Duration
 }
 
 var defaultConfig = &Config{
@@ -339,6 +340,7 @@ var defaultConfig = &Config{
 	PiholeTLSInsecureSkipVerify: false,
 	PluralCluster:               "",
 	PluralProvider:              "",
+	CacheSyncTimeout:            60 * time.Second,
 }
 
 // NewConfig returns new Config object
@@ -573,6 +575,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+	app.Flag("cache-sync-timeout", "Set the timeout for the local cache population. Defaults to 60s. If set to zero, also defaults to 60s").Default(defaultConfig.CacheSyncTimeout.String()).DurationVar(&cfg.CacheSyncTimeout)
 
 	_, err := app.Parse(args)
 	if err != nil {

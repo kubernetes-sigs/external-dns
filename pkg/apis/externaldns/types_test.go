@@ -129,6 +129,7 @@ var (
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
 		TencentCloudZoneType:        "",
+		CacheSyncTimeout:            60 * time.Second,
 	}
 
 	overriddenConfig = &Config{
@@ -239,6 +240,7 @@ var (
 		IBMCloudConfigFile:          "ibmcloud.json",
 		TencentCloudConfigFile:      "tencent-cloud.json",
 		TencentCloudZoneType:        "private",
+		CacheSyncTimeout:            35 * time.Second,
 	}
 )
 
@@ -379,6 +381,7 @@ func TestParseFlags(t *testing.T) {
 				"--ibmcloud-config-file=ibmcloud.json",
 				"--tencent-cloud-config-file=tencent-cloud.json",
 				"--tencent-cloud-zone-type=private",
+				"--cache-sync-timeout=35s",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -494,6 +497,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":       "tencent-cloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":         "private",
+				"EXTERNAL_DNS_CACHE_SYNC_TIMEOUT":              "35s",
 			},
 			expected: overriddenConfig,
 		},

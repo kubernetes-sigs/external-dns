@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,6 +76,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				fake.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
+				60*time.Second,
 			)
 
 			if ti.expectError {
@@ -358,6 +360,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubernetes,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
+				60*time.Second,
 			)
 			require.NoError(t, err)
 

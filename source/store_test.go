@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
@@ -187,4 +188,5 @@ func TestByNames(t *testing.T) {
 
 var minimalConfig = &Config{
 	ContourLoadBalancerService: "heptio-contour/contour",
+	CacheSyncTimeout:           60 * time.Second,
 }
