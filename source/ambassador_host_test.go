@@ -19,8 +19,15 @@ package source
 import (
 	"testing"
 
+	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/net/context"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	fakeDynamic "k8s.io/client-go/dynamic/fake"
+	fakeKube "k8s.io/client-go/kubernetes/fake"
 )
 
 type AmbassadorSuite struct {
@@ -35,6 +42,64 @@ func TestAmbassadorSource(t *testing.T) {
 // testAmbassadorSourceImplementsSource tests that ambassadorHostSource is a valid Source.
 func testAmbassadorSourceImplementsSource(t *testing.T) {
 	require.Implements(t, (*Source)(nil), new(ambassadorHostSource))
+}
+
+func TestAmbassadorHostSource(t *testing.T) {
+	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+
+	ambassadorScheme := runtime.NewScheme()
+
+	ambassador.AddToScheme(ambassadorScheme)
+
+	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
+
+	ctx := context.Background()
+
+	namespace := "test"
+
+	host, err := createAmbassadorHost("test-host", "test-service")
+	if err != nil {
+		t.Fatalf("could not create host resource: %v", err)
+	}
+
+	{
+		_, err := fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(ctx, host, v1.CreateOptions{})
+		if err != nil {
+			t.Fatalf("could not create host: %v", err)
+		}
+	}
+
+	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace)
+	if err != nil {
+		t.Fatalf("could not create ambassador source: %v", err)
+	}
+
+	{
+		_, err := ambassadorSource.Endpoints(ctx)
+		if err != nil {
+			t.Fatalf("could not collect ambassador source endpoints: %v", err)
+		}
+	}
+
+}
+
+func createAmbassadorHost(name, ambassadorService string) (*unstructured.Unstructured, error) {
+	host := &ambassador.Host{
+		ObjectMeta: v1.ObjectMeta{
+			Name: name,
+			Annotations: map[string]string{
+				ambHostAnnotation: ambassadorService,
+			},
+		},
+	}
+	obj := &unstructured.Unstructured{}
+	uc, _ := newUnstructuredConverter()
+	err := uc.scheme.Convert(host, obj, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return obj, nil
 }
 
 // TestParseAmbLoadBalancerService tests our parsing of Ambassador service info.
