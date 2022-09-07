@@ -56,8 +56,14 @@ func NewPluralProvider(cluster, provider string) (*PluralProvider, error) {
 		Cluster:  cluster,
 		Provider: provider,
 	}
+
+	client, err := NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
 	prov := &PluralProvider{
-		Client: NewClient(config),
+		Client: client,
 	}
 
 	return prov, nil
