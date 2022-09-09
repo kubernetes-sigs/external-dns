@@ -317,10 +317,8 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 	for _, rs := range recordsByKey {
-		for _, record := range rs.Records {
-			ep := endpoint.NewEndpoint(rs.Name, rs.Type, record)
-			result = append(result, ep)
-		}
+		ep := endpoint.NewEndpoint(rs.Name, rs.Type, rs.Records...)
+		result = append(result, ep)
 	}
 	return result, err
 }
@@ -375,6 +373,7 @@ type recordSet struct {
 	zoneID      string
 	recordSetID string
 	names       map[string]bool
+	targets     []string
 }
 
 // adds endpoint into recordset aggregation, loading original values from endpoint labels first
@@ -402,12 +401,12 @@ func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordset
 			}
 		}
 	}
-	targets := ep.Targets
-	if ep.RecordType == endpoint.RecordTypeCNAME {
-		targets = canonicalizeDomainNames(targets)
-	}
-	for _, t := range targets {
-		rs.names[t] = !delete
+	if !delete {
+		targets := ep.Targets
+		if ep.RecordType == endpoint.RecordTypeCNAME {
+			targets = canonicalizeDomainNames(targets)
+		}
+		rs.targets = targets
 	}
 	recordSets[key] = rs
 }
@@ -455,32 +454,26 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			return nil
 		}
 	}
-	var records []string
-	for rec, v := range rs.names {
-		if v {
-			records = append(records, rec)
-		}
-	}
-	if rs.recordSetID == "" && records == nil {
+	if rs.recordSetID == "" && rs.targets == nil {
 		return nil
 	}
 	if rs.recordSetID == "" {
 		opts := recordsets.CreateOpts{
 			Name:    rs.dnsName,
 			Type:    rs.recordType,
-			Records: records,
+			Records: rs.targets,
 		}
 		log.WithFields(log.Fields{
 			"dnsName":    rs.dnsName,
 			"recordType": rs.recordType,
-			"content":    strings.Join(records, ","),
+			"content":    strings.Join(rs.targets, ","),
 		}).Info("Creating records")
 		if p.dryRun {
 			return nil
 		}
 		_, err := p.client.CreateRecordSet(rs.zoneID, opts)
 		return err
-	} else if len(records) == 0 {
+	} else if len(rs.targets) == 0 {
 		log.WithFields(log.Fields{
 			"dnsName":    rs.dnsName,
 			"recordType": rs.recordType,
@@ -494,7 +487,7 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 	} else {
 		ttl := 0
 		opts := recordsets.UpdateOpts{
-			Records: records,
+			Records: rs.targets,
 			TTL:     &ttl,
 		}
 		log.WithFields(log.Fields{
@@ -502,7 +495,7 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			"recordType": rs.recordType,
 			"zoneID":     rs.zoneID,
 			"recordID":   rs.recordSetID,
-			"content":    strings.Join(records, ","),
+			"content":    strings.Join(rs.targets, ","),
 		}).Infof("Updating records")
 		if p.dryRun {
 			return nil
