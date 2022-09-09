@@ -310,25 +310,53 @@ func (p designateProvider) getHostZoneID(hostname string, managedZones map[strin
 }
 
 // Records returns the list of records.
-func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
+	recordsByKey, err := p.records(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, rs := range recordsByKey {
+		for _, record := range rs.Records {
+			ep := endpoint.NewEndpoint(rs.Name, rs.Type, record)
+			result = append(result, ep)
+		}
+	}
+	return result, err
+}
+
+func (p *designateProvider) records(ctx context.Context) (map[string]*recordsets.RecordSet, error) {
 	managedZones, err := p.getZones()
 	if err != nil {
 		return nil, err
 	}
+	recordSetsByZone := make(map[string]*recordsets.RecordSet)
 	for zoneID := range managedZones {
 		err = p.client.ForEachRecordSet(zoneID,
-			func(recordSet *recordsets.RecordSet) error {
-				if recordSet.Type != endpoint.RecordTypeA && recordSet.Type != endpoint.RecordTypeTXT && recordSet.Type != endpoint.RecordTypeCNAME {
+			func(rSet *recordsets.RecordSet) error {
+				rs := *rSet
+				if rs.Type != endpoint.RecordTypeA && rs.Type != endpoint.RecordTypeTXT && rs.Type != endpoint.RecordTypeCNAME {
+					log.WithFields(log.Fields{
+						"dnsName": rs.Name,
+						"type":    rs.Type,
+						"id":      rs.ID,
+						"zone":    rs.ZoneID,
+					}).Debug("Skipped.")
 					return nil
 				}
-				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
-					result = append(result, ep)
+				key := fmt.Sprintf("%s/%s", rs.Name, rs.Type)
+				if dup, ok := recordSetsByZone[key]; ok && dup != nil {
+					log.WithFields(log.Fields{
+						"key":             key,
+						"dnsName":         rs.Name,
+						"type":            rs.Type,
+						"id":              rs.ID,
+						"zone":            rs.ZoneID,
+						"duplicateID":     dup.ID,
+						"duplicateZoneID": dup.ZoneID,
+					}).Warn("Detected duplicate.")
 				}
+				recordSetsByZone[key] = &rs
 				return nil
 			},
 		)
@@ -337,7 +365,7 @@ func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 		}
 	}
 
-	return result, nil
+	return recordSetsByZone, nil
 }
 
 // temporary structure to hold recordset parameters so that we could aggregate endpoints into recordsets
@@ -350,8 +378,8 @@ type recordSet struct {
 }
 
 // adds endpoint into recordset aggregation, loading original values from endpoint labels first
-func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete bool) {
-	key := fmt.Sprintf("%s/%s", ep.DNSName, ep.RecordType)
+func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordsets.RecordSet, recordSets map[string]*recordSet, delete bool) {
+	key := fmt.Sprintf("%s/%s", canonicalizeDomainName(ep.DNSName), ep.RecordType)
 	rs := recordSets[key]
 	if rs == nil {
 		rs = &recordSet{
@@ -360,15 +388,18 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 			names:      make(map[string]bool),
 		}
 	}
-	if rs.zoneID == "" {
-		rs.zoneID = ep.Labels[designateZoneID]
-	}
-	if rs.recordSetID == "" {
-		rs.recordSetID = ep.Labels[designateRecordSetID]
-	}
-	for _, rec := range strings.Split(ep.Labels[designateOriginalRecords], "\000") {
-		if _, ok := rs.names[rec]; !ok && rec != "" {
-			rs.names[rec] = true
+	existingRs := existingRecordSets[key]
+	if existingRs != nil {
+		if rs.zoneID == "" {
+			rs.zoneID = existingRs.ZoneID
+		}
+		if rs.recordSetID == "" {
+			rs.recordSetID = existingRs.ID
+		}
+		for _, rec := range existingRs.Records {
+			if _, ok := rs.names[rec]; !ok && rec != "" {
+				rs.names[rec] = true
+			}
 		}
 	}
 	targets := ep.Targets
@@ -387,18 +418,22 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	if err != nil {
 		return err
 	}
+	existingRecordSets, err := p.records(ctx)
+	if err != nil {
+		return err
+	}
 	recordSets := map[string]*recordSet{}
 	for _, ep := range changes.Create {
-		addEndpoint(ep, recordSets, false)
+		addEndpoint(ep, existingRecordSets, recordSets, false)
 	}
 	for _, ep := range changes.UpdateNew {
-		addEndpoint(ep, recordSets, false)
+		addEndpoint(ep, existingRecordSets, recordSets, false)
 	}
 	for _, ep := range changes.UpdateOld {
-		addEndpoint(ep, recordSets, true)
+		addEndpoint(ep, existingRecordSets, recordSets, true)
 	}
 	for _, ep := range changes.Delete {
-		addEndpoint(ep, recordSets, true)
+		addEndpoint(ep, existingRecordSets, recordSets, true)
 	}
 	for _, rs := range recordSets {
 		if err2 := p.upsertRecordSet(rs, managedZones); err == nil {
