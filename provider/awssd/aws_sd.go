@@ -271,8 +271,10 @@ func (p *AWSSDProvider) updatesToCreates(changes *plan.Changes) (creates []*endp
 	for _, old := range changes.UpdateOld {
 		current := updateNewMap[old.DNSName]
 
-		if !old.Targets.Same(current.Targets) {
-			// when targets differ the old instances need to be de-registered first
+		// when targets differ no more needed old instances should be de-registered first
+		targetsToDelete := old.Targets.Sub(current.Targets)
+		if targetsToDelete.Len() > 0 {
+			old.Targets = targetsToDelete
 			deletes = append(deletes, old)
 		}
 
