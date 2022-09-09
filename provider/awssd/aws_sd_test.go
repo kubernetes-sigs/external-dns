@@ -92,18 +92,32 @@ func (s *AWSSDClientStub) GetService(input *sd.GetServiceInput) (*sd.GetServiceO
 	return nil, errors.New("service not found")
 }
 
-func (s *AWSSDClientStub) ListInstancesPages(input *sd.ListInstancesInput, fn func(*sd.ListInstancesOutput, bool) bool) error {
-	instances := make([]*sd.InstanceSummary, 0)
+func (s *AWSSDClientStub) DiscoverInstances(input *sd.DiscoverInstancesInput) (*sd.DiscoverInstancesOutput, error) {
+	instances := make([]*sd.HttpInstanceSummary, 0)
 
-	for _, inst := range s.instances[*input.ServiceId] {
-		instances = append(instances, instanceToInstanceSummary(inst))
+	for _, ns := range s.namespaces {
+		if ns.Name == input.NamespaceName {
+			for _, srv := range s.services[*ns.Id] {
+				if srv.Name == input.ServiceName {
+					for _, inst := range s.instances[*srv.Id] {
+						instances = append(instances, &sd.HttpInstanceSummary{
+							InstanceId: inst.Id,
+							Attributes: inst.Attributes,
+						})
+					}
+				}
+			}
+		}
+	}
+	if len(instances) == 0 {
+		return nil, errors.New("instances not found")
 	}
 
-	fn(&sd.ListInstancesOutput{
+	result := &sd.DiscoverInstancesOutput{
 		Instances: instances,
-	}, true)
+	}
 
-	return nil
+	return result, nil
 }
 
 func (s *AWSSDClientStub) ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error {
@@ -465,7 +479,7 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 	}
 }
 
-func TestAWSSDProvider_ListInstancesByService(t *testing.T) {
+func TestAWSSDProvider_DiscoverInstancesByService(t *testing.T) {
 	namespaces := map[string]*sd.Namespace{
 		"private": {
 			Id:   aws.String("private"),
@@ -512,8 +526,16 @@ func TestAWSSDProvider_ListInstancesByService(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
 
-	result, err := provider.ListInstancesByServiceID(services["private"]["srv1"].Id)
+	result, err := provider.DiscoverInstancesByServiceName(namespaces["private"].Name, services["private"]["srv1"].Name)
 	require.NoError(t, err)
+
+	instanceToInstanceSummary := func(instance *sd.Instance) *sd.InstanceSummary {
+
+		if instance == nil {
+			return nil
+		}
+		return &sd.InstanceSummary{Id: instance.Id, Attributes: instance.Attributes}
+	}
 
 	expectedInstances := []*sd.InstanceSummary{instanceToInstanceSummary(instances["srv1"]["inst1"]), instanceToInstanceSummary(instances["srv1"]["inst2"])}
 
