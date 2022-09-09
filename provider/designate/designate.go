@@ -341,7 +341,7 @@ func (p *designateProvider) records(ctx context.Context) (map[string]*recordsets
 						"type":    rs.Type,
 						"id":      rs.ID,
 						"zone":    rs.ZoneID,
-					}).Debug("Skipped.")
+					}).Debug("Skipping")
 					return nil
 				}
 				key := fmt.Sprintf("%s/%s", rs.Name, rs.Type)
@@ -354,7 +354,7 @@ func (p *designateProvider) records(ctx context.Context) (map[string]*recordsets
 						"zone":            rs.ZoneID,
 						"duplicateID":     dup.ID,
 						"duplicateZoneID": dup.ZoneID,
-					}).Warn("Detected duplicate.")
+					}).Warn("Detected duplicate")
 				}
 				recordSetsByZone[key] = &rs
 				return nil
@@ -452,7 +452,9 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			return err
 		}
 		if rs.zoneID == "" {
-			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", rs.dnsName)
+			log.WithFields(log.Fields{
+				"dnsName": rs.dnsName,
+			}).Debug("Skipping record because no hosted zone matching record DNS Name was detected")
 			return nil
 		}
 	}
@@ -471,14 +473,23 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			Type:    rs.recordType,
 			Records: records,
 		}
-		log.Infof("Creating records: %s/%s: %s", rs.dnsName, rs.recordType, strings.Join(records, ","))
+		log.WithFields(log.Fields{
+			"dnsName":    rs.dnsName,
+			"recordType": rs.recordType,
+			"content":    strings.Join(records, ","),
+		}).Info("Creating records")
 		if p.dryRun {
 			return nil
 		}
 		_, err := p.client.CreateRecordSet(rs.zoneID, opts)
 		return err
 	} else if len(records) == 0 {
-		log.Infof("Deleting records for %s/%s", rs.dnsName, rs.recordType)
+		log.WithFields(log.Fields{
+			"dnsName":    rs.dnsName,
+			"recordType": rs.recordType,
+			"zoneID":     rs.zoneID,
+			"recordID":   rs.recordSetID,
+		}).Info("Deleting records")
 		if p.dryRun {
 			return nil
 		}
@@ -489,7 +500,13 @@ func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[strin
 			Records: records,
 			TTL:     &ttl,
 		}
-		log.Infof("Updating records: %s/%s: %s", rs.dnsName, rs.recordType, strings.Join(records, ","))
+		log.WithFields(log.Fields{
+			"dnsName":    rs.dnsName,
+			"recordType": rs.recordType,
+			"zoneID":     rs.zoneID,
+			"recordID":   rs.recordSetID,
+			"content":    strings.Join(records, ","),
+		}).Infof("Updating records")
 		if p.dryRun {
 			return nil
 		}
