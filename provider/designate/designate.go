@@ -429,9 +429,6 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	for _, ep := range changes.UpdateNew {
 		addEndpoint(ep, existingRecordSets, recordSets, false)
 	}
-	for _, ep := range changes.UpdateOld {
-		addEndpoint(ep, existingRecordSets, recordSets, true)
-	}
 	for _, ep := range changes.Delete {
 		addEndpoint(ep, existingRecordSets, recordSets, true)
 	}
