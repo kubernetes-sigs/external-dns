@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gophercloud/gophercloud"
@@ -221,6 +222,18 @@ type designateProvider struct {
 	// only consider hosted zones managing domains ending in this suffix
 	domainFilter endpoint.DomainFilter
 	dryRun       bool
+
+	// cache Timeout
+	cacheTimeout time.Duration
+	cacheRefresh time.Time
+
+	// cache zone answers
+	zoneMu    sync.Mutex
+	zoneCache map[string]string
+
+	// cache recordsets
+	rsMu    sync.Mutex
+	rsCache map[string]*recordsets.RecordSet
 }
 
 // NewDesignateProvider is a factory function for OpenStack designate providers
@@ -233,6 +246,7 @@ func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (prov
 		client:       client,
 		domainFilter: domainFilter,
 		dryRun:       dryRun,
+		cacheTimeout: 5 * time.Second,
 	}, nil
 }
 
@@ -257,7 +271,14 @@ func canonicalizeDomainName(d string) string {
 }
 
 // returns ZoneID -> ZoneName mapping for zones that are managed by the Designate and match domain filter
-func (p designateProvider) getZones() (map[string]string, error) {
+func (p *designateProvider) getZones() (map[string]string, error) {
+	if time.Since(p.cacheRefresh) < p.cacheTimeout && p.zoneCache != nil {
+		log.Debug("Returning cached zones")
+		p.zoneMu.Lock()
+		defer p.zoneMu.Unlock()
+		return p.zoneCache, nil
+	}
+	log.Debug("Calculating zones")
 	result := map[string]string{}
 
 	err := p.client.ForEachZone(
@@ -274,6 +295,11 @@ func (p designateProvider) getZones() (map[string]string, error) {
 			return nil
 		},
 	)
+
+	p.zoneMu.Lock()
+	p.zoneCache = result
+	p.cacheRefresh = time.Now()
+	p.zoneMu.Unlock()
 
 	return result, err
 }
@@ -318,6 +344,14 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (p *designateProvider) records(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
+	if time.Since(p.cacheRefresh) < p.cacheTimeout && p.rsCache != nil {
+		log.Debug("Returning cached recordSets")
+		p.rsMu.Lock()
+		defer p.rsMu.Unlock()
+		return p.rsCache, nil
+	}
+
+	log.Debug("Calculating recordSets")
 	recordSetsByZone := make(map[string]*recordsets.RecordSet)
 	for zoneID := range zones {
 		err := p.client.ForEachRecordSet(zoneID,
@@ -352,6 +386,11 @@ func (p *designateProvider) records(ctx context.Context, zones map[string]string
 			return nil, err
 		}
 	}
+
+	p.rsMu.Lock()
+	p.rsCache = recordSetsByZone
+	p.cacheRefresh = time.Now()
+	p.rsMu.Unlock()
 
 	return recordSetsByZone, nil
 }
