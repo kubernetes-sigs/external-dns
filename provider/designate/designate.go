@@ -305,7 +305,7 @@ func (p *designateProvider) getZones() (map[string]string, error) {
 }
 
 // finds best suitable DNS zone for the hostname
-func (p designateProvider) getHostZoneID(hostname string, managedZones map[string]string) (string, error) {
+func (p *designateProvider) getHostZoneID(hostname string, managedZones map[string]string) (string, error) {
 	longestZoneLength := 0
 	resultID := ""
 
@@ -437,7 +437,7 @@ func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordset
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p *designateProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	managedZones, err := p.getZones()
 	if err != nil {
 		return err
@@ -465,7 +465,7 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 }
 
 // apply recordset changes by inserting/updating/deleting recordsets
-func (p designateProvider) upsertRecordSet(rs *recordSet, managedZones map[string]string) error {
+func (p *designateProvider) upsertRecordSet(rs *recordSet, managedZones map[string]string) error {
 	if rs.zoneID == "" {
 		var err error
 		rs.zoneID, err = p.getHostZoneID(rs.dnsName, managedZones)
