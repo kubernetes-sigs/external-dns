@@ -332,7 +332,7 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 		return nil, err
 	}
 
-	recordsByKey, err := p.records(ctx, managedZones)
+	recordsByKey, err := p.getRecordSets(ctx, managedZones)
 	if err != nil {
 		return nil, err
 	}
@@ -343,7 +343,7 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return result, err
 }
 
-func (p *designateProvider) records(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
+func (p *designateProvider) getRecordSets(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
 	if time.Since(p.cacheRefresh) < p.cacheTimeout && p.rsCache != nil {
 		log.Debug("Returning cached recordSets")
 		p.rsMu.Lock()
@@ -442,7 +442,7 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	if err != nil {
 		return err
 	}
-	existingRecordSets, err := p.records(ctx, managedZones)
+	existingRecordSets, err := p.getRecordSets(ctx, managedZones)
 	if err != nil {
 		return err
 	}
