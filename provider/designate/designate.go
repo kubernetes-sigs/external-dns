@@ -272,7 +272,7 @@ func canonicalizeDomainName(d string) string {
 
 // returns ZoneID -> ZoneName mapping for zones that are managed by the Designate and match domain filter
 func (p *designateProvider) getZones() (map[string]string, error) {
-	if time.Since(p.cacheRefresh) < p.cacheTimeout && p.zoneCache != nil {
+	if p.zoneCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached zones")
 		p.zoneMu.Lock()
 		defer p.zoneMu.Unlock()
@@ -344,7 +344,7 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (p *designateProvider) getRecordSets(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
-	if time.Since(p.cacheRefresh) < p.cacheTimeout && p.rsCache != nil {
+	if p.rsCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached recordSets")
 		p.rsMu.Lock()
 		defer p.rsMu.Unlock()
