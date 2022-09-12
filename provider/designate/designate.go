@@ -38,18 +38,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const (
-	// ID of the RecordSet from which endpoint was created
-	designateRecordSetID = "designate-recordset-id"
-	// Zone ID of the RecordSet
-	designateZoneID = "designate-record-id"
-
-	// Initial records values of the RecordSet. This label is required in order not to loose records that haven't
-	// changed where there are several targets per domain and only some of them changed.
-	// Values are joined by zero-byte to in order to get a single string
-	designateOriginalRecords = "designate-original-records"
-)
-
 // interface between provider and OpenStack DNS API
 type designateClientInterface interface {
 	// ForEachZone calls handler for each zone managed by the Designate
@@ -312,7 +300,13 @@ func (p designateProvider) getHostZoneID(hostname string, managedZones map[strin
 // Records returns the list of records.
 func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var result []*endpoint.Endpoint
-	recordsByKey, err := p.records(ctx)
+
+	managedZones, err := p.getZones()
+	if err != nil {
+		return nil, err
+	}
+
+	recordsByKey, err := p.records(ctx, managedZones)
 	if err != nil {
 		return nil, err
 	}
@@ -323,14 +317,10 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return result, err
 }
 
-func (p *designateProvider) records(ctx context.Context) (map[string]*recordsets.RecordSet, error) {
-	managedZones, err := p.getZones()
-	if err != nil {
-		return nil, err
-	}
+func (p *designateProvider) records(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
 	recordSetsByZone := make(map[string]*recordsets.RecordSet)
-	for zoneID := range managedZones {
-		err = p.client.ForEachRecordSet(zoneID,
+	for zoneID := range zones {
+		err := p.client.ForEachRecordSet(zoneID,
 			func(rSet *recordsets.RecordSet) error {
 				rs := *rSet
 				if rs.Type != endpoint.RecordTypeA && rs.Type != endpoint.RecordTypeTXT && rs.Type != endpoint.RecordTypeCNAME {
@@ -372,7 +362,6 @@ type recordSet struct {
 	recordType  string
 	zoneID      string
 	recordSetID string
-	names       map[string]bool
 	targets     []string
 }
 
@@ -380,27 +369,23 @@ type recordSet struct {
 func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordsets.RecordSet, recordSets map[string]*recordSet, delete bool) {
 	key := fmt.Sprintf("%s/%s", canonicalizeDomainName(ep.DNSName), ep.RecordType)
 	rs := recordSets[key]
+
 	if rs == nil {
 		rs = &recordSet{
 			dnsName:    canonicalizeDomainName(ep.DNSName),
 			recordType: ep.RecordType,
-			names:      make(map[string]bool),
 		}
 	}
-	existingRs := existingRecordSets[key]
-	if existingRs != nil {
+
+	if existingRs := existingRecordSets[key]; existingRs != nil {
 		if rs.zoneID == "" {
 			rs.zoneID = existingRs.ZoneID
 		}
 		if rs.recordSetID == "" {
 			rs.recordSetID = existingRs.ID
 		}
-		for _, rec := range existingRs.Records {
-			if _, ok := rs.names[rec]; !ok && rec != "" {
-				rs.names[rec] = true
-			}
-		}
 	}
+
 	if !delete {
 		targets := ep.Targets
 		if ep.RecordType == endpoint.RecordTypeCNAME {
@@ -408,6 +393,7 @@ func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordset
 		}
 		rs.targets = targets
 	}
+
 	recordSets[key] = rs
 }
 
@@ -417,7 +403,7 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	if err != nil {
 		return err
 	}
-	existingRecordSets, err := p.records(ctx)
+	existingRecordSets, err := p.records(ctx, managedZones)
 	if err != nil {
 		return err
 	}
