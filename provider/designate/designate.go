@@ -236,8 +236,12 @@ type designateProvider struct {
 	rsCache map[string]*recordsets.RecordSet
 }
 
+var (
+	_ provider.Provider = &designateProvider{}
+)
+
 // NewDesignateProvider is a factory function for OpenStack designate providers
-func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (provider.Provider, error) {
+func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*designateProvider, error) {
 	client, err := newDesignateClient()
 	if err != nil {
 		return nil, err
