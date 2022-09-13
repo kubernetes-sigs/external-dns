@@ -24,17 +24,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"reflect"
 	"sort"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/recordsets"
 	"github.com/gophercloud/gophercloud/openstack/dns/v2/zones"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
-	"sigs.k8s.io/external-dns/provider"
 )
 
 var lastGeneratedDesignateID int32
@@ -131,7 +131,7 @@ func (c fakeDesignateClient) DeleteRecordSet(zoneID, recordSetID string) error {
 	return nil
 }
 
-func (c fakeDesignateClient) ToProvider() provider.Provider {
+func (c fakeDesignateClient) ToProvider() *designateProvider {
 	return &designateProvider{client: c}
 }
 
@@ -205,12 +205,12 @@ func TestDesignateRecords(t *testing.T) {
 		Type:   "PRIMARY",
 		Status: "ACTIVE",
 	})
-	rs11ID, _ := client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
+	client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
 		Name:    "www.example.com.",
 		Type:    endpoint.RecordTypeA,
 		Records: []string{"10.1.1.1"},
 	})
-	rs12ID, _ := client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
+	client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
 		Name:    "www.example.com.",
 		Type:    endpoint.RecordTypeTXT,
 		Records: []string{"text1"},
@@ -220,7 +220,7 @@ func TestDesignateRecords(t *testing.T) {
 		Type:    "SRV",
 		Records: []string{"http://test.com:1234"},
 	})
-	rs14ID, _ := client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
+	client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
 		Name:    "ftp.example.com.",
 		Type:    endpoint.RecordTypeA,
 		Records: []string{"10.1.1.2"},
@@ -231,12 +231,12 @@ func TestDesignateRecords(t *testing.T) {
 		Type:   "PRIMARY",
 		Status: "ACTIVE",
 	})
-	rs21ID, _ := client.CreateRecordSet(zone2ID, recordsets.CreateOpts{
+	client.CreateRecordSet(zone2ID, recordsets.CreateOpts{
 		Name:    "srv.test.net.",
 		Type:    endpoint.RecordTypeA,
 		Records: []string{"10.2.1.1", "10.2.1.2"},
 	})
-	rs22ID, _ := client.CreateRecordSet(zone2ID, recordsets.CreateOpts{
+	client.CreateRecordSet(zone2ID, recordsets.CreateOpts{
 		Name:    "db.test.net.",
 		Type:    endpoint.RecordTypeCNAME,
 		Records: []string{"sql.test.net."},
@@ -246,89 +246,59 @@ func TestDesignateRecords(t *testing.T) {
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs11ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "10.1.1.1",
-			},
+			Labels:     endpoint.Labels{},
 		},
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeTXT,
 			Targets:    endpoint.Targets{"text1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs12ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "text1",
-			},
+			Labels:     endpoint.Labels{},
 		},
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.2"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs14ID,
-				designateZoneID:          zone1ID,
-				designateOriginalRecords: "10.1.1.2",
-			},
+			Labels:     endpoint.Labels{},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs21ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
-			},
-		},
-		{
-			DNSName:    "srv.test.net",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.2"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs21ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
-			},
+			Targets:    endpoint.Targets{"10.2.1.1", "10.2.1.2"},
+			Labels:     endpoint.Labels{},
 		},
 		{
 			DNSName:    "db.test.net",
 			RecordType: endpoint.RecordTypeCNAME,
 			Targets:    endpoint.Targets{"sql.test.net"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs22ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "sql.test.net.",
-			},
+			Labels:     endpoint.Labels{},
 		},
 	}
 
-	endpoints, err := client.ToProvider().Records(context.Background())
+	provider := client.ToProvider()
+	endpoints, err := provider.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-out:
-	for _, ep := range endpoints {
-		for i, ex := range expected {
-			if reflect.DeepEqual(ep, ex) {
-				expected = append(expected[:i], expected[i+1:]...)
-				continue out
-			}
-		}
-		t.Errorf("unexpected endpoint %s/%s -> %s", ep.DNSName, ep.RecordType, ep.Targets)
+
+	sortEndpoints := func(endpoints []*endpoint.Endpoint) {
+		sort.Slice(endpoints,
+			func(i, j int) bool {
+				key1 := fmt.Sprintf("%s/%s", endpoints[i].DNSName, endpoints[i].RecordType)
+				key2 := fmt.Sprintf("%s/%s", endpoints[j].DNSName, endpoints[j].RecordType)
+				return key1 < key2
+			})
 	}
-	if len(expected) != 0 {
-		t.Errorf("not all expected endpoints were returned. Remained: %v", expected)
+
+	sortEndpoints(endpoints)
+	sortEndpoints(expected)
+
+	if diff := cmp.Diff(expected, endpoints); diff != "" {
+		t.Fatalf("unexpected endpoints:\n%s", diff)
 	}
 }
 
 func TestDesignateCreateRecords(t *testing.T) {
 	client := newFakeDesignateClient()
-	testDesignateCreateRecords(t, client)
-}
-
-func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*recordsets.RecordSet {
 	for i, zoneName := range []string{"example.com.", "test.net."} {
 		client.AddZone(zones.Zone{
 			ID:     fmt.Sprintf("zone-%d", i+1),
@@ -342,37 +312,26 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.1"},
-			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "www.example.com",
 			RecordType: endpoint.RecordTypeTXT,
 			Targets:    endpoint.Targets{"text1"},
-			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.1.1.2"},
-			Labels:     map[string]string{},
 		},
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels:     map[string]string{},
-		},
-		{
-			DNSName:    "srv.test.net",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.2"},
-			Labels:     map[string]string{},
+			Targets:    endpoint.Targets{"10.2.1.1", "10.2.1.2"},
 		},
 		{
 			DNSName:    "db.test.net",
 			RecordType: endpoint.RecordTypeCNAME,
 			Targets:    endpoint.Targets{"sql.test.net"},
-			Labels:     map[string]string{},
 		},
 	}
 	expected := []*recordsets.RecordSet{
@@ -415,168 +374,224 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 		t.Fatal(err)
 	}
 
+	verifyDesignateEntries(t, client, expected)
+}
+
+func verifyDesignateEntries(t *testing.T, client *fakeDesignateClient, expected []*recordsets.RecordSet) {
+	var results []*recordsets.RecordSet
 	client.ForEachZone(func(zone *zones.Zone) error {
 		client.ForEachRecordSet(zone.ID, func(recordSet *recordsets.RecordSet) error {
-			id := recordSet.ID
-			recordSet.ID = ""
-			for i, ex := range expected {
-				sort.Strings(recordSet.Records)
-				if reflect.DeepEqual(ex, recordSet) {
-					ex.ID = id
-					recordSet.ID = id
-					expected = append(expected[:i], expected[i+1:]...)
-					return nil
-				}
-			}
-			t.Errorf("unexpected record-set %s/%s -> %v", recordSet.Name, recordSet.Type, recordSet.Records)
+			recordSet.ID = "" // we don't know the id, so ignoring it
+			results = append(results, recordSet)
 			return nil
 		})
 		return nil
 	})
 
-	if len(expected) != 0 {
-		t.Errorf("not all expected record-sets were created. Remained: %v", expected)
+	sortRecordSets := func(rs []*recordsets.RecordSet) {
+		sort.Slice(rs, func(i, j int) bool {
+			key1 := fmt.Sprintf("%s/%s", rs[i].Name, rs[i].Type)
+			key2 := fmt.Sprintf("%s/%s", rs[j].Name, rs[j].Type)
+			return key1 < key2
+		})
 	}
-	return expectedCopy
+	sortRecordSets(expected)
+	sortRecordSets(results)
+
+	if diff := cmp.Diff(expected, results); diff != "" {
+		t.Fatalf("unexpected results:\n%s", diff)
+	}
+}
+
+func setupPoplulatedDesignate(client *fakeDesignateClient) {
+	zone1ID := client.AddZone(zones.Zone{
+		ID:     "zone-1",
+		Name:   "example.com.",
+		Type:   "PRIMARY",
+		Status: "ACTIVE",
+	})
+	zone2ID := client.AddZone(zones.Zone{
+		ID:     "zone-2",
+		Name:   "test.net.",
+		Type:   "PRIMARY",
+		Status: "ACTIVE",
+	})
+	client.CreateRecordSet(zone1ID, recordsets.CreateOpts{
+		Name:    "ftp.example.com.",
+		Type:    endpoint.RecordTypeA,
+		Records: []string{"10.1.1.2"},
+	})
+	client.CreateRecordSet(zone2ID, recordsets.CreateOpts{
+		Name:    "srv.test.net.",
+		Type:    endpoint.RecordTypeTXT,
+		Records: []string{"hello world"},
+	})
 }
 
 func TestDesignateUpdateRecords(t *testing.T) {
 	client := newFakeDesignateClient()
-	testDesignateUpdateRecords(t, client)
-}
+	setupPoplulatedDesignate(client)
 
-func testDesignateUpdateRecords(t *testing.T, client *fakeDesignateClient) []*recordsets.RecordSet {
-	expected := testDesignateCreateRecords(t, client)
-
-	updatesOld := []*endpoint.Endpoint{
-		{
-			DNSName:    "ftp.example.com",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.1.1.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[2].ID,
-				designateOriginalRecords: "10.1.1.2",
-			},
-		},
-		{
-			DNSName:    "srv.test.net.",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
-			},
-		},
-	}
+	// NOTE: it is rather important to test TXT records here, since they
+	// are handled very differently in the registry stack
 	updatesNew := []*endpoint.Endpoint{
 		{
 			DNSName:    "ftp.example.com",
 			RecordType: endpoint.RecordTypeA,
 			Targets:    endpoint.Targets{"10.3.3.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[2].ID,
-				designateOriginalRecords: "10.1.1.2",
-			},
 		},
 		{
 			DNSName:    "srv.test.net.",
-			RecordType: endpoint.RecordTypeA,
+			RecordType: endpoint.RecordTypeTXT,
 			Targets:    endpoint.Targets{"10.3.3.2"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
-			},
 		},
 	}
-	expectedCopy := make([]*recordsets.RecordSet, len(expected))
-	copy(expectedCopy, expected)
+	expected := []*recordsets.RecordSet{
+		{
+			Name:    "ftp.example.com.",
+			Type:    endpoint.RecordTypeA,
+			Records: []string{"10.3.3.1"},
+			ZoneID:  "zone-1",
+		},
+		{
+			Name:    "srv.test.net.",
+			Type:    endpoint.RecordTypeTXT,
+			Records: []string{"10.3.3.2"},
+			ZoneID:  "zone-2",
+		},
+	}
 
-	expected[2].Records = []string{"10.3.3.1"}
-	expected[3].Records = []string{"10.2.1.1", "10.3.3.2"}
-
-	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{UpdateOld: updatesOld, UpdateNew: updatesNew})
+	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{UpdateNew: updatesNew})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	client.ForEachZone(func(zone *zones.Zone) error {
-		client.ForEachRecordSet(zone.ID, func(recordSet *recordsets.RecordSet) error {
-			for i, ex := range expected {
-				sort.Strings(recordSet.Records)
-				if reflect.DeepEqual(ex, recordSet) {
-					expected = append(expected[:i], expected[i+1:]...)
-					return nil
-				}
-			}
-			t.Errorf("unexpected record-set %s/%s -> %v", recordSet.Name, recordSet.Type, recordSet.Records)
-			return nil
-		})
-		return nil
-	})
-
-	if len(expected) != 0 {
-		t.Errorf("not all expected record-sets were updated. Remained: %v", expected)
-	}
-	return expectedCopy
+	verifyDesignateEntries(t, client, expected)
 }
 
 func TestDesignateDeleteRecords(t *testing.T) {
 	client := newFakeDesignateClient()
-	testDesignateDeleteRecords(t, client)
-}
+	setupPoplulatedDesignate(client)
 
-func testDesignateDeleteRecords(t *testing.T, client *fakeDesignateClient) {
-	expected := testDesignateUpdateRecords(t, client)
 	deletes := []*endpoint.Endpoint{
 		{
-			DNSName:    "www.example.com.",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.1.1.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-1",
-				designateRecordSetID:     expected[0].ID,
-				designateOriginalRecords: "10.1.1.1",
-			},
-		},
-		{
 			DNSName:    "srv.test.net.",
-			RecordType: endpoint.RecordTypeA,
+			RecordType: endpoint.RecordTypeTXT,
 			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels: map[string]string{
-				designateZoneID:          "zone-2",
-				designateRecordSetID:     expected[3].ID,
-				designateOriginalRecords: "10.2.1.1\00010.3.3.2",
-			},
 		},
 	}
-	expected[3].Records = []string{"10.3.3.2"}
-	expected = expected[1:]
-
+	expected := []*recordsets.RecordSet{
+		{
+			Name:    "ftp.example.com.",
+			Type:    endpoint.RecordTypeA,
+			Records: []string{"10.1.1.2"},
+			ZoneID:  "zone-1",
+		},
+	}
 	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Delete: deletes})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	client.ForEachZone(func(zone *zones.Zone) error {
-		client.ForEachRecordSet(zone.ID, func(recordSet *recordsets.RecordSet) error {
-			for i, ex := range expected {
-				sort.Strings(recordSet.Records)
-				if reflect.DeepEqual(ex, recordSet) {
-					expected = append(expected[:i], expected[i+1:]...)
-					return nil
-				}
-			}
-			t.Errorf("unexpected record-set %s/%s -> %v", recordSet.Name, recordSet.Type, recordSet.Records)
-			return nil
-		})
-		return nil
-	})
+	verifyDesignateEntries(t, client, expected)
+}
 
-	if len(expected) != 0 {
-		t.Errorf("not all expected record-sets were deleted. Remained: %v", expected)
+func TestRecordsCache(t *testing.T) {
+	client := newFakeDesignateClient()
+	provider := client.ToProvider()
+
+	provider.rsCache = map[string]*recordsets.RecordSet{
+		"something": {
+			Name: "www.example.com.",
+			Type: "CNAME",
+		},
 	}
+	provider.cacheRefresh = time.Now()
+	provider.cacheTimeout = 1 * time.Hour
+
+	managedZones := map[string]string{
+		"ZONEID": "example.com.",
+	}
+
+	expect := map[string]*recordsets.RecordSet{
+		"something": {
+			Name: "www.example.com.",
+			Type: "CNAME",
+		},
+	}
+
+	result, err := provider.getRecordSets(context.Background(), managedZones)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(expect, result); diff != "" {
+		t.Fatalf("unexpected recordSets:\n%s", diff)
+	}
+}
+
+func TestZoneCache(t *testing.T) {
+	client := newFakeDesignateClient()
+	provider := client.ToProvider()
+	provider.zoneCache = map[string]string{
+		"ZONEID": "example.com.",
+	}
+	provider.cacheRefresh = time.Now()
+	provider.cacheTimeout = 1 * time.Hour
+
+	expect := map[string]string{
+		"ZONEID": "example.com.",
+	}
+
+	result, err := provider.getZones()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(expect, result); diff != "" {
+		t.Fatalf("unexpceted zones:\n%s", diff)
+	}
+}
+
+func TestDryRun(t *testing.T) {
+	client := newFakeDesignateClient()
+	provider := client.ToProvider()
+	provider.dryRun = true
+
+	setupPoplulatedDesignate(client)
+
+	deletes := []*endpoint.Endpoint{
+		{
+			DNSName:    "srv.test.net.",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    endpoint.Targets{"hello world"},
+		},
+	}
+	updates := []*endpoint.Endpoint{
+		{
+			DNSName:    "srv.test.net.",
+			RecordType: endpoint.RecordTypeTXT,
+			Targets:    endpoint.Targets{"nothing special"},
+		},
+	}
+	expected := []*recordsets.RecordSet{
+		{
+			Name:    "ftp.example.com.",
+			Type:    endpoint.RecordTypeA,
+			Records: []string{"10.1.1.2"},
+			ZoneID:  "zone-1",
+		},
+		{
+			Name:    "srv.test.net.",
+			Type:    endpoint.RecordTypeTXT,
+			Records: []string{"hello world"},
+			ZoneID:  "zone-2",
+		},
+	}
+	err := provider.ApplyChanges(context.Background(), &plan.Changes{Delete: deletes, UpdateNew: updates})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	verifyDesignateEntries(t, client, expected)
 }
