@@ -77,7 +77,6 @@ func TestClientRecordSets(t *testing.T) {
 
 func setupTestServer() *httptest.Server {
 	dnsMux := http.NewServeMux()
-	ts := httptest.NewTLSServer(dnsMux)
 
 	dnsMux.Handle("/v2/zones", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -111,7 +110,7 @@ func setupTestServer() *httptest.Server {
 		            "region": "RegionOne",
 		            "region_id": "RegionOne",
 		            "interface": "public",
-		            "url": "` + ts.URL + `"
+		            "url": "https://` + r.Host + `"
 		          }
 		        ]
 		      }
@@ -119,8 +118,8 @@ func setupTestServer() *httptest.Server {
 		  }
 		}`))
 	}))
-	ts.Config = &http.Server{Handler: dnsMux}
-	return ts
+
+	return httptest.NewTLSServer(dnsMux)
 }
 
 func setupClientEnv(ts *httptest.Server) (*os.File, error) {
