@@ -44,6 +44,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
 	github.com/oracle/oci-go-sdk/v65 v65.41.0
 	github.com/ovh/go-ovh v1.4.1
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.5.1
 	github.com/projectcontour/contour v1.25.0
@@ -157,7 +158,6 @@ require (
 	github.com/oklog/ulid v1.3.1 // indirect
 	github.com/openshift/gssapi v0.0.0-20161010215902-5fb4217df13b // indirect
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
-	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/peterhellberg/link v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
