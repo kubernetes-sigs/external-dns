@@ -78,6 +78,7 @@ var (
 		"ap-northeast-3.elb.amazonaws.com":    "Z5LXEXXYW11ES",
 		"ap-southeast-1.elb.amazonaws.com":    "Z1LMS91P8CMLE5",
 		"ap-southeast-2.elb.amazonaws.com":    "Z1GM3OXH4ZPM65",
+		"ap-southeast-3.elb.amazonaws.com":    "Z08888821HLRG5A9ZRTER",
 		"ap-northeast-1.elb.amazonaws.com":    "Z14GRHDCWA56QT",
 		"eu-central-1.elb.amazonaws.com":      "Z215JYRZR1TBD5",
 		"eu-west-1.elb.amazonaws.com":         "Z32O12XQLNTSW2",
@@ -103,6 +104,7 @@ var (
 		"elb.ap-northeast-2.amazonaws.com":    "ZIBE1TIR4HY56",
 		"elb.ap-southeast-1.amazonaws.com":    "ZKVM4W9LS7TM",
 		"elb.ap-southeast-2.amazonaws.com":    "ZCT6FZBF4DROD",
+		"elb.ap-southeast-3.amazonaws.com":    "Z01971771FYVNCOVWJU1G",
 		"elb.ap-northeast-1.amazonaws.com":    "Z31USIVHYNEOWT",
 		"elb.eu-central-1.amazonaws.com":      "Z3F0SRJ5LGBH90",
 		"elb.eu-west-1.amazonaws.com":         "Z2IFOLAFXWLO4F",
@@ -886,6 +888,12 @@ func canonicalHostedZone(hostname string) string {
 		if strings.HasSuffix(hostname, suffix) {
 			return zone
 		}
+	}
+
+	if strings.HasSuffix(hostname, ".amazonaws.com") {
+		// hostname is an AWS hostname, but could not find canonical hosted zone.
+		// This could mean that a new region has been added but is not supported yet.
+		log.Warnf("Could not find canonical hosted zone for domain %s. This may be because your region is not supported yet.", hostname)
 	}
 
 	return ""
