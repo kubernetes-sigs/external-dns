@@ -142,6 +142,9 @@ require (
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.344
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.344
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.344
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.2 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
