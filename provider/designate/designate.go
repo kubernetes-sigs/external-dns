@@ -47,7 +47,7 @@ type designateProvider struct {
 
 	// cache zone answers
 	zoneMu    sync.Mutex
-	zoneCache map[string]string
+	zoneCache provider.ZoneIDName
 
 	// cache recordsets
 	rsMu    sync.Mutex
@@ -76,24 +76,13 @@ func NewDesignateProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*des
 func canonicalizeDomainNames(domains []string) []string {
 	var cDomains []string
 	for _, d := range domains {
-		if !strings.HasSuffix(d, ".") {
-			d += "."
-			cDomains = append(cDomains, strings.ToLower(d))
-		}
+		cDomains = append(cDomains, provider.EnsureTrailingDot(d))
 	}
 	return cDomains
 }
 
-// converts domain name to FQDN
-func canonicalizeDomainName(d string) string {
-	if !strings.HasSuffix(d, ".") {
-		d += "."
-	}
-	return strings.ToLower(d)
-}
-
 // returns ZoneID -> ZoneName mapping for zones that are managed by the Designate and match domain filter
-func (p *designateProvider) getZones() (map[string]string, error) {
+func (p *designateProvider) getZones() (provider.ZoneIDName, error) {
 	if p.zoneCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached zones")
 		p.zoneMu.Lock()
@@ -101,7 +90,7 @@ func (p *designateProvider) getZones() (map[string]string, error) {
 		return p.zoneCache, nil
 	}
 	log.Debug("Calculating zones")
-	result := map[string]string{}
+	result := provider.ZoneIDName{}
 
 	err := p.client.ForEachZone(
 		func(zone *zones.Zone) error {
@@ -109,7 +98,7 @@ func (p *designateProvider) getZones() (map[string]string, error) {
 				return nil
 			}
 
-			zoneName := canonicalizeDomainName(zone.Name)
+			zoneName := provider.EnsureTrailingDot(zone.Name)
 			if !p.domainFilter.Match(zoneName) {
 				return nil
 			}
@@ -124,25 +113,6 @@ func (p *designateProvider) getZones() (map[string]string, error) {
 	p.zoneMu.Unlock()
 
 	return result, err
-}
-
-// finds best suitable DNS zone for the hostname
-func (p *designateProvider) getHostZoneID(hostname string, managedZones map[string]string) (string, error) {
-	longestZoneLength := 0
-	resultID := ""
-
-	for zoneID, zoneName := range managedZones {
-		if !strings.HasSuffix(hostname, zoneName) {
-			continue
-		}
-		ln := len(zoneName)
-		if ln > longestZoneLength {
-			resultID = zoneID
-			longestZoneLength = ln
-		}
-	}
-
-	return resultID, nil
 }
 
 // Records returns the list of records.
@@ -165,7 +135,7 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	return result, err
 }
 
-func (p *designateProvider) getRecordSets(ctx context.Context, zones map[string]string) (map[string]*recordsets.RecordSet, error) {
+func (p *designateProvider) getRecordSets(ctx context.Context, zones provider.ZoneIDName) (map[string]*recordsets.RecordSet, error) {
 	if p.rsCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached recordSets")
 		p.rsMu.Lock()
@@ -228,12 +198,12 @@ type recordSet struct {
 
 // adds endpoint into recordset aggregation, loading original values from endpoint labels first
 func addEndpoint(ep *endpoint.Endpoint, existingRecordSets map[string]*recordsets.RecordSet, recordSets map[string]*recordSet, delete bool) {
-	key := fmt.Sprintf("%s/%s", canonicalizeDomainName(ep.DNSName), ep.RecordType)
+	key := fmt.Sprintf("%s/%s", provider.EnsureTrailingDot(ep.DNSName), ep.RecordType)
 	rs := recordSets[key]
 
 	if rs == nil {
 		rs = &recordSet{
-			dnsName:    canonicalizeDomainName(ep.DNSName),
+			dnsName:    provider.EnsureTrailingDot(ep.DNSName),
 			recordType: ep.RecordType,
 		}
 	}
@@ -296,23 +266,19 @@ func (p *designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 }
 
 // apply recordset changes by inserting/updating/deleting recordsets
-func (p *designateProvider) upsertRecordSet(rs *recordSet, managedZones map[string]string) error {
+func (p *designateProvider) upsertRecordSet(rs *recordSet, managedZones provider.ZoneIDName) error {
 	if rs.zoneID == "" {
-		var err error
-		rs.zoneID, err = p.getHostZoneID(rs.dnsName, managedZones)
-		if err != nil {
-			return err
-		}
+		rs.zoneID, _ = managedZones.FindZone(provider.EnsureTrailingDot(rs.dnsName))
 		if rs.zoneID == "" {
 			log.WithFields(log.Fields{
 				"dnsName": rs.dnsName,
-			}).Debug("Skipping record because no hosted zone matching record DNS Name was detected")
+			}).Warn("Skipping record because no hosted zone matching record DNS Name was detected")
 			return nil
 		}
 		log.WithFields(log.Fields{
 			"dnsName": rs.dnsName,
 			"zoneID":  rs.zoneID,
-		}).Debug("Fetched zoneID by getHostZoneID")
+		}).Debug("Fetched zoneID by FindZone")
 	}
 	if rs.recordSetID == "" && rs.targets == nil {
 		return nil

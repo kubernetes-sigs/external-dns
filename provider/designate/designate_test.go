@@ -35,6 +35,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	providerutil "sigs.k8s.io/external-dns/provider"
 )
 
 var lastGeneratedDesignateID int32
@@ -509,7 +510,7 @@ func TestRecordsCache(t *testing.T) {
 	provider.cacheRefresh = time.Now()
 	provider.cacheTimeout = 1 * time.Hour
 
-	managedZones := map[string]string{
+	managedZones := providerutil.ZoneIDName{
 		"ZONEID": "example.com.",
 	}
 
@@ -533,13 +534,13 @@ func TestRecordsCache(t *testing.T) {
 func TestZoneCache(t *testing.T) {
 	client := newFakeDesignateClient()
 	provider := client.ToProvider()
-	provider.zoneCache = map[string]string{
+	provider.zoneCache = providerutil.ZoneIDName{
 		"ZONEID": "example.com.",
 	}
 	provider.cacheRefresh = time.Now()
 	provider.cacheTimeout = 1 * time.Hour
 
-	expect := map[string]string{
+	expect := providerutil.ZoneIDName{
 		"ZONEID": "example.com.",
 	}
 
