@@ -279,8 +279,17 @@ func (p *designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 		addEndpoint(ep, existingRecordSets, recordSets, true)
 	}
 	for _, rs := range recordSets {
-		if err2 := p.upsertRecordSet(rs, managedZones); err == nil {
-			err = err2
+		if upsertErr := p.upsertRecordSet(rs, managedZones); upsertErr != nil {
+			log.WithFields(log.Fields{
+				"dnsName":    rs.dnsName,
+				"recordType": rs.recordType,
+				"content":    strings.Join(rs.targets, ","),
+				"zoneID":     rs.zoneID,
+			}).Error(upsertErr)
+			if err == nil {
+				// We only capture the first error and return it
+				err = upsertErr
+			}
 		}
 	}
 	return err
@@ -300,6 +309,10 @@ func (p *designateProvider) upsertRecordSet(rs *recordSet, managedZones map[stri
 			}).Debug("Skipping record because no hosted zone matching record DNS Name was detected")
 			return nil
 		}
+		log.WithFields(log.Fields{
+			"dnsName": rs.dnsName,
+			"zoneID":  rs.zoneID,
+		}).Debug("Fetched zoneID by getHostZoneID")
 	}
 	if rs.recordSetID == "" && rs.targets == nil {
 		return nil
@@ -314,6 +327,7 @@ func (p *designateProvider) upsertRecordSet(rs *recordSet, managedZones map[stri
 			"dnsName":    rs.dnsName,
 			"recordType": rs.recordType,
 			"content":    strings.Join(rs.targets, ","),
+			"zoneID":     rs.zoneID,
 		}).Info("Creating records")
 		if p.dryRun {
 			return nil
