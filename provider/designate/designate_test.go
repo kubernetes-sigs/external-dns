@@ -507,7 +507,7 @@ func TestRecordsCache(t *testing.T) {
 			Type: "CNAME",
 		},
 	}
-	provider.cacheRefresh = time.Now()
+	provider.rsCacheRefresh = time.Now()
 	provider.cacheTimeout = 1 * time.Hour
 
 	managedZones := providerutil.ZoneIDName{
@@ -537,7 +537,7 @@ func TestZoneCache(t *testing.T) {
 	provider.zoneCache = providerutil.ZoneIDName{
 		"ZONEID": "example.com.",
 	}
-	provider.cacheRefresh = time.Now()
+	provider.zoneCacheRefresh = time.Now()
 	provider.cacheTimeout = 1 * time.Hour
 
 	expect := providerutil.ZoneIDName{

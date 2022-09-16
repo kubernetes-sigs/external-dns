@@ -43,15 +43,16 @@ type designateProvider struct {
 
 	// cache Timeout
 	cacheTimeout time.Duration
-	cacheRefresh time.Time
 
 	// cache zone answers
-	zoneMu    sync.Mutex
-	zoneCache provider.ZoneIDName
+	zoneMu           sync.Mutex
+	zoneCache        provider.ZoneIDName
+	zoneCacheRefresh time.Time
 
 	// cache recordsets
-	rsMu    sync.Mutex
-	rsCache map[string]*recordsets.RecordSet
+	rsMu           sync.Mutex
+	rsCache        map[string]*recordsets.RecordSet
+	rsCacheRefresh time.Time
 }
 
 var (
@@ -83,7 +84,7 @@ func canonicalizeDomainNames(domains []string) []string {
 
 // returns ZoneID -> ZoneName mapping for zones that are managed by the Designate and match domain filter
 func (p *designateProvider) getZones() (provider.ZoneIDName, error) {
-	if p.zoneCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
+	if p.zoneCache != nil && time.Since(p.zoneCacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached zones")
 		p.zoneMu.Lock()
 		defer p.zoneMu.Unlock()
@@ -109,7 +110,7 @@ func (p *designateProvider) getZones() (provider.ZoneIDName, error) {
 
 	p.zoneMu.Lock()
 	p.zoneCache = result
-	p.cacheRefresh = time.Now()
+	p.zoneCacheRefresh = time.Now()
 	p.zoneMu.Unlock()
 
 	return result, err
@@ -136,7 +137,7 @@ func (p *designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 }
 
 func (p *designateProvider) getRecordSets(ctx context.Context, zones provider.ZoneIDName) (map[string]*recordsets.RecordSet, error) {
-	if p.rsCache != nil && time.Since(p.cacheRefresh) < p.cacheTimeout {
+	if p.rsCache != nil && time.Since(p.rsCacheRefresh) < p.cacheTimeout {
 		log.Debug("Returning cached recordSets")
 		p.rsMu.Lock()
 		defer p.rsMu.Unlock()
@@ -181,7 +182,7 @@ func (p *designateProvider) getRecordSets(ctx context.Context, zones provider.Zo
 
 	p.rsMu.Lock()
 	p.rsCache = recordSetsByZone
-	p.cacheRefresh = time.Now()
+	p.rsCacheRefresh = time.Now()
 	p.rsMu.Unlock()
 
 	return recordSetsByZone, nil
