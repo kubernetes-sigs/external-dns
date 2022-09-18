@@ -5,9 +5,10 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 ## Supported API Versions
 
-The currently supported version of Gateway API is v1alpha2. However, the maintainers of ExternalDNS
-make no backwards compatibility guarantees with alpha versions of the API. Future releases may only
-support beta or stable API versions.
+As the Gateway API is still in an experimental phase, ExternalDNS makes no backwards
+compatibilty guarantees regarding its support. However, it currently supports a mixture of
+v1alpha2 and v1beta1 APIs. Gateways and HTTPRoutes are supported using the v1beta1 API.
+TLSRoutes, TCPRoutes, and UDPRoutes are supported using the v1alpha2 API.
 
 ## Hostnames
 
