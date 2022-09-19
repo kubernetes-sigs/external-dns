@@ -75,6 +75,7 @@ func testTXTRegistryNew(t *testing.T) {
 }
 
 func testTXTRegistryRecords(t *testing.T) {
+	t.Run("With templated prefix", testTXTRegistryRecordsTemplatedPrefixed)
 	t.Run("With prefix", testTXTRegistryRecordsPrefixed)
 	t.Run("With suffix", testTXTRegistryRecordsSuffixed)
 	t.Run("No prefix", testTXTRegistryRecordsNoPrefix)
@@ -192,6 +193,35 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "", []string{})
 	records, _ = r.Records(ctx)
 
+	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
+}
+
+func testTXTRegistryRecordsTemplatedPrefixed(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwnerAndLabels("tar.test-zone.example.org", "tar.loadbalancer.com", endpoint.RecordTypeCNAME, "", endpoint.Labels{"tar": "sometar"}),
+			newEndpointWithOwner("prefix-cname.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""), // case-insensitive TXT prefix
+		},
+	})
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "tar.test-zone.example.org",
+			Targets:    endpoint.Targets{"tar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner-2",
+				"tar":                  "sometar",
+			},
+		},
+	}
+
+	r, _ := NewTXTRegistry(p, "prefix-%{record_type}.", "", "owner", time.Hour, "", []string{})
+	records, _ := r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
 }
 

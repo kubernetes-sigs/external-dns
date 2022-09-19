@@ -352,7 +352,7 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) string {
 	lowerDNSName := dropRecordType(strings.ToLower(txtDNSName))
 
 	// drop prefix
-	if strings.HasPrefix(lowerDNSName, pr.prefix) && pr.isPrefix() {
+	if pr.isPrefix() {
 		return pr.dropAffix(lowerDNSName)
 	}
 
