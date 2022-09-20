@@ -43,12 +43,13 @@ type updateRecordExoscale struct {
 	updateDNSRecord egoscale.UpdateDNSRecord
 }
 
-var createExoscale []createRecordExoscale
-var deleteExoscale []deleteRecordExoscale
-var updateExoscale []updateRecordExoscale
+var (
+	createExoscale []createRecordExoscale
+	deleteExoscale []deleteRecordExoscale
+	updateExoscale []updateRecordExoscale
+)
 
-type ExoscaleClientStub struct {
-}
+type ExoscaleClientStub struct{}
 
 func NewExoscaleClientStub() EgoscaleClientI {
 	ep := &ExoscaleClientStub{}
@@ -59,6 +60,7 @@ func (ep *ExoscaleClientStub) DeleteRecord(ctx context.Context, name string, rec
 	deleteExoscale = append(deleteExoscale, deleteRecordExoscale{name: name, recordID: recordID})
 	return nil
 }
+
 func (ep *ExoscaleClientStub) GetRecords(ctx context.Context, name string) ([]egoscale.DNSRecord, error) {
 	init := []egoscale.DNSRecord{
 		{ID: 0, Name: "v4.barfoo.com", RecordType: "ALIAS"},
@@ -79,14 +81,17 @@ func (ep *ExoscaleClientStub) GetRecords(ctx context.Context, name string) ([]eg
 
 	return rec, nil
 }
+
 func (ep *ExoscaleClientStub) UpdateRecord(ctx context.Context, name string, rec egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error) {
 	updateExoscale = append(updateExoscale, updateRecordExoscale{name: name, updateDNSRecord: rec})
 	return nil, nil
 }
+
 func (ep *ExoscaleClientStub) CreateRecord(ctx context.Context, name string, rec egoscale.DNSRecord) (*egoscale.DNSRecord, error) {
 	createExoscale = append(createExoscale, createRecordExoscale{name: name, rec: rec})
 	return nil, nil
 }
+
 func (ep *ExoscaleClientStub) GetDomains(ctx context.Context) ([]egoscale.DNSDomain, error) {
 	dom := []egoscale.DNSDomain{
 		{ID: 1, Name: "foo.com"},

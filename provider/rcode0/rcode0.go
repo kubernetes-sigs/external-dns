@@ -47,7 +47,6 @@ type RcodeZeroProvider struct {
 // Returns the provider or an error if a provider could not be created.
 func NewRcodeZeroProvider(domainFilter endpoint.DomainFilter, dryRun bool, txtEnc bool) (*RcodeZeroProvider, error) {
 	client, err := rc0.NewClient(os.Getenv("RC0_API_KEY"))
-
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +105,6 @@ func (p *RcodeZeroProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 	for _, zone := range zones {
 		rrset, err := p.fetchRecords(zone.Domain)
-
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +170,6 @@ func (p *RcodeZeroProvider) fetchRecords(zoneName string) ([]*rc0.RRType, error)
 
 	for {
 		records, page, err := p.Client.RRSet.List(zoneName, listOptions)
-
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +246,6 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 			switch change.ChangeType {
 			case rc0.ChangeTypeADD:
 				sr, err := p.Client.RRSet.Create(zoneName, []*rc0.RRSetChange{change})
-
 				if err != nil {
 					return err
 				}
@@ -260,7 +256,6 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 
 			case rc0.ChangeTypeUPDATE:
 				sr, err := p.Client.RRSet.Edit(zoneName, []*rc0.RRSetChange{change})
-
 				if err != nil {
 					return err
 				}
@@ -271,7 +266,6 @@ func (p *RcodeZeroProvider) submitChanges(changes []*rc0.RRSetChange) error {
 
 			case rc0.ChangeTypeDELETE:
 				sr, err := p.Client.RRSet.Delete(zoneName, []*rc0.RRSetChange{change})
-
 				if err != nil {
 					return err
 				}

@@ -62,7 +62,7 @@ type Route53APIStub struct {
 // MockMethod starts a description of an expectation of the specified method
 // being called.
 //
-//     Route53APIStub.MockMethod("MyMethod", arg1, arg2)
+//	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
 func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Call {
 	return r.m.On(method, args...)
 }
@@ -1241,7 +1241,6 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 
 	_, err = provider.Records(ctx)
 	require.NoError(t, err)
-
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
@@ -1301,6 +1300,7 @@ func escapeAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 		require.NoError(t, err)
 	}
 }
+
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
 	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }

@@ -76,7 +76,6 @@ func (m *mockUltraDNSRecord) Select(k udnssdk.RRSetKey) ([]udnssdk.RRSet, error)
 		RData:     []string{"1.1.1.1"},
 		TTL:       86400,
 	}}, nil
-
 }
 
 func (m *mockUltraDNSRecord) SelectWithOffset(k udnssdk.RRSetKey, offset int) ([]udnssdk.RRSet, udnssdk.ResultInfo, *http.Response, error) {
@@ -117,7 +116,7 @@ func TestNewUltraDNSProvider(t *testing.T) {
 	assert.NotNilf(t, err, "Expected to fail %s", "formatted")
 }
 
-//zones function test scenario
+// zones function test scenario
 func TestUltraDNSProvider_Zones(t *testing.T) {
 	mocked := mockUltraDNSZone{}
 	provider := &UltraDNSProvider{
@@ -136,10 +135,9 @@ func TestUltraDNSProvider_Zones(t *testing.T) {
 	zones, err := provider.Zones(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
-
 }
 
-//Records function test case
+// Records function test case
 func TestUltraDNSProvider_Records(t *testing.T) {
 	mocked := mockUltraDNSRecord{}
 	mockedDomain := mockUltraDNSZone{}
@@ -159,10 +157,9 @@ func TestUltraDNSProvider_Records(t *testing.T) {
 		assert.Equal(t, v.RecordType, expected[0].RRType)
 		assert.Equal(t, int(v.RecordTTL), expected[0].TTL)
 	}
-
 }
 
-//ApplyChanges function testcase
+// ApplyChanges function testcase
 func TestUltraDNSProvider_ApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
 	mocked := mockUltraDNSRecord{nil}
@@ -209,7 +206,7 @@ func TestUltraDNSProvider_getSpecificRecord(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-//Fail case scenario testing where CNAME and TXT Record name are same
+// Fail case scenario testing where CNAME and TXT Record name are same
 func TestUltraDNSProvider_ApplyChangesCNAME(t *testing.T) {
 	changes := &plan.Changes{}
 	mocked := mockUltraDNSRecord{nil}
@@ -233,11 +230,9 @@ func TestUltraDNSProvider_ApplyChangesCNAME(t *testing.T) {
 
 // This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be available "kubernetes-ultradns-provider-test.com"
 func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
-
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 
 		providerUltradns, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
@@ -271,7 +266,8 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		changes = &plan.Changes{}
 		changes.UpdateNew = []*endpoint.Endpoint{
 			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2"}, RecordType: "A", RecordTTL: 100},
-			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100}}
+			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
+		}
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
 		assert.Nil(t, err)
 
@@ -296,7 +292,8 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		changes = &plan.Changes{}
 		changes.Delete = []*endpoint.Endpoint{
 			{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"2001:0db8:85a3:0000:0000:8a2e:0370:7335"}, RecordType: "AAAA", RecordTTL: 100},
-			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2"}, RecordType: "A", RecordTTL: 100}}
+			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.2.2"}, RecordType: "A", RecordTTL: 100},
+		}
 
 		err = providerUltradns.ApplyChanges(context.Background(), changes)
 		assert.Nil(t, err)
@@ -308,7 +305,6 @@ func TestUltraDNSProvider_ApplyChanges_Integration(t *testing.T) {
 		assert.Equal(t, resp.Status, "404 Not Found")
 
 	}
-
 }
 
 // This will work if you would set the environment variables such as "ULTRADNS_INTEGRATION" and zone should be available "kubernetes-ultradns-provider-test.com" for multiple target
@@ -316,13 +312,13 @@ func TestUltraDNSProvider_ApplyChanges_MultipleTarget_integeration(t *testing.T)
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 
 		provider, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes := &plan.Changes{}
 		changes.Create = []*endpoint.Endpoint{
-			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.1.2.2"}, RecordType: "A"}}
+			{DNSName: "kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.1.2.2"}, RecordType: "A"},
+		}
 
 		err = provider.ApplyChanges(context.Background(), changes)
 		assert.Nil(t, err)
@@ -404,7 +400,7 @@ func TestUltraDNSProvider_newSBPoolObjectCreation(t *testing.T) {
 		},
 	}
 
-	for _, _ = range changesList.ResourceRecordSetUltraDNS.RData {
+	for range changesList.ResourceRecordSetUltraDNS.RData {
 
 		rrdataInfo := udnssdk.SBRDataInfo{
 			RunProbes: true,
@@ -428,15 +424,13 @@ func TestUltraDNSProvider_newSBPoolObjectCreation(t *testing.T) {
 
 	actualSBPoolObject, _ := provider.newSBPoolObjectCreation(context.Background(), changesList)
 	assert.Equal(t, sbPoolObject, actualSBPoolObject)
-
 }
 
-//Testcase to check fail scenario for multiple AAAA targets
+// Testcase to check fail scenario for multiple AAAA targets
 func TestUltraDNSProvider_MultipleTargetAAAA(t *testing.T) {
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
 
@@ -454,12 +448,11 @@ func TestUltraDNSProvider_MultipleTargetAAAA(t *testing.T) {
 	}
 }
 
-//Testcase to check fail scenario for multiple AAAA targets
+// Testcase to check fail scenario for multiple AAAA targets
 func TestUltraDNSProvider_MultipleTargetAAAARDPool(t *testing.T) {
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
@@ -491,7 +484,6 @@ func TestUltraDNSProvider_MultipleTargetCNAME(t *testing.T) {
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 		provider, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes := &plan.Changes{}
@@ -508,7 +500,7 @@ func TestUltraDNSProvider_MultipleTargetCNAME(t *testing.T) {
 	}
 }
 
-//Testing creation of RD Pool
+// Testing creation of RD Pool
 func TestUltraDNSProvider_newRDPoolObjectCreation(t *testing.T) {
 	mocked := mockUltraDNSRecord{nil}
 	mockedDomain := mockUltraDNSZone{nil}
@@ -538,10 +530,9 @@ func TestUltraDNSProvider_newRDPoolObjectCreation(t *testing.T) {
 
 	actualRDPoolObject, _ := provider.newRDPoolObjectCreation(context.Background(), changesList)
 	assert.Equal(t, rdPoolObject, actualRDPoolObject)
-
 }
 
-//Testing Failure scenarios over NewUltraDNS Provider
+// Testing Failure scenarios over NewUltraDNS Provider
 func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "")
@@ -590,7 +581,6 @@ func TestNewUltraDNSProvider_FailCases(t *testing.T) {
 	_ = os.Unsetenv("ULTRADNS_POOL_TYPE")
 	_, accounterr := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
 	assert.Nil(t, accounterr)
-
 }
 
 // Testing success scenarios for newly introduced environment variables
@@ -618,12 +608,10 @@ func TestNewUltraDNSProvider_NewEnvVariableSuccessCases(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ENABLE_ACTONPROBE", "true")
 	_, err2 := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
 	assert.Nilf(t, err2, "ActOnProbe given value is not working %s", "formatted")
-
 }
 
 // Base64 Bad string decoding scenario
 func TestNewUltraDNSProvider_Base64DecodeFailcase(t *testing.T) {
-
 	_ = os.Setenv("ULTRADNS_USERNAME", "")
 	_ = os.Setenv("ULTRADNS_PASSWORD", "12345")
 	_ = os.Setenv("ULTRADNS_BASEURL", "")
@@ -631,17 +619,14 @@ func TestNewUltraDNSProvider_Base64DecodeFailcase(t *testing.T) {
 	_ = os.Setenv("ULTRADNS_ENABLE_ACTONPROBE", "true")
 	_, err := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"test-ultradns-provider.com"}), true)
 	assert.NotNilf(t, err, "Base64 decode should fail in this case %s", "formatted")
-
 }
 
 func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
-
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
-		//Creating SBPool Record
+		// Creating SBPool Record
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes := &plan.Changes{}
@@ -652,7 +637,7 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 		resp, _ := provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
 
-		//Converting to RD Pool
+		// Converting to RD Pool
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "rdpool")
 		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes = &plan.Changes{}
@@ -662,7 +647,7 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
 
-		//Converting back to SB Pool
+		// Converting back to SB Pool
 		_ = os.Setenv("ULTRADNS_POOL_TYPE", "sbpool")
 		provider, _ = NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com"}), false)
 		changes = &plan.Changes{}
@@ -672,7 +657,7 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 		resp, _ = provider.client.Do("GET", "zones/kubernetes-ultradns-provider-test.com./rrsets/A/ttl.kubernetes-ultradns-provider-test.com.", nil, udnssdk.RRSetListDTO{})
 		assert.Equal(t, resp.Status, "200 OK")
 
-		//Deleting Record
+		// Deleting Record
 		changes = &plan.Changes{}
 		changes.Delete = []*endpoint.Endpoint{{DNSName: "ttl.kubernetes-ultradns-provider-test.com", Targets: endpoint.Targets{"1.1.1.1", "1.2.3.4"}, RecordType: "A"}}
 		err = provider.ApplyChanges(context.Background(), changes)
@@ -683,11 +668,9 @@ func TestUltraDNSProvider_PoolConversionCase(t *testing.T) {
 }
 
 func TestUltraDNSProvider_DomainFilter(t *testing.T) {
-
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com", "kubernetes-ultradns-provider-test.com"}), true)
 		zones, err := provider.Zones(context.Background())
@@ -703,11 +686,9 @@ func TestUltraDNSProvider_DomainFilter(t *testing.T) {
 }
 
 func TestUltraDNSProvider_DomainFiltersZonesFailCase(t *testing.T) {
-
 	_, ok := os.LookupEnv("ULTRADNS_INTEGRATION")
 	if !ok {
 		log.Printf("Skipping test")
-
 	} else {
 		provider, _ := NewUltraDNSProvider(endpoint.NewDomainFilter([]string{"kubernetes-ultradns-provider-test.com", "kubernetes-uldsvdsvadvvdsvadvstradns-provider-test.com"}), true)
 		_, err := provider.Zones(context.Background())
@@ -715,7 +696,7 @@ func TestUltraDNSProvider_DomainFiltersZonesFailCase(t *testing.T) {
 	}
 }
 
-//zones function with domain filter test scenario
+// zones function with domain filter test scenario
 func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 	mocked := mockUltraDNSZone{}
 	provider := &UltraDNSProvider{
@@ -756,7 +737,7 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
 
-	//When zone is not given but account is provided
+	// When zone is not given but account is provided
 	provider = &UltraDNSProvider{
 		client: udnssdk.Client{
 			Zone: &mocked,
@@ -772,5 +753,4 @@ func TestUltraDNSProvider_DomainFilterZonesMocked(t *testing.T) {
 	zones, err = provider.Zones(context.Background())
 	assert.Nil(t, err)
 	assert.Equal(t, reflect.DeepEqual(expected, zones), true)
-
 }

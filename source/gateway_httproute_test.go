@@ -446,7 +446,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gatewayParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+			},
 		},
 		{
 			title:      "WildcardInRoute",
@@ -472,7 +473,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gatewayParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+			},
 		},
 		{
 			title:      "WildcardInRouteAndGateway",
@@ -498,7 +500,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gatewayParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("*.example.internal", "A", "1.2.3.4")},
+				newTestEndpoint("*.example.internal", "A", "1.2.3.4"),
+			},
 		},
 		{
 			title:      "NoRouteHostname",
@@ -522,7 +525,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gatewayParentRef("default", "test")),
 			}},
 			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("foo.example.internal", "A", "1.2.3.4")},
+				newTestEndpoint("foo.example.internal", "A", "1.2.3.4"),
+			},
 		},
 		{
 			title:      "NoGateways",

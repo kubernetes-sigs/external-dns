@@ -419,7 +419,6 @@ func TestInfobloxRecords(t *testing.T) {
 
 	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
 	actual, err := providerCfg.Records(context.Background())
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -471,7 +470,6 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 }
 
 func TestInfobloxRecordsReverse(t *testing.T) {
-
 	client := mockIBConnector{
 		mockInfobloxZones: &[]ibclient.ZoneAuth{
 			createMockInfobloxZone("10.0.0.0/24"),
@@ -485,7 +483,6 @@ func TestInfobloxRecordsReverse(t *testing.T) {
 
 	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
 	actual, err := providerCfg.Records(context.Background())
-
 	if err != nil {
 		t.Fatal(err)
 	}

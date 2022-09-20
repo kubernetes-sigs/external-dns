@@ -66,7 +66,8 @@ func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string) (Source, error) {
+	namespace string,
+) (Source, error) {
 	var err error
 
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
