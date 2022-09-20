@@ -265,7 +265,7 @@ func APIRecord(apiAction Action, request string, response string) {
 	message := fmt.Sprintf("APIRecord API: %s/%s Request: %s, Response: %s", apiAction.Service, apiAction.Name, request, response)
 
 	if apiAction.ReadOnly {
-		//log.Infof(message)
+		// log.Infof(message)
 	} else {
 		log.Infof(message)
 	}

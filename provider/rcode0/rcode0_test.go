@@ -53,7 +53,6 @@ func (m *mockZoneManagementService) resetTestConditions() {
 }
 
 func TestRcodeZeroProvider_Records(t *testing.T) {
-
 	mockRRSetService := &mockRRSetService{}
 	mockZoneManagementService := &mockZoneManagementService{}
 
@@ -67,7 +66,6 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 	ctx := context.Background()
 
 	endpoints, err := provider.Records(ctx) // should return 6 rrs
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -79,11 +77,9 @@ func TestRcodeZeroProvider_Records(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}
-
 }
 
 func TestRcodeZeroProvider_ApplyChanges(t *testing.T) {
-
 	mockRRSetService := &mockRRSetService{}
 	mockZoneManagementService := &mockZoneManagementService{}
 
@@ -98,15 +94,12 @@ func TestRcodeZeroProvider_ApplyChanges(t *testing.T) {
 	changes := mockChanges()
 
 	err := provider.ApplyChanges(context.Background(), changes)
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-
 }
 
 func TestRcodeZeroProvider_NewRcodezeroChanges(t *testing.T) {
-
 	provider := &RcodeZeroProvider{}
 
 	changes := mockChanges()
@@ -125,7 +118,6 @@ func TestRcodeZeroProvider_NewRcodezeroChanges(t *testing.T) {
 }
 
 func TestRcodeZeroProvider_NewRcodezeroChange(t *testing.T) {
-
 	_endpoint := &endpoint.Endpoint{
 		RecordType: "A",
 		DNSName:    "app." + testZoneOne,
@@ -140,12 +132,10 @@ func TestRcodeZeroProvider_NewRcodezeroChange(t *testing.T) {
 	require.Equal(t, _endpoint.RecordType, rrsetChange.Type)
 	require.Equal(t, _endpoint.DNSName, rrsetChange.Name)
 	require.Equal(t, _endpoint.Targets[0], rrsetChange.Records[0].Content)
-	//require.Equal(t, endpoint.RecordTTL, rrsetChange.TTL)
-
+	// require.Equal(t, endpoint.RecordTTL, rrsetChange.TTL)
 }
 
 func Test_submitChanges(t *testing.T) {
-
 	mockRRSetService := &mockRRSetService{}
 	mockZoneManagementService := &mockZoneManagementService{}
 
@@ -164,11 +154,9 @@ func Test_submitChanges(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}
-
 }
 
 func mockRRSetChanges(condition int) []*rc0.RRSetChange {
-
 	switch condition {
 	case rrsetChangesUnsupportedChangeType:
 		return []*rc0.RRSetChange{
@@ -185,7 +173,6 @@ func mockRRSetChanges(condition int) []*rc0.RRSetChange {
 }
 
 func mockChanges() *plan.Changes {
-
 	changes := &plan.Changes{}
 
 	changes.Create = []*endpoint.Endpoint{
@@ -202,7 +189,6 @@ func mockChanges() *plan.Changes {
 }
 
 func TestRcodeZeroProvider_Zones(t *testing.T) {
-
 	mockRRSetService := &mockRRSetService{}
 	mockZoneManagementService := &mockZoneManagementService{}
 
@@ -216,7 +202,6 @@ func TestRcodeZeroProvider_Zones(t *testing.T) {
 	mockZoneManagementService.TestNilZonesReturned = true
 
 	zones, err := provider.Zones()
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,14 +214,11 @@ func TestRcodeZeroProvider_Zones(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail, %s", err)
 	}
-
 }
 
 func TestNewRcodeZeroProvider(t *testing.T) {
-
 	_ = os.Setenv("RC0_API_KEY", "123")
 	p, err := NewRcodeZeroProvider(endpoint.NewDomainFilter([]string{"ext-dns-test." + testZoneOne + "."}), true, true)
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -262,13 +244,11 @@ func TestNewRcodeZeroProvider(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
-
 }
 
 /* mocking mockRRSetServiceInterface */
 
 func (m *mockRRSetService) List(zone string, options *rc0.ListOptions) ([]*rc0.RRType, *rc0.Page, error) {
-
 	if m.TestErrorReturned {
 		return nil, nil, fmt.Errorf("operation RRSet.List failed")
 	}
@@ -341,20 +321,18 @@ func mockRRSet(zone string) []*rc0.RRType {
 }
 
 func (m *mockRRSetService) Create(zone string, rrsetCreate []*rc0.RRSetChange) (*rc0.StatusResponse, error) {
-
 	return &rc0.StatusResponse{Status: "ok", Message: "pass"}, nil
-
 }
+
 func (m *mockRRSetService) Edit(zone string, rrsetEdit []*rc0.RRSetChange) (*rc0.StatusResponse, error) {
-
 	return &rc0.StatusResponse{Status: "ok", Message: "pass"}, nil
 }
+
 func (m *mockRRSetService) Delete(zone string, rrsetDelete []*rc0.RRSetChange) (*rc0.StatusResponse, error) {
-
 	return &rc0.StatusResponse{Status: "ok", Message: "pass"}, nil
 }
-func (m *mockRRSetService) SubmitChangeSet(zone string, changeSet []*rc0.RRSetChange) (*rc0.StatusResponse, error) {
 
+func (m *mockRRSetService) SubmitChangeSet(zone string, changeSet []*rc0.RRSetChange) (*rc0.StatusResponse, error) {
 	return &rc0.StatusResponse{Status: "ok", Message: "pass"}, nil
 }
 
@@ -365,7 +343,6 @@ func (m *mockRRSetService) DecryptTXT(key []byte, rrType *rc0.RRType) {}
 /* mocking ZoneManagementServiceInterface */
 
 func (m *mockZoneManagementService) List(options *rc0.ListOptions) ([]*rc0.Zone, *rc0.Page, error) {
-
 	if m.TestNilZonesReturned {
 		return nil, nil, nil
 	}
@@ -407,6 +384,7 @@ func (m *mockZoneManagementService) Get(zone string) (*rc0.Zone, error) { return
 func (m *mockZoneManagementService) Create(zoneCreate *rc0.ZoneCreate) (*rc0.StatusResponse, error) {
 	return nil, nil
 }
+
 func (m *mockZoneManagementService) Edit(zone string, zoneEdit *rc0.ZoneEdit) (*rc0.StatusResponse, error) {
 	return nil, nil
 }

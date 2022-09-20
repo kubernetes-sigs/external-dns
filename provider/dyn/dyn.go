@@ -252,9 +252,9 @@ func apiRetryLoop(f func() error) error {
 
 func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsResponseType) []*endpoint.Endpoint {
 	result := []*endpoint.Endpoint{}
-	//Convert each record to an endpoint
+	// Convert each record to an endpoint
 
-	//Process A Records
+	// Process A Records
 	for _, rec := range records.Data.A_records {
 		ep := &endpoint.Endpoint{
 			DNSName:    rec.Fqdn,
@@ -266,7 +266,7 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsR
 		result = append(result, ep)
 	}
 
-	//Process CNAME Records
+	// Process CNAME Records
 	for _, rec := range records.Data.Cname_records {
 		ep := &endpoint.Endpoint{
 			DNSName:    rec.Fqdn,
@@ -278,7 +278,7 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsR
 		result = append(result, ep)
 	}
 
-	//Process TXT Records
+	// Process TXT Records
 	for _, rec := range records.Data.Txt_records {
 		ep := &endpoint.Endpoint{
 			DNSName:    rec.Fqdn,
@@ -321,7 +321,6 @@ func (d *dynProviderState) fetchZoneSerial(client *dynect.Client, zone string) (
 	var resp dynect.ZoneResponse
 
 	err := client.Do("GET", fmt.Sprintf("Zone/%s", zone), nil, &resp)
-
 	if err != nil {
 		return 0, err
 	}
@@ -329,7 +328,7 @@ func (d *dynProviderState) fetchZoneSerial(client *dynect.Client, zone string) (
 	return resp.Data.Serial, nil
 }
 
-//Use SOAP to fetch all records with a single call
+// Use SOAP to fetch all records with a single call
 func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynsoap.GetAllRecordsResponseType, error) {
 	var err error
 
@@ -368,7 +367,7 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynsoap.GetAllRe
 		Fault_incompat: 0,
 	}
 
-	var records = &dynsoap.GetAllRecordsResponseType{}
+	records := &dynsoap.GetAllRecordsResponseType{}
 
 	err = apiRetryLoop(func() error {
 		records, err = service.GetAllRecords(&req)
@@ -388,7 +387,7 @@ func (d *dynProviderState) fetchAllRecordsInZone(zone string) (*dynsoap.GetAllRe
 			Fault_incompat: 0,
 		}
 
-		var jobResults = dynsoap.GetJobResponseType{}
+		jobResults := dynsoap.GetJobResponseType{}
 		err = apiRetryLoop(func() error {
 			jobResults, err := service.GetJob(&jobRequest)
 			if strings.ToLower(jobResults.Status) == "incomplete" {
@@ -415,7 +414,7 @@ func (d *dynProviderState) buildLinkToRecord(ep *endpoint.Endpoint) string {
 	if ep == nil {
 		return ""
 	}
-	var matchingZone = ""
+	matchingZone := ""
 	for _, zone := range d.ZoneIDFilter.ZoneIDs {
 		if strings.HasSuffix(ep.DNSName, zone) {
 			matchingZone = zone
@@ -448,10 +447,11 @@ func (d *dynProviderState) login() (*dynect.Client, error) {
 	}
 	client := dynect.NewClient(d.CustomerName)
 
-	var req = dynect.LoginBlock{
+	req := dynect.LoginBlock{
 		Username:     d.Username,
 		Password:     d.Password,
-		CustomerName: d.CustomerName}
+		CustomerName: d.CustomerName,
+	}
 
 	var resp dynect.LoginResponse
 
@@ -618,7 +618,7 @@ func (d *dynProviderState) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		//Fetch All Records
+		// Fetch All Records
 		records, err := d.fetchAllRecordsInZone(zone)
 		if err != nil {
 			return nil, err

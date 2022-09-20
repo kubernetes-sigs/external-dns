@@ -536,6 +536,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
+
 func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
@@ -579,6 +580,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
+
 func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)

@@ -18,21 +18,22 @@ package tencentcloud
 
 import (
 	"context"
+	"testing"
+
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	dnspod "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod/v20210323"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/tencentcloud/cloudapi"
-	"testing"
 
 	privatedns "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns/v20201028"
 )
 
 func NewMockTencentCloudProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneType string) *TencentCloudProvider {
 	cfg := tencentCloudConfig{
-		//SecretId:  "",
-		//SecretKey: "",
+		// SecretId:  "",
+		// SecretKey: "",
 		RegionId: "ap-shanghai",
 		VPCId:    "vpc-abcdefg",
 	}

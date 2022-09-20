@@ -94,13 +94,13 @@ var internalProxySvc = corev1.Service{
 	Status: corev1.ServiceStatus{
 		LoadBalancer: corev1.LoadBalancerStatus{
 			Ingress: []corev1.LoadBalancerIngress{
-				corev1.LoadBalancerIngress{
+				{
 					IP: "203.0.113.1",
 				},
-				corev1.LoadBalancerIngress{
+				{
 					IP: "203.0.113.2",
 				},
-				corev1.LoadBalancerIngress{
+				{
 					IP: "203.0.113.3",
 				},
 			},
@@ -181,13 +181,13 @@ var externalProxySvc = corev1.Service{
 	Status: corev1.ServiceStatus{
 		LoadBalancer: corev1.LoadBalancerStatus{
 			Ingress: []corev1.LoadBalancerIngress{
-				corev1.LoadBalancerIngress{
+				{
 					Hostname: "a.example.org",
 				},
-				corev1.LoadBalancerIngress{
+				{
 					Hostname: "b.example.org",
 				},
-				corev1.LoadBalancerIngress{
+				{
 					Hostname: "c.example.org",
 				},
 			},
@@ -270,7 +270,7 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, endpoints, 5)
 	assert.ElementsMatch(t, endpoints, []*endpoint.Endpoint{
-		&endpoint.Endpoint{
+		{
 			DNSName:          "a.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
 			RecordType:       endpoint.RecordTypeA,
@@ -278,7 +278,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
 		},
-		&endpoint.Endpoint{
+		{
 			DNSName:          "b.test",
 			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
 			RecordType:       endpoint.RecordTypeA,
@@ -286,7 +286,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
 		},
-		&endpoint.Endpoint{
+		{
 			DNSName:       "c.test",
 			Targets:       []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
 			RecordType:    endpoint.RecordTypeA,
@@ -300,7 +300,7 @@ func TestGlooSource(t *testing.T) {
 				},
 			},
 		},
-		&endpoint.Endpoint{
+		{
 			DNSName:          "d.test",
 			Targets:          []string{externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname},
 			RecordType:       endpoint.RecordTypeCNAME,
@@ -308,7 +308,7 @@ func TestGlooSource(t *testing.T) {
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
 		},
-		&endpoint.Endpoint{
+		{
 			DNSName:       "e.test",
 			Targets:       []string{externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname},
 			RecordType:    endpoint.RecordTypeCNAME,

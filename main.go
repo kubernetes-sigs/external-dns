@@ -341,7 +341,7 @@ func main() {
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
 	case "plural":
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-        case "tencentcloud":
+	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)

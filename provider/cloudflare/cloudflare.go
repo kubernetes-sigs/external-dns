@@ -96,9 +96,11 @@ func (z zoneService) CreateDNSRecord(ctx context.Context, zoneID string, rr clou
 func (z zoneService) DNSRecords(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	return z.service.DNSRecords(ctx, zoneID, rr)
 }
+
 func (z zoneService) UpdateDNSRecord(ctx context.Context, zoneID, recordID string, rr cloudflare.DNSRecord) error {
 	return z.service.UpdateDNSRecord(ctx, zoneID, recordID, rr)
 }
+
 func (z zoneService) DeleteDNSRecord(ctx context.Context, zoneID, recordID string) error {
 	return z.service.DeleteDNSRecord(ctx, zoneID, recordID)
 }
@@ -145,7 +147,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
 	}
 	provider := &CloudFlareProvider{
-		//Client: config,
+		// Client: config,
 		Client:           zoneService{config},
 		domainFilter:     domainFilter,
 		zoneIDFilter:     zoneIDFilter,

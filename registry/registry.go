@@ -38,7 +38,7 @@ type Registry interface {
 	MissingRecords() []*endpoint.Endpoint
 }
 
-//TODO(ideahitme): consider moving this to Plan
+// TODO(ideahitme): consider moving this to Plan
 func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 	for _, ep := range eps {
