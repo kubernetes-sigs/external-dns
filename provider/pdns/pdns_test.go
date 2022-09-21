@@ -540,18 +540,20 @@ var (
 
 /******************************************************************************/
 // API that returns a zone with multiple record types
-type PDNSAPIClientStub struct {
-}
+type PDNSAPIClientStub struct{}
 
 func (c *PDNSAPIClientStub) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneMixed}, nil, nil
 }
+
 func (c *PDNSAPIClientStub) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	return zones, nil
 }
+
 func (c *PDNSAPIClientStub) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 	return ZoneMixed, nil, nil
 }
+
 func (c *PDNSAPIClientStub) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
 	return nil, nil
 }
@@ -566,11 +568,12 @@ type PDNSAPIClientStubEmptyZones struct {
 func (c *PDNSAPIClientStubEmptyZones) ListZones() ([]pgo.Zone, *http.Response, error) {
 	return []pgo.Zone{ZoneEmpty, ZoneEmptyLong, ZoneEmpty2}, nil, nil
 }
+
 func (c *PDNSAPIClientStubEmptyZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	return zones, nil
 }
-func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 
+func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 	if strings.Contains(zoneID, "example.com") {
 		return ZoneEmpty, nil, nil
 	} else if strings.Contains(zoneID, "mock.test") {
@@ -579,8 +582,8 @@ func (c *PDNSAPIClientStubEmptyZones) ListZone(zoneID string) (pgo.Zone, *http.R
 		return ZoneEmptyLong, nil, nil
 	}
 	return pgo.Zone{}, nil, nil
-
 }
+
 func (c *PDNSAPIClientStubEmptyZones) PatchZone(zoneID string, zoneStruct pgo.Zone) (*http.Response, error) {
 	c.patchedZones = append(c.patchedZones, zoneStruct)
 	return nil, nil
@@ -608,7 +611,6 @@ type PDNSAPIClientStubListZoneFailure struct {
 // Just overwrite the ListZone method to introduce a failure
 func (c *PDNSAPIClientStubListZoneFailure) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
 	return pgo.Zone{}, nil, errors.New("Generic PDNS Error")
-
 }
 
 /******************************************************************************/
@@ -635,7 +637,6 @@ func (c *PDNSAPIClientStubPartitionZones) ListZones() ([]pgo.Zone, *http.Respons
 }
 
 func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *http.Response, error) {
-
 	if strings.Contains(zoneID, "example.com") {
 		return ZoneEmpty, nil, nil
 	} else if strings.Contains(zoneID, "mock.test") {
@@ -651,7 +652,6 @@ func (c *PDNSAPIClientStubPartitionZones) ListZone(zoneID string) (pgo.Zone, *ht
 // Just overwrite the ListZones method to introduce a failure
 func (c *PDNSAPIClientStubPartitionZones) PartitionZones(zones []pgo.Zone) ([]pgo.Zone, []pgo.Zone) {
 	return []pgo.Zone{ZoneEmpty}, []pgo.Zone{ZoneEmptyLong, ZoneEmpty2}
-
 }
 
 /******************************************************************************/
@@ -661,7 +661,6 @@ type NewPDNSProviderTestSuite struct {
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
-
 	_, err := NewPDNSProvider(
 		context.Background(),
 		PDNSConfig{
@@ -701,7 +700,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
-
 	_, err := NewPDNSProvider(
 		context.Background(),
 		PDNSConfig{
@@ -829,7 +827,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
 	eps, err = p.convertRRSetToEndpoints(RRSetDisabledRecord)
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), endpointsDisabledRecord, eps)
-
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
@@ -861,7 +858,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSRecords() {
 	}
 	_, err = p.Records(ctx)
 	assert.NotNil(suite.T(), err)
-
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
@@ -996,7 +992,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSmutateRecords() {
 	// Check inserting endpoints from a single zone
 	err = p.mutateRecords(endpointsSimpleRecord, pdnsChangeType("REPLACE"))
 	assert.NotNil(suite.T(), err)
-
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {

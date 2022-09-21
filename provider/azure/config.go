@@ -109,7 +109,6 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 			token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, &adal.ManagedIdentityOptions{
 				ClientID: cfg.UserAssignedIdentityID,
 			})
-
 			if err != nil {
 				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 			}

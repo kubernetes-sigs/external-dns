@@ -108,7 +108,7 @@ func testNoopApplyChanges(t *testing.T) {
 	})
 	assert.EqualError(t, err, inmemory.ErrRecordAlreadyExists.Error())
 
-	//correct changes
+	// correct changes
 	require.NoError(t, r.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			{

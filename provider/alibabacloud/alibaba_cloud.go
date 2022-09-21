@@ -433,7 +433,6 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 	request.PageNumber = "1"
 	for {
 		response, err := p.getDNSClient().DescribeDomainRecords(request)
-
 		if err != nil {
 			log.Errorf("Failed to describe domain records for Alibaba Cloud DNS: %v", err)
 			return nil, err
@@ -449,7 +448,7 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 			if !provider.SupportedRecordType(recordType) {
 				continue
 			}
-			//TODO filter Locked record
+			// TODO filter Locked record
 			results = append(results, record)
 		}
 		nextPage := getNextPageNumber(response.PageNumber, defaultAlibabaCloudPageSize, response.TotalCount)
@@ -761,7 +760,6 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 	recordsCount := 0
 
 	zones, err := p.privateZones()
-
 	if err != nil {
 		return nil, err
 	}
@@ -776,7 +774,6 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 
 		for {
 			response, err := p.getPvtzClient().DescribeZoneRecords(request)
-
 			if err != nil {
 				log.Errorf("Failed to describe zone record '%s' in Alibaba Cloud DNS: %v", zone.ZoneId, err)
 				return nil, err
@@ -789,7 +786,7 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 					continue
 				}
 
-				//TODO filter Locked
+				// TODO filter Locked
 				records = append(records, record)
 			}
 			nextPage := getNextPageNumber(int64(response.PageNumber), defaultAlibabaCloudPageSize, int64(response.TotalItems))

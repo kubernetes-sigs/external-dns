@@ -156,7 +156,6 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	requestor := &ibclient.WapiHttpRequestor{}
 
 	client, err := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, requestor)
-
 	if err != nil {
 		return nil, err
 	}

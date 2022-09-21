@@ -69,17 +69,15 @@ type rfc2136Provider struct {
 	actions      rfc2136Actions
 }
 
-var (
-	// Map of supported TSIG algorithms
-	tsigAlgs = map[string]string{
-		"hmac-md5":    dns.HmacMD5,
-		"hmac-sha1":   dns.HmacSHA1,
-		"hmac-sha224": dns.HmacSHA224,
-		"hmac-sha256": dns.HmacSHA256,
-		"hmac-sha384": dns.HmacSHA384,
-		"hmac-sha512": dns.HmacSHA512,
-	}
-)
+// Map of supported TSIG algorithms
+var tsigAlgs = map[string]string{
+	"hmac-md5":    dns.HmacMD5,
+	"hmac-sha1":   dns.HmacSHA1,
+	"hmac-sha224": dns.HmacSHA224,
+	"hmac-sha256": dns.HmacSHA256,
+	"hmac-sha384": dns.HmacSHA384,
+	"hmac-sha512": dns.HmacSHA512,
+}
 
 type rfc2136Actions interface {
 	SendMessage(msg *dns.Msg) error
@@ -347,7 +345,7 @@ func (r rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newE
 func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
-	var ttl = int64(r.minTTL.Seconds())
+	ttl := int64(r.minTTL.Seconds())
 	if ep.RecordTTL.IsConfigured() && int64(ep.RecordTTL) > ttl {
 		ttl = int64(ep.RecordTTL)
 	}

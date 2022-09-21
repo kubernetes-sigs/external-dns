@@ -329,7 +329,6 @@ func TestDesignateCreateRecords(t *testing.T) {
 }
 
 func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*recordsets.RecordSet {
-
 	for i, zoneName := range []string{"example.com.", "test.net."} {
 		client.AddZone(zones.Zone{
 			ID:     fmt.Sprintf("zone-%d", i+1),

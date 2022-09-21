@@ -176,7 +176,6 @@ func GetBluecatGatewayToken(cfg BluecatConfig) (string, http.Cookie, error) {
 	url := cfg.GatewayHost + "/rest_login"
 
 	response, err := executeHTTPRequest(cfg.SkipTLSVerify, http.MethodPost, url, "", bytes.NewBuffer(body), http.Cookie{})
-
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "error obtaining API token from bluecat gateway")
 	}

@@ -31,7 +31,7 @@ func removeLinkPrefixInIndex() {
 	updatedContent := strings.ReplaceAll(string(content), "](./docs/", "](")
 	updatedContent = strings.ReplaceAll(updatedContent, "](docs/", "](")
 
-	f, err := os.OpenFile("./docs/index.md", os.O_RDWR, 0644)
+	f, err := os.OpenFile("./docs/index.md", os.O_RDWR, 0o644)
 	if err != nil {
 		log.Fatalf("Could not open index.md file to update content. Original error: %s", err)
 	}

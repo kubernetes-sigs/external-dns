@@ -70,7 +70,6 @@ func newPluralProvider(pluralDNSRecord []*DnsRecord) *PluralProvider {
 }
 
 func TestPluralRecords(t *testing.T) {
-
 	tests := []struct {
 		name              string
 		expectedEndpoints []*endpoint.Endpoint
@@ -136,11 +135,9 @@ func TestPluralRecords(t *testing.T) {
 			validateEndpoints(t, actual, test.expectedEndpoints)
 		})
 	}
-
 }
 
 func TestPluralApplyChangesCreate(t *testing.T) {
-
 	tests := []struct {
 		name              string
 		expectedEndpoints []*endpoint.Endpoint
@@ -198,7 +195,6 @@ func TestPluralApplyChangesCreate(t *testing.T) {
 }
 
 func TestPluralApplyChangesDelete(t *testing.T) {
-
 	tests := []struct {
 		name              string
 		records           []*DnsRecord

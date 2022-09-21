@@ -255,11 +255,10 @@ func newKongUnstructuredConverter() (*unstructuredConverter, error) {
 	return uc, nil
 }
 
-//Kong types based on https://github.com/Kong/kubernetes-ingress-controller/blob/v1.2.0/pkg/apis/configuration/v1beta1/types.go to facilitate testing
-//When trying to import them from the Kong repo as a dependency it required upgrading the k8s.io/client-go and k8s.io/apimachinery which seemed
-//cause several changes in how the mock clients were working that resulted in a bunch of failures in other tests
-//If that is dealt with at some point the below can be removed and replaced with an actual import
-
+// Kong types based on https://github.com/Kong/kubernetes-ingress-controller/blob/v1.2.0/pkg/apis/configuration/v1beta1/types.go to facilitate testing
+// When trying to import them from the Kong repo as a dependency it required upgrading the k8s.io/client-go and k8s.io/apimachinery which seemed
+// cause several changes in how the mock clients were working that resulted in a bunch of failures in other tests
+// If that is dealt with at some point the below can be removed and replaced with an actual import
 type TCPIngress struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

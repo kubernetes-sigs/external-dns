@@ -18,11 +18,12 @@ package azure
 
 import (
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/Azure/go-autorest/autorest/azure"
 )
 
 func TestGetAzureEnvironmentConfig(t *testing.T) {

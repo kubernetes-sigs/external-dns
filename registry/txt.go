@@ -35,7 +35,7 @@ const recordTemplate = "%{record_type}"
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
-	ownerID  string //refers to the owner id of the current instance
+	ownerID  string // refers to the owner id of the current instance
 	mapper   nameMapper
 
 	// cache the records in memory and update on an interval instead.
@@ -114,9 +114,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// We simply assume that TXT records for the registry will always have only one target.
 		labels, err := endpoint.NewLabelsFromString(record.Targets[0])
 		if err == endpoint.ErrInvalidHeritage {
-			//if no heritage is found or it is invalid
-			//case when value of txt record cannot be identified
-			//record will not be removed as it will have empty owner
+			// if no heritage is found or it is invalid
+			// case when value of txt record cannot be identified
+			// record will not be removed as it will have empty owner
 			endpoints = append(endpoints, record)
 			continue
 		}
@@ -343,6 +343,7 @@ func (pr affixNameMapper) dropAffixTemplate(name string) string {
 func (pr affixNameMapper) isPrefix() bool {
 	return len(pr.suffix) == 0
 }
+
 func (pr affixNameMapper) isSuffix() bool {
 	return len(pr.prefix) == 0 && len(pr.suffix) > 0
 }
@@ -395,6 +396,7 @@ func (pr affixNameMapper) normalizeAffixTemplate(afix, recordType string) string
 	}
 	return afix
 }
+
 func (pr affixNameMapper) toNewTXTName(endpointDNSName, recordType string) string {
 	DNSName := strings.SplitN(endpointDNSName, ".", 2)
 	recordType = strings.ToLower(recordType)

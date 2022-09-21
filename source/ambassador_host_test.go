@@ -80,7 +80,6 @@ func TestAmbassadorHostSource(t *testing.T) {
 			t.Fatalf("could not collect ambassador source endpoints: %v", err)
 		}
 	}
-
 }
 
 func createAmbassadorHost(name, ambassadorService string) (*unstructured.Unstructured, error) {
