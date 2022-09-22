@@ -360,7 +360,7 @@ func TestCivoApplyChanges(t *testing.T) {
 	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
 		{
 			Method: "GET",
-			Value:  []civogo.ValueAdvanceClientForTesting{
+			Value: []civogo.ValueAdvanceClientForTesting{
 				{
 					RequestBody:  "",
 					URL:          "/v2/dns",
@@ -375,7 +375,7 @@ func TestCivoApplyChanges(t *testing.T) {
 		},
 	})
 	defer server.Close()
-	
+
 	changes := &plan.Changes{}
 	provider := &CivoProvider{
 		Client: *client,
@@ -386,7 +386,7 @@ func TestCivoApplyChanges(t *testing.T) {
 	}
 	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target"}}}
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType:endpoint.RecordTypeCNAME, RecordTTL: 100}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

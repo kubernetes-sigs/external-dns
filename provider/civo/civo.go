@@ -384,7 +384,6 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 					DomainRecord: record,
 				})
 			}
-
 		}
 	}
 
