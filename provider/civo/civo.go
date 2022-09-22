@@ -26,6 +26,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -75,6 +76,13 @@ func NewCivoProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*CivoProv
 	if err != nil {
 		return nil, err
 	}
+
+	userAgent := &civogo.Component{
+		Name:    "external-dns",
+		Version: externaldns.Version,
+	}
+	civoClient.SetUserAgent(userAgent)
+
 	provider := &CivoProvider{
 		Client:       *civoClient,
 		domainFilter: domainFilter,
@@ -421,10 +429,9 @@ func processDeleteActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 	return nil
 }
 
-
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	var civoChange CivoChanges 
+	var civoChange CivoChanges
 	recordsByZoneID := make(map[string][]civogo.DNSRecord)
 
 	zones, err := p.fetchZones(ctx)
@@ -468,12 +475,12 @@ func (p *CivoProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	if err != nil {
 		return err
 	}
-	
+
 	// Generate Deletes
 	err = processDeleteActions(zonesByID, recordsByZoneID, deletesByZone, &civoChange)
 	if err != nil {
 		return err
-	}	
+	}
 
 	return p.submitChanges(ctx, civoChange)
 }

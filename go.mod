@@ -18,7 +18,7 @@ require (
 	github.com/ans-group/sdk-go v1.8.1
 	github.com/aws/aws-sdk-go v1.44.81
 	github.com/bodgit/tsig v1.2.0
-	github.com/civo/civogo v0.3.7
+	github.com/civo/civogo v0.3.13
 	github.com/cloudflare/cloudflare-go v0.50.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
