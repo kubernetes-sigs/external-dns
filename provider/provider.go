@@ -34,8 +34,7 @@ type Provider interface {
 	GetDomainFilter() endpoint.DomainFilterInterface
 }
 
-type BaseProvider struct {
-}
+type BaseProvider struct{}
 
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return endpoints

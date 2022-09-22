@@ -127,6 +127,8 @@ var (
 		OCPRouterName:               "default",
 		IBMCloudProxied:             false,
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
+		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
+		TencentCloudZoneType:        "",
 	}
 
 	overriddenConfig = &Config{
@@ -235,6 +237,8 @@ var (
 		RFC2136BatchChangeSize:      100,
 		IBMCloudProxied:             true,
 		IBMCloudConfigFile:          "ibmcloud.json",
+		TencentCloudConfigFile:      "tencent-cloud.json",
+		TencentCloudZoneType:        "private",
 	}
 )
 
@@ -373,6 +377,8 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-batch-change-size=100",
 				"--ibmcloud-proxied",
 				"--ibmcloud-config-file=ibmcloud.json",
+				"--tencent-cloud-config-file=tencent-cloud.json",
+				"--tencent-cloud-zone-type=private",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -486,6 +492,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
 				"EXTERNAL_DNS_IBMCLOUD_PROXIED":                "1",
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",
+				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":       "tencent-cloud.json",
+				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":         "private",
 			},
 			expected: overriddenConfig,
 		},

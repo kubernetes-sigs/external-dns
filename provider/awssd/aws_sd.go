@@ -18,13 +18,11 @@ package awssd
 
 import (
 	"context"
-	"strings"
-
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-
 	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -493,7 +491,9 @@ func (p *AWSSDProvider) UpdateService(service *sd.Service, ep *endpoint.Endpoint
 						Type: aws.String(srvType),
 						TTL:  aws.Int64(ttl),
 					}},
-				}}})
+				},
+			},
+		})
 		if err != nil {
 			return err
 		}

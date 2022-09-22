@@ -168,7 +168,7 @@ func TestValidateGoodRfc2136Config(t *testing.T) {
 }
 
 func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
-	var invalidRfc2136GssTsigConfigs = []*externaldns.Config{
+	invalidRfc2136GssTsigConfigs := []*externaldns.Config{
 		{
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},
@@ -258,7 +258,7 @@ func TestValidateBadRfc2136GssTsigConfig(t *testing.T) {
 }
 
 func TestValidateGoodRfc2136GssTsigConfig(t *testing.T) {
-	var validRfc2136GssTsigConfigs = []*externaldns.Config{
+	validRfc2136GssTsigConfigs := []*externaldns.Config{
 		{
 			LogFormat:               "json",
 			Sources:                 []string{"test-source"},

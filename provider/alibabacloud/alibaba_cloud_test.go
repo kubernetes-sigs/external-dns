@@ -435,7 +435,6 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 }
 
 func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
-
 	p := newTestAlibabaCloudProvider(false)
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
@@ -448,9 +447,8 @@ func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
 	}
 }
 
-//TestAlibabaCloudProvider_TXTEndpoint_PrivateZone
+// TestAlibabaCloudProvider_TXTEndpoint_PrivateZone
 func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
-
 	p := newTestAlibabaCloudProvider(true)
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""

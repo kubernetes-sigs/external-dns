@@ -44,10 +44,8 @@ var actionNames = []string{
 	"delete",
 }
 
-var (
-	// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
-	ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
-)
+// ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
+var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
 
 type gdClient interface {
 	Patch(string, interface{}, interface{}) error
@@ -141,7 +139,6 @@ func (z gdZoneIDName) findZoneRecord(hostname string) (suitableZoneID string, su
 // NewGoDaddyProvider initializes a new GoDaddy DNS based Provider.
 func NewGoDaddyProvider(ctx context.Context, domainFilter endpoint.DomainFilter, ttl int64, apiKey, apiSecret string, useOTE, dryRun bool) (*GDProvider, error) {
 	client, err := NewClient(useOTE, apiKey, apiSecret)
-
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +174,6 @@ func (p *GDProvider) zones() ([]string, error) {
 func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gdRecords, error) {
 	var allRecords []gdRecords
 	zones, err := p.zones()
-
 	if err != nil {
 		return nil, nil, err
 	}
@@ -186,7 +182,6 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 		allRecords = []gdRecords{}
 	} else if len(zones) == 1 {
 		record, err := p.records(&ctx, zones[0], all)
-
 		if err != nil {
 			return nil, nil, err
 		}
@@ -201,7 +196,6 @@ func (p *GDProvider) zonesRecords(ctx context.Context, all bool) ([]string, []gd
 			zone := zoneName
 			eg.Go(func() error {
 				record, err := p.records(&ctx, zone, all)
-
 				if err != nil {
 					return err
 				}
@@ -316,7 +310,6 @@ func (p *GDProvider) groupByNameAndType(zoneRecords []gdRecords) []*endpoint.End
 // Records returns the list of records in all relevant zones.
 func (p *GDProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	_, records, err := p.zonesRecords(ctx, false)
-
 	if err != nil {
 		return nil, err
 	}
@@ -390,7 +383,6 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 	}
 
 	_, records, err := p.zonesRecords(ctx, true)
-
 	if err != nil {
 		return err
 	}
@@ -549,7 +541,6 @@ func maxOf(vars ...int64) int64 {
 
 func toString(obj interface{}) string {
 	b, err := json.MarshalIndent(obj, "", "	")
-
 	if err != nil {
 		return fmt.Sprintf("<%v>", err)
 	}

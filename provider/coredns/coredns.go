@@ -232,7 +232,7 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	}
 }
 
-//newETCDClient is an etcd client constructor
+// newETCDClient is an etcd client constructor
 func newETCDClient() (coreDNSClient, error) {
 	cfg, err := getETCDConfig()
 	if err != nil {

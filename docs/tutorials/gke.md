@@ -325,6 +325,7 @@ spec:
             - --source=ingress
             - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
             - --provider=google
+            - --log-format=json # google cloud logs parses severity of the "text" log format incorrectly
     #        - --google-project=my-cloud-dns-project # Use this to specify a project different from the one external-dns is running inside
             - --google-zone-visibility=public # Use this to filter to only zones with this visibility. Set to either 'public' or 'private'. Omitting will match public and private zones
             - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization

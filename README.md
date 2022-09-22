@@ -57,6 +57,9 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Gandi](https://www.gandi.net)
 * [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
 * [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
+* [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
+* [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
+* [Plural](https://www.plural.sh/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -115,6 +118,8 @@ The following table clarifies the current status of the providers according to t
 | Gandi | Alpha | @packi |
 | SafeDNS | Alpha | @assureddt |
 | IBMCloud | Alpha | @hughhuangzh |
+| TencentCloud | Alpha | @Hyzhou |
+| Plural | Alpha | @michaeljguarino |
 
 ## Kubernetes version compatibility
 
@@ -183,6 +188,8 @@ The following tutorials are provided:
 * [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
+* [TencentCloud](docs/tutorials/tencentcloud.md)
+* [Plural](docs/tutorials/plural.md)
 
 ### Running Locally
 

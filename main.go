@@ -60,11 +60,13 @@ import (
 	"sigs.k8s.io/external-dns/provider/oci"
 	"sigs.k8s.io/external-dns/provider/ovh"
 	"sigs.k8s.io/external-dns/provider/pdns"
+	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
+	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
@@ -78,15 +80,15 @@ func main() {
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
+	if cfg.LogFormat == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
 	log.Infof("config: %s", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
 	}
 
-	if cfg.LogFormat == "json" {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
@@ -337,6 +339,10 @@ func main() {
 		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
 	case "safedns":
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
+	case "plural":
+		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
+	case "tencentcloud":
+		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

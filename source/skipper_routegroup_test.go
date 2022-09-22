@@ -215,14 +215,14 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 					Targets: endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
-		}} {
+		},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := tt.source.endpointsFromRouteGroup(tt.rg)
 
 			validateEndpoints(t, got, tt.want)
 		})
 	}
-
 }
 
 type fakeRouteGroupClient struct {
@@ -709,7 +709,8 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 					Targets: endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
-		}} {
+		},
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			if tt.fqdnTemplate != "" {
 				tmpl, err := parseTemplate(tt.fqdnTemplate)
