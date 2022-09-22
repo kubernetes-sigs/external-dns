@@ -15,7 +15,7 @@ require (
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.1
 	github.com/alecthomas/kingpin v2.2.5+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.1742
-	github.com/ans-group/sdk-go v1.8.1
+	github.com/ans-group/sdk-go v1.9.0
 	github.com/aws/aws-sdk-go v1.44.81
 	github.com/bodgit/tsig v1.2.0
 	github.com/cloudflare/cloudflare-go v0.50.0
