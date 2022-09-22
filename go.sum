@@ -274,8 +274,6 @@ github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMn
 github.com/cilium/ebpf v0.0.0-20200110133405-4032b1d8aae3/go.mod h1:MA5e5Lr8slmEg9bt0VpxxWqJlO4iwu3FBdHUzV7wQVg=
 github.com/circonus-labs/circonus-gometrics v2.3.1+incompatible/go.mod h1:nmEj6Dob7S7YxXgwXpfOuvO54S+tGdZdw9fuRZt25Ag=
 github.com/circonus-labs/circonusllhist v0.1.3/go.mod h1:kMXHVDlOchFAehlya5ePtbp5jckzBHf4XRpQvBOLI+I=
-github.com/civo/civogo v0.3.7 h1:9Uk3XoxtGlRDB8NmHIjRuxHYVTkA8oLRbm7y4ZIVD7k=
-github.com/civo/civogo v0.3.7/go.mod h1:PA6uFCqqmQQAR7gv5NkAzvz4axp/Ue4LCILGQ3cG3uE=
 github.com/civo/civogo v0.3.13 h1:CtZIaXHPN7IUXKgCwSQMiLw42+HV9lRN8EB8NZjaneE=
 github.com/civo/civogo v0.3.13/go.mod h1:7+GeeFwc4AYTULaEshpT2vIcl3Qq8HPoxA17viX3l6g=
 github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4dUb/I5gc9Hdhagfvm9+RyrPryS/auMzxE=
