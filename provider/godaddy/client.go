@@ -105,7 +105,7 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 	var endpoint string
 
 	if useOTE {
-		endpoint = " https://api.ote-godaddy.com"
+		endpoint = "https://api.ote-godaddy.com"
 	} else {
 		endpoint = "https://api.godaddy.com"
 	}
