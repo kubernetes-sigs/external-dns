@@ -52,7 +52,7 @@ jobs:
         run: ct lint --check-version-increment=false
 
       - name: Set-up Kind cluster
-        uses: helm/kind-action@d08cf6ff1575077dee99962540d77ce91c62387d
+        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07
         with:
           wait: 120s
         if: steps.list-changed.outputs.changed == 'true'
