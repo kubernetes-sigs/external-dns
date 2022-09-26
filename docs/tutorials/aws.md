@@ -124,7 +124,7 @@ INSTANCE_NAME=$(kubectl get pods --all-namespaces \
 INSTANCE_NAME=$(kubectl get nodes --output name | cut -d'/' -f2 | tail -1)
 ```
 
-With the instnace host name, you can then get the instance id:
+With the instance host name, you can then get the instance id:
 
 ```bash
 get_instance_id() {
