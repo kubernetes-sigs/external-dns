@@ -322,13 +322,13 @@ func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				if recordSet.Type != endpoint.RecordTypeA && recordSet.Type != endpoint.RecordTypeTXT && recordSet.Type != endpoint.RecordTypeCNAME {
 					return nil
 				}
-				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
-					result = append(result, ep)
-				}
+
+				ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, recordSet.Records...)
+				ep.Labels[designateRecordSetID] = recordSet.ID
+				ep.Labels[designateZoneID] = recordSet.ZoneID
+				ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
+				result = append(result, ep)
+
 				return nil
 			},
 		)
