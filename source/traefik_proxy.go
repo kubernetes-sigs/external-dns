@@ -144,6 +144,7 @@ func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	return endpoints, nil
 }
 
+// ingressRouteEndpoints extracts endpoints from all IngressRoute objects
 func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -196,6 +197,8 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 
 	return endpoints, nil
 }
+
+// ingressRouteTCPEndpoints extracts endpoints from all IngressRouteTCP objects
 func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -248,6 +251,8 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 
 	return endpoints, nil
 }
+
+// ingressRouteUDPEndpoints extracts endpoints from all IngressRouteUDP objects
 func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -465,6 +470,8 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *traefikV1alpha1
 
 	return endpoints, nil
 }
+
+// endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
 func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alpha1.IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
@@ -491,6 +498,8 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alp
 
 	return endpoints, nil
 }
+
+// endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
 func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *traefikV1alpha1.IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 

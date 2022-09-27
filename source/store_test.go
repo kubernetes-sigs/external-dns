@@ -130,9 +130,24 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 				Version:  "v1",
 				Resource: "virtualservers",
 			}: "VirtualServersList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressroutes",
+			}: "IngressRouteList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressroutetcps",
+			}: "IngressRouteTCPList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressrouteudps",
+			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "fake"}, minimalConfig)
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 7, "should generate all seven sources")
 }
@@ -170,9 +185,6 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
 	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"kong-tcpingress"}, minimalConfig)
-	suite.Error(err, "should return an error if kubernetes client cannot be created")
-
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"f5-virtualserver"}, minimalConfig)
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
