@@ -97,7 +97,7 @@ The role name of the role associated with the node(s) where ExternalDNS will run
 
 ##### Get role name with a single managed nodegroup
 
-From the comand line, if you have a single managed node group, the default with `eksctl create cluster`, you can find the role name with the following:
+From the command line, if you have a single managed node group, the default with `eksctl create cluster`, you can find the role name with the following:
 
 ```bash
 # get managed node group name (assuming there's only one node group)
@@ -112,7 +112,7 @@ ROLE_NAME=${NODE_ROLE_ARN##*/}
 
 ##### Get role name with other configurations
 
-If you have multiple node groups or any unmanaged node groups, the process gets more complex.  The first step is to get the instance host name of the destired node to where ExternalDNS will be deployed or is already deployed:
+If you have multiple node groups or any unmanaged node groups, the process gets more complex.  The first step is to get the instance host name of the desired node to where ExternalDNS will be deployed or is already deployed:
 
 ```bash
 # node instance name of one of the external dns pods currently running
@@ -124,7 +124,7 @@ INSTANCE_NAME=$(kubectl get pods --all-namespaces \
 INSTANCE_NAME=$(kubectl get nodes --output name | cut -d'/' -f2 | tail -1)
 ```
 
-With the instnace host name, you can then get the instance id:
+With the instance host name, you can then get the instance id:
 
 ```bash
 get_instance_id() {
@@ -157,7 +157,7 @@ findRoleName() {
       --role-name $ROLE --query InstanceProfiles[0].Arn --output text)
     # if there is an instance profile
     if [[ "$PROFILE_ARN" != "None" ]]; then
-      # get all the instances with this associated instance prfile
+      # get all the instances with this associated instance profile
       INSTANCES=$(aws ec2 describe-instances \
         --filters Name=iam-instance-profile.arn,Values=$PROFILE_ARN \
         --query Reservations[*].Instances[0].InstanceId --out text)
@@ -194,7 +194,7 @@ If ExternalDNS is not yet deployed, follow the steps under [Deploy ExternalDNS](
 
 In this method, the policy is attached to an IAM user, and the credentials secrets for the IAM user are then made available using a Kubernetes secret.
 
-This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.  However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.  Given this situation, it is important to limit the associated privileges to just minimal requried privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.
+This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.  However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.  Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.
 
 #### Create IAM user and attach the policy
 
@@ -565,7 +565,7 @@ Create the following sample application to test that ExternalDNS works.
 
 > If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma `,` separator.
 
-For this verification phase, you can can use default or another namespace for the nginx demo, for example:
+For this verification phase, you can use default or another namespace for the nginx demo, for example:
 
 ```bash
 NGINXDEMO_NS="nginx"
@@ -701,7 +701,7 @@ If you hooked up your DNS zone with its parent zone correctly you can use `curl`
 curl nginx.example.com.
 ```
 
-This shold show something like:
+This should show something like:
 
 ```html
 <!DOCTYPE html>
@@ -906,7 +906,7 @@ aws iam detach-role-policy --role-name $IRSA_ROLE --policy-arn $POLICY_ARN
 aws iam delete-role --role-name $IRSA_ROLE
 ```
 
-Delete any uneeded policies:
+Delete any unneeded policies:
 
 ```bash
 aws iam delete-policy --policy-arn $POLICY_ARN
