@@ -415,6 +415,10 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	}
 
 	endpoints, err := p.Records(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch active records: %w", err)
+	}
+
 	recordSets := map[string]*recordSet{}
 	for _, ep := range changes.Create {
 		addEndpoint(ep, recordSets, endpoints, false)
@@ -429,9 +433,6 @@ func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 		addEndpoint(ep, recordSets, endpoints, true)
 	}
 
-	if err != nil {
-		return fmt.Errorf("failed to fetch active records: %w", err)
-	}
 	for _, rs := range recordSets {
 		if err2 := p.upsertRecordSet(rs, managedZones); err == nil {
 			err = err2
