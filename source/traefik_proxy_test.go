@@ -249,6 +249,31 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "IngressRoute omit wildcard",
+			ingressRoute: traefikV1alpha1.IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: traefikV1alpha1.SchemeGroupVersion.String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-omit-wildcard-host",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":             "traefik",
+					},
+				},
+				Spec: traefikV1alpha1.IngressRouteSpec{
+					Routes: []traefikV1alpha1.Route{
+						{
+							Match: "Host(`*`)",
+						},
+					},
+				},
+			},
+			expected: nil,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -465,6 +490,31 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
 			},
+		},
+		{
+			title: "IngressRouteTCP omit wildcard host sni",
+			ingressRouteTCP: traefikV1alpha1.IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: traefikV1alpha1.SchemeGroupVersion.String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroutetcp-omit-wildcard-host",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/target": "target.domain.tld",
+						"kubernetes.io/ingress.class":             "traefik",
+					},
+				},
+				Spec: traefikV1alpha1.IngressRouteTCPSpec{
+					Routes: []traefikV1alpha1.RouteTCP{
+						{
+							Match: "HostSNI(`*`)",
+						},
+					},
+				},
+			},
+			expected: nil,
 		},
 	} {
 		ti := ti

@@ -473,7 +473,11 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *traefikV1alpha1
 			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
 				host = strings.TrimPrefix(host, "`")
 				host = strings.TrimSuffix(host, "`")
-				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+
+				// Checking for host = * is required, as Host(`*`) can be set
+				if host != "*" && host != "" {
+					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+				}
 			}
 		}
 	}
@@ -504,7 +508,12 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alp
 			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
 				host = strings.TrimPrefix(host, "`")
 				host = strings.TrimSuffix(host, "`")
-				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+
+				// Checking for host = * is required, as HostSNI(`*`) can be set
+				// in the case of TLS passthrough
+				if host != "*" && host != "" {
+					endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+				}
 			}
 		}
 	}
