@@ -72,7 +72,7 @@ rules:
 {{- end }}
 {{- if has "traefik-proxy" .Values.sources }}
   - apiGroups: ["traefik.containo.us"]
-    resources: ["ingressroutes", "ingressroutestcps", "ingressroutesudps"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "openshift-route" .Values.sources }}
