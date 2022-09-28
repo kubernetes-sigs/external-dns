@@ -54,7 +54,7 @@ rules:
   resources: ["nodes"]
   verbs: ["list","watch"]
 - apiGroups: ["traefik.containo.us"]
-  resources: ["ingressroutes", "ingressroutestcps", "ingressroutesudps"]
+  resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
