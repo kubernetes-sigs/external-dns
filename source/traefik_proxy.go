@@ -19,7 +19,9 @@ package source
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -55,6 +57,11 @@ var (
 		Version:  traefikV1alpha1.SchemeGroupVersion.Version,
 		Resource: "ingressrouteudps",
 	}
+)
+
+var (
+	traefikHostExtractor  = regexp.MustCompile(`(?:HostSNI|HostHeader|Host)\s*\(\s*(\x60.*?\x60)\s*\)`)
+	traefikValueProcessor = regexp.MustCompile(`\x60([^,\x60]+)\x60`)
 )
 
 type traefikSource struct {
@@ -459,14 +466,17 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *traefikV1alpha1
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
-	// TODO: Implement Traefik router rule logic/regex magic
-	// if ingressRoute.Spec.Rules != nil {
-	// 	for _, rule := range ingressRoute.Spec.Rules {
-	// 		if rule.Host != "" {
-	// 			endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
-	// 		}
-	// 	}
-	// }
+	for _, route := range ingressRoute.Spec.Routes {
+		match := route.Match
+
+		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
+				host = strings.TrimPrefix(host, "`")
+				host = strings.TrimSuffix(host, "`")
+				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+			}
+		}
+	}
 
 	return endpoints, nil
 }
@@ -487,14 +497,17 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alp
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
 
-	// TODO: Implement Traefik router rule logic/regex magic
-	// if ingressRoute.Spec.Rules != nil {
-	// 	for _, rule := range ingressRoute.Spec.Rules {
-	// 		if rule.Host != "" {
-	// 			endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
-	// 		}
-	// 	}
-	// }
+	for _, route := range ingressRoute.Spec.Routes {
+		match := route.Match
+
+		for _, hostEntry := range traefikHostExtractor.FindAllString(match, -1) {
+			for _, host := range traefikValueProcessor.FindAllString(hostEntry, -1) {
+				host = strings.TrimPrefix(host, "`")
+				host = strings.TrimSuffix(host, "`")
+				endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+			}
+		}
+	}
 
 	return endpoints, nil
 }
@@ -514,15 +527,6 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *traefikV1alp
 	for _, hostname := range hostnameList {
 		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
 	}
-
-	// TODO: Implement Traefik router rule logic/regex magic
-	// if ingressRoute.Spec.Rules != nil {
-	// 	for _, rule := range ingressRoute.Spec.Rules {
-	// 		if rule.Host != "" {
-	// 			endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
-	// 		}
-	// 	}
-	// }
 
 	return endpoints, nil
 }
@@ -547,7 +551,7 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	// Add the core types we need
 	uc.scheme.AddKnownTypes(ingressrouteGVR.GroupVersion(), &traefikV1alpha1.IngressRoute{}, &traefikV1alpha1.IngressRouteList{})
 	uc.scheme.AddKnownTypes(ingressrouteTCPGVR.GroupVersion(), &traefikV1alpha1.IngressRouteTCP{}, &traefikV1alpha1.IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &traefikV1alpha1.IngressRouteUDP{}, &traefikV1alpha1.IngressRouteUDP{})
+	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &traefikV1alpha1.IngressRouteUDP{}, &traefikV1alpha1.IngressRouteUDPList{})
 	if err := scheme.AddToScheme(uc.scheme); err != nil {
 		return nil, err
 	}
