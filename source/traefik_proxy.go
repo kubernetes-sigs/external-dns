@@ -37,24 +37,22 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/external-dns/endpoint"
-
-	traefikV1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefik/v1alpha1"
 )
 
 var (
 	ingressrouteGVR = schema.GroupVersionResource{
-		Group:    traefikV1alpha1.SchemeGroupVersion.Group,
-		Version:  traefikV1alpha1.SchemeGroupVersion.Version,
+		Group:    "traefik.containo.us",
+		Version:  "v1alpha1",
 		Resource: "ingressroutes",
 	}
 	ingressrouteTCPGVR = schema.GroupVersionResource{
-		Group:    traefikV1alpha1.SchemeGroupVersion.Group,
-		Version:  traefikV1alpha1.SchemeGroupVersion.Version,
+		Group:    "traefik.containo.us",
+		Version:  "v1alpha1",
 		Resource: "ingressroutetcps",
 	}
 	ingressrouteUDPGVR = schema.GroupVersionResource{
-		Group:    traefikV1alpha1.SchemeGroupVersion.Group,
-		Version:  traefikV1alpha1.SchemeGroupVersion.Version,
+		Group:    "traefik.containo.us",
+		Version:  "v1alpha1",
 		Resource: "ingressrouteudps",
 	}
 )
@@ -160,14 +158,14 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 		return nil, err
 	}
 
-	var ingressRoutes []*traefikV1alpha1.IngressRoute
+	var ingressRoutes []*IngressRoute
 	for _, ingressRouteObj := range irs {
 		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
 		if !ok {
 			return nil, errors.New("could not convert")
 		}
 
-		ingressRoute := &traefikV1alpha1.IngressRoute{}
+		ingressRoute := &IngressRoute{}
 		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
 		if err != nil {
 			return nil, err
@@ -214,14 +212,14 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	var ingressRoutes []*traefikV1alpha1.IngressRouteTCP
+	var ingressRoutes []*IngressRouteTCP
 	for _, ingressRouteObj := range irs {
 		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
 		if !ok {
 			return nil, errors.New("could not convert")
 		}
 
-		ingressRoute := &traefikV1alpha1.IngressRouteTCP{}
+		ingressRoute := &IngressRouteTCP{}
 		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
 		if err != nil {
 			return nil, err
@@ -268,14 +266,14 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	var ingressRoutes []*traefikV1alpha1.IngressRouteUDP
+	var ingressRoutes []*IngressRouteUDP
 	for _, ingressRouteObj := range irs {
 		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
 		if !ok {
 			return nil, errors.New("could not convert")
 		}
 
-		ingressRoute := &traefikV1alpha1.IngressRouteUDP{}
+		ingressRoute := &IngressRouteUDP{}
 		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
 		if err != nil {
 			return nil, err
@@ -314,7 +312,7 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 }
 
 // filterByAnnotations filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*traefikV1alpha1.IngressRoute) ([]*traefikV1alpha1.IngressRoute, error) {
+func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*IngressRoute) ([]*IngressRoute, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -329,7 +327,7 @@ func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*traefi
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*traefikV1alpha1.IngressRoute{}
+	filteredList := []*IngressRoute{}
 
 	for _, ingressRoute := range ingressRoutes {
 		// convert the IngressRoute's annotations to an equivalent label selector
@@ -345,7 +343,7 @@ func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*traefi
 }
 
 // filterByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*traefikV1alpha1.IngressRouteTCP) ([]*traefikV1alpha1.IngressRouteTCP, error) {
+func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -360,7 +358,7 @@ func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*tra
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*traefikV1alpha1.IngressRouteTCP{}
+	filteredList := []*IngressRouteTCP{}
 
 	for _, ingressRoute := range ingressRoutes {
 		// convert the IngressRoute's annotations to an equivalent label selector
@@ -376,7 +374,7 @@ func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*tra
 }
 
 // filterByAnnotations filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRouteUDP(ingressRoutes []*traefikV1alpha1.IngressRouteUDP) ([]*traefikV1alpha1.IngressRouteUDP, error) {
+func (ts *traefikSource) filterByAnnotationsIngressRouteUDP(ingressRoutes []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -391,7 +389,7 @@ func (ts *traefikSource) filterByAnnotationsIngressRouteUDP(ingressRoutes []*tra
 		return ingressRoutes, nil
 	}
 
-	filteredList := []*traefikV1alpha1.IngressRouteUDP{}
+	filteredList := []*IngressRouteUDP{}
 
 	for _, ingressRoute := range ingressRoutes {
 		// convert the IngressRoute's annotations to an equivalent label selector
@@ -406,23 +404,23 @@ func (ts *traefikSource) filterByAnnotationsIngressRouteUDP(ingressRoutes []*tra
 	return filteredList, nil
 }
 
-func (ts *traefikSource) setResourceLabelIngressRoute(ingressroute *traefikV1alpha1.IngressRoute, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setResourceLabelIngressRoute(ingressroute *IngressRoute, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingressroute/%s/%s", ingressroute.Namespace, ingressroute.Name)
 	}
 }
-func (ts *traefikSource) setResourceLabelIngressRouteTCP(ingressroute *traefikV1alpha1.IngressRouteTCP, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setResourceLabelIngressRouteTCP(ingressroute *IngressRouteTCP, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingressroutetcp/%s/%s", ingressroute.Namespace, ingressroute.Name)
 	}
 }
-func (ts *traefikSource) setResourceLabelIngressRouteUDP(ingressroute *traefikV1alpha1.IngressRouteUDP, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setResourceLabelIngressRouteUDP(ingressroute *IngressRouteUDP, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingressrouteudp/%s/%s", ingressroute.Namespace, ingressroute.Name)
 	}
 }
 
-func (ts *traefikSource) setDualstackLabelIngressRoute(ingressRoute *traefikV1alpha1.IngressRoute, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setDualstackLabelIngressRoute(ingressRoute *IngressRoute, endpoints []*endpoint.Endpoint) {
 	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to IngressRoute %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
@@ -431,7 +429,7 @@ func (ts *traefikSource) setDualstackLabelIngressRoute(ingressRoute *traefikV1al
 		}
 	}
 }
-func (ts *traefikSource) setDualstackLabelIngressRouteTCP(ingressRoute *traefikV1alpha1.IngressRouteTCP, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setDualstackLabelIngressRouteTCP(ingressRoute *IngressRouteTCP, endpoints []*endpoint.Endpoint) {
 	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to IngressRouteTCP %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
@@ -440,7 +438,7 @@ func (ts *traefikSource) setDualstackLabelIngressRouteTCP(ingressRoute *traefikV
 		}
 	}
 }
-func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *traefikV1alpha1.IngressRouteUDP, endpoints []*endpoint.Endpoint) {
+func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *IngressRouteUDP, endpoints []*endpoint.Endpoint) {
 	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to IngressRouteUDP %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
@@ -451,7 +449,7 @@ func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *traefikV
 }
 
 // endpointsFromIngressRoute extracts the endpoints from a IngressRoute object
-func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *traefikV1alpha1.IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
@@ -486,7 +484,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *traefikV1alpha1
 }
 
 // endpointsFromIngressRouteTCP extracts the endpoints from a IngressRouteTCP object
-func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alpha1.IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
@@ -522,7 +520,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *traefikV1alp
 }
 
 // endpointsFromIngressRouteUDP extracts the endpoints from a IngressRouteUDP object
-func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *traefikV1alpha1.IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
@@ -558,12 +556,347 @@ func newTraefikUnstructuredConverter() (*unstructuredConverter, error) {
 	}
 
 	// Add the core types we need
-	uc.scheme.AddKnownTypes(ingressrouteGVR.GroupVersion(), &traefikV1alpha1.IngressRoute{}, &traefikV1alpha1.IngressRouteList{})
-	uc.scheme.AddKnownTypes(ingressrouteTCPGVR.GroupVersion(), &traefikV1alpha1.IngressRouteTCP{}, &traefikV1alpha1.IngressRouteTCPList{})
-	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &traefikV1alpha1.IngressRouteUDP{}, &traefikV1alpha1.IngressRouteUDPList{})
+	uc.scheme.AddKnownTypes(ingressrouteGVR.GroupVersion(), &IngressRoute{}, &IngressRouteList{})
+	uc.scheme.AddKnownTypes(ingressrouteTCPGVR.GroupVersion(), &IngressRouteTCP{}, &IngressRouteTCPList{})
+	uc.scheme.AddKnownTypes(ingressrouteUDPGVR.GroupVersion(), &IngressRouteUDP{}, &IngressRouteUDPList{})
 	if err := scheme.AddToScheme(uc.scheme); err != nil {
 		return nil, err
 	}
 
 	return uc, nil
+}
+
+// Basic redefinition of Traefik 2's CRD: https://github.com/traefik/traefik/tree/v2.8.7/pkg/provider/kubernetes/crd/traefik/v1alpha1
+
+// traefikIngressRouteSpec defines the desired state of IngressRoute.
+type traefikIngressRouteSpec struct {
+	// Routes defines the list of routes.
+	Routes []traefikRoute `json:"routes"`
+}
+
+// traefikRoute holds the HTTP route configuration.
+type traefikRoute struct {
+	// Match defines the router's rule.
+	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule
+	Match string `json:"match"`
+}
+
+// IngressRoute is the CRD implementation of a Traefik HTTP Router.
+type IngressRoute struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec traefikIngressRouteSpec `json:"spec"`
+}
+
+// IngressRouteList is a collection of IngressRoute.
+type IngressRouteList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRoute.
+	Items []IngressRoute `json:"items"`
+}
+
+// traefikIngressRouteTCPSpec defines the desired state of IngressRouteTCP.
+type traefikIngressRouteTCPSpec struct {
+	Routes []traefikRouteTCP `json:"routes"`
+}
+
+// traefikRouteTCP holds the TCP route configuration.
+type traefikRouteTCP struct {
+	// Match defines the router's rule.
+	// More info: https://doc.traefik.io/traefik/v2.9/routing/routers/#rule_1
+	Match string `json:"match"`
+}
+
+// IngressRouteTCP is the CRD implementation of a Traefik TCP Router.
+type IngressRouteTCP struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+
+	Spec traefikIngressRouteTCPSpec `json:"spec"`
+}
+
+// IngressRouteTCPList is a collection of IngressRouteTCP.
+type IngressRouteTCPList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRouteTCP.
+	Items []IngressRouteTCP `json:"items"`
+}
+
+// IngressRouteUDP is a CRD implementation of a Traefik UDP Router.
+type IngressRouteUDP struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ObjectMeta `json:"metadata"`
+}
+
+// IngressRouteUDPList is a collection of IngressRouteUDP.
+type IngressRouteUDPList struct {
+	metav1.TypeMeta `json:",inline"`
+	// Standard object's metadata.
+	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+	metav1.ListMeta `json:"metadata"`
+
+	// Items is the list of IngressRouteUDP.
+	Items []IngressRouteUDP `json:"items"`
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRoute) DeepCopyInto(out *IngressRoute) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.Spec.DeepCopyInto(&out.Spec)
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRoute.
+func (in *IngressRoute) DeepCopy() *IngressRoute {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRoute)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRoute) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRouteList) DeepCopyInto(out *IngressRouteList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IngressRoute, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteList.
+func (in *IngressRouteList) DeepCopy() *IngressRouteList {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRouteList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRouteList) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *traefikIngressRouteSpec) DeepCopyInto(out *traefikIngressRouteSpec) {
+	*out = *in
+	if in.Routes != nil {
+		in, out := &in.Routes, &out.Routes
+		*out = make([]traefikRoute, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteSpec.
+func (in *traefikIngressRouteSpec) DeepCopy() *traefikIngressRouteSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(traefikIngressRouteSpec)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *traefikRoute) DeepCopyInto(out *traefikRoute) {
+	*out = *in
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new Route.
+func (in *traefikRoute) DeepCopy() *traefikRoute {
+	if in == nil {
+		return nil
+	}
+	out := new(traefikRoute)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRouteTCP) DeepCopyInto(out *IngressRouteTCP) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.Spec.DeepCopyInto(&out.Spec)
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteTCP.
+func (in *IngressRouteTCP) DeepCopy() *IngressRouteTCP {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRouteTCP)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRouteTCP) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRouteTCPList) DeepCopyInto(out *IngressRouteTCPList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IngressRouteTCP, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteTCPList.
+func (in *IngressRouteTCPList) DeepCopy() *IngressRouteTCPList {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRouteTCPList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRouteTCPList) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *traefikIngressRouteTCPSpec) DeepCopyInto(out *traefikIngressRouteTCPSpec) {
+	*out = *in
+	if in.Routes != nil {
+		in, out := &in.Routes, &out.Routes
+		*out = make([]traefikRouteTCP, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteTCPSpec.
+func (in *traefikIngressRouteTCPSpec) DeepCopy() *traefikIngressRouteTCPSpec {
+	if in == nil {
+		return nil
+	}
+	out := new(traefikIngressRouteTCPSpec)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *traefikRouteTCP) DeepCopyInto(out *traefikRouteTCP) {
+	*out = *in
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new RouteTCP.
+func (in *traefikRouteTCP) DeepCopy() *traefikRouteTCP {
+	if in == nil {
+		return nil
+	}
+	out := new(traefikRouteTCP)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRouteUDP) DeepCopyInto(out *IngressRouteUDP) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteUDP.
+func (in *IngressRouteUDP) DeepCopy() *IngressRouteUDP {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRouteUDP)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRouteUDP) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *IngressRouteUDPList) DeepCopyInto(out *IngressRouteUDPList) {
+	*out = *in
+	out.TypeMeta = in.TypeMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]IngressRouteUDP, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new IngressRouteUDPList.
+func (in *IngressRouteUDPList) DeepCopy() *IngressRouteUDPList {
+	if in == nil {
+		return nil
+	}
+	out := new(IngressRouteUDPList)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyObject is an autogenerated deepcopy function, copying the receiver, creating a new runtime.Object.
+func (in *IngressRouteUDPList) DeepCopyObject() runtime.Object {
+	if c := in.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
 }
