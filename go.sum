@@ -116,8 +116,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
-github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.11.0 h1:75KEvjN+5lXcFzvW7RBoZY1YALJSNctcXFEfUyFz5Vo=
-github.com/IBM-Cloud/ibm-cloud-cli-sdk v0.11.0/go.mod h1:+GAqrO/rFsYnhzTIxYLXCHxHVZyrtzBLyKjV6hi73YQ=
+github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0 h1:2gzVSELk4I4ncZNrsaKI6fvZ3to60iYnig+lTFcGCEM=
+github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0/go.mod h1:P9YNyJaJazc49fLNFG4uQ61VZVptykWqNU2vWLWcxu0=
 github.com/IBM/go-sdk-core/v5 v5.8.0 h1:Bn9BxTaKYKWpd+BDpVsL6XOOJl4QDgxux4gSdWi31vE=
 github.com/IBM/go-sdk-core/v5 v5.8.0/go.mod h1:+YbdhrjCHC84ls4MeBp+Hj4NZCni+tDAc0XQUqRO9Jc=
 github.com/IBM/networking-go-sdk v0.32.0 h1:QWd7CxC+Wzap+zWFfXMjbqB5LpvrB1KvNtIbKrWIkhA=
