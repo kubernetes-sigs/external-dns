@@ -190,6 +190,13 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 		cleanTargets[idx] = strings.TrimSuffix(target, ".")
 	}
 
+	for _, label := range strings.Split(dnsName, ".") {
+		if len(label) > 63 {
+			log.Errorf("label %s in %s is longer than 63 characters. Cannot create endpoint", label, dnsName)
+			return nil
+		}
+	}
+
 	return &Endpoint{
 		DNSName:    strings.TrimSuffix(dnsName, "."),
 		Targets:    cleanTargets,
