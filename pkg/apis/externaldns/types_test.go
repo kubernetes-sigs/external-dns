@@ -90,7 +90,7 @@ var (
 		InfobloxWapiUsername:        "admin",
 		InfobloxWapiPassword:        "",
 		InfobloxWapiVersion:         "2.3.1",
-		InfobloxView:                "",
+		InfobloxView:                "default",
 		InfobloxSSLVerify:           true,
 		InfobloxMaxResults:          0,
 		OCIConfigFile:               "/etc/kubernetes/oci.yaml",

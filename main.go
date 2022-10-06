@@ -256,7 +256,7 @@ func main() {
 				View:          cfg.InfobloxView,
 				MaxResults:    cfg.InfobloxMaxResults,
 				DryRun:        cfg.DryRun,
-				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
 			},

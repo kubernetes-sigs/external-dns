@@ -19,6 +19,7 @@ package validation
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -68,6 +69,10 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 		if cfg.InfobloxWapiPassword == "" {
 			return errors.New("no Infoblox WAPI password specified")
+		}
+		_, err := regexp.Compile(cfg.InfobloxFQDNRegEx)
+		if err != nil {
+			return fmt.Errorf("FQDN's regular expression cannot be compiled: %s", err.Error())
 		}
 	}
 
