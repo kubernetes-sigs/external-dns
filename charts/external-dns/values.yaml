@@ -64,6 +64,7 @@ serviceMonitor:
   scrapeTimeout: 10s
 
 env: []
+envFrom: []
 
 livenessProbe:
   httpGet:

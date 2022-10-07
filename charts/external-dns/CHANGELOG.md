@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- ## [UNRELEASED]
 ### Added
+- Added support to configure `envFrom` on the Helm chart deployment. [@tamcore](https://github.com/tamcore)
 ### Changed
 ### Fixed
 ### Deprecated
