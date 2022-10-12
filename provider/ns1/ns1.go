@@ -209,12 +209,7 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 					endpoint.TTL(record.TTL),
 					targets...,
 				)
-
-				// If weight meta is available, add it to endpoint
 				ep = ep.WithProviderSpecific("weight", weight)
-				// if weight != "" {
-				// 	ep = ep.WithProviderSpecific("weight", weight)
-				// }
 
 				endpoints = append(endpoints, ep)
 			}
