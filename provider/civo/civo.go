@@ -72,7 +72,11 @@ func NewCivoProvider(domainFilter endpoint.DomainFilter, dryRun bool) (*CivoProv
 		return nil, fmt.Errorf("no token found")
 	}
 
-	civoClient, err := civogo.NewClient(token, "LON1")
+	// Declare a default region just for the client is not used for anything else
+	// as the DNS API is global and not region based
+	region := "LON1"
+	
+	civoClient, err := civogo.NewClient(token, region)
 	if err != nil {
 		return nil, err
 	}
