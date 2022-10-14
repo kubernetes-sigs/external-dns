@@ -228,8 +228,13 @@ func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Re
 		a := dns.NewAnswer(strings.Split(v, " "))
 		// Add weight and ownerId meta for the endpoint
 		w, exists := change.Endpoint.GetProviderSpecificProperty("weight")
-		if exists && record.Type == "A" {
+		if exists && (record.Type == "A" || record.Type == "AAAA") {
 			a.Meta.Weight = w.Value
+			if w.Value == "0" {
+				a.Meta.Up = false
+			} else {
+				a.Meta.Up = true
+			}
 		}
 		a.Meta.Note = ownerNote(p.OwnerID)
 		record.AddAnswer(a)
