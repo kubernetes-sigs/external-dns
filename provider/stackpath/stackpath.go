@@ -19,6 +19,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -133,6 +134,8 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 					name = name + "." + zone.GetDomain()
 				}
 
+				wstring := strconv.Itoa(int(record.GetWeight()))
+
 				if label, ok := record.GetLabels()["external-dns-owner"]; ok {
 					if label == p.ownerID {
 						endpoints = append(endpoints, endpoint.NewEndpointWithTTL(
@@ -140,7 +143,7 @@ func (p *StackPathProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 							record.GetType(),
 							endpoint.TTL(record.GetTtl()),
 							record.GetData(),
-						),
+						).WithProviderSpecific("weight", wstring),
 						)
 					}
 				}
@@ -280,6 +283,14 @@ func (p *StackPathProvider) create(endpoints []*endpoint.Endpoint, zones *[]dns.
 
 func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpoint.Endpoint, target string) error {
 
+	if val, ok := ep.GetProviderSpecificProperty("weight"); ok {
+		if val, err := strconv.Atoi(val.Value); err == nil {
+			if val < 1 {
+				return nil
+			}
+		}
+	}
+
 	msg := dns.NewZoneUpdateZoneRecordMessage()
 	name := strings.TrimSuffix(ep.DNSName, domain)
 	name = strings.TrimSuffix(name, ".")
@@ -300,6 +311,15 @@ func (p *StackPathProvider) createTarget(zoneID string, domain string, ep *endpo
 	msg.SetTtl(recTTL)
 	msg.SetData(target)
 	msg.SetLabels(ownerLabel)
+
+	weight := int32(0)
+	if wstring, ok := ep.GetProviderSpecificProperty("weight"); ok {
+		iweight, err := strconv.Atoi(wstring.Value)
+		if err == nil {
+			weight = int32(iweight)
+			msg.SetWeight(weight)
+		}
+	}
 
 	a, r, err := p.createCall(zoneID, domain, ep, target, msg)
 
