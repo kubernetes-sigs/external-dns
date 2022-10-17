@@ -200,8 +200,8 @@ github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883/go.mod h1:rCTlJbsFo
 github.com/andybalholm/brotli v0.0.0-20190621154722-5f990b63d2d6/go.mod h1:+lx6/Aqd1kLJ1GQfkvOnaZ1WGmLpMpbprPuIOOZX30U=
 github.com/ans-group/go-durationstring v1.2.0 h1:UJIuQATkp0t1rBvZsHRwki33YHV9E+Ulro+3NbMB7MM=
 github.com/ans-group/go-durationstring v1.2.0/go.mod h1:QGF9Mdpq9058QXaut8r55QWu6lcHX6i/GvF1PZVkV6o=
-github.com/ans-group/sdk-go v1.8.1 h1:PHPcYHujevWvCMiI7ujXvvrYHf5zpHIcZw7FfJ1rXw0=
-github.com/ans-group/sdk-go v1.8.1/go.mod h1:XSKXEDfKobnDtZoyia5DhJxxaDMcCjr76e1KJ9dU/xc=
+github.com/ans-group/sdk-go v1.10.4 h1:wZzojt99wtVIEHs8zNQzp1Xhqme5tD5NqMM1VLmG6xQ=
+github.com/ans-group/sdk-go v1.10.4/go.mod h1:XSKXEDfKobnDtZoyia5DhJxxaDMcCjr76e1KJ9dU/xc=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20210826220005-b48c857c3a0e/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/aokoli/goutils v1.1.0/go.mod h1:SijmP0QR8LtwsmDs8Yii5Z/S4trXFGFC2oO5g9DP+DQ=
