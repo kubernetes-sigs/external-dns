@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
 package civo
 
 import (
@@ -38,8 +37,13 @@ func TestNewCivoProvider(t *testing.T) {
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("CIVO_TOKEN")
-	_, err = NewCivoProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
-	require.Error(t, err)
+}
+
+func TestNewCivoProviderNoToken(t *testing.T) {
+	_, err := NewCivoProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
+	assert.Error(t, err)
+
+	assert.Equal(t, "no token found", err.Error())
 }
 
 func TestCivoProviderZones(t *testing.T) {
@@ -55,16 +59,27 @@ func TestCivoProviderZones(t *testing.T) {
 	}
 
 	expected, err := client.ListDNSDomains()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	zones, err := provider.Zones(context.Background())
-	if err != nil {
-		t.Fatal(err)
+	assert.NoError(t, err)
+
+	// Check if the return is a DNSDomain type
+	assert.Equal(t, reflect.TypeOf(zones), reflect.TypeOf(expected))
+	assert.ElementsMatch(t, zones, expected)
+}
+
+func TestCivoProviderZonesWithError(t *testing.T) {
+	client, server, _ := civogo.NewClientForTesting(map[string]string{
+		"/v2/dns-error": `[]`,
+	})
+	defer server.Close()
+	provider := &CivoProvider{
+		Client: *client,
 	}
-	if !reflect.DeepEqual(expected, zones) {
-		t.Fatal(err)
-	}
+
+	_, err := provider.Zones(context.Background())
+	assert.Error(t, err)
 }
 
 func TestCivoProviderRecords(t *testing.T) {
@@ -86,9 +101,7 @@ func TestCivoProviderRecords(t *testing.T) {
 
 	expected, _ := client.ListDNSRecords("12345")
 	records, err := provider.Records(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 
 	assert.Equal(t, strings.TrimSuffix(records[0].DNSName, ".example.com"), expected[0].Name)
 	assert.Equal(t, records[0].RecordType, string(expected[0].Type))
@@ -98,6 +111,26 @@ func TestCivoProviderRecords(t *testing.T) {
 	assert.Equal(t, records[1].RecordType, string(expected[1].Type))
 	assert.Equal(t, int(records[1].RecordTTL), expected[1].TTL)
 
+}
+
+func TestCivoProviderWithoutRecords(t *testing.T) {
+	client, server, _ := civogo.NewClientForTesting(map[string]string{
+		"/v2/dns/12345/records": `[]`,
+		"/v2/dns": `[
+			{"id": "12345", "account_id": "1", "name": "example.com"},
+			{"id": "12346", "account_id": "1", "name": "example.net"}
+			]`,
+	})
+	defer server.Close()
+	provider := &CivoProvider{
+		Client:       *client,
+		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+	}
+
+	records, err := provider.Records(context.Background())
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(records), 0)
 }
 
 func TestCivoProcessCreateActions(t *testing.T) {
@@ -123,7 +156,7 @@ func TestCivoProcessCreateActions(t *testing.T) {
 		},
 	}
 
-	createsByDomain := map[string][]*endpoint.Endpoint{
+	createsByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
 			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.4"),
 			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
@@ -131,7 +164,7 @@ func TestCivoProcessCreateActions(t *testing.T) {
 	}
 
 	var changes CivoChanges
-	err := processCreateActions(zoneByID, recordsByZoneID, createsByDomain, &changes)
+	err := processCreateActions(zoneByID, recordsByZoneID, createsByZone, &changes)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(changes.Creates))
@@ -168,6 +201,38 @@ func TestCivoProcessCreateActions(t *testing.T) {
 	if !elementsMatch(t, expectedCreates, changes.Creates) {
 		assert.Failf(t, "diff: %s", cmp.Diff(expectedCreates, changes.Creates))
 	}
+}
+
+func TestCivoProcessCreateActionsLog(t *testing.T) {
+	zoneByID := map[string]civogo.DNSDomain{
+		"example.com": {
+			ID:        "1",
+			AccountID: "1",
+			Name:      "example.com",
+		},
+	}
+
+	recordsByZoneID := map[string][]civogo.DNSRecord{
+		"example.com": {
+			{
+				ID:          "1",
+				AccountID:   "1",
+				DNSDomainID: "1",
+				Name:        "txt",
+				Value:       "12.12.12.1",
+				Type:        "A",
+				TTL:         600,
+			},
+		},
+	}
+
+	createsByZone := map[string][]*endpoint.Endpoint{
+		"example.com": {},
+	}
+
+	var changes CivoChanges
+	err := processCreateActions(zoneByID, recordsByZoneID, createsByZone, &changes)
+	require.NoError(t, err)
 }
 
 func TestCivoProcessUpdateActions(t *testing.T) {
@@ -386,9 +451,7 @@ func TestCivoApplyChanges(t *testing.T) {
 	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}}}
 	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
 	err := provider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestCivoProviderFetchZones(t *testing.T) {
@@ -450,17 +513,31 @@ func TestCivoProviderFetchRecords(t *testing.T) {
 	}
 
 	expected, err := client.ListDNSRecords("12345")
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
+	assert.NoError(t, err)
+
 	actual, err := provider.fetchRecords(context.Background(), "12345")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
+
 	assert.ElementsMatch(t, expected, actual)
 }
 
-func TestCivoGetStrippedRecordName(t *testing.T) {
+func TestCivoProviderFetchRecordsWithError(t *testing.T) {
+	client, server, _ := civogo.NewClientForTesting(map[string]string{
+		"/v2/dns/12345/records": `[
+			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
+			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600}
+			]`,
+	})
+	defer server.Close()
+	provider := &CivoProvider{
+		Client: *client,
+	}
+
+	_, err := provider.fetchRecords(context.Background(), "235698")
+	assert.Error(t, err)
+}
+
+func TestCivo_getStrippedRecordName(t *testing.T) {
 	assert.Equal(t, "", getStrippedRecordName(civogo.DNSDomain{
 		Name: "foo.com",
 	}, endpoint.Endpoint{
@@ -474,7 +551,7 @@ func TestCivoGetStrippedRecordName(t *testing.T) {
 	}))
 }
 
-func TestCivoConvertRecordType(t *testing.T) {
+func TestCivo_convertRecordType(t *testing.T) {
 	record, err := convertRecordType("A")
 	recordA := civogo.DNSRecordType(civogo.DNSRecordTypeA)
 	require.NoError(t, err)
@@ -497,6 +574,9 @@ func TestCivoConvertRecordType(t *testing.T) {
 
 	_, err = convertRecordType("INVALID")
 	require.Error(t, err)
+
+	assert.Equal(t, "invalid Record Type: INVALID", err.Error())
+
 }
 
 func TestCivoProviderGetRecordID(t *testing.T) {

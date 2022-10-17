@@ -247,7 +247,7 @@ func processCreateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 			log.WithFields(log.Fields{
 				"zoneID":   zoneID,
 				"zoneName": zone.Name,
-			}).Debug("Skipping Zone, no creates found.")
+			}).Info("Skipping Zone, no creates found.")
 			continue
 		}
 
