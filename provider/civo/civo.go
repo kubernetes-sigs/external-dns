@@ -306,7 +306,6 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 
 		for _, ep := range updates {
 			matchedRecords := getRecordID(records, zone, *ep)
-
 			if len(matchedRecords) == 0 {
 				log.WithFields(log.Fields{
 					"zoneID":     zoneID,
@@ -317,13 +316,11 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 			}
 
 			recordType, err := convertRecordType(ep.RecordType)
-
 			if err != nil {
 				return err
 			}
 
 			matchedRecordsByTarget := make(map[string]civogo.DNSRecord)
-
 			for _, record := range matchedRecords {
 				matchedRecordsByTarget[record.Value] = record
 			}

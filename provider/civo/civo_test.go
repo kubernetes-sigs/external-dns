@@ -203,7 +203,7 @@ func TestCivoProcessCreateActions(t *testing.T) {
 	}
 }
 
-func TestCivoProcessCreateActionsLog(t *testing.T) {
+func TestCivoProcessCreateActionsWithError(t *testing.T) {
 	zoneByID := map[string]civogo.DNSDomain{
 		"example.com": {
 			ID:        "1",
@@ -227,12 +227,16 @@ func TestCivoProcessCreateActionsLog(t *testing.T) {
 	}
 
 	createsByZone := map[string][]*endpoint.Endpoint{
-		"example.com": {},
+		"example.com": {
+			endpoint.NewEndpoint("foo.example.com", "AAAA", "1.2.3.4"),
+			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeCNAME, "foo.example.com"),
+		},
 	}
 
 	var changes CivoChanges
 	err := processCreateActions(zoneByID, recordsByZoneID, createsByZone, &changes)
-	require.NoError(t, err)
+	require.Error(t, err)
+	assert.Equal(t, "invalid Record Type: AAAA", err.Error())
 }
 
 func TestCivoProcessUpdateActions(t *testing.T) {
@@ -276,7 +280,7 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 		},
 	}
 
-	updatesByDomain := map[string][]*endpoint.Endpoint{
+	updatesByZone := map[string][]*endpoint.Endpoint{
 		"example.com": {
 			endpoint.NewEndpoint("txt.example.com", endpoint.RecordTypeA, "10.20.30.40"),
 			endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeCNAME, "bar.example.com"),
@@ -284,7 +288,7 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 	}
 
 	var changes CivoChanges
-	err := processUpdateActions(zoneByID, recordsByZoneID, updatesByDomain, &changes)
+	err := processUpdateActions(zoneByID, recordsByZoneID, updatesByZone, &changes)
 	require.NoError(t, err)
 
 	assert.Equal(t, 2, len(changes.Creates))
@@ -320,6 +324,47 @@ func TestCivoProcessUpdateActions(t *testing.T) {
 
 	if !elementsMatch(t, expectedUpdate, changes.Creates) {
 		assert.Failf(t, "diff: %s", cmp.Diff(expectedUpdate, changes.Creates))
+	}
+
+	expectedDelete := []*CivoChangeDelete{
+		{
+			Domain: civogo.DNSDomain{
+				ID:        "1",
+				AccountID: "1",
+				Name:      "example.com",
+			},
+			DomainRecord: civogo.DNSRecord{
+				ID:          "1",
+				AccountID:   "1",
+				DNSDomainID: "1",
+				Name:        "txt",
+				Value:       "1.2.3.4",
+				Type:        "A",
+				Priority:    0,
+				TTL:         600,
+			},
+		},
+		{
+			Domain: civogo.DNSDomain{
+				ID:        "1",
+				AccountID: "1",
+				Name:      "example.com",
+			},
+			DomainRecord: civogo.DNSRecord{
+				ID:          "2",
+				AccountID:   "1",
+				DNSDomainID: "1",
+				Name:        "foo",
+				Value:       "foo.example.com",
+				Type:        "CNAME",
+				Priority:    0,
+				TTL:         600,
+			},
+		},
+	}
+
+	if !elementsMatch(t, expectedDelete, changes.Deletes) {
+		assert.Failf(t, "diff: %s", cmp.Diff(expectedDelete, changes.Deletes))
 	}
 }
 
@@ -576,7 +621,6 @@ func TestCivo_convertRecordType(t *testing.T) {
 	require.Error(t, err)
 
 	assert.Equal(t, "invalid Record Type: INVALID", err.Error())
-
 }
 
 func TestCivoProviderGetRecordID(t *testing.T) {
