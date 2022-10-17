@@ -67,6 +67,11 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	return records, nil
 }
 
+// MissingRecords returns nil because there is no missing records for AWSSD registry
+func (sdr *AWSSDRegistry) MissingRecords() []*endpoint.Endpoint {
+	return nil
+}
+
 // ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
 // inserted in the AWS SD instance as a CreateID field
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {

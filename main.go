@@ -51,7 +51,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
-	"sigs.k8s.io/external-dns/provider/hetzner"
+	"sigs.k8s.io/external-dns/provider/ibmcloud"
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
@@ -59,11 +59,13 @@ import (
 	"sigs.k8s.io/external-dns/provider/oci"
 	"sigs.k8s.io/external-dns/provider/ovh"
 	"sigs.k8s.io/external-dns/provider/pdns"
+	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
+	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
@@ -77,15 +79,15 @@ func main() {
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
+	if cfg.LogFormat == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
 	log.Infof("config: %s", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
 		log.Fatalf("config validation failed: %v", err)
 	}
 
-	if cfg.LogFormat == "json" {
-		log.SetFormatter(&log.JSONFormatter{})
-	}
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
@@ -114,6 +116,8 @@ func main() {
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		GatewayNamespace:               cfg.GatewayNamespace,
+		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,
 		PublishInternal:                cfg.PublishInternal,
 		PublishHostIP:                  cfg.PublishHostIP,
@@ -151,8 +155,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Filter targets
+	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
+
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
+	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
 	// RegexDomainFilter overrides DomainFilter
 	var domainFilter endpoint.DomainFilter
@@ -194,6 +202,7 @@ func main() {
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
 				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
 				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
@@ -206,13 +215,13 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID)
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.AWSAssumeRoleExternalID, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID)
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
 		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
+		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, cfg.TXTPrefix, cfg.TXTSuffix, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
 	case "vinyldns":
 		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "vultr":
@@ -227,8 +236,6 @@ func main() {
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
-	case "hetzner":
-		p, err = hetzner.NewHetznerProvider(ctx, domainFilter, cfg.DryRun)
 	case "ovh":
 		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
 	case "linode":
@@ -237,7 +244,7 @@ func main() {
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
 	case "infoblox":
 		p, err = infoblox.NewInfobloxProvider(
-			infoblox.InfobloxConfig{
+			infoblox.StartupConfig{
 				DomainFilter:  domainFilter,
 				ZoneIDFilter:  zoneIDFilter,
 				Host:          cfg.InfobloxGridHost,
@@ -325,8 +332,14 @@ func main() {
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+	case "ibmcloud":
+		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
 	case "safedns":
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
+	case "plural":
+		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
+	case "tencentcloud":
+		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
@@ -339,7 +352,7 @@ func main() {
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes)
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
 	default:

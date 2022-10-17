@@ -122,9 +122,11 @@ spec:
     http:
       paths:
       - backend:
-          serviceName: my-awesome-service
-          servicePort: 8080
-
+          service:
+            name: my-awesome-service
+            port:
+              number: 8080
+        pathType: Prefix
 ```
 
 As the DNS name `test-ingress.example.com` matches the filter, external-dns will create two records:

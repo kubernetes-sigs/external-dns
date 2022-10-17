@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
@@ -50,6 +51,8 @@ type Config struct {
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
+	GatewayNamespace               string
+	GatewayLabelFilter             string
 	Compatibility                  string
 	PublishInternal                bool
 	PublishHostIP                  bool
@@ -74,6 +77,7 @@ type Config struct {
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
+	GatewayClient() (gateway.Interface, error)
 	IstioClient() (istioclient.Interface, error)
 	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
@@ -87,11 +91,13 @@ type SingletonClientGenerator struct {
 	APIServerURL    string
 	RequestTimeout  time.Duration
 	kubeClient      kubernetes.Interface
+	gatewayClient   gateway.Interface
 	istioClient     *istioclient.Clientset
 	cfClient        *cfclient.Client
 	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
+	gatewayOnce     sync.Once
 	istioOnce       sync.Once
 	cfOnce          sync.Once
 	dynCliOnce      sync.Once
@@ -105,6 +111,28 @@ func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.kubeClient, err
+}
+
+// GatewayClient generates a gateway client if it was not created before
+func (p *SingletonClientGenerator) GatewayClient() (gateway.Interface, error) {
+	var err error
+	p.gatewayOnce.Do(func() {
+		p.gatewayClient, err = newGatewayClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
+	})
+	return p.gatewayClient, err
+}
+
+func newGatewayClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (gateway.Interface, error) {
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gateway.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Created GatewayAPI client %s", config.Host)
+	return client, nil
 }
 
 // IstioClient generates an istio go client if it was not created before
@@ -199,6 +227,14 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
+	case "gateway-httproute":
+		return NewGatewayHTTPRouteSource(p, cfg)
+	case "gateway-tlsroute":
+		return NewGatewayTLSRouteSource(p, cfg)
+	case "gateway-tcproute":
+		return NewGatewayTCPRouteSource(p, cfg)
+	case "gateway-udproute":
+		return NewGatewayUDPRouteSource(p, cfg)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -296,6 +332,23 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 	return nil, ErrSourceNotFound
 }
 
+func instrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*rest.Config, error) {
+	config, err := GetRestConfig(kubeConfig, apiServerURL)
+	if err != nil {
+		return nil, err
+	}
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
+	}
+	config.Timeout = requestTimeout
+	return config, nil
+}
+
 // GetRestConfig returns the rest clients config to get automatically
 // data if you run inside a cluster or by passing flags.
 func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
@@ -331,28 +384,15 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
 	log.Infof("Instantiating new Kubernetes client")
-	config, err := GetRestConfig(kubeConfig, apiServerURL)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.Timeout = requestTimeout
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created Kubernetes client %s", config.Host)
-
 	return client, nil
 }
 
@@ -388,35 +428,15 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (dynamic.Interface, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	config.Timeout = requestTimeout
-
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created Dynamic Kubernetes client %s", config.Host)
-
 	return client, nil
 }
 
@@ -424,34 +444,14 @@ func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout 
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewOpenShiftClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*openshift.Clientset, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	config.Timeout = requestTimeout
-
 	client, err := openshift.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created OpenShift client %s", config.Host)
-
 	return client, nil
 }

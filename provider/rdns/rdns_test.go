@@ -282,7 +282,6 @@ func TestRDNSApplyChanges(t *testing.T) {
 	}
 
 	client.validateRecords(client.rs, expectedRecords3, t)
-
 }
 
 func (c fakeEtcdv3Client) aggregationRecords(result *clientv3.GetResponse) ([]RDNSRecord, error) {

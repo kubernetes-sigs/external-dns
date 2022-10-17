@@ -66,7 +66,8 @@ func NewAmbassadorHostSource(
 	ctx context.Context,
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
-	namespace string) (Source, error) {
+	namespace string,
+) (Source, error) {
 	var err error
 
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
@@ -134,12 +135,14 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 		targets, err := sc.targetsFromAmbassadorLoadBalancer(ctx, service)
 		if err != nil {
-			return nil, err
+			log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
+			continue
 		}
 
 		hostEndpoints, err := sc.endpointsFromHost(ctx, host, targets)
 		if err != nil {
-			return nil, err
+			log.Warningf("Could not get endpoints for Host %s", err)
+			continue
 		}
 		if len(hostEndpoints) == 0 {
 			log.Debugf("No endpoints could be generated from Host %s", fullname)

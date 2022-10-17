@@ -75,9 +75,11 @@ func (m *mockDigitalOceanClient) CreateRecord(context.Context, string, *godo.Dom
 func (m *mockDigitalOceanClient) Delete(context.Context, string) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanClient) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanClient) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
@@ -157,9 +159,11 @@ func (m *mockDigitalOceanRecordsFail) CreateRecord(context.Context, string, *god
 func (m *mockDigitalOceanRecordsFail) Delete(context.Context, string) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }

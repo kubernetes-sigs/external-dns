@@ -16,14 +16,14 @@ package gandi
 import (
 	"context"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+	"testing"
+
 	"github.com/go-gandi/go-gandi/domain"
 	"github.com/go-gandi/go-gandi/livedns"
 	"github.com/maxatome/go-testdeep/td"
-	"strings"
-
-	"os"
-	"reflect"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 
@@ -62,9 +62,11 @@ func mockGandiClientNewWithFailure(functionToFail string) *mockGandiClient {
 	}
 }
 
-const domainUriPrefix = "https://api.gandi.net/v5/domain/domains/"
-const exampleDotComUri = domainUriPrefix + "example.com"
-const exampleDotNetUri = domainUriPrefix + "example.net"
+const (
+	domainUriPrefix  = "https://api.gandi.net/v5/domain/domains/"
+	exampleDotComUri = domainUriPrefix + "example.com"
+	exampleDotNetUri = domainUriPrefix + "example.net"
+)
 
 func testRecords() []livedns.DomainRecord {
 	return []livedns.DomainRecord{
@@ -286,7 +288,6 @@ func TestGandiProvider_TestData(t *testing.T) {
 	if !reflect.DeepEqual(expectedRecordsAnswer, testingRecordsAnswer) {
 		t.Errorf("should be equal, %s", err)
 	}
-
 }
 
 func TestGandiProvider_Records(t *testing.T) {
@@ -319,7 +320,6 @@ func TestGandiProvider_Records(t *testing.T) {
 }
 
 func TestGandiProvider_RecordsAppliesDomainFilter(t *testing.T) {
-
 	mockedClient := mockGandiClientNew()
 
 	mockedProvider := &GandiProvider{
@@ -343,7 +343,6 @@ func TestGandiProvider_RecordsAppliesDomainFilter(t *testing.T) {
 }
 
 func TestGandiProvider_RecordsErrorOnMultipleValues(t *testing.T) {
-
 	mockedClient := mockGandiClientNewWithRecords([]livedns.DomainRecord{
 		{
 			RrsetValues: []string{"foo", "bar"},

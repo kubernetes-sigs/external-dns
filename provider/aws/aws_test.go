@@ -62,7 +62,7 @@ type Route53APIStub struct {
 // MockMethod starts a description of an expectation of the specified method
 // being called.
 //
-//     Route53APIStub.MockMethod("MyMethod", arg1, arg2)
+//	Route53APIStub.MockMethod("MyMethod", arg1, arg2)
 func (r *Route53APIStub) MockMethod(method string, args ...interface{}) *mock.Call {
 	return r.m.On(method, args...)
 }
@@ -1084,11 +1084,13 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.ap-northeast-3.elb.amazonaws.com", "Z5LXEXXYW11ES"},
 		{"foo.ap-southeast-1.elb.amazonaws.com", "Z1LMS91P8CMLE5"},
 		{"foo.ap-southeast-2.elb.amazonaws.com", "Z1GM3OXH4ZPM65"},
+		{"foo.ap-southeast-3.elb.amazonaws.com", "Z08888821HLRG5A9ZRTER"},
 		{"foo.ap-northeast-1.elb.amazonaws.com", "Z14GRHDCWA56QT"},
 		{"foo.eu-central-1.elb.amazonaws.com", "Z215JYRZR1TBD5"},
 		{"foo.eu-west-1.elb.amazonaws.com", "Z32O12XQLNTSW2"},
 		{"foo.eu-west-2.elb.amazonaws.com", "ZHURV8PSTC4K8"},
 		{"foo.eu-west-3.elb.amazonaws.com", "Z3Q77PNBQS71R4"},
+		{"foo.eu-south-1.elb.amazonaws.com", "Z3ULH7SSC9OV64"},
 		{"foo.sa-east-1.elb.amazonaws.com", "Z2P70J7HTTTPLU"},
 		{"foo.cn-north-1.elb.amazonaws.com.cn", "Z1GDH35T77C1KE"},
 		{"foo.cn-northwest-1.elb.amazonaws.com.cn", "ZM7IZAIOVVDZF"},
@@ -1104,11 +1106,13 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 		{"foo.elb.ap-northeast-2.amazonaws.com", "ZIBE1TIR4HY56"},
 		{"foo.elb.ap-southeast-1.amazonaws.com", "ZKVM4W9LS7TM"},
 		{"foo.elb.ap-southeast-2.amazonaws.com", "ZCT6FZBF4DROD"},
+		{"foo.elb.ap-southeast-3.amazonaws.com", "Z01971771FYVNCOVWJU1G"},
 		{"foo.elb.ap-northeast-1.amazonaws.com", "Z31USIVHYNEOWT"},
 		{"foo.elb.eu-central-1.amazonaws.com", "Z3F0SRJ5LGBH90"},
 		{"foo.elb.eu-west-1.amazonaws.com", "Z2IFOLAFXWLO4F"},
 		{"foo.elb.eu-west-2.amazonaws.com", "ZD4D7Y8KGAS4G"},
 		{"foo.elb.eu-west-3.amazonaws.com", "Z1CMS0P5QUZ6D5"},
+		{"foo.elb.eu-south-1.amazonaws.com", "Z23146JA1KNAFP"},
 		{"foo.elb.sa-east-1.amazonaws.com", "ZTK26PT1VY4CU"},
 		{"foo.elb.cn-north-1.amazonaws.com.cn", "Z3QFB96KMJ7ED6"},
 		{"foo.elb.cn-northwest-1.amazonaws.com.cn", "ZQEIKTCZ8352D"},
@@ -1237,7 +1241,6 @@ func setupAWSRecords(t *testing.T, provider *AWSProvider, endpoints []*endpoint.
 
 	_, err = provider.Records(ctx)
 	require.NoError(t, err)
-
 }
 
 func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.ResourceRecordSet {
@@ -1297,6 +1300,7 @@ func escapeAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
 		require.NoError(t, err)
 	}
 }
+
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []*endpoint.Endpoint) (*AWSProvider, *Route53APIStub) {
 	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }

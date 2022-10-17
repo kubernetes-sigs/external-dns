@@ -103,7 +103,7 @@ func (p *vinyldnsProvider) Records(ctx context.Context) (endpoints []*endpoint.E
 				recordsCount := len(r.Records)
 				log.Debugf(fmt.Sprintf("%s.%s.%d.%s", r.Name, r.Type, recordsCount, zone.Name))
 
-				//TODO: AAAA Records
+				// TODO: AAAA Records
 				if len(r.Records) > 0 {
 					targets := make([]string, len(r.Records))
 					for idx, rr := range r.Records {
@@ -231,7 +231,7 @@ func newVinylDNSChanges(action string, endpoints []*endpoint.Endpoint) []*vinyld
 }
 
 func newVinylDNSChange(action string, endpoint *endpoint.Endpoint) *vinyldnsChange {
-	var ttl = vinyldnsRecordTTL
+	ttl := vinyldnsRecordTTL
 	if endpoint.RecordTTL.IsConfigured() {
 		ttl = int(endpoint.RecordTTL)
 	}

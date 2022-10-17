@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "external-dns.fullname" . }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
@@ -13,6 +14,8 @@ spec:
   selector:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
+  strategy:
+    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
   template:
     metadata:
       labels:
@@ -30,6 +33,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "external-dns.serviceAccountName" . }}
+      {{- with .Values.shareProcessNamespace }}
+      shareProcessNamespace: {{ . }}
+      {{- end }}
       {{- with .Values.podSecurityContext }}
       securityContext:
         {{- toYaml . | nindent 8 }}
@@ -39,6 +45,9 @@ spec:
       {{- end }}
       {{- with .Values.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
       {{- end }}
       containers:
         - name: external-dns

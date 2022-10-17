@@ -32,7 +32,7 @@ type LabelsSuite struct {
 	barTextAsMap         Labels
 	noHeritageText       string
 	wrongHeritageText    string
-	multipleHeritageText string //considered invalid
+	multipleHeritageText string // considered invalid
 }
 
 func (suite *LabelsSuite) SetupTest() {
@@ -48,7 +48,7 @@ func (suite *LabelsSuite) SetupTest() {
 		"resource": "bar-resource",
 		"new-key":  "bar-new-key",
 	}
-	suite.barText = "heritage=external-dns,,external-dns/owner=bar-owner,external-dns/resource=bar-resource,external-dns/new-key=bar-new-key,random=stuff,no-equal-sign,," //also has some random gibberish
+	suite.barText = "heritage=external-dns,,external-dns/owner=bar-owner,external-dns/resource=bar-resource,external-dns/new-key=bar-new-key,random=stuff,no-equal-sign,," // also has some random gibberish
 
 	suite.noHeritageText = "external-dns/owner=random-owner"
 	suite.wrongHeritageText = "heritage=mate,external-dns/owner=random-owner"
