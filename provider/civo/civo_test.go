@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
+
 func TestNewCivoProvider(t *testing.T) {
 	_ = os.Setenv("CIVO_TOKEN", "xxxxxxxxxxxxxxx")
 	_, err := NewCivoProvider(endpoint.NewDomainFilter([]string{"test.civo.com"}), true)
