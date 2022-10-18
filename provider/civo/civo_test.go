@@ -110,7 +110,6 @@ func TestCivoProviderRecords(t *testing.T) {
 	assert.Equal(t, strings.TrimSuffix(records[1].DNSName, ".example.com"), expected[1].Name)
 	assert.Equal(t, records[1].RecordType, string(expected[1].Type))
 	assert.Equal(t, int(records[1].RecordTTL), expected[1].TTL)
-
 }
 
 func TestCivoProviderWithoutRecords(t *testing.T) {
@@ -649,6 +648,149 @@ func TestCivoProviderGetRecordID(t *testing.T) {
 	id := getRecordID(record, zone, endPoint)
 
 	assert.Equal(t, id[0].ID, record[0].ID)
+}
+
+func TestCivo_submitChangesCreate(t *testing.T) {
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "POST",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					RequestBody: `{"type":"MX","name":"mail","value":"10.0.0.1","priority":10,"ttl":600}`,
+					URL:         "/v2/dns/12345/records",
+					ResponseBody: `{
+						"id": "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+						"account_id": "1",
+						"domain_id": "12345",
+						"name": "mail",
+						"value": "10.0.0.1",
+						"type": "MX",
+						"priority": 10,
+						"ttl": 600
+					}`,
+				},
+			},
+		},
+	})
+	defer server.Close()
+
+	provider := &CivoProvider{
+		Client: *client,
+		DryRun: false,
+	}
+
+	changes := CivoChanges{
+		Creates: []*CivoChangeCreate{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				Options: &civogo.DNSRecordConfig{
+					Type:     "MX",
+					Name:     "mail",
+					Value:    "10.0.0.1",
+					Priority: 10,
+					TTL:      600,
+				},
+			},
+		},
+	}
+
+	err := provider.submitChanges(context.Background(), changes)
+	assert.NoError(t, err)
+}
+
+func TestCivo_submitChangesUpdate(t *testing.T) {
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "PUT",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					RequestBody: `{"type":"MX","name":"mail","value":"10.0.0.2","priority":10,"ttl":600}`,
+					URL:         "/v2/dns/12345/records/76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					ResponseBody: `{
+						"id": "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+						"account_id": "1",
+						"domain_id": "12345",
+						"name": "mail",
+						"value": "10.0.0.2",
+						"type": "MX",
+						"priority": 10,
+						"ttl": 600
+					}`,
+				},
+			},
+		},
+	})
+	defer server.Close()
+
+	provider := &CivoProvider{
+		Client: *client,
+		DryRun: false,
+	}
+
+	changes := CivoChanges{
+		Updates: []*CivoChangeUpdate{
+			{
+				Domain: civogo.DNSDomain{ID: "12345", AccountID: "1", Name: "example.com"},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "10.0.0.1",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+				Options: civogo.DNSRecordConfig{
+					Type:     "MX",
+					Name:     "mail",
+					Value:    "10.0.0.2",
+					Priority: 10,
+					TTL:      600,
+				},
+			},
+		},
+	}
+
+	err := provider.submitChanges(context.Background(), changes)
+	assert.NoError(t, err)
+}
+
+func TestCivo_submitChangesDelete(t *testing.T) {
+	client, server, _ := civogo.NewClientForTesting(map[string]string{
+		"/v2/dns/12345/records/76cc107f-fbef-4e2b-b97f-f5d34f4075d3": `{"result": "success"}`,
+	})
+	defer server.Close()
+
+	provider := &CivoProvider{
+		Client: *client,
+		DryRun: false,
+	}
+
+	changes := CivoChanges{
+		Deletes: []*CivoChangeDelete{
+			{
+				Domain: civogo.DNSDomain{ID: "12345", AccountID: "1", Name: "example.com"},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "10.0.0.2",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+			},
+		},
+	}
+
+	err := provider.submitChanges(context.Background(), changes)
+	assert.NoError(t, err)
 }
 
 // This function is an adapted copy of the testify package's ElementsMatch function with the
