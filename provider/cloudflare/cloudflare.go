@@ -242,16 +242,16 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
+		for _, a := range remove {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
+		}
+
 		for _, a := range add {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a))
 		}
 
 		for _, a := range leave {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a))
-		}
-
-		for _, a := range remove {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
 		}
 	}
 
