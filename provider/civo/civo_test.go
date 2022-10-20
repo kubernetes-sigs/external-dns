@@ -83,23 +83,40 @@ func TestCivoProviderZonesWithError(t *testing.T) {
 }
 
 func TestCivoProviderRecords(t *testing.T) {
-	client, server, _ := civogo.NewClientForTesting(map[string]string{
-		"/v2/dns/12345/records": `[
-			{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
-			{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600}
-			]`,
-		"/v2/dns": `[
-			{"id": "12345", "account_id": "1", "name": "example.com"},
-			{"id": "12346", "account_id": "1", "name": "example.net"}
-			]`,
+	client, server, _ := civogo.NewAdvancedClientForTesting([]civogo.ConfigAdvanceClientForTesting{
+		{
+			Method: "GET",
+			Value: []civogo.ValueAdvanceClientForTesting{
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns/12345/records",
+					ResponseBody: `[
+						{"id": "1", "domain_id":"12345", "account_id": "1", "name": "www", "type": "A", "value": "10.0.0.0", "ttl": 600},
+						{"id": "2", "account_id": "1", "domain_id":"12345", "name": "mail", "type": "A", "value": "10.0.0.1", "ttl": 600}
+						]`,
+				},
+				{
+					RequestBody: ``,
+					URL:         "/v2/dns",
+					ResponseBody: `[
+						{"id": "12345", "account_id": "1", "name": "example.com"},
+						{"id": "12346", "account_id": "1", "name": "example.net"}
+						]`,
+				},
+			},
+		},
 	})
+
+
 	defer server.Close()
 	provider := &CivoProvider{
 		Client:       *client,
 		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
 	}
 
-	expected, _ := client.ListDNSRecords("12345")
+	expected, err := client.ListDNSRecords("12345")
+	assert.NoError(t, err)
+	
 	records, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
