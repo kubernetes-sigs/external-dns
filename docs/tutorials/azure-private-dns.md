@@ -19,7 +19,7 @@ Therefore, please see the subsequent prerequisites.
 
 Helm is used to deploy the ingress controller. 
 
-We employ the popular chart [stable/nginx-ingress](https://github.com/helm/charts/tree/HEAD/stable/nginx-ingress).
+We employ the popular chart [ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx).
 
 ```
 $ helm install stable/nginx-ingress \
