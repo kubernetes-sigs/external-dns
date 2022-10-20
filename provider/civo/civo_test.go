@@ -107,7 +107,6 @@ func TestCivoProviderRecords(t *testing.T) {
 		},
 	})
 
-
 	defer server.Close()
 	provider := &CivoProvider{
 		Client:       *client,
@@ -116,7 +115,7 @@ func TestCivoProviderRecords(t *testing.T) {
 
 	expected, err := client.ListDNSRecords("12345")
 	assert.NoError(t, err)
-	
+
 	records, err := provider.Records(context.Background())
 	assert.NoError(t, err)
 
