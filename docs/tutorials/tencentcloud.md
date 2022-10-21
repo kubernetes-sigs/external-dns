@@ -1,7 +1,7 @@
 # Setting up ExternalDNS for Tencent Cloud
 
 ## External Dns Version
-* Make sure to use **>=1.7.2** version of ExternalDNS for this tutorial
+* Make sure to use **>=0.13.1** version of ExternalDNS for this tutorial
 
 ## Set up PrivateDns or DNSPod
 
@@ -101,7 +101,8 @@ data:
       "regionId": "ap-shanghai",
       "secretId": "******",  
       "secretKey": "******",
-      "vpcId": "vpc-******"
+      "vpcId": "vpc-******",
+      "internetEndpoint": false  # Default: false. Access the Tencent API through the intranet. If you need to deploy on the public network, you need to change to true
     }
 ---
 apiVersion: apps/v1
@@ -128,7 +129,7 @@ spec:
         - --policy=sync # set `upsert-only` would prevent ExternalDNS from deleting any records
         - --tencent-cloud-zone-type=private # only look at private hosted zones. set `public` to use the public dns service.
         - --tencent-cloud-config-file=/etc/kubernetes/tencent-cloud.json
-        image: k8s.gcr.io/external-dns/external-dns:v1.7.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         imagePullPolicy: Always
         name: external-dns
         resources: {}
@@ -139,6 +140,11 @@ spec:
           name: config-volume
           readOnly: true
       dnsPolicy: ClusterFirst
+      hostAliases:
+      - hostnames:
+        - privatedns.internal.tencentcloudapi.com
+        - dnspod.internal.tencentcloudapi.com
+        ip: 169.254.0.95
       restartPolicy: Always
       schedulerName: default-scheduler
       securityContext: {}
