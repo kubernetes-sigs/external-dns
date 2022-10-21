@@ -101,6 +101,10 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			newEndpointWithOwner("multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
 			newEndpointWithOwner("*.wildcard.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("txt.wc.wildcard.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("txt.dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
+			newEndpointWithOwner("aaaa-txt.dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -181,6 +185,22 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"2001:DB8::1"},
+			RecordType: endpoint.RecordTypeAAAA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner-2",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{})
@@ -214,6 +234,10 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 			newEndpointWithOwner("multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-1"),
 			newEndpointWithOwner("multiple.test-zone.example.org", "lb2.loadbalancer.com", endpoint.RecordTypeCNAME, "").WithSetIdentifier("test-set-2"),
 			newEndpointWithOwner("multiple.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("test-set-2"),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
+			newEndpointWithOwner("aaaa-dualstack-txt.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -286,6 +310,22 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 				endpoint.OwnerLabelKey: "",
 			},
 		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"2001:DB8::1"},
+			RecordType: endpoint.RecordTypeAAAA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner-2",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "", "-txt", "owner", time.Hour, "", []string{})
@@ -315,6 +355,10 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.tar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("foobar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
+			newEndpointWithOwner("aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -365,6 +409,22 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "dualstack.test-zone.example.org",
+			Targets:    endpoint.Targets{"2001:DB8::1"},
+			RecordType: endpoint.RecordTypeAAAA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner-2",
 			},
 		},
 	}
@@ -1012,6 +1072,7 @@ func TestCacheMethods(t *testing.T) {
 		newEndpointWithOwner("thing2.com", "1.2.3.4", "CNAME", "owner"),
 		newEndpointWithOwner("thing3.com", "1.2.3.4", "A", "owner"),
 		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
+		newEndpointWithOwner("thing4.com", "2001:DB8::1", "AAAA", "owner"),
 		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
 	}
 
@@ -1022,6 +1083,7 @@ func TestCacheMethods(t *testing.T) {
 		newEndpointWithOwner("thing4.com", "1.2.3.4", "A", "owner"),
 		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
 		newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"),
+		newEndpointWithOwner("thing4.com", "2001:DB8::2", "AAAA", "owner"),
 	}
 
 	expectedCacheAfterDelete := []*endpoint.Endpoint{
@@ -1032,6 +1094,7 @@ func TestCacheMethods(t *testing.T) {
 		newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"),
 	}
 	// test add cache
+	registry.addToCache(newEndpointWithOwner("thing4.com", "2001:DB8::1", "AAAA", "owner"))
 	registry.addToCache(newEndpointWithOwner("thing5.com", "1.2.3.5", "A", "owner"))
 
 	if !reflect.DeepEqual(expectedCacheAfterAdd, registry.recordsCache) {
@@ -1041,6 +1104,8 @@ func TestCacheMethods(t *testing.T) {
 	// test update cache
 	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"))
 	registry.addToCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	registry.removeFromCache(newEndpointWithOwner("thing4.com", "2001:DB8::1", "AAAA", "owner"))
+	registry.addToCache(newEndpointWithOwner("thing4.com", "2001:DB8::2", "AAAA", "owner"))
 	// ensure it was updated
 	if !reflect.DeepEqual(expectedCacheAfterUpdate, registry.recordsCache) {
 		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterUpdate, registry.recordsCache)
@@ -1048,6 +1113,7 @@ func TestCacheMethods(t *testing.T) {
 
 	// test deleting a record
 	registry.removeFromCache(newEndpointWithOwner("thing.com", "1.2.3.6", "A", "owner2"))
+	registry.removeFromCache(newEndpointWithOwner("thing4.com", "2001:DB8::2", "AAAA", "owner"))
 	// ensure it was deleted
 	if !reflect.DeepEqual(expectedCacheAfterDelete, registry.recordsCache) {
 		t.Fatalf("expected endpoints should match endpoints from cache: expected %v, but got %v", expectedCacheAfterDelete, registry.recordsCache)
@@ -1075,11 +1141,40 @@ func TestDropSuffix(t *testing.T) {
 	assert.Equal(t, expectedARecord, actualARecord)
 }
 
-func TestDropRecordType(t *testing.T) {
-	r := "ns-zone.example.com"
-	expectedRecord := "zone.example.com"
-	actualRecord := dropRecordType(r)
-	assert.Equal(t, expectedRecord, actualRecord)
+func TestExtractRecordType(t *testing.T) {
+	tests := []struct {
+		input        string
+		expectedName string
+		expectedType string
+	}{
+		{
+			input:        "ns-zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "NS",
+		},
+		{
+			input:        "aaaa-zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "AAAA",
+		},
+		{
+			input:        "ptr-zone.example.com",
+			expectedName: "ptr-zone.example.com",
+			expectedType: "",
+		},
+		{
+			input:        "zone.example.com",
+			expectedName: "zone.example.com",
+			expectedType: "",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			actualName, actualType := extractRecordType(tc.input)
+			assert.Equal(t, tc.expectedName, actualName)
+			assert.Equal(t, tc.expectedType, actualType)
+		})
+	}
 }
 
 func TestNewTXTScheme(t *testing.T) {
@@ -1171,6 +1266,25 @@ func TestGenerateTXT(t *testing.T) {
 		},
 		{
 			DNSName:    "cname-foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType: endpoint.RecordTypeTXT,
+			Labels: map[string]string{
+				endpoint.OwnedRecordLabelKey: "foo.test-zone.example.org",
+			},
+		},
+	}
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{})
+	gotTXT := r.generateTXTRecord(record)
+	assert.Equal(t, expectedTXT, gotTXT)
+}
+
+func TestGenerateTXTForAAAA(t *testing.T) {
+	record := newEndpointWithOwner("foo.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, "owner")
+	expectedTXT := []*endpoint.Endpoint{
+		{
+			DNSName:    "aaaa-foo.test-zone.example.org",
 			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
 			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
