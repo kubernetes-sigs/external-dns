@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
@@ -142,8 +143,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 	}, nil
 }
 
-// Endpoints returns endpoint objects for each service that should be processed.
-func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (sc *serviceSource) Services() ([]*v1.Service, error) {
 	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(sc.labelSelector)
 	if err != nil {
 		return nil, err
@@ -156,6 +156,15 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 	// filter on service types if at least one has been provided
 	if len(sc.serviceTypeFilter) > 0 {
 		services = sc.filterByServiceType(services)
+	}
+	return services, nil
+}
+
+// Endpoints returns endpoint objects for each service that should be processed.
+func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	services, err := sc.Services()
+	if err != nil {
+		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
@@ -665,6 +674,117 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets e
 	return endpoints
 }
 
+type eventCheckingHandlerFunc struct {
+	checker func(obj interface{}) bool
+	fn      func()
+}
+
+func (e eventCheckingHandlerFunc) OnAdd(obj interface{}) {
+	if e.checker(obj) {
+		e.fn()
+	}
+}
+func (e eventCheckingHandlerFunc) OnUpdate(oldObj, newObj interface{}) {
+	if e.checker(oldObj) || e.checker(newObj) {
+		e.fn()
+	}
+}
+func (e eventCheckingHandlerFunc) OnDelete(obj interface{}) {
+	if e.checker(obj) {
+		e.fn()
+	}
+}
+
+func eventCheckingHandler(checker func(obj interface{}) bool, fn func()) eventCheckingHandlerFunc {
+	return eventCheckingHandlerFunc{
+		checker: checker,
+		fn:      fn,
+	}
+}
+
+func (sc *serviceSource) serviceNeedsUpdate(svc *v1.Service) bool {
+	if !sc.labelSelector.Matches(labels.Set(svc.Labels)) {
+		return false
+	}
+
+	services, err := sc.filterByAnnotations([]*v1.Service{svc})
+	if err != nil {
+		return false
+	}
+
+	// filter on service types if at least one has been provided
+	if len(sc.serviceTypeFilter) > 0 {
+		services = sc.filterByServiceType(services)
+	}
+
+	// Check controller annotation to see if we are responsible.
+	controller, ok := svc.Annotations[controllerAnnotationKey]
+	if ok && controller != controllerAnnotationValue {
+		return false
+	}
+
+	return len(services) > 0
+}
+
+func (sc *serviceSource) endpointsNeedUpdate(endpointObj *v1.Endpoints) bool {
+	svc, err := sc.serviceInformer.Lister().Services(endpointObj.Namespace).Get(endpointObj.GetName())
+	if err != nil {
+		return false
+	}
+	return sc.serviceNeedsUpdate(svc)
+}
+
+func (sc *serviceSource) nodeNeedsUpdate(oldNode *v1.Node, newNode *v1.Node) bool {
+	var oldInternalIPs []string
+	var oldExternalIPs []string
+	for _, address := range oldNode.Status.Addresses {
+		switch address.Type {
+		case v1.NodeExternalIP:
+			oldExternalIPs = append(oldExternalIPs, address.Address)
+		case v1.NodeInternalIP:
+			oldInternalIPs = append(oldInternalIPs, address.Address)
+		}
+	}
+	sort.Strings(oldInternalIPs)
+	sort.Strings(oldExternalIPs)
+
+	var newInternalIPs []string
+	var newExternalIPs []string
+	for _, address := range newNode.Status.Addresses {
+		switch address.Type {
+		case v1.NodeExternalIP:
+			newExternalIPs = append(newExternalIPs, address.Address)
+		case v1.NodeInternalIP:
+			newInternalIPs = append(newInternalIPs, address.Address)
+		}
+	}
+	sort.Strings(newInternalIPs)
+	sort.Strings(newExternalIPs)
+
+	return !reflect.DeepEqual(oldInternalIPs, newInternalIPs) || !reflect.DeepEqual(oldExternalIPs, newExternalIPs)
+}
+
+func (sc *serviceSource) podNeedsUpdate(pod *v1.Pod) bool {
+	services, err := sc.Services()
+	if err != nil {
+		return false
+	}
+	for _, svc := range services {
+		labelSelector, err := metav1.ParseToLabelSelector(labels.Set(svc.Spec.Selector).AsSelectorPreValidated().String())
+		if err != nil {
+			return false
+		}
+		selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+		if err != nil {
+			return false
+		}
+		if selector.Matches(labels.Set(pod.Labels)) {
+			return true
+		}
+	}
+	return false
+}
+
 func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	log.Debug("Adding event handler for service")
 
@@ -673,15 +793,38 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	for _, eventObject := range sc.eventSources {
 		switch eventObject {
 		case "services":
-			sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+			sc.serviceInformer.Informer().AddEventHandler(eventCheckingHandler(func(obj interface{}) bool {
+				svc := obj.(*v1.Service)
+				return sc.serviceNeedsUpdate(svc)
+			}, handler))
 		case "endpoints":
-			sc.endpointsInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+			sc.endpointsInformer.Informer().AddEventHandler(eventCheckingHandler(func(obj interface{}) bool {
+				endpoints := obj.(*v1.Endpoints)
+				return sc.endpointsNeedUpdate(endpoints)
+			}, handler))
 		case "nodes":
-			sc.nodeInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+			sc.nodeInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {
+					handler()
+				},
+				DeleteFunc: func(obj interface{}) {
+					handler()
+				},
+				// node updates are slightly more tricky, usually we should update when nodes are added / go away,
+				// except when an IP changed on a live node, in which case we do need to update
+				UpdateFunc: func(oldObj interface{}, newObj interface{}) {
+					oldNode := oldObj.(*v1.Node)
+					newNode := newObj.(*v1.Node)
+					if sc.nodeNeedsUpdate(oldNode, newNode) {
+						handler()
+					}
+				},
+			})
 		case "pods":
-			if sc.publishHostIP {
-				sc.podInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-			}
+			sc.podInformer.Informer().AddEventHandler(eventCheckingHandler(func(obj interface{}) bool {
+				pod := obj.(*v1.Pod)
+				return sc.podNeedsUpdate(pod)
+			}, handler))
 		}
 	}
 }
