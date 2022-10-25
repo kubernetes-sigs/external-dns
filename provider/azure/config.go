@@ -17,8 +17,10 @@ limitations under the License.
 package azure
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -29,16 +31,17 @@ import (
 
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
-	Cloud                       string            `json:"cloud" yaml:"cloud"`
-	Environment                 azure.Environment `json:"-" yaml:"-"`
-	TenantID                    string            `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID              string            `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup               string            `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                    string            `json:"location" yaml:"location"`
-	ClientID                    string            `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                string            `json:"aadClientSecret" yaml:"aadClientSecret"`
-	UseManagedIdentityExtension bool              `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
-	UserAssignedIdentityID      string            `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	Cloud                        string            `json:"cloud" yaml:"cloud"`
+	Environment                  azure.Environment `json:"-" yaml:"-"`
+	TenantID                     string            `json:"tenantId" yaml:"tenantId"`
+	SubscriptionID               string            `json:"subscriptionId" yaml:"subscriptionId"`
+	ResourceGroup                string            `json:"resourceGroup" yaml:"resourceGroup"`
+	Location                     string            `json:"location" yaml:"location"`
+	ClientID                     string            `json:"aadClientId" yaml:"aadClientId"`
+	ClientSecret                 string            `json:"aadClientSecret" yaml:"aadClientSecret"`
+	UseManagedIdentityExtension  bool              `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	UseWorkloadIdentityExtension bool              `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
+	UserAssignedIdentityID       string            `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 }
 
 func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (*config, error) {
@@ -100,6 +103,35 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		return token, nil
 	}
 
+	// Try to retrieve token with Workload Identity.
+	if cfg.UseWorkloadIdentityExtension {
+		log.Info("Using workload identity extension to retrieve access token for Azure API.")
+
+		token, err := getWIToken(environment)
+		if err != nil {
+			return nil, err
+		}
+
+		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
+		// we're using up-to-date secret while requesting an access token
+		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
+			newWIToken, err := getWIToken(environment)
+			if err != nil {
+				return nil, err
+			}
+
+			// Need to call Refresh(), otherwise .Token() will be empty
+			newWIToken.Refresh()
+			accessToken := newWIToken.Token()
+
+			return &accessToken, nil
+		}
+
+		token.SetCustomRefreshFunc(refreshFunc)
+
+		return token, nil
+	}
+
 	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
@@ -124,4 +156,23 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	}
 
 	return nil, fmt.Errorf("no credentials provided for Azure API")
+}
+
+func getWIToken(environment azure.Environment) (*adal.ServicePrincipalToken, error) {
+	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, os.Getenv("AZURE_TENANT_ID"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+	}
+
+	jwt, err := os.ReadFile(os.Getenv("AZURE_FEDERATED_TOKEN_FILE"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
+	}
+
+	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, os.Getenv("AZURE_CLIENT_ID"), string(jwt), "https://management.azure.com")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create a workload identity token: %v", err)
+	}
+
+	return token, nil
 }
