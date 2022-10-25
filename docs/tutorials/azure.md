@@ -53,6 +53,7 @@ The following fields are used:
 * `aadClientID` and `aaClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
+* `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
 
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
 
@@ -63,6 +64,7 @@ ExternalDNS needs permissions to make changes to the Azure DNS zone. There are t
 - [Service Principal](#service-principal)
 - [Managed Identity Using AKS Kubelet Identity](#managed-identity-using-aks-kubelet-identity)
 - [Managed Identity Using AAD Pod Identities](#managed-identity-using-aad-pod-identities)
+- [Managed Identity Using Workload Identity](#managed-identity-using-workload-identity)
 
 ### Service Principal
 
@@ -317,6 +319,114 @@ When deploying ExternalDNS, you want to make sure that deployed pod(s) will have
 ```bash
 kubectl patch deployment external-dns --namespace "default" --patch \
  '{"spec": {"template": {"metadata": {"labels": {"aadpodidbinding": "external-dns"}}}}}'
+```
+
+### Managed identity using Workload Identity
+
+For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is somewhat similar to Pod Identity except that this managed identity is associated with a kubernetes service account.
+
+#### Enable the Worload Identity feature
+
+To enable [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) preview feature, use the following commands:
+
+```bash
+$ az extension add --name aks-preview
+$ az extension update --name aks-preview
+$ az feature register --namespace "Microsoft.ContainerService" --name "EnableWorkloadIdentityPreview"
+
+# After several minutes, the feature should become registered. You can check that by periodically running the following command
+$ az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/EnableWorkloadIdentityPreview')].{Name:name,State:properties.state}"
+
+# Once the process is completed, refresh the registration of resource provider
+$ az provider register --namespace Microsoft.ContainerService
+```
+
+#### Deploy OIDC issuer and Workload Identity services
+
+Once enabled, you can update your cluster and install needed services for the [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) feature:
+
+```bash
+$ AZURE_AKS_RESOURCE_GROUP="my-aks-cluster-group" # name of resource group where aks cluster was created
+$ AZURE_AKS_CLUSTER_NAME="my-aks-cluster" # name of aks cluster previously created
+
+$ az aks update --resource-group ${AZURE_AKS_RESOURCE_GROUP} --name ${AZURE_AKS_CLUSTER_NAME} --enable-oidc-issuer --enable-workload-identity
+```
+
+#### Create a managed identity
+
+Create a managed identity:
+
+```bash
+$ IDENTITY_RESOURCE_GROUP=$AZURE_AKS_RESOURCE_GROUP # custom group or reuse AKS group
+$ IDENTITY_NAME="example-com-identity"
+
+# create a managed identity
+$ az identity create --resource-group "${IDENTITY_RESOURCE_GROUP}" --name "${IDENTITY_NAME}"
+```
+
+#### Assign rights for the managed identity
+
+Grant access to Azure DNS zone for the managed identity:
+
+```bash
+$ AZURE_DNS_ZONE_RESOURCE_GROUP="MyDnsResourceGroup" # name of resource group where dns zone is hosted
+$ AZURE_DNS_ZONE="example.com" # DNS zone name like example.com or sub.example.com
+
+# fetch identity client id from managed identity created earlier
+$ IDENTITY_CLIENT_ID=$(az identity show --resource-group "${IDENTITY_RESOURCE_GROUP}" \
+  --name "${IDENTITY_NAME}" --query "clientId" --output tsv)
+# fetch DNS id used to grant access to the managed identity
+$ DNS_ID=$(az network dns zone show --name "${AZURE_DNS_ZONE}" \
+  --resource-group "${AZURE_DNS_ZONE_RESOURCE_GROUP}" --query "id" --output tsv)
+
+$ az role assignment create --role "DNS Zone Contributor" \
+  --assignee "${IDENTITY_CLIENT_ID}" --scope "${DNS_ID}"
+```
+
+#### Create a configuration file for the managed identity
+
+Create the file `azure.json` with the values from previous steps:
+
+```bash
+cat <<-EOF > /local/path/to/azure.json
+{
+  "subscriptionId": "$(az account show --query id -o tsv)",
+  "resourceGroup": "$AZURE_DNS_ZONE_RESOURCE_GROUP",
+  "useWorkloadIdentityExtension": true
+}
+EOF
+```
+
+Use the `azure.json` file to create a Kubernetes secret:
+
+```bash
+$ kubectl create secret generic azure-config-file --namespace "default" --from-file /local/path/to/azure.json
+```
+
+#### Create a federated identity credential
+
+A binding between the managed identity and the ExternalDNS service account needs to be setup by creating a federated identity resource:
+
+```bash
+$ OIDC_ISSUER_URL="$(az aks show -n myAKSCluster -g myResourceGroup --query "oidcIssuerProfile.issuerUrl" -otsv)"
+
+$ az identity federated-credential create --name ${IDENTITY_NAME} --identity-name ${IDENTITY_NAME} --resource-group $AZURE_AKS_RESOURCE_GROUP} --issuer "$OIDC_ISSUER_URL" --subject "system:serviceaccount:default:external-dns"
+```
+
+#### Update labels and annotations on ExternalDNS service account
+
+To instruct Workload Identity webhook to inject a projected token into the ExternalDNS pod, the service account needs to have a label `azure.workload.identity/use: "true"` and an annotation `azure.workload.identity/client-id: <IDENTITY_CLIENT_ID>`:
+
+To patch the existing serviceaccount, use the following command:
+
+```bash
+$ kubectl patch serviceaccount external-dns --namespace "default" --patch \
+ "{\"metadata\": {\"labels\": {\"azure.workload.identity/use\": \"true\"}, \"annotations\": {\"azure.workload.identity/client-id\": \"${IDENTITY_CLIENT_ID}\"}}}"
+```
+
+If a pod with external-dns is already running, you need to restart it:
+```bash
+$ kubectl rollout restart deployment/external-dns
 ```
 
 ## Ingress used with ExternalDNS
