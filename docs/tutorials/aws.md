@@ -328,7 +328,7 @@ kubectl patch serviceaccount "external-dns" --namespace ${EXTERNALDNS_NS:-"defau
  "{\"metadata\": { \"annotations\": { \"eks.amazonaws.com/role-arn\": \"$ROLE_ARN\" }}}"
 ```
 
-If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.  
+If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the wrong role, etc., you will see errors like `WebIdentityErr: failed to retrieve credentials`. Check the configuration and make corrections.
 
 When the service account annotations are updated, then the current running pods will have to be terminated, so that new pod(s) with proper configuration (environment variables) will be created automatically.
 

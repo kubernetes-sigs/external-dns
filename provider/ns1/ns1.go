@@ -44,7 +44,7 @@ const (
 	ns1DefaultTTL = 10
 )
 
-// NS1DomainClient is a subset of the NS1 API the the provider uses, to ease testing
+// NS1DomainClient is a subset of the NS1 API the provider uses, to ease testing
 type NS1DomainClient interface {
 	CreateRecord(r *dns.Record) (*http.Response, error)
 	DeleteRecord(zone string, domain string, t string) (*http.Response, error)
