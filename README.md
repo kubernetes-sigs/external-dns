@@ -27,14 +27,6 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
----
-**WARNING**
-Releases v0.12.0 - v0.12.2 (current) have a *major* bug for InfoBlox providers. It will cause *all* DNS records not managed by external-dns to be deleted. This was identified in issue [#2931](https://github.com/kubernetes-sigs/external-dns/issues/2931) and fixed in PR [#2890](https://github.com/kubernetes-sigs/external-dns/pull/2890). *BUT* there is no external-dns release with this fix.
-
-Do *not* upgrade to these versions if you use external-dns
-
----
-
 ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
