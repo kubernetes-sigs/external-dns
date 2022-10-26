@@ -169,7 +169,7 @@ func getWIToken(environment azure.Environment) (*adal.ServicePrincipalToken, err
 		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
 	}
 
-	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, os.Getenv("AZURE_CLIENT_ID"), string(jwt), "https://management.azure.com")
+	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, os.Getenv("AZURE_CLIENT_ID"), string(jwt), environment.ResourceManagerEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a workload identity token: %v", err)
 	}
