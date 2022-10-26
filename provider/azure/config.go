@@ -121,7 +121,11 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 			}
 
 			// Need to call Refresh(), otherwise .Token() will be empty
-			newWIToken.Refresh()
+			err = newWIToken.Refresh()
+			if err != nil {
+				return nil, err
+			}
+
 			accessToken := newWIToken.Token()
 
 			return &accessToken, nil
