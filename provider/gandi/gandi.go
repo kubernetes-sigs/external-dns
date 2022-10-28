@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/go-gandi/go-gandi"
+	"github.com/go-gandi/go-gandi/config"
 	"github.com/go-gandi/go-gandi/livedns"
 	log "github.com/sirupsen/logrus"
 
@@ -58,15 +59,16 @@ func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, d
 	}
 	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
 
-	g := gandi.Config{
+	g := config.Config{
+		APIKey:    key,
 		SharingID: sharingID,
 		Debug:     false,
 		// dry-run doesn't work but it won't hurt passing the flag
 		DryRun: dryRun,
 	}
 
-	liveDNSClient := gandi.NewLiveDNSClient(key, g)
-	domainClient := gandi.NewDomainClient(key, g)
+	liveDNSClient := gandi.NewLiveDNSClient(g)
+	domainClient := gandi.NewDomainClient(g)
 
 	gandiProvider := &GandiProvider{
 		LiveDNSClient: NewLiveDNSClient(liveDNSClient),
