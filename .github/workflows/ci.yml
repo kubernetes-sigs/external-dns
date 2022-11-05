@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read  #  to fetch code (actions/checkout)
+
 jobs:
 
   build:
+    permissions:
+      contents: read  #  to fetch code (actions/checkout)
+      checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
+
     name: Build
     runs-on: ubuntu-latest
     steps:

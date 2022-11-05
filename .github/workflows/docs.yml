@@ -5,8 +5,12 @@ on:
     tags:
       - "v*"
 
+permissions: {}
 jobs:
   release_docs:
+    permissions:
+      contents: write  #  for mike to push
+
     name: Release Docs
     runs-on: ubuntu-latest
     steps:
