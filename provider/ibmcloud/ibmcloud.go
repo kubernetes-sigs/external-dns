@@ -218,7 +218,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 	var service ibmcloudService
 	isPrivate := false
 	log.Debugf("filters: %v, %v", domainFilter.Filters, zoneIDFilter.ZoneIDs)
-	if domainFilter.Filters[0] == "" && zoneIDFilter.ZoneIDs[0] == "" {
+	if (len(domainFilter.Filters) == 0 || domainFilter.Filters[0] == "") && zoneIDFilter.ZoneIDs[0] == "" {
 		return service, isPrivate, fmt.Errorf("at lease one of filters: 'domain-filter', 'zone-id-filter' needed")
 	}
 
@@ -253,7 +253,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 		}
 		for _, zone := range zonesResp.Result {
 			log.Debugf("zoneName: %s, zoneID: %s", *zone.Name, *zone.ID)
-			if len(domainFilter.Filters[0]) != 0 && domainFilter.Match(*zone.Name) {
+			if len(domainFilter.Filters) > 0 && domainFilter.Filters[0] != "" && domainFilter.Match(*zone.Name) {
 				log.Debugf("zone %s found.", *zone.ID)
 				zoneID = *zone.ID
 				break

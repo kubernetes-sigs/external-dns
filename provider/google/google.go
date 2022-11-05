@@ -188,17 +188,13 @@ func (p *GoogleProvider) Zones(ctx context.Context) (map[string]*dns.ManagedZone
 		return nil
 	}
 
-	log.Debugf("Matching zones against domain filters: %v", p.domainFilter.Filters)
+	log.Debugf("Matching zones against domain filters: %v", p.domainFilter)
 	if err := p.managedZonesClient.List(p.project).Pages(ctx, f); err != nil {
 		return nil, err
 	}
 
 	if len(zones) == 0 {
-		if p.domainFilter.IsConfigured() {
-			log.Warnf("No zones in the project, %s, match domain filters: %v", p.project, p.domainFilter.Filters)
-		} else {
-			log.Warnf("No zones found in the project, %s", p.project)
-		}
+		log.Warnf("No zones in the project, %s, match domain filters: %v", p.project, p.domainFilter)
 	}
 
 	for _, zone := range zones {
