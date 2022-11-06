@@ -41,6 +41,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [BlueCat](https://bluecatnetworks.com)
+* [Civo](https://www.civo.com)
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
@@ -101,6 +102,7 @@ The following table clarifies the current status of the providers according to t
 | Akamai Edge DNS | Beta | |
 | AzureDNS | Beta | |
 | BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
+| Civo | Alpha | @alejandrojnm |
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
@@ -160,6 +162,7 @@ The following tutorials are provided:
 	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
+* [Civo](docs/tutorials/civo.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
