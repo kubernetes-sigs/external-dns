@@ -373,7 +373,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	log.Infof("Retrieving Alibaba Cloud DNS Domain Records")
 	var results []alidns.Record
 
-	if len(p.domainFilter.Filters) == 1 && p.domainFilter.Filters[0] == "" {
+	if len(p.domainFilter.Filters) == 0 {
 		domainNames, tmpErr := p.getDomainList()
 		if tmpErr != nil {
 			log.Errorf("AlibabaCloudProvider getDomainList error %v", tmpErr)

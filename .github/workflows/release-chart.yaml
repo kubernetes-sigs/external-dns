@@ -7,8 +7,13 @@ on:
     paths:
       - "charts/external-dns/Chart.yaml"
 
+permissions: {}
 jobs:
   release:
+
+    permissions:
+      contents: write  #  to push chart release and create a release (helm/chart-releaser-action)
+
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
     defaults:

@@ -138,11 +138,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	}
 
 	if len(zones) == 0 {
-		if p.domainFilter.IsConfigured() {
-			log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter.Filters)
-		} else {
-			log.Warnf("No zones found in compartment %q", p.cfg.CompartmentID)
-		}
+		log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter)
 	}
 
 	return zones, nil
