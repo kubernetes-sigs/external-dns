@@ -243,3 +243,39 @@ func (cs *crdSource) filterByAnnotations(dnsendpoints *endpoint.DNSEndpointList)
 
 	return &filteredList, nil
 }
+
+// NewCRDClientForAPIVersionKind return rest client for the given apiVersion and kind of the CRD
+func NewCRDClientForAPIVersionKindWithConfig(client kubernetes.Interface, config *rest.Config, apiVersion, kind string) (*rest.RESTClient, *runtime.Scheme, error) {
+	groupVersion, err := schema.ParseGroupVersion(apiVersion)
+	if err != nil {
+		return nil, nil, err
+	}
+	apiResourceList, err := client.Discovery().ServerResourcesForGroupVersion(groupVersion.String())
+	if err != nil {
+		return nil, nil, fmt.Errorf("error listing resources in GroupVersion %q: %s", groupVersion.String(), err)
+	}
+
+	var crdAPIResource *metav1.APIResource
+	for _, apiResource := range apiResourceList.APIResources {
+		if apiResource.Kind == kind {
+			crdAPIResource = &apiResource
+			break
+		}
+	}
+	if crdAPIResource == nil {
+		return nil, nil, fmt.Errorf("unable to find Resource Kind %q in GroupVersion %q", kind, apiVersion)
+	}
+
+	scheme := runtime.NewScheme()
+	addKnownTypes(scheme, groupVersion)
+
+	config.ContentConfig.GroupVersion = &groupVersion
+	config.APIPath = "/apis"
+	config.NegotiatedSerializer = serializer.WithoutConversionCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+
+	crdClient, err := rest.UnversionedRESTClientFor(config)
+	if err != nil {
+		return nil, nil, err
+	}
+	return crdClient, scheme, nil
+}

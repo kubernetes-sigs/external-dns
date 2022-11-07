@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: external-dns
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: external-dns
+rules:
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints"]
+  verbs: ["get","watch","list"]
+# - apiGroups: [""]
+#   resources: ["services","endpoints","pods"]
+#   verbs: ["get","watch","list"]
+# - apiGroups: ["extensions","networking.k8s.io"]
+#   resources: ["ingresses"] 
+#   verbs: ["get","watch","list"]
+# - apiGroups: [""]
+#   resources: ["nodes"]
+#   verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: external-dns-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: external-dns
+subjects:
+- kind: ServiceAccount
+  name: external-dns
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: external-dns
+spec:
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: external-dns
+  template:
+    metadata:
+      labels:
+        app: external-dns
+    spec:
+      serviceAccountName: external-dns
+      containers:
+      - name: external-dns
+        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        args:
+        - --source=crd
+        - --provider=inmemory
+        # - --infoblox-grid-host=foo # (required) IP of the Infoblox Grid host.
+        # - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
+        # - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
+        # - --no-infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        # env:
+        # - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
+        #   value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
+        # - name: EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT
+        #   value: "60" # (optional) Infoblox WAPI request timeout in seconds. The default is "60".
+        # - name: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME
+        #   value: Foo
+        # - name: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+        #   value: Bar
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: workload1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: workload1-external-dns
+  namespace: workload1
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: workload1-external-dns
+  namespace: workload1
+rules:
+- apiGroups: ["externaldns.k8s.io"]
+  resources: ["dnsendpoints"]
+  resourceNames:
+  - workload1
+  verbs: ["create", "update", "delete", "get","watch","list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: workload1-external-dns
+  namespace: workload1
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: workload1-external-dns
+subjects:
+- kind: ServiceAccount
+  name: workload1-external-dns
+  namespace: workload1

@@ -190,6 +190,15 @@ type Config struct {
 	OCPRouterName                     string
 	IBMCloudProxied                   bool
 	IBMCloudConfigFile                string
+	ExternalDNSCaCrt                  string
+	ExternalDNSNamespace              string
+	ExternalDNSToken                  string
+	ExternalDNSCaCrtPath              string
+	ExternalDNSNamespacePath          string
+	ExternalDNSTokenPath              string
+	ExternalDNSCrName                 string
+	ExternalDNSKubernetesHost         string
+	ExternalDNSKubernetesPort         string
 	TencentCloudConfigFile            string
 	TencentCloudZoneType              string
 	PluralCluster                     string
@@ -329,6 +338,15 @@ var defaultConfig = &Config{
 	GoDaddyOTE:                  false,
 	IBMCloudProxied:             false,
 	IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
+	ExternalDNSCaCrt:            "",
+	ExternalDNSNamespace:        "",
+	ExternalDNSToken:            "",
+	ExternalDNSCaCrtPath:        "",
+	ExternalDNSNamespacePath:    "",
+	ExternalDNSTokenPath:        "",
+	ExternalDNSCrName:           "external-dns",
+	ExternalDNSKubernetesHost:   "127.0.0.1",
+	ExternalDNSKubernetesPort:   "443",
 	TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
 	TencentCloudZoneType:        "",
 	PluralCluster:               "",
@@ -422,7 +440,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "plural")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "plural", "externaldns")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
@@ -506,7 +524,16 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)").Default(defaultConfig.GoDaddySecretKey).StringVar(&cfg.GoDaddySecretKey)
 	app.Flag("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.").Int64Var(&cfg.GoDaddyTTL)
 	app.Flag("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)").BoolVar(&cfg.GoDaddyOTE)
-
+	//External-dns flags
+	app.Flag("externaldns-kubernetes-host", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSKubernetesHost).StringVar(&cfg.ExternalDNSKubernetesHost)
+	app.Flag("externaldns-kubernetes-port", "When using the ExternalDns provider, specify the API secret (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSKubernetesPort).StringVar(&cfg.ExternalDNSKubernetesPort)
+	app.Flag("externaldns-resource-name", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSCrName).StringVar(&cfg.ExternalDNSCrName)
+	app.Flag("externaldns-ca-cert-path", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSCaCrtPath).StringVar(&cfg.ExternalDNSCaCrtPath)
+	app.Flag("externaldns-namespace-path", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSNamespacePath).StringVar(&cfg.ExternalDNSNamespacePath)
+	app.Flag("externaldns-token-path", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSTokenPath).StringVar(&cfg.ExternalDNSTokenPath)
+	app.Flag("externaldns-ca-cert", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSCaCrt).StringVar(&cfg.ExternalDNSCaCrt)
+	app.Flag("externaldns-namespace", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSNamespace).StringVar(&cfg.ExternalDNSNamespace)
+	app.Flag("externaldns-token", "When using the ExternalDns provider, specify the Kubernetes Host (required when --provider=externaldns)").Default(defaultConfig.ExternalDNSToken).StringVar(&cfg.ExternalDNSToken)
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
 	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
