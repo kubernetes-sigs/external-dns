@@ -35,7 +35,7 @@ Do *not* upgrade to these versions if you use external-dns
 
 ---
 
-ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
+ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various DNS providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
@@ -69,6 +69,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
 * [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 * [Plural](https://www.plural.sh/)
+* [Pi-hole](https://pi-hole.net/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -130,6 +131,7 @@ The following table clarifies the current status of the providers according to t
 | IBMCloud | Alpha | @hughhuangzh |
 | TencentCloud | Alpha | @Hyzhou |
 | Plural | Alpha | @michaeljguarino |
+| Pi-hole | Alpha | @tinyzimmer |
 
 ## Kubernetes version compatibility
 
@@ -201,6 +203,7 @@ The following tutorials are provided:
 * [Nodes as source](docs/tutorials/nodes.md)
 * [TencentCloud](docs/tutorials/tencentcloud.md)
 * [Plural](docs/tutorials/plural.md)
+* [Pi-hole](docs/tutorials/pihole.md)
 
 ### Running Locally
 
