@@ -31,9 +31,19 @@ func TestApply(t *testing.T) {
 	fooV1 := []*endpoint.Endpoint{{DNSName: "foo", Targets: endpoint.Targets{"v1"}}}
 	// the same entry but with different target
 	fooV2 := []*endpoint.Endpoint{{DNSName: "foo", Targets: endpoint.Targets{"v2"}}}
-	// another two simple entries
-	bar := []*endpoint.Endpoint{{DNSName: "bar", Targets: endpoint.Targets{"v1"}}}
-	baz := []*endpoint.Endpoint{{DNSName: "baz", Targets: endpoint.Targets{"v1"}}}
+	// more simple entries
+	barV1 := []*endpoint.Endpoint{{DNSName: "bar1", Targets: endpoint.Targets{"v1"}}}
+	barV2 := []*endpoint.Endpoint{{DNSName: "bar2", Targets: endpoint.Targets{"v2"}}}
+	bazV1 := []*endpoint.Endpoint{{DNSName: "baz1", Targets: endpoint.Targets{"v1"}}}
+	bazV2 := []*endpoint.Endpoint{{DNSName: "baz2", Targets: endpoint.Targets{"v2"}}}
+	bazV3 := []*endpoint.Endpoint{{DNSName: "baz3", Targets: endpoint.Targets{"v3"}}}
+	// Compose input
+	barAndBaz := []*endpoint.Endpoint{barV1[0], barV2[0], bazV1[0], bazV2[0], bazV3[0]}
+	fooAndBar := []*endpoint.Endpoint{barV1[0], barV2[0], fooV1[0], fooV2[0]}
+	// Expected halves
+	bar := []*endpoint.Endpoint{barV1[0], barV2[0]}
+	baz := []*endpoint.Endpoint{bazV1[0], bazV2[0], bazV3[0]}
+	foo := []*endpoint.Endpoint{fooV1[0], fooV2[0]}
 
 	for _, tc := range []struct {
 		policy   Policy
@@ -43,20 +53,56 @@ func TestApply(t *testing.T) {
 		{
 			// SyncPolicy doesn't modify the set of changes.
 			&SyncPolicy{},
-			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
-			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+			&Changes{Create: bazV1, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
+			&Changes{Create: bazV1, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
 		},
 		{
 			// UpsertOnlyPolicy clears the list of deletions.
 			&UpsertOnlyPolicy{},
-			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
-			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: empty},
+			&Changes{Create: bazV1, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
+			&Changes{Create: bazV1, UpdateOld: fooV1, UpdateNew: fooV2, Delete: empty},
 		},
 		{
 			// CreateOnlyPolicy clears the list of updates and deletions.
 			&CreateOnlyPolicy{},
-			&Changes{Create: baz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: bar},
+			&Changes{Create: bazV1, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
+			&Changes{Create: bazV1, UpdateOld: empty, UpdateNew: empty, Delete: empty},
+		},
+		{
+			// FirstHalfChangesPolicy limits list to Create's first half
+			&FirstHalfChangesPolicy{},
+			&Changes{Create: barAndBaz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
+			&Changes{Create: bar, UpdateOld: empty, UpdateNew: empty, Delete: empty},
+		},
+		{
+			// FirstHalfChangesPolicy limits list to Update's first half
+			&FirstHalfChangesPolicy{},
+			&Changes{Create: empty, UpdateOld: barAndBaz, UpdateNew: fooAndBar, Delete: barV1},
+			&Changes{Create: empty, UpdateOld: bar, UpdateNew: bar, Delete: empty},
+		},
+		{
+			// FirstHalfChangesPolicy limits list to Delete's first half
+			&FirstHalfChangesPolicy{},
+			&Changes{Create: empty, UpdateOld: empty, UpdateNew: empty, Delete: barAndBaz},
+			&Changes{Create: empty, UpdateOld: empty, UpdateNew: empty, Delete: bar},
+		},
+		{
+			// LastHalfChangesPolicy limits list to Create's last half
+			&LastHalfChangesPolicy{},
+			&Changes{Create: barAndBaz, UpdateOld: fooV1, UpdateNew: fooV2, Delete: barV1},
 			&Changes{Create: baz, UpdateOld: empty, UpdateNew: empty, Delete: empty},
+		},
+		{
+			// LastHalfChangesPolicy limits list to Update's last half
+			&LastHalfChangesPolicy{},
+			&Changes{Create: empty, UpdateOld: barAndBaz, UpdateNew: fooAndBar, Delete: barV1},
+			&Changes{Create: empty, UpdateOld: baz, UpdateNew: foo, Delete: empty},
+		},
+		{
+			// LastHalfChangesPolicy limits list to Delete's last half
+			&LastHalfChangesPolicy{},
+			&Changes{Create: empty, UpdateOld: empty, UpdateNew: empty, Delete: barAndBaz},
+			&Changes{Create: empty, UpdateOld: empty, UpdateNew: empty, Delete: baz},
 		},
 	} {
 		// apply policy

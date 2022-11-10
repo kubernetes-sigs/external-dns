@@ -26,6 +26,8 @@ var Policies = map[string]Policy{
 	"sync":        &SyncPolicy{},
 	"upsert-only": &UpsertOnlyPolicy{},
 	"create-only": &CreateOnlyPolicy{},
+	"first-half":  &FirstHalfChangesPolicy{},
+	"last-half":   &LastHalfChangesPolicy{},
 }
 
 // SyncPolicy allows for full synchronization of DNS records.
@@ -56,4 +58,64 @@ func (p *CreateOnlyPolicy) Apply(changes *Changes) *Changes {
 	return &Changes{
 		Create: changes.Create,
 	}
+}
+
+// FirstHalfChangesPolicy allows limiting amount of records modified.
+type FirstHalfChangesPolicy struct{}
+
+// Apply applies the first half changes policy which limits change list to its first half.
+func (p *FirstHalfChangesPolicy) Apply(changes *Changes) *Changes {
+	if len(changes.Create) > 0 {
+		halfChanges := len(changes.Create) / 2
+		return &Changes{
+			Create: changes.Create[:halfChanges],
+		}
+	}
+
+	if len(changes.UpdateOld) > 0 && len(changes.UpdateNew) > 0 {
+		halfChanges := len(changes.UpdateNew) / 2
+		return &Changes{
+			UpdateOld: changes.UpdateOld[:halfChanges],
+			UpdateNew: changes.UpdateNew[:halfChanges],
+		}
+	}
+
+	if len(changes.Delete) > 0 {
+		halfChanges := len(changes.Delete) / 2
+		return &Changes{
+			Delete: changes.Delete[:halfChanges],
+		}
+	}
+
+	return &Changes{}
+}
+
+// LastHalfChangesPolicy allows limiting amount of records modified.
+type LastHalfChangesPolicy struct{}
+
+// Apply applies the last half changes policy which limits change list to its last half.
+func (p *LastHalfChangesPolicy) Apply(changes *Changes) *Changes {
+	if len(changes.Create) > 0 {
+		halfChanges := len(changes.Create) / 2
+		return &Changes{
+			Create: changes.Create[halfChanges:],
+		}
+	}
+
+	if len(changes.UpdateOld) > 0 && len(changes.UpdateNew) > 0 {
+		halfChanges := len(changes.UpdateNew) / 2
+		return &Changes{
+			UpdateOld: changes.UpdateOld[halfChanges:],
+			UpdateNew: changes.UpdateNew[halfChanges:],
+		}
+	}
+
+	if len(changes.Delete) > 0 {
+		halfChanges := len(changes.Delete) / 2
+		return &Changes{
+			Delete: changes.Delete[halfChanges:],
+		}
+	}
+
+	return &Changes{}
 }
