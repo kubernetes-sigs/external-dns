@@ -1143,6 +1143,11 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 
 	td.CmpDeeply(t, client.Actions, []MockAction{
 		{
+			Name:     "Delete",
+			ZoneId:   "001",
+			RecordId: "2345678901",
+		},
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -1164,11 +1169,6 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				TTL:     1,
 				Proxied: proxyEnabled,
 			},
-		},
-		{
-			Name:     "Delete",
-			ZoneId:   "001",
-			RecordId: "2345678901",
 		},
 	})
 }
