@@ -16,7 +16,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.5+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.4
 	github.com/ans-group/sdk-go v1.10.4
-	github.com/aws/aws-sdk-go v1.44.119
+	github.com/aws/aws-sdk-go v1.44.135
 	github.com/bodgit/tsig v1.2.0
 	github.com/civo/civogo v0.3.14
 	github.com/cloudflare/cloudflare-go v0.50.0
