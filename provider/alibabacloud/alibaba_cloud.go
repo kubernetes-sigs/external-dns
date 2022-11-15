@@ -42,6 +42,7 @@ const (
 	defaultAlibabaCloudPageSize             = 50
 	nullHostAlibabaCloud                    = "@"
 	pVTZDoamin                              = "pvtz.aliyuncs.com"
+	defaultAlibabaCloudRequestScheme        = "https"
 )
 
 // AlibabaCloudDNSAPI is a minimal implementation of DNS API that we actually use, used primarily for unit testing.
@@ -406,6 +407,7 @@ func (p *AlibabaCloudProvider) getDomainList() ([]string, error) {
 	request := alidns.CreateDescribeDomainsRequest()
 	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 	request.PageNumber = "1"
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	for {
 		resp, err := p.dnsClient.DescribeDomains(request)
 		if err != nil {
@@ -431,6 +433,7 @@ func (p *AlibabaCloudProvider) getDomainRecords(domainName string) ([]alidns.Rec
 	request.DomainName = domainName
 	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 	request.PageNumber = "1"
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	for {
 		response, err := p.getDNSClient().DescribeDomainRecords(request)
 		if err != nil {
@@ -496,6 +499,7 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 	request.DomainName = domain
 	request.Type = endpoint.RecordType
 	request.RR = rr
+	request.Scheme = defaultAlibabaCloudRequestScheme
 
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
@@ -539,6 +543,7 @@ func (p *AlibabaCloudProvider) deleteRecord(recordID string) error {
 
 	request := alidns.CreateDeleteDomainRecordRequest()
 	request.RecordId = recordID
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	response, err := p.getDNSClient().DeleteDomainRecord(request)
 	if err == nil {
 		log.Infof("Delete record id %s in Alibaba Cloud DNS", response.RecordId)
@@ -554,6 +559,7 @@ func (p *AlibabaCloudProvider) updateRecord(record alidns.Record, endpoint *endp
 	request.RR = record.RR
 	request.Type = record.Type
 	request.Value = record.Value
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
 		request.TTL = requests.NewInteger(ttl)
@@ -696,6 +702,7 @@ func (p *AlibabaCloudProvider) matchVPC(zoneID string) bool {
 	request := pvtz.CreateDescribeZoneInfoRequest()
 	request.ZoneId = zoneID
 	request.Domain = pVTZDoamin
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	response, err := p.getPvtzClient().DescribeZoneInfo(request)
 	if err != nil {
 		log.Errorf("Failed to describe zone info %s in Alibaba Cloud DNS: %v", zoneID, err)
@@ -718,6 +725,7 @@ func (p *AlibabaCloudProvider) privateZones() ([]pvtz.Zone, error) {
 	request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 	request.PageNumber = "1"
 	request.Domain = pVTZDoamin
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	for {
 		response, err := p.getPvtzClient().DescribeZones(request)
 		if err != nil {
@@ -770,6 +778,7 @@ func (p *AlibabaCloudProvider) getPrivateZones() (map[string]*alibabaPrivateZone
 		request.PageSize = requests.NewInteger(defaultAlibabaCloudPageSize)
 		request.PageNumber = "1"
 		request.Domain = pVTZDoamin
+		request.Scheme = defaultAlibabaCloudRequestScheme
 		var records []pvtz.Record
 
 		for {
@@ -867,6 +876,7 @@ func (p *AlibabaCloudProvider) createPrivateZoneRecord(zones map[string]*alibaba
 	request.Type = endpoint.RecordType
 	request.Rr = rr
 	request.Domain = pVTZDoamin
+	request.Scheme = defaultAlibabaCloudRequestScheme
 
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
@@ -910,6 +920,7 @@ func (p *AlibabaCloudProvider) deletePrivateZoneRecord(recordID int64) error {
 	request := pvtz.CreateDeleteZoneRecordRequest()
 	request.RecordId = requests.NewInteger64(recordID)
 	request.Domain = pVTZDoamin
+	request.Scheme = defaultAlibabaCloudRequestScheme
 
 	response, err := p.getPvtzClient().DeleteZoneRecord(request)
 	if err == nil {
@@ -982,6 +993,7 @@ func (p *AlibabaCloudProvider) updatePrivateZoneRecord(record pvtz.Record, endpo
 	request.Type = record.Type
 	request.Value = record.Value
 	request.Domain = pVTZDoamin
+	request.Scheme = defaultAlibabaCloudRequestScheme
 	ttl := int(endpoint.RecordTTL)
 	if ttl != 0 {
 		request.Ttl = requests.NewInteger(ttl)
