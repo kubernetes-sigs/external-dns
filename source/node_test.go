@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -43,6 +44,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 	for _, ti := range []struct {
 		title            string
 		annotationFilter string
+		labelSelector    labels.Selector
 		fqdnTemplate     string
 		expectError      bool
 	}{
@@ -65,6 +67,11 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
+		{
+			title:         "non-empty labelSelector",
+			expectError:   false,
+			labelSelector: labels.SelectorFromSet(labels.Set{"node-role.kubernetes.io/control-plane": ""}),
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -75,6 +82,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				fake.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
+				ti.labelSelector,
 			)
 
 			if ti.expectError {
@@ -93,6 +101,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title            string
 		annotationFilter string
+		labelSelector    labels.Selector
 		fqdnTemplate     string
 		nodeName         string
 		nodeAddresses    []v1.NodeAddress
@@ -104,6 +113,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with short hostname returns one endpoint",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -117,6 +127,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with fqdn returns one endpoint",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1.example.org",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -130,6 +141,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with fqdn template returns endpoint with expanded hostname",
 			"",
+			labels.NewSelector(),
 			"{{.Name}}.example.org",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -143,6 +155,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with fqdn and fqdn template returns one endpoint",
 			"",
+			labels.NewSelector(),
 			"{{.Name}}.example.org",
 			"node1.example.org",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -156,6 +169,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
 			"",
+			labels.NewSelector(),
 			"{{.Name}}.example.org",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
@@ -169,6 +183,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with both external and internal IP returns an endpoint with external IP",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
@@ -182,6 +197,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with only internal IP returns an endpoint with internal IP",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
@@ -195,6 +211,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"node with neither external nor internal IP returns no endpoints",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{},
@@ -206,6 +223,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"annotated node without annotation filter returns endpoint",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -221,6 +239,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"annotated node with matching annotation filter returns endpoint",
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -236,6 +255,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"annotated node with non-matching annotation filter returns endpoint",
 			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -247,8 +267,39 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"labeled node with matching labelSelector returns endpoint",
+			"",
+			labels.SelectorFromSet(labels.Set{"node-role.kubernetes.io/control-plane": ""}),
+			"",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			map[string]string{
+				"node-role.kubernetes.io/control-plane": "",
+			},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			false,
+		},
+		{
+			"node with non-matching labelSelector returns no endpoint",
+			"",
+			labels.SelectorFromSet(labels.Set{"node-role.kubernetes.io/control-plane": ""}),
+			"",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			map[string]string{
+				"node-role.kubernetes.io/worker": "",
+			},
+			map[string]string{},
+			[]*endpoint.Endpoint{},
+			false,
+		},
+		{
 			"our controller type is dns-controller",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -264,6 +315,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"different controller types are ignored",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -277,6 +329,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"ttl not annotated should have RecordTTL.IsConfigured set to false",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -290,6 +343,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -305,6 +359,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			"ttl annotated and is valid should set Record.TTL",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -318,8 +373,9 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"node with nil Lables returns valid endpoint",
+			"node with nil Labels returns valid endpoint",
 			"",
+			labels.NewSelector(),
 			"",
 			"node1",
 			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
@@ -358,6 +414,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubernetes,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
+				tc.labelSelector,
 			)
 			require.NoError(t, err)
 

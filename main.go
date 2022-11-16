@@ -108,6 +108,9 @@ func main() {
 	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
 
+	// error is explicitly ignored because the filter is already validated in validation.ValidateConfig
+	nodeLabelSelector, _ := labels.Parse(cfg.NodeLabelFilter)
+
 	// Create a source.Config from the flags passed by the user.
 	sourceCfg := &source.Config{
 		Namespace:                      cfg.Namespace,
@@ -118,6 +121,7 @@ func main() {
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
 		IgnoreIngressTLSSpec:           cfg.IgnoreIngressTLSSpec,
 		IgnoreIngressRulesSpec:         cfg.IgnoreIngressRulesSpec,
+		NodeLabelFilter:                nodeLabelSelector,
 		GatewayNamespace:               cfg.GatewayNamespace,
 		GatewayLabelFilter:             cfg.GatewayLabelFilter,
 		Compatibility:                  cfg.Compatibility,
