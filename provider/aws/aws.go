@@ -423,37 +423,6 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 	return endpoints, nil
 }
 
-// CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *AWSProvider) CreateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
-	return p.doRecords(ctx, route53.ChangeActionCreate, endpoints)
-}
-
-// DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *AWSProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
-	return p.doRecords(ctx, route53.ChangeActionDelete, endpoints)
-}
-
-func (p *AWSProvider) doRecords(ctx context.Context, action string, endpoints []*endpoint.Endpoint) error {
-	zones, err := p.Zones(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to list zones, aborting %s doRecords action", action)
-	}
-
-	p.AdjustEndpoints(endpoints)
-
-	return p.submitChanges(ctx, p.newChanges(action, endpoints), zones)
-}
-
-// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *AWSProvider) UpdateRecords(ctx context.Context, updates, current []*endpoint.Endpoint) error {
-	zones, err := p.Zones(ctx)
-	if err != nil {
-		return errors.Wrapf(err, "failed to list zones, aborting UpdateRecords")
-	}
-
-	return p.submitChanges(ctx, p.createUpdateChanges(updates, current), zones)
-}
-
 // Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
 func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint.Endpoint) bool {
 	// a change of record type
