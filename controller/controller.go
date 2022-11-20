@@ -292,7 +292,7 @@ func (c *Controller) Run(ctx context.Context) {
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
-				log.Error(err)
+				log.Fatal(err)
 			}
 		}
 		select {
