@@ -212,8 +212,8 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	currentProperties := map[string]endpoint.ProviderSpecificProperty{}
 
 	if current.ProviderSpecific != nil {
-		for _, d := range current.ProviderSpecific {
-			currentProperties[d.Name] = d
+		for _, c := range current.ProviderSpecific {
+			currentProperties[c.Name] = c
 		}
 	}
 
@@ -229,7 +229,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 				}
 			} else {
 				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, "", d.Value) {
+					if !p.PropertyComparator(d.Name, "", d.Value) {
 						return true
 					}
 				} else if d.Value != "" {
