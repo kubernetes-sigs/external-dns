@@ -209,16 +209,17 @@ func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
 }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
-	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
+	currentProperties := map[string]endpoint.ProviderSpecificProperty{}
+
+	if current.ProviderSpecific != nil {
+		for _, d := range current.ProviderSpecific {
+			currentProperties[d.Name] = d
+		}
+	}
 
 	if desired.ProviderSpecific != nil {
 		for _, d := range desired.ProviderSpecific {
-			desiredProperties[d.Name] = d
-		}
-	}
-	if current.ProviderSpecific != nil {
-		for _, c := range current.ProviderSpecific {
-			if d, ok := desiredProperties[c.Name]; ok {
+			if c, ok := currentProperties[d.Name]; ok {
 				if p.PropertyComparator != nil {
 					if !p.PropertyComparator(c.Name, c.Value, d.Value) {
 						return true
@@ -228,10 +229,10 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 				}
 			} else {
 				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, c.Value, "") {
+					if !p.PropertyComparator(c.Name, "", d.Value) {
 						return true
 					}
-				} else if c.Value != "" {
+				} else if d.Value != "" {
 					return true
 				}
 			}
