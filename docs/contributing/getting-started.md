@@ -15,6 +15,12 @@ make build
 ./build/external-dns --source=service --provider=inmemory --once
 ```
 
+Install stuff required for the next steps (Linux):
+```shell
+curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+
+```
+
 Run linting, unit tests, and coverage report.
 ```shell
 make lint

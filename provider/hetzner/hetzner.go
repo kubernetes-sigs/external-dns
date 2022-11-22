@@ -42,7 +42,7 @@ type HetznerProvider struct {
 	// page size when querying paginated APIs
 	apiPageSize      int
 	DryRun           bool
-	zoneIdNameMapper provider.ZoneIDName
+	zoneIDNameMapper provider.ZoneIDName
 	aIgnoredNets     []net.IPNet
 }
 
@@ -117,24 +117,24 @@ func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 func ipNetFromNetworkString(nwString string) (net.IPNet, error) {
 	nwParts := strings.Split(nwString, "/")
 	if len(nwParts) != 2 {
-		return net.IPNet{}, fmt.Errorf("Network descriptor '%s' is not a valid network", nwString)
+		return net.IPNet{}, fmt.Errorf("network descriptor '%s' is not a valid network", nwString)
 	}
 
 	netmask, err := strconv.Atoi(nwParts[1])
 
 	if err != nil {
-		return net.IPNet{}, fmt.Errorf("Netmask '%s' not a valid number", nwParts[1])
+		return net.IPNet{}, fmt.Errorf("netmask '%s' not a valid number", nwParts[1])
 	}
 
 	ipv4Parts := strings.Split(nwParts[0], ".")
 	if len(ipv4Parts) != 4 {
-		return net.IPNet{}, fmt.Errorf("Netaddress '%s' invalid", nwParts[0])
+		return net.IPNet{}, fmt.Errorf("netaddress '%s' invalid", nwParts[0])
 	}
 	ipv4Bytes := []byte{}
 	for _, i := range ipv4Parts {
 		ipv4Part, err := strconv.Atoi(i)
 		if err != nil {
-			return net.IPNet{}, fmt.Errorf("Netaddress '%s' invalid - part '%s'", nwParts[0], i)
+			return net.IPNet{}, fmt.Errorf("netaddress '%s' invalid - part '%s'", nwParts[0], i)
 		}
 		ipv4Bytes = append(ipv4Bytes, uint8(ipv4Part))
 	}
@@ -160,7 +160,7 @@ func (p *HetznerProvider) Zones(ctx context.Context) ([]hdns.Zone, error) {
 		}
 	}
 
-	p.ensureZoneIdMappingPresent(zones)
+	p.ensureZoneIDMappingPresent(zones)
 
 	return result, nil
 }
@@ -169,7 +169,7 @@ func (p HetznerProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endp
 	adjustedEndpoints := []*endpoint.Endpoint{}
 
 	for _, ep := range endpoints {
-		_, zoneName := p.zoneIdNameMapper.FindZone(ep.DNSName)
+		_, zoneName := p.zoneIDNameMapper.FindZone(ep.DNSName)
 		adjustedTargets := endpoint.Targets{}
 		for _, t := range ep.Targets {
 			adjustedTarget, producedValidTarget := p.makeEndpointTarget(zoneName, t, ep.RecordType)
@@ -259,9 +259,9 @@ func (p *HetznerProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	return endpoints, nil
 }
 
-func (p *HetznerProvider) fetchRecords(ctx context.Context, zoneId string) ([]hdns.Record, error) {
+func (p *HetznerProvider) fetchRecords(ctx context.Context, zoneID string) ([]hdns.Record, error) {
 	allRecords := []hdns.Record{}
-	listOptions := &hdns.RecordListOpts{ListOpts: hdns.ListOpts{PerPage: p.apiPageSize}, ZoneID: zoneId}
+	listOptions := &hdns.RecordListOpts{ListOpts: hdns.ListOpts{PerPage: p.apiPageSize}, ZoneID: zoneID}
 	for {
 		records, resp, err := p.Client.Record.List(ctx, *listOptions)
 		if err != nil {
@@ -305,16 +305,16 @@ func (p *HetznerProvider) fetchZones(ctx context.Context) ([]hdns.Zone, error) {
 	return allZones, nil
 }
 
-func (p *HetznerProvider) ensureZoneIdMappingPresent(zones []hdns.Zone) {
-	zoneIdNameMapper := provider.ZoneIDName{}
+func (p *HetznerProvider) ensureZoneIDMappingPresent(zones []hdns.Zone) {
+	zoneIDNameMapper := provider.ZoneIDName{}
 	for _, z := range zones {
-		zoneIdNameMapper.Add(z.ID, z.Name)
+		zoneIDNameMapper.Add(z.ID, z.Name)
 	}
-	p.zoneIdNameMapper = zoneIdNameMapper
+	p.zoneIDNameMapper = zoneIDNameMapper
 }
 
-func (p *HetznerProvider) getRecordsByZoneId(ctx context.Context) (map[string][]hdns.Record, provider.ZoneIDName, error) {
-	recordsByZoneId := map[string][]hdns.Record{}
+func (p *HetznerProvider) getRecordsByZoneID(ctx context.Context) (map[string][]hdns.Record, provider.ZoneIDName, error) {
+	recordsByZoneID := map[string][]hdns.Record{}
 
 	zones, err := p.Zones(ctx)
 	if err != nil {
@@ -328,10 +328,10 @@ func (p *HetznerProvider) getRecordsByZoneId(ctx context.Context) (map[string][]
 			return nil, nil, err
 		}
 
-		recordsByZoneId[zone.ID] = append(recordsByZoneId[zone.ID], records...)
+		recordsByZoneID[zone.ID] = append(recordsByZoneID[zone.ID], records...)
 	}
 
-	return recordsByZoneId, p.zoneIdNameMapper, nil
+	return recordsByZoneID, p.zoneIDNameMapper, nil
 }
 
 // Make a endpoint name that conforms to Hetzner DNS requirements:
@@ -348,7 +348,7 @@ func makeEndpointName(domain, entryName, epType string) string {
 	return adjustedName
 }
 
-func (p HetznerProvider) ignoresIpV4(ipv4 string) bool {
+func (p HetznerProvider) ignoresIPV4(ipv4 string) bool {
 	ipParts := strings.Split(ipv4, ".")
 	if len(ipParts) != 4 {
 		return true
@@ -384,7 +384,7 @@ func (p HetznerProvider) makeEndpointTarget(domain, entryTarget, recordType stri
 		adjustedTarget = strings.TrimSuffix(entryTarget, ".")
 		adjustedTarget = strings.TrimSuffix(adjustedTarget, "."+domain)
 	case "A":
-		if p.ignoresIpV4(entryTarget) {
+		if p.ignoresIPV4(entryTarget) {
 			return "", false
 		}
 	}
@@ -402,7 +402,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes *hetznerCha
 	for _, d := range changes.Deletes {
 		log.WithFields(log.Fields{
 			"domain":   d.Domain,
-			"recordId": d.RecordID,
+			"recordID": d.RecordID,
 		}).Debug("Deleting domain record")
 
 		if p.DryRun {
@@ -422,7 +422,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes *hetznerCha
 		}
 		log.WithFields(log.Fields{
 			"domain":     c.Domain,
-			"zoneId":     c.Options.Zone.ID,
+			"zoneID":     c.Options.Zone.ID,
 			"dnsName":    c.Options.Name,
 			"recordType": c.Options.Type,
 			"value":      c.Options.Value,
@@ -446,7 +446,7 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes *hetznerCha
 		}
 		log.WithFields(log.Fields{
 			"domain":     u.Domain,
-			"zoneId":     u.Options.Zone.ID,
+			"zoneID":     u.Options.Zone.ID,
 			"dnsName":    u.Options.Name,
 			"recordType": u.Options.Type,
 			"value":      u.Options.Value,
@@ -466,8 +466,8 @@ func (p *HetznerProvider) submitChanges(ctx context.Context, changes *hetznerCha
 	return nil
 }
 
-func endpointsByZoneId(zoneIDNameMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
-	endpointsByZoneId := make(map[string][]*endpoint.Endpoint)
+func endpointsByZoneID(zoneIDNameMapper provider.ZoneIDName, endpoints []*endpoint.Endpoint) map[string][]*endpoint.Endpoint {
+	endpointsByZoneID := make(map[string][]*endpoint.Endpoint)
 
 	for _, ep := range endpoints {
 		zoneID, _ := zoneIDNameMapper.FindZone(ep.DNSName)
@@ -475,19 +475,10 @@ func endpointsByZoneId(zoneIDNameMapper provider.ZoneIDName, endpoints []*endpoi
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", ep.DNSName)
 			continue
 		}
-		endpointsByZoneId[zoneID] = append(endpointsByZoneId[zoneID], ep)
+		endpointsByZoneID[zoneID] = append(endpointsByZoneID[zoneID], ep)
 	}
 
-	return endpointsByZoneId
-}
-
-func arrContains(arr []string, s string) bool {
-	for _, v := range arr {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return endpointsByZoneID
 }
 
 func getMatchingDomainRecords(records []hdns.Record, zoneName string, ep *endpoint.Endpoint) []hdns.Record {
@@ -516,13 +507,13 @@ func getTTLFromEndpoint(ep *endpoint.Endpoint) (int, bool) {
 
 func processCreateActions(
 	zoneIDNameMapper provider.ZoneIDName,
-	recordsByZoneId map[string][]hdns.Record,
-	createsByZoneId map[string][]*endpoint.Endpoint,
+	recordsByZoneID map[string][]hdns.Record,
+	createsByZoneID map[string][]*endpoint.Endpoint,
 	changes *hetznerChanges,
 ) error {
 	// Process endpoints that need to be created.
-	for zoneId, endpoints := range createsByZoneId {
-		zoneName := zoneIDNameMapper[zoneId]
+	for zoneID, endpoints := range createsByZoneID {
+		zoneName := zoneIDNameMapper[zoneID]
 		if len(endpoints) == 0 {
 			log.WithFields(log.Fields{
 				"zoneName": zoneName,
@@ -530,7 +521,7 @@ func processCreateActions(
 			continue
 		}
 
-		records := recordsByZoneId[zoneName]
+		records := recordsByZoneID[zoneName]
 
 		for _, ep := range endpoints {
 			// Warn if there are existing records since we expect to create only new records.
@@ -544,9 +535,9 @@ func processCreateActions(
 			}
 
 			var ttl *int = nil
-			configuredTtl, ttlIsSet := getTTLFromEndpoint(ep)
+			configuredTTL, ttlIsSet := getTTLFromEndpoint(ep)
 			if ttlIsSet {
-				*ttl = configuredTtl
+				*ttl = configuredTTL
 			}
 			for _, target := range ep.Targets {
 				changes.Creates = append(changes.Creates, &hetznerChangeCreate{
@@ -557,7 +548,7 @@ func processCreateActions(
 						Type:  hdns.RecordType(ep.RecordType),
 						Value: target,
 						Zone: &hdns.Zone{
-							ID:   zoneId,
+							ID:   zoneID,
 							Name: zoneName,
 						},
 					},
@@ -571,13 +562,13 @@ func processCreateActions(
 
 func processUpdateActions(
 	zoneIDNameMapper provider.ZoneIDName,
-	recordsByZoneId map[string][]hdns.Record,
-	updatesByZoneId map[string][]*endpoint.Endpoint,
+	recordsByZoneID map[string][]hdns.Record,
+	updatesByZoneID map[string][]*endpoint.Endpoint,
 	changes *hetznerChanges,
 ) error {
 	// Generate creates and updates based on existing
-	for zoneId, updates := range updatesByZoneId {
-		zoneName := zoneIDNameMapper[zoneId]
+	for zoneID, updates := range updatesByZoneID {
+		zoneName := zoneIDNameMapper[zoneID]
 		if len(updates) == 0 {
 			log.WithFields(log.Fields{
 				"zoneName": zoneName,
@@ -585,7 +576,7 @@ func processUpdateActions(
 			continue
 		}
 
-		records := recordsByZoneId[zoneId]
+		records := recordsByZoneID[zoneID]
 		log.WithFields(log.Fields{
 			"zoneName": zoneName,
 			"records":  records,
@@ -613,9 +604,9 @@ func processUpdateActions(
 			}
 
 			var ttl *int = nil
-			configuredTtl, ttlIsSet := getTTLFromEndpoint(ep)
+			configuredTTL, ttlIsSet := getTTLFromEndpoint(ep)
 			if ttlIsSet {
-				*ttl = configuredTtl
+				*ttl = configuredTTL
 			}
 
 			// Generate create and delete actions based on existence of a record for each target.
@@ -637,7 +628,7 @@ func processUpdateActions(
 							Type:  hdns.RecordType(ep.RecordType),
 							Value: target,
 							Zone: &hdns.Zone{
-								ID:   zoneId,
+								ID:   zoneID,
 								Name: zoneName,
 							},
 						},
@@ -661,7 +652,7 @@ func processUpdateActions(
 							Type:  hdns.RecordType(ep.RecordType),
 							Value: target,
 							Zone: &hdns.Zone{
-								ID:   zoneId,
+								ID:   zoneID,
 								Name: zoneName,
 							},
 						},
@@ -691,13 +682,13 @@ func processUpdateActions(
 
 func processDeleteActions(
 	zoneIDNameMapper provider.ZoneIDName,
-	recordsByZoneId map[string][]hdns.Record,
-	deletesByZoneId map[string][]*endpoint.Endpoint,
+	recordsByZoneID map[string][]hdns.Record,
+	deletesByZoneID map[string][]*endpoint.Endpoint,
 	changes *hetznerChanges,
 ) error {
 	// Generate delete actions for each deleted endpoint.
-	for zoneId, deletes := range deletesByZoneId {
-		zoneName := zoneIDNameMapper[zoneId]
+	for zoneID, deletes := range deletesByZoneID {
+		zoneName := zoneIDNameMapper[zoneID]
 		if len(deletes) == 0 {
 			log.WithFields(log.Fields{
 				"zoneName": zoneName,
@@ -705,7 +696,7 @@ func processDeleteActions(
 			continue
 		}
 
-		records := recordsByZoneId[zoneId]
+		records := recordsByZoneID[zoneID]
 
 		for _, ep := range deletes {
 			matchingRecords := getMatchingDomainRecords(records, zoneName, ep)
@@ -748,26 +739,26 @@ func processDeleteActions(
 // ApplyChanges applies the given set of generic changes to the provider.
 func (p *HetznerProvider) ApplyChanges(ctx context.Context, planChanges *plan.Changes) error {
 	// TODO: This should only retrieve zones affected by the given `planChanges`.
-	recordsByZoneId, zoneIDNameMapper, err := p.getRecordsByZoneId(ctx)
+	recordsByZoneID, zoneIDNameMapper, err := p.getRecordsByZoneID(ctx)
 	if err != nil {
 		return err
 	}
 
-	createsByZoneId := endpointsByZoneId(zoneIDNameMapper, planChanges.Create)
-	updatesByZoneId := endpointsByZoneId(zoneIDNameMapper, planChanges.UpdateNew)
-	deletesByZoneId := endpointsByZoneId(zoneIDNameMapper, planChanges.Delete)
+	createsByZoneID := endpointsByZoneID(zoneIDNameMapper, planChanges.Create)
+	updatesByZoneID := endpointsByZoneID(zoneIDNameMapper, planChanges.UpdateNew)
+	deletesByZoneID := endpointsByZoneID(zoneIDNameMapper, planChanges.Delete)
 
 	var changes hetznerChanges
 
-	if err := processCreateActions(zoneIDNameMapper, recordsByZoneId, createsByZoneId, &changes); err != nil {
+	if err := processCreateActions(zoneIDNameMapper, recordsByZoneID, createsByZoneID, &changes); err != nil {
 		return err
 	}
 
-	if err := processUpdateActions(zoneIDNameMapper, recordsByZoneId, updatesByZoneId, &changes); err != nil {
+	if err := processUpdateActions(zoneIDNameMapper, recordsByZoneID, updatesByZoneID, &changes); err != nil {
 		return err
 	}
 
-	if err := processDeleteActions(zoneIDNameMapper, recordsByZoneId, deletesByZoneId, &changes); err != nil {
+	if err := processDeleteActions(zoneIDNameMapper, recordsByZoneID, deletesByZoneID, &changes); err != nil {
 		return err
 	}
 
