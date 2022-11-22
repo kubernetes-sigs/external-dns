@@ -346,7 +346,7 @@ type informerFactory interface {
 }
 
 func waitForCacheSync(ctx context.Context, factory informerFactory) error {
-	ctx, cancel := context.WithTimeout(ctx, 180*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 	for typ, done := range factory.WaitForCacheSync(ctx.Done()) {
 		if !done {
