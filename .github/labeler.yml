@@ -26,6 +26,9 @@ provider/designate: provider/designate*
 # Add 'provider/digitalocean' in file which starts with digitalocean
 provider/digitalocean: provider/digital_ocean*
 
+# Add 'provider/hetzner' in file which starts with hetzner
+provider/hetzner: provider/hetzner*
+
 # Add 'provider/dnssimple' in file which starts with dnssimple
 provider/dnssimple: provider/dnssimple*
 

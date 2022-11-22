@@ -116,6 +116,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DATA-DOG/go-sqlmock v1.5.0/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
+github.com/DrBu7cher/hetzner-dns-go v0.0.0-20221119165401-d2f2e210aa6e h1:nhU52EwKABHx/nVFvRfirBE8fjBSToQfyI7QsV1b3js=
+github.com/DrBu7cher/hetzner-dns-go v0.0.0-20221119165401-d2f2e210aa6e/go.mod h1:IbHKjMETVWyUlOFmpH2kmckON6nciYblwnvN2af7SN4=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0 h1:2gzVSELk4I4ncZNrsaKI6fvZ3to60iYnig+lTFcGCEM=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0/go.mod h1:P9YNyJaJazc49fLNFG4uQ61VZVptykWqNU2vWLWcxu0=
 github.com/IBM/go-sdk-core/v5 v5.8.0 h1:Bn9BxTaKYKWpd+BDpVsL6XOOJl4QDgxux4gSdWi31vE=
@@ -897,6 +899,8 @@ github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGw
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
 github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhBSsks=
 github.com/jmoiron/sqlx v1.3.1/go.mod h1:2BljVx/86SuTyjE+aPYlHCTNvZrnJXghYGpNiXLBMCQ=
+github.com/jobstoit/hetzner-dns-go v0.0.0-20220830201730-6b4ef68e5359 h1:ry1Ma6iZCSnIV4GT9xNW0CnEexRQOHAGsvujImrYJhI=
+github.com/jobstoit/hetzner-dns-go v0.0.0-20220830201730-6b4ef68e5359/go.mod h1:IbHKjMETVWyUlOFmpH2kmckON6nciYblwnvN2af7SN4=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=

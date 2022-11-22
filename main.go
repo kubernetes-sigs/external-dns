@@ -52,6 +52,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/gandi"
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
+	"sigs.k8s.io/external-dns/provider/hetzner"
 	"sigs.k8s.io/external-dns/provider/ibmcloud"
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
@@ -238,6 +239,8 @@ func main() {
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
+	case "hetzner":
+		p, err = hetzner.NewHetznerProvider(ctx, domainFilter, cfg.DryRun, cfg.HetznerAPIPageSize, cfg.HetznerAIgnoreNets)
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":

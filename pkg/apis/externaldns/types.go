@@ -182,6 +182,8 @@ type Config struct {
 	TransIPAccountName                string
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
+	HetznerAPIPageSize                int
+	HetznerAIgnoreNets                string
 	ManagedDNSRecordTypes             []string
 	GoDaddyAPIKey                     string `secure:"yes"`
 	GoDaddySecretKey                  string `secure:"yes"`
@@ -325,6 +327,8 @@ var defaultConfig = &Config{
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
+	HetznerAPIPageSize:          50,
+	HetznerAIgnoreNets:          "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
 	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	GoDaddyAPIKey:               "",
 	GoDaddySecretKey:            "",
@@ -428,7 +432,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, hetzner, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "hetzner", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
@@ -505,6 +509,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("ns1-ignoressl", "When using the NS1 provider, specify whether to verify the SSL certificate (default: false)").Default(strconv.FormatBool(defaultConfig.NS1IgnoreSSL)).BoolVar(&cfg.NS1IgnoreSSL)
 	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
+	app.Flag("hetzner-api-page-size", "Configure the page size used when querying the Hetzner DNS API.").Default(strconv.Itoa(defaultConfig.HetznerAPIPageSize)).IntVar(&cfg.HetznerAPIPageSize)
+	app.Flag("hetzner-a-ignore-nets", "Configure the network ranges to be ignored when creating A-records.").Default(defaultConfig.HetznerAIgnoreNets).StringVar(&cfg.HetznerAIgnoreNets)
 	app.Flag("ibmcloud-config-file", "When using the IBM Cloud provider, specify the IBM Cloud configuration file (required when --provider=ibmcloud").Default(defaultConfig.IBMCloudConfigFile).StringVar(&cfg.IBMCloudConfigFile)
 	app.Flag("ibmcloud-proxied", "When using the IBM provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.IBMCloudProxied)
 	// GoDaddy flags
