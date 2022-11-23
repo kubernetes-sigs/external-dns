@@ -19,6 +19,7 @@ package source
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/assert"
@@ -312,7 +313,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(context.Background(), host, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace)
+			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace, 60*time.Second)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 

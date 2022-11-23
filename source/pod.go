@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 
@@ -39,7 +40,7 @@ type podSource struct {
 }
 
 // NewPodSource creates a new podSource with the given config.
-func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string) (Source, error) {
+func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespace string, compatibility string, cacheSyncTimeout time.Duration) (Source, error) {
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	podInformer := informerFactory.Core().V1().Pods()
 	nodeInformer := informerFactory.Core().V1().Nodes()
@@ -60,7 +61,7 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 

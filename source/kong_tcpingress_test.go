@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -362,7 +363,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(kongGroupdVersionResource).Namespace(defaultKongNamespace).Create(context.Background(), &tcpi, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewKongTCPIngressSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultKongNamespace, "kubernetes.io/ingress.class=kong", ti.ignoreHostnameAnnotation)
+			source, err := NewKongTCPIngressSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultKongNamespace, "kubernetes.io/ingress.class=kong", ti.ignoreHostnameAnnotation, 60*time.Second)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 

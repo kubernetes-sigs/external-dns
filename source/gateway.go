@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -143,19 +144,24 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	nsInformer := kubeInformerFactory.Core().V1().Namespaces() // TODO: Namespace informer should be shared across gateway sources.
 	nsInformer.Informer()                                      // Register with factory before starting.
 
+	cacheSyncTimeout := config.CacheSyncTimeout
+	if cacheSyncTimeout == 0 {
+		cacheSyncTimeout = 60 * time.Second
+	}
+
 	informerFactory.Start(wait.NeverStop)
 	kubeInformerFactory.Start(wait.NeverStop)
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := waitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := waitForCacheSync(ctx, cacheSyncTimeout, rtInformerFactory); err != nil {
 			return nil, err
 		}
 	}
-	if err := waitForCacheSync(ctx, informerFactory); err != nil {
+	if err := waitForCacheSync(ctx, cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := waitForCacheSync(ctx, cacheSyncTimeout, kubeInformerFactory); err != nil {
 		return nil, err
 	}
 

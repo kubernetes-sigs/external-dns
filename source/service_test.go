@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,6 +80,7 @@ func (suite *ServiceSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		false,
+		10*time.Minute,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -160,6 +162,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				false,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 
 			if ti.expectError {
@@ -1131,6 +1134,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				sourceLabel,
 				tc.resolveLoadBalancerHostname,
+				10*time.Minute,
 			)
 
 			require.NoError(t, err)
@@ -1321,6 +1325,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -1624,6 +1629,7 @@ func TestClusterIpServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labelSelector,
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -2342,6 +2348,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -3070,6 +3077,7 @@ func TestHeadlessServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -3529,6 +3537,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -3707,6 +3716,7 @@ func TestExternalServices(t *testing.T) {
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
 				false,
+				10*time.Minute,
 			)
 			require.NoError(t, err)
 
@@ -3762,6 +3772,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		false,
 		labels.Everything(),
 		false,
+		10*time.Minute,
 	)
 	require.NoError(b, err)
 

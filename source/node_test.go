@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -77,6 +78,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				ti.annotationFilter,
 				ti.fqdnTemplate,
 				labels.Everything(),
+				60*time.Second,
 			)
 
 			if ti.expectError {
@@ -357,6 +359,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				tc.annotationFilter,
 				tc.fqdnTemplate,
 				labelSelector,
+				60*time.Second,
 			)
 			require.NoError(t, err)
 

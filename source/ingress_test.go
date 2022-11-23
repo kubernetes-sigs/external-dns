@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,6 +67,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		[]string{},
+		60*time.Second,
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -162,6 +164,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				labels.Everything(),
 				ti.ingressClassNames,
+				60*time.Second,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -267,7 +270,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "invalid hostname does not generate endpoints",
 			ingress: fakeIngress{
-				dnsnames:  []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -1416,6 +1419,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressRulesSpec,
 				ti.ingressLabelSelector,
 				ti.ingressClassNames,
+				60*time.Second,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())

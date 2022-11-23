@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -42,7 +43,7 @@ type nodeSource struct {
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector, cacheSyncTimeout time.Duration) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 

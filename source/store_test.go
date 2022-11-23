@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	openshift "github.com/openshift/client-go/route/clientset/versioned"
@@ -162,7 +163,9 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, &Config{})
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, &Config{
+		CacheSyncTimeout: 60 * time.Second,
+	})
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 8, "should generate all eight sources")
 }

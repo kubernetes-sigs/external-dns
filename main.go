@@ -152,6 +152,7 @@ func main() {
 		GlooNamespaces:                 cfg.GlooNamespaces,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
+		CacheSyncTimeout:               cfg.CacheSyncTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,

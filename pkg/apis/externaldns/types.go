@@ -165,6 +165,7 @@ type Config struct {
 	LogFormat                          string
 	MetricsAddress                     string
 	LogLevel                           string
+	CacheSyncTimeout                   time.Duration
 	TXTCacheInterval                   time.Duration
 	TXTWildcardReplacement             string
 	ExoscaleEndpoint                   string
@@ -325,6 +326,7 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:        5 * time.Second,
 	TXTEncryptEnabled:           false,
 	TXTEncryptAESKey:            "",
+	CacheSyncTimeout:            time.Second * 60,
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -626,6 +628,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")").Default(defaultConfig.AWSDynamoDBTable).StringVar(&cfg.AWSDynamoDBTable)
 
 	// Flags related to the main control loop
+	app.Flag("cache-sync-timeout", "The maximum time allowed for a cache synchronization to occur (default: 10m)").Default(defaultConfig.CacheSyncTimeout.String()).DurationVar(&cfg.CacheSyncTimeout)
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
 	app.Flag("interval", "The interval between two consecutive synchronizations in duration format (default: 1m)").Default(defaultConfig.Interval.String()).DurationVar(&cfg.Interval)
 	app.Flag("min-event-sync-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)").Default(defaultConfig.MinEventSyncInterval.String()).DurationVar(&cfg.MinEventSyncInterval)

@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -99,6 +100,7 @@ func (suite *GatewaySuite) SetupTest() {
 		"{{.Name}}",
 		false,
 		false,
+		60*time.Second,
 	)
 	suite.NoError(err, "should initialize gateway source")
 	suite.NoError(err, "should succeed")
@@ -173,6 +175,7 @@ func TestNewIstioGatewaySource(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				false,
+				60*time.Second,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1507,6 +1510,7 @@ func testGatewayEndpoints(t *testing.T) {
 				ti.fqdnTemplate,
 				ti.combineFQDNAndAnnotation,
 				ti.ignoreHostnameAnnotation,
+				60*time.Second,
 			)
 			require.NoError(t, err)
 
@@ -1551,6 +1555,7 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 		"{{.Name}}",
 		false,
 		false,
+		60*time.Second,
 	)
 	if err != nil {
 		return nil, err

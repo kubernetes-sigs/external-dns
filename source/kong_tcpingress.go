@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -57,7 +58,7 @@ type kongTCPIngressSource struct {
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
-func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, cacheSyncTimeout time.Duration) (Source, error) {
 	var err error
 
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
@@ -76,7 +77,7 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForDynamicCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -62,6 +63,7 @@ func NewF5VirtualServerSource(
 	kubeClient kubernetes.Interface,
 	namespace string,
 	annotationFilter string,
+	cacheSyncTimeout time.Duration,
 ) (Source, error) {
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
 	virtualServerInformer := informerFactory.ForResource(f5VirtualServerGVR)
@@ -76,7 +78,7 @@ func NewF5VirtualServerSource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForDynamicCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 
