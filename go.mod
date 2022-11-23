@@ -138,7 +138,7 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jinzhu/copier v0.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/jobstoit/hetzner-dns-go v0.0.0-20220830201730-6b4ef68e5359
+	github.com/jobstoit/hetzner-dns-go v0.0.0-20221122174934-adf3b294e6ca
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
@@ -204,6 +204,3 @@ require (
 )
 
 replace k8s.io/klog/v2 => github.com/Raffo/knolog v0.0.0-20211016155154-e4d5e0cc970a
-
-// overridden until jobstoit merges [PR-1](https://github.com/jobstoit/hetzner-dns-go/pull/1)
-replace github.com/jobstoit/hetzner-dns-go => github.com/DrBu7cher/hetzner-dns-go v0.0.0-20221119165401-d2f2e210aa6e

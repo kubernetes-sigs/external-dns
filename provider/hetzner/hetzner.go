@@ -19,9 +19,7 @@ package hetzner
 import (
 	"context"
 	"fmt"
-	"net"
 	"os"
-	"strconv"
 	"strings"
 
 	hdns "github.com/jobstoit/hetzner-dns-go/dns"
@@ -43,7 +41,6 @@ type HetznerProvider struct {
 	apiPageSize      int
 	DryRun           bool
 	zoneIDNameMapper provider.ZoneIDName
-	aIgnoredNets     []net.IPNet
 }
 
 type hetznerChangeCreate struct {
@@ -74,30 +71,18 @@ func (c *hetznerChanges) Empty() bool {
 }
 
 // NewHetznerProvider initializes a new Hetzner DNS based Provider.
-func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool, apiPageSize int, aIgnoreNets string) (*HetznerProvider, error) {
+func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool, apiPageSize int) (*HetznerProvider, error) {
 	token, ok := os.LookupEnv("HDNS_TOKEN")
 	if !ok {
 		return nil, fmt.Errorf("no token found")
 	}
-	client := hdns.NewClient(hdns.WithToken(token), hdns.WithApplication("ExternalDNS", externaldns.Version))
+	clientOptions := []hdns.ClientOption{hdns.WithToken(token), hdns.WithApplication("ExternalDNS", externaldns.Version)}
 
-	aIgnoredNets := []net.IPNet{}
-	if aIgnoreNets != "" {
-		networkStrings := strings.Split(aIgnoreNets, ",")
-
-		for _, nwString := range networkStrings {
-			net, err := ipNetFromNetworkString(nwString)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"networkString": nwString,
-					"error":         err,
-				}).Error("Could not parse network string")
-				return nil, err
-			} else {
-				aIgnoredNets = append(aIgnoredNets, net)
-			}
-		}
+	if log.GetLevel() >= log.TraceLevel {
+		clientOptions = append(clientOptions, hdns.WithDebugWriter(log.StandardLogger().Out))
 	}
+
+	client := hdns.NewClient(clientOptions...)
 
 	_, err := client.NewRequest(ctx, "GET", "/", nil)
 	if err != nil {
@@ -109,40 +94,8 @@ func NewHetznerProvider(ctx context.Context, domainFilter endpoint.DomainFilter,
 		domainFilter: domainFilter,
 		apiPageSize:  apiPageSize,
 		DryRun:       dryRun,
-		aIgnoredNets: aIgnoredNets,
 	}
 	return p, nil
-}
-
-func ipNetFromNetworkString(nwString string) (net.IPNet, error) {
-	nwParts := strings.Split(nwString, "/")
-	if len(nwParts) != 2 {
-		return net.IPNet{}, fmt.Errorf("network descriptor '%s' is not a valid network", nwString)
-	}
-
-	netmask, err := strconv.Atoi(nwParts[1])
-
-	if err != nil {
-		return net.IPNet{}, fmt.Errorf("netmask '%s' not a valid number", nwParts[1])
-	}
-
-	ipv4Parts := strings.Split(nwParts[0], ".")
-	if len(ipv4Parts) != 4 {
-		return net.IPNet{}, fmt.Errorf("netaddress '%s' invalid", nwParts[0])
-	}
-	ipv4Bytes := []byte{}
-	for _, i := range ipv4Parts {
-		ipv4Part, err := strconv.Atoi(i)
-		if err != nil {
-			return net.IPNet{}, fmt.Errorf("netaddress '%s' invalid - part '%s'", nwParts[0], i)
-		}
-		ipv4Bytes = append(ipv4Bytes, uint8(ipv4Part))
-	}
-
-	return net.IPNet{
-		IP:   net.IPv4(ipv4Bytes[0], ipv4Bytes[1], ipv4Bytes[2], ipv4Bytes[3]),
-		Mask: net.CIDRMask((32 - netmask), 32),
-	}, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -287,7 +240,6 @@ func (p *HetznerProvider) fetchZones(ctx context.Context) ([]hdns.Zone, error) {
 	for {
 		zones, resp, err := p.Client.Zone.List(ctx, *listOptions)
 		if err != nil {
-			log.Infoln("here3")
 			return nil, err
 		}
 
@@ -348,27 +300,6 @@ func makeEndpointName(domain, entryName, epType string) string {
 	return adjustedName
 }
 
-func (p HetznerProvider) ignoresIPV4(ipv4 string) bool {
-	ipParts := strings.Split(ipv4, ".")
-	if len(ipParts) != 4 {
-		return true
-	}
-	ipBytes := []byte{}
-	for _, ipPart := range ipParts {
-		ipPartAsInt, err := strconv.Atoi(ipPart)
-		if err != nil {
-			return true
-		}
-		ipBytes = append(ipBytes, uint8(ipPartAsInt))
-	}
-	for _, ignoredNet := range p.aIgnoredNets {
-		if ignoredNet.Contains(net.IPv4(ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3])) {
-			return true
-		}
-	}
-	return false
-}
-
 // Make a endpoint name that conforms to Hetzner DNS requirements:
 // - Records at root of the zone have `@` as the name
 // - A-Records should respect ignored networks and should only contain IPv4 entries
@@ -378,16 +309,9 @@ func (p HetznerProvider) makeEndpointTarget(domain, entryTarget, recordType stri
 	}
 	adjustedTarget := entryTarget
 
-	switch recordType {
-	case "CNAME":
-		// Trim the trailing dot
-		adjustedTarget = strings.TrimSuffix(entryTarget, ".")
-		adjustedTarget = strings.TrimSuffix(adjustedTarget, "."+domain)
-	case "A":
-		if p.ignoresIPV4(entryTarget) {
-			return "", false
-		}
-	}
+	// Trim the trailing dot
+	adjustedTarget = strings.TrimSuffix(entryTarget, ".")
+	adjustedTarget = strings.TrimSuffix(adjustedTarget, "."+domain)
 
 	return adjustedTarget, true
 }
@@ -499,7 +423,7 @@ func getMatchingDomainRecords(records []hdns.Record, zoneName string, ep *endpoi
 }
 
 func getTTLFromEndpoint(ep *endpoint.Endpoint) (int, bool) {
-	if int(ep.RecordTTL) != 0 {
+	if ep.RecordTTL.IsConfigured() {
 		return int(ep.RecordTTL), true
 	}
 	return -1, false
@@ -537,9 +461,17 @@ func processCreateActions(
 			var ttl *int = nil
 			configuredTTL, ttlIsSet := getTTLFromEndpoint(ep)
 			if ttlIsSet {
-				*ttl = configuredTTL
+				ttl = &configuredTTL
 			}
 			for _, target := range ep.Targets {
+
+				log.WithFields(log.Fields{
+					"zoneName":   zoneName,
+					"dnsName":    ep.DNSName,
+					"recordType": ep.RecordType,
+					"target":     target,
+				}).Warn("Creating new target")
+
 				changes.Creates = append(changes.Creates, &hetznerChangeCreate{
 					Domain: zoneName,
 					Options: &hdns.RecordCreateOpts{
@@ -606,7 +538,7 @@ func processUpdateActions(
 			var ttl *int = nil
 			configuredTTL, ttlIsSet := getTTLFromEndpoint(ep)
 			if ttlIsSet {
-				*ttl = configuredTTL
+				ttl = &configuredTTL
 			}
 
 			// Generate create and delete actions based on existence of a record for each target.
@@ -642,7 +574,7 @@ func processUpdateActions(
 						"dnsName":    ep.DNSName,
 						"recordType": ep.RecordType,
 						"target":     target,
-					}).Warn("Creating new target")
+					}).Warn("No target to update - creating new target")
 
 					changes.Creates = append(changes.Creates, &hetznerChangeCreate{
 						Domain: zoneName,

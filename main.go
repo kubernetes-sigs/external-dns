@@ -240,7 +240,7 @@ func main() {
 	case "google":
 		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
 	case "hetzner":
-		p, err = hetzner.NewHetznerProvider(ctx, domainFilter, cfg.DryRun, cfg.HetznerAPIPageSize, cfg.HetznerAIgnoreNets)
+		p, err = hetzner.NewHetznerProvider(ctx, domainFilter, cfg.DryRun, cfg.HetznerAPIPageSize)
 	case "digitalocean":
 		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
 	case "ovh":

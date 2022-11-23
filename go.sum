@@ -901,6 +901,8 @@ github.com/jmoiron/sqlx v1.2.0/go.mod h1:1FEQNm3xlJgrMD+FBdI9+xvCksHtbpVBBw5dYhB
 github.com/jmoiron/sqlx v1.3.1/go.mod h1:2BljVx/86SuTyjE+aPYlHCTNvZrnJXghYGpNiXLBMCQ=
 github.com/jobstoit/hetzner-dns-go v0.0.0-20220830201730-6b4ef68e5359 h1:ry1Ma6iZCSnIV4GT9xNW0CnEexRQOHAGsvujImrYJhI=
 github.com/jobstoit/hetzner-dns-go v0.0.0-20220830201730-6b4ef68e5359/go.mod h1:IbHKjMETVWyUlOFmpH2kmckON6nciYblwnvN2af7SN4=
+github.com/jobstoit/hetzner-dns-go v0.0.0-20221122174934-adf3b294e6ca h1:P0yDY31s7+tNppuC2GQZIWK50s8f2TmevxbiZkATuBY=
+github.com/jobstoit/hetzner-dns-go v0.0.0-20221122174934-adf3b294e6ca/go.mod h1:IbHKjMETVWyUlOFmpH2kmckON6nciYblwnvN2af7SN4=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/jonboulle/clockwork v0.1.0/go.mod h1:Ii8DK3G1RaLaWxj9trq07+26W01tbo22gdxWY5EU2bo=

@@ -183,7 +183,6 @@ type Config struct {
 	TransIPPrivateKeyFile             string
 	DigitalOceanAPIPageSize           int
 	HetznerAPIPageSize                int
-	HetznerAIgnoreNets                string
 	ManagedDNSRecordTypes             []string
 	GoDaddyAPIKey                     string `secure:"yes"`
 	GoDaddySecretKey                  string `secure:"yes"`
@@ -328,7 +327,6 @@ var defaultConfig = &Config{
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
 	HetznerAPIPageSize:          50,
-	HetznerAIgnoreNets:          "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16",
 	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	GoDaddyAPIKey:               "",
 	GoDaddySecretKey:            "",
@@ -510,7 +508,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("ns1-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.NS1MinTTLSeconds)
 	app.Flag("digitalocean-api-page-size", "Configure the page size used when querying the DigitalOcean API.").Default(strconv.Itoa(defaultConfig.DigitalOceanAPIPageSize)).IntVar(&cfg.DigitalOceanAPIPageSize)
 	app.Flag("hetzner-api-page-size", "Configure the page size used when querying the Hetzner DNS API.").Default(strconv.Itoa(defaultConfig.HetznerAPIPageSize)).IntVar(&cfg.HetznerAPIPageSize)
-	app.Flag("hetzner-a-ignore-nets", "Configure the network ranges to be ignored when creating A-records.").Default(defaultConfig.HetznerAIgnoreNets).StringVar(&cfg.HetznerAIgnoreNets)
 	app.Flag("ibmcloud-config-file", "When using the IBM Cloud provider, specify the IBM Cloud configuration file (required when --provider=ibmcloud").Default(defaultConfig.IBMCloudConfigFile).StringVar(&cfg.IBMCloudConfigFile)
 	app.Flag("ibmcloud-proxied", "When using the IBM provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.IBMCloudProxied)
 	// GoDaddy flags

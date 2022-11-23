@@ -50,7 +50,6 @@ spec:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=hetzner
-        - --hetzner-a-ignore-nets="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" # this setting would prevent private network A record entry creation
         - --txt-prefix="txt-" # this MUST be set, until the old TXT records are no longer part of ExternalDNS (follow https://github.com/kubernetes-sigs/external-dns/issues/3078 for that) - but it's recommended to set this either way, to have no conflicts in naming - CNAME and TXT records are not allowed to be named similarly
         env:
         - name: HDNS_TOKEN
@@ -116,7 +115,6 @@ spec:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=hetzner
-        - --hetzner-a-ignore-nets="10.0.0.0/8,172.16.0.0/12,192.168.0.0/16" # this setting would prevent private network A record entry creation
         - --txt-prefix="txt-" # this MUST be set, until the old TXT records are no longer part of ExternalDNS (follow https://github.com/kubernetes-sigs/external-dns/issues/3078 for that) - but it's recommended to set this either way, to have no conflicts in naming - CNAME and TXT records are not allowed to be named similarly
         env:
         - name: HDNS_TOKEN
@@ -206,8 +204,6 @@ the current DNS configuration during every reconciliation loop. If this is the c
 `--hetzner-api-page-size` option to increase the size of the pages used when querying the Hetzner API.
 (Note: external-dns uses a default of 50.)
 
-### No A-Records for private networks
+### Debug client library
 
-If you use the [Hetzner Cloud Controller Manager (hccm)](https://github.com/hetznercloud/hcloud-cloud-controller-manager) in your cluster - for example to manage the automatic Hetzner Cloud Loadbalancer creation - you will likely have the private IP of the Loadbalancer mapped to your k8s-service too.
-
-`--hetzner-a-ignore-nets` can be set to ignore the private network addresses of the loadbalancer, so the public A-records don't include these. This is the default setting. Set `--hetzner-a-ignore-nets=""` if you don't want that.
+Set `--log-level=trace` if you want to see the requests and their responses from the used client library [hetzner-dns-go](https://github.com/jobstoit/hetzner-dns-go)
