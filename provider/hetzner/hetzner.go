@@ -465,8 +465,8 @@ func processCreateActions(
 			if ttlIsSet {
 				ttl = &configuredTTL
 			}
-			for _, target := range ep.Targets {
 
+			for _, target := range ep.Targets {
 				log.WithFields(log.Fields{
 					"zoneName":   zoneName,
 					"dnsName":    ep.DNSName,
