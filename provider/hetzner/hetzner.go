@@ -164,6 +164,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 		}
 
 		e := endpoint.NewEndpoint(dnsName, recordType, targets...)
+		e.RecordTTL = endpoints[0].RecordTTL
 		result = append(result, e)
 	}
 
@@ -195,6 +196,7 @@ func (p *HetznerProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 				}
 
 				ep := endpoint.NewEndpoint(name, string(r.Type), r.Value)
+				ep.RecordTTL = endpoint.TTL(r.Ttl)
 				endpoints = append(endpoints, ep)
 			}
 		}
@@ -470,6 +472,12 @@ func processCreateActions(
 					"dnsName":    ep.DNSName,
 					"recordType": ep.RecordType,
 					"target":     target,
+					"ttl": func() interface{} {
+						if ttl != nil {
+							return *ttl
+						}
+						return "default"
+					}(),
 				}).Warn("Creating new target")
 
 				changes.Creates = append(changes.Creates, &hetznerChangeCreate{
@@ -549,6 +557,12 @@ func processUpdateActions(
 						"dnsName":    ep.DNSName,
 						"recordType": ep.RecordType,
 						"target":     target,
+						"ttl": func() interface{} {
+							if ttl != nil {
+								return *ttl
+							}
+							return "default"
+						}(),
 					}).Warn("Updating existing target")
 
 					changes.Updates = append(changes.Updates, &hetznerChangeUpdate{
@@ -574,6 +588,12 @@ func processUpdateActions(
 						"dnsName":    ep.DNSName,
 						"recordType": ep.RecordType,
 						"target":     target,
+						"ttl": func() interface{} {
+							if ttl != nil {
+								return *ttl
+							}
+							return "default"
+						}(),
 					}).Warn("No target to update - creating new target")
 
 					changes.Creates = append(changes.Creates, &hetznerChangeCreate{
