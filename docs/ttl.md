@@ -41,6 +41,7 @@ Providers
 - [x] DigitalOcean
 - [x] DNSimple
 - [x] Google
+- [x] Hetzner
 - [ ] InMemory
 - [x] Linode
 - [x] TransIP
