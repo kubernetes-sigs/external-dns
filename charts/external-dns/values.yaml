@@ -126,5 +126,10 @@ provider: aws
 
 extraArgs: []
 
+secretConfiguration:
+  enabled: false
+  mountPath: /.aws/credentials
+  data: {}
+
 deploymentStrategy:
   type: Recreate
