@@ -3,8 +3,6 @@ linters-settings:
     default-signifies-exhaustive: false
   goimports:
     local-prefixes: sigs.k8s.io/external-dns
-  golint:
-    min-confidence: 0.9
   maligned:
     suggest-new: true
   misspell:
@@ -23,6 +21,7 @@ linters:
     - goprintffuncname
     - gosimple
     - govet
+    - revive
     - ineffassign
     - misspell
     - rowserrcheck
