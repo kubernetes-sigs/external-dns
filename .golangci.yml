@@ -23,11 +23,8 @@ linters:
     - ineffassign
     - misspell
     - rowserrcheck
-    - staticcheck
-    - stylecheck
     - typecheck
     - unconvert
-    - unused
     - whitespace
 
 issues:
