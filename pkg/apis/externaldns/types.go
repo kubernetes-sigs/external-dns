@@ -95,6 +95,13 @@ type Config struct {
 	AzureResourceGroup                string
 	AzureSubscriptionID               string
 	AzureUserAssignedIdentityClientID string
+	ProVisionConfigFile               string
+	ProVisionUsername                 string
+	ProVisionPassword                 string
+	ProVisionHost                     string
+	ProVisionZoneIDs                  string
+	ProVisionPush                     bool
+	ProVisionGetAllRecords            bool
 	BluecatDNSConfiguration           string
 	BluecatConfigFile                 string
 	BluecatDNSView                    string
@@ -251,6 +258,13 @@ var defaultConfig = &Config{
 	AzureSubscriptionID:         "",
 	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
 	BluecatDNSDeployType:        "no-deploy",
+	ProVisionConfigFile:         "",
+    ProVisionUsername:           "",
+    ProVisionPassword:           "",
+    ProVisionHost:               "",
+    ProVisionZoneIDs:            "",
+    ProVisionPush:               false,
+    ProVisionGetAllRecords:      false,
 	CloudflareProxied:           false,
 	CloudflareZonesPerPage:      50,
 	CoreDNSPrefix:               "/skydns/",
@@ -428,7 +442,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
+	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: aws, aws-sd, godaddy, google, azure, azure-dns, azure-private-dns, bluecat, cloudflare, rcodezero, digitalocean, dnsimple, akamai, infoblox, dyn, designate, coredns, skydns, ibmcloud, pv6connect, inmemory, ovh, pdns, oci, exoscale, linode, rfc2136, ns1, transip, vinyldns, rdns, scaleway, vultr, ultradns, gandi, safedns, tencentcloud)").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, "aws", "aws-sd", "google", "azure", "azure-dns", "azure-private-dns", "alibabacloud", "cloudflare", "rcodezero", "digitalocean", "dnsimple", "akamai", "infoblox", "dyn", "designate", "coredns", "skydns", "ibmcloud", "inmemory", "ovh", "pdns", "oci", "exoscale", "linode", "rfc2136", "ns1", "transip", "vinyldns", "rdns", "scaleway", "vultr", "ultradns", "godaddy", "bluecat", "gandi", "safedns", "tencentcloud", "pihole", "plural")
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
@@ -458,6 +472,15 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
 	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
+
+	// Flags related to ProVision provider
+	app.Flag("pv6connect-config-file", "When using the 6Connect ProVision provider, specify the ProVision configuration file (required when --provider=6cprovision").Default(defaultConfig.ProVisionConfigFile).StringVar(&cfg.ProVisionConfigFile)
+	app.Flag("pv6connect-username", "When using the 6Connect ProVision provider, specify the ProVision UserName (required when --provider=6cprovision").Default(defaultConfig.ProVisionUsername).StringVar(&cfg.ProVisionUsername)
+	app.Flag("pv6connect-password", "When using the 6Connect ProVision provider, specify the ProVision Password (required when --provider=6cprovision").Default(defaultConfig.ProVisionPassword).StringVar(&cfg.ProVisionPassword)
+	app.Flag("pv6connect-host", "When using the 6Connect ProVision provider, specify the ProVision Host URL (required when --provider=6cprovision").Default(defaultConfig.ProVisionHost).StringVar(&cfg.ProVisionHost)
+	app.Flag("pv6connect-zoneids", "When using the 6Connect ProVision provider, specify the ProVision Zone IDs separated by comma (required when --provider=6cprovision").Default(defaultConfig.ProVisionZoneIDs).StringVar(&cfg.ProVisionZoneIDs)
+	app.Flag("pv6connect-push", "When using the 6Connect ProVision provider, specify the ProVision Push Flag ").Default(strconv.FormatBool(defaultConfig.ProVisionPush)).BoolVar(&cfg.ProVisionPush)
+	app.Flag("pv6connect-getallrecords", "When using the 6Connect ProVision provider, specify Get All Records to ommit the k8s-externaldns attribute").Default(strconv.FormatBool(defaultConfig.ProVisionGetAllRecords)).BoolVar(&cfg.ProVisionGetAllRecords)
 
 	// Flags related to BlueCat provider
 	app.Flag("bluecat-dns-configuration", "When using the Bluecat provider, specify the Bluecat DNS configuration string (optional when --provider=bluecat)").Default("").StringVar(&cfg.BluecatDNSConfiguration)

@@ -72,6 +72,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
+	"sigs.k8s.io/external-dns/provider/pv6connect"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -354,6 +355,17 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
+    case "pv6connect":
+        p, err = pv6connect.NewProVisionProvider(
+            pv6connect.ProVisionConfig{
+                ProVisionHost:     cfg.ProVisionHost,
+                ProVisionUsername: cfg.ProVisionUsername,
+                ProVisionPassword: cfg.ProVisionPassword,
+                ProVisionPush:     cfg.ProVisionPush,
+                GetAllRecords:     cfg.ProVisionGetAllRecords,
+                ZoneIDs:           pv6connect.SplitZoneIds(cfg.ProVisionZoneIDs),
+            },
+            cfg.ProVisionConfigFile, domainFilter, zoneIDFilter, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
