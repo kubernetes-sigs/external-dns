@@ -23,9 +23,14 @@ spec:
       {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.podAnnotations }}
+      {{- if or .Values.secretConfiguration.enabled .Values.podAnnotations }}
       annotations:
+        {{- if .Values.secretConfiguration.enabled }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -87,9 +92,9 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
-            - --provider={{ .Values.provider }}
+            - --provider={{ tpl .Values.provider $ }}
           {{- range .Values.extraArgs }}
-            - {{ . }}
+            - {{ tpl . $ }}
           {{- end }}
           ports:
             - name: http
@@ -99,17 +104,30 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- with .Values.extraVolumeMounts }}
+          {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
           volumeMounts:
+            {{- if .Values.secretConfiguration.enabled }}
+            - name: secrets
+              mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.extraVolumes }}
+      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
       volumes:
+        {{- if .Values.secretConfiguration.enabled }}
+        - name: secrets
+          secret:
+            secretName: {{ include "external-dns.fullname" . }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

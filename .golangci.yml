@@ -3,8 +3,6 @@ linters-settings:
     default-signifies-exhaustive: false
   goimports:
     local-prefixes: sigs.k8s.io/external-dns
-  golint:
-    min-confidence: 0.9
   maligned:
     suggest-new: true
   misspell:
@@ -15,24 +13,17 @@ linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
-    - deadcode
     - depguard
     - dogsled
     - gofmt
     - goimports
     - goprintffuncname
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - rowserrcheck
-    - staticcheck
-    - structcheck
-    - stylecheck
     - typecheck
     - unconvert
-    - unused
-    - varcheck
     - whitespace
 
 issues:
