@@ -25,6 +25,11 @@ linters:
     - typecheck
     - unconvert
     - whitespace
+    - revive
+    - statickcheck
+    - stylecheck
+    - unused
+    - gosimple
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
