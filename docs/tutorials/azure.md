@@ -424,6 +424,8 @@ $ kubectl patch serviceaccount external-dns --namespace "default" --patch \
  "{\"metadata\": {\"labels\": {\"azure.workload.identity/use\": \"true\"}, \"annotations\": {\"azure.workload.identity/client-id\": \"${IDENTITY_CLIENT_ID}\"}}}"
 ```
 
+NOTE: it's also possible to specify (or override) ClientID through `UserAssignedIdentityID` field in `azure.json`.
+
 If a pod with external-dns is already running, you need to restart it:
 ```bash
 $ kubectl rollout restart deployment/external-dns

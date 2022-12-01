@@ -107,20 +107,26 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	if cfg.UseWorkloadIdentityExtension {
 		log.Info("Using workload identity extension to retrieve access token for Azure API.")
 
-		token, err := getWIToken(environment)
+		token, err := getWIToken(environment, cfg)
 		if err != nil {
 			return nil, err
 		}
 
 		// adal does not offer methods to dynamically replace a federated token, thus we need to have a wrapper to make sure
-		// we're using up-to-date secret while requesting an access token
+		// we're using up-to-date secret while requesting an access token.
+		// NOTE: There's no RefreshToken in the whole process (in fact, it's absent in AAD responses). An AccessToken can be
+		// received only in exchange for a federated token.
 		var refreshFunc adal.TokenRefresh = func(context context.Context, resource string) (*adal.Token, error) {
-			newWIToken, err := getWIToken(environment)
+			newWIToken, err := getWIToken(environment, cfg)
 			if err != nil {
 				return nil, err
 			}
 
-			// Need to call Refresh(), otherwise .Token() will be empty
+			// An AccessToken gets populated into an spt only when .Refresh() is called. Normally, it's something that happens implicitly when
+			// a first request to manipulate Azure resources is made. Since our goal here is only to receive a fresh AccessToken, we need to make
+			// an explicit call.
+			// .Refresh() itself results in a call to Oauth endpoint. During the process, a federated token is exchanged for an AccessToken.
+			// RefreshToken is absent from responses.
 			err = newWIToken.Refresh()
 			if err != nil {
 				return nil, err
@@ -162,7 +168,9 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 	return nil, fmt.Errorf("no credentials provided for Azure API")
 }
 
-func getWIToken(environment azure.Environment) (*adal.ServicePrincipalToken, error) {
+// getWIToken prepares a token for a Workload Identity-enabled setup
+func getWIToken(environment azure.Environment, cfg config) (*adal.ServicePrincipalToken, error) {
+	// NOTE: all related environment variables are described here: https://azure.github.io/azure-workload-identity/docs/installation/mutating-admission-webhook.html
 	oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, os.Getenv("AZURE_TENANT_ID"))
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
@@ -173,7 +181,14 @@ func getWIToken(environment azure.Environment) (*adal.ServicePrincipalToken, err
 		return nil, fmt.Errorf("failed to read a file with a federated token: %v", err)
 	}
 
-	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, os.Getenv("AZURE_CLIENT_ID"), string(jwt), environment.ResourceManagerEndpoint)
+	// AZURE_CLIENT_ID will be empty in case azure.workload.identity/client-id annotation is not set
+	// Thus, it's important to offer optional ClientID overrides
+	clientID := os.Getenv("AZURE_CLIENT_ID")
+	if cfg.UserAssignedIdentityID != "" {
+		clientID = cfg.UserAssignedIdentityID
+	}
+
+	token, err := adal.NewServicePrincipalTokenFromFederatedToken(*oauthConfig, clientID, string(jwt), environment.ResourceManagerEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create a workload identity token: %v", err)
 	}
