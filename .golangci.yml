@@ -32,7 +32,6 @@ linters:
     - unconvert
     - whitespace
     - revive
-    - stylecheck
     - unused
     - gosimple
 
