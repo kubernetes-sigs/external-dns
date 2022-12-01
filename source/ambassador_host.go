@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/pkg/errors"
@@ -67,6 +68,7 @@ func NewAmbassadorHostSource(
 	dynamicKubeClient dynamic.Interface,
 	kubeClient kubernetes.Interface,
 	namespace string,
+	cacheSyncTimeout time.Duration,
 ) (Source, error) {
 	var err error
 
@@ -85,7 +87,7 @@ func NewAmbassadorHostSource(
 
 	informerFactory.Start(ctx.Done())
 
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForDynamicCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 

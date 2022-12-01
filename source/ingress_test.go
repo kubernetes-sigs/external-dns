@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -66,6 +67,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		false,
 		labels.Everything(),
+		60*time.Second,
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -149,6 +151,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				false,
 				labels.Everything(),
+				60*time.Second,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -1237,6 +1240,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressTLSSpec,
 				ti.ignoreIngressRulesSpec,
 				ti.ingressLabelSelector,
+				60*time.Second,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())

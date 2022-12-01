@@ -29,7 +29,7 @@ import (
 func NewGatewayTCPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(clients, config, "TCPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTCPRouteInformer{factory.Gateway().V1alpha2().TCPRoutes()}
-	})
+	}, config.CacheSyncTimeout)
 }
 
 type gatewayTCPRoute struct{ route *v1alpha2.TCPRoute }

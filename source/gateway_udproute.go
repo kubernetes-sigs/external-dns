@@ -29,7 +29,7 @@ import (
 func NewGatewayUDPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(clients, config, "UDPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayUDPRouteInformer{factory.Gateway().V1alpha2().UDPRoutes()}
-	})
+	}, config.CacheSyncTimeout)
 }
 
 type gatewayUDPRoute struct{ route *v1alpha2.UDPRoute }

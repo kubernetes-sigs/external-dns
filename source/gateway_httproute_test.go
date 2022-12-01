@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -143,6 +144,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			title: "GatewayNamespace",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",
+				CacheSyncTimeout: 60 * time.Second,
 			},
 			namespaces: namespaces("gateway-namespace", "not-gateway-namespace", "route-namespace"),
 			gateways: []*v1beta1.Gateway{
@@ -181,7 +183,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "RouteNamespace",
 			config: Config{
-				Namespace: "route-namespace",
+				Namespace:        "route-namespace",
+				CacheSyncTimeout: 60 * time.Second,
 			},
 			namespaces: namespaces("gateway-namespace", "route-namespace", "not-route-namespace"),
 			gateways: []*v1beta1.Gateway{{
@@ -218,6 +221,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			title: "GatewayLabelFilter",
 			config: Config{
 				GatewayLabelFilter: "foo=bar",
+				CacheSyncTimeout:   60 * time.Second,
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{
@@ -261,7 +265,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "RouteLabelFilter",
 			config: Config{
-				LabelFilter: mustGetLabelSelector("foo=bar"),
+				CacheSyncTimeout: 60 * time.Second,
+				LabelFilter:      mustGetLabelSelector("foo=bar"),
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
@@ -302,6 +307,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "RouteAnnotationFilter",
 			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
 				AnnotationFilter: "foo=bar",
 			},
 			namespaces: namespaces("default"),
@@ -341,8 +347,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "SkipControllerAnnotation",
-			config:     Config{},
+			title: "SkipControllerAnnotation",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -367,8 +375,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: nil,
 		},
 		{
-			title:      "MultipleGateways",
-			config:     Config{},
+			title: "MultipleGateways",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{
 				{
@@ -401,8 +411,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "MultipleListeners",
-			config:     Config{},
+			title: "MultipleListeners",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "one"),
@@ -437,8 +449,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "SectionNameMatch",
-			config:     Config{},
+			title: "SectionNameMatch",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -473,8 +487,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		},
 		{
 			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
-			title:      "PortNumberMatch",
-			config:     Config{},
+			title: "PortNumberMatch",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -517,8 +533,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "WildcardInGateway",
-			config:     Config{},
+			title: "WildcardInGateway",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -544,8 +562,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "WildcardInRoute",
-			config:     Config{},
+			title: "WildcardInRoute",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -571,8 +591,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "WildcardInRouteAndGateway",
-			config:     Config{},
+			title: "WildcardInRouteAndGateway",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -598,8 +620,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "NoRouteHostname",
-			config:     Config{},
+			title: "NoRouteHostname",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -623,8 +647,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "NoGateways",
-			config:     Config{},
+			title: "NoGateways",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways:   nil,
 			routes: []*v1beta1.HTTPRoute{{
@@ -637,8 +663,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: nil,
 		},
 		{
-			title:      "NoHostnames",
-			config:     Config{},
+			title: "NoHostnames",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -657,8 +685,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			endpoints: nil,
 		},
 		{
-			title:      "HostnameAnnotation",
-			config:     Config{},
+			title: "HostnameAnnotation",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -704,6 +734,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "IgnoreHostnameAnnotation",
 			config: Config{
+				CacheSyncTimeout:         60 * time.Second,
 				IgnoreHostnameAnnotation: true,
 			},
 			namespaces: namespaces("default"),
@@ -734,7 +765,8 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "FQDNTemplate",
 			config: Config{
-				FQDNTemplate: "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ",
+				CacheSyncTimeout: 60 * time.Second,
+				FQDNTemplate:     "{{.Name}}.zero.internal, {{.Name}}.one.internal. ,  {{.Name}}.two.internal  ",
 			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
@@ -770,6 +802,7 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 		{
 			title: "CombineFQDN",
 			config: Config{
+				CacheSyncTimeout:         60 * time.Second,
 				FQDNTemplate:             "combine-{{.Name}}.internal",
 				CombineFQDNAndAnnotation: true,
 			},
@@ -794,8 +827,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "TTL",
-			config:     Config{},
+			title: "TTL",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -834,8 +869,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "ProviderAnnotations",
-			config:     Config{},
+			title: "ProviderAnnotations",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),
@@ -865,8 +902,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "DifferentHostnameDifferentGateway",
-			config:     Config{},
+			title: "DifferentHostnameDifferentGateway",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("default"),
 			gateways: []*v1beta1.Gateway{
 				{
@@ -906,8 +945,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "AllowedRoutesSameNamespace",
-			config:     Config{},
+			title: "AllowedRoutesSameNamespace",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: namespaces("same-namespace", "other-namespace"),
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("same-namespace", "test"),
@@ -944,8 +985,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:  "AllowedRoutesNamespaceSelector",
-			config: Config{},
+			title: "AllowedRoutesNamespaceSelector",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: []*corev1.Namespace{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1003,8 +1046,10 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:      "MissingNamespace",
-			config:     Config{},
+			title: "MissingNamespace",
+			config: Config{
+				CacheSyncTimeout: 60 * time.Second,
+			},
 			namespaces: nil,
 			gateways: []*v1beta1.Gateway{{
 				ObjectMeta: objectMeta("default", "test"),

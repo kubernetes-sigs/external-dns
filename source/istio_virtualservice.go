@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 
@@ -67,6 +68,7 @@ func NewIstioVirtualServiceSource(
 	fqdnTemplate string,
 	combineFQDNAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	cacheSyncTimeout time.Duration,
 ) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
@@ -101,10 +103,10 @@ func NewIstioVirtualServiceSource(
 	istioInformerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(context.Background(), istioInformerFactory); err != nil {
+	if err := waitForCacheSync(context.Background(), cacheSyncTimeout, istioInformerFactory); err != nil {
 		return nil, err
 	}
 

@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -97,7 +98,7 @@ type gatewayRouteSource struct {
 	ignoreHostnameAnnotation bool
 }
 
-func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string, newInformerFn newGatewayRouteInformerFunc) (Source, error) {
+func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string, newInformerFn newGatewayRouteInformerFunc, cacheSyncTimeout time.Duration) (Source, error) {
 	ctx := context.TODO()
 
 	gwLabels, err := getLabelSelector(config.GatewayLabelFilter)
@@ -147,14 +148,14 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	if rtInformerFactory != informerFactory {
 		rtInformerFactory.Start(wait.NeverStop)
 
-		if err := waitForCacheSync(ctx, rtInformerFactory); err != nil {
+		if err := waitForCacheSync(ctx, cacheSyncTimeout, rtInformerFactory); err != nil {
 			return nil, err
 		}
 	}
-	if err := waitForCacheSync(ctx, informerFactory); err != nil {
+	if err := waitForCacheSync(ctx, cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
-	if err := waitForCacheSync(ctx, kubeInformerFactory); err != nil {
+	if err := waitForCacheSync(ctx, cacheSyncTimeout, kubeInformerFactory); err != nil {
 		return nil, err
 	}
 

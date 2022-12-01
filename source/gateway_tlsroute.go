@@ -29,7 +29,7 @@ import (
 func NewGatewayTLSRouteSource(clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(clients, config, "TLSRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayTLSRouteInformer{factory.Gateway().V1alpha2().TLSRoutes()}
-	})
+	}, config.CacheSyncTimeout)
 }
 
 type gatewayTLSRoute struct{ route *v1alpha2.TLSRoute }

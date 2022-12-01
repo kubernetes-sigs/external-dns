@@ -18,6 +18,7 @@ package source
 
 import (
 	"testing"
+	"time"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
 	"github.com/stretchr/testify/require"
@@ -69,7 +70,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 		}
 	}
 
-	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace)
+	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace, 60*time.Second)
 	if err != nil {
 		t.Fatalf("could not create ambassador source: %v", err)
 	}

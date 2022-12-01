@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -81,6 +82,7 @@ func TestGatewayTCPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create TCPRoute")
 
 	src, err := NewGatewayTCPRouteSource(clients, &Config{
+		CacheSyncTimeout:         60 * time.Second,
 		FQDNTemplate:             "{{.Name}}-template.foobar.internal",
 		CombineFQDNAndAnnotation: true,
 	})

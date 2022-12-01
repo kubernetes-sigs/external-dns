@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"text/template"
+	"time"
 
 	"github.com/pkg/errors"
 	projectcontour "github.com/projectcontour/contour/apis/projectcontour/v1"
@@ -59,6 +60,7 @@ func NewContourHTTPProxySource(
 	fqdnTemplate string,
 	combineFqdnAnnotation bool,
 	ignoreHostnameAnnotation bool,
+	cacheSyncTimeout time.Duration,
 ) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
@@ -81,7 +83,7 @@ func NewContourHTTPProxySource(
 	informerFactory.Start(ctx.Done())
 
 	// wait for the local cache to be populated.
-	if err := waitForDynamicCacheSync(context.Background(), informerFactory); err != nil {
+	if err := waitForDynamicCacheSync(context.Background(), cacheSyncTimeout, informerFactory); err != nil {
 		return nil, err
 	}
 

@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -412,7 +413,7 @@ func TestPodSource(t *testing.T) {
 				}
 			}
 
-			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility)
+			client, err := NewPodSource(context.TODO(), kubernetes, tc.targetNamespace, tc.compatibility, 60*time.Second)
 			require.NoError(t, err)
 
 			endpoints, err := client.Endpoints(ctx)

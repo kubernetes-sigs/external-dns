@@ -28,7 +28,7 @@ import (
 func NewGatewayHTTPRouteSource(clients ClientGenerator, config *Config) (Source, error) {
 	return newGatewayRouteSource(clients, config, "HTTPRoute", func(factory informers.SharedInformerFactory) gatewayRouteInformer {
 		return &gatewayHTTPRouteInformer{factory.Gateway().V1beta1().HTTPRoutes()}
-	})
+	}, config.CacheSyncTimeout)
 }
 
 type gatewayHTTPRoute struct{ route *v1beta1.HTTPRoute }
