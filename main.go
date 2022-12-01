@@ -153,6 +153,7 @@ func main() {
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
 		CacheSyncTimeout:               cfg.CacheSyncTimeout,
+		DynamicCacheSyncTimeout:        cfg.DynamicCacheSyncTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
