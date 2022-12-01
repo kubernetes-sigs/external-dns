@@ -34,6 +34,7 @@ linters:
     - revive
     - unused
     - gosimple
+    - staticcheck
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
