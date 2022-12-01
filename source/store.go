@@ -70,6 +70,8 @@ type Config struct {
 	GlooNamespace                  string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
+	CacheSyncTimeout               time.Duration
+	DynamicCacheSyncTimeout        time.Duration
 	DefaultTargets                 []string
 	OCPRouterName                  string
 }
