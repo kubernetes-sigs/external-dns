@@ -19,7 +19,7 @@ package ibmcloud
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -201,7 +201,7 @@ type ibmcloudChange struct {
 }
 
 func getConfig(configFile string) (*ibmcloudConfig, error) {
-	contents, err := ioutil.ReadFile(configFile)
+	contents, err := os.ReadFile(configFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read IBM Cloud config file '%s': %v", configFile, err)
 	}

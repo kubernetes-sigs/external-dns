@@ -19,7 +19,7 @@ package alibabacloud
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -99,7 +99,7 @@ type alibabaCloudConfig struct {
 func NewAlibabaCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFileter provider.ZoneIDFilter, zoneType string, dryRun bool) (*AlibabaCloudProvider, error) {
 	cfg := alibabaCloudConfig{}
 	if configFile != "" {
-		contents, err := ioutil.ReadFile(configFile)
+		contents, err := os.ReadFile(configFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read Alibaba Cloud config file '%s': %v", configFile, err)
 		}

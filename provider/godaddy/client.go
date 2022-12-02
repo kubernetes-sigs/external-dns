@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -286,7 +286,7 @@ func (c *Client) CallAPIWithContext(ctx context.Context, method, path string, re
 func (c *Client) UnmarshalResponse(response *http.Response, resType interface{}) error {
 	// Read all the response body
 	defer response.Body.Close()
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return err
 	}

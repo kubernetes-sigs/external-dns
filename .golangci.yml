@@ -7,6 +7,12 @@ linters-settings:
     suggest-new: true
   misspell:
     locale: US
+  revive:
+    confusing-naming: false
+    ignore-generated-header: true
+    rules:
+      - name: confusing-naming
+        disabled: true
 
 linters:
   # please, do not use `enable-all`: it's deprecated and will be removed soon.
@@ -25,6 +31,10 @@ linters:
     - typecheck
     - unconvert
     - whitespace
+    - revive
+    - unused
+    - gosimple
+    - staticcheck
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
