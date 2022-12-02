@@ -442,8 +442,10 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 		old := oldEndpoints[i]
 		if new.RecordType != old.RecordType ||
 			// Handle the case where an AWS ALIAS record is changing to/from a CNAME.
-			(old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME)) {
-			// The record type changed, so UPSERT will fail. Instead perform a DELETE followed by a CREATE.
+			(old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME)) ||
+			// Handle the case where an AWS record is changing to/from simple to other routing policies
+			((old.SetIdentifier == "" && new.SetIdentifier != "") || (old.SetIdentifier != "" && new.SetIdentifier == "")) {
+			// The record type changed or the routing policy change, so UPSERT will fail. Instead perform a DELETE followed by a CREATE.
 			deletes = append(deletes, old)
 			creates = append(creates, new)
 		} else {
