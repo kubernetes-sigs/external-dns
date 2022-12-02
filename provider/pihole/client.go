@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -114,7 +113,7 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 		return nil, err
 	}
 	defer body.Close()
-	raw, err := ioutil.ReadAll(body)
+	raw, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +225,7 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	}
 	defer body.Close()
 
-	raw, err := ioutil.ReadAll(body)
+	raw, err := io.ReadAll(body)
 	if err != nil {
 		return nil
 	}

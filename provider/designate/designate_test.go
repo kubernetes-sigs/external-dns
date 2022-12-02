@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -174,7 +173,7 @@ func TestNewDesignateProvider(t *testing.T) {
 		Type:  "CERTIFICATE",
 		Bytes: ts.Certificate().Raw,
 	}
-	tmpfile, err := ioutil.TempFile("", "os-test.crt")
+	tmpfile, err := os.CreateTemp("", "os-test.crt")
 	if err != nil {
 		t.Fatal(err)
 	}

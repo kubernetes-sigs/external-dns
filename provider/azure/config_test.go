@@ -18,7 +18,6 @@ package azure
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -27,7 +26,7 @@ import (
 )
 
 func TestGetAzureEnvironmentConfig(t *testing.T) {
-	tmp, err := ioutil.TempFile("", "azureconf")
+	tmp, err := os.CreateTemp("", "azureconf")
 	if err != nil {
 		t.Errorf("couldn't write temp file %v", err)
 	}
