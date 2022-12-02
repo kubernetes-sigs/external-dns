@@ -209,7 +209,18 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.NodeLabelFilter)
+		nodeLabelFilter := labels.Everything()
+		if requirements, selectable := cfg.LabelFilter.Requirements(); selectable {
+			for _, requirement := range requirements {
+				nodeLabelFilter = nodeLabelFilter.Add(requirement)
+			}
+		}
+		if requirements, selectable := cfg.NodeLabelFilter.Requirements(); selectable {
+			for _, requirement := range requirements {
+				nodeLabelFilter = nodeLabelFilter.Add(requirement)
+			}
+		}
+		return NewNodeSource(ctx, client, cfg.AnnotationFilter, cfg.FQDNTemplate, nodeLabelFilter)
 	case "service":
 		client, err := p.KubeClient()
 		if err != nil {
