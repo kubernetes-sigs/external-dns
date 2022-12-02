@@ -22,9 +22,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 )
 
 // Helper function (shared with test code)
@@ -41,7 +41,7 @@ func parseMxTarget[T dns.MxRecord | privatedns.MxRecord](mxTarget string) (T, er
 	}
 
 	return T{
-		Preference: to.Int32Ptr(int32(preference)),
-		Exchange:   to.StringPtr(exchange),
+		Preference: to.Ptr(int32(preference)),
+		Exchange:   to.Ptr(exchange),
 	}, nil
 }
