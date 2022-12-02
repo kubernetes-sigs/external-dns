@@ -32,6 +32,8 @@ import (
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -207,11 +209,11 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	}
 
 	if p.cfg.DryRun {
-		log.Infof("DRY RUN: %s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+		log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 		return nil
 	}
 
-	log.Infof("%s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 
 	form := p.newDNSActionForm(action, ep)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
