@@ -62,6 +62,9 @@ type coreDNSProvider struct {
 	coreDNSPrefix string
 	domainFilter  endpoint.DomainFilter
 	client        coreDNSClient
+
+	ownerID                       string //refers to the owner id of the current instance
+	preFilterExternalOwnedRecords bool
 }
 
 // Service represents CoreDNS etcd record
@@ -246,7 +249,7 @@ func newETCDClient() (coreDNSClient, error) {
 }
 
 // NewCoreDNSProvider is a CoreDNS provider constructor
-func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRun bool) (provider.Provider, error) {
+func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix, ownerID string, preFilterExternalOwnedRecords, dryRun bool) (provider.Provider, error) {
 	client, err := newETCDClient()
 	if err != nil {
 		return nil, err
@@ -257,6 +260,9 @@ func NewCoreDNSProvider(domainFilter endpoint.DomainFilter, prefix string, dryRu
 		dryRun:        dryRun,
 		coreDNSPrefix: prefix,
 		domainFilter:  domainFilter,
+
+		ownerID:                       ownerID,
+		preFilterExternalOwnedRecords: preFilterExternalOwnedRecords,
 	}, nil
 }
 
@@ -291,6 +297,14 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		return nil, err
 	}
 	for _, service := range services {
+		if p.preFilterExternalOwnedRecords && service.Text != "" {
+			if labels, err := endpoint.NewLabelsFromString(service.Text); err == nil && labels != nil {
+				if owner, exists := labels[endpoint.OwnerLabelKey]; exists && owner != p.ownerID {
+					log.Debugf(`Skipping coredns service %v because owner id does not match, found: "%s", required: "%s"`, service, owner, p.ownerID)
+					continue
+				}
+			}
+		}
 		domains := strings.Split(strings.TrimPrefix(service.Key, p.coreDNSPrefix), "/")
 		reverse(domains)
 		dnsName := strings.Join(domains[service.TargetStrip:], ".")

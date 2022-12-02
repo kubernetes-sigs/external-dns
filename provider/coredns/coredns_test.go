@@ -84,6 +84,54 @@ func TestAServiceTranslation(t *testing.T) {
 	}
 }
 
+func TestAServiceFilterOutOtherOwnerBasedOnText(t *testing.T) {
+	expectedTarget := "1.2.3.4"
+
+	client := fakeETCDClient{
+		map[string]*Service{
+			"/skydns/com/example": {Host: expectedTarget, Text: "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\""},
+		},
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+
+		ownerID:                       "not-owner",
+		preFilterExternalOwnedRecords: true,
+	}
+	endpoints, err := provider.Records(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(endpoints) != 0 {
+		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
+	}
+}
+
+func TestAServiceOwnOwnerBasedOnText(t *testing.T) {
+	expectedTarget := "1.2.3.4"
+
+	client := fakeETCDClient{
+		map[string]*Service{
+			"/skydns/com/example": {Host: expectedTarget, Text: "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\""},
+		},
+	}
+	provider := coreDNSProvider{
+		client:        client,
+		coreDNSPrefix: defaultCoreDNSPrefix,
+
+		ownerID:                       "owner",
+		preFilterExternalOwnedRecords: true,
+	}
+	endpoints, err := provider.Records(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(endpoints) != 2 {
+		t.Fatalf("got unexpected number of endpoints: %d", len(endpoints))
+	}
+}
+
 func TestCNAMEServiceTranslation(t *testing.T) {
 	expectedTarget := "example.net"
 	expectedDNSName := "example.com"

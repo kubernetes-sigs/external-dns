@@ -230,3 +230,7 @@ dnstools# dig @10.100.4.143 nginx.example.org +short
 10.0.2.15
 dnstools#
 ```
+
+## Pre filtering CoreDNS services based on ownerIDs
+
+If your are running external-dns in multi cluster, you can use `--coredns-pre-filter-external-owned-records` and `--txt-owner-id` to ignore external created services, for example from a different external-dns.
