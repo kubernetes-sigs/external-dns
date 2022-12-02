@@ -32,8 +32,6 @@ import (
 	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/html"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
