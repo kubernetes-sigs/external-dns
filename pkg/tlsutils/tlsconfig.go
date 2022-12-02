@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 )
@@ -77,7 +76,7 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 	}
 
 	roots := x509.NewCertPool()
-	pem, err := ioutil.ReadFile(caPath)
+	pem, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %s", caPath, err)
 	}
