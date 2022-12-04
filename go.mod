@@ -5,8 +5,8 @@ go 1.19
 require (
 	cloud.google.com/go/compute v1.9.0
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.27
-	github.com/Azure/go-autorest/autorest/adal v0.9.20
+	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0
 	github.com/IBM/go-sdk-core/v5 v5.8.0
@@ -36,7 +36,7 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.9.1
 	github.com/maxatome/go-testdeep v1.12.0
-	github.com/miekg/dns v1.1.48
+	github.com/miekg/dns v1.1.50
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.16.5
@@ -51,9 +51,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.7.0.20210127161313-bd30bebeac4f
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.344
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.550
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.344
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.344
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.550
 	github.com/transip/gotransip/v6 v6.17.0
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
@@ -174,7 +174,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.19.1 // indirect
-	golang.org/x/crypto v0.0.0-20220427172511-eb4f295cb31f // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.1.0 // indirect
