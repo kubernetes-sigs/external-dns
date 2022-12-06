@@ -130,7 +130,7 @@ extraArgs: []
 
 secretConfiguration:
   enabled: false
-  mountPath: /.aws/credentials
+  mountPath: ""
   data: {}
 
 deploymentStrategy:
