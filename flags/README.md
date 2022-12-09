@@ -4,7 +4,7 @@
 |--server|string| |The Kubernetes API server to connect to (default: auto-detect)|
 |--kubeconfig|string| |Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)|
 |--request-timeout|time.Duration|time.Second * 30|Request timeout when calling Kubernetes APIs. 0s means no timeout|
-| **Flags related to cloud foundry** ** | | | |
+| **Flags related to cloud foundry** | | | |
 |--cf-api-endpoint|string| |The fully-qualified domain name of the cloud foundry instance you are targeting|
 |--cf-username|string| |The username to log into the cloud foundry API|
 |--cf-password|string| |The password to log into the cloud foundry API|
