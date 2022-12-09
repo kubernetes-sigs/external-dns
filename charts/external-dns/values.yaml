@@ -131,7 +131,7 @@ extraArgs: []
 secretConfiguration:
   enabled: false
   mountPath: ""
-  subPath: ~
+  subPath: ""
   data: {}
     # credentials: |
     #   [default]
