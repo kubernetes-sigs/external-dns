@@ -1,7 +1,7 @@
 |# Flag|# Default|# Type|# Description|
 |:----|:----|:----|:----|
-| | | | |
 |## Flags related to Kubernetes| | | |
+|:----|:----|:----|:----|
 |--server|string| |The Kubernetes API server to connect to (default: auto-detect)|
 |--kubeconfig|string| |Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)|
 |--request-timeout|time.Duration|time.Second * 30|Request timeout when calling Kubernetes APIs. 0s means no timeout|
