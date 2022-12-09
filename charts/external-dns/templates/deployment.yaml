@@ -109,6 +109,9 @@ spec:
             {{- if .Values.secretConfiguration.enabled }}
             - name: secrets
               mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
+            {{- with .Values.secretConfiguration.subPath }}
+              subPath: {{ tpl . $ }}
+            {{- end }}
             {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
