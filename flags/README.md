@@ -1,5 +1,5 @@
 |Flag|Default|Type|Description|
-|:====|:====|:====|:====|
+|:----|:----|:----|:----|
 | | | | |
 |// Flags related to Kubernetes| | | |
 |--server|string| |The Kubernetes API server to connect to (default: auto-detect)|
