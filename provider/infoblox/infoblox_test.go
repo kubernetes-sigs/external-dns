@@ -255,10 +255,7 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:txt":
 		var records []ibclient.RecordTXT
 		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: result[2],
-			},
-		)
+			"", "", result[2], "", 0, false, "", nil)
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
@@ -355,13 +352,10 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 		obj.Canonical = value
 		return obj
 	case endpoint.RecordTypeTXT:
-		return ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Ref:  ref,
-				Name: name,
-				Text: value,
-			},
-		)
+		res := ibclient.NewRecordTXT(
+			"", "", name, value, 0, false, "", nil)
+		res.Ref = ref
+		return res
 	case "HOST":
 		obj := ibclient.NewEmptyHostRecord()
 		obj.Name = name
@@ -385,7 +379,8 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 
 func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
 	return &ProviderConfig{
-		client:       client,
+		clientRO:     client,
+		clientRW:     client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
 		dryRun:       dryRun,
