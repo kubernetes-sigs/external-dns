@@ -15,7 +15,7 @@ package api
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -100,7 +100,7 @@ func TestBluecatSplitProperties(t *testing.T) {
 func TestCreateTXTRecord(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req := BluecatCreateTXTRecordRequest{}
-		requestBodyBytes, _ := ioutil.ReadAll(r.Body)
+		requestBodyBytes, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(requestBodyBytes, &req)
 		if err != nil {
 			t.Fatalf("failed to unmarshal body for server full deploy")
@@ -196,7 +196,7 @@ func TestDeleteTXTRecord(t *testing.T) {
 func TestServerFullDeploy(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req := BluecatServerFullDeployRequest{}
-		requestBodyBytes, _ := ioutil.ReadAll(r.Body)
+		requestBodyBytes, _ := io.ReadAll(r.Body)
 		err := json.Unmarshal(requestBodyBytes, &req)
 		if err != nil {
 			t.Fatalf("failed to unmarshal body for server full deploy")

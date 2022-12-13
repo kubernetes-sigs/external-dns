@@ -37,6 +37,8 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
+	// List of missing records to be created, use for the migrations (e.g. old-new TXT format)
+	Missing []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
@@ -80,7 +82,7 @@ type planTable struct {
 	resolver ConflictResolver
 }
 
-func newPlanTable() planTable { //TODO: make resolver configurable
+func newPlanTable() planTable { // TODO: make resolver configurable
 	return planTable{map[string]map[string]*planTableRow{}, PerResource{}}
 }
 
@@ -146,7 +148,7 @@ func (p *Plan) Calculate() *Plan {
 
 	for _, topRow := range t.rows {
 		for _, row := range topRow {
-			if row.current == nil { //dns name not taken
+			if row.current == nil { // dns name not taken
 				changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
 			}
 			if row.current != nil && len(row.candidates) == 0 {
@@ -154,7 +156,7 @@ func (p *Plan) Calculate() *Plan {
 			}
 
 			// TODO: allows record type change, which might not be supported by all dns providers
-			if row.current != nil && len(row.candidates) > 0 { //dns name is taken
+			if row.current != nil && len(row.candidates) > 0 { // dns name is taken
 				update := t.resolver.ResolveUpdate(row.current, row.candidates)
 				// compare "update" to "current" to figure out if actual update is required
 				if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
@@ -168,6 +170,11 @@ func (p *Plan) Calculate() *Plan {
 	}
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
+	}
+
+	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
+	if len(p.Missing) > 0 {
+		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
 	}
 
 	plan := &Plan{
@@ -250,7 +257,7 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 			log.Debugf("ignoring record %s that does not match domain filter", record.DNSName)
 			continue
 		}
-		if isManagedRecord(record.RecordType, managedRecords) {
+		if IsManagedRecord(record.RecordType, managedRecords) {
 			filtered = append(filtered, record)
 		}
 	}
@@ -293,7 +300,7 @@ func CompareBoolean(defaultValue bool, name, current, previous string) bool {
 	return v1 == v2
 }
 
-func isManagedRecord(record string, managedRecords []string) bool {
+func IsManagedRecord(record string, managedRecords []string) bool {
 	for _, r := range managedRecords {
 		if record == r {
 			return true

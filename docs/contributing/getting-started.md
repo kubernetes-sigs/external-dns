@@ -1,7 +1,7 @@
 # Quick Start
 
 - [Git](https://git-scm.com/downloads)
-- [Go 1.18+](https://golang.org/dl/)
+- [Go 1.19+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
 - [Docker](https://docs.docker.com/install/)
@@ -31,7 +31,7 @@ make build.docker
 
 ExternalDNS's sources of DNS records live in package [source](../../source). They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
 
-For example, the `ServiceSource` returns all Services converted to `Endpoints` where the hostname is the value of the `external-dns.alpha.kubernetes.io/hostname` annotation and the target is the IP of the load balancer or where the hostname is the value of the `external-dns.alpha.kubernetes.io/internal-hostname` annotation and the target is the IP of the service CLusterIP.
+For example, the `ServiceSource` returns all Services converted to `Endpoints` where the hostname is the value of the `external-dns.alpha.kubernetes.io/hostname` annotation and the target is the IP of the load balancer or where the hostname is the value of the `external-dns.alpha.kubernetes.io/internal-hostname` annotation and the target is the IP of the service ClusterIP.
 
 This list of endpoints is passed to the [Plan](../../plan) which determines the difference between the current DNS records and the desired list of `Endpoints`.
 

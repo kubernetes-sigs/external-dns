@@ -27,12 +27,13 @@ To see ExternalDNS in action, have a look at this [video](https://www.youtube.co
 
 ## The Latest Release
 
-ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various cloud providers:
+ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchronized with Ingresses and Services of `type=LoadBalancer` and nodes in various DNS providers:
 * [Google Cloud DNS](https://cloud.google.com/dns/docs/)
 * [AWS Route 53](https://aws.amazon.com/route53/)
 * [AWS Cloud Map](https://docs.aws.amazon.com/cloud-map/)
 * [AzureDNS](https://azure.microsoft.com/en-us/services/dns)
 * [BlueCat](https://bluecatnetworks.com)
+* [Civo](https://www.civo.com)
 * [CloudFlare](https://www.cloudflare.com/dns)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
@@ -57,6 +58,10 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Gandi](https://www.gandi.net)
 * [ANS Group SafeDNS](https://portal.ans.co.uk/safedns/)
 * [IBM Cloud DNS](https://www.ibm.com/cloud/dns)
+* [TencentCloud PrivateDNS](https://cloud.tencent.com/product/privatedns)
+* [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
+* [Plural](https://www.plural.sh/)
+* [Pi-hole](https://pi-hole.net/)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -90,6 +95,7 @@ The following table clarifies the current status of the providers according to t
 | Akamai Edge DNS | Beta | |
 | AzureDNS | Beta | |
 | BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
+| Civo | Alpha | @alejandrojnm |
 | CloudFlare | Beta | |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
@@ -115,6 +121,9 @@ The following table clarifies the current status of the providers according to t
 | Gandi | Alpha | @packi |
 | SafeDNS | Alpha | @assureddt |
 | IBMCloud | Alpha | @hughhuangzh |
+| TencentCloud | Alpha | @Hyzhou |
+| Plural | Alpha | @michaeljguarino |
+| Pi-hole | Alpha | @tinyzimmer |
 
 ## Kubernetes version compatibility
 
@@ -147,6 +156,7 @@ The following tutorials are provided:
 	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
+* [Civo](docs/tutorials/civo.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
@@ -183,6 +193,9 @@ The following tutorials are provided:
 * [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
+* [TencentCloud](docs/tutorials/tencentcloud.md)
+* [Plural](docs/tutorials/plural.md)
+* [Pi-hole](docs/tutorials/pihole.md)
 
 ### Running Locally
 

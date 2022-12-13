@@ -22,7 +22,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -176,13 +175,12 @@ func GetBluecatGatewayToken(cfg BluecatConfig) (string, http.Cookie, error) {
 	url := cfg.GatewayHost + "/rest_login"
 
 	response, err := executeHTTPRequest(cfg.SkipTLSVerify, http.MethodPost, url, "", bytes.NewBuffer(body), http.Cookie{})
-
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "error obtaining API token from bluecat gateway")
 	}
 	defer response.Body.Close()
 
-	responseBody, err := ioutil.ReadAll(response.Body)
+	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", http.Cookie{}, errors.Wrap(err, "failed to read login response from bluecat gateway")
 	}
@@ -505,7 +503,7 @@ func (c GatewayClientConfig) ServerFullDeploy() error {
 	}
 
 	if response.StatusCode != http.StatusCreated {
-		responseBody, err := ioutil.ReadAll(response.Body)
+		responseBody, err := io.ReadAll(response.Body)
 		if err != nil {
 			return errors.Wrap(err, "failed to read full deploy response body")
 		}
