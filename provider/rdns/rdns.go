@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -309,7 +308,7 @@ func newEtcdv3Client() (RDNSClient, error) {
 
 		if ca != "" {
 			roots := x509.NewCertPool()
-			pem, err := ioutil.ReadFile(ca)
+			pem, err := os.ReadFile(ca)
 			if err != nil {
 				return nil, fmt.Errorf("error reading %s: %s", ca, err)
 			}

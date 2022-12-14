@@ -67,7 +67,6 @@ func NewTencentCloudProvider(domainFilter endpoint.DomainFilter, zoneIDFilter pr
 
 type TencentCloudProvider struct {
 	provider.BaseProvider
-	logger       *log.Logger
 	apiService   cloudapi.TencentAPIService
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter // Private Zone only

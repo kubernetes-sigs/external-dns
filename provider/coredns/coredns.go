@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"net"
 	"os"
@@ -191,7 +190,7 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 	}
 
 	roots := x509.NewCertPool()
-	pem, err := ioutil.ReadFile(caPath)
+	pem, err := os.ReadFile(caPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading %s: %s", caPath, err)
 	}

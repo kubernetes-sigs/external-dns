@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -114,7 +113,7 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 		return nil, err
 	}
 	defer body.Close()
-	raw, err := ioutil.ReadAll(body)
+	raw, err := io.ReadAll(body)
 	if err != nil {
 		return nil, err
 	}
@@ -207,11 +206,11 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	}
 
 	if p.cfg.DryRun {
-		log.Infof("DRY RUN: %s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+		log.Infof("DRY RUN: %s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 		return nil
 	}
 
-	log.Infof("%s %s IN %s -> %s", strings.Title(action), ep.DNSName, ep.RecordType, ep.Targets[0])
+	log.Infof("%s %s IN %s -> %s", action, ep.DNSName, ep.RecordType, ep.Targets[0])
 
 	form := p.newDNSActionForm(action, ep)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(form.Encode()))
@@ -226,7 +225,7 @@ func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.En
 	}
 	defer body.Close()
 
-	raw, err := ioutil.ReadAll(body)
+	raw, err := io.ReadAll(body)
 	if err != nil {
 		return nil
 	}
