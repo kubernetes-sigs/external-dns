@@ -188,4 +188,5 @@ $ kubectl delete service -f externaldns.yaml
 
 # Additional options
 
-If you're using organizations to separate your domains, you can pass the organization's ID in an environment variable called `GANDI_SHARING_ID` to get access to it.
+ - If you're using organizations to separate your domains, you can pass the organization's ID in an environment variable called `GANDI_SHARING_ID` to get access to it.
+ - If you want to register an apex domain that redirect to an FQDN (aws alb, ect...) you can force usage of Gandi [ALIAS Record](https://docs.gandi.net/en/domain_names/faq/record_types/alias_record.html) whith a `GANDI_PREFER_ALIAS` variables.
