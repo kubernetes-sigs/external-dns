@@ -66,6 +66,10 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           args:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
