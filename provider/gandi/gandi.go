@@ -20,6 +20,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/go-gandi/go-gandi"
 	"github.com/go-gandi/go-gandi/config"
 	"github.com/go-gandi/go-gandi/livedns"
@@ -49,15 +50,38 @@ type GandiProvider struct {
 	LiveDNSClient LiveDNSClientAdapter
 	DomainClient  DomainClientAdapter
 	domainFilter  endpoint.DomainFilter
+	PreferALIAS   bool
 	DryRun        bool
+}
+
+const (
+	// RecordTypeALIAS is a RecordType enum value
+	RecordTypeALIAS = "ALIAS"
+)
+
+// inferAlias determines if the provider specific alias should be set
+func inferAlias(domain string, preferALIAS bool) bool {
+	if preferALIAS {
+		return govalidator.IsDNSName(domain)
+	}
+
+	return false
+}
+
+// isGandiAlias determines if a given endpoint is supposed to create an Gandi Alias record
+func isGandiAlias(r livedns.DomainRecord, preferALIAS bool) bool {
+	return preferALIAS && r.RrsetType == RecordTypeALIAS
 }
 
 func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
 	key, ok := os.LookupEnv("GANDI_KEY")
+
 	if !ok {
 		return nil, errors.New("no environment variable GANDI_KEY provided")
 	}
+
 	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
+	_, PreferALIAS := os.LookupEnv("GANDI_PREFER_ALIAS")
 
 	g := config.Config{
 		APIKey:    key,
@@ -74,6 +98,7 @@ func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, d
 		LiveDNSClient: NewLiveDNSClient(liveDNSClient),
 		DomainClient:  NewDomainClient(domainClient),
 		domainFilter:  domainFilter,
+		PreferALIAS:   PreferALIAS,
 		DryRun:        dryRun,
 	}
 	return gandiProvider, nil
@@ -114,6 +139,11 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		for _, r := range records {
+			if isGandiAlias(r, p.PreferALIAS) {
+				// Convert back ALIAS to CNAME
+				r.RrsetType = endpoint.RecordTypeCNAME
+			}
+
 			if provider.SupportedRecordType(r.RrsetType) {
 				name := r.RrsetName + "." + zone
 
@@ -124,6 +154,14 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 				if len(r.RrsetValues) > 1 {
 					return nil, fmt.Errorf("can't handle multiple values for rrset %s", name)
 				}
+
+				log.WithFields(log.Fields{
+					"record": r.RrsetName,
+					"type":   r.RrsetType,
+					"value":  r.RrsetValues[0],
+					"ttl":    r.RrsetTTL,
+					"zone":   zone,
+				}).Info("Rerturning endpoint record")
 
 				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, r.RrsetValues[0]))
 			}
@@ -158,14 +196,20 @@ func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChang
 
 	for _, changes := range zoneChanges {
 		for _, change := range changes {
+			if change.Record.RrsetType == endpoint.RecordTypeCNAME && !strings.HasSuffix(change.Record.RrsetValues[0], ".") {
+				change.Record.RrsetValues[0] += "."
+			}
+
 			// Prepare record name
 			recordName := strings.TrimSuffix(change.Record.RrsetName, "."+change.ZoneName)
 			if recordName == change.ZoneName {
 				recordName = "@"
+
+				if change.Record.RrsetType == endpoint.RecordTypeCNAME && inferAlias(change.Record.RrsetValues[0], p.PreferALIAS) {
+					change.Record.RrsetType = RecordTypeALIAS
+				}
 			}
-			if change.Record.RrsetType == endpoint.RecordTypeCNAME && !strings.HasSuffix(change.Record.RrsetValues[0], ".") {
-				change.Record.RrsetValues[0] += "."
-			}
+
 			change.Record.RrsetName = recordName
 
 			log.WithFields(log.Fields{

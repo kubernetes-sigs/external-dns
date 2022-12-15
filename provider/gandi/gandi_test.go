@@ -513,6 +513,77 @@ func TestGandiProvider_ApplyChangesCreateUpdateCname(t *testing.T) {
 	})
 }
 
+func TestGandiProvider_ApplyChangesCreateAlias(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := mockGandiClientNew()
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+		PreferALIAS:   true,
+	}
+
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "example.com", Targets: endpoint.Targets{"fqdn"}, RecordTTL: 666, RecordType: "CNAME"},
+	}
+	changes.UpdateNew = []*endpoint.Endpoint{}
+
+	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	td.Cmp(t, mockedClient.Actions, []MockAction{
+		{
+			Name: "ListDomains",
+		},
+		{
+			Name: "CreateDomainRecord",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   "ALIAS",
+				RrsetName:   "@",
+				RrsetValues: []string{"fqdn."},
+				RrsetTTL:    666,
+			},
+		},
+	})
+}
+
+func TestGandiProvider_ApplyChangesCreate(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := mockGandiClientNew()
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	changes.Create = []*endpoint.Endpoint{
+		{DNSName: "example.com", Targets: endpoint.Targets{"fqdn"}, RecordTTL: 666, RecordType: "CNAME"},
+	}
+	changes.UpdateNew = []*endpoint.Endpoint{}
+
+	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
+	td.Cmp(t, mockedClient.Actions, []MockAction{
+		{
+			Name: "ListDomains",
+		},
+		{
+			Name: "CreateDomainRecord",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   "CNAME",
+				RrsetName:   "@",
+				RrsetValues: []string{"fqdn."},
+				RrsetTTL:    666,
+			},
+		},
+	})
+}
+
 func TestGandiProvider_ApplyChangesCreateEmpty(t *testing.T) {
 	changes := &plan.Changes{}
 	mockedClient := mockGandiClientNew()
