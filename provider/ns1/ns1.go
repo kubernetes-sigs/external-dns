@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	api "gopkg.in/ns1/ns1-go.v2/rest"
 	"gopkg.in/ns1/ns1-go.v2/rest/model/dns"
+	"gopkg.in/ns1/ns1-go.v2/rest/model/filter"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -257,9 +258,9 @@ func (p *NS1Provider) reconcileRecordChanges(record *dns.Record, action string) 
 
 	// Add the filters back to the posting object
 	// method ns1BuildRecord creats a new record object, which discards the original filters available at ns1
-	if r != nil {
-		record.Filters = r.Filters
-	}
+	// if r != nil {
+	// 	record.Filters = r.Filters
+	// }
 
 	switch action {
 	case ns1Create:
@@ -350,7 +351,10 @@ func (p *NS1Provider) ns1SubmitChanges(changes []*ns1Change) error {
 
 			if p.dryRun {
 				continue
+
 			}
+
+			record.Filters = make([]*filter.Filter, 0)
 
 			switch action {
 			case ns1Create:
