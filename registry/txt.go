@@ -123,9 +123,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
-		key := fmt.Sprintf("%s::%s", im.mapper.toEndpointName(record.DNSName), record.SetIdentifier)
-		labelMap[key] = labels
-		txtRecordsMap[record.DNSName] = struct{}{}
+		labelMap[fmt.Sprintf("%s::%s", im.mapper.toEndpointName(record.DNSName), record.SetIdentifier)] = labels
+		txtRecordsMap[record.Id()] = struct{}{}
 	}
 
 	for _, ep := range endpoints {
@@ -138,8 +137,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			dnsNameSplit[0] = im.wildcardReplacement
 		}
 		dnsName := strings.Join(dnsNameSplit, ".")
-		key := fmt.Sprintf("%s::%s", dnsName, ep.SetIdentifier)
-		if labels, ok := labelMap[key]; ok {
+		if labels, ok := labelMap[fmt.Sprintf("%s::%s", dnsName, ep.SetIdentifier)]; ok {
 			for k, v := range labels {
 				ep.Labels[k] = v
 			}
@@ -153,7 +151,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 				desiredTXTs := im.generateTXTRecord(ep)
 				missingDesiredTXTs := []*endpoint.Endpoint{}
 				for _, desiredTXT := range desiredTXTs {
-					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
+					if _, exists := txtRecordsMap[desiredTXT.Id()]; !exists {
 						missingDesiredTXTs = append(missingDesiredTXTs, desiredTXT)
 					}
 				}

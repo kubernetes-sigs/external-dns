@@ -784,6 +784,11 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("oldformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("oldformat2.test-zone.example.org", "bar.loadbalancer.com", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("oldformat2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "bar1.loadbalancer.com", endpoint.RecordTypeA, "").WithSetIdentifier("one"),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("one"),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "bar2.loadbalancer.com", endpoint.RecordTypeA, "").WithSetIdentifier("two"),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=some-other-owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("two"),
+			newEndpointWithOwner("a-oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=some-other-owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("two"),
 			newEndpointWithOwner("newformat.test-zone.example.org", "foobar.nameserver.com", endpoint.RecordTypeNS, ""),
 			newEndpointWithOwner("ns-newformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("newformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
@@ -815,6 +820,15 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			},
 		},
 		{
+			DNSName:       "oldformat3.test-zone.example.org",
+			SetIdentifier: "one",
+			Targets:       endpoint.Targets{"bar1.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
 			DNSName:    "newformat.test-zone.example.org",
 			Targets:    endpoint.Targets{"foobar.nameserver.com"},
 			RecordType: endpoint.RecordTypeNS,
@@ -839,6 +853,16 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			Labels: map[string]string{
 				// Records() retrieves all the records of the zone, no matter the owner
 				endpoint.OwnerLabelKey: "otherowner",
+			},
+		},
+		{
+			DNSName:       "oldformat3.test-zone.example.org",
+			SetIdentifier: "two",
+			Targets:       endpoint.Targets{"bar2.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeA,
+			Labels: map[string]string{
+				// Records() retrieves all the records of the zone, no matter the owner
+				endpoint.OwnerLabelKey: "some-other-owner",
 			},
 		},
 		{
@@ -879,6 +903,15 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 				endpoint.OwnedRecordLabelKey: "oldformat2.test-zone.example.org",
 			},
 		},
+		{
+			DNSName:       "a-oldformat3.test-zone.example.org",
+			SetIdentifier: "one",
+			Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType:    endpoint.RecordTypeTXT,
+			Labels: endpoint.Labels{
+				endpoint.OwnedRecordLabelKey: "oldformat3.test-zone.example.org",
+			},
+		},
 	}
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS})
@@ -899,6 +932,11 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			newEndpointWithOwner("txt.oldformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("oldformat2.test-zone.example.org", "bar.loadbalancer.com", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("txt.oldformat2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "bar1.loadbalancer.com", endpoint.RecordTypeA, "").WithSetIdentifier("one"),
+			newEndpointWithOwner("txt.oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("one"),
+			newEndpointWithOwner("oldformat3.test-zone.example.org", "bar2.loadbalancer.com", endpoint.RecordTypeA, "").WithSetIdentifier("two"),
+			newEndpointWithOwner("txt.oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=some-other-owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("two"),
+			newEndpointWithOwner("txt.a-oldformat3.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=some-other-owner\"", endpoint.RecordTypeTXT, "").WithSetIdentifier("two"),
 			newEndpointWithOwner("newformat.test-zone.example.org", "foobar.nameserver.com", endpoint.RecordTypeNS, ""),
 			newEndpointWithOwner("txt.ns-newformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("txt.newformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
@@ -925,6 +963,25 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:       "oldformat3.test-zone.example.org",
+			SetIdentifier: "one",
+			Targets:       endpoint.Targets{"bar1.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:       "oldformat3.test-zone.example.org",
+			SetIdentifier: "two",
+			Targets:       endpoint.Targets{"bar2.loadbalancer.com"},
+			RecordType:    endpoint.RecordTypeA,
+			Labels: map[string]string{
+				// All the records of the zone are retrieved, no matter the owner
+				endpoint.OwnerLabelKey: "some-other-owner",
 			},
 		},
 		{
@@ -981,6 +1038,15 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeTXT,
 			Labels: endpoint.Labels{
 				endpoint.OwnedRecordLabelKey: "oldformat2.test-zone.example.org",
+			},
+		},
+		{
+			DNSName:       "txt.a-oldformat3.test-zone.example.org",
+			SetIdentifier: "one",
+			Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
+			RecordType:    endpoint.RecordTypeTXT,
+			Labels: endpoint.Labels{
+				endpoint.OwnedRecordLabelKey: "oldformat3.test-zone.example.org",
 			},
 		},
 	}

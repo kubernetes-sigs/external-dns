@@ -236,6 +236,10 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProp
 	return ProviderSpecificProperty{}, false
 }
 
+func (e *Endpoint) Id() string {
+	return fmt.Sprintf("%s::%s", e.DNSName, e.SetIdentifier)
+}
+
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
