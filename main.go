@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/adguardhome"
 	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
@@ -178,6 +179,11 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
+	case "adguardhome":
+		p, err = adguardhome.NewAdguardHomeProvider(
+			domainFilter,
+			cfg.DryRun,
+		)
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
 			akamai.AkamaiConfig{
