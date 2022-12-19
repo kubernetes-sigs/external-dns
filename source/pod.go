@@ -74,7 +74,6 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 }
 
 func (*podSource) AddEventHandler(ctx context.Context, handler func()) {
-
 }
 
 func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {

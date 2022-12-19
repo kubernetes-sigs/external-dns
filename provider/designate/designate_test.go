@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -174,7 +173,7 @@ func TestNewDesignateProvider(t *testing.T) {
 		Type:  "CERTIFICATE",
 		Bytes: ts.Certificate().Raw,
 	}
-	tmpfile, err := ioutil.TempFile("", "os-test.crt")
+	tmpfile, err := os.CreateTemp("", "os-test.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,7 +328,6 @@ func TestDesignateCreateRecords(t *testing.T) {
 }
 
 func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*recordsets.RecordSet {
-
 	for i, zoneName := range []string{"example.com.", "test.net."} {
 		client.AddZone(zones.Zone{
 			ID:     fmt.Sprintf("zone-%d", i+1),

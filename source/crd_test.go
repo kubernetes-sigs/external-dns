@@ -22,7 +22,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -45,7 +44,6 @@ type CRDSuite struct {
 }
 
 func (suite *CRDSuite) SetupTest() {
-
 }
 
 func defaultHeader() http.Header {
@@ -55,7 +53,7 @@ func defaultHeader() http.Header {
 }
 
 func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
-	return ioutil.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
+	return io.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
 func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, t *testing.T) rest.Interface {
@@ -152,7 +150,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredKind:       "DNSEndpoint",
 			kind:                 "DNSEndpoint",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -168,7 +167,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredKind:       "DNSEndpoint",
 			kind:                 "JustEndpoint",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -186,7 +186,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -204,7 +205,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "bar",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -222,7 +224,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -240,7 +243,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -258,12 +262,14 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
-				{DNSName: "xyz.example.org",
+				{
+					DNSName:    "xyz.example.org",
 					Targets:    endpoint.Targets{"abc.example.org"},
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  180,
@@ -283,7 +289,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			annotations:          map[string]string{"test": "that"},
 			annotationFilter:     "test=filter_something_else",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -303,7 +310,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			annotations:          map[string]string{"test": "that"},
 			annotationFilter:     "test=that",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -323,7 +331,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=filter_something_else",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -343,7 +352,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -363,7 +373,8 @@ func testCRDSourceEndpoints(t *testing.T) {
 			labels:               map[string]string{"test": "that"},
 			labelFilter:          "test=that",
 			endpoints: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"ns1.k8s.io", "ns2.k8s.io"},
 					RecordType: endpoint.RecordTypeNS,
 					RecordTTL:  180,

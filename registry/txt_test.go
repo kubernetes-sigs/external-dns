@@ -536,6 +536,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
+
 func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
@@ -579,6 +580,7 @@ func testTXTRegistryApplyChangesWithTemplatedSuffix(t *testing.T) {
 	err := r.ApplyChanges(ctx, changes)
 	require.NoError(t, err)
 }
+
 func testTXTRegistryApplyChangesWithSuffix(t *testing.T) {
 	p := inmemory.NewInMemoryProvider()
 	p.CreateZone(testZone)
@@ -790,6 +792,8 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("oldformat-otherowner.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=otherowner\"", endpoint.RecordTypeTXT, ""),
 			endpoint.NewEndpoint("unmanaged1.test-zone.example.org", endpoint.RecordTypeA, "unmanaged1.loadbalancer.com"),
 			endpoint.NewEndpoint("unmanaged2.test-zone.example.org", endpoint.RecordTypeCNAME, "unmanaged2.loadbalancer.com"),
+			newEndpointWithOwner("this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -846,6 +850,14 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			DNSName:    "unmanaged2.test-zone.example.org",
 			Targets:    endpoint.Targets{"unmanaged2.loadbalancer.com"},
 			RecordType: endpoint.RecordTypeCNAME,
+		},
+		{
+			DNSName:    "this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
 		},
 	}
 

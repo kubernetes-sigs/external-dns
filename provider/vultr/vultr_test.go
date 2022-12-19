@@ -72,7 +72,6 @@ func (m mockVultrDomain) GetDNSSec(ctx context.Context, domain string) ([]string
 	return nil, nil
 }
 
-
 type mockVultrRecord struct {
 	client *govultr.Client
 }

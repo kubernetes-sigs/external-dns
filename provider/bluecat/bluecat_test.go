@@ -48,14 +48,17 @@ type Changes struct {
 func (g mockGatewayClient) GetBluecatZones(zoneName string) ([]api.BluecatZone, error) {
 	return *g.mockBluecatZones, nil
 }
+
 func (g mockGatewayClient) GetHostRecords(zone string, records *[]api.BluecatHostRecord) error {
 	*records = *g.mockBluecatHosts
 	return nil
 }
+
 func (g mockGatewayClient) GetCNAMERecords(zone string, records *[]api.BluecatCNAMERecord) error {
 	*records = *g.mockBluecatCNAMEs
 	return nil
 }
+
 func (g mockGatewayClient) GetHostRecord(name string, record *api.BluecatHostRecord) error {
 	for _, currentRecord := range *g.mockBluecatHosts {
 		if currentRecord.Name == strings.Split(name, ".")[0] {
@@ -65,6 +68,7 @@ func (g mockGatewayClient) GetHostRecord(name string, record *api.BluecatHostRec
 	}
 	return nil
 }
+
 func (g mockGatewayClient) GetCNAMERecord(name string, record *api.BluecatCNAMERecord) error {
 	for _, currentRecord := range *g.mockBluecatCNAMEs {
 		if currentRecord.Name == strings.Split(name, ".")[0] {
@@ -74,24 +78,30 @@ func (g mockGatewayClient) GetCNAMERecord(name string, record *api.BluecatCNAMER
 	}
 	return nil
 }
+
 func (g mockGatewayClient) CreateHostRecord(zone string, req *api.BluecatCreateHostRecordRequest) (err error) {
 	return nil
 }
+
 func (g mockGatewayClient) CreateCNAMERecord(zone string, req *api.BluecatCreateCNAMERecordRequest) (err error) {
 	return nil
 }
+
 func (g mockGatewayClient) DeleteHostRecord(name string, zone string) (err error) {
 	*g.mockBluecatHosts = nil
 	return nil
 }
+
 func (g mockGatewayClient) DeleteCNAMERecord(name string, zone string) (err error) {
 	*g.mockBluecatCNAMEs = nil
 	return nil
 }
+
 func (g mockGatewayClient) GetTXTRecords(zone string, records *[]api.BluecatTXTRecord) error {
 	*records = *g.mockBluecatTXTs
 	return nil
 }
+
 func (g mockGatewayClient) GetTXTRecord(name string, record *api.BluecatTXTRecord) error {
 	for _, currentRecord := range *g.mockBluecatTXTs {
 		if currentRecord.Name == name {
@@ -101,13 +111,16 @@ func (g mockGatewayClient) GetTXTRecord(name string, record *api.BluecatTXTRecor
 	}
 	return nil
 }
+
 func (g mockGatewayClient) CreateTXTRecord(zone string, req *api.BluecatCreateTXTRecordRequest) error {
 	return nil
 }
+
 func (g mockGatewayClient) DeleteTXTRecord(name string, zone string) error {
 	*g.mockBluecatTXTs = nil
 	return nil
 }
+
 func (g mockGatewayClient) ServerFullDeploy() error {
 	return nil
 }
@@ -271,6 +284,7 @@ func TestBluecatApplyChangesCreate(t *testing.T) {
 		validateEndpoints(t, actual, []*endpoint.Endpoint{})
 	}
 }
+
 func TestBluecatApplyChangesDelete(t *testing.T) {
 	client := mockGatewayClient{
 		mockBluecatZones: &[]api.BluecatZone{
@@ -354,7 +368,6 @@ func TestBluecatApplyChangesDeleteWithOwner(t *testing.T) {
 		}
 		validateEndpoints(t, actual, []*endpoint.Endpoint{})
 	}
-
 }
 
 // TODO: ensure findZone method is tested

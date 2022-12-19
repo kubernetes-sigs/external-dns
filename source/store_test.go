@@ -33,7 +33,7 @@ import (
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 type MockClientGenerator struct {

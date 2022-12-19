@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// This is a compile-time validation that glooSource is a Source.
+// This is a compile-time validation that kongTCPIngressSource is a Source.
 var _ Source = &kongTCPIngressSource{}
 
 const defaultKongNamespace = "kong"

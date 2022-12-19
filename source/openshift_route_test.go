@@ -490,7 +490,6 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			title:       "route without matching labels",
 			labelFilter: "app=web-external",
 			ocpRoute: &routev1.Route{
-
 				Spec: routev1.RouteSpec{
 					Host: "my-annotation-domain.com",
 				},

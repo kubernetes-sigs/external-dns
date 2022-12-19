@@ -32,10 +32,10 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions/apis/v1alpha2"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
+	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	informers_v1b1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -51,11 +51,11 @@ type gatewayRoute interface {
 	// Metadata returns the route's metadata.
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
-	Hostnames() []v1alpha2.Hostname
+	Hostnames() []v1beta1.Hostname
 	// Protocol returns the route's protocol type.
-	Protocol() v1alpha2.ProtocolType
+	Protocol() v1beta1.ProtocolType
 	// RouteStatus returns the route's common status.
-	RouteStatus() v1alpha2.RouteStatus
+	RouteStatus() v1beta1.RouteStatus
 }
 
 type newGatewayRouteInformerFunc func(informers.SharedInformerFactory) gatewayRouteInformer
@@ -82,7 +82,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 type gatewayRouteSource struct {
 	gwNamespace string
 	gwLabels    labels.Selector
-	gwInformer  informers_v1a2.GatewayInformer
+	gwInformer  informers_v1b1.GatewayInformer
 
 	rtKind        string
 	rtNamespace   string
@@ -123,8 +123,8 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	}
 
 	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := informerFactory.Gateway().V1alpha2().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                         // Register with factory before starting.
+	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+	gwInformer.Informer()                                        // Register with factory before starting.
 
 	rtInformerFactory := informerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
@@ -257,15 +257,15 @@ type gatewayRouteResolver struct {
 }
 
 type gatewayListeners struct {
-	gateway   *v1alpha2.Gateway
-	listeners map[v1alpha2.SectionName][]v1alpha2.Listener
+	gateway   *v1beta1.Gateway
+	listeners map[v1beta1.SectionName][]v1beta1.Listener
 }
 
-func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1alpha2.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
+func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
 	// Create Gateway Listener lookup table.
 	gws := make(map[types.NamespacedName]gatewayListeners, len(gateways))
 	for _, gw := range gateways {
-		lss := make(map[v1alpha2.SectionName][]v1alpha2.Listener, len(gw.Spec.Listeners)+1)
+		lss := make(map[v1beta1.SectionName][]v1beta1.Listener, len(gw.Spec.Listeners)+1)
 		for i, lis := range gw.Spec.Listeners {
 			lss[lis.Name] = gw.Spec.Listeners[i : i+1]
 		}
@@ -321,9 +321,18 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 		section := sectionVal(ref.SectionName, "")
 		listeners := gw.listeners[section]
 		for i := range listeners {
-			// Confirm that the protocols match and the Listener allows the Route (based on namespace and kind).
 			lis := &listeners[i]
-			if !gwProtocolMatches(rt.Protocol(), lis.Protocol) || !c.routeIsAllowed(gw.gateway, lis, rt) {
+			// Confirm that the Listener and Route protocols match.
+			if !gwProtocolMatches(rt.Protocol(), lis.Protocol) {
+				continue
+			}
+			// Confirm that the Listener and Route ports match, if specified.
+			// EXPERIMENTAL: https://gateway-api.sigs.k8s.io/geps/gep-957/
+			if ref.Port != nil && *ref.Port != lis.Port {
+				continue
+			}
+			// Confirm that the Listener allows the Route (based on namespace and kind).
+			if !c.routeIsAllowed(gw.gateway, lis, rt) {
 				continue
 			}
 			// Find all overlapping hostnames between the Route and Listener.
@@ -388,23 +397,23 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	return hostnames, nil
 }
 
-func (c *gatewayRouteResolver) routeIsAllowed(gw *v1alpha2.Gateway, lis *v1alpha2.Listener, rt gatewayRoute) bool {
+func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1beta1.Listener, rt gatewayRoute) bool {
 	meta := rt.Metadata()
 	allow := lis.AllowedRoutes
 
 	// Check the route's namespace.
-	from := v1alpha2.NamespacesFromSame
+	from := v1beta1.NamespacesFromSame
 	if allow != nil && allow.Namespaces != nil && allow.Namespaces.From != nil {
 		from = *allow.Namespaces.From
 	}
 	switch from {
-	case v1alpha2.NamespacesFromAll:
+	case v1beta1.NamespacesFromAll:
 		// OK
-	case v1alpha2.NamespacesFromSame:
+	case v1beta1.NamespacesFromSame:
 		if gw.Namespace != meta.Namespace {
 			return false
 		}
-	case v1alpha2.NamespacesFromSelector:
+	case v1beta1.NamespacesFromSelector:
 		selector, err := metav1.LabelSelectorAsSelector(allow.Namespaces.Selector)
 		if err != nil {
 			log.Debugf("Gateway %s/%s section %q has invalid namespace selector: %v", gw.Namespace, gw.Name, lis.Name, err)
@@ -442,7 +451,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1alpha2.Gateway, lis *v1alpha
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
 	for _, c := range conds {
-		if v1alpha2.RouteConditionType(c.Type) == v1alpha2.ConditionRouteAccepted {
+		if v1beta1.RouteConditionType(c.Type) == v1beta1.RouteConditionAccepted {
 			return c.Status == metav1.ConditionTrue
 		}
 	}
@@ -469,12 +478,12 @@ func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
 
 // gwProtocolMatches returns whether a and b are the same protocol,
 // where HTTP and HTTPS are considered the same.
-func gwProtocolMatches(a, b v1alpha2.ProtocolType) bool {
-	if a == v1alpha2.HTTPSProtocolType {
-		a = v1alpha2.HTTPProtocolType
+func gwProtocolMatches(a, b v1beta1.ProtocolType) bool {
+	if a == v1beta1.HTTPSProtocolType {
+		a = v1beta1.HTTPProtocolType
 	}
-	if b == v1alpha2.HTTPSProtocolType {
-		b = v1alpha2.HTTPProtocolType
+	if b == v1beta1.HTTPSProtocolType {
+		b = v1beta1.HTTPProtocolType
 	}
 	return a == b
 }
@@ -522,7 +531,7 @@ func strVal(ptr *string, def string) string {
 	return *ptr
 }
 
-func sectionVal(ptr *v1alpha2.SectionName, def v1alpha2.SectionName) v1alpha2.SectionName {
+func sectionVal(ptr *v1beta1.SectionName, def v1beta1.SectionName) v1beta1.SectionName {
 	if ptr == nil || *ptr == "" {
 		return def
 	}

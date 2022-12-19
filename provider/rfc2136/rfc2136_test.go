@@ -208,7 +208,6 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 	assert.Equal(t, 2, len(stub.updateMsgs))
 	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v2.foobar.com"))
-
 }
 
 func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
@@ -253,7 +252,6 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	assert.True(t, strings.Contains(createRecords[2], "v3.foo.com"))
 	assert.True(t, strings.Contains(createRecords[2], "4.3.3.3"))
 	assert.True(t, strings.Contains(createRecords[2], "300"))
-
 }
 
 func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
@@ -331,7 +329,6 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v1.foobar.com"))
 	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "boom"))
-
 }
 
 func TestChunkBy(t *testing.T) {

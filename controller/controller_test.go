@@ -19,11 +19,12 @@ package controller
 import (
 	"context"
 	"errors"
-	"github.com/prometheus/client_golang/prometheus"
 	"math"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
@@ -236,6 +237,17 @@ func TestShouldRunOnce(t *testing.T) {
 
 	// But not two times
 	assert.False(t, ctrl.ShouldRunOnce(now))
+
+	// Multiple ingresses or services changes, closer than MinInterval from each other
+	firstChangeTime := now
+	secondChangeTime := firstChangeTime.Add(time.Second)
+	// First change
+	ctrl.ScheduleRunOnce(firstChangeTime)
+	// Second change
+	ctrl.ScheduleRunOnce(secondChangeTime)
+	// Should not postpone the reconciliation further than firstChangeTime + MinInterval
+	now = now.Add(ctrl.MinEventSyncInterval)
+	assert.True(t, ctrl.ShouldRunOnce(now))
 }
 
 func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {

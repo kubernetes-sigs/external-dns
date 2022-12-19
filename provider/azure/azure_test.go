@@ -138,12 +138,15 @@ func othersRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetP
 		TTL: to.Int64Ptr(ttl),
 	}
 }
+
 func createMockRecordSet(name, recordType string, values ...string) dns.RecordSet {
 	return createMockRecordSetMultiWithTTL(name, recordType, 0, values...)
 }
+
 func createMockRecordSetWithTTL(name, recordType, value string, ttl int64) dns.RecordSet {
 	return createMockRecordSetMultiWithTTL(name, recordType, ttl, value)
 }
+
 func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values ...string) dns.RecordSet {
 	var getterFunc func(values []string, ttl int64) *dns.RecordSetProperties
 
@@ -162,7 +165,6 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		Type:                to.StringPtr("Microsoft.Network/dnszones/" + recordType),
 		RecordSetProperties: getterFunc(values, ttl),
 	}
-
 }
 
 func (client *mockRecordSetsClient) ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error) {
@@ -270,14 +272,12 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
 	actual, err := provider.Records(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +290,6 @@ func TestAzureRecord(t *testing.T) {
 	}
 
 	validateAzureEndpoints(t, actual, expected)
-
 }
 
 func TestAzureMultiRecord(t *testing.T) {
@@ -307,14 +306,12 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
 	actual, err := provider.Records(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,7 +324,6 @@ func TestAzureMultiRecord(t *testing.T) {
 	}
 
 	validateAzureEndpoints(t, actual, expected)
-
 }
 
 func TestAzureApplyChanges(t *testing.T) {
@@ -461,14 +457,12 @@ func TestAzureNameFilter(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
-
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ctx := context.Background()
 	actual, err := provider.Records(ctx)
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -479,7 +473,6 @@ func TestAzureNameFilter(t *testing.T) {
 	}
 
 	validateAzureEndpoints(t, actual, expected)
-
 }
 
 func TestAzureApplyChangesZoneName(t *testing.T) {
