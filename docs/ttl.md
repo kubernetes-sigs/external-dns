@@ -38,6 +38,7 @@ Providers
 - [x] AWS (Route53)
 - [x] Azure
 - [x] Cloudflare
+- [x] ClouDNS
 - [x] DigitalOcean
 - [x] DNSimple
 - [x] Google
@@ -64,6 +65,9 @@ By default it will be 300s.
 
 ## CloudFlare Provider
 CloudFlare overrides the value to "auto" when the TTL is 0.
+
+### ClouDNS Provider
+The ClouDNS Provider default TTL is used when the TTL is undefined in the source annotation. The default TTL used is 1 day (86400 seconds).
 
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.

@@ -35,6 +35,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [BlueCat](https://bluecatnetworks.com)
 * [Civo](https://www.civo.com)
 * [CloudFlare](https://www.cloudflare.com/dns)
+* [ClouDNS](https://www.cloudns.net/)
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
@@ -97,6 +98,7 @@ The following table clarifies the current status of the providers according to t
 | BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
 | Civo | Alpha | @alejandrojnm |
 | CloudFlare | Beta | |
+| ClouDNS | Alpha | @wmarchesi123 |
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
 | DNSimple | Alpha | |
@@ -158,6 +160,7 @@ The following tutorials are provided:
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Civo](docs/tutorials/civo.md)
 * [Cloudflare](docs/tutorials/cloudflare.md)
+* [ClouDNS](docs/tutorials/cloudns.md)
 * [BlueCat](docs/tutorials/bluecat.md)
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
