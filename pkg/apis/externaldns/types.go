@@ -198,6 +198,7 @@ type Config struct {
 	PluralCluster                     string
 	PluralProvider                    string
 	CacheSyncTimeout                  time.Duration
+	DynamicCacheSyncTimeout           time.Duration
 }
 
 var defaultConfig = &Config{
@@ -341,6 +342,7 @@ var defaultConfig = &Config{
 	PluralCluster:               "",
 	PluralProvider:              "",
 	CacheSyncTimeout:            60 * time.Second,
+	DynamicCacheSyncTimeout:     60 * time.Second,
 }
 
 // NewConfig returns new Config object

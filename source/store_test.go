@@ -189,4 +189,5 @@ func TestByNames(t *testing.T) {
 var minimalConfig = &Config{
 	ContourLoadBalancerService: "heptio-contour/contour",
 	CacheSyncTimeout:           60 * time.Second,
+	DynamicCacheSyncTimeout:    60 * time.Second,
 }

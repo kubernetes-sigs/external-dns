@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -83,6 +84,8 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	src, err := NewGatewayUDPRouteSource(clients, &Config{
 		FQDNTemplate:             "{{.Name}}-template.foobar.internal",
 		CombineFQDNAndAnnotation: true,
+		CacheSyncTimeout:         60 * time.Second,
+		DynamicCacheSyncTimeout:  60 * time.Second,
 	})
 	require.NoError(t, err, "failed to create Gateway UDPRoute Source")
 

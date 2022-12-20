@@ -140,6 +140,7 @@ func main() {
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
 		CacheSyncTimeout:               cfg.CacheSyncTimeout,
+		DynamicCacheSyncTimeout:        cfg.DynamicCacheSyncTimeout,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
