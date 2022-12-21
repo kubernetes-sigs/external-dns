@@ -89,6 +89,7 @@ func NewClouDNSProvider(config ClouDNSConfig) (*ClouDNSProvider, error) {
 
 		client = c
 		log.Info("Authenticated with ClouDNS using user-id login type")
+
 	case "sub-user":
 		log.Info("Using sub-user login type")
 
@@ -111,6 +112,7 @@ func NewClouDNSProvider(config ClouDNSConfig) (*ClouDNSProvider, error) {
 
 		client = c
 		log.Info("Authenticated with ClouDNS using sub-user login type")
+
 	case "sub-user-name":
 		log.Info("Using sub-user-name login type")
 
@@ -144,6 +146,28 @@ func NewClouDNSProvider(config ClouDNSConfig) (*ClouDNSProvider, error) {
 }
 
 func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	log.Info("Getting Records from ClouDNS")
+
+	//var endpoints []*endpoint.Endpoint
+
+	zones, err := p.client.Zones.List(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting zones: %s", err)
+	}
+
+	for _, zone := range zones {
+		log.Info("Getting records for zone: ", zone.Name)
+
+		records, err := p.client.Records.List(ctx, zone.Name)
+		if err != nil {
+			return nil, fmt.Errorf("error getting records: %s", err)
+		}
+
+		for _, record := range records {
+			log.Info("Record: ", record.ID)
+		}
+	}
+
 	return nil, nil
 }
 
