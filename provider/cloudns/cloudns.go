@@ -156,7 +156,6 @@ func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	}
 
 	for _, zone := range zones {
-		log.Info("Getting records for zone: ", zone.Name)
 
 		records, err := p.client.Records.List(ctx, zone.Name)
 		if err != nil {
@@ -197,6 +196,49 @@ func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 }
 
 func (p *ClouDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	infoString := "Creating " + fmt.Sprint(len(changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
+
+	if len(changes.Create) == 0 && len(changes.Delete) == 0 && len(changes.UpdateNew) == 0 && len(changes.UpdateOld) == 0 {
+		log.Info("No Changes")
+		return nil
+	} else if p.dryRun {
+		log.Info("DRY RUN: " + infoString)
+	} else {
+		log.Info(infoString)
+	}
+
+	zones, err := p.client.Zones.List(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = p.createRecords(ctx, zones, changes.Create)
+	if err != nil {
+		return err
+	}
+
+	err = p.deleteRecords(ctx, zones, changes.Delete)
+	if err != nil {
+		return err
+	}
+
+	err = p.updateRecords(ctx, zones, changes.UpdateNew)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *ClouDNSProvider) createRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
+	return nil
+}
+
+func (p *ClouDNSProvider) deleteRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
+	return nil
+}
+
+func (p *ClouDNSProvider) updateRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
 	return nil
 }
 
