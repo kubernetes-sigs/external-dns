@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "external-dns.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ include "external-dns.namespace" . }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.deploymentAnnotations }}
