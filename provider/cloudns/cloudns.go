@@ -342,7 +342,6 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 // deleteRecords deletes DNS records from the CloudDNS provider for the given endpoints.
 // The function takes in a context and a slice of endpoint.Endpoint structs.
 // If an error occurs while deleting the records, it is returned.
-
 func (p *ClouDNSProvider) deleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 
 	for _, ep := range endpoints {
@@ -384,15 +383,31 @@ func (p *ClouDNSProvider) deleteRecords(ctx context.Context, endpoints []*endpoi
 	return nil
 }
 
+// updateRecords updates the records in the ClouDNS provider by first creating the records in the updateNew slice
+// and then deleting the records in the updateOld slice. If an error occurs while creating or deleting the records,
+// it is returned.
+//
+// The updateNew slice should contain the updated records that need to be created, and the updateOld slice should
+// contain the old records that need to be deleted.
 func (p *ClouDNSProvider) updateRecords(ctx context.Context, updateOld, updateNew []*endpoint.Endpoint) error {
-	for _, endpoint := range updateNew {
-		log.Infof("Creating Record: %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
+
+	err := p.createRecords(ctx, updateNew)
+	if err != nil {
+		return err
 	}
+
+	err = p.deleteRecords(ctx, updateOld)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
-// Merge Endpoints with the same Name and Type into a single endpoint with
-// multiple Targets. From pkg/digitalocean/provider.go
+// mergeEndpointsByNameType takes a slice of endpoints and returns a new slice of endpoints
+// with the endpoints merged based on their DNS name and record type. If no merge occurs,
+// the original slice of endpoints is returned.
+// From pkg/digitalocean/provider.go
 func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	endpointsByNameType := map[string][]*endpoint.Endpoint{}
 
@@ -442,6 +457,15 @@ func isValidTTL(ttl string) bool {
 	return false
 }
 
+// recordFromTarget returns the ID and zone name of a record in the ClouDNS provider
+// that matches the given endpoint, target, and zone name. If no matching record is found,
+// the ID is returned as 0 and the zone name is returned as an empty string.
+//
+// The function first retrieves a map of zones and their corresponding records from the ClouDNS provider.
+// It then iterates over the records, checking if the record type, hostname, zone name, and target
+// match the given endpoint and target. If a match is found, the ID and zone name of the record
+// are returned. If no match is found, the ID is returned as 0 and the zone name is returned as an empty string.
+// If an error occurs while retrieving the map of zones and records, it is returned.
 func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, ep *endpoint.Endpoint, target string, epZoneName string, epHostName string) (int, string, error) {
 
 	zoneRecordMap, err := p.zoneRecordMap(ctx)
