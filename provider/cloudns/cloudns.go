@@ -493,28 +493,51 @@ func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, endpoint *endpoi
 	log.Info("dnsName: " + endpoint.DNSName)
 	log.Info("recordTTL: " + strconv.Itoa(int(endpoint.RecordTTL)))
 
+	i := strings.LastIndex(endpoint.DNSName, "."+epZoneName)
+
+	log.Info("1")
+
+	if endpoint.DNSName[0:2] == "a-" && i != -1 {
+		epHostName = "adash"
+		epZoneName = endpoint.DNSName[2:]
+		log.Info("2")
+	}
+
+	log.Info("3")
+
 	if epZoneName == epHostName {
 		epHostName = ""
+		log.Info("4")
 	}
 
 	recordsByZone, err := p.zoneRecordMap(ctx)
 	if err != nil {
+		log.Info("5")
 		return 0, err
 	}
 
 	if records, ok := recordsByZone[epZoneName]; ok {
+		log.Info("6")
 
 		for _, record := range records {
+			log.Info("7")
 
 			if record.RecordType == cloudns.RecordTypeTXT {
+				log.Info("8")
+				endpoint.RecordTTL = 60
 				if record.Host == "adash" {
 					record.Host = ""
+					log.Info("9")
 				}
 			}
 
-			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s", record.Host, epHostName, record.Record, target)
+			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s, record.RecordType: %s, ep.RecordType: "+string(record.RecordType)+", record.TTL: %s", record.Host, epHostName, record.Record, target, endpoint.RecordType)
 
-			if record.Host == epHostName && record.Record == target {
+			if record.RecordType == "TXT" && record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
+				log.Info("10")
+				return record.ID, nil
+			} else if record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
+				log.Info("11")
 				return record.ID, nil
 			}
 
@@ -522,6 +545,50 @@ func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, endpoint *endpoi
 
 	}
 
+	dnsParts := strings.Split(epZoneName, ".")
+	partLength := len(dnsParts)
+
+	if endpoint.RecordType == "TXT" {
+		if partLength == 2 && dnsParts[0][0:2] == "a-" {
+			epHostName = "adash"
+			epZoneName = dnsParts[0][2:] + "." + dnsParts[1]
+			log.Info("epHostName: " + epHostName + ", epZoneName: " + epZoneName)
+		} else if partLength > 2 {
+			epZoneName = dnsParts[1][2:] + "." + dnsParts[2]
+			log.Info("epHostName: " + epHostName + ", epZoneName: " + epZoneName)
+		}
+	}
+
+	if records, ok := recordsByZone[epZoneName]; ok {
+		log.Info("6")
+
+		for _, record := range records {
+			log.Info("7")
+
+			if record.RecordType == cloudns.RecordTypeTXT {
+				log.Info("8")
+				endpoint.RecordTTL = 60
+				if record.Host == "adash" {
+					record.Host = ""
+					log.Info("9")
+				}
+			}
+
+			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s, record.RecordType: %s, ep.RecordType: "+string(record.RecordType)+", record.TTL: %s", record.Host, epHostName, record.Record, target, endpoint.RecordType)
+
+			if record.RecordType == "TXT" && record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
+				log.Info("10")
+				return record.ID, nil
+			} else if record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
+				log.Info("11")
+				return record.ID, nil
+			}
+
+		}
+
+	}
+
+	log.Info("12")
 	return 0, fmt.Errorf("record not found")
 }
 
