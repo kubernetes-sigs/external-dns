@@ -512,6 +512,8 @@ func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, endpoint *endpoi
 				}
 			}
 
+			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s", record.Host, epHostName, record.Record, target)
+
 			if record.Host == epHostName && record.Record == target {
 				return record.ID, nil
 			}
