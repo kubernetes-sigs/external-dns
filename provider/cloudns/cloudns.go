@@ -28,6 +28,8 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
+// ClouDNSProvider is a struct representing a CloudDNS provider.
+// It embeds the provider.BaseProvider struct and includes fields for the CloudDNS client, context, domain and zone ID filters, owner ID, and flags for dry-run and testing modes.
 type ClouDNSProvider struct {
 	provider.BaseProvider
 	client       *cloudns.Client
@@ -39,6 +41,8 @@ type ClouDNSProvider struct {
 	testing      bool
 }
 
+// ClouDNSConfig is a struct representing the configuration for a CloudDNS provider.
+// It includes fields for the context, domain and zone ID filters, owner ID, and flags for dry-run and testing modes.
 type ClouDNSConfig struct {
 	Context      context.Context
 	DomainFilter endpoint.DomainFilter
@@ -48,6 +52,9 @@ type ClouDNSConfig struct {
 	Testing      bool
 }
 
+// NewClouDNSProvider creates and returns a new ClouDNSProvider struct based on the given configuration.
+// The function authenticates with the CloudDNS service using the login type, user or sub-user ID, and user password specified in the environment variables.
+// If an error occurs while authenticating or creating the ClouDNS client, it is returned.
 func NewClouDNSProvider(config ClouDNSConfig) (*ClouDNSProvider, error) {
 
 	var client *cloudns.Client
@@ -146,6 +153,9 @@ func NewClouDNSProvider(config ClouDNSConfig) (*ClouDNSProvider, error) {
 	return provider, nil
 }
 
+// Records retrieves the DNS records from the CloudDNS provider and returns them as a slice of endpoint.Endpoint structs.
+// The function retrieves all zones and their corresponding records and filters out unsupported record types.
+// If an error occurs while retrieving the zones or records, it is returned.
 func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	log.Info("Getting Records from ClouDNS")
 
@@ -202,6 +212,10 @@ func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	return merged, nil
 }
 
+// ApplyChanges applies the given DNS changes to the CloudDNS provider.
+// The function retrieves the zones, creates new records, deletes old records, and updates existing records as needed.
+// If the provider is in dry-run mode, the changes are not applied but the details of the changes are logged.
+// If an error occurs while retrieving the zones or applying the changes, it is returned.
 func (p *ClouDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	infoString := "Creating " + fmt.Sprint(len(changes.Create)) + " Record(s), Updating " + fmt.Sprint(len(changes.UpdateNew)) + " Record(s), Deleting " + fmt.Sprint(len(changes.Delete)) + " Record(s)"
 
@@ -214,22 +228,17 @@ func (p *ClouDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 		log.Info(infoString)
 	}
 
-	zones, err := p.client.Zones.List(ctx)
+	err := p.createRecords(ctx, changes.Create)
 	if err != nil {
 		return err
 	}
 
-	err = p.createRecords(ctx, zones, changes.Create)
+	err = p.deleteRecords(ctx, changes.Delete)
 	if err != nil {
 		return err
 	}
 
-	err = p.deleteRecords(ctx, zones, changes.Delete)
-	if err != nil {
-		return err
-	}
-
-	err = p.updateRecords(ctx, zones, changes.UpdateNew)
+	err = p.updateRecords(ctx, changes.UpdateOld, changes.UpdateNew)
 	if err != nil {
 		return err
 	}
@@ -237,16 +246,20 @@ func (p *ClouDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 	return nil
 }
 
-func (p *ClouDNSProvider) createRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
+// createRecords creates DNS records in the CloudDNS provider for the given endpoints.
+// The function takes in a context and a slice of endpoint.Endpoint structs.
+// If an error occurs while creating the records, it is returned.
+func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 	for _, ep := range endpoints {
 
 		dnsParts := strings.Split(ep.DNSName, ".")
 		partLength := len(dnsParts)
+		rootZone := rootZone(ep.DNSName)
 
 		if ep.RecordType == "TXT" {
 			if !p.dryRun {
 				if partLength == 2 && dnsParts[0][0:2] == "a-" {
-					_, err := p.client.Records.Create(ctx, dnsParts[0][2:]+"."+dnsParts[1], cloudns.Record{
+					_, err := p.client.Records.Create(ctx, rootZone[2:], cloudns.Record{
 						Host:       "adash",
 						Record:     ep.Targets[0],
 						RecordType: cloudns.RecordType("TXT"),
@@ -256,15 +269,12 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, zones []cloudns.Zon
 						return err
 					}
 				} else {
-					hostName := ""
-
-					zoneName := dnsParts[partLength-2] + "." + dnsParts[partLength-1]
-					i := strings.LastIndex(ep.DNSName, "."+zoneName)
-					if i != -1 {
-						hostName = ep.DNSName[:i] + strings.Replace(ep.DNSName[i:], "."+zoneName, "", 1)
+					hostName := removeLastOccurrance(ep.DNSName, "."+rootZone)
+					if hostName == rootZone {
+						hostName = ""
 					}
 
-					_, err := p.client.Records.Create(ctx, zoneName, cloudns.Record{
+					_, err := p.client.Records.Create(ctx, rootZone, cloudns.Record{
 						Host:       hostName,
 						Record:     ep.Targets[0],
 						RecordType: cloudns.RecordType("TXT"),
@@ -304,15 +314,11 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, zones []cloudns.Zon
 			}
 		} else if partLength > 2 && !(ep.RecordType == "TXT") {
 
-			zoneName := dnsParts[partLength-2] + "." + dnsParts[partLength-1]
-			i := strings.LastIndex(ep.DNSName, "."+zoneName)
-			hostName := ep.DNSName[:i] + strings.Replace(ep.DNSName[i:], "."+zoneName, "", 1)
-
-			log.Info(hostName)
+			hostName := removeLastOccurrance(ep.DNSName, "."+rootZone)
 
 			for _, target := range ep.Targets {
 				if !p.dryRun {
-					_, err := p.client.Records.Create(ctx, zoneName, cloudns.Record{
+					_, err := p.client.Records.Create(ctx, rootZone, cloudns.Record{
 						Host:       hostName,
 						Record:     target,
 						RecordType: cloudns.RecordType(ep.RecordType),
@@ -333,105 +339,53 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, zones []cloudns.Zon
 	return nil
 }
 
-func (p *ClouDNSProvider) deleteRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
+// deleteRecords deletes DNS records from the CloudDNS provider for the given endpoints.
+// The function takes in a context and a slice of endpoint.Endpoint structs.
+// If an error occurs while deleting the records, it is returned.
 
-	for _, endpoint := range endpoints {
-		log.Info("Deleting record: ", endpoint.DNSName, " ", endpoint.RecordType, " ", endpoint.Targets[0], " ", fmt.Sprint(endpoint.RecordTTL))
+func (p *ClouDNSProvider) deleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 
-		dnsParts := strings.Split(endpoint.DNSName, ".")
-		partLength := len(dnsParts)
+	for _, ep := range endpoints {
+		log.Infof("Deleting Record: %s %s %s", ep.DNSName, ep.RecordType, ep.Targets[0])
 
-		epZoneName := ""
-		if partLength == 2 {
-			epZoneName = endpoint.DNSName
-			log.Info("1")
-		} else if partLength > 2 {
-			epZoneName = dnsParts[partLength-2] + "." + dnsParts[partLength-1]
-			log.Info("2")
-		}
+		rootZone := rootZone(ep.DNSName)
+		hostName := ""
 
-		if endpoint.RecordType == "TXT" {
-			log.Info("3")
-			if epZoneName[0:2] == "a-" {
-				log.Info("4")
-				recordID, err := p.recordFromTarget(ctx, endpoint, endpoint.Targets[0], epZoneName, "adash")
-				if err != nil {
-					return err
-				}
-
-				if !p.dryRun {
-					_, err := p.client.Records.Delete(ctx, epZoneName, recordID)
-					if err != nil {
-						return err
-					}
-					log.Infof("DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
-				} else {
-					log.Infof("DRY RUN: DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
-				}
-			} else {
-				log.Info("10")
-				epHostName := ""
-				i := strings.LastIndex(endpoint.DNSName, "."+epZoneName)
-				if i != -1 {
-					epHostName = endpoint.DNSName[:i] + strings.Replace(endpoint.DNSName[i:], "."+epZoneName, "", 1)
-					log.Info("11")
-				} else {
-					epHostName = strings.ReplaceAll(endpoint.DNSName, "."+epZoneName, "")
-					log.Info("12")
-				}
-
-				recordID, err := p.recordFromTarget(ctx, endpoint, endpoint.Targets[0], epZoneName, epHostName)
-				if err != nil {
-					return err
-				}
-
-				if !p.dryRun {
-					_, err := p.client.Records.Delete(ctx, epZoneName, recordID)
-					if err != nil {
-						return err
-					}
-					log.Infof("DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
-				} else {
-					log.Infof("DRY RUN: DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
-				}
-
-			}
+		if rootZone[0:2] == "a-" && ep.RecordType == "TXT" {
+			rootZone = rootZone[2:]
+			hostName = "adash"
 		} else {
-			log.Info("5")
-			epHostName := ""
-			i := strings.LastIndex(endpoint.DNSName, "."+epZoneName)
-			if i != -1 {
-				epHostName = endpoint.DNSName[:i] + strings.Replace(endpoint.DNSName[i:], "."+epZoneName, "", 1)
-			} else {
-				epHostName = strings.ReplaceAll(endpoint.DNSName, "."+epZoneName, "")
+			hostName = removeRootZone(ep.DNSName, rootZone)
+		}
+
+		for _, target := range ep.Targets {
+
+			id, zone, err := p.recordFromTarget(ctx, ep, target, rootZone, hostName)
+			if err != nil {
+				return err
 			}
 
-			for _, target := range endpoint.Targets {
-
-				recordID, err := p.recordFromTarget(ctx, endpoint, target, epZoneName, epHostName)
+			if id == 0 {
+				log.Infof("Record not found: %s %s %s", ep.DNSName, ep.RecordType, target)
+				continue
+			} else if !p.dryRun {
+				_, err := p.client.Records.Delete(ctx, zone, id)
 				if err != nil {
 					return err
 				}
-
-				if !p.dryRun {
-					_, err := p.client.Records.Delete(ctx, epZoneName, recordID)
-					if err != nil {
-						return err
-					}
-					log.Infof("DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
-				} else {
-					log.Infof("DRY RUN: DELETE %s %s %s", endpoint.DNSName, endpoint.RecordType, target)
-				}
-
+				log.Infof("DELETE %s %s %s %s", ep.DNSName, ep.RecordType, target, fmt.Sprint(ep.RecordTTL))
+			} else {
+				log.Infof("DRY RUN: DELETE %s %s %s %s", ep.DNSName, ep.RecordType, target, fmt.Sprint(ep.RecordTTL))
 			}
-		}
 
+		}
 	}
+
 	return nil
 }
 
-func (p *ClouDNSProvider) updateRecords(ctx context.Context, zones []cloudns.Zone, endpoints []*endpoint.Endpoint) error {
-	for _, endpoint := range endpoints {
+func (p *ClouDNSProvider) updateRecords(ctx context.Context, updateOld, updateNew []*endpoint.Endpoint) error {
+	for _, endpoint := range updateNew {
 		log.Infof("Creating Record: %s %s %s", endpoint.DNSName, endpoint.RecordType, endpoint.Targets[0])
 	}
 	return nil
@@ -472,6 +426,10 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 	return result
 }
 
+// isValidTTL checks if the given time-to-live (TTL) value is valid.
+// A valid TTL value is a string representation of a positive integer that is one of the following values:
+// "60", "300", "900", "1800", "3600", "21600", "43200", "86400", "172800", "259200", "604800", "1209600", "2592000".
+// The function returns true if the given TTL value is valid and false otherwise.
 func isValidTTL(ttl string) bool {
 	validTTLs := []string{"60", "300", "900", "1800", "3600", "21600", "43200", "86400", "172800", "259200", "604800", "1209600", "2592000"}
 
@@ -484,117 +442,44 @@ func isValidTTL(ttl string) bool {
 	return false
 }
 
-func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, endpoint *endpoint.Endpoint, target string, epZoneName string, epHostName string) (int, error) {
+func (p *ClouDNSProvider) recordFromTarget(ctx context.Context, ep *endpoint.Endpoint, target string, epZoneName string, epHostName string) (int, string, error) {
 
-	log.Info("epZoneName: " + epZoneName)
-	log.Info("epHostName: " + epHostName)
-	log.Info("target: " + target)
-	log.Info("recordType: " + endpoint.RecordType)
-	log.Info("dnsName: " + endpoint.DNSName)
-	log.Info("recordTTL: " + strconv.Itoa(int(endpoint.RecordTTL)))
-
-	i := strings.LastIndex(endpoint.DNSName, "."+epZoneName)
-
-	log.Info("1")
-
-	if endpoint.DNSName[0:2] == "a-" && i != -1 {
-		epHostName = "adash"
-		epZoneName = endpoint.DNSName[2:]
-		log.Info("2")
-	}
-
-	log.Info("3")
-
-	if epZoneName == epHostName {
-		epHostName = ""
-		log.Info("4")
-	}
-
-	recordsByZone, err := p.zoneRecordMap(ctx)
+	zoneRecordMap, err := p.zoneRecordMap(ctx)
 	if err != nil {
-		log.Info("5")
-		return 0, err
+		return 0, "", err
 	}
 
-	if records, ok := recordsByZone[epZoneName]; ok {
-		log.Info("6")
+	for zoneName, recordMap := range zoneRecordMap {
+		for _, record := range recordMap {
 
-		for _, record := range records {
-			log.Info("7")
-
-			if record.RecordType == cloudns.RecordTypeTXT {
-				log.Info("8")
-				endpoint.RecordTTL = 60
+			if string(record.RecordType) == "TXT" {
 				if record.Host == "adash" {
-					record.Host = ""
-					log.Info("9")
+					record.Host = "a-"
 				}
-			}
 
-			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s, record.RecordType: %s, ep.RecordType: "+string(record.RecordType)+", record.TTL: %s", record.Host, epHostName, record.Record, target, endpoint.RecordType)
-
-			if record.RecordType == "TXT" && record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
-				log.Info("10")
-				return record.ID, nil
-			} else if record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
-				log.Info("11")
-				return record.ID, nil
-			}
-
-		}
-
-	}
-
-	dnsParts := strings.Split(epZoneName, ".")
-	partLength := len(dnsParts)
-
-	if endpoint.RecordType == "TXT" {
-		if partLength == 2 && dnsParts[0][0:2] == "a-" {
-			epHostName = "adash"
-			epZoneName = dnsParts[0][2:] + "." + dnsParts[1]
-			log.Info("epHostName: " + epHostName + ", epZoneName: " + epZoneName)
-		} else if partLength > 2 {
-			epZoneName = dnsParts[1][2:] + "." + dnsParts[2]
-			log.Info("epHostName: " + epHostName + ", epZoneName: " + epZoneName)
-		}
-	}
-
-	if records, ok := recordsByZone[epZoneName]; ok {
-		log.Info("6")
-
-		for _, record := range records {
-			log.Info("7")
-
-			if record.RecordType == cloudns.RecordTypeTXT {
-				log.Info("8")
-				endpoint.RecordTTL = 60
-				if record.Host == "adash" {
-					record.Host = ""
-					log.Info("9")
+				if epHostName == "adash" {
+					epHostName = "a-"
 				}
-			}
 
-			log.Infof("record.Host: %s, epHostName: %s, record.Record: %s, target: %s, record.RecordType: %s, ep.RecordType: "+string(record.RecordType)+", record.TTL: %s", record.Host, epHostName, record.Record, target, endpoint.RecordType)
-
-			if record.RecordType == "TXT" && record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
-				log.Info("10")
-				return record.ID, nil
-			} else if record.Host == epHostName && record.Record == strings.Trim(target, "\\\"") && string(record.RecordType) == endpoint.RecordType {
-				log.Info("11")
-				return record.ID, nil
+				if string(record.RecordType) == ep.RecordType && record.Host == epHostName && zoneName == epZoneName && record.Record == strings.Trim(target, "\\\"") {
+					return record.ID, zoneName, nil
+				}
+			} else if string(record.RecordType) == ep.RecordType && record.Host == epHostName && zoneName == epZoneName && record.Record == target {
+				return record.ID, zoneName, nil
 			}
 
 		}
-
 	}
 
-	log.Info("12")
-	return 0, fmt.Errorf("record not found")
+	return 0, "", nil
 }
 
-func (p *ClouDNSProvider) zoneRecordMap(ctx context.Context) (map[string][]cloudns.Record, error) {
+// zoneRecordMap returns a map of all zones and their corresponding records in the CloudDNS provider.
+// The map keys are the zone names and the map values are slices of cloudns.Record structs representing the records in the zone.
+// If an error occurs while retrieving the zones or records, it is returned.
+func (p *ClouDNSProvider) zoneRecordMap(ctx context.Context) (map[string]cloudns.RecordMap, error) {
 
-	zoneRecordMap := make(map[string][]cloudns.Record)
+	zoneRecordMap := make(map[string]cloudns.RecordMap)
 
 	zones, err := p.client.Zones.List(ctx)
 	if err != nil {
@@ -602,17 +487,51 @@ func (p *ClouDNSProvider) zoneRecordMap(ctx context.Context) (map[string][]cloud
 	}
 
 	for _, zone := range zones {
-		zoneRecordMap[zone.Name] = []cloudns.Record{}
-
 		recordMap, err := p.client.Records.List(ctx, zone.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		for _, record := range recordMap {
-			zoneRecordMap[zone.Name] = append(zoneRecordMap[zone.Name], record)
-		}
+		zoneRecordMap[zone.Name] = make(cloudns.RecordMap)
+		zoneRecordMap[zone.Name] = recordMap
 	}
 
 	return zoneRecordMap, nil
+}
+
+// rootZone returns the root zone of a domain name.
+// A root zone is the last two parts of a domain name, separated by a "." character.
+// For example, the root zone of "test.this.program.com" is "program.com" and
+// the root zone of "easy.com" is "easy.com".
+// If the domain name has less than two parts, the domain name is returned as-is.
+func rootZone(domain string) string {
+	parts := strings.Split(domain, ".")
+	if len(parts) < 2 {
+		return domain
+	}
+	return strings.Join(parts[len(parts)-2:], ".")
+}
+
+// Returns the domain name with the root zone and any trailing periods removed.
+// domain is the domain name to be modified.
+// rootZone is the root zone to be removed from the domain name.
+func removeRootZone(domain string, rootZone string) string {
+	parts := strings.Split(domain, ".")
+	if len(parts) < 2 {
+		return domain
+	}
+	rootZoneIndex := len(parts) - len(strings.Split(rootZone, "."))
+	return strings.TrimSuffix(strings.Join(parts[:rootZoneIndex], "."), ".")
+}
+
+// removeLastOccurrence removes the last occurrence of the given substring from the given string.
+// If the substring is not present, the original string is returned.
+func removeLastOccurrance(str, subStr string) string {
+	i := strings.LastIndex(str, subStr)
+
+	if i == -1 {
+		return str
+	}
+
+	return strings.Join([]string{str[:i], str[i+len(subStr):]}, "")
 }
