@@ -538,6 +538,11 @@ func rootZone(domain string) string {
 // domain is the domain name to be modified.
 // rootZone is the root zone to be removed from the domain name.
 func removeRootZone(domain string, rootZone string) string {
+
+	if strings.LastIndex(domain, rootZone) == -1 {
+		return domain
+	}
+
 	parts := strings.Split(domain, ".")
 	if len(parts) < 2 {
 		return domain
