@@ -243,7 +243,7 @@ spec:
         - --txt-owner-id=external-dns
         - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
         - --aws-zone-type=public
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         name: external-dns-public
 ```
 
@@ -281,7 +281,7 @@ spec:
         - --txt-owner-id=dev.k8s.nexus
         - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
         - --aws-zone-type=private
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         name: external-dns-private
 ```
 

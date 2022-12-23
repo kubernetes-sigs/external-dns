@@ -48,7 +48,7 @@ spec:
       - name: external-dns
         # You will need to check what the latest version is yourself:
         # https://github.com/kubernetes-sigs/external-dns/releases
-        image: k8s.gcr.io/external-dns/external-dns:vX.Y.Z
+        image: registry.k8s.io/external-dns/external-dns:vX.Y.Z
         args:
         - --source=service # ingress is also possible
         # (optional) limit to only example.com domains; change to match the
@@ -114,7 +114,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.11.0
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=service # ingress is also possible
         # (optional) limit to only example.com domains; change to match the
