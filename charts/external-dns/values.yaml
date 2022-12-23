@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: k8s.gcr.io/external-dns/external-dns
+  repository: registry.k8s.io/external-dns/external-dns
   # Overrides the image tag whose default is v{{ .Chart.AppVersion }}
   tag: ""
   pullPolicy: IfNotPresent
