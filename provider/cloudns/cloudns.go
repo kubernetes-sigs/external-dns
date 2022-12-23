@@ -52,6 +52,26 @@ type ClouDNSConfig struct {
 	Testing      bool
 }
 
+var listZones = func(client *cloudns.Client, ctx context.Context) ([]cloudns.Zone, error) {
+	return client.Zones.List(ctx)
+}
+
+var listRecords = func(client *cloudns.Client, ctx context.Context, zoneName string) (cloudns.RecordMap, error) {
+	return client.Records.List(ctx, zoneName)
+}
+
+var createRecord = func(client *cloudns.Client, ctx context.Context, zoneName string, record cloudns.Record) error {
+	_, err := client.Records.Create(ctx, zoneName, record)
+
+	return err
+}
+
+var deleteRecord = func(client *cloudns.Client, ctx context.Context, zoneName string, recordID int) error {
+	_, err := client.Records.Delete(ctx, zoneName, recordID)
+
+	return err
+}
+
 // NewClouDNSProvider creates and returns a new ClouDNSProvider struct based on the given configuration.
 // The function authenticates with the CloudDNS service using the login type, user or sub-user ID, and user password specified in the environment variables.
 // If an error occurs while authenticating or creating the ClouDNS client, it is returned.
@@ -161,14 +181,14 @@ func (p *ClouDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 
 	var endpoints []*endpoint.Endpoint
 
-	zones, err := p.client.Zones.List(ctx)
+	zones, err := listZones(p.client, ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting zones: %s", err)
 	}
 
 	for _, zone := range zones {
 
-		records, err := p.client.Records.List(ctx, zone.Name)
+		records, err := listRecords(p.client, ctx, zone.Name)
 		if err != nil {
 			return nil, fmt.Errorf("error getting records: %s", err)
 		}
@@ -259,7 +279,7 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 		if ep.RecordType == "TXT" {
 			if !p.dryRun {
 				if partLength == 2 && dnsParts[0][0:2] == "a-" {
-					_, err := p.client.Records.Create(ctx, rootZone[2:], cloudns.Record{
+					err := createRecord(p.client, ctx, rootZone[2:], cloudns.Record{
 						Host:       "adash",
 						Record:     ep.Targets[0],
 						RecordType: cloudns.RecordType("TXT"),
@@ -274,12 +294,13 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 						hostName = ""
 					}
 
-					_, err := p.client.Records.Create(ctx, rootZone, cloudns.Record{
+					err := createRecord(p.client, ctx, rootZone, cloudns.Record{
 						Host:       hostName,
 						Record:     ep.Targets[0],
 						RecordType: cloudns.RecordType("TXT"),
 						TTL:        60,
 					})
+
 					if err != nil {
 						return err
 					}
@@ -297,7 +318,7 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 		if partLength == 2 && !(ep.RecordType == "TXT") {
 			for _, target := range ep.Targets {
 				if !p.dryRun {
-					_, err := p.client.Records.Create(ctx, ep.DNSName, cloudns.Record{
+					err := createRecord(p.client, ctx, ep.DNSName, cloudns.Record{
 						Host:       "",
 						Record:     target,
 						RecordType: cloudns.RecordType(ep.RecordType),
@@ -318,7 +339,7 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 
 			for _, target := range ep.Targets {
 				if !p.dryRun {
-					_, err := p.client.Records.Create(ctx, rootZone, cloudns.Record{
+					err := createRecord(p.client, ctx, rootZone, cloudns.Record{
 						Host:       hostName,
 						Record:     target,
 						RecordType: cloudns.RecordType(ep.RecordType),
@@ -366,7 +387,7 @@ func (p *ClouDNSProvider) deleteRecords(ctx context.Context, endpoints []*endpoi
 				log.Infof("Record not found: %s %s %s", ep.DNSName, ep.RecordType, target)
 				continue
 			} else if !p.dryRun {
-				_, err := p.client.Records.Delete(ctx, zone, id)
+				err := deleteRecord(p.client, ctx, zone, id)
 				if err != nil {
 					return err
 				}
