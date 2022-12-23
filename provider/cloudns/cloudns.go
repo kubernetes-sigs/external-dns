@@ -345,8 +345,6 @@ func (p *ClouDNSProvider) createRecords(ctx context.Context, endpoints []*endpoi
 func (p *ClouDNSProvider) deleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
 
 	for _, ep := range endpoints {
-		log.Infof("Deleting Record: %s %s %s", ep.DNSName, ep.RecordType, ep.Targets[0])
-
 		rootZone := rootZone(ep.DNSName)
 		hostName := ""
 
