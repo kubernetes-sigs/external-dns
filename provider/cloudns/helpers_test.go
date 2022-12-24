@@ -1,6 +1,57 @@
 package cloudns
 
-import "testing"
+import (
+	"testing"
+
+	"sigs.k8s.io/external-dns/endpoint"
+)
+
+var testEndpoints = []*endpoint.Endpoint{
+	endpoint.NewEndpoint("example.com", "A", "1.2.3.4"),
+	endpoint.NewEndpoint("example.com", "A", "5.6.7.8"),
+	endpoint.NewEndpoint("example.com", "A", "9.10.11.12"),
+	endpoint.NewEndpoint("example.com", "CNAME", "target.com"),
+	endpoint.NewEndpoint("example.com", "CNAME", "target1.com"),
+	endpoint.NewEndpoint("example.com", "CNAME", "target2.com"),
+	endpoint.NewEndpoint("example.com", "CNAME", "target3.com"),
+	endpoint.NewEndpoint("test.com", "A", "1.2.3.4"),
+}
+
+func TestMergeEndpointsByNameType(t *testing.T) {
+	// Test case with no merge
+	endpoints1 := append(testEndpoints[6:], testEndpoints[0])
+	mergedEndpoints1 := mergeEndpointsByNameType(endpoints1)
+	if len(mergedEndpoints1) != len(endpoints1) {
+		t.Errorf("Expected mergeEndpointsByNameType to return %d endpoints, got %d", len(endpoints1), len(mergedEndpoints1))
+	}
+
+	// Test case with merge of A records
+	endpoints2 := testEndpoints[:4]
+	mergedEndpoints2 := mergeEndpointsByNameType(endpoints2)
+	if len(mergedEndpoints2) != 2 {
+		t.Errorf("Expected mergeEndpointsByNameType to return 2 endpoints, got %d", len(mergedEndpoints2))
+	}
+	if mergedEndpoints2[0].DNSName != "example.com" || mergedEndpoints2[0].RecordType != "A" || len(mergedEndpoints2[0].Targets) != 3 {
+		t.Error("Unexpected endpoint returned after merge")
+	}
+	if mergedEndpoints2[1].DNSName != "example.com" || mergedEndpoints2[1].RecordType != "CNAME" || len(mergedEndpoints2[1].Targets) != 1 {
+		t.Error("Unexpected endpoint returned after merge")
+	}
+
+	// Test case with merge of CNAME records
+	endpoints3 := testEndpoints[4:]
+	mergedEndpoints3 := mergeEndpointsByNameType(endpoints3)
+	if len(mergedEndpoints3) != 2 {
+		t.Errorf("Expected mergeEndpointsByNameType to return 2 endpoints, got %d", len(mergedEndpoints3))
+	}
+	if mergedEndpoints3[0].DNSName != "example.com" || mergedEndpoints3[0].RecordType != "CNAME" || len(mergedEndpoints3[0].Targets) != 3 {
+		t.Error("Unexpected endpoint returned after merge")
+	}
+	if mergedEndpoints3[1].DNSName != "test.com" || mergedEndpoints3[1].RecordType != "A" || len(mergedEndpoints3[1].Targets) != 1 {
+		t.Error("Unexpected endpoint returned after merge")
+	}
+
+}
 
 // isValidTTL checks if a given Time to Live (TTL) value is valid.
 // Valid TTL values are strings representing a number of seconds.
