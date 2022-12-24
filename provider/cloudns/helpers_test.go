@@ -6,6 +6,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// testEndpoints is a slice of endpoints used in unit tests for the mergeEndpointsByNameType function.
 var testEndpoints = []*endpoint.Endpoint{
 	endpoint.NewEndpoint("example.com", "A", "1.2.3.4"),
 	endpoint.NewEndpoint("example.com", "A", "5.6.7.8"),
@@ -17,6 +18,10 @@ var testEndpoints = []*endpoint.Endpoint{
 	endpoint.NewEndpoint("test.com", "A", "1.2.3.4"),
 }
 
+// TestMergeEndpointsByNameType tests the mergeEndpointsByNameType function.
+// It checks that the function correctly merges endpoints with the same DNS name
+// and record type, and that it leaves endpoints with different DNS names or
+// record types unchanged.
 func TestMergeEndpointsByNameType(t *testing.T) {
 	// Test case with no merge
 	endpoints1 := append(testEndpoints[6:], testEndpoints[0])
