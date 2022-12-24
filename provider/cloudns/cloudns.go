@@ -524,19 +524,21 @@ func (p *ClouDNSProvider) zoneRecordMap(ctx context.Context) (map[string]cloudns
 
 	zoneRecordMap := make(map[string]cloudns.RecordMap)
 
-	zones, err := p.client.Zones.List(ctx)
+	zones, err := listZones(p.client, ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, zone := range zones {
-		recordMap, err := p.client.Records.List(ctx, zone.Name)
+		recordMap, err := listRecords(p.client, ctx, zone.Name)
 		if err != nil {
 			return nil, err
 		}
 
-		zoneRecordMap[zone.Name] = make(cloudns.RecordMap)
-		zoneRecordMap[zone.Name] = recordMap
+		if len(recordMap) != 0 {
+			zoneRecordMap[zone.Name] = make(cloudns.RecordMap)
+			zoneRecordMap[zone.Name] = recordMap
+		}
 	}
 
 	return zoneRecordMap, nil
