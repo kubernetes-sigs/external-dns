@@ -1,4 +1,4 @@
-name: Go
+name: Lint
 
 on:
   push:
@@ -29,21 +29,7 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3
 
-    - name: Install CI
+    - name: Lint
       run: |
-        go get -v -t -d ./...
-
-    - name: Install additional CI for nektos/act
-      run: |
-            apt update
-            apt install -y make gcc libc-dev git
-      if: github.actor == 'nektos/act'
-  
-    - name: Test
-      run: make test
-
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
-      with:
-        path-to-profile: profile.cov
-      if: github.actor != 'nektos/act'
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.50.1
+        make lint
