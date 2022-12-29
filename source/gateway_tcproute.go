@@ -32,9 +32,9 @@ func NewGatewayTCPRouteSource(clients ClientGenerator, config *Config) (Source, 
 	})
 }
 
-type gatewayTCPRoute struct{ route *v1alpha2.TCPRoute }
+type gatewayTCPRoute struct{ route v1alpha2.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayTCPRoute) Object() kubeObject             { return rt.route }
+func (rt *gatewayTCPRoute) Object() kubeObject             { return &rt.route }
 func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
 func (rt *gatewayTCPRoute) Hostnames() []v1beta1.Hostname  { return nil }
 func (rt *gatewayTCPRoute) Protocol() v1beta1.ProtocolType { return v1beta1.TCPProtocolType }
@@ -53,7 +53,14 @@ func (inf gatewayTCPRouteInformer) List(namespace string, selector labels.Select
 	}
 	routes := make([]gatewayRoute, len(list))
 	for i, rt := range list {
-		routes[i] = &gatewayTCPRoute{rt}
+		// List results are supposed to be treated as read-only.
+		// We make a shallow copy since we're only interested in setting the TypeMeta.
+		clone := *rt
+		clone.TypeMeta = metav1.TypeMeta{
+			APIVersion: v1alpha2.GroupVersion.String(),
+			Kind:       "TCPRoute",
+		}
+		routes[i] = &gatewayTCPRoute{clone}
 	}
 	return routes, nil
 }
