@@ -24,6 +24,7 @@ Note that you will also need to the Organization ID, which can be retrieve on th
 Three environment variables are needed to run ExternalDNS with Scaleway DNS:
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
+- `SCW_DEFAULT_ORGANIZATION_ID` which is the Default Organization ID.
 
 ## Deploy ExternalDNS
 
@@ -62,6 +63,8 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your default organization ID>"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -128,6 +131,8 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
+        - name: SCW_DEFAULT_ORGANIZATION_ID
+          value: "<your default organization ID>"
 ```
 
 
