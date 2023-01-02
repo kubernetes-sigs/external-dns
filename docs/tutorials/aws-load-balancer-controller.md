@@ -12,11 +12,11 @@ for hostnames in Ingress objects. In addition, you may wish to limit which Ingre
 objects are used as an ExternalDNS source via the `ingress-class` argument, but
 this is not required.
 
-For help setting up the ALB Ingress Controller, follow the [Setup Guide][2].
+For help setting up the AWS Load Balancer Controller, follow the [Setup Guide][2].
 
 [2]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/installation/
 
-Note that the ALB ingress controller uses the same tags for [subnet auto-discovery][3]
+Note that the AWS Load Balancer Controller uses the same tags for [subnet auto-discovery][3]
 as Kubernetes does with the AWS cloud provider.
 
 [3]: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/deploy/subnet_discovery/
@@ -143,7 +143,7 @@ multiple aliases for the resulting ALB.
 ## Dualstack ALBs
 
 AWS [supports][4] both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces for ALBs.
-The ALB ingress controller uses the `alb.ingress.kubernetes.io/ip-address-type`
+The AWS Load Balancer Controller uses the `alb.ingress.kubernetes.io/ip-address-type`
 annotation (which defaults to `ipv4`) to determine this. If this annotation is
 set to `dualstack` then ExternalDNS will create two alias records (one A record
 and one AAAA record) for each hostname associated with the Ingress object.
