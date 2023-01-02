@@ -1,10 +1,10 @@
-# Using ExternalDNS with alb-ingress-controller
+# Using ExternalDNS with aws-load-balancer-controller
 
-This tutorial describes how to use ExternalDNS with the [aws-alb-ingress-controller][1].
+This tutorial describes how to use ExternalDNS with the [aws-load-balancer-controller][1].
 
 [1]: https://kubernetes-sigs.github.io/aws-load-balancer-controller
 
-## Setting up ExternalDNS and aws-alb-ingress-controller
+## Setting up ExternalDNS and aws-load-balancer-controller
 
 Follow the [AWS tutorial](aws.md) to setup ExternalDNS for use in Kubernetes clusters
 running in AWS. Specify the `source=ingress` argument so that ExternalDNS will look
