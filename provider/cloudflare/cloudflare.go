@@ -175,7 +175,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
 			if err != nil {
 				log.Errorf("zone %s lookup failed, %v", zoneID, err)
-				continue
+				return result, err
 			}
 			log.WithFields(log.Fields{
 				"zoneName": detailResponse.Name,
