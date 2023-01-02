@@ -340,6 +340,14 @@ func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 	return result, nil
 }
 
+func (p designateProvider) PropertyValuesEqual(name, previous, current string) bool {
+	if name == designateRecordSetID || name == designateZoneID || name == designateOriginalRecords {
+		return true
+	}
+
+	return previous == current
+}
+
 // temporary structure to hold recordset parameters so that we could aggregate endpoints into recordsets
 type recordSet struct {
 	dnsName     string
