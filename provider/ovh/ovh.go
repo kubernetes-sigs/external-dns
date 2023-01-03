@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/sync/errgroup"
+	"golang.org/x/sync/errgroup"
 	"github.com/ovh/go-ovh/ovh"
 	log "github.com/sirupsen/logrus"
 
