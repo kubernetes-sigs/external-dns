@@ -57,6 +57,7 @@ var (
 		AWSZoneType:                 "",
 		AWSZoneTagFilter:            []string{""},
 		AWSAssumeRole:               "",
+		AWSAssumeRoleExternalID:     "",
 		AWSBatchChangeSize:          1000,
 		AWSBatchChangeInterval:      time.Second,
 		AWSEvaluateTargetHealth:     true,
@@ -126,6 +127,8 @@ var (
 		OCPRouterName:               "default",
 		IBMCloudProxied:             false,
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
+		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
+		TencentCloudZoneType:        "",
 	}
 
 	overriddenConfig = &Config{
@@ -159,6 +162,7 @@ var (
 		AWSZoneType:                 "private",
 		AWSZoneTagFilter:            []string{"tag=foo"},
 		AWSAssumeRole:               "some-other-role",
+		AWSAssumeRoleExternalID:     "pg2000",
 		AWSBatchChangeSize:          100,
 		AWSBatchChangeInterval:      time.Second * 2,
 		AWSEvaluateTargetHealth:     false,
@@ -233,6 +237,8 @@ var (
 		RFC2136BatchChangeSize:      100,
 		IBMCloudProxied:             true,
 		IBMCloudConfigFile:          "ibmcloud.json",
+		TencentCloudConfigFile:      "tencent-cloud.json",
+		TencentCloudZoneType:        "private",
 	}
 )
 
@@ -332,6 +338,7 @@ func TestParseFlags(t *testing.T) {
 				"--aws-zone-type=private",
 				"--aws-zone-tags=tag=foo",
 				"--aws-assume-role=some-other-role",
+				"--aws-assume-role-external-id=pg2000",
 				"--aws-batch-change-size=100",
 				"--aws-batch-change-interval=2s",
 				"--aws-api-retries=13",
@@ -370,6 +377,8 @@ func TestParseFlags(t *testing.T) {
 				"--rfc2136-batch-change-size=100",
 				"--ibmcloud-proxied",
 				"--ibmcloud-config-file=ibmcloud.json",
+				"--tencent-cloud-config-file=tencent-cloud.json",
+				"--tencent-cloud-zone-type=private",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -446,6 +455,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AWS_ZONE_TYPE":                   "private",
 				"EXTERNAL_DNS_AWS_ZONE_TAGS":                   "tag=foo",
 				"EXTERNAL_DNS_AWS_ASSUME_ROLE":                 "some-other-role",
+				"EXTERNAL_DNS_AWS_ASSUME_ROLE_EXTERNAL_ID":     "pg2000",
 				"EXTERNAL_DNS_AWS_BATCH_CHANGE_SIZE":           "100",
 				"EXTERNAL_DNS_AWS_BATCH_CHANGE_INTERVAL":       "2s",
 				"EXTERNAL_DNS_AWS_EVALUATE_TARGET_HEALTH":      "0",
@@ -482,6 +492,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_RFC2136_BATCH_CHANGE_SIZE":       "100",
 				"EXTERNAL_DNS_IBMCLOUD_PROXIED":                "1",
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",
+				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":       "tencent-cloud.json",
+				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":         "private",
 			},
 			expected: overriddenConfig,
 		},

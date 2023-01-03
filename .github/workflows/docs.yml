@@ -5,8 +5,12 @@ on:
     tags:
       - "v*"
 
+permissions: {}
 jobs:
   release_docs:
+    permissions:
+      contents: write  #  for mike to push
+
     name: Release Docs
     runs-on: ubuntu-latest
     steps:
@@ -22,7 +26,7 @@ jobs:
 
       - uses: actions/setup-go@v3
         with:
-          go-version: ^1.18
+          go-version: ^1.19
 
       - run: |
           pip install -r docs/scripts/requirements.txt

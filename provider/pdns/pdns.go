@@ -257,7 +257,7 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error) {
 	endpoints = []*endpoint.Endpoint{}
-	var targets = []string{}
+	targets := []string{}
 
 	for _, record := range rr.Records {
 		// If a record is "Disabled", it's not supposed to be "visible"

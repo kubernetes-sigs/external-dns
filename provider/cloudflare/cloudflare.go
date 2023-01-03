@@ -97,9 +97,11 @@ func (z zoneService) CreateDNSRecord(ctx context.Context, zoneID string, rr clou
 func (z zoneService) DNSRecords(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
 	return z.service.DNSRecords(ctx, zoneID, rr)
 }
+
 func (z zoneService) UpdateDNSRecord(ctx context.Context, zoneID, recordID string, rr cloudflare.DNSRecord) error {
 	return z.service.UpdateDNSRecord(ctx, zoneID, recordID, rr)
 }
+
 func (z zoneService) DeleteDNSRecord(ctx context.Context, zoneID, recordID string) error {
 	return z.service.DeleteDNSRecord(ctx, zoneID, recordID)
 }
@@ -146,7 +148,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
 	}
 	provider := &CloudFlareProvider{
-		//Client: config,
+		// Client: config,
 		Client:           zoneService{config},
 		domainFilter:     domainFilter,
 		zoneIDFilter:     zoneIDFilter,
@@ -174,7 +176,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
 			if err != nil {
 				log.Errorf("zone %s lookup failed, %v", zoneID, err)
-				continue
+				return result, err
 			}
 			log.WithFields(log.Fields{
 				"zoneName": detailResponse.Name,
@@ -264,16 +266,16 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
+		for _, a := range remove {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
+		}
+
 		for _, a := range add {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a))
 		}
 
 		for _, a := range leave {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a))
-		}
-
-		for _, a := range remove {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
 		}
 	}
 

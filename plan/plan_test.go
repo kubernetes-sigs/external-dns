@@ -226,7 +226,7 @@ func (suite *PlanTestSuite) SetupTest() {
 func (suite *PlanTestSuite) TestSyncFirstRound() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV2Cname, suite.bar127A}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar127A} //v1 is chosen because of resolver taking "min"
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar127A} // v1 is chosen because of resolver taking "min"
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
@@ -544,7 +544,7 @@ func (suite *PlanTestSuite) TestRemoveEndpointWithUpsert() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
-//TODO: remove once multiple-target per endpoint is supported
+// TODO: remove once multiple-target per endpoint is supported
 func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 	current := []*endpoint.Endpoint{suite.fooV3CnameSameResource, suite.bar192A}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
@@ -567,9 +567,8 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceReplace() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
-//TODO: remove once multiple-target per endpoint is supported
+// TODO: remove once multiple-target per endpoint is supported
 func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
-
 	current := []*endpoint.Endpoint{suite.fooV1Cname, suite.bar192A}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooV3CnameSameResource}
 	expectedCreate := []*endpoint.Endpoint{}
@@ -592,7 +591,6 @@ func (suite *PlanTestSuite) TestDuplicatedEndpointsForSameResourceRetain() {
 }
 
 func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() {
-
 	current := []*endpoint.Endpoint{suite.multiple1}
 	desired := []*endpoint.Endpoint{suite.multiple2, suite.multiple3}
 	expectedCreate := []*endpoint.Endpoint{suite.multiple3}
@@ -615,7 +613,6 @@ func (suite *PlanTestSuite) TestMultipleRecordsSameNameDifferentSetIdentifier() 
 }
 
 func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
-
 	current := []*endpoint.Endpoint{suite.multiple2}
 	desired := []*endpoint.Endpoint{suite.multiple3}
 	expectedCreate := []*endpoint.Endpoint{suite.multiple3}
@@ -638,7 +635,6 @@ func (suite *PlanTestSuite) TestSetIdentifierUpdateCreatesAndDeletes() {
 }
 
 func (suite *PlanTestSuite) TestDomainFiltersInitial() {
-
 	current := []*endpoint.Endpoint{suite.domainFilterExcluded}
 	desired := []*endpoint.Endpoint{suite.domainFilterExcluded, suite.domainFilterFiltered1, suite.domainFilterFiltered2, suite.domainFilterFiltered3}
 	expectedCreate := []*endpoint.Endpoint{suite.domainFilterFiltered1, suite.domainFilterFiltered2, suite.domainFilterFiltered3}
@@ -662,7 +658,6 @@ func (suite *PlanTestSuite) TestDomainFiltersInitial() {
 }
 
 func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
-
 	current := []*endpoint.Endpoint{suite.domainFilterExcluded, suite.domainFilterFiltered1, suite.domainFilterFiltered2}
 	desired := []*endpoint.Endpoint{suite.domainFilterExcluded, suite.domainFilterFiltered1, suite.domainFilterFiltered2, suite.domainFilterFiltered3}
 	expectedCreate := []*endpoint.Endpoint{suite.domainFilterFiltered3}
@@ -686,7 +681,6 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 }
 
 func (suite *PlanTestSuite) TestMissing() {
-
 	missing := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2, suite.domainFilterExcludedTXT}
 	expectedCreate := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2}
 
@@ -893,7 +887,6 @@ func TestShouldUpdateProviderSpecific(tt *testing.T) {
 			}
 			b := plan.shouldUpdateProviderSpecific(test.desired, test.current)
 			assert.Equal(t, test.shouldUpdate, b)
-
 		})
 	}
 }

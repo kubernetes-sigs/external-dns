@@ -6,9 +6,16 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions:
+  contents: read  #  to fetch code (actions/checkout)
+
 jobs:
 
   build:
+    permissions:
+      contents: read  #  to fetch code (actions/checkout)
+      checks: write  #  to create a new check based on the results (shogo82148/actions-goveralls)
+
     name: Build
     runs-on: ubuntu-latest
     steps:
@@ -16,7 +23,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: 1.19
       id: go
 
     - name: Check out code into the Go module directory
@@ -25,21 +32,12 @@ jobs:
     - name: Install CI
       run: |
         go get -v -t -d ./...
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        fi
 
     - name: Install additional CI for nektos/act
       run: |
             apt update
             apt install -y make gcc libc-dev git
       if: github.actor == 'nektos/act'
-
-    - name: Lint
-      run: |
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.45.2
-        make lint
   
     - name: Test
       run: make test

@@ -686,7 +686,8 @@ func testServiceSourceEndpoints(t *testing.T) {
 				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 				{DNSName: "internal.foo.example.org", Targets: endpoint.Targets{"lb.example.com"}},
 			},
-		}, {
+		},
+		{
 			title:         "load balancer services annotated with DNS Controller annotations return an endpoint with both annotations in compatibility mode",
 			svcNamespace:  "testing",
 			svcName:       "foo",

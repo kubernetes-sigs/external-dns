@@ -19,11 +19,12 @@ Therefore, please see the subsequent prerequisites.
 
 Helm is used to deploy the ingress controller. 
 
-We employ the popular chart [stable/nginx-ingress](https://github.com/helm/charts/tree/HEAD/stable/nginx-ingress).
+We employ the popular chart [ingress-nginx](https://github.com/kubernetes/ingress-nginx/tree/main/charts/ingress-nginx).
 
 ```
-$ helm install stable/nginx-ingress \
-     --name nginx-ingress \
+$ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+$ helm repo update
+$ helm install [RELEASE_NAME] ingress-nginx/ingress-nginx
      --set controller.publishService.enabled=true
 ```
 
@@ -171,7 +172,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=service
         - --source=ingress
@@ -242,7 +243,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=service
         - --source=ingress
@@ -313,7 +314,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: k8s.gcr.io/external-dns/external-dns:v0.8.0
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=service
         - --source=ingress

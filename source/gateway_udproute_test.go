@@ -26,7 +26,8 @@ import (
 	kubefake "k8s.io/client-go/kubernetes/fake"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/gateway/versioned/fake"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
+	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
 )
 
 func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
@@ -48,19 +49,19 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 	require.NoError(t, err, "failed to create Namespace")
 
 	ips := []string{"10.64.0.1", "10.64.0.2"}
-	gw := &v1alpha2.Gateway{
+	gw := &v1beta1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "internal",
 			Namespace: "default",
 		},
-		Spec: v1alpha2.GatewaySpec{
-			Listeners: []v1alpha2.Listener{{
-				Protocol: v1alpha2.UDPProtocolType,
+		Spec: v1beta1.GatewaySpec{
+			Listeners: []v1beta1.Listener{{
+				Protocol: v1beta1.UDPProtocolType,
 			}},
 		},
 		Status: gatewayStatus(ips...),
 	}
-	_, err = gwClient.GatewayV1alpha2().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
+	_, err = gwClient.GatewayV1beta1().Gateways(gw.Namespace).Create(ctx, gw, metav1.CreateOptions{})
 	require.NoError(t, err, "failed to create Gateway")
 
 	rt := &v1alpha2.UDPRoute{
@@ -73,7 +74,7 @@ func TestGatewayUDPRouteSourceEndpoints(t *testing.T) {
 		},
 		Spec: v1alpha2.UDPRouteSpec{},
 		Status: v1alpha2.UDPRouteStatus{
-			RouteStatus: routeStatus(gatewayParentRef("default", "internal")),
+			RouteStatus: v1a2RouteStatus(v1a2ParentRef("default", "internal")),
 		},
 	}
 	_, err = gwClient.GatewayV1alpha2().UDPRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})

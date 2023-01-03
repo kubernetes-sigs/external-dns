@@ -76,10 +76,11 @@ func (c *mockOCIDNSClient) GetZoneRecords(ctx context.Context, request dns.GetZo
 			}}
 			response.OpcNextPage = common.String("1")
 		} else {
-			response.Items = []dns.Record{{Domain: common.String("bar.foo.com"),
-				Rdata: common.String("bar.com."),
-				Rtype: common.String(endpoint.RecordTypeCNAME),
-				Ttl:   common.Int(ociRecordTTL),
+			response.Items = []dns.Record{{
+				Domain: common.String("bar.foo.com"),
+				Rdata:  common.String("bar.com."),
+				Rtype:  common.String(endpoint.RecordTypeCNAME),
+				Ttl:    common.Int(ociRecordTTL),
 			}}
 		}
 	case "ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404":

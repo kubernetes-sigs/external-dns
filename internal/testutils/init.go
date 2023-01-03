@@ -17,7 +17,7 @@ limitations under the License.
 package testutils
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -29,8 +29,8 @@ import (
 func init() {
 	config.FastPoll = true
 	if os.Getenv("DEBUG") == "" {
-		logrus.SetOutput(ioutil.Discard)
-		log.SetOutput(ioutil.Discard)
+		logrus.SetOutput(io.Discard)
+		log.SetOutput(io.Discard)
 	} else {
 		if level, err := logrus.ParseLevel(os.Getenv("DEBUG")); err == nil {
 			logrus.SetLevel(level)

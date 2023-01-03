@@ -156,7 +156,6 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	requestor := &ibclient.WapiHttpRequestor{}
 
 	client, err := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, requestor)
-
 	if err != nil {
 		return nil, err
 	}
@@ -531,7 +530,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -547,7 +547,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.PtrdName})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -563,7 +564,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -587,7 +589,8 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			},
 		)
 		if getObject {
-			err = p.client.GetObject(obj, "", nil, &res)
+			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
+			err = p.client.GetObject(obj, "", queryParams, &res)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
@@ -675,7 +678,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "A", record.Name, record.Ipv4Addr, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -684,7 +687,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "PTR", record.PtrdName, record.Ipv4Addr, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -693,7 +696,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "CNAME", record.Name, record.Canonical, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}
@@ -702,7 +705,7 @@ func (p *ProviderConfig) deleteRecords(deleted infobloxChangeMap) {
 						if p.dryRun {
 							logrus.Infof("Would delete %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
 						} else {
-							logrus.Debugf("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
+							logrus.Infof("Deleting %s record named '%s' to '%s' for Infoblox DNS zone '%s'.", "TXT", record.Name, record.Text, record.Zone)
 							_, err = p.client.DeleteObject(record.Ref)
 						}
 					}

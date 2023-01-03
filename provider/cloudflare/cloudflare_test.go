@@ -244,7 +244,6 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	ctx := fillContext(context.Background())
 
 	records, err := provider.Records(ctx)
-
 	if err != nil {
 		t.Fatalf("cannot fetch records, %s", err)
 	}
@@ -309,7 +308,6 @@ func TestCloudflareA(t *testing.T) {
 	},
 		[]string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	)
-
 }
 
 func TestCloudflareCname(t *testing.T) {
@@ -501,7 +499,7 @@ func TestCloudflareProxiedOverrideIllegal(t *testing.T) {
 func TestCloudflareSetProxied(t *testing.T) {
 	var proxied *bool = proxyEnabled
 	var notProxied *bool = proxyDisabled
-	var testCases = []struct {
+	testCases := []struct {
 		recordType string
 		domain     string
 		proxiable  *bool
@@ -696,7 +694,6 @@ func TestCloudflareApplyChanges(t *testing.T) {
 		Targets: endpoint.Targets{"target-new"},
 	}}
 	err := provider.ApplyChanges(fillContext(context.Background()), changes)
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1133,7 +1130,6 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	ctx := fillContext(context.Background())
 
 	records, err := provider.Records(ctx)
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -1168,7 +1164,12 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	}
 
 	td.CmpDeeply(t, client.Actions, []MockAction{
-		MockAction{
+		{
+			Name:     "Delete",
+			ZoneId:   "001",
+			RecordId: "2345678901",
+		},
+		{
 			Name:   "Create",
 			ZoneId: "001",
 			RecordData: cloudflare.DNSRecord{
@@ -1179,7 +1180,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Proxied: proxyEnabled,
 			},
 		},
-		MockAction{
+		{
 			Name:     "Update",
 			ZoneId:   "001",
 			RecordId: "1234567890",
@@ -1191,17 +1192,12 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				Proxied: proxyEnabled,
 			},
 		},
-		MockAction{
-			Name:     "Delete",
-			ZoneId:   "001",
-			RecordId: "2345678901",
-		},
 	})
 }
 
 func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
-		"001": []cloudflare.DNSRecord{
+		"001": {
 			{
 				ID:      "1234567890",
 				ZoneID:  "001",
@@ -1219,7 +1215,6 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 	}
 
 	records, err := provider.Records(fillContext(context.Background()))
-
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}

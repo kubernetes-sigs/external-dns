@@ -187,16 +187,16 @@ func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler fun
 	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
-func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService *networkingv1alpha3.VirtualService) *networkingv1alpha3.Gateway {
+func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService *networkingv1alpha3.VirtualService) (*networkingv1alpha3.Gateway, error) {
 	if gatewayStr == "" || gatewayStr == IstioMeshGateway {
 		// This refers to "all sidecars in the mesh"; ignore.
-		return nil
+		return nil, nil
 	}
 
 	namespace, name, err := parseGateway(gatewayStr)
 	if err != nil {
 		log.Debugf("Failed parsing gatewayStr %s of VirtualService %s/%s", gatewayStr, virtualService.Namespace, virtualService.Name)
-		return nil
+		return nil, err
 	}
 	if namespace == "" {
 		namespace = virtualService.Namespace
@@ -205,14 +205,14 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 	gateway, err := sc.istioClient.NetworkingV1alpha3().Gateways(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("Failed retrieving gateway %s referenced by VirtualService %s/%s: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
-		return nil
+		return nil, err
 	}
 	if gateway == nil {
 		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
-		return nil
+		return nil, nil
 	}
 
-	return gateway
+	return gateway, nil
 }
 
 func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
@@ -290,7 +290,10 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
 	for _, gateway := range virtualService.Spec.Gateways {
-		gateway := sc.getGateway(ctx, gateway, virtualService)
+		gateway, err := sc.getGateway(ctx, gateway, virtualService)
+		if err != nil {
+			return nil, err
+		}
 		if gateway == nil {
 			continue
 		}

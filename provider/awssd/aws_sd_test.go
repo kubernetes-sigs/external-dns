@@ -50,7 +50,6 @@ type AWSSDClientStub struct {
 }
 
 func (s *AWSSDClientStub) CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error) {
-
 	srv := &sd.Service{
 		Id:               aws.String(strconv.Itoa(rand.Intn(10000))),
 		DnsConfig:        input.DnsConfig,
@@ -150,7 +149,6 @@ func (s *AWSSDClientStub) ListServicesPages(input *sd.ListServicesInput, fn func
 }
 
 func (s *AWSSDClientStub) RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error) {
-
 	srvInstances, ok := s.instances[*input.ServiceId]
 	if !ok {
 		srvInstances = make(map[string]*sd.Instance)

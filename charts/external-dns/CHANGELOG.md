@@ -7,15 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-<!-- ## [UNRELEASED]
+<!-- ## [vX.Y.Z] - UNRELEASED
+### Highlights
+### All Changes
+- Added
+- Updated
+- Changed
+- Fixed
+- Deprecated
+- Removed -->
+
+## [v1.12.0] - 2022-11-29
+
+### All Changes
+
+- Added ability to provide ExternalDNS with secret configuration via `secretConfiguration`. ([#3144](https://github.com/kubernetes-sigs/external-dns/pull/3144)) [@jkroepke](https://github.com/jkroepke)
+- Added the ability to template `provider` & `extraArgs`. ([#3144](https://github.com/kubernetes-sigs/external-dns/pull/3144)) [@jkroepke](https://github.com/jkroepke)
+- Added the ability to customise the service account labels. ([#3145](https://github.com/kubernetes-sigs/external-dns/pull/3145)) [@jkroepke](https://github.com/jkroepke)
+- Updated _ExternalDNS_ version to [v0.13.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.1). ([#3197](https://github.com/kubernetes-sigs/external-dns/pull/3197)) [@stevehipwell](https://github.com/stevehipwell)
+
+## [v1.11.0] - 2022-08-10
+
 ### Added
 
-- Add support to configure dnsPolicy on the Helm chart deployment. [@michelzanini](https://github.com/michelzanini)
+- Added support to configure `dnsPolicy` on the Helm chart deployment. [@michelzanini](https://github.com/michelzanini)
+- Added ability to customise the deployment strategy. [mac-chaffee](https://github.com/mac-chaffee)
 
 ### Changed
-### Fixed
-### Deprecated
-### Removed -->
+
+- Updated _ExternalDNS_ version to [v0.12.2](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.12.2). [@stevehipwell](https://github.com/stevehipwell)
+- Changed default deployment strategy to `Recreate`. [mac-chaffee](https://github.com/mac-chaffee)
 
 ## [v1.10.1] - 2022-07-11
 

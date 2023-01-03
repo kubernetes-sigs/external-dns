@@ -20,8 +20,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	informers "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions"
-	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/gateway/externalversions/apis/v1alpha2"
+	"sigs.k8s.io/gateway-api/apis/v1beta1"
+	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
+	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 )
 
 // NewGatewayTLSRouteSource creates a new Gateway TLSRoute source with the given config.
@@ -33,11 +34,15 @@ func NewGatewayTLSRouteSource(clients ClientGenerator, config *Config) (Source, 
 
 type gatewayTLSRoute struct{ route *v1alpha2.TLSRoute }
 
-func (rt *gatewayTLSRoute) Object() kubeObject                { return rt.route }
-func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta      { return &rt.route.ObjectMeta }
-func (rt *gatewayTLSRoute) Hostnames() []v1alpha2.Hostname    { return rt.route.Spec.Hostnames }
-func (rt *gatewayTLSRoute) Protocol() v1alpha2.ProtocolType   { return v1alpha2.TLSProtocolType }
-func (rt *gatewayTLSRoute) RouteStatus() v1alpha2.RouteStatus { return rt.route.Status.RouteStatus }
+func (rt *gatewayTLSRoute) Object() kubeObject           { return rt.route }
+func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
+func (rt *gatewayTLSRoute) Hostnames() []v1beta1.Hostname {
+	return v1b1Hostnames(rt.route.Spec.Hostnames)
+}
+func (rt *gatewayTLSRoute) Protocol() v1beta1.ProtocolType { return v1beta1.TLSProtocolType }
+func (rt *gatewayTLSRoute) RouteStatus() v1beta1.RouteStatus {
+	return v1b1RouteStatus(rt.route.Status.RouteStatus)
+}
 
 type gatewayTLSRouteInformer struct {
 	informers_v1a2.TLSRouteInformer

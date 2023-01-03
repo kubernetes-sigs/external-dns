@@ -32,9 +32,11 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-var mockProvider dnsimpleProvider
-var dnsimpleListRecordsResponse dnsimple.ZoneRecordsResponse
-var dnsimpleListZonesResponse dnsimple.ZonesResponse
+var (
+	mockProvider                dnsimpleProvider
+	dnsimpleListRecordsResponse dnsimple.ZoneRecordsResponse
+	dnsimpleListZonesResponse   dnsimple.ZonesResponse
+)
 
 func TestDnsimpleServices(t *testing.T) {
 	// Setup example responses

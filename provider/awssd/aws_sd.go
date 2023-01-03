@@ -18,13 +18,11 @@ package awssd
 
 import (
 	"context"
-	"strings"
-
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-
 	"regexp"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -88,7 +86,7 @@ type AWSSDProvider struct {
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, dryRun, cleanEmptyService bool, ownerID string) (*AWSSDProvider, error) {
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, assumeRoleExternalID string, dryRun, cleanEmptyService bool, ownerID string) (*AWSSDProvider, error) {
 	config := aws.NewConfig()
 
 	config = config.WithHTTPClient(
@@ -109,8 +107,15 @@ func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, 
 	}
 
 	if assumeRole != "" {
-		log.Infof("Assuming role: %s", assumeRole)
-		sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
+		if assumeRoleExternalID != "" {
+			log.Infof("Assuming role %q with external ID %q", assumeRole, assumeRoleExternalID)
+			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole, func(p *stscreds.AssumeRoleProvider) {
+				p.ExternalID = &assumeRoleExternalID
+			}))
+		} else {
+			log.Infof("Assuming role: %s", assumeRole)
+			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
+		}
 	}
 
 	sess.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler("ExternalDNS", externaldns.Version))
@@ -486,7 +491,9 @@ func (p *AWSSDProvider) UpdateService(service *sd.Service, ep *endpoint.Endpoint
 						Type: aws.String(srvType),
 						TTL:  aws.Int64(ttl),
 					}},
-				}}})
+				},
+			},
+		})
 		if err != nil {
 			return err
 		}

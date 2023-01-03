@@ -18,7 +18,7 @@ package oci
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/oracle/oci-go-sdk/common"
@@ -72,7 +72,7 @@ type ociDNSClient interface {
 // LoadOCIConfig reads and parses the OCI ExternalDNS config file at the given
 // path.
 func LoadOCIConfig(path string) (*OCIConfig, error) {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading OCI config file %q", path)
 	}
@@ -138,11 +138,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	}
 
 	if len(zones) == 0 {
-		if p.domainFilter.IsConfigured() {
-			log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter.Filters)
-		} else {
-			log.Warnf("No zones found in compartment %q", p.cfg.CompartmentID)
-		}
+		log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter)
 	}
 
 	return zones, nil
