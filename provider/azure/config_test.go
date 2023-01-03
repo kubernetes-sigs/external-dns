@@ -45,7 +45,7 @@ func TestGetAzureEnvironmentConfig(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			_, _ = tmp.Seek(0, 0)
-			_, _ = tmp.Write([]byte(fmt.Sprintf(`{"cloud": "%s"}`, test.cloud)))
+			_, _ = fmt.Fprintf(tmp, `{"cloud": "%s"}`, test.cloud)
 			got, err := getConfig(tmp.Name(), "", "")
 			if err != nil {
 				t.Errorf("got unexpected err %v", err)

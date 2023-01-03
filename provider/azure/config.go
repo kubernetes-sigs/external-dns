@@ -29,27 +29,27 @@ import (
 
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
-	Cloud                       string            `json:"cloud" yaml:"cloud"`
-	Environment                 azure.Environment `json:"-" yaml:"-"`
-	TenantID                    string            `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID              string            `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup               string            `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                    string            `json:"location" yaml:"location"`
-	ClientID                    string            `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                string            `json:"aadClientSecret" yaml:"aadClientSecret"`
+	Cloud                       string            `json:"cloud"                       yaml:"cloud"`
+	Environment                 azure.Environment `json:"-"                           yaml:"-"`
+	TenantID                    string            `json:"tenantId"                    yaml:"tenantId"`
+	SubscriptionID              string            `json:"subscriptionId"              yaml:"subscriptionId"`
+	ResourceGroup               string            `json:"resourceGroup"               yaml:"resourceGroup"`
+	Location                    string            `json:"location"                    yaml:"location"`
+	ClientID                    string            `json:"aadClientId"                 yaml:"aadClientId"`
+	ClientSecret                string            `json:"aadClientSecret"             yaml:"aadClientSecret"`
 	UseManagedIdentityExtension bool              `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
-	UserAssignedIdentityID      string            `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	UserAssignedIdentityID      string            `json:"userAssignedIdentityID"      yaml:"userAssignedIdentityID"`
 }
 
 func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (*config, error) {
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
 	}
 	cfg := &config{}
 	err = yaml.Unmarshal(contents, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
 	}
 
 	// If a resource group was given, override what was present in the config file
@@ -67,7 +67,7 @@ func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (
 	} else {
 		environment, err = azure.EnvironmentFromName(cfg.Cloud)
 		if err != nil {
-			return nil, fmt.Errorf("invalid cloud value '%s': %v", cfg.Cloud, err)
+			return nil, fmt.Errorf("invalid cloud value %q: %v", cfg.Cloud, err)
 		}
 	}
 	cfg.Environment = environment
@@ -93,7 +93,12 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
 		}
 
-		token, err := adal.NewServicePrincipalToken(*oauthConfig, cfg.ClientID, cfg.ClientSecret, environment.ResourceManagerEndpoint)
+		token, err := adal.NewServicePrincipalToken(
+			*oauthConfig,
+			cfg.ClientID,
+			cfg.ClientSecret,
+			environment.ResourceManagerEndpoint,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create service principal token: %v", err)
 		}
@@ -106,9 +111,12 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 
 		if cfg.UserAssignedIdentityID != "" {
 			log.Infof("Resolving to user assigned identity, client id is %s.", cfg.UserAssignedIdentityID)
-			token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, &adal.ManagedIdentityOptions{
-				ClientID: cfg.UserAssignedIdentityID,
-			})
+			token, err := adal.NewServicePrincipalTokenFromManagedIdentity(
+				environment.ServiceManagementEndpoint,
+				&adal.ManagedIdentityOptions{
+					ClientID: cfg.UserAssignedIdentityID,
+				},
+			)
 			if err != nil {
 				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
 			}

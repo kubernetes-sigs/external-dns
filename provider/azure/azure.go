@@ -39,14 +39,40 @@ const (
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
-	ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultIterator, err error)
+	ListByResourceGroupComplete(
+		ctx context.Context,
+		resourceGroupName string,
+		top *int32,
+	) (result dns.ZoneListResultIterator, err error)
 }
 
 // RecordSetsClient is an interface of dns.RecordSetsClient that can be stubbed for testing.
 type RecordSetsClient interface {
-	ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error)
-	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
-	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
+	ListAllByDNSZoneComplete(
+		ctx context.Context,
+		resourceGroupName string,
+		zoneName string,
+		top *int32,
+		recordSetNameSuffix string,
+	) (result dns.RecordSetListResultIterator, err error)
+	Delete(
+		ctx context.Context,
+		resourceGroupName string,
+		zoneName string,
+		relativeRecordSetName string,
+		recordType dns.RecordType,
+		ifMatch string,
+	) (result autorest.Response, err error)
+	CreateOrUpdate(
+		ctx context.Context,
+		resourceGroupName string,
+		zoneName string,
+		relativeRecordSetName string,
+		recordType dns.RecordType,
+		parameters dns.RecordSet,
+		ifMatch string,
+		ifNoneMatch string,
+	) (result dns.RecordSet, err error)
 }
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
@@ -65,10 +91,18 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
+func NewAzureProvider(
+	configFile string,
+	domainFilter endpoint.DomainFilter,
+	zoneNameFilter endpoint.DomainFilter,
+	zoneIDFilter provider.ZoneIDFilter,
+	resourceGroup string,
+	userAssignedIdentityClientID string,
+	dryRun bool,
+) (*AzureProvider, error) {
 	cfg, err := getConfig(configFile, resourceGroup, userAssignedIdentityClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
 	}
 
 	token, err := getAccessToken(*cfg, cfg.Environment)
@@ -120,7 +154,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 			}
 			targets := extractAzureTargets(&recordSet)
 			if len(targets) == 0 {
-				log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
+				log.Debugf("Failed to extract targets for %q with type %q.", name, recordType)
 				return true
 			}
 			var ttl endpoint.TTL
@@ -130,7 +164,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 
 			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
-				"Found %s record for '%s' with target '%s'.",
+				"Found %s record for %q with target %q.",
 				ep.RecordType,
 				ep.DNSName,
 				ep.Targets,
@@ -191,7 +225,7 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 }
 
 func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
-	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
+	log.Debugf("Retrieving Azure DNS records for zone %q.", zoneName)
 
 	recordSetsIterator, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
 	if err != nil {
@@ -229,7 +263,7 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 		if zone == "" {
 			if _, ok := ignored[change.DNSName]; !ok {
 				ignored[change.DNSName] = true
-				log.Infof("Ignoring changes to '%s' because a suitable Azure DNS zone was not found.", change.DNSName)
+				log.Infof("Ignoring changes to %q because a suitable Azure DNS zone was not found.", change.DNSName)
 			}
 			return
 		}
@@ -238,10 +272,6 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	}
 
 	for _, change := range changes.Delete {
-		mapChange(deleted, change)
-	}
-
-	for _, change := range changes.UpdateOld {
 		mapChange(deleted, change)
 	}
 
@@ -261,16 +291,19 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
 			if !p.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping deletion of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				log.Debugf(
+					"Skipping deletion of record %s because it was filtered out by the specified --domain-filter",
+					ep.DNSName,
+				)
 				continue
 			}
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
+				log.Infof("Would delete %s record named %q for Azure DNS zone %q.", ep.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
+				log.Infof("Deleting %s record named %q for Azure DNS zone %q.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), ""); err != nil {
 					log.Errorf(
-						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
+						"Failed to delete %s record named %q for Azure DNS zone %q: %v",
 						ep.RecordType,
 						name,
 						zone,
@@ -287,12 +320,15 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
 			if !p.domainFilter.Match(ep.DNSName) {
-				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				log.Debugf(
+					"Skipping update of record %s because it was filtered out by the specified --domain-filter",
+					ep.DNSName,
+				)
 				continue
 			}
 			if p.dryRun {
 				log.Infof(
-					"Would update %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+					"Would update %s record named %q to %q for Azure DNS zone %q.",
 					ep.RecordType,
 					name,
 					ep.Targets,
@@ -302,7 +338,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 			}
 
 			log.Infof(
-				"Updating %s record named '%s' to '%s' for Azure DNS zone '%s'.",
+				"Updating %s record named %q to %q for Azure DNS zone %q.",
 				ep.RecordType,
 				name,
 				ep.Targets,
@@ -324,7 +360,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
+					"Failed to update %s record named %q to %q for DNS zone %q: %v",
 					ep.RecordType,
 					name,
 					ep.Targets,
@@ -391,7 +427,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			},
 		}, nil
 	}
-	return dns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
+	return dns.RecordSet{}, fmt.Errorf("unsupported record type %q", endpoint.RecordType)
 }
 
 // Helper function (shared with test code)

@@ -34,14 +34,40 @@ import (
 
 // PrivateZonesClient is an interface of privatedns.PrivateZoneClient that can be stubbed for testing.
 type PrivateZonesClient interface {
-	ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result privatedns.PrivateZoneListResultIterator, err error)
+	ListByResourceGroupComplete(
+		ctx context.Context,
+		resourceGroupName string,
+		top *int32,
+	) (result privatedns.PrivateZoneListResultIterator, err error)
 }
 
 // PrivateRecordSetsClient is an interface of privatedns.RecordSetsClient that can be stubbed for testing.
 type PrivateRecordSetsClient interface {
-	ListComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result privatedns.RecordSetListResultIterator, err error)
-	Delete(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, ifMatch string) (result autorest.Response, err error)
-	CreateOrUpdate(ctx context.Context, resourceGroupName string, privateZoneName string, recordType privatedns.RecordType, relativeRecordSetName string, parameters privatedns.RecordSet, ifMatch string, ifNoneMatch string) (result privatedns.RecordSet, err error)
+	ListComplete(
+		ctx context.Context,
+		resourceGroupName string,
+		zoneName string,
+		top *int32,
+		recordSetNameSuffix string,
+	) (result privatedns.RecordSetListResultIterator, err error)
+	Delete(
+		ctx context.Context,
+		resourceGroupName string,
+		privateZoneName string,
+		recordType privatedns.RecordType,
+		relativeRecordSetName string,
+		ifMatch string,
+	) (result autorest.Response, err error)
+	CreateOrUpdate(
+		ctx context.Context,
+		resourceGroupName string,
+		privateZoneName string,
+		recordType privatedns.RecordType,
+		relativeRecordSetName string,
+		parameters privatedns.RecordSet,
+		ifMatch string,
+		ifNoneMatch string,
+	) (result privatedns.RecordSet, err error)
 }
 
 // AzurePrivateDNSProvider implements the DNS provider for Microsoft's Azure Private DNS service
@@ -59,10 +85,16 @@ type AzurePrivateDNSProvider struct {
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, resourceGroup, userAssignedIdentityClientID string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func NewAzurePrivateDNSProvider(
+	configFile string,
+	domainFilter endpoint.DomainFilter,
+	zoneIDFilter provider.ZoneIDFilter,
+	resourceGroup, userAssignedIdentityClientID string,
+	dryRun bool,
+) (*AzurePrivateDNSProvider, error) {
 	cfg, err := getConfig(configFile, resourceGroup, userAssignedIdentityClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
 	}
 
 	token, err := getAccessToken(*cfg, cfg.Environment)
@@ -95,7 +127,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 		return nil, err
 	}
 
-	log.Debugf("Retrieving Azure Private DNS Records for resource group '%s'", p.resourceGroup)
+	log.Debugf("Retrieving Azure Private DNS Records for resource group %q", p.resourceGroup)
 
 	for _, zone := range zones {
 		err := p.iterateRecords(ctx, *zone.Name, func(recordSet privatedns.RecordSet) {
@@ -115,7 +147,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 
 			targets := extractAzurePrivateDNSTargets(&recordSet)
 			if len(targets) == 0 {
-				log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
+				log.Debugf("Failed to extract targets for %q with type %q.", name, recordType)
 				return
 			}
 
@@ -126,7 +158,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 
 			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
 			log.Debugf(
-				"Found %s record for '%s' with target '%s'.",
+				"Found %s record for %q with target %q.",
 				ep.RecordType,
 				ep.DNSName,
 				ep.Targets,
@@ -138,7 +170,7 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 		}
 	}
 
-	log.Debugf("Returning %d Azure Private DNS Records for resource group '%s'", len(endpoints), p.resourceGroup)
+	log.Debugf("Returning %d Azure Private DNS Records for resource group %q", len(endpoints), p.resourceGroup)
 
 	return endpoints, nil
 }
@@ -147,7 +179,10 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 //
 // Returns nil if the operation was successful or an error if the operation failed.
 func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("Received %d changes to process", len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew)+len(changes.UpdateOld))
+	log.Debugf(
+		"Received %d changes to process",
+		len(changes.Create)+len(changes.Delete)+len(changes.UpdateNew)+len(changes.UpdateOld),
+	)
 
 	zones, err := p.zones(ctx)
 	if err != nil {
@@ -161,7 +196,7 @@ func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *pla
 }
 
 func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.PrivateZone, error) {
-	log.Debugf("Retrieving Azure Private DNS zones for Resource Group '%s'", p.resourceGroup)
+	log.Debugf("Retrieving Azure Private DNS zones for Resource Group %q", p.resourceGroup)
 
 	var zones []privatedns.PrivateZone
 
@@ -188,8 +223,12 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 	return zones, nil
 }
 
-func (p *AzurePrivateDNSProvider) iterateRecords(ctx context.Context, zoneName string, callback func(privatedns.RecordSet)) error {
-	log.Debugf("Retrieving Azure Private DNS Records for zone '%s'.", zoneName)
+func (p *AzurePrivateDNSProvider) iterateRecords(
+	ctx context.Context,
+	zoneName string,
+	callback func(privatedns.RecordSet),
+) error {
+	log.Debugf("Retrieving Azure Private DNS Records for zone %q.", zoneName)
 
 	i, err := p.recordSetsClient.ListComplete(ctx, p.resourceGroup, zoneName, nil, "")
 	if err != nil {
@@ -210,7 +249,10 @@ func (p *AzurePrivateDNSProvider) iterateRecords(ctx context.Context, zoneName s
 
 type azurePrivateDNSChangeMap map[string][]*endpoint.Endpoint
 
-func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, changes *plan.Changes) (azurePrivateDNSChangeMap, azurePrivateDNSChangeMap) {
+func (p *AzurePrivateDNSProvider) mapChanges(
+	zones []privatedns.PrivateZone,
+	changes *plan.Changes,
+) (azurePrivateDNSChangeMap, azurePrivateDNSChangeMap) {
 	ignored := map[string]bool{}
 	deleted := azurePrivateDNSChangeMap{}
 	updated := azurePrivateDNSChangeMap{}
@@ -225,7 +267,7 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 		if zone == "" {
 			if _, ok := ignored[change.DNSName]; !ok {
 				ignored[change.DNSName] = true
-				log.Infof("Ignoring changes to '%s' because a suitable Azure Private DNS zone was not found.", change.DNSName)
+				log.Infof("Ignoring changes to %q because a suitable Azure Private DNS zone was not found.", change.DNSName)
 			}
 			return
 		}
@@ -234,10 +276,6 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 	}
 
 	for _, change := range changes.Delete {
-		mapChange(deleted, change)
-	}
-
-	for _, change := range changes.UpdateOld {
 		mapChange(deleted, change)
 	}
 
@@ -258,12 +296,12 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
 			if p.dryRun {
-				log.Infof("Would delete %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
+				log.Infof("Would delete %s record named %q for Azure Private DNS zone %q.", ep.RecordType, name, zone)
 			} else {
-				log.Infof("Deleting %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
+				log.Infof("Deleting %s record named %q for Azure Private DNS zone %q.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(ep.RecordType), name, ""); err != nil {
 					log.Errorf(
-						"Failed to delete %s record named '%s' for Azure Private DNS zone '%s': %v",
+						"Failed to delete %s record named %q for Azure Private DNS zone %q: %v",
 						ep.RecordType,
 						name,
 						zone,
@@ -282,7 +320,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			name := p.recordSetNameForZone(zone, ep)
 			if p.dryRun {
 				log.Infof(
-					"Would update %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
+					"Would update %s record named %q to %q for Azure Private DNS zone %q.",
 					ep.RecordType,
 					name,
 					ep.Targets,
@@ -292,7 +330,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 
 			log.Infof(
-				"Updating %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
+				"Updating %s record named %q to %q for Azure Private DNS zone %q.",
 				ep.RecordType,
 				name,
 				ep.Targets,
@@ -314,7 +352,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
+					"Failed to update %s record named %q to %q for Azure Private DNS zone %q: %v",
 					ep.RecordType,
 					name,
 					ep.Targets,
@@ -381,7 +419,7 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 			},
 		}, nil
 	}
-	return privatedns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
+	return privatedns.RecordSet{}, fmt.Errorf("unsupported record type %q", endpoint.RecordType)
 }
 
 // Helper function (shared with test code)
