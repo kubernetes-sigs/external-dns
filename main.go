@@ -67,6 +67,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/rfc2136"
 	"sigs.k8s.io/external-dns/provider/safedns"
 	"sigs.k8s.io/external-dns/provider/scaleway"
+	"sigs.k8s.io/external-dns/provider/stackpath"
 	"sigs.k8s.io/external-dns/provider/tencentcloud"
 	"sigs.k8s.io/external-dns/provider/transip"
 	"sigs.k8s.io/external-dns/provider/ultradns"
@@ -326,6 +327,7 @@ func main() {
 				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
 				DryRun:        cfg.DryRun,
 				MinTTLSeconds: cfg.NS1MinTTLSeconds,
+				OwnerID:       cfg.TXTOwnerID,
 			},
 		)
 	case "transip":
@@ -348,6 +350,16 @@ func main() {
 		)
 	case "ibmcloud":
 		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
+	case "stackpath":
+		p, err = stackpath.NewStackPathProvider(
+			stackpath.StackPathConfig{
+				Context:      ctx,
+				DomainFilter: domainFilter,
+				ZoneIDFilter: zoneIDFilter,
+				OwnerID:      cfg.TXTOwnerID,
+				DryRun:       cfg.DryRun,
+			},
+		)
 	case "safedns":
 		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
 	case "plural":
