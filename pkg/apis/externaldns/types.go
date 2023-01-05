@@ -105,6 +105,7 @@ type Config struct {
 	BluecatDNSDeployType              string
 	BluecatSkipTLSVerify              bool
 	CloudflareProxied                 bool
+	CloudflareDNSRecordsPerPage       int
 	CoreDNSPrefix                     string
 	RcodezeroTXTEncrypt               bool
 	AkamaiServiceConsumerDomain       string
@@ -252,6 +253,7 @@ var defaultConfig = &Config{
 	BluecatConfigFile:           "/etc/kubernetes/bluecat.json",
 	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
+	CloudflareDNSRecordsPerPage: 100,
 	CoreDNSPrefix:               "/skydns/",
 	RcodezeroTXTEncrypt:         false,
 	AkamaiServiceConsumerDomain: "",
@@ -470,6 +472,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("bluecat-dns-deploy-type", "When using the Bluecat provider, specify the type of DNS deployment to initiate after records are updated. Valid options are 'full-deploy' and 'no-deploy'. Deploy will only execute if --bluecat-dns-server-name is set (optional when --provider=bluecat)").Default(defaultConfig.BluecatDNSDeployType).StringVar(&cfg.BluecatDNSDeployType)
 
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
+	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)

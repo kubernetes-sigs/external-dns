@@ -155,12 +155,12 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 		}
 	}
 
-	if len(result) == 0 {
+	if len(result) == 0 || rp.PerPage == 0 {
 		return result, &cloudflare.ResultInfo{Page: 1, TotalPages: 1, Count: 0, Total: 0}, nil
 	}
 
 	// if not pagination options were passed in, return the result as is
-	if rp.Page == 0 && rp.PerPage == 0 {
+	if rp.Page == 0 {
 		return result, &cloudflare.ResultInfo{Page: 1, TotalPages: 1, Count: len(result), Total: len(result)}, nil
 	}
 
@@ -640,10 +640,10 @@ func TestCloudflareRecords(t *testing.T) {
 		"001": ExampleDomain,
 	})
 
-	// change the defaultListDNSRecordsPerPage value to 1 test the pagination behaviour
-	defaultListDNSRecordsPerPage = 1
+	// Set DNSRecordsPerPage to 1 test the pagination behaviour
 	provider := &CloudFlareProvider{
-		Client: client,
+		Client:            client,
+		DNSRecordsPerPage: 1,
 	}
 	ctx := context.Background()
 
@@ -672,7 +672,8 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		false,
-		true)
+		true,
+		5000)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -683,7 +684,8 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		false,
-		true)
+		true,
+		5000)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -693,7 +695,8 @@ func TestCloudflareProvider(t *testing.T) {
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
 		false,
-		true)
+		true,
+		5000)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

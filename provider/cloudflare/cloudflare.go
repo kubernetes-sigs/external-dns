@@ -60,8 +60,6 @@ var recordTypeProxyNotSupported = map[string]bool{
 	"SRV": true,
 }
 
-var defaultListDNSRecordsPerPage int = 100
-
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
 	UserDetails(ctx context.Context) (cloudflare.User, error)
@@ -120,10 +118,11 @@ type CloudFlareProvider struct {
 	provider.BaseProvider
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter     endpoint.DomainFilter
-	zoneIDFilter     provider.ZoneIDFilter
-	proxiedByDefault bool
-	DryRun           bool
+	domainFilter      endpoint.DomainFilter
+	zoneIDFilter      provider.ZoneIDFilter
+	proxiedByDefault  bool
+	DryRun            bool
+	DNSRecordsPerPage int
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -149,7 +148,7 @@ func getRecordParam[T RecordParamsTypes](cfc cloudFlareChange) T {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -165,11 +164,12 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	}
 	provider := &CloudFlareProvider{
 		// Client: config,
-		Client:           zoneService{config},
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		proxiedByDefault: proxiedByDefault,
-		DryRun:           dryRun,
+		Client:            zoneService{config},
+		domainFilter:      domainFilter,
+		zoneIDFilter:      zoneIDFilter,
+		proxiedByDefault:  proxiedByDefault,
+		DryRun:            dryRun,
+		DNSRecordsPerPage: dnsRecordsPerPage,
 	}
 	return provider, nil
 }
@@ -419,7 +419,7 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 // listDNSRecords performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
 func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
 	var records []cloudflare.DNSRecord
-	resultInfo := cloudflare.ResultInfo{PerPage: defaultListDNSRecordsPerPage, Page: 1}
+	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
 	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
