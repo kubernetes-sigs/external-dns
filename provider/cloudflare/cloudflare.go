@@ -118,11 +118,10 @@ type CloudFlareProvider struct {
 	provider.BaseProvider
 	Client cloudFlareDNS
 	// only consider hosted zones managing domains ending in this suffix
-	domainFilter      endpoint.DomainFilter
-	zoneIDFilter      provider.ZoneIDFilter
-	proxiedByDefault  bool
-	DryRun            bool
-	PaginationOptions cloudflare.PaginationOptions
+	domainFilter     endpoint.DomainFilter
+	zoneIDFilter     provider.ZoneIDFilter
+	proxiedByDefault bool
+	DryRun           bool
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -148,7 +147,7 @@ func getRecordParam[T RecordParamsTypes](cfc cloudFlareChange) T {
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -169,10 +168,6 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		zoneIDFilter:     zoneIDFilter,
 		proxiedByDefault: proxiedByDefault,
 		DryRun:           dryRun,
-		PaginationOptions: cloudflare.PaginationOptions{
-			PerPage: zonesPerPage,
-			Page:    1,
-		},
 	}
 	return provider, nil
 }
@@ -180,7 +175,6 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 // Zones returns the list of hosted zones.
 func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
-	p.PaginationOptions.Page = 1
 
 	// if there is a zoneIDfilter configured
 	// && if the filter isn't just a blank string (used in tests)

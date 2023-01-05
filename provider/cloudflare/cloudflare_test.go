@@ -640,7 +640,6 @@ func TestCloudflareProvider(t *testing.T) {
 	_, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		25,
 		false,
 		true)
 	if err != nil {
@@ -652,7 +651,6 @@ func TestCloudflareProvider(t *testing.T) {
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		1,
 		false,
 		true)
 	if err != nil {
@@ -663,7 +661,6 @@ func TestCloudflareProvider(t *testing.T) {
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		50,
 		false,
 		true)
 	if err == nil {
