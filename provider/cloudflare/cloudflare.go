@@ -60,6 +60,8 @@ var recordTypeProxyNotSupported = map[string]bool{
 	"SRV": true,
 }
 
+var defaultListDNSRecordsPerPage int = 100
+
 // cloudFlareDNS is the subset of the CloudFlare API that we actually use.  Add methods as required. Signatures must match exactly.
 type cloudFlareDNS interface {
 	UserDetails(ctx context.Context) (cloudflare.User, error)
@@ -223,7 +225,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
-		records, _, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zone.ID), cloudflare.ListDNSRecordsParams{})
+		records, err := p.listDNSRecordsWithAutoPagination(ctx, zone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -297,7 +299,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	changesByZone := p.changesByZone(zones, changes)
 
 	for zoneID, changes := range changesByZone {
-		records, _, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), cloudflare.ListDNSRecordsParams{})
+		records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 		if err != nil {
 			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
@@ -412,6 +414,26 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 			Content: target,
 		},
 	}
+}
+
+// listDNSRecords performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
+func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
+	var records []cloudflare.DNSRecord
+	resultInfo := cloudflare.ResultInfo{PerPage: defaultListDNSRecordsPerPage, Page: 1}
+	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
+	for {
+		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
+		if err != nil {
+			return nil, err
+		}
+
+		records = append(records, pageRecords...)
+		params.ResultInfo = resultInfo.Next()
+		if params.ResultInfo.Done() {
+			break
+		}
+	}
+	return records, nil
 }
 
 func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
