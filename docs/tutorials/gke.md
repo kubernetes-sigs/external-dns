@@ -447,7 +447,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: nginx-svc
+                name: nginx
                 port:
                   number: 80
 ```
