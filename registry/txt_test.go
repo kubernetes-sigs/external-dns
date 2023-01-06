@@ -1169,6 +1169,23 @@ func TestGenerateTXT(t *testing.T) {
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
+func TestFailGenerateTXT(t *testing.T) {
+
+	cnameRecord := &endpoint.Endpoint{
+		DNSName:    "foo-some-really-big-name-not-supported-and-will-fail-000000000000000000.test-zone.example.org",
+		Targets:    endpoint.Targets{"new-foo.loadbalancer.com"},
+		RecordType: endpoint.RecordTypeCNAME,
+		Labels:     map[string]string{},
+	}
+	// A bad DNS name returns empty expected TXT
+	expectedTXT := []*endpoint.Endpoint{}
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{})
+	gotTXT := r.generateTXTRecord(cnameRecord)
+	assert.Equal(t, expectedTXT, gotTXT)
+}
+
 /**
 
 helper methods

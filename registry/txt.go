@@ -191,19 +191,26 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	if r.RecordType == endpoint.RecordTypeTXT {
 		return nil
 	}
+
+	endpoints := make([]*endpoint.Endpoint, 0)
+
 	// old TXT record format
-	txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true)).WithSetIdentifier(r.SetIdentifier)
-	txt.ProviderSpecific = r.ProviderSpecific
+	txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
+	if txt != nil {
+		txt.WithSetIdentifier(r.SetIdentifier)
+		txt.ProviderSpecific = r.ProviderSpecific
+		endpoints = append(endpoints, txt)
+	}
+
 	// new TXT record format (containing record type)
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.ProviderSpecific = r.ProviderSpecific
-	} else {
-		return []*endpoint.Endpoint{txt}
+		endpoints = append(endpoints, txtNew)
 	}
 
-	return []*endpoint.Endpoint{txt, txtNew}
+	return endpoints
 }
 
 // ApplyChanges updates dns provider with the changes
