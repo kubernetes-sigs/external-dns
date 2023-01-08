@@ -28,7 +28,6 @@ require (
 	github.com/exoscale/egoscale v1.19.0
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.5.0
-	github.com/golang/sync v0.0.0-20180314180146-1d60e4601c6f
 	github.com/google/go-cmp v0.5.9
 	github.com/gophercloud/gophercloud v0.25.0
 	github.com/hooklift/gowsdl v0.5.0
