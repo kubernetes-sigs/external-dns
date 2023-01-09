@@ -49,6 +49,12 @@ type PiholeConfig struct {
 	DryRun bool
 }
 
+// Helper struct for de-duping DNS entry updates.
+type piholeEntryKey struct {
+	Target     string
+	RecordType string
+}
+
 // NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
 func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	api, err := newPiholeClient(cfg)
@@ -82,17 +88,19 @@ func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	}
 
 	// Handle updated state - there are no endpoints for updating in place.
-	updateNew := make(map[string]*endpoint.Endpoint)
+	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
 	for _, ep := range changes.UpdateNew {
-		updateNew[ep.DNSName] = ep
+		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+		updateNew[key] = ep
 	}
 
 	for _, ep := range changes.UpdateOld {
-		// Check if this existing entry has an exact match for an updated entry, and skip it if so.
-		if newRecord := updateNew[ep.DNSName]; newRecord != nil {
-			// PiHole only has a single target and a record type, no need to compare other fields.
-			if newRecord.Targets.String() == ep.Targets.String() && newRecord.RecordType == ep.RecordType {
-				delete(updateNew, ep.DNSName)
+		// Check if this existing entry has an exact match for an updated entry and skip it if so.
+		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+		if newRecord := updateNew[key]; newRecord != nil {
+			// PiHole only has a single target; no need to compare other fields.
+			if newRecord.Targets[0] == ep.Targets[0] {
+				delete(updateNew, key)
 				continue
 			}
 		}
