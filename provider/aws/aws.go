@@ -435,6 +435,38 @@ func (p *AWSProvider) UpdateRecords(ctx context.Context, updates, current []*end
 	return p.submitChanges(ctx, p.createUpdateChanges(updates, current), zones)
 }
 
+// Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
+func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint.Endpoint) bool {
+	// a change of record type
+	if old.RecordType != new.RecordType {
+		return true
+	}
+
+	// an ALIAS record change to/from a CNAME
+	if old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME) {
+		return true
+	}
+
+	// a set identifier change
+	if old.SetIdentifier != new.SetIdentifier {
+		return true
+	}
+
+	// a change of routing policy
+	// default to true for geolocation properties if any geolocation property exists in old/new but not the other
+	for _, propType := range [7]string{providerSpecificWeight, providerSpecificRegion, providerSpecificFailover,
+		providerSpecificFailover, providerSpecificGeolocationContinentCode, providerSpecificGeolocationCountryCode,
+		providerSpecificGeolocationSubdivisionCode} {
+		_, oldPolicy := old.GetProviderSpecificProperty(propType)
+		_, newPolicy := new.GetProviderSpecificProperty(propType)
+		if oldPolicy != newPolicy {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint.Endpoint) []*route53.Change {
 	var deletes []*endpoint.Endpoint
 	var creates []*endpoint.Endpoint
@@ -442,10 +474,7 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 
 	for i, new := range newEndpoints {
 		old := oldEndpoints[i]
-		if new.RecordType != old.RecordType ||
-			// Handle the case where an AWS ALIAS record is changing to/from a CNAME.
-			(old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME)) {
-			// The record type changed, so UPSERT will fail. Instead perform a DELETE followed by a CREATE.
+		if p.requiresDeleteCreate(old, new) {
 			deletes = append(deletes, old)
 			creates = append(creates, new)
 		} else {
