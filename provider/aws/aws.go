@@ -437,7 +437,6 @@ func (p *AWSProvider) UpdateRecords(ctx context.Context, updates, current []*end
 
 // Identify if old and new endpoints require DELETE/CREATE instead of UPDATE.
 func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint.Endpoint) bool {
-
 	// a change of record type
 	if old.RecordType != new.RecordType {
 		return true
@@ -448,21 +447,21 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint
 		return true
 	}
 
+	// a set identifier change
+	if old.SetIdentifier != new.SetIdentifier {
+		return true
+	}
+
 	// a change of routing policy
 	// default to true for geolocation properties if any geolocation property exists in old/new but not the other
 	for _, propType := range [7]string{providerSpecificWeight, providerSpecificRegion, providerSpecificFailover,
 		providerSpecificFailover, providerSpecificGeolocationContinentCode, providerSpecificGeolocationCountryCode,
 		providerSpecificGeolocationSubdivisionCode} {
 		_, oldPolicy := old.GetProviderSpecificProperty(propType)
-		_, newPolicy := old.GetProviderSpecificProperty(propType)
+		_, newPolicy := new.GetProviderSpecificProperty(propType)
 		if oldPolicy != newPolicy {
 			return true
 		}
-	}
-
-	// a set identifier change
-	if old.SetIdentifier != new.SetIdentifier {
-		return true
 	}
 
 	return false
