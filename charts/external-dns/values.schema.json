@@ -26,6 +26,14 @@
           }
         }
       }
+    },
+    "secretEnvConfiguration": {
+      "type": "object",
+      "properties": {
+        "secretName": {
+          "type": "string"
+        }
+      }
     }
   }
 }

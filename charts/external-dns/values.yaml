@@ -138,5 +138,9 @@ secretConfiguration:
     #   aws_access_key_id = $SECRET_ACCESS_KEY
     #   aws_secret_access_key = $SECRET_ACCESS_KEY
 
+secretEnvConfiguration:
+  enabled: false
+  secretName: ""
+
 deploymentStrategy:
   type: Recreate

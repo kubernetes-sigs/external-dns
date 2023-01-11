@@ -66,6 +66,13 @@ spec:
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if .Values.secretEnvConfiguration.enabled }}
+          {{- with .Values.secretEnvConfiguration }}
+          envFrom:
+            - secretRef:
+                name: {{ .secretName }}
+          {{- end }}
+          {{- end }}
           args:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
