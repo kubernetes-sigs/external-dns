@@ -138,6 +138,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	for _, dnsEndpoint := range result.Items {
+		providerSpecific, setIdentifier := getProviderSpecificAnnotations(dnsEndpoint.Annotations)
+
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
@@ -162,7 +164,12 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				ep.Labels = endpoint.NewLabels()
 			}
 
-			crdEndpoints = append(crdEndpoints, ep)
+			// The endpointsForHostname function only works with CNAME and A records.
+			if ep.RecordType == "CNAME" || ep.RecordType == "A" {
+				crdEndpoints = append(crdEndpoints, endpointsForHostname(ep.DNSName, ep.Targets, ep.RecordTTL, providerSpecific, setIdentifier)...)
+			} else {
+				crdEndpoints = append(crdEndpoints, ep)
+			}
 		}
 
 		cs.setResourceLabel(&dnsEndpoint, crdEndpoints)
