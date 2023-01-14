@@ -1,0 +1,3058 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="external-dns maintainers">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.2.8">
+    
+    
+      
+        <title>Setting up ExternalDNS for Services on AWS - external-dns</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.644de097.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#setting-up-externaldns-for-services-on-aws" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="external-dns" class="md-header__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            external-dns
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Setting up ExternalDNS for Services on AWS
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../ANS_Group_SafeDNS/" class="md-tabs__link md-tabs__link--active">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../initial-design/" class="md-tabs__link">
+        Advanced Topics
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CONTRIBUTING/" class="md-tabs__link">
+        Contributing
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        About
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="external-dns" class="md-nav__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    external-dns
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ANS_Group_SafeDNS/" class="md-nav__link">
+        Setting up ExternalDNS for Services on ANS Group's SafeDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../akamai-edgedns/" class="md-nav__link">
+        Setting up External-DNS for Services on Akamai Edge DNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../alibabacloud/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-load-balancer-controller/" class="md-nav__link">
+        Using ExternalDNS with aws-load-balancer-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-sd/" class="md-nav__link">
+        Setting up ExternalDNS using AWS Cloud Map API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Setting up ExternalDNS for Services on AWS
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Setting up ExternalDNS for Services on AWS
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#iam-policy" class="md-nav__link">
+    IAM Policy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provisioning-a-kubernetes-cluster" class="md-nav__link">
+    Provisioning a Kubernetes cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permissions-to-modify-dns-zone" class="md-nav__link">
+    Permissions to modify DNS zone
+  </a>
+  
+    <nav class="md-nav" aria-label="Permissions to modify DNS zone">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-iam-role" class="md-nav__link">
+    Node IAM Role
+  </a>
+  
+    <nav class="md-nav" aria-label="Node IAM Role">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-the-node-iam-role-name" class="md-nav__link">
+    Get the Node IAM role name
+  </a>
+  
+    <nav class="md-nav" aria-label="Get the Node IAM role name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-role-name-with-a-single-managed-nodegroup" class="md-nav__link">
+    Get role name with a single managed nodegroup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-role-name-with-other-configurations" class="md-nav__link">
+    Get role name with other configurations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-with-attached-policy-to-node-iam-role" class="md-nav__link">
+    Deploy ExternalDNS with attached policy to Node IAM Role
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-credentials" class="md-nav__link">
+    Static credentials
+  </a>
+  
+    <nav class="md-nav" aria-label="Static credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-iam-user-and-attach-the-policy" class="md-nav__link">
+    Create IAM user and attach the policy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-the-static-credentials" class="md-nav__link">
+    Create the static credentials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-kubernetes-secret-from-credentials" class="md-nav__link">
+    Create Kubernetes secret from credentials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-using-static-credentials" class="md-nav__link">
+    Deploy ExternalDNS using static credentials
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-roles-for-service-accounts" class="md-nav__link">
+    IAM Roles for Service Accounts
+  </a>
+  
+    <nav class="md-nav" aria-label="IAM Roles for Service Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-oidc-is-supported" class="md-nav__link">
+    Verify OIDC is supported
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#associate-oidc-to-cluster" class="md-nav__link">
+    Associate OIDC to cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-an-iam-role-bound-to-a-service-account" class="md-nav__link">
+    Create an IAM role bound to a service account
+  </a>
+  
+    <nav class="md-nav" aria-label="Create an IAM role bound to a service account">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-eksctl-with-eksctl-created-eks-cluster" class="md-nav__link">
+    Use eksctl with eksctl created EKS cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-aws-cli-with-any-eks-cluster" class="md-nav__link">
+    Use aws cli with any EKS cluster
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-using-irsa" class="md-nav__link">
+    Deploy ExternalDNS using IRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-up-a-hosted-zone" class="md-nav__link">
+    Set up a hosted zone
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-externaldns" class="md-nav__link">
+    Deploy ExternalDNS
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy ExternalDNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-without-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters without RBAC enabled)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    Arguments
+  </a>
+  
+    <nav class="md-nav" aria-label="Arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-zone-type" class="md-nav__link">
+    aws-zone-type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#annotations" class="md-nav__link">
+    Annotations
+  </a>
+  
+    <nav class="md-nav" aria-label="Annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alias" class="md-nav__link">
+    alias
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-externaldns-works-service-example" class="md-nav__link">
+    Verify ExternalDNS works (Service example)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-externaldns-works-ingress-example" class="md-nav__link">
+    Verify ExternalDNS works (Ingress example)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-service-annotation-options" class="md-nav__link">
+    More service annotation options
+  </a>
+  
+    <nav class="md-nav" aria-label="More service annotation options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-ttl" class="md-nav__link">
+    Custom TTL
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routing-policies" class="md-nav__link">
+    Routing policies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#associating-dns-records-with-healthchecks" class="md-nav__link">
+    Associating DNS records with healthchecks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#govcloud-caveats" class="md-nav__link">
+    Govcloud caveats
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throttling" class="md-nav__link">
+    Throttling
+  </a>
+  
+    <nav class="md-nav" aria-label="Throttling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eks" class="md-nav__link">
+    EKS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure-private-dns/" class="md-nav__link">
+        Set up ExternalDNS for Azure Private DNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Azure
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bluecat/" class="md-nav__link">
+        Setting up external-dns for BlueCat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civo/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Civo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudflare/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Cloudflare
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contour/" class="md-nav__link">
+        Setting up External DNS with Contour
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coredns/" class="md-nav__link">
+        Setting up ExternalDNS for CoreDNS with minikube
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../designate/" class="md-nav__link">
+        Setting up ExternalDNS for Services on OpenStack Designate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digitalocean/" class="md-nav__link">
+        Setting up ExternalDNS for Services on DigitalOcean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dnsimple/" class="md-nav__link">
+        Setting up ExternalDNS for Services on DNSimple
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dyn/" class="md-nav__link">
+        Setting up ExternalDNS for Dyn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exoscale/" class="md-nav__link">
+        Setting up ExternalDNS for Exoscale
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../externalname/" class="md-nav__link">
+        Setting up ExternalDNS for ExternalName Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gandi/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Gandi
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gateway-api/" class="md-nav__link">
+        Configuring ExternalDNS to use Gateway API Route Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gke/" class="md-nav__link">
+        Setting up ExternalDNS on Google Kubernetes Engine
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gloo-proxy/" class="md-nav__link">
+        Configuring ExternalDNS to use the Gloo Proxy Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../godaddy/" class="md-nav__link">
+        Setting up ExternalDNS for Services on GoDaddy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hostport/" class="md-nav__link">
+        Setting up ExternalDNS for Headless Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibmcloud/" class="md-nav__link">
+        Setting up ExternalDNS for Services on IBMCloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../infoblox/" class="md-nav__link">
+        Setting up ExternalDNS for Infoblox
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Configuring ExternalDNS to use the Istio Gateway and/or Istio Virtual Service Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kong/" class="md-nav__link">
+        Configuring ExternalDNS to use the Kong TCPIngress Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kops-dns-controller/" class="md-nav__link">
+        kOps dns-controller compatibility mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kube-ingress-aws/" class="md-nav__link">
+        Using ExternalDNS with kube-ingress-aws-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../linode/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Linode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nginx-ingress/" class="md-nav__link">
+        Setting up ExternalDNS on GKE with nginx-ingress-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nodes/" class="md-nav__link">
+        Configuring ExternalDNS to use Cluster Nodes as Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ns-record/" class="md-nav__link">
+        Creating NS record with CRD source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ns1/" class="md-nav__link">
+        Setting up ExternalDNS for Services on NS1
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openshift/" class="md-nav__link">
+        Configuring ExternalDNS to use the OpenShift Route Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oracle/" class="md-nav__link">
+        Setting up ExternalDNS for Oracle Cloud Infrastructure (OCI)
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ovh/" class="md-nav__link">
+        Setting up ExternalDNS for Services on OVH
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pdns/" class="md-nav__link">
+        Setting up ExternalDNS for PowerDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pihole/" class="md-nav__link">
+        Setting up ExternalDNS for Pi-hole
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plural/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Plural
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../public-private-route53/" class="md-nav__link">
+        Setting up ExternalDNS using the same domain for public and private Route53 zones
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rcodezero/" class="md-nav__link">
+        Setting up ExternalDNS for Services on RcodeZero
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdns/" class="md-nav__link">
+        Setting up ExternalDNS for RancherDNS(RDNS) with kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfc2136/" class="md-nav__link">
+        Configuring RFC2136 provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scaleway/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Scaleway
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-context/" class="md-nav__link">
+        Running ExternalDNS with limited privileges
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tencentcloud/" class="md-nav__link">
+        Setting up ExternalDNS for Tencent Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transip/" class="md-nav__link">
+        Setting up ExternalDNS for Services on TransIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ultradns/" class="md-nav__link">
+        Setting up ExternalDNS for Services on UltraDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vinyldns/" class="md-nav__link">
+        Setting up ExternalDNS for VinylDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vultr/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Vultr
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../initial-design/" class="md-nav__link">
+        Initial Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ttl/" class="md-nav__link">
+        TTL
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Contributing
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Contributing" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Contributing
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        Kubernetes Contributions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release/" class="md-nav__link">
+        Release
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/chart/" class="md-nav__link">
+        Helm Chart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/crd-source/" class="md-nav__link">
+        CRD Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/getting-started/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/sources-and-providers/" class="md-nav__link">
+        Sources and Providers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          About
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="About" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          About
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../20190708-external-dns-incubator/" class="md-nav__link">
+        Out of Incubator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code-of-conduct/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../LICENSE/" class="md-nav__link">
+        License
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#iam-policy" class="md-nav__link">
+    IAM Policy
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provisioning-a-kubernetes-cluster" class="md-nav__link">
+    Provisioning a Kubernetes cluster
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permissions-to-modify-dns-zone" class="md-nav__link">
+    Permissions to modify DNS zone
+  </a>
+  
+    <nav class="md-nav" aria-label="Permissions to modify DNS zone">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#node-iam-role" class="md-nav__link">
+    Node IAM Role
+  </a>
+  
+    <nav class="md-nav" aria-label="Node IAM Role">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-the-node-iam-role-name" class="md-nav__link">
+    Get the Node IAM role name
+  </a>
+  
+    <nav class="md-nav" aria-label="Get the Node IAM role name">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-role-name-with-a-single-managed-nodegroup" class="md-nav__link">
+    Get role name with a single managed nodegroup
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-role-name-with-other-configurations" class="md-nav__link">
+    Get role name with other configurations
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-with-attached-policy-to-node-iam-role" class="md-nav__link">
+    Deploy ExternalDNS with attached policy to Node IAM Role
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-credentials" class="md-nav__link">
+    Static credentials
+  </a>
+  
+    <nav class="md-nav" aria-label="Static credentials">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-iam-user-and-attach-the-policy" class="md-nav__link">
+    Create IAM user and attach the policy
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-the-static-credentials" class="md-nav__link">
+    Create the static credentials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-kubernetes-secret-from-credentials" class="md-nav__link">
+    Create Kubernetes secret from credentials
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-using-static-credentials" class="md-nav__link">
+    Deploy ExternalDNS using static credentials
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#iam-roles-for-service-accounts" class="md-nav__link">
+    IAM Roles for Service Accounts
+  </a>
+  
+    <nav class="md-nav" aria-label="IAM Roles for Service Accounts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#verify-oidc-is-supported" class="md-nav__link">
+    Verify OIDC is supported
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#associate-oidc-to-cluster" class="md-nav__link">
+    Associate OIDC to cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-an-iam-role-bound-to-a-service-account" class="md-nav__link">
+    Create an IAM role bound to a service account
+  </a>
+  
+    <nav class="md-nav" aria-label="Create an IAM role bound to a service account">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-eksctl-with-eksctl-created-eks-cluster" class="md-nav__link">
+    Use eksctl with eksctl created EKS cluster
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-aws-cli-with-any-eks-cluster" class="md-nav__link">
+    Use aws cli with any EKS cluster
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-externaldns-using-irsa" class="md-nav__link">
+    Deploy ExternalDNS using IRSA
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#set-up-a-hosted-zone" class="md-nav__link">
+    Set up a hosted zone
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-externaldns" class="md-nav__link">
+    Deploy ExternalDNS
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy ExternalDNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-without-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters without RBAC enabled)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    Arguments
+  </a>
+  
+    <nav class="md-nav" aria-label="Arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aws-zone-type" class="md-nav__link">
+    aws-zone-type
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#annotations" class="md-nav__link">
+    Annotations
+  </a>
+  
+    <nav class="md-nav" aria-label="Annotations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#alias" class="md-nav__link">
+    alias
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-externaldns-works-service-example" class="md-nav__link">
+    Verify ExternalDNS works (Service example)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verify-externaldns-works-ingress-example" class="md-nav__link">
+    Verify ExternalDNS works (Ingress example)
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-service-annotation-options" class="md-nav__link">
+    More service annotation options
+  </a>
+  
+    <nav class="md-nav" aria-label="More service annotation options">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-ttl" class="md-nav__link">
+    Custom TTL
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#routing-policies" class="md-nav__link">
+    Routing policies
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#associating-dns-records-with-healthchecks" class="md-nav__link">
+    Associating DNS records with healthchecks
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#govcloud-caveats" class="md-nav__link">
+    Govcloud caveats
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clean-up" class="md-nav__link">
+    Clean up
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throttling" class="md-nav__link">
+    Throttling
+  </a>
+  
+    <nav class="md-nav" aria-label="Throttling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#eks" class="md-nav__link">
+    EKS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/kubernetes-sigs/external-dns/edit/master/docs/tutorials/aws.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="setting-up-externaldns-for-services-on-aws">Setting up ExternalDNS for Services on AWS<a class="headerlink" href="#setting-up-externaldns-for-services-on-aws" title="Permanent link">&para;</a></h1>
+<p>This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use <strong>&gt;=0.11.0</strong> version of ExternalDNS for this tutorial</p>
+<h2 id="iam-policy">IAM Policy<a class="headerlink" href="#iam-policy" title="Permanent link">&para;</a></h2>
+<p>The following IAM Policy document allows ExternalDNS to update Route53 Resource<br />
+Record Sets and Hosted Zones. You&rsquo;ll want to create this Policy in IAM first. In<br />
+our example, we&rsquo;ll call the policy <code>AllowExternalDNSUpdates</code> (but you can call<br />
+it whatever you prefer).</p>
+<p>If you prefer, you may fine-tune the policy to permit updates only to explicit<br />
+Hosted Zone IDs.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="p">{</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="nt">&quot;Version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2012-10-17&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="nt">&quot;Statement&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">        </span><span class="s2">&quot;route53:ChangeResourceRecordSets&quot;</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">        </span><span class="s2">&quot;arn:aws:route53:::hostedzone/*&quot;</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">      </span><span class="p">]</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="p">},</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">      </span><span class="nt">&quot;Effect&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Allow&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">      </span><span class="nt">&quot;Action&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">        </span><span class="s2">&quot;route53:ListHostedZones&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">        </span><span class="s2">&quot;route53:ListResourceRecordSets&quot;</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">      </span><span class="p">],</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">      </span><span class="nt">&quot;Resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">        </span><span class="s2">&quot;*&quot;</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="w">      </span><span class="p">]</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="w">  </span><span class="p">]</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">}</span>
+</code></pre></div>
+<p>If you are using the AWS CLI, you can run the following to install the above policy (saved as <code>policy.json</code>).  This can be use in subsequent steps to allow ExternalDNS to access Route53 zones.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>aws<span class="w"> </span>iam<span class="w"> </span>create-policy<span class="w"> </span>--policy-name<span class="w"> </span><span class="s2">&quot;AllowExternalDNSUpdates&quot;</span><span class="w"> </span>--policy-document<span class="w"> </span>file://policy.json
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># example: arn:aws:iam::XXXXXXXXXXXX:policy/AllowExternalDNSUpdates</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nb">export</span><span class="w"> </span><span class="nv">POLICY_ARN</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>iam<span class="w"> </span>list-policies<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w"> </span>--query<span class="w"> </span><span class="s1">&#39;Policies[?PolicyName==`AllowExternalDNSUpdates`].Arn&#39;</span><span class="w"> </span>--output<span class="w"> </span>text<span class="k">)</span>
+</code></pre></div>
+<h2 id="provisioning-a-kubernetes-cluster">Provisioning a Kubernetes cluster<a class="headerlink" href="#provisioning-a-kubernetes-cluster" title="Permanent link">&para;</a></h2>
+<p>You can use <a href="https://eksctl.io">eksctl</a> to easily provision an <a href="https://aws.amazon.com/eks">Amazon Elastic Kubernetes Service</a> (<a href="https://aws.amazon.com/eks">EKS</a>) cluster that is suitable for this tutorial.  See <a href="https://docs.aws.amazon.com/eks/latest/userguide/getting-started-eksctl.html">Getting started with Amazon EKS – eksctl</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EKS_CLUSTER_NAME</span><span class="o">=</span><span class="s2">&quot;my-externaldns-cluster&quot;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EKS_CLUSTER_REGION</span><span class="o">=</span><span class="s2">&quot;us-east-2&quot;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">KUBECONFIG</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.kube/</span><span class="si">${</span><span class="nv">EKS_CLUSTER_NAME</span><span class="si">}</span><span class="s2">-</span><span class="si">${</span><span class="nv">EKS_CLUSTER_REGION</span><span class="si">}</span><span class="s2">.yaml&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>eksctl<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span>--region<span class="w"> </span><span class="nv">$EKS_CLUSTER_REGION</span>
+</code></pre></div>
+<p>Feel free to use other provisioning tools or an existing cluster.  If <a href="https://www.terraform.io/">Terraform</a> is used, <a href="https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/">vpc</a> and <a href="https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/">eks</a> modules are recommended for standing up an EKS cluster.  Amazon has a workshop called <a href="https://tf-eks-workshop.workshop.aws/">Amazon EKS Terraform Workshop</a> that may be useful for this process.</p>
+<h2 id="permissions-to-modify-dns-zone">Permissions to modify DNS zone<a class="headerlink" href="#permissions-to-modify-dns-zone" title="Permanent link">&para;</a></h2>
+<p>You will need to use the above policy (represented by the <code>POLICY_ARN</code> environment variable) to allow ExternalDNS to update records in Route53 DNS zones. Here are three common ways this can be accomplished:</p>
+<ul>
+<li><a href="#node-iam-role">Node IAM Role</a></li>
+<li><a href="#static-credentials">Static credentials</a></li>
+<li><a href="#iam-roles-for-service-accounts">IAM Roles for Service Accounts</a></li>
+</ul>
+<p>For this tutorial, ExternalDNS will use the environment variable <code>EXTERNALDNS_NS</code> to represent the namespace, defaulted to <code>default</code>.  Feel free to change this to something else, such <code>externaldns</code> or <code>kube-addons</code>.  Make sure to edit the <code>subjects[0].namespace</code> for the <code>ClusterRoleBinding</code> resource when deploying ExternalDNS with RBAC enabled.  See <a href="#manifest-for-clusteres-with-rbac-enabled">Manifest (for clusters with RBAC enabled)</a>  for more information.</p>
+<p>Additionally, throughout this tutorial, the example domain of <code>example.com</code> is used.  Change this to appropriate domain under your control.  See <a href="#set-up-a-hosted-zone">Set up a hosted zone</a> section.</p>
+<h3 id="node-iam-role">Node IAM Role<a class="headerlink" href="#node-iam-role" title="Permanent link">&para;</a></h3>
+<p>In this method, you can attach a policy to the Node IAM Role.  This will allow nodes in the Kubernetes cluster to access Route53 zones, which allows ExternalDNS to update DNS records.  Given that this allows all containers to access Route53, not just ExternalDNS, running on the node with these privileges, this method is not recommended, and is only suitable for limited limited test environments.</p>
+<p>If you are using eksctl to provision a new cluster, you add the policy at creation time with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>eksctl<span class="w"> </span>create<span class="w"> </span>cluster<span class="w"> </span>--external-dns-access<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span>--name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span>--region<span class="w"> </span><span class="nv">$EKS_CLUSTER_REGION</span><span class="w"> </span><span class="se">\</span>
+</code></pre></div>
+<p><img alt="⚠" class="twemoji" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/26a0.svg" title=":warning:" /> <strong>WARNING</strong>: This will assign allow read-write access to all nodes in the cluster, not just ExternalDNS.  For this reason, this method is only suitable for limited test environments.</p>
+<p>If you already provisioned a cluster or use other provisioning tools like Terraform, you can use AWS CLI to attach the policy to the Node IAM Role.</p>
+<h4 id="get-the-node-iam-role-name">Get the Node IAM role name<a class="headerlink" href="#get-the-node-iam-role-name" title="Permanent link">&para;</a></h4>
+<p>The role name of the role associated with the node(s) where ExternalDNS will run is needed.  An easy way to get the role name is to use the AWS web console (https://console.aws.amazon.com/eks/), and find any instance in the target node group and copy the role name associated with that instance.</p>
+<h5 id="get-role-name-with-a-single-managed-nodegroup">Get role name with a single managed nodegroup<a class="headerlink" href="#get-role-name-with-a-single-managed-nodegroup" title="Permanent link">&para;</a></h5>
+<p>From the command line, if you have a single managed node group, the default with <code>eksctl create cluster</code>, you can find the role name with the following:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># get managed node group name (assuming there&#39;s only one node group)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">GROUP_NAME</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>eks<span class="w"> </span>list-nodegroups<span class="w"> </span>--cluster-name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span>--query<span class="w"> </span>nodegroups<span class="w"> </span>--out<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># fetch role arn given node group name</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nv">ROLE_ARN</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>eks<span class="w"> </span>describe-nodegroup<span class="w"> </span>--cluster-name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span>--nodegroup-name<span class="w"> </span><span class="nv">$GROUP_NAME</span><span class="w"> </span>--query<span class="w"> </span>nodegroup.nodeRole<span class="w"> </span>--out<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># extract just the name part of role arn</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nv">ROLE_NAME</span><span class="o">=</span><span class="si">${</span><span class="nv">NODE_ROLE_ARN</span><span class="p">##*/</span><span class="si">}</span>
+</code></pre></div>
+<h5 id="get-role-name-with-other-configurations">Get role name with other configurations<a class="headerlink" href="#get-role-name-with-other-configurations" title="Permanent link">&para;</a></h5>
+<p>If you have multiple node groups or any unmanaged node groups, the process gets more complex.  The first step is to get the instance host name of the desired node to where ExternalDNS will be deployed or is already deployed:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># node instance name of one of the external dns pods currently running</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nv">INSTANCE_NAME</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>--all-namespaces<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span>--selector<span class="w"> </span>app.kubernetes.io/instance<span class="o">=</span>external-dns<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span>--output<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].spec.nodeName}&#39;</span><span class="k">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># instance name of one of the nodes (change if node group is different)</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nv">INSTANCE_NAME</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span>--output<span class="w"> </span>name<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="s1">&#39;/&#39;</span><span class="w"> </span>-f2<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-1<span class="k">)</span>
+</code></pre></div>
+<p>With the instance host name, you can then get the instance id:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>get_instance_id<span class="o">()</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nv">INSTANCE_NAME</span><span class="o">=</span><span class="nv">$1</span><span class="w"> </span><span class="c1"># example: ip-192-168-74-34.us-east-2.compute.internal</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span><span class="c1"># get list of nodes</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="c1"># ip-192-168-74-34.us-east-2.compute.internal aws:///us-east-2a/i-xxxxxxxxxxxxxxxxx</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span><span class="c1"># ip-192-168-86-105.us-east-2.compute.internal    aws:///us-east-2a/i-xxxxxxxxxxxxxxxxx</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span><span class="nv">NODES</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>nodes<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">   </span>--output<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{range .items[*]}{.metadata.name}{&quot;\t&quot;}{.spec.providerID}{&quot;\n&quot;}{end}&#39;</span><span class="k">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span><span class="c1"># print instance id from matching node</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span>grep<span class="w"> </span><span class="nv">$INSTANCE_NAME</span><span class="w"> </span><span class="o">&lt;&lt;&lt;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$NODES</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="s1">&#39;/&#39;</span><span class="w"> </span>-f5
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="o">}</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="nv">INSTANCE_ID</span><span class="o">=</span><span class="k">$(</span>get_instance_id<span class="w"> </span><span class="nv">$INSTANCE_NAME</span><span class="k">)</span>
+</code></pre></div>
+<p>With the instance id, you can get the associated role name:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>findRoleName<span class="o">()</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nv">INSTANCE_ID</span><span class="o">=</span><span class="nv">$1</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="c1"># get all of the roles</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nv">ROLES</span><span class="o">=(</span><span class="k">$(</span>aws<span class="w"> </span>iam<span class="w"> </span>list-roles<span class="w"> </span>--query<span class="w"> </span>Roles<span class="o">[</span>*<span class="o">]</span>.RoleName<span class="w"> </span>--out<span class="w"> </span>text<span class="k">)</span><span class="o">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span><span class="k">for</span><span class="w"> </span>ROLE<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="si">${</span><span class="nv">ROLES</span><span class="p">[*]</span><span class="si">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="w">    </span><span class="c1"># get instance profile arn</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">    </span><span class="nv">PROFILE_ARN</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>iam<span class="w"> </span>list-instance-profiles-for-role<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">      </span>--role-name<span class="w"> </span><span class="nv">$ROLE</span><span class="w"> </span>--query<span class="w"> </span>InstanceProfiles<span class="o">[</span><span class="m">0</span><span class="o">]</span>.Arn<span class="w"> </span>--output<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="c1"># if there is an instance profile</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$PROFILE_ARN</span><span class="s2">&quot;</span><span class="w"> </span>!<span class="o">=</span><span class="w"> </span><span class="s2">&quot;None&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">      </span><span class="c1"># get all the instances with this associated instance profile</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">      </span><span class="nv">INSTANCES</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>ec2<span class="w"> </span>describe-instances<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">        </span>--filters<span class="w"> </span><span class="nv">Name</span><span class="o">=</span>iam-instance-profile.arn,Values<span class="o">=</span><span class="nv">$PROFILE_ARN</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a><span class="w">        </span>--query<span class="w"> </span>Reservations<span class="o">[</span>*<span class="o">]</span>.Instances<span class="o">[</span><span class="m">0</span><span class="o">]</span>.InstanceId<span class="w"> </span>--out<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a><span class="w">      </span><span class="c1"># find instances that match the instant profile</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a><span class="w">      </span><span class="k">for</span><span class="w"> </span>INSTANCE<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="si">${</span><span class="nv">INSTANCES</span><span class="p">[*]</span><span class="si">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a><span class="w">        </span><span class="c1"># set role name value if there is a match</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$INSTANCE_ID</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$INSTANCE</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nv">ROLE_NAME</span><span class="o">=</span><span class="nv">$ROLE</span><span class="p">;</span><span class="w"> </span><span class="k">fi</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="w">      </span><span class="k">done</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="w">    </span><span class="k">fi</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">  </span><span class="k">done</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="w">  </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$ROLE_NAME</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a><span class="o">}</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="nv">NODE_ROLE_NAME</span><span class="o">=</span><span class="k">$(</span>findRoleName<span class="w"> </span><span class="nv">$INSTANCE_ID</span><span class="k">)</span>
+</code></pre></div>
+<p>Using the role name, you can associate the policy that was created earlier:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># attach policy arn created earlier to node IAM role</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>aws<span class="w"> </span>iam<span class="w"> </span>attach-role-policy<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$NODE_ROLE_NAME</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+</code></pre></div>
+<p><img alt="⚠" class="twemoji" src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/svg/26a0.svg" title=":warning:" /> <strong>WARNING</strong>: This will assign allow read-write access to all pods running on the same node pool, not just the ExternalDNS pod(s).</p>
+<h4 id="deploy-externaldns-with-attached-policy-to-node-iam-role">Deploy ExternalDNS with attached policy to Node IAM Role<a class="headerlink" href="#deploy-externaldns-with-attached-policy-to-node-iam-role" title="Permanent link">&para;</a></h4>
+<p>If ExternalDNS is not yet deployed, follow the steps under <a href="#deploy-externaldns">Deploy ExternalDNS</a> using either RBAC or non-RBAC.</p>
+<p><strong>NOTE</strong>: Before deleting the cluster during, be sure to run <code>aws iam detach-role-policy</code>.  Otherwise, there can be errors as the provisioning system, such as <code>eksctl</code> or <code>terraform</code>, will not be able to delete the roles with the attached policy.</p>
+<h3 id="static-credentials">Static credentials<a class="headerlink" href="#static-credentials" title="Permanent link">&para;</a></h3>
+<p>In this method, the policy is attached to an IAM user, and the credentials secrets for the IAM user are then made available using a Kubernetes secret.</p>
+<p>This method is not the preferred method as the secrets in the credential file could be copied and used by an unauthorized threat actor.  However, if the Kubernetes cluster is not hosted on AWS, it may be the only method available.  Given this situation, it is important to limit the associated privileges to just minimal required privileges, i.e. read-write access to Route53, and not used a credentials file that has extra privileges beyond what is required.</p>
+<h4 id="create-iam-user-and-attach-the-policy">Create IAM user and attach the policy<a class="headerlink" href="#create-iam-user-and-attach-the-policy" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># create IAM user</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>aws<span class="w"> </span>iam<span class="w"> </span>create-user<span class="w"> </span>--user-name<span class="w"> </span><span class="s2">&quot;externaldns&quot;</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># attach policy arn created earlier to IAM user</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>aws<span class="w"> </span>iam<span class="w"> </span>attach-user-policy<span class="w"> </span>--user-name<span class="w"> </span><span class="s2">&quot;externaldns&quot;</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+</code></pre></div>
+<h4 id="create-the-static-credentials">Create the static credentials<a class="headerlink" href="#create-the-static-credentials" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nv">SECRET_ACCESS_KEY</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>iam<span class="w"> </span>create-access-key<span class="w"> </span>--user-name<span class="w"> </span><span class="s2">&quot;externaldns&quot;</span><span class="k">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; /local/path/to/credentials</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s">[default]</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s">aws_access_key_id = $(echo $SECRET_ACCESS_KEY | jq -r &#39;.AccessKey.AccessKeyId&#39;)</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s">aws_secret_access_key = $(echo $SECRET_ACCESS_KEY | jq -r &#39;.AccessKey.SecretAccessKey&#39;)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s">EOF</span>
+</code></pre></div>
+<h4 id="create-kubernetes-secret-from-credentials">Create Kubernetes secret from credentials<a class="headerlink" href="#create-kubernetes-secret-from-credentials" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>external-dns<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span><span class="w"> </span>--from-file<span class="w"> </span>/local/path/to/credentials
+</code></pre></div>
+<h4 id="deploy-externaldns-using-static-credentials">Deploy ExternalDNS using static credentials<a class="headerlink" href="#deploy-externaldns-using-static-credentials" title="Permanent link">&para;</a></h4>
+<p>Follow the steps under <a href="#deploy-externaldns">Deploy ExternalDNS</a> using either RBAC or non-RBAC.  Make sure to uncomment the section that mounts volumes, so that the credentials can be mounted.</p>
+<h3 id="iam-roles-for-service-accounts">IAM Roles for Service Accounts<a class="headerlink" href="#iam-roles-for-service-accounts" title="Permanent link">&para;</a></h3>
+<p><a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html">IRSA</a> (<a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html">IAM roles for Service Accounts</a>) allows cluster operators to map AWS IAM Roles to Kubernetes Service Accounts.  This essentially allows only ExternalDNS pods to access Route53 without exposing any static credentials.</p>
+<p>This is the preferred method as it implements <a href="https://csrc.nist.gov/glossary/term/principle_of_least_privilege">PoLP</a> (<a href="https://csrc.nist.gov/glossary/term/principle_of_least_privilege">Principal of Least Privilege</a>).</p>
+<p><strong>IMPORTANT</strong>: This method requires using KSA (Kuberntes service account) and RBAC.</p>
+<p>This method requires deploying with RBAC.  See <a href="#manifest-for-clusters-with-rbac-enabled">Manifest (for clusters with RBAC enabled)</a> when ready to deploy ExternalDNS.</p>
+<p><strong>NOTE</strong>: Similar methods to IRSA on AWS are <a href="https://github.com/uswitch/kiam">kiam</a>, which is in maintenence mode, and has <a href="https://github.com/uswitch/kiam/blob/HEAD/docs/IAM.md">instructions</a> for creating an IAM role, and also <a href="https://github.com/jtblin/kube2iam">kube2iam</a>.  IRSA is the officially supported method for EKS clusters, and so for non-EKS clusters on AWS, these other tools could be an option.</p>
+<h4 id="verify-oidc-is-supported">Verify OIDC is supported<a class="headerlink" href="#verify-oidc-is-supported" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>aws<span class="w"> </span>eks<span class="w"> </span>describe-cluster<span class="w"> </span>--name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;cluster.identity.oidc.issuer&quot;</span><span class="w"> </span>--output<span class="w"> </span>text
+</code></pre></div>
+<h4 id="associate-oidc-to-cluster">Associate OIDC to cluster<a class="headerlink" href="#associate-oidc-to-cluster" title="Permanent link">&para;</a></h4>
+<p>Configure the cluster with an OIDC provider and add support for <a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html">IRSA</a> (<a href="https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html">IAM roles for Service Accounts</a>).</p>
+<p>If you used <code>eksctl</code> to provision the EKS cluster, you can update it with the following command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>eksctl<span class="w"> </span>utils<span class="w"> </span>associate-iam-oidc-provider<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span>--cluster<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span>--approve
+</code></pre></div>
+<p>If the cluster was provisioned with Terraform, you can use the <code>iam_openid_connect_provider</code> resource (<a href="https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_openid_connect_provider">ref</a>) to associate to the OIDC provider.</p>
+<h4 id="create-an-iam-role-bound-to-a-service-account">Create an IAM role bound to a service account<a class="headerlink" href="#create-an-iam-role-bound-to-a-service-account" title="Permanent link">&para;</a></h4>
+<p>For the next steps in this process, we will need to associate the <code>external-dns</code> service account and a role used to grant access to Route53.  This requires the following steps:</p>
+<ol>
+<li>Create a role with a trust relationship to the cluster&rsquo;s OIDC provider</li>
+<li>Attach the <code>AllowExternalDNSUpdates</code> policy to the role</li>
+<li>Create the <code>external-dns</code> service account</li>
+<li>Add annotation to the service account with the role arn</li>
+</ol>
+<h5 id="use-eksctl-with-eksctl-created-eks-cluster">Use eksctl with eksctl created EKS cluster<a class="headerlink" href="#use-eksctl-with-eksctl-created-eks-cluster" title="Permanent link">&para;</a></h5>
+<p>If <code>eksctl</code> was used to provision the EKS cluster, you can perform all of these steps with the following command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>eksctl<span class="w"> </span>create<span class="w"> </span>iamserviceaccount<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--cluster<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--name<span class="w"> </span><span class="s2">&quot;external-dns&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--attach-policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>--approve
+</code></pre></div>
+<h5 id="use-aws-cli-with-any-eks-cluster">Use aws cli with any EKS cluster<a class="headerlink" href="#use-aws-cli-with-any-eks-cluster" title="Permanent link">&para;</a></h5>
+<p>Otherwise, we can do the following steps using <code>aws</code> commands (also see <a href="https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html">Creating an IAM role and policy for your service account</a>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nv">ACCOUNT_ID</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>sts<span class="w"> </span>get-caller-identity<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;Account&quot;</span><span class="w"> </span>--output<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="nv">OIDC_PROVIDER</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>eks<span class="w"> </span>describe-cluster<span class="w"> </span>--name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;cluster.identity.oidc.issuer&quot;</span><span class="w"> </span>--output<span class="w"> </span>text<span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;s|^https://||&#39;</span><span class="k">)</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; trust.json</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="s">{</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="s">    &quot;Version&quot;: &quot;2012-10-17&quot;,</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="s">    &quot;Statement&quot;: [</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="s">        {</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="s">            &quot;Effect&quot;: &quot;Allow&quot;,</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="s">            &quot;Principal&quot;: {</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="s">                &quot;Federated&quot;: &quot;arn:aws:iam::$ACCOUNT_ID:oidc-provider/$OIDC_PROVIDER&quot;</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="s">            },</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="s">            &quot;Action&quot;: &quot;sts:AssumeRoleWithWebIdentity&quot;,</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="s">            &quot;Condition&quot;: {</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="s">                &quot;StringEquals&quot;: {</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="s">                    &quot;$OIDC_PROVIDER:sub&quot;: &quot;system:serviceaccount:${EXTERNALDNS_NS:-&quot;default&quot;}:external-dns&quot;,</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="s">                    &quot;$OIDC_PROVIDER:aud&quot;: &quot;sts.amazonaws.com&quot;</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="s">                }</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="s">            }</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="s">        }</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="s">    ]</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="s">}</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="s">EOF</span>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="nv">IRSA_ROLE</span><span class="o">=</span><span class="s2">&quot;external-dns-irsa-role&quot;</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>aws<span class="w"> </span>iam<span class="w"> </span>create-role<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$IRSA_ROLE</span><span class="w"> </span>--assume-role-policy-document<span class="w"> </span>file://trust.json
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>aws<span class="w"> </span>iam<span class="w"> </span>attach-role-policy<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$IRSA_ROLE</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="nv">ROLE_ARN</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>iam<span class="w"> </span>get-role<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$IRSA_ROLE</span><span class="w"> </span>--query<span class="w"> </span>Role.Arn<span class="w"> </span>--output<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a><span class="c1"># Create service account (skip is already created)</span>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a>kubectl<span class="w"> </span>create<span class="w"> </span>serviceaccount<span class="w"> </span><span class="s2">&quot;external-dns&quot;</span><span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a><span class="c1"># Add annotation referencing IRSA role</span>
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>serviceaccount<span class="w"> </span><span class="s2">&quot;external-dns&quot;</span><span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span><span class="w"> </span>--patch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a><span class="w"> </span><span class="s2">&quot;{\&quot;metadata\&quot;: { \&quot;annotations\&quot;: { \&quot;eks.amazonaws.com/role-arn\&quot;: \&quot;</span><span class="nv">$ROLE_ARN</span><span class="s2">\&quot; }}}&quot;</span>
+</code></pre></div>
+<p>If any part of this step is misconfigured, such as the role with incorrect namespace configured in the trust relationship, annotation pointing the the wrong role, etc., you will see errors like <code>WebIdentityErr: failed to retrieve credentials</code>. Check the configuration and make corrections.  </p>
+<p>When the service account annotations are updated, then the current running pods will have to be terminated, so that new pod(s) with proper configuration (environment variables) will be created automatically.</p>
+<p>When annotation is added to service account, the ExternalDNS pod(s) scheduled will have <code>AWS_ROLE_ARN</code>, <code>AWS_STS_REGIONAL_ENDPOINTS</code>, and <code>AWS_WEB_IDENTITY_TOKEN_FILE</code> environment variables injected automatically.</p>
+<h4 id="deploy-externaldns-using-irsa">Deploy ExternalDNS using IRSA<a class="headerlink" href="#deploy-externaldns-using-irsa" title="Permanent link">&para;</a></h4>
+<p>Follow the steps under <a href="#manifest-for-clusters-with-rbac-enabled">Manifest (for clusters with RBAC enabled)</a>.  Make sure to comment out the service account section if this has been created already.</p>
+<p>If you deployed ExternalDNS before adding the service account annotation and the corresponding role, you will likely see error with <code>failed to list hosted zones: AccessDenied: User</code>.  You can delete the current running ExternalDNS pod(s) after updating the annotation, so that new pods scheduled will have appropriate configuration to access Route53.</p>
+<h2 id="set-up-a-hosted-zone">Set up a hosted zone<a class="headerlink" href="#set-up-a-hosted-zone" title="Permanent link">&para;</a></h2>
+<p><em>If you prefer to try-out ExternalDNS in one of the existing hosted-zones you can skip this step</em></p>
+<p>Create a DNS zone which will contain the managed DNS records.  This tutorial will use the fictional domain of <code>example.com</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>aws<span class="w"> </span>route53<span class="w"> </span>create-hosted-zone<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;example.com.&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span>--caller-reference<span class="w"> </span><span class="s2">&quot;external-dns-test-</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>Make a note of the nameservers that were assigned to your new zone.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nv">ZONE_ID</span><span class="o">=</span><span class="k">$(</span>aws<span class="w"> </span>route53<span class="w"> </span>list-hosted-zones-by-name<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">  </span>--dns-name<span class="w"> </span><span class="s2">&quot;example.com.&quot;</span><span class="w"> </span>--query<span class="w"> </span>HostedZones<span class="o">[</span><span class="m">0</span><span class="o">]</span>.Id<span class="w"> </span>--out<span class="w"> </span>text<span class="k">)</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>aws<span class="w"> </span>route53<span class="w"> </span>list-resource-record-sets<span class="w"> </span>--output<span class="w"> </span>text<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w"> </span>--hosted-zone-id<span class="w"> </span><span class="nv">$ZONE_ID</span><span class="w"> </span>--query<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="w"> </span><span class="s2">&quot;ResourceRecordSets[?Type == &#39;NS&#39;].ResourceRecords[*].Value | []&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\t&#39;</span><span class="w"> </span><span class="s1">&#39;\n&#39;</span>
+</code></pre></div>
+<p>This should yield something similar this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>ns-695.awsdns-22.net.
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>ns-1313.awsdns-36.org.
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>ns-350.awsdns-43.com.
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>ns-1805.awsdns-33.co.uk.
+</code></pre></div>
+<p>If using your own domain that was registered with a third-party domain registrar, you should point your domain&rsquo;s name servers to the values in the from the list above.  Please consult your registrar&rsquo;s documentation on how to do that.</p>
+<h2 id="deploy-externaldns">Deploy ExternalDNS<a class="headerlink" href="#deploy-externaldns" title="Permanent link">&para;</a></h2>
+<p>Connect your <code>kubectl</code> client to the cluster you want to test ExternalDNS with.<br />
+Then apply one of the following manifests file to deploy ExternalDNS. You can check if your cluster has RBAC by <code>kubectl api-versions | grep rbac.authorization.k8s.io</code>.</p>
+<p>For clusters with RBAC enabled, be sure to choose the correct <code>namespace</code>.  For this tutorial, the enviornment variable <code>EXTERNALDNS_NS</code> will refer to the namespace.  You can set this to a value of your choice:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">EXTERNALDNS_NS</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="w"> </span><span class="c1"># externaldns, kube-addons, etc</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># create namespace if it does not yet exist</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>kubectl<span class="w"> </span>get<span class="w"> </span>namespaces<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-q<span class="w"> </span><span class="nv">$EXTERNALDNS_NS</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span><span class="nv">$EXTERNALDNS_NS</span>
+</code></pre></div>
+<h3 id="manifest-for-clusters-without-rbac-enabled">Manifest (for clusters without RBAC enabled)<a class="headerlink" href="#manifest-for-clusters-without-rbac-enabled" title="Permanent link">&para;</a></h3>
+<p>Save the following below as <code>externaldns-no-rbac.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="w">        </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.13.1</span>
+<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
+<a id="__codelineno-20-23" name="__codelineno-20-23" href="#__codelineno-20-23"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
+<a id="__codelineno-20-24" name="__codelineno-20-24" href="#__codelineno-20-24"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones</span>
+<a id="__codelineno-20-25" name="__codelineno-20-25" href="#__codelineno-20-25"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--provider=aws</span>
+<a id="__codelineno-20-26" name="__codelineno-20-26" href="#__codelineno-20-26"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--policy=upsert-only</span><span class="w"> </span><span class="c1"># would prevent ExternalDNS from deleting any records, omit to enable full synchronization</span>
+<a id="__codelineno-20-27" name="__codelineno-20-27" href="#__codelineno-20-27"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--aws-zone-type=public</span><span class="w"> </span><span class="c1"># only look at public hosted zones (valid values are public, private or no value for both)</span>
+<a id="__codelineno-20-28" name="__codelineno-20-28" href="#__codelineno-20-28"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--registry=txt</span>
+<a id="__codelineno-20-29" name="__codelineno-20-29" href="#__codelineno-20-29"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--txt-owner-id=my-hostedzone-identifier</span>
+<a id="__codelineno-20-30" name="__codelineno-20-30" href="#__codelineno-20-30"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-20-31" name="__codelineno-20-31" href="#__codelineno-20-31"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_DEFAULT_REGION</span>
+<a id="__codelineno-20-32" name="__codelineno-20-32" href="#__codelineno-20-32"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">us-east-1</span><span class="w"> </span><span class="c1"># change to region where EKS is installed</span>
+<a id="__codelineno-20-33" name="__codelineno-20-33" href="#__codelineno-20-33"></a><span class="w">      </span><span class="c1"># # Uncomment below if using static credentials</span>
+<a id="__codelineno-20-34" name="__codelineno-20-34" href="#__codelineno-20-34"></a><span class="w">      </span><span class="c1">#       - name: AWS_SHARED_CREDENTIALS_FILE</span>
+<a id="__codelineno-20-35" name="__codelineno-20-35" href="#__codelineno-20-35"></a><span class="w">      </span><span class="c1">#        value: /.aws/credentials</span>
+<a id="__codelineno-20-36" name="__codelineno-20-36" href="#__codelineno-20-36"></a><span class="w">      </span><span class="c1">#     volumeMounts:</span>
+<a id="__codelineno-20-37" name="__codelineno-20-37" href="#__codelineno-20-37"></a><span class="w">      </span><span class="c1">#       - name: aws-credentials</span>
+<a id="__codelineno-20-38" name="__codelineno-20-38" href="#__codelineno-20-38"></a><span class="w">      </span><span class="c1">#         mountPath: /.aws</span>
+<a id="__codelineno-20-39" name="__codelineno-20-39" href="#__codelineno-20-39"></a><span class="w">      </span><span class="c1">#         readOnly: true</span>
+<a id="__codelineno-20-40" name="__codelineno-20-40" href="#__codelineno-20-40"></a><span class="w">      </span><span class="c1"># volumes:</span>
+<a id="__codelineno-20-41" name="__codelineno-20-41" href="#__codelineno-20-41"></a><span class="w">      </span><span class="c1">#   - name: aws-credentials</span>
+<a id="__codelineno-20-42" name="__codelineno-20-42" href="#__codelineno-20-42"></a><span class="w">      </span><span class="c1">#     secret:</span>
+<a id="__codelineno-20-43" name="__codelineno-20-43" href="#__codelineno-20-43"></a><span class="w">      </span><span class="c1">#       secretName: external-dns</span>
+</code></pre></div>
+<p>When ready you can deploy:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>--filename<span class="w"> </span>externaldns-no-rbac.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<h3 id="manifest-for-clusters-with-rbac-enabled">Manifest (for clusters with RBAC enabled)<a class="headerlink" href="#manifest-for-clusters-with-rbac-enabled" title="Permanent link">&para;</a></h3>
+<p>Save the following below as <code>externaldns-with-rbac.yaml</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># comment out sa if it was previously created</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="nn">---</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRole</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;services&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;endpoints&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;pods&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;nodes&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;extensions&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;networking.k8s.io&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;ingresses&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a><span class="nn">---</span>
+<a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRoleBinding</span>
+<a id="__codelineno-22-25" name="__codelineno-22-25" href="#__codelineno-22-25"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-22-26" name="__codelineno-22-26" href="#__codelineno-22-26"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns-viewer</span>
+<a id="__codelineno-22-27" name="__codelineno-22-27" href="#__codelineno-22-27"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-22-28" name="__codelineno-22-28" href="#__codelineno-22-28"></a><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-29" name="__codelineno-22-29" href="#__codelineno-22-29"></a><span class="nt">roleRef</span><span class="p">:</span>
+<a id="__codelineno-22-30" name="__codelineno-22-30" href="#__codelineno-22-30"></a><span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
+<a id="__codelineno-22-31" name="__codelineno-22-31" href="#__codelineno-22-31"></a><span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRole</span>
+<a id="__codelineno-22-32" name="__codelineno-22-32" href="#__codelineno-22-32"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-33" name="__codelineno-22-33" href="#__codelineno-22-33"></a><span class="nt">subjects</span><span class="p">:</span>
+<a id="__codelineno-22-34" name="__codelineno-22-34" href="#__codelineno-22-34"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-22-35" name="__codelineno-22-35" href="#__codelineno-22-35"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-36" name="__codelineno-22-36" href="#__codelineno-22-36"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span><span class="w"> </span><span class="c1"># change to desired namespace: externaldns, kube-addons</span>
+<a id="__codelineno-22-37" name="__codelineno-22-37" href="#__codelineno-22-37"></a><span class="nn">---</span>
+<a id="__codelineno-22-38" name="__codelineno-22-38" href="#__codelineno-22-38"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-22-39" name="__codelineno-22-39" href="#__codelineno-22-39"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-22-40" name="__codelineno-22-40" href="#__codelineno-22-40"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-22-41" name="__codelineno-22-41" href="#__codelineno-22-41"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-42" name="__codelineno-22-42" href="#__codelineno-22-42"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a><span class="w">    </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-22-45" name="__codelineno-22-45" href="#__codelineno-22-45"></a><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<a id="__codelineno-22-46" name="__codelineno-22-46" href="#__codelineno-22-46"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<a id="__codelineno-22-47" name="__codelineno-22-47" href="#__codelineno-22-47"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-22-48" name="__codelineno-22-48" href="#__codelineno-22-48"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-22-49" name="__codelineno-22-49" href="#__codelineno-22-49"></a><span class="w">      </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-50" name="__codelineno-22-50" href="#__codelineno-22-50"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-22-51" name="__codelineno-22-51" href="#__codelineno-22-51"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-22-52" name="__codelineno-22-52" href="#__codelineno-22-52"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-22-53" name="__codelineno-22-53" href="#__codelineno-22-53"></a><span class="w">        </span><span class="nt">app.kubernetes.io/name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-54" name="__codelineno-22-54" href="#__codelineno-22-54"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-22-55" name="__codelineno-22-55" href="#__codelineno-22-55"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-56" name="__codelineno-22-56" href="#__codelineno-22-56"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-22-57" name="__codelineno-22-57" href="#__codelineno-22-57"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-22-58" name="__codelineno-22-58" href="#__codelineno-22-58"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.13.1</span>
+<a id="__codelineno-22-59" name="__codelineno-22-59" href="#__codelineno-22-59"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-22-60" name="__codelineno-22-60" href="#__codelineno-22-60"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
+<a id="__codelineno-22-61" name="__codelineno-22-61" href="#__codelineno-22-61"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
+<a id="__codelineno-22-62" name="__codelineno-22-62" href="#__codelineno-22-62"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones</span>
+<a id="__codelineno-22-63" name="__codelineno-22-63" href="#__codelineno-22-63"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--provider=aws</span>
+<a id="__codelineno-22-64" name="__codelineno-22-64" href="#__codelineno-22-64"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--policy=upsert-only</span><span class="w"> </span><span class="c1"># would prevent ExternalDNS from deleting any records, omit to enable full synchronization</span>
+<a id="__codelineno-22-65" name="__codelineno-22-65" href="#__codelineno-22-65"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--aws-zone-type=public</span><span class="w"> </span><span class="c1"># only look at public hosted zones (valid values are public, private or no value for both)</span>
+<a id="__codelineno-22-66" name="__codelineno-22-66" href="#__codelineno-22-66"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--registry=txt</span>
+<a id="__codelineno-22-67" name="__codelineno-22-67" href="#__codelineno-22-67"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--txt-owner-id=external-dns</span>
+<a id="__codelineno-22-68" name="__codelineno-22-68" href="#__codelineno-22-68"></a><span class="w">          </span><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-22-69" name="__codelineno-22-69" href="#__codelineno-22-69"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_DEFAULT_REGION</span>
+<a id="__codelineno-22-70" name="__codelineno-22-70" href="#__codelineno-22-70"></a><span class="w">              </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">us-east-1</span><span class="w"> </span><span class="c1"># change to region where EKS is installed</span>
+<a id="__codelineno-22-71" name="__codelineno-22-71" href="#__codelineno-22-71"></a><span class="w">     </span><span class="c1"># # Uncommend below if using static credentials</span>
+<a id="__codelineno-22-72" name="__codelineno-22-72" href="#__codelineno-22-72"></a><span class="w">     </span><span class="c1">#        - name: AWS_SHARED_CREDENTIALS_FILE</span>
+<a id="__codelineno-22-73" name="__codelineno-22-73" href="#__codelineno-22-73"></a><span class="w">     </span><span class="c1">#          value: /.aws/credentials</span>
+<a id="__codelineno-22-74" name="__codelineno-22-74" href="#__codelineno-22-74"></a><span class="w">     </span><span class="c1">#      volumeMounts:</span>
+<a id="__codelineno-22-75" name="__codelineno-22-75" href="#__codelineno-22-75"></a><span class="w">     </span><span class="c1">#        - name: aws-credentials</span>
+<a id="__codelineno-22-76" name="__codelineno-22-76" href="#__codelineno-22-76"></a><span class="w">     </span><span class="c1">#          mountPath: /.aws</span>
+<a id="__codelineno-22-77" name="__codelineno-22-77" href="#__codelineno-22-77"></a><span class="w">     </span><span class="c1">#          readOnly: true</span>
+<a id="__codelineno-22-78" name="__codelineno-22-78" href="#__codelineno-22-78"></a><span class="w">     </span><span class="c1">#  volumes:</span>
+<a id="__codelineno-22-79" name="__codelineno-22-79" href="#__codelineno-22-79"></a><span class="w">     </span><span class="c1">#    - name: aws-credentials</span>
+<a id="__codelineno-22-80" name="__codelineno-22-80" href="#__codelineno-22-80"></a><span class="w">     </span><span class="c1">#      secret:</span>
+<a id="__codelineno-22-81" name="__codelineno-22-81" href="#__codelineno-22-81"></a><span class="w">     </span><span class="c1">#        secretName: external-dns</span>
+</code></pre></div>
+<p>When ready deploy:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>--filename<span class="w"> </span>externaldns-with-rbac.yaml<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">  </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">EXTERNALDNS_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<p>This list is not the full list, but a few arguments that where chosen.</p>
+<h3 id="aws-zone-type">aws-zone-type<a class="headerlink" href="#aws-zone-type" title="Permanent link">&para;</a></h3>
+<p><code>aws-zone-type</code> allows filtering for private and public zones</p>
+<h2 id="annotations">Annotations<a class="headerlink" href="#annotations" title="Permanent link">&para;</a></h2>
+<p>Annotations which are specific to AWS.</p>
+<h3 id="alias">alias<a class="headerlink" href="#alias" title="Permanent link">&para;</a></h3>
+<p><code>external-dns.alpha.kubernetes.io/alias</code> if set to <code>true</code> on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in <a href="../nginx-ingress/#with-a-separate-tcp-load-balancer">the docs</a>. In particular, the argument <code>--publish-service=default/nginx-ingress-controller</code> has to be set on the <code>nginx-ingress-controller</code> container. If one uses the <code>nginx-ingress</code> Helm chart, this flag can be set with the <code>controller.publishService.enabled</code> configuration option.</p>
+<h2 id="verify-externaldns-works-service-example">Verify ExternalDNS works (Service example)<a class="headerlink" href="#verify-externaldns-works-service-example" title="Permanent link">&para;</a></h2>
+<p>Create the following sample application to test that ExternalDNS works.</p>
+<blockquote>
+<p>For services ExternalDNS will look for the annotation <code>external-dns.alpha.kubernetes.io/hostname</code> on the service and use the corresponding value.</p>
+<p>If you want to give multiple names to service, you can set it to external-dns.alpha.kubernetes.io/hostname with a comma <code>,</code> separator.</p>
+</blockquote>
+<p>For this verification phase, you can use default or another namespace for the nginx demo, for example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="nv">NGINXDEMO_NS</span><span class="o">=</span><span class="s2">&quot;nginx&quot;</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>namespaces<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-q<span class="w"> </span><span class="nv">$NGINXDEMO_NS</span><span class="w"> </span><span class="o">||</span><span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span><span class="nv">$NGINXDEMO_NS</span>
+</code></pre></div>
+<p>Save the following manifest below as <code>nginx.yaml</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="w">    </span><span class="nt">external-dns.alpha.kubernetes.io/hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx.example.com</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="w">    </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a><span class="nn">---</span>
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-28" name="__codelineno-25-28" href="#__codelineno-25-28"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-25-29" name="__codelineno-25-29" href="#__codelineno-25-29"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-25-30" name="__codelineno-25-30" href="#__codelineno-25-30"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-31" name="__codelineno-25-31" href="#__codelineno-25-31"></a><span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-25-32" name="__codelineno-25-32" href="#__codelineno-25-32"></a><span class="w">        </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-25-33" name="__codelineno-25-33" href="#__codelineno-25-33"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-25-34" name="__codelineno-25-34" href="#__codelineno-25-34"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http</span>
+</code></pre></div>
+<p>Deploy the nginx deployment and service with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>--filename<span class="w"> </span>nginx.yaml<span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NGINXDEMO_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<p>Verify that the load balancer was allocated with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>service<span class="w"> </span>nginx<span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NGINXDEMO_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<p>This should show something like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>NAME<span class="w">    </span>TYPE<span class="w">           </span>CLUSTER-IP<span class="w">     </span>EXTERNAL-IP<span class="w">                                                                   </span>PORT<span class="o">(</span>S<span class="o">)</span><span class="w">        </span>AGE
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>nginx<span class="w">   </span>LoadBalancer<span class="w">   </span><span class="m">10</span>.100.47.41<span class="w">   </span>ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.<span class="w">   </span><span class="m">80</span>:32749/TCP<span class="w">   </span>12m
+</code></pre></div>
+<p>After roughly two minutes check that a corresponding DNS record for your service that was created.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>aws<span class="w"> </span>route53<span class="w"> </span>list-resource-record-sets<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--hosted-zone-id<span class="w"> </span><span class="nv">$ZONE_ID</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;ResourceRecordSets[?Name == &#39;nginx.example.com.&#39;]|[?Type == &#39;A&#39;]&quot;</span>
+</code></pre></div>
+<p>This should show something like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="p">[</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">        </span><span class="nt">&quot;Name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nginx.example.com.&quot;</span><span class="p">,</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">        </span><span class="nt">&quot;Type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;A&quot;</span><span class="p">,</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="w">        </span><span class="nt">&quot;AliasTarget&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">            </span><span class="nt">&quot;HostedZoneId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ZEWFWZ4R16P7IB&quot;</span><span class="p">,</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">            </span><span class="nt">&quot;DNSName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.&quot;</span><span class="p">,</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w">            </span><span class="nt">&quot;EvaluateTargetHealth&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="p">]</span>
+</code></pre></div>
+<p>You can also fetch the corresponding text records:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>aws<span class="w"> </span>route53<span class="w"> </span>list-resource-record-sets<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--hosted-zone-id<span class="w"> </span><span class="nv">$ZONE_ID</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;ResourceRecordSets[?Name == &#39;nginx.example.com.&#39;]|[?Type == &#39;TXT&#39;]&quot;</span>
+</code></pre></div>
+<p>This will show something like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="p">[</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">    </span><span class="p">{</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">        </span><span class="nt">&quot;Name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nginx.example.com.&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">        </span><span class="nt">&quot;Type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TXT&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="w">        </span><span class="nt">&quot;TTL&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="w">        </span><span class="nt">&quot;ResourceRecords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="w">            </span><span class="p">{</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="w">                </span><span class="nt">&quot;Value&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;\&quot;heritage=external-dns,external-dns/owner=external-dns,external-dns/resource=service/default/nginx\&quot;&quot;</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="w">        </span><span class="p">]</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="p">]</span>
+</code></pre></div>
+<p>Note created TXT record alongside ALIAS record. TXT record signifies that the corresponding ALIAS record is managed by ExternalDNS. This makes ExternalDNS safe for running in environments where there are other records managed via other means.</p>
+<p>For more information about ALIAS record, see <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/resource-record-sets-choosing-alias-non-alias.html">Choosing between alias and non-alias records</a>.</p>
+<p>Let&rsquo;s check that we can resolve this DNS name. We&rsquo;ll ask the nameservers assigned to your zone first.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>dig<span class="w"> </span>+short<span class="w"> </span>@ns-5514.awsdns-53.org.<span class="w"> </span>nginx.example.com.
+</code></pre></div>
+<p>This should return 1+ IP addresses that correspond to the ELB FQDN, i.e. <code>ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.</code>.</p>
+<p>Next try the public nameservers configured by DNS client on your system:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>dig<span class="w"> </span>+short<span class="w"> </span>nginx.example.com.
+</code></pre></div>
+<p>If you hooked up your DNS zone with its parent zone correctly you can use <code>curl</code> to access your site.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>curl<span class="w"> </span>nginx.example.com.
+</code></pre></div>
+<p>This should show something like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="p">&lt;</span><span class="nt">html</span><span class="p">&gt;</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>Welcome to nginx!<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>...
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a><span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a><span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>Welcome to nginx!<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>...
+<a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a><span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a><span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</code></pre></div>
+<h2 id="verify-externaldns-works-ingress-example">Verify ExternalDNS works (Ingress example)<a class="headerlink" href="#verify-externaldns-works-ingress-example" title="Permanent link">&para;</a></h2>
+<p>With the previous <code>deployment</code> and <code>service</code> objects deployed, we can add an <code>ingress</code> object and configure a FQDN value for the <code>host</code> key.  The ingress controller will match incoming HTTP traffic, and route it to the appropriate backend service based on the <code>host</code> key.</p>
+<blockquote>
+<p>For ingress objects ExternalDNS will create a DNS record based on the host specified for the ingress object.</p>
+</blockquote>
+<p>For this tutorial, we have two endpoints, the service with <code>LoadBalancer</code> type and an ingress.  For practical purposes, if an ingress is used, the service type can be changed to <code>ClusterIP</code> as two endpoints are unecessary in this scenario.</p>
+<p><strong>IMPORTANT</strong>: This requires that an ingress controller has been installed in your Kubernetes cluster.  EKS does not come with an ingress controller by default.  A popular ingress controller is <a href="https://github.com/kubernetes/ingress-nginx/">ingress-nginx</a>, which can be installed by a <a href="https://artifacthub.io/packages/helm/ingress-nginx/ingress-nginx">helm chart</a> or by <a href="https://kubernetes.github.io/ingress-nginx/deploy/#aws">manifests</a>.</p>
+<p>Create an ingress resource manifest file named <code>ingress.yaml</code> with the contents below:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a><span class="nn">---</span>
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a><span class="w">    </span><span class="nt">kubernetes.io/ingress.class</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;nginx&quot;</span><span class="w"> </span><span class="c1"># use the one that corresponds to your ingress controller.</span>
+<a id="__codelineno-37-8" name="__codelineno-37-8" href="#__codelineno-37-8"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-37-9" name="__codelineno-37-9" href="#__codelineno-37-9"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-37-10" name="__codelineno-37-10" href="#__codelineno-37-10"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.example.com</span>
+<a id="__codelineno-37-11" name="__codelineno-37-11" href="#__codelineno-37-11"></a><span class="w">      </span><span class="nt">http</span><span class="p">:</span>
+<a id="__codelineno-37-12" name="__codelineno-37-12" href="#__codelineno-37-12"></a><span class="w">        </span><span class="nt">paths</span><span class="p">:</span>
+<a id="__codelineno-37-13" name="__codelineno-37-13" href="#__codelineno-37-13"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">backend</span><span class="p">:</span>
+<a id="__codelineno-37-14" name="__codelineno-37-14" href="#__codelineno-37-14"></a><span class="w">              </span><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-37-15" name="__codelineno-37-15" href="#__codelineno-37-15"></a><span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-37-16" name="__codelineno-37-16" href="#__codelineno-37-16"></a><span class="w">                </span><span class="nt">port</span><span class="p">:</span>
+<a id="__codelineno-37-17" name="__codelineno-37-17" href="#__codelineno-37-17"></a><span class="w">                  </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-37-18" name="__codelineno-37-18" href="#__codelineno-37-18"></a><span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<a id="__codelineno-37-19" name="__codelineno-37-19" href="#__codelineno-37-19"></a><span class="w">            </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix</span>
+</code></pre></div>
+<p>When ready, you can deploy this with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>kubectl<span class="w"> </span>create<span class="w"> </span>--filename<span class="w"> </span>ingress.yaml<span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NGINXDEMO_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<p>Watch the status of the ingress until the ADDRESS field is populated.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>ingress<span class="w"> </span>--watch<span class="w"> </span>--namespace<span class="w"> </span><span class="si">${</span><span class="nv">NGINXDEMO_NS</span><span class="k">:-</span><span class="s2">&quot;default&quot;</span><span class="si">}</span>
+</code></pre></div>
+<p>You should see something like this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a>NAME    CLASS    HOSTS                ADDRESS   PORTS   AGE
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>nginx   &lt;none&gt;   server.example.com             80      47s
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>nginx   &lt;none&gt;   server.example.com   ae11c2360188411e7951602725593fd1-1224345803.eu-central-1.elb.amazonaws.com.   80      54s
+</code></pre></div>
+<p>For the ingress test, run through similar checks, but using domain name used for the ingress:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="c1"># check records on route53</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a>aws<span class="w"> </span>route53<span class="w"> </span>list-resource-record-sets<span class="w"> </span>--output<span class="w"> </span>json<span class="w"> </span>--hosted-zone-id<span class="w"> </span><span class="nv">$ZONE_ID</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;ResourceRecordSets[?Name == &#39;server.example.com.&#39;]&quot;</span>
+<a id="__codelineno-41-4" name="__codelineno-41-4" href="#__codelineno-41-4"></a>
+<a id="__codelineno-41-5" name="__codelineno-41-5" href="#__codelineno-41-5"></a><span class="c1"># query using a route53 name server</span>
+<a id="__codelineno-41-6" name="__codelineno-41-6" href="#__codelineno-41-6"></a>dig<span class="w"> </span>+short<span class="w"> </span>@ns-5514.awsdns-53.org.<span class="w"> </span>server.example.com.
+<a id="__codelineno-41-7" name="__codelineno-41-7" href="#__codelineno-41-7"></a><span class="c1"># query using the default name server</span>
+<a id="__codelineno-41-8" name="__codelineno-41-8" href="#__codelineno-41-8"></a>dig<span class="w"> </span>+short<span class="w"> </span>server.example.com.
+<a id="__codelineno-41-9" name="__codelineno-41-9" href="#__codelineno-41-9"></a>
+<a id="__codelineno-41-10" name="__codelineno-41-10" href="#__codelineno-41-10"></a><span class="c1"># connect to the nginx web server through the ingress</span>
+<a id="__codelineno-41-11" name="__codelineno-41-11" href="#__codelineno-41-11"></a>curl<span class="w"> </span>server.example.com.
+</code></pre></div>
+<h2 id="more-service-annotation-options">More service annotation options<a class="headerlink" href="#more-service-annotation-options" title="Permanent link">&para;</a></h2>
+<h3 id="custom-ttl">Custom TTL<a class="headerlink" href="#custom-ttl" title="Permanent link">&para;</a></h3>
+<p>The default DNS record TTL (Time-To-Live) is 300 seconds. You can customize this value by setting the annotation <code>external-dns.alpha.kubernetes.io/ttl</code>.<br />
+e.g., modify the service manifest YAML file above:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-42-5" name="__codelineno-42-5" href="#__codelineno-42-5"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="w">    </span><span class="nt">external-dns.alpha.kubernetes.io/hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx.example.com</span>
+<a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="w">    </span><span class="nt">external-dns.alpha.kubernetes.io/ttl</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;60&quot;</span>
+<a id="__codelineno-42-8" name="__codelineno-42-8" href="#__codelineno-42-8"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-42-9" name="__codelineno-42-9" href="#__codelineno-42-9"></a><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</code></pre></div>
+<p>This will set the DNS record&rsquo;s TTL to 60 seconds.</p>
+<h3 id="routing-policies">Routing policies<a class="headerlink" href="#routing-policies" title="Permanent link">&para;</a></h3>
+<p>Route53 offers <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/routing-policy.html">different routing policies</a>. The routing policy for a record can be controlled with the following annotations:</p>
+<ul>
+<li><code>external-dns.alpha.kubernetes.io/set-identifier</code>: this <strong>needs</strong> to be set to use any of the following routing policies</li>
+</ul>
+<p>For any given DNS name, only <strong>one</strong> of the following routing policies can be used:</p>
+<ul>
+<li>Weighted records: <code>external-dns.alpha.kubernetes.io/aws-weight</code></li>
+<li>Latency-based routing: <code>external-dns.alpha.kubernetes.io/aws-region</code></li>
+<li>Failover:<code>external-dns.alpha.kubernetes.io/aws-failover</code></li>
+<li>Geolocation-based routing:</li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geolocation-continent-code</code></li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geolocation-country-code</code></li>
+<li><code>external-dns.alpha.kubernetes.io/aws-geolocation-subdivision-code</code></li>
+<li>Multi-value answer:<code>external-dns.alpha.kubernetes.io/aws-multi-value-answer</code></li>
+</ul>
+<h3 id="associating-dns-records-with-healthchecks">Associating DNS records with healthchecks<a class="headerlink" href="#associating-dns-records-with-healthchecks" title="Permanent link">&para;</a></h3>
+<p>You can configure Route53 to associate DNS records with healthchecks for automated DNS failover using<br />
+<code>external-dns.alpha.kubernetes.io/aws-health-check-id: &lt;health-check-id&gt;</code> annotation.</p>
+<p>Note: ExternalDNS does not support creating healthchecks, and assumes that <code>&lt;health-check-id&gt;</code> already exists.</p>
+<h2 id="govcloud-caveats">Govcloud caveats<a class="headerlink" href="#govcloud-caveats" title="Permanent link">&para;</a></h2>
+<p>Due to the special nature with how Route53 runs in Govcloud, there are a few tweaks in the deployment settings.</p>
+<ul>
+<li>An Environment variable with name of <code>AWS_REGION</code> set to either <code>us-gov-west-1</code> or <code>us-gov-east-1</code> is required. Otherwise it tries to lookup a region that does not exist in Govcloud and it errors out.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_REGION</span>
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a><span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">us-gov-west-1</span>
+</code></pre></div>
+<ul>
+<li>Route53 in Govcloud does not allow aliases. Therefore, container args must be set so that it uses CNAMES and a txt-prefix must be set to something. Otherwise, it will try to create a TXT record with the same value than the CNAME itself, which is not allowed.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--aws-prefer-cname</span>
+<a id="__codelineno-44-3" name="__codelineno-44-3" href="#__codelineno-44-3"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--txt-prefix={{ YOUR_PREFIX }}</span>
+</code></pre></div>
+<ul>
+<li>The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commerical AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code> with a key and secret to the commerical account that has the sufficient rights.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-45-1" name="__codelineno-45-1" href="#__codelineno-45-1"></a><span class="nt">env</span><span class="p">:</span>
+<a id="__codelineno-45-2" name="__codelineno-45-2" href="#__codelineno-45-2"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_ACCESS_KEY_ID</span>
+<a id="__codelineno-45-3" name="__codelineno-45-3" href="#__codelineno-45-3"></a><span class="w">  </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">XXXXXXXXX</span>
+<a id="__codelineno-45-4" name="__codelineno-45-4" href="#__codelineno-45-4"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AWS_SECRET_ACCESS_KEY</span>
+<a id="__codelineno-45-5" name="__codelineno-45-5" href="#__codelineno-45-5"></a><span class="w">  </span><span class="nt">valueFrom</span><span class="p">:</span>
+<a id="__codelineno-45-6" name="__codelineno-45-6" href="#__codelineno-45-6"></a><span class="w">    </span><span class="nt">secretKeyRef</span><span class="p">:</span>
+<a id="__codelineno-45-7" name="__codelineno-45-7" href="#__codelineno-45-7"></a><span class="w">      </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">YOUR_SECRET_NAME</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+<a id="__codelineno-45-8" name="__codelineno-45-8" href="#__codelineno-45-8"></a><span class="w">      </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{{</span><span class="w"> </span><span class="nv">YOUR_SECRET_KEY</span><span class="w"> </span><span class="p p-Indicator">}}</span>
+</code></pre></div>
+<h2 id="clean-up">Clean up<a class="headerlink" href="#clean-up" title="Permanent link">&para;</a></h2>
+<p>Make sure to delete all Service objects before terminating the cluster so all load balancers get cleaned up correctly.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-46-1" name="__codelineno-46-1" href="#__codelineno-46-1"></a>kubectl<span class="w"> </span>delete<span class="w"> </span>service<span class="w"> </span>nginx
+</code></pre></div>
+<p><strong>IMPORTANT</strong> If you attached a policy to the Node IAM Role, then you will want to detach this before deleting the EKS cluster.  Otherwise, the role resource will be locked, and the cluster cannot be deleted, especially if it was provisioned by automation like <code>terraform</code> or <code>eksctl</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-47-1" name="__codelineno-47-1" href="#__codelineno-47-1"></a>aws<span class="w"> </span>iam<span class="w"> </span>detach-role-policy<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$NODE_ROLE_NAME</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+</code></pre></div>
+<p>If the cluster was provisioned using <code>eksctl</code>, you can delete the cluster with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-48-1" name="__codelineno-48-1" href="#__codelineno-48-1"></a>eksctl<span class="w"> </span>delete<span class="w"> </span>cluster<span class="w"> </span>--name<span class="w"> </span><span class="nv">$EKS_CLUSTER_NAME</span><span class="w"> </span>--region<span class="w"> </span><span class="nv">$EKS_CLUSTER_REGION</span>
+</code></pre></div>
+<p>Give ExternalDNS some time to clean up the DNS records for you. Then delete the hosted zone if you created one for the testing purpose.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-49-1" name="__codelineno-49-1" href="#__codelineno-49-1"></a>aws<span class="w"> </span>route53<span class="w"> </span>delete-hosted-zone<span class="w"> </span>--id<span class="w"> </span><span class="nv">$NODE_ID</span><span class="w"> </span><span class="c1"># e.g /hostedzone/ZEWFWZ4R16P7IB</span>
+</code></pre></div>
+<p>If IAM user credentials were used, you can remove the user with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-50-1" name="__codelineno-50-1" href="#__codelineno-50-1"></a>aws<span class="w"> </span>iam<span class="w"> </span>detach-user-policy<span class="w"> </span>--user-name<span class="w"> </span><span class="s2">&quot;externaldns&quot;</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+<a id="__codelineno-50-2" name="__codelineno-50-2" href="#__codelineno-50-2"></a>aws<span class="w"> </span>iam<span class="w"> </span>delete-user<span class="w"> </span>--user-name<span class="w"> </span><span class="s2">&quot;externaldns&quot;</span>
+</code></pre></div>
+<p>If IRSA was used, you can remove the IRSA role with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-51-1" name="__codelineno-51-1" href="#__codelineno-51-1"></a>aws<span class="w"> </span>iam<span class="w"> </span>detach-role-policy<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$IRSA_ROLE</span><span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+<a id="__codelineno-51-2" name="__codelineno-51-2" href="#__codelineno-51-2"></a>aws<span class="w"> </span>iam<span class="w"> </span>delete-role<span class="w"> </span>--role-name<span class="w"> </span><span class="nv">$IRSA_ROLE</span>
+</code></pre></div>
+<p>Delete any unneeded policies:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-52-1" name="__codelineno-52-1" href="#__codelineno-52-1"></a>aws<span class="w"> </span>iam<span class="w"> </span>delete-policy<span class="w"> </span>--policy-arn<span class="w"> </span><span class="nv">$POLICY_ARN</span>
+</code></pre></div>
+<h2 id="throttling">Throttling<a class="headerlink" href="#throttling" title="Permanent link">&para;</a></h2>
+<p>Route53 has a <a href="https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests-route-53">5 API requests per second per account hard quota</a>.<br />
+Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:<br />
+* Reduce the polling loop&rsquo;s synchronization interval at the possible cost of slower change propagation (but see <code>--events</code> below to reduce the impact).<br />
+  * <code>--interval=5m</code> (default <code>1m</code>)<br />
+* Trigger the polling loop on changes to K8s objects, rather than only at <code>interval</code>, to have responsive updates with long poll intervals<br />
+  * <code>--events</code><br />
+* Limit the <a href="https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L364">sources watched</a> when the <code>--events</code> flag is specified to specific types, namespaces, labels, or annotations<br />
+  * <code>--source=ingress --source=service</code> - specify multiple times for multiple sources<br />
+  * <code>--namespace=my-app</code><br />
+  * <code>--label-filter=app in (my-app)</code><br />
+  * <code>--annotation-filter=kubernetes.io/ingress.class in (nginx-external)</code> - note that this filter would apply to services too..<br />
+* Limit services watched by type (not applicable to ingress or other types)<br />
+  * <code>--service-type-filter=LoadBalancer</code> default <code>all</code><br />
+* Limit the hosted zones considered<br />
+  * <code>--zone-id-filter=ABCDEF12345678</code> - specify multiple times if needed<br />
+  * <code>--domain-filter=example.com</code> by domain suffix - specify multiple times if needed<br />
+  * <code>--regex-domain-filter=example*</code> by domain suffix but as a regex - overrides domain-filter<br />
+  * <code>--exclude-domains=ignore.this.example.com</code> to exclude a domain or subdomain<br />
+  * <code>--regex-domain-exclusion=ignore*</code> subtracts it&rsquo;s matches from <code>regex-domain-filter</code>&lsquo;s matches<br />
+  * <code>--aws-zone-type=public</code> only sync zones of this type <code>[public|private]</code><br />
+  * <code>--aws-zone-tags=owner=k8s</code> only sync zones with this tag<br />
+* If the list of zones managed by ExternalDNS doesn&rsquo;t change frequently, cache it by setting a TTL.<br />
+  * <code>--aws-zones-cache-duration=3h</code> (default <code>0</code> - disabled)<br />
+* Increase the number of changes applied to Route53 in each batch<br />
+  * <code>--aws-batch-change-size=4000</code> (default <code>1000</code>)<br />
+* Increase the interval between changes<br />
+  * <code>--aws-batch-change-interval=10s</code> (default <code>1s</code>)<br />
+* Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.</p>
+<p>A simple way to implement randomised startup is with an init container:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-53-1" name="__codelineno-53-1" href="#__codelineno-53-1"></a>...
+<a id="__codelineno-53-2" name="__codelineno-53-2" href="#__codelineno-53-2"></a>    spec:
+<a id="__codelineno-53-3" name="__codelineno-53-3" href="#__codelineno-53-3"></a>      initContainers:
+<a id="__codelineno-53-4" name="__codelineno-53-4" href="#__codelineno-53-4"></a>      - name: init-jitter
+<a id="__codelineno-53-5" name="__codelineno-53-5" href="#__codelineno-53-5"></a>        image: registry.k8s.io/external-dns/external-dns:v0.13.1
+<a id="__codelineno-53-6" name="__codelineno-53-6" href="#__codelineno-53-6"></a>        command:
+<a id="__codelineno-53-7" name="__codelineno-53-7" href="#__codelineno-53-7"></a>        - /bin/sh
+<a id="__codelineno-53-8" name="__codelineno-53-8" href="#__codelineno-53-8"></a>        - -c
+<a id="__codelineno-53-9" name="__codelineno-53-9" href="#__codelineno-53-9"></a>        - &#39;FOR=$((RANDOM % 10))s;echo &quot;Sleeping for $FOR&quot;;sleep $FOR&#39;
+<a id="__codelineno-53-10" name="__codelineno-53-10" href="#__codelineno-53-10"></a>      containers:
+<a id="__codelineno-53-11" name="__codelineno-53-11" href="#__codelineno-53-11"></a>...
+</code></pre></div>
+<h3 id="eks">EKS<a class="headerlink" href="#eks" title="Permanent link">&para;</a></h3>
+<p>An effective starting point for EKS with an ingress controller might look like:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-54-1" name="__codelineno-54-1" href="#__codelineno-54-1"></a>--interval<span class="o">=</span>5m
+<a id="__codelineno-54-2" name="__codelineno-54-2" href="#__codelineno-54-2"></a>--events
+<a id="__codelineno-54-3" name="__codelineno-54-3" href="#__codelineno-54-3"></a>--source<span class="o">=</span>ingress
+<a id="__codelineno-54-4" name="__codelineno-54-4" href="#__codelineno-54-4"></a>--domain-filter<span class="o">=</span>example.com
+<a id="__codelineno-54-5" name="__codelineno-54-5" href="#__codelineno-54-5"></a>--aws-zones-cache-duration<span class="o">=</span>1h
+</code></pre></div>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">December 23, 2022</span>
+      
+    
+  </small>
+</div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../aws-sd/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Setting up ExternalDNS using AWS Cloud Map API" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Setting up ExternalDNS using AWS Cloud Map API
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../azure-private-dns/" class="md-footer__link md-footer__link--next" aria-label="Next: Set up ExternalDNS for Azure Private DNS" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Set up ExternalDNS for Azure Private DNS
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "navigation.top", "navigation.tracking", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.5e67fbfe.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c44cc438.min.js"></script>
+      
+    
+  </body>
+</html>
