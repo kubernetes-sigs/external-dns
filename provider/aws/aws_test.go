@@ -847,6 +847,65 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	require.Error(t, provider.submitChanges(ctx, cs, zones))
 }
 
+func TestAWSsubmitChangesRetryOnError(t *testing.T) {
+	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, []*endpoint.Endpoint{})
+
+	ctx := context.Background()
+	zones, err := provider.Zones(ctx)
+	require.NoError(t, err)
+
+	ep1 := endpoint.NewEndpointWithTTL("success.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
+	ep2 := endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.2")
+	ep3 := endpoint.NewEndpointWithTTL("success2.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.3")
+
+	ep2txt := endpoint.NewEndpointWithTTL("fail__edns_housekeeping.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "something") // "__edns_housekeeping" is the TXT suffix
+	ep2txt.Labels = map[string]string{
+		endpoint.OwnedRecordLabelKey: "fail.zone-1.ext-dns-test-2.teapot.zalan.do",
+	}
+
+	// "success" and "fail" are created in the first step, both are submitted in the same batch; this should fail
+	cs1 := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep2, ep2txt, ep1})
+	input1 := &route53.ChangeResourceRecordSetsInput{
+		HostedZoneId: aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: cs1.Route53Changes(),
+		},
+	}
+	clientStub.MockMethod("ChangeResourceRecordSets", input1).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	// because of the failure, changes will be retried one by one; make "fail" submitted in its own batch fail as well
+	cs2 := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep2, ep2txt})
+	input2 := &route53.ChangeResourceRecordSetsInput{
+		HostedZoneId: aws.String("/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+		ChangeBatch: &route53.ChangeBatch{
+			Changes: cs2.Route53Changes(),
+		},
+	}
+	clientStub.MockMethod("ChangeResourceRecordSets", input2).Return(nil, fmt.Errorf("Mock route53 failure"))
+
+	// "success" should have been created, verify that we still get an error because "fail" failed
+	require.Error(t, provider.submitChanges(ctx, cs1, zones))
+
+	// assert that "success" was successfully created and "fail" and its TXT record were not
+	records, err := provider.Records(ctx)
+	require.NoError(t, err)
+	require.True(t, containsRecordWithDNSName(records, "success.zone-1.ext-dns-test-2.teapot.zalan.do"))
+	require.False(t, containsRecordWithDNSName(records, "fail.zone-1.ext-dns-test-2.teapot.zalan.do"))
+	require.False(t, containsRecordWithDNSName(records, "fail__edns_housekeeping.zone-1.ext-dns-test-2.teapot.zalan.do"))
+
+	// next batch should contain "fail" and "success2", should succeed this time
+	cs3 := provider.newChanges(route53.ChangeActionCreate, []*endpoint.Endpoint{ep2, ep2txt, ep3})
+	require.NoError(t, provider.submitChanges(ctx, cs3, zones))
+
+	// verify all records are there
+	records, err = provider.Records(ctx)
+	require.NoError(t, err)
+	require.True(t, containsRecordWithDNSName(records, "success.zone-1.ext-dns-test-2.teapot.zalan.do"))
+	require.True(t, containsRecordWithDNSName(records, "fail.zone-1.ext-dns-test-2.teapot.zalan.do"))
+	require.True(t, containsRecordWithDNSName(records, "success2.zone-1.ext-dns-test-2.teapot.zalan.do"))
+	require.True(t, containsRecordWithDNSName(records, "fail__edns_housekeeping.zone-1.ext-dns-test-2.teapot.zalan.do"))
+}
+
 func TestAWSBatchChangeSet(t *testing.T) {
 	var cs Route53Changes
 
@@ -1375,6 +1434,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		zoneTagFilter:        zoneTagFilter,
 		dryRun:               false,
 		zonesCache:           &zonesListCache{duration: 1 * time.Minute},
+		failedChangesQueue:   make(map[string]Route53Changes),
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{
@@ -1447,6 +1507,15 @@ func addZoneTags(tagMap map[string][]*route53.Tag, zoneID string, tags map[strin
 
 func validateRecords(t *testing.T, records []*route53.ResourceRecordSet, expected []*route53.ResourceRecordSet) {
 	assert.ElementsMatch(t, expected, records)
+}
+
+func containsRecordWithDNSName(records []*endpoint.Endpoint, dnsName string) bool {
+	for _, record := range records {
+		if record.DNSName == dnsName {
+			return true
+		}
+	}
+	return false
 }
 
 func TestRequiresDeleteCreate(t *testing.T) {

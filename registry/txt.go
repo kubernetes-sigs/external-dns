@@ -198,6 +198,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 	if txt != nil {
 		txt.WithSetIdentifier(r.SetIdentifier)
+		txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txt.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txt)
 	}
@@ -206,6 +207,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
+		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
 	}
