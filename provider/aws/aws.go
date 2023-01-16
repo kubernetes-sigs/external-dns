@@ -136,6 +136,22 @@ type Route53API interface {
 	ListTagsForResourceWithContext(ctx context.Context, input *route53.ListTagsForResourceInput, opts ...request.Option) (*route53.ListTagsForResourceOutput, error)
 }
 
+// wrapper to handle ownership relation throughout the provider implementation
+type Route53Change struct {
+	route53.Change
+	OwnedRecord string
+}
+
+type Route53Changes []*Route53Change
+
+func (cs Route53Changes) Route53Changes() []*route53.Change {
+	ret := []*route53.Change{}
+	for _, c := range cs {
+		ret = append(ret, &c.Change)
+	}
+	return ret
+}
+
 type zonesListCache struct {
 	age      time.Time
 	duration time.Duration
@@ -467,7 +483,7 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint
 	return false
 }
 
-func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint.Endpoint) []*route53.Change {
+func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint.Endpoint) Route53Changes {
 	var deletes []*endpoint.Endpoint
 	var creates []*endpoint.Endpoint
 	var updates []*endpoint.Endpoint
@@ -483,7 +499,7 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 		}
 	}
 
-	combined := make([]*route53.Change, 0, len(deletes)+len(creates)+len(updates))
+	combined := make(Route53Changes, 0, len(deletes)+len(creates)+len(updates))
 	combined = append(combined, p.newChanges(route53.ChangeActionCreate, creates)...)
 	combined = append(combined, p.newChanges(route53.ChangeActionUpsert, updates)...)
 	combined = append(combined, p.newChanges(route53.ChangeActionDelete, deletes)...)
@@ -514,7 +530,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 
 	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
 
-	combinedChanges := make([]*route53.Change, 0, len(changes.Delete)+len(changes.Create)+len(updateChanges))
+	combinedChanges := make(Route53Changes, 0, len(changes.Delete)+len(changes.Create)+len(updateChanges))
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionCreate, changes.Create)...)
 	combinedChanges = append(combinedChanges, p.newChanges(route53.ChangeActionDelete, changes.Delete)...)
 	combinedChanges = append(combinedChanges, updateChanges...)
@@ -523,7 +539,7 @@ func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
-func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Change, zones map[string]*route53.HostedZone) error {
+func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes, zones map[string]*route53.HostedZone) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
 		log.Info("All records are already up to date")
@@ -551,7 +567,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 				params := &route53.ChangeResourceRecordSetsInput{
 					HostedZoneId: aws.String(z),
 					ChangeBatch: &route53.ChangeBatch{
-						Changes: b,
+						Changes: b.Route53Changes(),
 					},
 				}
 
@@ -583,8 +599,8 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes []*route53.Chan
 }
 
 // newChanges returns a collection of Changes based on the given records and action.
-func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) []*route53.Change {
-	changes := make([]*route53.Change, 0, len(endpoints))
+func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) Route53Changes {
+	changes := make(Route53Changes, 0, len(endpoints))
 
 	for _, endpoint := range endpoints {
 		change, dualstack := p.newChange(action, endpoint)
@@ -592,7 +608,7 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) 
 		if dualstack {
 			// make a copy of change, modify RRS type to AAAA, then add new change
 			rrs := *change.ResourceRecordSet
-			change2 := &route53.Change{Action: change.Action, ResourceRecordSet: &rrs}
+			change2 := &Route53Change{Change: route53.Change{Action: change.Action, ResourceRecordSet: &rrs}}
 			change2.ResourceRecordSet.Type = aws.String(route53.RRTypeAaaa)
 			changes = append(changes, change2)
 		}
@@ -635,11 +651,13 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoin
 // returned Change is based on the given record by the given action, e.g.
 // action=ChangeActionCreate returns a change for creation of the record and
 // action=ChangeActionDelete returns a change for deletion of the record.
-func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*route53.Change, bool) {
-	change := &route53.Change{
-		Action: aws.String(action),
-		ResourceRecordSet: &route53.ResourceRecordSet{
-			Name: aws.String(ep.DNSName),
+func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53Change, bool) {
+	change := &Route53Change{
+		Change: route53.Change{
+			Action: aws.String(action),
+			ResourceRecordSet: &route53.ResourceRecordSet{
+				Name: aws.String(ep.DNSName),
+			},
 		},
 	}
 	dualstack := false
@@ -736,15 +754,15 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 	return tagMap, nil
 }
 
-func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
+func batchChangeSet(cs Route53Changes, batchSize int) []Route53Changes {
 	if len(cs) <= batchSize {
 		res := sortChangesByActionNameType(cs)
-		return [][]*route53.Change{res}
+		return []Route53Changes{res}
 	}
 
-	batchChanges := make([][]*route53.Change, 0)
+	batchChanges := make([]Route53Changes, 0)
 
-	changesByName := make(map[string][]*route53.Change)
+	changesByName := make(map[string]Route53Changes)
 	for _, v := range cs {
 		changesByName[*v.ResourceRecordSet.Name] = append(changesByName[*v.ResourceRecordSet.Name], v)
 	}
@@ -784,7 +802,7 @@ func batchChangeSet(cs []*route53.Change, batchSize int) [][]*route53.Change {
 	return batchChanges
 }
 
-func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
+func sortChangesByActionNameType(cs Route53Changes) Route53Changes {
 	sort.SliceStable(cs, func(i, j int) bool {
 		if *cs[i].Action > *cs[j].Action {
 			return true
@@ -805,11 +823,11 @@ func sortChangesByActionNameType(cs []*route53.Change) []*route53.Change {
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.
-func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Change) map[string][]*route53.Change {
-	changes := make(map[string][]*route53.Change)
+func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Changes) map[string]Route53Changes {
+	changes := make(map[string]Route53Changes)
 
 	for _, z := range zones {
-		changes[aws.StringValue(z.Id)] = []*route53.Change{}
+		changes[aws.StringValue(z.Id)] = Route53Changes{}
 	}
 
 	for _, c := range changeSet {
@@ -828,9 +846,11 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet []*route53.Ch
 				aliasTarget := *rrset.AliasTarget
 				aliasTarget.HostedZoneId = aws.String(cleanZoneID(aws.StringValue(z.Id)))
 				rrset.AliasTarget = &aliasTarget
-				c = &route53.Change{
-					Action:            c.Action,
-					ResourceRecordSet: &rrset,
+				c = &Route53Change{
+					Change: route53.Change{
+						Action:            c.Action,
+						ResourceRecordSet: &rrset,
+					},
 				}
 			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
