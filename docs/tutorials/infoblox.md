@@ -2,19 +2,21 @@
 
 This tutorial describes how to setup ExternalDNS for usage with Infoblox.
 
-Make sure to use **>=0.4.6** version of ExternalDNS for this tutorial. The only WAPI version that
+Make sure to use **>=0.10.2** version of ExternalDNS for this tutorial. The only WAPI version that
 has been validated is **v2.3.1**. It is assumed that the API user has rights to create objects of
 the following types: `zone_auth`, `record:a`, `record:cname`, `record:txt`.
 
 This tutorial assumes you have substituted the correct values for the following environment variables:
 
 ```
-export GRID_HOST=127.0.0.1
+export GRID_HOST=172.18.20.1
 export WAPI_PORT=443
 export WAPI_VERSION=2.3.1
 export WAPI_USERNAME=admin
 export WAPI_PASSWORD=infoblox
 ```
+
+**Warning**: Grid's Cloud platform member is not supported yet as a target host to be used by ExternalDNS plugin.
 
 ## Creating an Infoblox DNS zone
 
@@ -177,6 +179,18 @@ spec:
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
 ```
 
+You also may use Grid Master Candidate node for 'read-only' requests, to load off the Grid Master node.
+The parameters which may be defined additionaly for this case are:
+
+* infoblox-grid-host-ro
+* infoblox-wapi-port-ro
+* infoblox-wapi-username-ro
+* infoblox-wapi-password-ro
+* infoblox-wapi-version-ro
+* infoblox-ssl-verify-ro
+
+The parameters may be the same as for 'write' requests. In this case, all the requests go to the same node,
+the same as in the case when no 'read-only' parameters are specified.
 
 ## Deploying an Nginx Service
 
@@ -265,16 +279,23 @@ $ curl -kl \
 
 ## Ability to filter results from the zone auth API using a regular expression
 
-There is also the ability to filter results from the Infoblox zone_auth service based upon a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature for the zone_auth service, set the parameter infoblox-fqdn-regex for external-dns to a regular expression that makes sense for you.  For instance, to only return hosted zones that start with staging in the test.com domain (like staging.beta.test.com, or staging.test.com), use the following command line option when starting external-dns
+There is also the ability to filter results from the Infoblox zone_auth service
+based upon a regular expression.
+See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf)
+for examples. To use this feature for the zone_auth service,
+set the parameter 'infoblox-fqdn-regex' for external-dns to a regular expression that
+makes sense for you.  For instance, to only return hosted zones that start with
+'staging' in the 'test.com' domain (like staging.beta.test.com, or staging.test.com),
+use the following command line option when starting external-dns:
 
 ```
---infoblox-fqdn-regex=^staging.*test.com$
+--infoblox-fqdn-regex='^staging.*test.com$'
 ```
 
-## Infoblox PTR record support
+The regular expression must take into account all the zones (including reverse-mapping)
+which are to be populated by the plugin. Any zone which does not match the regular
+expression will be ignored, no matter if it is a forward- or reverse-mapping zone.
+This note is specifically for the case when 'infoblox-create-ptr' is in use. 
 
-There is an option to enable PTR records support for infoblox provider. PTR records allow to do reverse dns search. To enable PTR records support, add following into arguments for external-dns:  
-`--infoblox-create-ptr` to allow management of PTR records.  
-You can also add a filter for reverse dns zone to limit PTR records to specific zones only:  
-`--domain-filter=10.196.0.0/16` change this to the reverse zone(s) as defined in your infoblox.  
-Now external-dns will manage PTR records for you.
+To select one forward-mapping zone and all of reverse-mapping zones,
+you may

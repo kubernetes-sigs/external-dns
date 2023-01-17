@@ -97,7 +97,7 @@ var (
 		InfobloxWapiPasswordRO:      "",
 		InfobloxWapiVersionRO:       "2.3.1",
 		InfobloxSSLVerifyRO:         true,
-		InfobloxView:                "",
+		InfobloxView:                "default",
 		InfobloxMaxResults:          0,
 		OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 		InMemoryZones:               []string{""},
