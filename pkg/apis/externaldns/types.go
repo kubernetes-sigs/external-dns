@@ -120,6 +120,16 @@ type Config struct {
 	InfobloxWapiPassword              string `secure:"yes"`
 	InfobloxWapiVersion               string
 	InfobloxSSLVerify                 bool
+	InfobloxClientCert                string
+	InfobloxClientKey                 string
+	InfobloxGridHostRO                string
+	InfobloxWapiPortRO                int
+	InfobloxWapiUsernameRO            string
+	InfobloxWapiPasswordRO            string `secure:"yes"`
+	InfobloxWapiVersionRO             string
+	InfobloxSSLVerifyRO               bool
+	InfobloxClientCertRO              string
+	InfobloxClientKeyRO               string
 	InfobloxView                      string
 	InfobloxMaxResults                int
 	InfobloxFQDNRegEx                 string
@@ -264,11 +274,21 @@ var defaultConfig = &Config{
 	AkamaiEdgercPath:            "",
 	InfobloxGridHost:            "",
 	InfobloxWapiPort:            443,
-	InfobloxWapiUsername:        "admin",
+	InfobloxWapiUsername:        "",
 	InfobloxWapiPassword:        "",
 	InfobloxWapiVersion:         "2.3.1",
 	InfobloxSSLVerify:           true,
-	InfobloxView:                "",
+	InfobloxClientCert:          "",
+	InfobloxClientKey:           "",
+	InfobloxGridHostRO:          "",
+	InfobloxWapiPortRO:          443,
+	InfobloxWapiUsernameRO:      "",
+	InfobloxWapiPasswordRO:      "",
+	InfobloxWapiVersionRO:       "2.3.1",
+	InfobloxSSLVerifyRO:         true,
+	InfobloxClientCertRO:        "",
+	InfobloxClientKeyRO:         "",
+	InfobloxView:                "default",
 	InfobloxMaxResults:          0,
 	InfobloxFQDNRegEx:           "",
 	InfobloxCreatePTR:           false,
@@ -480,17 +500,29 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("akamai-access-token", "When using the Akamai provider, specify the access token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiAccessToken).StringVar(&cfg.AkamaiAccessToken)
 	app.Flag("akamai-edgerc-path", "When using the Akamai provider, specify the .edgerc file path. Path must be reachable form invocation environment. (required when --provider=akamai and *-token, secret serviceconsumerdomain not specified)").Default(defaultConfig.AkamaiEdgercPath).StringVar(&cfg.AkamaiEdgercPath)
 	app.Flag("akamai-edgerc-section", "When using the Akamai provider, specify the .edgerc file path (Optional when edgerc-path is specified)").Default(defaultConfig.AkamaiEdgercSection).StringVar(&cfg.AkamaiEdgercSection)
+
 	app.Flag("infoblox-grid-host", "When using the Infoblox provider, specify the Grid Manager host (required when --provider=infoblox)").Default(defaultConfig.InfobloxGridHost).StringVar(&cfg.InfobloxGridHost)
-	app.Flag("infoblox-wapi-port", "When using the Infoblox provider, specify the WAPI port (default: 443)").Default(strconv.Itoa(defaultConfig.InfobloxWapiPort)).IntVar(&cfg.InfobloxWapiPort)
-	app.Flag("infoblox-wapi-username", "When using the Infoblox provider, specify the WAPI username (default: admin)").Default(defaultConfig.InfobloxWapiUsername).StringVar(&cfg.InfobloxWapiUsername)
+	app.Flag("infoblox-wapi-port", "When using the Infoblox provider, specify the WAPI port").Default(strconv.Itoa(defaultConfig.InfobloxWapiPort)).IntVar(&cfg.InfobloxWapiPort)
+	app.Flag("infoblox-wapi-username", "When using the Infoblox provider, specify the WAPI username").Default(defaultConfig.InfobloxWapiUsername).StringVar(&cfg.InfobloxWapiUsername)
 	app.Flag("infoblox-wapi-password", "When using the Infoblox provider, specify the WAPI password (required when --provider=infoblox)").Default(defaultConfig.InfobloxWapiPassword).StringVar(&cfg.InfobloxWapiPassword)
-	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version (default: 2.3.1)").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
-	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate (default: true, disable with --no-infoblox-ssl-verify)").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
-	app.Flag("infoblox-view", "DNS view (default: \"\")").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
+	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
+	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
+	app.Flag("infoblox-client-cert", "Path to a certificate file (public part) to be used for client-based authentication when connecting to an Infoblox NIOS server").Default(defaultConfig.InfobloxClientCert).StringVar(&cfg.InfobloxClientCert)
+	app.Flag("infoblox-client-key", "Path to a certificate key (private part) to be used for client-based authentication when connecting to an Infoblox server").Default(defaultConfig.InfobloxClientKey).StringVar(&cfg.InfobloxClientKey)
+	app.Flag("infoblox-grid-host-ro", "When using the Infoblox provider, specify the Grid Manager host (required when --provider=infoblox). This if used for 'read' operations, if defined, along with other Infoblox-related options with '-ro' suffix.").Default(defaultConfig.InfobloxGridHostRO).StringVar(&cfg.InfobloxGridHostRO)
+	app.Flag("infoblox-wapi-port-ro", "When using the Infoblox provider, specify the WAPI port").Default(strconv.Itoa(defaultConfig.InfobloxWapiPortRO)).IntVar(&cfg.InfobloxWapiPortRO)
+	app.Flag("infoblox-wapi-username-ro", "When using the Infoblox provider, specify the WAPI username").Default(defaultConfig.InfobloxWapiUsernameRO).StringVar(&cfg.InfobloxWapiUsernameRO)
+	app.Flag("infoblox-wapi-password-ro", "When using the Infoblox provider, specify the WAPI password").Default(defaultConfig.InfobloxWapiPasswordRO).StringVar(&cfg.InfobloxWapiPasswordRO)
+	app.Flag("infoblox-wapi-version-ro", "When using the Infoblox provider, specify the WAPI version").Default(defaultConfig.InfobloxWapiVersionRO).StringVar(&cfg.InfobloxWapiVersionRO)
+	app.Flag("infoblox-ssl-verify-ro", "When using the Infoblox provider, specify whether to verify the SSL certificate").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerifyRO)).BoolVar(&cfg.InfobloxSSLVerifyRO)
+	app.Flag("infoblox-client-cert-ro", "Path to a certificate file (public part) to be used for client-based authentication when connecting to an Infoblox NIOS server").Default(defaultConfig.InfobloxClientCertRO).StringVar(&cfg.InfobloxClientCertRO)
+	app.Flag("infoblox-client-key-ro", "Path to a certificate key (private part) to be used for client-based authentication when connecting to an Infoblox server").Default(defaultConfig.InfobloxClientKeyRO).StringVar(&cfg.InfobloxClientKeyRO)
+	app.Flag("infoblox-view", "DNS view for records to be managed").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
 	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
 	app.Flag("infoblox-fqdn-regex", "Apply this regular expression as a filter for obtaining zone_auth objects. This is disabled by default.").Default(defaultConfig.InfobloxFQDNRegEx).StringVar(&cfg.InfobloxFQDNRegEx)
 	app.Flag("infoblox-create-ptr", "When using the Infoblox provider, create a ptr entry in addition to an entry").Default(strconv.FormatBool(defaultConfig.InfobloxCreatePTR)).BoolVar(&cfg.InfobloxCreatePTR)
-	app.Flag("infoblox-cache-duration", "When using the Infoblox provider, set the record TTL (0s to disable).").Default(strconv.Itoa(defaultConfig.InfobloxCacheDuration)).IntVar(&cfg.InfobloxCacheDuration)
+	app.Flag("infoblox-cache-duration", "When using the Infoblox provider, set the record TTL (0 to disable).").Default(strconv.Itoa(defaultConfig.InfobloxCacheDuration)).IntVar(&cfg.InfobloxCacheDuration)
+
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
@@ -579,6 +611,43 @@ func (cfg *Config) ParseFlags(args []string) error {
 	_, err := app.Parse(args)
 	if err != nil {
 		return err
+	}
+
+	if cfg.InfobloxGridHostRO != "" && cfg.InfobloxGridHostRO != cfg.InfobloxGridHost ||
+		cfg.InfobloxWapiPortRO != 0 && cfg.InfobloxWapiPortRO != cfg.InfobloxWapiPort {
+
+		// custom settings make sense only if hosts for reading and writing data are not the same...
+		if cfg.InfobloxGridHostRO == "" {
+			cfg.InfobloxGridHostRO = cfg.InfobloxGridHost
+		}
+		if cfg.InfobloxWapiPortRO == 0 {
+			cfg.InfobloxWapiPortRO = cfg.InfobloxWapiPort
+		}
+		if cfg.InfobloxWapiUsernameRO == "" {
+			cfg.InfobloxWapiUsernameRO = cfg.InfobloxWapiUsername
+		}
+		if cfg.InfobloxWapiPasswordRO == "" {
+			cfg.InfobloxWapiPasswordRO = cfg.InfobloxWapiPassword
+		}
+		if cfg.InfobloxWapiVersionRO == "" {
+			cfg.InfobloxWapiVersionRO = cfg.InfobloxWapiVersion
+		}
+		if cfg.InfobloxClientCertRO == "" {
+			cfg.InfobloxClientCertRO = cfg.InfobloxClientCert
+		}
+		if cfg.InfobloxClientKeyRO == "" {
+			cfg.InfobloxClientKeyRO = cfg.InfobloxClientKey
+		}
+	} else {
+		// ... otherwise custom settings for reading data make not a great sense.
+		cfg.InfobloxGridHostRO = cfg.InfobloxGridHost
+		cfg.InfobloxWapiPortRO = cfg.InfobloxWapiPort
+		cfg.InfobloxWapiUsernameRO = cfg.InfobloxWapiUsername
+		cfg.InfobloxWapiPasswordRO = cfg.InfobloxWapiPassword
+		cfg.InfobloxWapiVersionRO = cfg.InfobloxWapiVersion
+		cfg.InfobloxSSLVerifyRO = cfg.InfobloxSSLVerify
+		cfg.InfobloxClientCertRO = cfg.InfobloxClientCert
+		cfg.InfobloxClientKeyRO = cfg.InfobloxClientKey
 	}
 
 	return nil
