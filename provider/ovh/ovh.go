@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/sync/errgroup"
 	"github.com/ovh/go-ovh/ovh"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"

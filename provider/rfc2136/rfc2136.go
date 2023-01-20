@@ -71,7 +71,6 @@ type rfc2136Provider struct {
 
 // Map of supported TSIG algorithms
 var tsigAlgs = map[string]string{
-	"hmac-md5":    dns.HmacMD5,
 	"hmac-sha1":   dns.HmacSHA1,
 	"hmac-sha224": dns.HmacSHA224,
 	"hmac-sha256": dns.HmacSHA256,

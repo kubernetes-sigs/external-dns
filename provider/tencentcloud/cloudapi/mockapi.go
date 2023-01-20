@@ -111,11 +111,7 @@ func (api *mockAPIService) ModifyPrivateZoneRecord(request *privatedns.ModifyPri
 
 func (api *mockAPIService) DescribePrivateZoneList(request *privatedns.DescribePrivateZoneListRequest) (response *privatedns.DescribePrivateZoneListResponse, err error) {
 	response = privatedns.NewDescribePrivateZoneListResponse()
-	response.Response = &struct {
-		TotalCount     *int64                    `json:"TotalCount,omitempty" name:"TotalCount"`
-		PrivateZoneSet []*privatedns.PrivateZone `json:"PrivateZoneSet,omitempty" name:"PrivateZoneSet"`
-		RequestId      *string                   `json:"RequestId,omitempty" name:"RequestId"`
-	}{
+	response.Response = &privatedns.DescribePrivateZoneListResponseParams{
 		TotalCount:     common.Int64Ptr(int64(len(api.privateZones))),
 		PrivateZoneSet: api.privateZones,
 	}
@@ -124,11 +120,7 @@ func (api *mockAPIService) DescribePrivateZoneList(request *privatedns.DescribeP
 
 func (api *mockAPIService) DescribePrivateZoneRecordList(request *privatedns.DescribePrivateZoneRecordListRequest) (response *privatedns.DescribePrivateZoneRecordListResponse, err error) {
 	response = privatedns.NewDescribePrivateZoneRecordListResponse()
-	response.Response = &struct {
-		TotalCount *int64                          `json:"TotalCount,omitempty" name:"TotalCount"`
-		RecordSet  []*privatedns.PrivateZoneRecord `json:"RecordSet,omitempty" name:"RecordSet"`
-		RequestId  *string                         `json:"RequestId,omitempty" name:"RequestId"`
-	}{}
+	response.Response = &privatedns.DescribePrivateZoneRecordListResponseParams{}
 	if _, exist := api.privateZoneRecords[*request.ZoneId]; !exist {
 		response.Response.TotalCount = common.Int64Ptr(0)
 		response.Response.RecordSet = make([]*privatedns.PrivateZoneRecord, 0)

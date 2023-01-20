@@ -8,7 +8,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 As the Gateway API is still in an experimental phase, ExternalDNS makes no backwards
 compatibilty guarantees regarding its support. However, it currently supports a mixture of
 v1alpha2 and v1beta1 APIs. Gateways and HTTPRoutes are supported using the v1beta1 API.
-TLSRoutes, TCPRoutes, and UDPRoutes are supported using the v1alpha2 API.
+GRPCRoutes, TLSRoutes, TCPRoutes, and UDPRoutes are supported using the v1alpha2 API.
 
 ## Hostnames
 
@@ -37,7 +37,7 @@ rules:
   resources: ["namespaces"]
   verbs: ["get","watch","list"]
 - apiGroups: ["gateway.networking.k8s.io"]
-  resources: ["gateways","httproutes","tlsroutes","tcproutes","udproutes"] 
+  resources: ["gateways","httproutes","grpcroutes","tlsroutes","tcproutes","udproutes"] 
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -72,10 +72,11 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.10.0
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         # Add desired Gateway API Route sources.
         - --source=gateway-httproute
+        - --source=gateway-grpcroute
         - --source=gateway-tlsroute
         - --source=gateway-tcproute
         - --source=gateway-udproute

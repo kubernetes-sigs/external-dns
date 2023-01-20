@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: k8s.gcr.io/external-dns/external-dns
+  repository: registry.k8s.io/external-dns/external-dns
   # Overrides the image tag whose default is v{{ .Chart.AppVersion }}
   tag: ""
   pullPolicy: IfNotPresent
@@ -20,6 +20,8 @@ serviceAccount:
   create: true
   # Annotations to add to the service account
   annotations: {}
+  # Labels to add to the service account
+  labels: {}
   # The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
@@ -125,6 +127,16 @@ domainFilters: []
 provider: aws
 
 extraArgs: []
+
+secretConfiguration:
+  enabled: false
+  mountPath: ""
+  subPath: ""
+  data: {}
+    # credentials: |
+    #   [default]
+    #   aws_access_key_id = $SECRET_ACCESS_KEY
+    #   aws_secret_access_key = $SECRET_ACCESS_KEY
 
 deploymentStrategy:
   type: Recreate

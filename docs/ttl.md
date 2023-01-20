@@ -37,7 +37,7 @@ Providers
 
 - [x] AWS (Route53)
 - [x] Azure
-- [ ] Cloudflare
+- [x] Cloudflare
 - [x] DigitalOcean
 - [x] DNSimple
 - [x] Google
@@ -61,6 +61,9 @@ This value is a constant in the provider code.
 ## Azure
 TTL value should be between 1 and 2,147,483,647 seconds.
 By default it will be 300s.
+
+## CloudFlare Provider
+CloudFlare overrides the value to "auto" when the TTL is 0.
 
 ### DigitalOcean Provider
 The DigitalOcean Provider overrides the value to 300s when the TTL is 0.

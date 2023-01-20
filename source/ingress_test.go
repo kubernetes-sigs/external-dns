@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	v1 "k8s.io/api/core/v1"
 	networkv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -1274,8 +1273,8 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 			Rules: []networkv1.IngressRule{},
 		},
 		Status: networkv1.IngressStatus{
-			LoadBalancer: v1.LoadBalancerStatus{
-				Ingress: []v1.LoadBalancerIngress{},
+			LoadBalancer: networkv1.IngressLoadBalancerStatus{
+				Ingress: []networkv1.IngressLoadBalancerIngress{},
 			},
 		},
 	}
@@ -1290,12 +1289,12 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 		})
 	}
 	for _, ip := range ing.ips {
-		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, networkv1.IngressLoadBalancerIngress{
 			IP: ip,
 		})
 	}
 	for _, hostname := range ing.hostnames {
-		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
+		ingress.Status.LoadBalancer.Ingress = append(ingress.Status.LoadBalancer.Ingress, networkv1.IngressLoadBalancerIngress{
 			Hostname: hostname,
 		})
 	}

@@ -18,7 +18,7 @@ package oci
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/oracle/oci-go-sdk/common"
@@ -72,7 +72,7 @@ type ociDNSClient interface {
 // LoadOCIConfig reads and parses the OCI ExternalDNS config file at the given
 // path.
 func LoadOCIConfig(path string) (*OCIConfig, error) {
-	contents, err := ioutil.ReadFile(path)
+	contents, err := os.ReadFile(path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "reading OCI config file %q", path)
 	}

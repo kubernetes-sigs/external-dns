@@ -53,7 +53,7 @@ func (api *defaultTencentAPIService) CreatePrivateZoneRecord(request *privatedns
 		client := api.ClientSetService.PrivateDnsCli(apiAction.Name)
 		if response, err = client.CreatePrivateZoneRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -71,7 +71,7 @@ func (api *defaultTencentAPIService) DeletePrivateZoneRecord(request *privatedns
 		client := api.ClientSetService.PrivateDnsCli(apiAction.Name)
 		if response, err = client.DeletePrivateZoneRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -89,7 +89,7 @@ func (api *defaultTencentAPIService) ModifyPrivateZoneRecord(request *privatedns
 		client := api.ClientSetService.PrivateDnsCli(apiAction.Name)
 		if response, err = client.ModifyPrivateZoneRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -107,7 +107,7 @@ func (api *defaultTencentAPIService) DescribePrivateZoneList(request *privatedns
 		client := api.ClientSetService.PrivateDnsCli(apiAction.Name)
 		if response, err = client.DescribePrivateZoneList(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -125,7 +125,7 @@ func (api *defaultTencentAPIService) DescribePrivateZoneRecordList(request *priv
 		client := api.ClientSetService.PrivateDnsCli(apiAction.Name)
 		if response, err = client.DescribePrivateZoneRecordList(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -147,7 +147,7 @@ func (api *defaultTencentAPIService) DescribeDomainList(request *dnspod.Describe
 		client := api.ClientSetService.DnsPodCli(apiAction.Name)
 		if response, err = client.DescribeDomainList(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -165,7 +165,7 @@ func (api *defaultTencentAPIService) DescribeRecordList(request *dnspod.Describe
 		client := api.ClientSetService.DnsPodCli(apiAction.Name)
 		if response, err = client.DescribeRecordList(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -183,7 +183,7 @@ func (api *defaultTencentAPIService) CreateRecord(request *dnspod.CreateRecordRe
 		client := api.ClientSetService.DnsPodCli(apiAction.Name)
 		if response, err = client.CreateRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -201,7 +201,7 @@ func (api *defaultTencentAPIService) DeleteRecord(request *dnspod.DeleteRecordRe
 		client := api.ClientSetService.DnsPodCli(apiAction.Name)
 		if response, err = client.DeleteRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
@@ -219,7 +219,7 @@ func (api *defaultTencentAPIService) ModifyRecord(request *dnspod.ModifyRecordRe
 		client := api.ClientSetService.DnsPodCli(apiAction.Name)
 		if response, err = client.ModifyRecord(request); err != nil {
 			requestJson := JsonWrapper(request)
-			if retry := dealWithError(apiAction, requestJson, err); retry == false || times == api.RetryDefault {
+			if retry := dealWithError(apiAction, requestJson, err); retry || times == api.RetryDefault {
 				APIErrorRecord(apiAction, requestJson, JsonWrapper(response), err)
 				return nil, err
 			}
