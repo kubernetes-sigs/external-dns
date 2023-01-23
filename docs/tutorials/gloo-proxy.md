@@ -22,7 +22,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Omit to use the default (gloo-system)
@@ -90,7 +90,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=gloo-proxy
         - --gloo-namespace=custom-gloo-system # gloo system namespace. Omit to use the default (gloo-system)
