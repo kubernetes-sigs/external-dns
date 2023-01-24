@@ -102,12 +102,12 @@ func NewAzureProvider(
 ) (*AzureProvider, error) {
 	cfg, err := getConfig(configFile, resourceGroup, userAssignedIdentityClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %w", configFile, err)
 	}
 
 	token, err := getAccessToken(*cfg, cfg.Environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %v", err)
+		return nil, fmt.Errorf("failed to get token: %w", err)
 	}
 
 	zonesClient := dns.NewZonesClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
@@ -139,7 +139,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 	for _, zone := range zones {
 		err := p.iterateRecords(ctx, *zone.Name, func(recordSet dns.RecordSet) bool {
 			if recordSet.Name == nil || recordSet.Type == nil {
-				log.Error("Skipping invalid record set with nil name or type.")
+				log.Error("skipping invalid record set with nil name or type")
 				return true
 			}
 			recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
@@ -303,7 +303,7 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 				log.Infof("Deleting %s record named %q for Azure DNS zone %q.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), ""); err != nil {
 					log.Errorf(
-						"Failed to delete %s record named %q for Azure DNS zone %q: %v",
+						"failed to delete %s record named %q for Azure DNS zone %q: %v",
 						ep.RecordType,
 						name,
 						zone,
@@ -360,7 +360,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named %q to %q for DNS zone %q: %v",
+					"failed to update %s record named %q to %q for DNS zone %q: %v",
 					ep.RecordType,
 					name,
 					ep.Targets,

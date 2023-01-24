@@ -44,12 +44,12 @@ type config struct {
 func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (*config, error) {
 	contents, err := os.ReadFile(configFile)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %w", configFile, err)
 	}
 	cfg := &config{}
 	err = yaml.Unmarshal(contents, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %w", configFile, err)
 	}
 
 	// If a resource group was given, override what was present in the config file
@@ -67,7 +67,7 @@ func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (
 	} else {
 		environment, err = azure.EnvironmentFromName(cfg.Cloud)
 		if err != nil {
-			return nil, fmt.Errorf("invalid cloud value %q: %v", cfg.Cloud, err)
+			return nil, fmt.Errorf("invalid cloud value %q: %w", cfg.Cloud, err)
 		}
 	}
 	cfg.Environment = environment
@@ -90,7 +90,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
 		oauthConfig, err := adal.NewOAuthConfig(environment.ActiveDirectoryEndpoint, cfg.TenantID)
 		if err != nil {
-			return nil, fmt.Errorf("failed to retrieve OAuth config: %v", err)
+			return nil, fmt.Errorf("failed to retrieve OAuth config: %w", err)
 		}
 
 		token, err := adal.NewServicePrincipalToken(
@@ -100,7 +100,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 			environment.ResourceManagerEndpoint,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create service principal token: %v", err)
+			return nil, fmt.Errorf("failed to create service principal token: %w", err)
 		}
 		return token, nil
 	}
@@ -118,7 +118,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 				},
 			)
 			if err != nil {
-				return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+				return nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
 			}
 			return token, nil
 		}
@@ -126,7 +126,7 @@ func getAccessToken(cfg config, environment azure.Environment) (*adal.ServicePri
 		log.Info("Resolving to system assigned identity.")
 		token, err := adal.NewServicePrincipalTokenFromManagedIdentity(environment.ServiceManagementEndpoint, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %v", err)
+			return nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
 		}
 		return token, nil
 	}

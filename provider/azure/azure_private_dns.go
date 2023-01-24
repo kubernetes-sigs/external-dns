@@ -94,12 +94,12 @@ func NewAzurePrivateDNSProvider(
 ) (*AzurePrivateDNSProvider, error) {
 	cfg, err := getConfig(configFile, resourceGroup, userAssignedIdentityClientID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read Azure config file %q: %v", configFile, err)
+		return nil, fmt.Errorf("failed to read Azure config file %q: %w", configFile, err)
 	}
 
 	token, err := getAccessToken(*cfg, cfg.Environment)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %v", err)
+		return nil, fmt.Errorf("failed to get token: %w", err)
 	}
 
 	zonesClient := privatedns.NewPrivateZonesClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
@@ -301,7 +301,7 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 				log.Infof("Deleting %s record named %q for Azure Private DNS zone %q.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(ep.RecordType), name, ""); err != nil {
 					log.Errorf(
-						"Failed to delete %s record named %q for Azure Private DNS zone %q: %v",
+						"failed to delete %s record named %q for Azure Private DNS zone %q: %v",
 						ep.RecordType,
 						name,
 						zone,
@@ -352,7 +352,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 			if err != nil {
 				log.Errorf(
-					"Failed to update %s record named %q to %q for Azure Private DNS zone %q: %v",
+					"failed to update %s record named %q to %q for Azure Private DNS zone %q: %v",
 					ep.RecordType,
 					name,
 					ep.Targets,
