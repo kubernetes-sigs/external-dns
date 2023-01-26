@@ -16,7 +16,6 @@ package gandi
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
@@ -121,11 +120,17 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					name = zone
 				}
 
-				if len(r.RrsetValues) > 1 {
-					return nil, fmt.Errorf("can't handle multiple values for rrset %s", name)
-				}
+				for _, v := range r.RrsetValues {
+					log.WithFields(log.Fields{
+						"record": r.RrsetName,
+						"type":   r.RrsetType,
+						"value":  v,
+						"ttl":    r.RrsetTTL,
+						"zone":   zone,
+					}).Info("Rerturning endpoint record")
 
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, r.RrsetValues[0]))
+					endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, v))
+				}
 			}
 		}
 	}
