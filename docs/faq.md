@@ -181,6 +181,7 @@ Here is the full list of available metrics provided by ExternalDNS:
 | Name                                                | Description                                             | Type    |
 | --------------------------------------------------- | ------------------------------------------------------- | ------- |
 | external_dns_controller_last_sync_timestamp_seconds | Timestamp of last successful sync with the DNS provider | Gauge   |
+| external_dns_controller_last_reconcile_timestamp_seconds | Timestamp of last attempted sync with the DNS provider | Gauge   |
 | external_dns_registry_endpoints_total               | Number of Endpoints in all sources                      | Gauge   |
 | external_dns_registry_errors_total                  | Number of Registry errors                               | Counter |
 | external_dns_source_endpoints_total                 | Number of Endpoints in the registry                     | Gauge   |
