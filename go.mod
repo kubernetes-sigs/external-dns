@@ -38,6 +38,7 @@ require (
 	github.com/miekg/dns v1.1.50
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
+	github.com/nrdcg/desec v0.7.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
 	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73

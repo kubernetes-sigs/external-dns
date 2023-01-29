@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
 	"sigs.k8s.io/external-dns/provider/coredns"
+	"sigs.k8s.io/external-dns/provider/desec"
 	"sigs.k8s.io/external-dns/provider/designate"
 	"sigs.k8s.io/external-dns/provider/digitalocean"
 	"sigs.k8s.io/external-dns/provider/dnsimple"
@@ -354,6 +355,8 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
+	case "desec":
+		p, err = desec.NewDesecProvider(domainFilter, cfg.DesecAPIKey, cfg.DryRun)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

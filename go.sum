@@ -862,6 +862,8 @@ github.com/nesv/go-dynect v0.6.0/go.mod h1:GHRBRKzTwjAMhosHJQq/KrZaFkXIFyJ5zRE7t
 github.com/nic-at/rc0go v1.1.1 h1:bf2gTwYecJEh7qmnOEuarXKueZn4A8N08U1Uop3K8+s=
 github.com/nic-at/rc0go v1.1.1/go.mod h1:KEa3H5fmDNXCaXSqOeAZxkKnG/8ggr1OHIG25Ve7fjU=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
+github.com/nrdcg/desec v0.7.0 h1:iuGhi4pstF3+vJWwt292Oqe2+AsSPKDynQna/eu1fDs=
+github.com/nrdcg/desec v0.7.0/go.mod h1:e1uRqqKv1mJdd5+SQROAhmy75lKMphLzWIuASLkpeFY=
 github.com/nwaples/rardecode v1.0.0/go.mod h1:5DzqNKiOdpKKBH87u8VlvAnPZMXcGRhxWkRpHbbfGS0=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
