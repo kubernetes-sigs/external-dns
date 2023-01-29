@@ -101,6 +101,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.ca-central-1.amazonaws.com":      "Z2EPGBW3API2WT",
 	"elb.ap-east-1.amazonaws.com":         "Z12Y7K3UBGUAD1",
 	"elb.ap-south-1.amazonaws.com":        "ZVDDRBQ08TROA",
+	"elb.ap-northeast-3.amazonaws.com":    "Z1GWIQ4HH19I5X",
 	"elb.ap-northeast-2.amazonaws.com":    "ZIBE1TIR4HY56",
 	"elb.ap-southeast-1.amazonaws.com":    "ZKVM4W9LS7TM",
 	"elb.ap-southeast-2.amazonaws.com":    "ZCT6FZBF4DROD",
