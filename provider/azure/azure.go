@@ -390,6 +390,19 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				},
 			},
 		}, nil
+	case dns.NS:
+		nsRecords := make([]dns.NsRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			nsRecords[i] = dns.NsRecord{
+				Nsdname: to.StringPtr(target),
+			}
+		}
+		return dns.RecordSet{
+			RecordSetProperties: &dns.RecordSetProperties{
+				TTL:       to.Int64Ptr(ttl),
+				NsRecords: &nsRecords,
+			},
+		}, nil
 	}
 	return dns.RecordSet{}, fmt.Errorf("unsupported record type '%s'", endpoint.RecordType)
 }
@@ -433,5 +446,16 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 			return []string{(*values)[0]}
 		}
 	}
+
+	// Check for NS records
+	nsRecords := properties.NsRecords
+	if nsRecords != nil && len(*nsRecords) > 0 && (*nsRecords)[0].Nsdname != nil {
+		targets := make([]string, len(*nsRecords))
+		for i, nsRecord := range *nsRecords {
+			targets[i] = *nsRecord.Nsdname
+		}
+		return targets
+	}
+
 	return []string{}
 }

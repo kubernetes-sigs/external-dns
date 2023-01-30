@@ -9,6 +9,17 @@ This tutorial uses [Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/in
 Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and `kubectl` commands
 are being run on an orchestration node.
 
+## Supported Record types
+
+Note: Not all record types, which are available in Azure DNS, are currently implemented in external-dns. 
+
+Only the following types are currently supported:
+
+- A
+- CNAME
+- TXT
+- NS
+
 ## Creating an Azure DNS zone
 
 The Azure provider for ExternalDNS will find suitable zones for domains it manages; it will not automatically create zones.
