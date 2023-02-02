@@ -280,6 +280,9 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		}
 	}
 
+	logrus.Infof("endpoint for 'read' requests: %s", net.JoinHostPort(hostCfgRO.Host, hostCfgRO.Port))
+	logrus.Infof("endpoint for 'write' requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+
 	return providerCfg, nil
 }
 
