@@ -58,7 +58,7 @@ jobs:
           version: latest
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@98bccfd32b0f76149d188912ac8e45ddd3f8695f
+        uses: helm/chart-releaser-action@be16258da8010256c6e82849661221415f031968
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
