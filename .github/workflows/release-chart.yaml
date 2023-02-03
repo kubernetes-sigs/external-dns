@@ -52,7 +52,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Set-up Helm
-        uses: azure/setup-helm@f382f75448129b3be48f8121b9857be18d815a82
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
