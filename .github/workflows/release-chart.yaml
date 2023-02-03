@@ -34,7 +34,7 @@ jobs:
 
       - name: Get changelog entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@5bfb30f7871d5c4cde50cd897314f37578043394
+        uses: mindsers/changelog-reader-action@b97ce03a10d9bdbb07beb491c76a5a01d78cd3ef
         with:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
