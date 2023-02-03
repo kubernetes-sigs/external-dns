@@ -24,7 +24,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.12.2
+        image: k8s.gcr.io/external-dns/external-dns:v0.13.3
         args:
         - --source=traefik-proxy
         - --provider=aws
@@ -33,8 +33,6 @@ spec:
 ```
 
 ## Manifest (for clusters with RBAC enabled)
-
-Could be change if you have mulitple sources
 
 ```yaml
 apiVersion: v1
@@ -89,7 +87,7 @@ spec:
       containers:
       - name: external-dns
         # update this to the desired external-dns version
-        image: k8s.gcr.io/external-dns/external-dns:v0.12.2
+        image: k8s.gcr.io/external-dns/external-dns:v0.13.3
         args:
         - --source=traefik-proxy
         - --provider=aws
