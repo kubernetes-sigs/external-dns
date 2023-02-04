@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/external-dns/provider/adguardhome"
 
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -178,6 +179,11 @@ func main() {
 
 	var p provider.Provider
 	switch cfg.Provider {
+	case "adguardhome":
+		p, err = adguardhome.NewAdguardHomeProvider(
+			domainFilter,
+			cfg.DryRun,
+		)
 	case "akamai":
 		p, err = akamai.NewAkamaiProvider(
 			akamai.AkamaiConfig{
