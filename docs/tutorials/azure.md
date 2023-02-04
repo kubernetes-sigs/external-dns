@@ -518,7 +518,7 @@ Create the deployment for ExternalDNS:
 $ kubectl create --namespace "default" --filename externaldns.yaml
 ```
 
-## Deploying an Nginx Service
+## Ingress Option: Expose an nginx service with an ingress
 
 Create a file called `nginx.yaml` with the following contents:
 
@@ -585,6 +585,49 @@ $ kubectl create --namespace "default" --filename nginx.yaml
 ```
 
 Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.
+
+## Azure Load Balancer option: Expose an nginx service with a load balancer
+
+Create a file called `nginx.yaml` with the following contents:
+
+```yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - image: nginx
+          name: nginx
+          ports:
+          - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+annotations:
+  external-dns.alpha.kubernetes.io/hostname: server.example.com
+metadata:
+  name: nginx-svc
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: nginx
+  type: LoadBalancer
+```
+
+The annotation `external-dns.alpha.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
 
 ## Verifying Azure DNS records
 
