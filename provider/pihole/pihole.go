@@ -49,6 +49,12 @@ type PiholeConfig struct {
 	DryRun bool
 }
 
+// Helper struct for de-duping DNS entry updates.
+type piholeEntryKey struct {
+	Target     string
+	RecordType string
+}
+
 // NewPiholeProvider initializes a new Pi-hole Local DNS based Provider.
 func NewPiholeProvider(cfg PiholeConfig) (*PiholeProvider, error) {
 	api, err := newPiholeClient(cfg)
@@ -74,25 +80,42 @@ func (p *PiholeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges implements Provider, syncing desired state with the Pi-hole server Local DNS.
 func (p *PiholeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	// Handle deletions first - there are no endpoints for updating in place.
+	// Handle pure deletes first.
 	for _, ep := range changes.Delete {
 		if err := p.api.deleteRecord(ctx, ep); err != nil {
 			return err
 		}
 	}
+
+	// Handle updated state - there are no endpoints for updating in place.
+	updateNew := make(map[piholeEntryKey]*endpoint.Endpoint)
+	for _, ep := range changes.UpdateNew {
+		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+		updateNew[key] = ep
+	}
+
 	for _, ep := range changes.UpdateOld {
+		// Check if this existing entry has an exact match for an updated entry and skip it if so.
+		key := piholeEntryKey{ep.DNSName, ep.RecordType}
+		if newRecord := updateNew[key]; newRecord != nil {
+			// PiHole only has a single target; no need to compare other fields.
+			if newRecord.Targets[0] == ep.Targets[0] {
+				delete(updateNew, key)
+				continue
+			}
+		}
 		if err := p.api.deleteRecord(ctx, ep); err != nil {
 			return err
 		}
 	}
 
-	// Handle desired state
+	// Handle pure creates before applying new updated state.
 	for _, ep := range changes.Create {
 		if err := p.api.createRecord(ctx, ep); err != nil {
 			return err
 		}
 	}
-	for _, ep := range changes.UpdateNew {
+	for _, ep := range updateNew {
 		if err := p.api.createRecord(ctx, ep); err != nil {
 			return err
 		}
