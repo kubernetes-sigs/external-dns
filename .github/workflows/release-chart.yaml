@@ -10,9 +10,8 @@ on:
 permissions: {}
 jobs:
   release:
-
     permissions:
-      contents: write  #  to push chart release and create a release (helm/chart-releaser-action)
+      contents: write #  to push chart release and create a release (helm/chart-releaser-action)
 
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
@@ -42,7 +41,7 @@ jobs:
       - name: Create release notes
         run: |
           set -euo pipefail
-          cat <<"EOF" > charts/external-dns/_release-notes.md
+          cat <<"EOF" > charts/external-dns/RELEASE.md
           ${{ steps.changelog_reader.outputs.changes }}
           EOF
 
@@ -62,4 +61,5 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
-          CR_RELEASE_NOTES_FILE: _release-notes.md
+          CR_RELEASE_NOTES_FILE: RELEASE.md
+          CR_MAKE_RELEASE_LATEST: false
