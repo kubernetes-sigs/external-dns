@@ -4,6 +4,39 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: changed
+          description: "Updated ExternalDNS version to v0.13.2."
+        - kind: added
+          description: "Added secretConfiguration.subPath to mount specific files from secret as a sub-path."
+        - kind: changed
+          description: "Changed to use registry.k8s.io instead of k8s.gcr.io."
+    apiVersion: v2
+    appVersion: 0.13.2
+    created: "2023-02-06T18:13:26.171349129Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: d76a20526d2c905833bf5622c2f927487d542685ceb19959a9126ea8910d0215
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.12.1/external-dns-1.12.1.tgz
+    version: 1.12.1
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: changed
           description: "Updated ExternalDNS version to v0.13.1."
     apiVersion: v2
     appVersion: 0.13.1
@@ -469,4 +502,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2022-12-06T17:33:07.481135398Z"
+generated: "2023-02-06T18:13:26.171477031Z"
