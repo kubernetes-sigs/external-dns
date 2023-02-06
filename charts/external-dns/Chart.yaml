@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.12.0
-appVersion: 0.13.1
+version: 1.12.1
+appVersion: 0.13.2
 keywords:
   - kubernetes
   - externaldns
@@ -21,4 +21,8 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: changed
-      description: "Updated ExternalDNS version to v0.13.1."
+      description: "Updated ExternalDNS version to v0.13.2."
+    - kind: added
+      description: "Added secretConfiguration.subPath to mount specific files from secret as a sub-path."
+    - kind: changed
+      description: "Changed to use registry.k8s.io instead of k8s.gcr.io."
