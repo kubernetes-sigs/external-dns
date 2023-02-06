@@ -20,6 +20,8 @@ Only the following types are currently supported:
 - TXT
 - NS
 
+**Note:** To manage `NS` records, you need to explicitly enable those through the [managed-record-types](https://github.com/kubernetes-sigs/external-dns/blob/master/pkg/apis/externaldns/types.go#L426) switch.
+
 ## Creating an Azure DNS zone
 
 The Azure provider for ExternalDNS will find suitable zones for domains it manages; it will not automatically create zones.
