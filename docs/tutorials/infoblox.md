@@ -14,6 +14,11 @@ export WAPI_PORT=443
 export WAPI_VERSION=2.3.1
 export WAPI_USERNAME=admin
 export WAPI_PASSWORD=infoblox
+
+# these values are for specifying a separate endpoint for read-only requests
+export GRID_HOST_RO=172.18.20.2
+export WAPI_USERNAME_RO=admin-ro
+export WAPI_PASSWORD=infoblox123
 ```
 
 **Warning**: Grid's Cloud platform member is not supported yet as a target host to be used by ExternalDNS plugin.
@@ -74,13 +79,16 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
         - --source=service
-        - --domain-filter=example.com       # (optional) limit to only example.com domains.
+        - --domain-filter=example.com             # (optional) limit to only example.com domains.
         - --provider=infoblox
-        - --infoblox-grid-host=${GRID_HOST} # (required) IP of the Infoblox Grid host.
-        - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
-        - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
-        - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
-        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
+        - --infoblox-grid-host=${GRID_HOST}       # (required) domain name or IP of the Infoblox Grid host.
+        - --infoblox-wapi-port=443                # (optional) Infoblox WAPI port. The default is "443".
+        - --infoblox-wapi-version=2.3.1           # (optional) Infoblox WAPI version. The default is "2.3.1"
+        - --infoblox-ssl-verify                   # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+        - --infoblox-create-ptr                   # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
+        - --infoblox-grid-host-ro=${GRID_HOST_RO} # (required for a separate read-only endpoint) domain name or IP of the Infoblox Grid host.
+        - --infoblox-wapi-port-ro=443             # (optional, for a separate read-only endpoint) Infoblox WAPI port. The default is "443".
+        - --infoblox-ssl-verify-ro                # (optional, for a separate read-only endpoint) Use --no-infoblox-ssl-verify-ro to skip server certificate verification.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -96,6 +104,16 @@ spec:
             secretKeyRef:
               name: external-dns
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME_RO
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME_RO
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD_RO
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD_RO
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -154,14 +172,17 @@ spec:
       - name: external-dns
         image: registry.k8s.io/external-dns/external-dns:v0.13.1
         args:
-        - --source=service
-        - --domain-filter=example.com       # (optional) limit to only example.com domains.
-        - --provider=infoblox
-        - --infoblox-grid-host=${GRID_HOST} # (required) IP of the Infoblox Grid host.
-        - --infoblox-wapi-port=443          # (optional) Infoblox WAPI port. The default is "443".
-        - --infoblox-wapi-version=2.3.1     # (optional) Infoblox WAPI version. The default is "2.3.1"
-        - --infoblox-ssl-verify             # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
-        - --infoblox-create-ptr             # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
+          - --source=service
+          - --domain-filter=example.com             # (optional) limit to only example.com domains.
+          - --provider=infoblox
+          - --infoblox-grid-host=${GRID_HOST}       # (required) domain name or IP of the Infoblox Grid host.
+          - --infoblox-wapi-port=443                # (optional) Infoblox WAPI port. The default is "443".
+          - --infoblox-wapi-version=2.3.1           # (optional) Infoblox WAPI version. The default is "2.3.1"
+          - --infoblox-ssl-verify                   # (optional) Use --no-infoblox-ssl-verify to skip server certificate verification.
+          - --infoblox-create-ptr                   # (optional) Use --infoblox-create-ptr to create a ptr entry in addition to an entry.
+          - --infoblox-grid-host-ro=${GRID_HOST_RO} # (required for a separate read-only endpoint) domain name or IP of the Infoblox Grid host.
+          - --infoblox-wapi-port-ro=443             # (optional, for a separate read-only endpoint) Infoblox WAPI port. The default is "443".
+          - --infoblox-ssl-verify-ro                # (optional, for a separate read-only endpoint) Use --no-infoblox-ssl-verify-ro to skip server certificate verification.
         env:
         - name: EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS
           value: "10" # (optional) Infoblox WAPI request connection pool size. The default is "10".
@@ -177,6 +198,16 @@ spec:
             secretKeyRef:
               name: external-dns
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME_RO
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME_RO
+        - name: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD_RO
+          valueFrom:
+            secretKeyRef:
+              name: external-dns
+              key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD_RO
 ```
 
 You also may use Grid Master Candidate node for 'read-only' requests, to load off the Grid Master node.
