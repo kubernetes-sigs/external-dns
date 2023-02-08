@@ -142,10 +142,8 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 // NewInfobloxProvider creates a new Infoblox provider.
 func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	var (
-		authMethodNamePassRW bool
-		authMethodCertRW     bool
-		authMethodNamePassRO bool
-		authMethodCertRO     bool
+		authMethodCertRW bool
+		authMethodCertRO bool
 	)
 
 	if strings.TrimSpace(ibStartupCfg.View) == "" {
@@ -176,13 +174,6 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		Password:   ibStartupCfg.PasswordRO,
 		ClientCert: nil,
 		ClientKey:  nil,
-	}
-
-	if authCfgRW.Username != "" {
-		authMethodNamePassRW = true
-	}
-	if authCfgRO.Username != "" {
-		authMethodNamePassRO = true
 	}
 
 	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
@@ -262,18 +253,14 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		cacheDuration: ibStartupCfg.CacheDuration,
 	}
 
-	if authMethodCertRW && authMethodNamePassRW {
-		logrus.Infof("Both client-certificate and password-based authentication methods are used for connecting to Infoblox NIOS server (read-write endpoint).")
-	} else if authMethodCertRW {
+	if authMethodCertRW {
 		logrus.Infof("client-certificate authentication method is used for connecting to Infoblox NIOS server (read-write endpoint).")
 	} else {
 		logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server (read-write endpoint).")
 	}
 
 	if hostCfgRO.Host != "" {
-		if authMethodCertRO && authMethodNamePassRO {
-			logrus.Infof("Both client-certificate and password-based authentication methods are used for connecting to Infoblox NIOS server (read-only endpoint).")
-		} else if authMethodCertRO {
+		if authMethodCertRO {
 			logrus.Infof("client-certificate authentication method is used for connecting to Infoblox NIOS server (read-only endpoint).")
 		} else {
 			logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server (read-only endpoint).")
