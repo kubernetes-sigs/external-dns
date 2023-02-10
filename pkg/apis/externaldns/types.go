@@ -613,42 +613,5 @@ func (cfg *Config) ParseFlags(args []string) error {
 		return err
 	}
 
-	if cfg.InfobloxGridHostRO != "" && cfg.InfobloxGridHostRO != cfg.InfobloxGridHost ||
-		cfg.InfobloxWapiPortRO != 0 && cfg.InfobloxWapiPortRO != cfg.InfobloxWapiPort {
-
-		// custom settings make sense only if hosts for reading and writing data are not the same...
-		if cfg.InfobloxGridHostRO == "" {
-			cfg.InfobloxGridHostRO = cfg.InfobloxGridHost
-		}
-		if cfg.InfobloxWapiPortRO == 0 {
-			cfg.InfobloxWapiPortRO = cfg.InfobloxWapiPort
-		}
-		if cfg.InfobloxWapiUsernameRO == "" {
-			cfg.InfobloxWapiUsernameRO = cfg.InfobloxWapiUsername
-		}
-		if cfg.InfobloxWapiPasswordRO == "" {
-			cfg.InfobloxWapiPasswordRO = cfg.InfobloxWapiPassword
-		}
-		if cfg.InfobloxWapiVersionRO == "" {
-			cfg.InfobloxWapiVersionRO = cfg.InfobloxWapiVersion
-		}
-		if cfg.InfobloxClientCertRO == "" {
-			cfg.InfobloxClientCertRO = cfg.InfobloxClientCert
-		}
-		if cfg.InfobloxClientKeyRO == "" {
-			cfg.InfobloxClientKeyRO = cfg.InfobloxClientKey
-		}
-	} else {
-		// ... otherwise custom settings for reading data make not a great sense.
-		cfg.InfobloxGridHostRO = cfg.InfobloxGridHost
-		cfg.InfobloxWapiPortRO = cfg.InfobloxWapiPort
-		cfg.InfobloxWapiUsernameRO = cfg.InfobloxWapiUsername
-		cfg.InfobloxWapiPasswordRO = cfg.InfobloxWapiPassword
-		cfg.InfobloxWapiVersionRO = cfg.InfobloxWapiVersion
-		cfg.InfobloxSSLVerifyRO = cfg.InfobloxSSLVerify
-		cfg.InfobloxClientCertRO = cfg.InfobloxClientCert
-		cfg.InfobloxClientKeyRO = cfg.InfobloxClientKey
-	}
-
 	return nil
 }

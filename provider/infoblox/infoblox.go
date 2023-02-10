@@ -142,12 +142,26 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 // NewInfobloxProvider creates a new Infoblox provider.
 func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	var (
-		authMethodCertRW bool
-		authMethodCertRO bool
+		authCfgRW, authCfgRO ibclient.AuthConfig
+		authMethodCertRW     bool
+		authMethodCertRO     bool
+		err                  error
+		requestBuilderRO     ibclient.HttpRequestBuilder
 	)
 
 	if strings.TrimSpace(ibStartupCfg.View) == "" {
 		return nil, fmt.Errorf("non-empty DNS view's name is required")
+	}
+
+	if (ibStartupCfg.ClientCert == "") != (ibStartupCfg.ClientKey == "") {
+		return nil, fmt.Errorf("to use certificate-based authentication you must specify BOTH certificate's and private key's file paths")
+	}
+
+	roEndpointInUse := true
+	if (ibStartupCfg.HostRO == "" || ibStartupCfg.HostRO == ibStartupCfg.Host) &&
+		ibStartupCfg.PortRO == ibStartupCfg.Port {
+
+		roEndpointInUse = false // no separate read-only endpoint is used
 	}
 
 	hostCfgRW := ibclient.HostConfig{
@@ -156,24 +170,62 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		Version: ibStartupCfg.Version,
 	}
 
-	authCfgRW := ibclient.AuthConfig{
-		Username:   ibStartupCfg.Username,
-		Password:   ibStartupCfg.Password,
-		ClientCert: nil,
-		ClientKey:  nil,
-	}
-
 	hostCfgRO := ibclient.HostConfig{
 		Host:    ibStartupCfg.HostRO,
 		Port:    strconv.Itoa(ibStartupCfg.PortRO),
 		Version: ibStartupCfg.VersionRO,
 	}
 
-	authCfgRO := ibclient.AuthConfig{
-		Username:   ibStartupCfg.UsernameRO,
-		Password:   ibStartupCfg.PasswordRO,
-		ClientCert: nil,
-		ClientKey:  nil,
+	if ibStartupCfg.ClientCert != "" {
+		if authCfgRW.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
+			return nil, err
+		}
+
+		if authCfgRW.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
+			return nil, err
+		}
+
+		authMethodCertRW = true
+	} else {
+		if ibStartupCfg.Username == "" || ibStartupCfg.Password == "" {
+			return nil, fmt.Errorf("either username AND password or certificate AND key MUST be specified")
+		}
+		authCfgRW.Username = ibStartupCfg.Username
+		authCfgRW.Password = ibStartupCfg.Password
+	}
+
+	if roEndpointInUse {
+		if ibStartupCfg.UsernameRO == "" &&
+			ibStartupCfg.PasswordRO == "" &&
+			ibStartupCfg.ClientKeyRO == "" &&
+			ibStartupCfg.ClientCertRO == "" {
+
+			authCfgRO = authCfgRW
+		} else {
+			if (ibStartupCfg.ClientCertRO == "") != (ibStartupCfg.ClientKeyRO == "") {
+				return nil, fmt.Errorf("to use certificate-based authentication you must specify BOTH certificate's and private key's file paths")
+			}
+			if ibStartupCfg.ClientCertRO != "" {
+				if authCfgRO.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCertRO); err != nil {
+					return nil, err
+				}
+
+				if authCfgRO.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKeyRO); err != nil {
+					return nil, err
+				}
+
+				authMethodCertRO = true
+			} else {
+				if ibStartupCfg.UsernameRO == "" || ibStartupCfg.PasswordRO == "" {
+					return nil, fmt.Errorf("either username AND password or certificate AND key MUST be specified")
+				}
+				authCfgRO.Username = ibStartupCfg.UsernameRO
+				authCfgRO.Password = ibStartupCfg.PasswordRO
+			}
+		}
+	} else {
+		authCfgRO = authCfgRW
+		hostCfgRO = hostCfgRW
 	}
 
 	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
@@ -191,11 +243,6 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		httpPoolConnections,
 	)
 
-	var (
-		requestBuilderRO ibclient.HttpRequestBuilder
-		err              error
-	)
-
 	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRegEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
 		requestBuilderRO = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRegEx)
@@ -203,30 +250,6 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		// Use the default HttpRequestBuilder of the Infoblox client
 		// It will be initialized later, in ibclient.NewConnector().
 		requestBuilderRO = &ibclient.WapiRequestBuilder{}
-	}
-
-	if ibStartupCfg.ClientCert != "" && ibStartupCfg.ClientKey != "" {
-		if authCfgRW.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
-			return nil, err
-		}
-
-		if authCfgRW.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
-			return nil, err
-		}
-
-		authMethodCertRW = true
-	}
-
-	if ibStartupCfg.ClientCertRO != "" && ibStartupCfg.ClientKeyRO != "" {
-		if authCfgRO.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCertRO); err != nil {
-			return nil, err
-		}
-
-		if authCfgRO.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKeyRO); err != nil {
-			return nil, err
-		}
-
-		authMethodCertRO = true
 	}
 
 	clientRO, err := ibclient.NewConnector(
