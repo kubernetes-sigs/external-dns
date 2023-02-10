@@ -29,7 +29,7 @@ RUN make test build.$ARCH
 # final image
 FROM $ARCH/alpine:3.17
 
-RUN apk update && apk add -U libcrypto3 libssl3 && rm -rf /var/cache/apt/*
+RUN apk update && apk add --latest libcrypto3 libssl3 && rm -rf /var/cache/apt/*
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns
