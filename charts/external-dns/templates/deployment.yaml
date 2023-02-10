@@ -70,8 +70,12 @@ spec:
             - --log-level={{ .Values.logLevel }}
             - --log-format={{ .Values.logFormat }}
             - --interval={{ .Values.interval }}
+            - --min-event-sync-interval={{ .Values.minEventSyncInterval }}
             {{- if .Values.triggerLoopOnEvent }}
             - --events
+            {{- end }}
+            {{- if .Values.txtCacheInterval }}
+            - --txt-cache-interval={{ .Values.txtCacheInterval }}
             {{- end }}
             {{- range .Values.sources }}
             - --source={{ . }}

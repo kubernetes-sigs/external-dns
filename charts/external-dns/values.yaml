@@ -149,7 +149,9 @@ logLevel: info
 logFormat: text
 
 interval: 1m
+minEventSyncInterval: 5s
 triggerLoopOnEvent: false
+txtCacheInterval: ""
 
 sources:
   - service
