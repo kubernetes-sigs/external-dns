@@ -970,3 +970,23 @@ An effective starting point for EKS with an ingress controller might look like:
 --domain-filter=example.com
 --aws-zones-cache-duration=1h
 ```
+
+## Provider specific annotations
+
+You may pass aws annotations on the Service, Ingress and CRD source types. Example of using annotations with a CRD source:
+
+```yaml
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: foo
+  annotations:
+    external-dns.alpha.kubernetes.io/aws-weight: "50"
+    external-dns.alpha.kubernetes.io/set-identifier: "foo"
+spec:
+  endpoints:
+    - dnsName: foo.example.com
+      recordType: A
+      targets:
+        - 1.2.3.4
+```
