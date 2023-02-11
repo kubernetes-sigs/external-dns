@@ -383,6 +383,36 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "valid crd gvk with weight annotation",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
+				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+			},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:       "abc.example.org",
+					Targets:       endpoint.Targets{"1.2.3.4"},
+					RecordType:    endpoint.RecordTypeA,
+					RecordTTL:     180,
+					SetIdentifier: "setID",
+					ProviderSpecific: []endpoint.ProviderSpecificProperty{
+						{
+							Name:  "aws/weight",
+							Value: "50",
+						},
+					},
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
