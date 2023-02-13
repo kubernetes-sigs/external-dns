@@ -140,12 +140,38 @@ func TestCachedProviderForcesCacheRefreshOnUpdate(t *testing.T) {
 	_, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
-	t.Run("When the caching time frame is exceeded", func(t *testing.T) {
+	t.Run("When empty changes are applied", func(t *testing.T) {
 		testProvider.records = recordsNotCalled(t)
 		testProvider.applyChanges = func(ctx context.Context, changes *plan.Changes) error {
 			return nil
 		}
 		err := provider.ApplyChanges(context.Background(), &plan.Changes{})
+		assert.NoError(t, err)
+		t.Run("Next call to Records is cached", func(t *testing.T) {
+			testProvider.applyChanges = applyChangesNotCalled(t)
+			testProvider.records = func(ctx context.Context) ([]*endpoint.Endpoint, error) {
+				return []*endpoint.Endpoint{{DNSName: "new.domain.fqdn"}}, nil
+			}
+			endpoints, err := provider.Records(context.Background())
+
+			assert.NoError(t, err)
+			require.NotNil(t, endpoints)
+			require.Len(t, endpoints, 1)
+			require.NotNil(t, endpoints[0])
+			assert.Equal(t, "domain.fqdn", endpoints[0].DNSName)
+		})
+	})
+
+	t.Run("When changes are applied", func(t *testing.T) {
+		testProvider.records = recordsNotCalled(t)
+		testProvider.applyChanges = func(ctx context.Context, changes *plan.Changes) error {
+			return nil
+		}
+		err := provider.ApplyChanges(context.Background(), &plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{DNSName: "hello.world"},
+			},
+		})
 		assert.NoError(t, err)
 		t.Run("Next call to Records is not cached", func(t *testing.T) {
 			testProvider.applyChanges = applyChangesNotCalled(t)
