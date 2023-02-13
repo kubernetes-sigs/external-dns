@@ -23,6 +23,44 @@ export WAPI_PASSWORD=infoblox123
 
 **Warning**: Grid's Cloud platform member is not supported yet as a target host to be used by ExternalDNS plugin.
 
+You may use Grid Master Candidate node for 'read-only' requests, to load off the Grid Master node.
+The parameters which may be defined additionaly for this case are:
+
+* infoblox-grid-host-ro
+* infoblox-wapi-port-ro
+* infoblox-wapi-username-ro
+* infoblox-wapi-password-ro
+* infoblox-wapi-version-ro
+* infoblox-ssl-verify-ro
+
+The parameters may be the same as for 'write' requests. In this case, all the requests go to the same node,
+the same as in the case when no 'read-only' parameters are specified.
+
+### More complicated cases when specifying authentication parameters
+
+If you specify either Grid Host or port number for read-only requests which are different from those for 'write' requests,
+then Infoblox provider plugin considers a separate set of authentication parameters. Port number is never copied from
+the main set of parameters. If 'infoblox-wapi-port-ro' is omited, the default value is used: 443.
+The same is about 'infoblox-ssl-verify-ro' and 'infoblox-wapi-version-ro': the default values will be used if omitted,
+not the values from 'infoblox-ssl-verify' and 'infoblox-wapi-version' respectively.
+
+You may completely omit them. In this case, they will be assumed the same as for 'write' requests. But if you specify
+at least one of the parameters, then you have to specify a full set of parameters for read-only operations.
+
+There is an ability to use either of password-based or client's certificate-based authentication, but not both
+at the same time for the given endpoint ('read' endpoint and 'write' endpoint). But you may use, for example,
+password-based authentication for 'write' endpoint and client's certificate-based authentication for 'read' endpoint.
+And vice versa.
+
+If you use password-based authentication for a given endpoint, you must specify both user's name AND password.
+
+If you use client's certificate-based authentication, you must specify paths both to certificate's private part file and
+to certificate's public part.
+
+By default, 'infoblox-ssl-verify' and 'infoblox-ssl-verify-ro' are set to 'true' which means that
+server's certificate must be valid and must be signed by a certificate authority which is
+familiar to and trusted by the client (Infoblox provider for External DNS).
+
 ## Creating an Infoblox DNS zone
 
 The Infoblox provider for ExternalDNS will find suitable zones for domains it manages; it will
@@ -209,19 +247,6 @@ spec:
               name: external-dns
               key: EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD_RO
 ```
-
-You also may use Grid Master Candidate node for 'read-only' requests, to load off the Grid Master node.
-The parameters which may be defined additionaly for this case are:
-
-* infoblox-grid-host-ro
-* infoblox-wapi-port-ro
-* infoblox-wapi-username-ro
-* infoblox-wapi-password-ro
-* infoblox-wapi-version-ro
-* infoblox-ssl-verify-ro
-
-The parameters may be the same as for 'write' requests. In this case, all the requests go to the same node,
-the same as in the case when no 'read-only' parameters are specified.
 
 ## Deploying an Nginx Service
 
