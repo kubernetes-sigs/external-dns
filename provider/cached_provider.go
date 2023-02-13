@@ -72,6 +72,7 @@ func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 }
 func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if !changes.HasChanges() {
+		log.Info("Records cache provider: no changes to be applied")
 		return nil
 	}
 	c.Reset()
