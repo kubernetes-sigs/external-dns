@@ -67,13 +67,6 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		if cfg.InfobloxGridHost == "" {
 			return errors.New("no Infoblox Grid Manager host specified")
 		}
-		if (cfg.InfobloxWapiUsername == "" || cfg.InfobloxWapiPassword == "") && (cfg.InfobloxClientKey == "" || cfg.InfobloxClientCert == "") {
-			return errors.New("neither Infoblox WAPI password nor paths to public AND private parts of TLS client certificate specified for the read-write capable endpoint (Grid's node)")
-		}
-
-		if (cfg.InfobloxWapiUsernameRO == "" || cfg.InfobloxWapiPasswordRO == "") && (cfg.InfobloxClientKeyRO == "" || cfg.InfobloxClientCertRO == "") {
-			return errors.New("neither Infoblox WAPI password nor paths to public AND private parts of TLS client certificate specified for the read-only capable endpoint (Grid's node)")
-		}
 
 		_, err := regexp.Compile(cfg.InfobloxFQDNRegEx)
 		if err != nil {
