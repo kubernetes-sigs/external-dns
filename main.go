@@ -409,6 +409,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if cfg.ProviderCacheTime > 0 {
+		p = &provider.CachedProvider{
+			Provider:     p,
+			RefreshDelay: cfg.ProviderCacheTime,
+		}
+	}
+
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
