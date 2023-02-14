@@ -94,3 +94,25 @@ Not all sources are supported in namespaced scope, since some sources depends on
 For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
 Sources like `istio-virtualservice` only work, if all resources like `Gateway` and `VirtualService` are present in the same 
 namespaces as `external-dns`.
+
+The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
+
+If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`.
+
+### Support matrix
+
+| Source                 | Supported | Infos                  |
+|------------------------|-----------|------------------------|
+| `ingress`              | ✅         |                        |
+| `istio-gateway`        | ✅         |                        |
+| `istio-virtualservice` | ✅         |                        |
+| `contour-ingressroute` | ✅         |                        |
+| `crd`                  | ✅         |                        |
+| `kong-tcpingress`      | ✅         |                        |
+| `openshift-route`      | ✅         |                        |
+| `skipper-routegroup`   | ✅         |                        |
+| `gloo-proxy`           | ✅         |                        |
+| `contour-httpproxy`    | ✅         |                        |
+| `service`              | ⚠️️       | NodePort not supported |
+| `node`                 | ❌         |                        |
+| `pod`                  | ❌         |                        |

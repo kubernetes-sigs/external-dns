@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
 rules:
-{{- if or (has "node" .Values.sources) (has "pod" .Values.sources) (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources) }}
+{{- if and (not .Values.namespaced) (or (has "node" .Values.sources) (has "pod" .Values.sources) (has "service" .Values.sources) (has "contour-httpproxy" .Values.sources) (has "gloo-proxy" .Values.sources) (has "openshift-route" .Values.sources) (has "skipper-routegroup" .Values.sources)) }}
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["list","watch"]
