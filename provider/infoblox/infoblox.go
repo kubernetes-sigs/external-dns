@@ -237,11 +237,16 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		httpPoolConnections,
 	)
 
-	transportConfigRO := ibclient.NewTransportConfig(
-		strconv.FormatBool(ibStartupCfg.SSLVerifyRO),
-		httpRequestTimeout,
-		httpPoolConnections,
-	)
+	var transportConfigRO ibclient.TransportConfig
+	if roEndpointInUse {
+		transportConfigRO = ibclient.NewTransportConfig(
+			strconv.FormatBool(ibStartupCfg.SSLVerifyRO),
+			httpRequestTimeout,
+			httpPoolConnections,
+		)
+	} else {
+		transportConfigRO = transportConfigRW
+	}
 
 	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRegEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
