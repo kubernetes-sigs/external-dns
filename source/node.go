@@ -109,41 +109,51 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Warn(err)
 		}
 
-		// create new endpoint with the information we already have
-		ep := &endpoint.Endpoint{
-			RecordType: "A", // hardcoded DNS record type
-			RecordTTL:  ttl,
-		}
+		dnsnames := []string{}
 
 		if ns.fqdnTemplate != nil {
 			hostnames, err := execTemplate(ns.fqdnTemplate, node)
 			if err != nil {
 				return nil, err
 			}
-			hostname := ""
+
 			if len(hostnames) > 0 {
-				hostname = hostnames[0]
+				for i := range hostnames {
+					dnsnames = append(dnsnames, hostnames[i])
+					log.Debugf("applied template for %s, converting to %s", node.Name, hostnames[i])
+				}
+			} else {
+				dnsnames = append(dnsnames, "")
+				log.Debugf("applied empty template for %s", node.Name)
 			}
-			ep.DNSName = hostname
-			log.Debugf("applied template for %s, converting to %s", node.Name, ep.DNSName)
 		} else {
-			ep.DNSName = node.Name
+			dnsnames = append(dnsnames, node.Name)
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs, err := ns.nodeAddresses(node)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get node address from %s: %s", node.Name, err.Error())
-		}
+		for i := range dnsnames {
+			// create new endpoint with the information we already have
+			ep := &endpoint.Endpoint{
+				RecordType: "A", // hardcoded DNS record type
+				RecordTTL:  ttl,
+			}
 
-		ep.Targets = endpoint.Targets(addrs)
-		ep.Labels = endpoint.NewLabels()
+			ep.DNSName = dnsnames[i]
 
-		log.Debugf("adding endpoint %s", ep)
-		if _, ok := endpoints[ep.DNSName]; ok {
-			endpoints[ep.DNSName].Targets = append(endpoints[ep.DNSName].Targets, ep.Targets...)
-		} else {
-			endpoints[ep.DNSName] = ep
+			addrs, err := ns.nodeAddresses(node)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get node address from %s: %s", node.Name, err.Error())
+			}
+
+			ep.Targets = endpoint.Targets(addrs)
+			ep.Labels = endpoint.NewLabels()
+
+			log.Debugf("adding endpoint %s", ep)
+			if _, ok := endpoints[ep.DNSName]; ok {
+				endpoints[ep.DNSName].Targets = append(endpoints[ep.DNSName].Targets, ep.Targets...)
+			} else {
+				endpoints[ep.DNSName] = ep
+			}
 		}
 	}
 
