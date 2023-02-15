@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deprecated
 - Removed -->
 
+## [v1.12.2] - 2023-02-15
+
+### All Changes
+
+- Added `existingSecret` to support existing secrets with credentials to various DNS providers. ([#3412](https://github.com/kubernetes-sigs/external-dns/pull/3412 [@lewandowskim1988](https://github.com/lewandowskim1988)
+
 ## [v1.12.1] - 2023-02-06
 
 ### All Changes
