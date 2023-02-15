@@ -36,6 +36,10 @@ The parameters which may be defined additionally for this case are:
 The parameters may be the same as for 'write' requests. In this case, all the requests go to the same node,
 the same as in the case when no 'read-only' parameters are specified.
 
+If you do not specify `infoblox-grid-host-ro` and/or
+`infoblox-wapi-port-ro`, or they have the same values as `infoblox-grid-host-ro` and `infoblox-wapi-port-ro`, then
+the rest of '-ro' parameters have no effect and no endpoint separation is applied. 
+
 ### More complicated cases when specifying authentication parameters
 
 If you specify either Grid Host or port number for read-only requests which are different from those for 'write' requests,

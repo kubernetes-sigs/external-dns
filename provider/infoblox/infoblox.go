@@ -281,22 +281,36 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		cacheDuration: ibStartupCfg.CacheDuration,
 	}
 
-	if authMethodCertRW {
-		logrus.Infof("client-certificate authentication method is used for connecting to Infoblox NIOS server (read-write endpoint).")
+	var logAuthMsgEnding string
+	if roEndpointInUse {
+		logAuthMsgEnding = " (read-write endpoint)."
 	} else {
-		logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server (read-write endpoint).")
+		logAuthMsgEnding = "."
 	}
 
-	if hostCfgRO.Host != "" {
+	certInUseMsg := "client-certificate authentication method is used for connecting to Infoblox NIOS server"
+	passInUseMsg := "password-based authentication method is used for connecting to Infoblox NIOS server"
+	if authMethodCertRW {
+		logrus.Infof("%s%s", certInUseMsg, logAuthMsgEnding)
+	} else {
+		logrus.Infof("%s%s", passInUseMsg, logAuthMsgEnding)
+	}
+
+	if roEndpointInUse {
+		logAuthMsgEnding = " (read-only endpoint)."
 		if authMethodCertRO {
-			logrus.Infof("client-certificate authentication method is used for connecting to Infoblox NIOS server (read-only endpoint).")
+			logrus.Infof("%s%s", certInUseMsg, logAuthMsgEnding)
 		} else {
-			logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server (read-only endpoint).")
+			logrus.Infof("%s%s", passInUseMsg, logAuthMsgEnding)
 		}
 	}
 
-	logrus.Infof("endpoint for 'read' requests: %s", net.JoinHostPort(hostCfgRO.Host, hostCfgRO.Port))
-	logrus.Infof("endpoint for 'write' requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	if roEndpointInUse {
+		logrus.Infof("endpoint for 'read' requests: %s", net.JoinHostPort(hostCfgRO.Host, hostCfgRO.Port))
+		logrus.Infof("endpoint for 'write' requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	} else {
+		logrus.Infof("endpoint for requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	}
 
 	return providerCfg, nil
 }
