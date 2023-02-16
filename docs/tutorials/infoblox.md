@@ -4,7 +4,7 @@ This tutorial describes how to set ExternalDNS up for usage with Infoblox.
 
 Make sure to use **>=0.10.2** version of ExternalDNS for this tutorial. The only WAPI version that
 has been validated is **v2.3.1**. It is assumed that the API user has rights to create objects of
-the following types: `zone_auth`, `record:a`, `record:cname`, `record:txt`.
+the following types: `zone_auth`, `record:a`, `record:txt`.
 
 This tutorial assumes you have substituted the correct values for the following environment variables:
 
@@ -37,7 +37,7 @@ The parameters may be the same as for 'write' requests. In this case, all the re
 the same as in the case when no 'read-only' parameters are specified.
 
 If you do not specify `infoblox-grid-host-ro` and/or
-`infoblox-wapi-port-ro`, or they have the same values as `infoblox-grid-host-ro` and `infoblox-wapi-port-ro`, then
+`infoblox-wapi-port-ro`, or they have the same values as `infoblox-grid-host` and `infoblox-wapi-port`, then
 the rest of '-ro' parameters have no effect and no endpoint separation is applied. 
 
 ### More complicated cases when specifying authentication parameters
