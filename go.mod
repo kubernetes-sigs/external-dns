@@ -51,7 +51,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.599
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.344
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.599
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.599
 	github.com/transip/gotransip/v6 v6.17.0
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
