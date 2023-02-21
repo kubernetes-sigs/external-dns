@@ -247,7 +247,7 @@ func (p *GDProvider) records(ctx *context.Context, zone string, all bool) (*gdRe
 
 			results.records = append(results.records, rec)
 		} else {
-			log.Infof("GoDaddy: Discard record %s for %s is %+v", rec.Name, zone, rec)
+			log.Infof("GoDaddy: Ignore record %s for %s is %+v", rec.Name, zone, rec)
 		}
 	}
 
