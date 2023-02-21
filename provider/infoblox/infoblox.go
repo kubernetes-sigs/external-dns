@@ -19,6 +19,7 @@ package infoblox
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -66,12 +67,16 @@ type StartupConfig struct {
 	Password      string
 	Version       string
 	SSLVerify     bool
+	ClientCert    string
+	ClientKey     string
 	HostRO        string
 	PortRO        int
 	UsernameRO    string
 	PasswordRO    string
 	VersionRO     string
 	SSLVerifyRO   bool
+	ClientCertRO  string
+	ClientKeyRO   string
 	DryRun        bool
 	View          string
 	MaxResults    int
@@ -138,12 +143,18 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	var (
 		authCfgRW, authCfgRO ibclient.AuthConfig
+		authMethodCertRW     bool
+		authMethodCertRO     bool
 		err                  error
 		requestBuilderRO     ibclient.HttpRequestBuilder
 	)
 
 	if strings.TrimSpace(ibStartupCfg.View) == "" {
 		return nil, fmt.Errorf("non-empty DNS view's name is required")
+	}
+
+	if (ibStartupCfg.ClientCert == "") != (ibStartupCfg.ClientKey == "") {
+		return nil, fmt.Errorf("to use certificate-based authentication you must specify BOTH certificate's and private key's file paths")
 	}
 
 	roEndpointInUse := true
@@ -165,23 +176,52 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		Version: ibStartupCfg.VersionRO,
 	}
 
-	if ibStartupCfg.Username == "" || ibStartupCfg.Password == "" {
-		return nil, fmt.Errorf("username AND password MUST be specified")
+	if ibStartupCfg.ClientCert != "" {
+		if authCfgRW.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCert); err != nil {
+			return nil, err
+		}
+
+		if authCfgRW.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKey); err != nil {
+			return nil, err
+		}
+
+		authMethodCertRW = true
+	} else {
+		if ibStartupCfg.Username == "" || ibStartupCfg.Password == "" {
+			return nil, fmt.Errorf("either username AND password or certificate AND key MUST be specified")
+		}
+		authCfgRW.Username = ibStartupCfg.Username
+		authCfgRW.Password = ibStartupCfg.Password
 	}
-	authCfgRW.Username = ibStartupCfg.Username
-	authCfgRW.Password = ibStartupCfg.Password
 
 	if roEndpointInUse {
 		if ibStartupCfg.UsernameRO == "" &&
-			ibStartupCfg.PasswordRO == "" {
+			ibStartupCfg.PasswordRO == "" &&
+			ibStartupCfg.ClientKeyRO == "" &&
+			ibStartupCfg.ClientCertRO == "" {
 
 			authCfgRO = authCfgRW
 		} else {
-			if ibStartupCfg.UsernameRO == "" || ibStartupCfg.PasswordRO == "" {
-				return nil, fmt.Errorf("username AND password MUST be specified")
+			if (ibStartupCfg.ClientCertRO == "") != (ibStartupCfg.ClientKeyRO == "") {
+				return nil, fmt.Errorf("to use certificate-based authentication you must specify BOTH certificate's and private key's file paths")
 			}
-			authCfgRO.Username = ibStartupCfg.UsernameRO
-			authCfgRO.Password = ibStartupCfg.PasswordRO
+			if ibStartupCfg.ClientCertRO != "" {
+				if authCfgRO.ClientCert, err = ioutil.ReadFile(ibStartupCfg.ClientCertRO); err != nil {
+					return nil, err
+				}
+
+				if authCfgRO.ClientKey, err = ioutil.ReadFile(ibStartupCfg.ClientKeyRO); err != nil {
+					return nil, err
+				}
+
+				authMethodCertRO = true
+			} else {
+				if ibStartupCfg.UsernameRO == "" || ibStartupCfg.PasswordRO == "" {
+					return nil, fmt.Errorf("either username AND password or certificate AND key MUST be specified")
+				}
+				authCfgRO.Username = ibStartupCfg.UsernameRO
+				authCfgRO.Password = ibStartupCfg.PasswordRO
+			}
 		}
 	} else {
 		authCfgRO = authCfgRW
@@ -239,6 +279,30 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		fqdnRegEx:     regexp.MustCompile(ibStartupCfg.FQDNRegEx),
 		createPTR:     ibStartupCfg.CreatePTR,
 		cacheDuration: ibStartupCfg.CacheDuration,
+	}
+
+	var logAuthMsgEnding string
+	if roEndpointInUse {
+		logAuthMsgEnding = " (read-write endpoint)."
+	} else {
+		logAuthMsgEnding = "."
+	}
+
+	certInUseMsg := "client-certificate authentication method is used for connecting to Infoblox NIOS server"
+	passInUseMsg := "password-based authentication method is used for connecting to Infoblox NIOS server"
+	if authMethodCertRW {
+		logrus.Infof("%s%s", certInUseMsg, logAuthMsgEnding)
+	} else {
+		logrus.Infof("%s%s", passInUseMsg, logAuthMsgEnding)
+	}
+
+	if roEndpointInUse {
+		logAuthMsgEnding = " (read-only endpoint)."
+		if authMethodCertRO {
+			logrus.Infof("%s%s", certInUseMsg, logAuthMsgEnding)
+		} else {
+			logrus.Infof("%s%s", passInUseMsg, logAuthMsgEnding)
+		}
 	}
 
 	if roEndpointInUse {
