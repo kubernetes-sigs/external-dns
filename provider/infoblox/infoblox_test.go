@@ -378,6 +378,7 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 
 func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
 	return &ProviderConfig{
+		clientRO:     client,
 		clientRW:     client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -483,6 +484,7 @@ func TestInfobloxRecords(t *testing.T) {
 				zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
 				dryRun:       true,
 				createPTR:    tc.createPtr,
+				clientRO:     &tc.client,
 				clientRW:     &tc.client,
 			}
 			actualEndpoints, err := providerCfg.Records(context.Background())
@@ -544,6 +546,13 @@ func TestInfobloxApplyChangesTableTest(t *testing.T) {
 		// because they both are in the plan and match the domain filter
 		"ReverseMappingZoneExistPTRMatchDomainFilter": {
 			providerConfig: ProviderConfig{
+				clientRO: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
 				clientRW: &mockIBConnector{
 					mockInfobloxZones: &[]ibclient.ZoneAuth{
 						createMockInfobloxZone("example.com"),
@@ -579,6 +588,13 @@ func TestInfobloxApplyChangesTableTest(t *testing.T) {
 		// doesn't match the domain filter
 		"ReverseMappingZoneExistDoesntMatchDomainFilter": {
 			providerConfig: ProviderConfig{
+				clientRO: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
 				clientRW: &mockIBConnector{
 					mockInfobloxZones: &[]ibclient.ZoneAuth{
 						createMockInfobloxZone("example.com"),
@@ -611,6 +627,12 @@ func TestInfobloxApplyChangesTableTest(t *testing.T) {
 		// Reverse-mapping zone doesn't exist, so the PTR record for the A record will not be created
 		"ReverseMappingZoneDoesntExist": {
 			providerConfig: ProviderConfig{
+				clientRO: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("example.com"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
 				clientRW: &mockIBConnector{
 					mockInfobloxZones: &[]ibclient.ZoneAuth{
 						createMockInfobloxZone("example.com"),
@@ -642,6 +664,12 @@ func TestInfobloxApplyChangesTableTest(t *testing.T) {
 		// Auth zone for the A record doesn't exist, so no A/PTR records will be created
 		"AuthZoneForARecordDoesntExist": {
 			providerConfig: ProviderConfig{
+				clientRO: &mockIBConnector{
+					mockInfobloxZones: &[]ibclient.ZoneAuth{
+						createMockInfobloxZone("22.22.22.0/24"),
+					},
+					mockInfobloxObjects: &[]ibclient.IBObject{},
+				},
 				clientRW: &mockIBConnector{
 					mockInfobloxZones: &[]ibclient.ZoneAuth{
 						createMockInfobloxZone("22.22.22.0/24"),

@@ -66,6 +66,12 @@ type StartupConfig struct {
 	Password      string
 	Version       string
 	SSLVerify     bool
+	HostRO        string
+	PortRO        int
+	UsernameRO    string
+	PasswordRO    string
+	VersionRO     string
+	SSLVerifyRO   bool
 	DryRun        bool
 	View          string
 	MaxResults    int
@@ -78,6 +84,7 @@ type StartupConfig struct {
 type ProviderConfig struct {
 	provider.BaseProvider
 	clientRW      ibclient.IBConnector
+	clientRO      ibclient.IBConnector
 	domainFilter  endpoint.DomainFilter
 	zoneIDFilter  provider.ZoneIDFilter
 	view          string
@@ -130,13 +137,20 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 // NewInfobloxProvider creates a new Infoblox provider.
 func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	var (
-		authCfgRW      ibclient.AuthConfig
-		requestBuilder ibclient.HttpRequestBuilder
-		err            error
+		authCfgRW, authCfgRO ibclient.AuthConfig
+		err                  error
+		requestBuilderRO     ibclient.HttpRequestBuilder
 	)
 
 	if strings.TrimSpace(ibStartupCfg.View) == "" {
 		return nil, fmt.Errorf("non-empty DNS view's name is required")
+	}
+
+	roEndpointInUse := true
+	if (ibStartupCfg.HostRO == "" || ibStartupCfg.HostRO == ibStartupCfg.Host) &&
+		ibStartupCfg.PortRO == ibStartupCfg.Port {
+
+		roEndpointInUse = false // no separate read-only endpoint is used
 	}
 
 	hostCfgRW := ibclient.HostConfig{
@@ -145,11 +159,34 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		Version: ibStartupCfg.Version,
 	}
 
+	hostCfgRO := ibclient.HostConfig{
+		Host:    ibStartupCfg.HostRO,
+		Port:    strconv.Itoa(ibStartupCfg.PortRO),
+		Version: ibStartupCfg.VersionRO,
+	}
+
 	if ibStartupCfg.Username == "" || ibStartupCfg.Password == "" {
-		return nil, fmt.Errorf("either username AND password or certificate AND key MUST be specified")
+		return nil, fmt.Errorf("username AND password MUST be specified")
 	}
 	authCfgRW.Username = ibStartupCfg.Username
 	authCfgRW.Password = ibStartupCfg.Password
+
+	if roEndpointInUse {
+		if ibStartupCfg.UsernameRO == "" &&
+			ibStartupCfg.PasswordRO == "" {
+
+			authCfgRO = authCfgRW
+		} else {
+			if ibStartupCfg.UsernameRO == "" || ibStartupCfg.PasswordRO == "" {
+				return nil, fmt.Errorf("username AND password MUST be specified")
+			}
+			authCfgRO.Username = ibStartupCfg.UsernameRO
+			authCfgRO.Password = ibStartupCfg.PasswordRO
+		}
+	} else {
+		authCfgRO = authCfgRW
+		hostCfgRO = hostCfgRW
+	}
 
 	httpPoolConnections := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_POOL_CONNECTIONS", 10)
 	httpRequestTimeout := lookupEnvAtoi("EXTERNAL_DNS_INFOBLOX_HTTP_REQUEST_TIMEOUT", 60)
@@ -160,22 +197,40 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		httpPoolConnections,
 	)
 
+	var transportConfigRO ibclient.TransportConfig
+	if roEndpointInUse {
+		transportConfigRO = ibclient.NewTransportConfig(
+			strconv.FormatBool(ibStartupCfg.SSLVerifyRO),
+			httpRequestTimeout,
+			httpPoolConnections,
+		)
+	} else {
+		transportConfigRO = transportConfigRW
+	}
+
 	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRegEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRegEx)
+		requestBuilderRO = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRegEx)
 	} else {
 		// Use the default HttpRequestBuilder of the Infoblox client
 		// It will be initialized later, in ibclient.NewConnector().
-		requestBuilder = &ibclient.WapiRequestBuilder{}
+		requestBuilderRO = &ibclient.WapiRequestBuilder{}
+	}
+
+	clientRO, err := ibclient.NewConnector(
+		hostCfgRO, authCfgRO, transportConfigRO, requestBuilderRO, &ibclient.WapiHttpRequestor{})
+	if err != nil {
+		return nil, err
 	}
 
 	clientRW, err := ibclient.NewConnector(
-		hostCfgRW, authCfgRW, transportConfigRW, requestBuilder, &ibclient.WapiHttpRequestor{})
+		hostCfgRW, authCfgRW, transportConfigRW, &ibclient.WapiRequestBuilder{}, &ibclient.WapiHttpRequestor{})
 	if err != nil {
 		return nil, err
 	}
 
 	providerCfg := &ProviderConfig{
+		clientRO:      clientRO,
 		clientRW:      clientRW,
 		domainFilter:  ibStartupCfg.DomainFilter,
 		zoneIDFilter:  ibStartupCfg.ZoneIDFilter,
@@ -186,8 +241,12 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		cacheDuration: ibStartupCfg.CacheDuration,
 	}
 
-	logrus.Infof("password-based authentication method is used for connecting to Infoblox NIOS server.")
-	logrus.Infof("endpoint for requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	if roEndpointInUse {
+		logrus.Infof("endpoint for 'read' requests: %s", net.JoinHostPort(hostCfgRO.Host, hostCfgRO.Port))
+		logrus.Infof("endpoint for 'write' requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	} else {
+		logrus.Infof("endpoint for requests: %s", net.JoinHostPort(hostCfgRW.Host, hostCfgRW.Port))
+	}
 
 	return providerCfg, nil
 }
@@ -213,7 +272,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resA []ibclient.RecordA
 		objA := ibclient.NewEmptyRecordA()
-		err = p.clientRW.GetObject(objA, "", queryParams, &resA)
+		err = p.clientRO.GetObject(objA, "", queryParams, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A-records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -257,7 +316,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		// Include Host records since they should be treated synonymously with A-records
 		var resH []ibclient.HostRecord
 		objH := ibclient.NewEmptyHostRecord()
-		err = p.clientRW.GetObject(objH, "", queryParams, &resH)
+		err = p.clientRO.GetObject(objH, "", queryParams, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -277,7 +336,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resC []ibclient.RecordCNAME
 		objC := ibclient.NewEmptyRecordCNAME()
-		err = p.clientRW.GetObject(objC, "", queryParams, &resC)
+		err = p.clientRO.GetObject(objC, "", queryParams, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME-records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -299,7 +358,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 					"zone":    arpaZone,
 					"creator": "STATIC",
 				})
-				err = p.clientRW.GetObject(objP, "", qp, &resPtrStatic)
+				err = p.clientRO.GetObject(objP, "", qp, &resPtrStatic)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR-records from zone '%s': %s", zone.Fqdn, err.Error())
 				}
@@ -308,7 +367,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 					"zone":    arpaZone,
 					"creator": "DYNAMIC",
 				})
-				err = p.clientRW.GetObject(objP, "", qp, &resPtrDynamic)
+				err = p.clientRO.GetObject(objP, "", qp, &resPtrDynamic)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR-records from zone '%s': %s", zone.Fqdn, err.Error())
 				}
@@ -323,7 +382,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resT []ibclient.RecordTXT
 		objT := ibclient.NewEmptyRecordTXT()
-		err = p.clientRW.GetObject(objT, "", queryParams, &resT)
+		err = p.clientRO.GetObject(objT, "", queryParams, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT-records from zone '%s': %s", zone.Fqdn, err)
 		}
@@ -447,7 +506,7 @@ func (p *ProviderConfig) zones() ([]ibclient.ZoneAuth, error) {
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
 	qp := ibclient.NewQueryParams(
 		false, map[string]string{"view": p.view})
-	err := p.clientRW.GetObject(obj, "", qp, &res)
+	err := p.clientRO.GetObject(obj, "", qp, &res)
 	if err != nil && !isNotFoundError(err) {
 		return nil, err
 	}
@@ -581,7 +640,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			"ipv4addr": obj.Ipv4Addr,
 		}
 		if getObject {
-			err = p.clientRW.GetObject(
+			err = p.clientRO.GetObject(
 				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
@@ -605,13 +664,13 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		if getObject {
 			var staticPtrs, dynamicPtrs []ibclient.RecordPTR
 			sf["creator"] = "STATIC"
-			err = p.clientRW.GetObject(
+			err = p.clientRO.GetObject(
 				obj, "", ibclient.NewQueryParams(false, sf), &staticPtrs)
 			if err != nil && !isNotFoundError(err) {
 				return
 			}
 			sf["creator"] = "DYNAMIC"
-			err = p.clientRW.GetObject(
+			err = p.clientRO.GetObject(
 				obj, "", ibclient.NewQueryParams(false, sf), &dynamicPtrs)
 			if err != nil && !isNotFoundError(err) {
 				return
@@ -634,7 +693,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			"canonical": obj.Canonical,
 		}
 		if getObject {
-			err = p.clientRW.GetObject(
+			err = p.clientRO.GetObject(
 				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return
@@ -660,7 +719,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 			"text": obj.Text,
 		}
 		if getObject {
-			err = p.clientRW.GetObject(
+			err = p.clientRO.GetObject(
 				obj, "", ibclient.NewQueryParams(false, sf), &res)
 			if err != nil && !isNotFoundError(err) {
 				return

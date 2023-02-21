@@ -120,6 +120,16 @@ type Config struct {
 	InfobloxWapiPassword              string `secure:"yes"`
 	InfobloxWapiVersion               string
 	InfobloxSSLVerify                 bool
+	InfobloxClientCert                string
+	InfobloxClientKey                 string
+	InfobloxGridHostRO                string
+	InfobloxWapiPortRO                int
+	InfobloxWapiUsernameRO            string
+	InfobloxWapiPasswordRO            string `secure:"yes"`
+	InfobloxWapiVersionRO             string
+	InfobloxSSLVerifyRO               bool
+	InfobloxClientCertRO              string
+	InfobloxClientKeyRO               string
 	InfobloxView                      string
 	InfobloxMaxResults                int
 	InfobloxFQDNRegEx                 string
@@ -268,6 +278,16 @@ var defaultConfig = &Config{
 	InfobloxWapiPassword:        "",
 	InfobloxWapiVersion:         "2.3.1",
 	InfobloxSSLVerify:           true,
+	InfobloxClientCert:          "",
+	InfobloxClientKey:           "",
+	InfobloxGridHostRO:          "",
+	InfobloxWapiPortRO:          443,
+	InfobloxWapiUsernameRO:      "",
+	InfobloxWapiPasswordRO:      "",
+	InfobloxWapiVersionRO:       "2.3.1",
+	InfobloxSSLVerifyRO:         true,
+	InfobloxClientCertRO:        "",
+	InfobloxClientKeyRO:         "",
 	InfobloxView:                "default",
 	InfobloxMaxResults:          0,
 	InfobloxFQDNRegEx:           "",
@@ -487,6 +507,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-wapi-password", "When using the Infoblox provider, specify the WAPI password (required when --provider=infoblox)").Default(defaultConfig.InfobloxWapiPassword).StringVar(&cfg.InfobloxWapiPassword)
 	app.Flag("infoblox-wapi-version", "When using the Infoblox provider, specify the WAPI version").Default(defaultConfig.InfobloxWapiVersion).StringVar(&cfg.InfobloxWapiVersion)
 	app.Flag("infoblox-ssl-verify", "When using the Infoblox provider, specify whether to verify the SSL certificate").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerify)).BoolVar(&cfg.InfobloxSSLVerify)
+	app.Flag("infoblox-grid-host-ro", "When using the Infoblox provider, specify the Grid Manager host (required when --provider=infoblox). This if used for 'read' operations, if defined, along with other Infoblox-related options with '-ro' suffix.").Default(defaultConfig.InfobloxGridHostRO).StringVar(&cfg.InfobloxGridHostRO)
+	app.Flag("infoblox-wapi-port-ro", "When using the Infoblox provider, specify the WAPI port").Default(strconv.Itoa(defaultConfig.InfobloxWapiPortRO)).IntVar(&cfg.InfobloxWapiPortRO)
+	app.Flag("infoblox-wapi-username-ro", "When using the Infoblox provider, specify the WAPI username").Default(defaultConfig.InfobloxWapiUsernameRO).StringVar(&cfg.InfobloxWapiUsernameRO)
+	app.Flag("infoblox-wapi-password-ro", "When using the Infoblox provider, specify the WAPI password").Default(defaultConfig.InfobloxWapiPasswordRO).StringVar(&cfg.InfobloxWapiPasswordRO)
+	app.Flag("infoblox-wapi-version-ro", "When using the Infoblox provider, specify the WAPI version").Default(defaultConfig.InfobloxWapiVersionRO).StringVar(&cfg.InfobloxWapiVersionRO)
+	app.Flag("infoblox-ssl-verify-ro", "When using the Infoblox provider, specify whether to verify the SSL certificate").Default(strconv.FormatBool(defaultConfig.InfobloxSSLVerifyRO)).BoolVar(&cfg.InfobloxSSLVerifyRO)
 	app.Flag("infoblox-view", "DNS view for records to be managed").Default(defaultConfig.InfobloxView).StringVar(&cfg.InfobloxView)
 	app.Flag("infoblox-max-results", "Add _max_results as query parameter to the URL on all API requests. The default is 0 which means _max_results is not set and the default of the server is used.").Default(strconv.Itoa(defaultConfig.InfobloxMaxResults)).IntVar(&cfg.InfobloxMaxResults)
 	app.Flag("infoblox-fqdn-regex", "Apply this regular expression as a filter for obtaining zone_auth objects. This is disabled by default.").Default(defaultConfig.InfobloxFQDNRegEx).StringVar(&cfg.InfobloxFQDNRegEx)
