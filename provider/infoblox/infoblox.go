@@ -223,6 +223,9 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 				authCfgRO.Password = ibStartupCfg.PasswordRO
 			}
 		}
+		if hostCfgRO.Host == "" {
+			hostCfgRO.Host = hostCfgRW.Host
+		}
 	} else {
 		authCfgRO = authCfgRW
 		hostCfgRO = hostCfgRW

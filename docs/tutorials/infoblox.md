@@ -48,9 +48,8 @@ the main set of parameters. If 'infoblox-wapi-port-ro' is omited, the default va
 The same is about 'infoblox-ssl-verify-ro' and 'infoblox-wapi-version-ro': the default values will be used if omitted,
 not the values from 'infoblox-ssl-verify' and 'infoblox-wapi-version' respectively.
 
-You may completely omit them. In this case, they will be assumed the same as for 'write' requests,
-with the same parameter's values. But if you specify at least one of the parameters,
-then you have to specify a full set of parameters for read-only operations.
+You may completely omit the authentication parameters with '-ro' suffix. In this case,
+they will be assumed the same as for 'write' requests, with the same parameter's values.
 
 There is an ability to use either of password-based or client's certificate-based authentication, but not both
 at the same time for the given endpoint ('read' endpoint and 'write' endpoint). But you may use, for example,
