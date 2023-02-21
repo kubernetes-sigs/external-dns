@@ -86,6 +86,7 @@ type gdUpdateRecordField struct {
 	Data     string  `json:"data"`
 	Name     string  `json:"name"`
 	TTL      int64   `json:"ttl"`
+	Type     string  `json:"type"`
 	Port     *int    `json:"port,omitempty"`
 	Priority *int    `json:"priority,omitempty"`
 	Weight   *int64  `json:"weight,omitempty"`
@@ -347,6 +348,9 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", dnsName)
 		} else {
 			dnsName = strings.TrimSuffix(dnsName, "."+zone)
+			if dnsName == zone {
+				dnsName = ""
+			}
 
 			if e.endpoint.RecordType == endpoint.RecordTypeA && (len(dnsName) == 0) {
 				dnsName = "@"
@@ -397,7 +401,7 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
 	allChanges = p.appendChange(gdDelete, changes.UpdateOld, allChanges)
-	allChanges = p.appendChange(gdCreate, changes.UpdateNew, allChanges)
+	allChanges = p.appendChange(gdUpdate, changes.UpdateNew, allChanges)
 	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
 
 	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
@@ -442,6 +446,7 @@ func (p *gdRecords) updateRecord(client gdClient, change gdRecordField, dryRun b
 				Data:     change.Data,
 				Name:     change.Name,
 				TTL:      change.TTL,
+				Type:     change.Type,
 				Port:     change.Port,
 				Priority: change.Priority,
 				Weight:   change.Weight,
@@ -451,7 +456,7 @@ func (p *gdRecords) updateRecord(client gdClient, change gdRecordField, dryRun b
 
 			if dryRun {
 				log.Infof("[DryRun] - Update record %s.%s of type %s %s", change.Name, p.zone, change.Type, toString(changed))
-			} else if err := client.Patch(fmt.Sprintf("/v1/domains/%s/records/%s", p.zone, change.Type), changed, &response); err != nil {
+			} else if err := client.Patch(fmt.Sprintf("/v1/domains/%s/records", p.zone), changed, &response); err != nil {
 				log.Errorf("Update record %s.%s of type %s failed: %v", change.Name, p.zone, change.Type, response)
 
 				return err
@@ -488,7 +493,11 @@ func (p *gdRecords) deleteRecord(client gdClient, change gdRecordField, dryRun b
 		} else if err := client.Delete(fmt.Sprintf("/v1/domains/%s/records/%s/%s", p.zone, change.Type, change.Name), &response); err != nil {
 			log.Errorf("Delete record %s.%s of type %s failed: %v", change.Name, p.zone, change.Type, response)
 
-			return err
+			if strings.Contains(err.Error(), "RECORD_NOT_FOUND") {
+				log.Debugf("Handle not found - already deleted?")
+			} else {
+				return err
+			}
 		}
 	} else {
 		log.Warnf("GoDaddy: record in zone %s not found %s to delete", p.zone, change.String())
