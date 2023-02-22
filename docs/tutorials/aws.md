@@ -837,6 +837,14 @@ You can configure Route53 to associate DNS records with healthchecks for automat
 
 Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
 
+## Canonical Hosted Zones
+
+When creating ALIAS type records in Route53 it is required that external-dns be aware of the canonical hosted zone in which
+the specified hostname is created. External-dns is able to automatically identify the canonical hosted zone for many
+hostnames based upon known hostname suffixes which are defined in [aws.go](../../provider/aws/aws.go). If a hostname
+does not have a known suffix then the suffix can be added into `aws.go` or the [target-hosted-zone annotation](#target-hosted-zone)
+can be used to manually define the ID of the canonical hosted zone.
+
 ## Govcloud caveats
 
 Due to the special nature with how Route53 runs in Govcloud, there are a few tweaks in the deployment settings.
