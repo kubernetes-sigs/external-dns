@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sigs.k8s.io/external-dns/provider/stackit"
 	"syscall"
 	"time"
 
@@ -370,6 +371,12 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
+	case "stackit":
+		p, err = stackit.NewStackitDNSProvider(domainFilter, cfg.DryRun, stackit.Config{
+			BasePath:  cfg.StackitBaseUrl,
+			Token:     cfg.StackitBearerToken,
+			ProjectId: cfg.StackitProjectId,
+		})
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
