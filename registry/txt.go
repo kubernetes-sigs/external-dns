@@ -24,6 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/maps"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -51,7 +52,7 @@ type TXTRegistry struct {
 	managedRecordTypes []string
 
 	// missingTXTRecords stores TXT records which are missing after the migration to the new format
-	missingTXTRecords []*endpoint.Endpoint
+	missingTXTRecords map[*endpoint.Endpoint]struct{}
 }
 
 // NewTXTRegistry returns new TXTRegistry object
@@ -172,7 +173,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		im.recordsCacheRefreshTime = time.Now()
 	}
 
-	im.missingTXTRecords = missingEndpoints
+	im.missingTXTRecords = map[*endpoint.Endpoint]struct{}{}
+
+	for _, missingEndpoint := range missingEndpoints {
+		im.missingTXTRecords[missingEndpoint] = struct{}{}
+	}
 
 	return endpoints, nil
 }
@@ -180,7 +185,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // MissingRecords returns the TXT record to be created.
 // The missing records are collected during the run of Records method.
 func (im *TXTRegistry) MissingRecords() []*endpoint.Endpoint {
-	return im.missingTXTRecords
+	return maps.Keys(im.missingTXTRecords)
 }
 
 // generateTXTRecord generates both "old" and "new" TXT records.
@@ -189,7 +194,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	// Missing TXT records are added to the set of changes.
 	// Obviously, we don't need any other TXT record for them.
 	if r.RecordType == endpoint.RecordTypeTXT {
-		return nil
+		if _, ok := im.missingTXTRecords[r]; ok {
+			return nil
+		}
 	}
 
 	endpoints := make([]*endpoint.Endpoint, 0)
