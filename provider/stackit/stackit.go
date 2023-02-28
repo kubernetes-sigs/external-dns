@@ -9,10 +9,11 @@ import (
 	"github.com/antihax/optional"
 	log "github.com/sirupsen/logrus"
 
+	stackitdnsclient "github.com/stackitcloud/stackit-dns-api-client-go"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	stackitdnsclient "sigs.k8s.io/external-dns/provider/stackit/swaggerclient"
 )
 
 const (

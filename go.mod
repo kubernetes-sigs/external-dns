@@ -168,6 +168,7 @@ require (
 	github.com/smartystreets/gunit v1.3.4 // indirect
 	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/stackitcloud/stackit-dns-api-client-go v0.0.0-20230228161103-9a465ba13cc1 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.0 // indirect

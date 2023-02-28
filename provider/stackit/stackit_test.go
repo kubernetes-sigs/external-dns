@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/google/uuid"
+	stackitdnsclient "github.com/stackitcloud/stackit-dns-api-client-go"
 	"github.com/stretchr/testify/assert"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
-	stackitdnsclient "sigs.k8s.io/external-dns/provider/stackit/swaggerclient"
 	"testing"
 )
 
