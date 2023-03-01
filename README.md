@@ -62,6 +62,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 * [Plural](https://www.plural.sh/)
 * [Pi-hole](https://pi-hole.net/)
+* [STACKIT DNS](https://docs.stackit.cloud)
 
 From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -87,43 +88,44 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers |
-| -------- | ------ | ----------- |
-| Google Cloud DNS | Stable | |
-| AWS Route 53 | Stable | |
-| AWS Cloud Map | Beta | |
-| Akamai Edge DNS | Beta | |
-| AzureDNS | Beta | |
-| BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
-| Civo | Alpha | @alejandrojnm |
-| CloudFlare | Beta | |
-| RcodeZero | Alpha | |
-| DigitalOcean | Alpha | |
-| DNSimple | Alpha | |
-| Infoblox | Alpha | @saileshgiri |
-| Dyn | Alpha | |
-| OpenStack Designate | Alpha | |
-| PowerDNS | Alpha | |
-| CoreDNS | Alpha | |
-| Exoscale | Alpha | |
+| Provider                        | Status | Maintainers |
+|---------------------------------| ------ | ---------- |
+| Google Cloud DNS                | Stable | |
+| AWS Route 53                    | Stable | |
+| AWS Cloud Map                   | Beta | |
+| Akamai Edge DNS                 | Beta | |
+| AzureDNS                        | Beta | |
+| BlueCat                         | Alpha | @seanmalloy  @vinny-sabatini |
+| Civo                            | Alpha | @alejandrojnm |
+| CloudFlare                      | Beta | |
+| RcodeZero                       | Alpha | |
+| DigitalOcean                    | Alpha | |
+| DNSimple                        | Alpha | |
+| Infoblox                        | Alpha | @saileshgiri |
+| Dyn                             | Alpha | |
+| OpenStack Designate             | Alpha | |
+| PowerDNS                        | Alpha | |
+| CoreDNS                         | Alpha | |
+| Exoscale                        | Alpha | |
 | Oracle Cloud Infrastructure DNS | Alpha | |
-| Linode DNS | Alpha | |
-| RFC2136 | Alpha | |
-| NS1 | Alpha | |
-| TransIP | Alpha | |
-| VinylDNS | Alpha | |
-| RancherDNS | Alpha | |
-| OVH | Alpha | |
-| Scaleway DNS | Alpha | @Sh4d1 |
-| Vultr | Alpha | |
-| UltraDNS | Alpha | |
-| GoDaddy | Alpha | |
-| Gandi | Alpha | @packi |
-| SafeDNS | Alpha | @assureddt |
-| IBMCloud | Alpha | @hughhuangzh |
-| TencentCloud | Alpha | @Hyzhou |
-| Plural | Alpha | @michaeljguarino |
-| Pi-hole | Alpha | @tinyzimmer |
+| Linode DNS                      | Alpha | |
+| RFC2136                         | Alpha | |
+| NS1                             | Alpha | |
+| TransIP                         | Alpha | |
+| VinylDNS                        | Alpha | |
+| RancherDNS                      | Alpha | |
+| OVH                             | Alpha | |
+| Scaleway DNS                    | Alpha | @Sh4d1 |
+| Vultr                           | Alpha | |
+| UltraDNS                        | Alpha | |
+| GoDaddy                         | Alpha | |
+| Gandi                           | Alpha | @packi |
+| SafeDNS                         | Alpha | @assureddt |
+| IBMCloud                        | Alpha | @hughhuangzh |
+| TencentCloud                    | Alpha | @Hyzhou |
+| Plural                          | Alpha | @michaeljguarino |
+| Pi-hole                         | Alpha | @tinyzimmer |
+| STACKIT                         | Alpha | |
 
 ## Kubernetes version compatibility
 
@@ -149,11 +151,11 @@ The following tutorials are provided:
 * [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * AWS
-	* [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
-	* [Route53](docs/tutorials/aws.md)
-		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
-	* [Cloud Map](docs/tutorials/aws-sd.md)
-	* [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
+    * [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
+    * [Route53](docs/tutorials/aws.md)
+        * [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
+    * [Cloud Map](docs/tutorials/aws-sd.md)
+    * [Kube Ingress AWS Controller](docs/tutorials/kube-ingress-aws.md)
 * [Azure DNS](docs/tutorials/azure.md)
 * [Azure Private DNS](docs/tutorials/azure-private-dns.md)
 * [Civo](docs/tutorials/civo.md)
@@ -166,8 +168,8 @@ The following tutorials are provided:
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
 * Google Kubernetes Engine
-	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
-	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
+    * [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
+    * [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [Headless Services](docs/tutorials/hostport.md)
 * [Infoblox](docs/tutorials/infoblox.md)
 * [Istio Gateway Source](docs/tutorials/istio.md)
@@ -196,6 +198,7 @@ The following tutorials are provided:
 * [TencentCloud](docs/tutorials/tencentcloud.md)
 * [Plural](docs/tutorials/plural.md)
 * [Pi-hole](docs/tutorials/pihole.md)
+* [STACKIT DNS](docs/tutorials/stackit.md)
 
 ### Running Locally
 

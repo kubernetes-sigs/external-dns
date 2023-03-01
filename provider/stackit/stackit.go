@@ -3,6 +3,7 @@ package stackit
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 
@@ -185,7 +186,16 @@ func NewStackitDNSProvider(
 	config Config,
 ) (*StackitDNSProvider, error) {
 	configClient := stackitdnsclient.NewConfiguration()
-	configClient.DefaultHeader["Authorization"] = fmt.Sprintf("Bearer %s", config.Token)
+
+	token := config.Token
+	if token == "" {
+		token = os.Getenv("EXTERNAL_DNS_STACKIT_CLIENT_TOKEN")
+	}
+	if token == "" {
+		return nil, fmt.Errorf("no token found")
+	}
+
+	configClient.DefaultHeader["Authorization"] = fmt.Sprintf("Bearer %s", token)
 	configClient.BasePath = config.BasePath
 	apiClient := stackitdnsclient.NewAPIClient(configClient)
 	clientWrapper := client{client: apiClient}
