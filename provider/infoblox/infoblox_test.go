@@ -698,7 +698,7 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
@@ -712,6 +712,33 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 	assert.True(t, req.URL.Query().Get("fqdn~") == "")
 }
 
+func TestExtendedRequestNameRegExBuilder(t *testing.T) {
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(0, "", "^staging.*test.com$")
+	requestBuilder.Init(hostCfg, authCfg)
+
+	obj := ibclient.NewEmptyRecordCNAME()
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "^staging.*test.com$")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "")
+}
+
+
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	hostCfg := ibclient.HostConfig{
 		Host:    "localhost",
@@ -724,7 +751,7 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(54321, "")
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewEmptyRecordCNAME()
@@ -743,7 +770,7 @@ func TestGetObject(t *testing.T) {
 	hostCfg := ibclient.HostConfig{}
 	authCfg := ibclient.AuthConfig{}
 	transportConfig := ibclient.TransportConfig{}
-	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com")
+	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com", "")
 	requestor := mockRequestor{}
 	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
 

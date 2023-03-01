@@ -271,6 +271,14 @@ There is also the ability to filter results from the Infoblox zone_auth service 
 --infoblox-fqdn-regex=^staging.*test.com$
 ```
 
+## Ability to filter A, Host, CNAME and TXT records from the by name using a regular expression
+
+Infoblox supports filtering records by name using a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature, set the parameter infoblox-name-regex for external-dns to a regular expression that makes sense for you.  For instance, if all your dns records end with `cluster1.example.com`, you can fetch records matching this style by setting the following:
+
+```
+--infoblox-name-regex=cluster1.example.com
+```
+
 ## Infoblox PTR record support
 
 There is an option to enable PTR records support for infoblox provider. PTR records allow to do reverse dns search. To enable PTR records support, add following into arguments for external-dns:  
