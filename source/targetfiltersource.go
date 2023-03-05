@@ -52,6 +52,11 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 			}
 		}
 
+		// If all targets are filtered out, skip the endpoint.
+		if len(filteredTargets) == 0 {
+			continue
+		}
+
 		ep.Targets = filteredTargets
 
 		result = append(result, ep)
