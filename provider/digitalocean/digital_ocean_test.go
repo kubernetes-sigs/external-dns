@@ -333,6 +333,17 @@ func TestDigitalOceanMakeDomainEditRequest(t *testing.T) {
 		Data: "bar.example.com.",
 		TTL:  digitalOceanRecordTTL,
 	}, r3)
+
+	// Ensure that custom TTLs can be set
+	customTTL := 600
+	r4 := makeDomainEditRequest("example.com", "foo.example.com", endpoint.RecordTypeCNAME,
+		"bar.example.com.", customTTL)
+	assert.Equal(t, &godo.DomainRecordEditRequest{
+		Type: endpoint.RecordTypeCNAME,
+		Name: "foo",
+		Data: "bar.example.com.",
+		TTL:  customTTL,
+	}, r4)
 }
 
 func TestDigitalOceanApplyChanges(t *testing.T) {

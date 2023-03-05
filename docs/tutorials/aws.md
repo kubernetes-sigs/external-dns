@@ -413,7 +413,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: k8s.gcr.io/external-dns/external-dns:v0.11.0
+          image: registry.k8s.io/external-dns/external-dns:v0.13.2
           args:
             - --source=service
             - --source=ingress
@@ -508,7 +508,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: k8s.gcr.io/external-dns/external-dns:v0.11.0
+          image: registry.k8s.io/external-dns/external-dns:v0.13.2
           args:
             - --source=service
             - --source=ingress
@@ -853,7 +853,7 @@ args:
 - --txt-prefix={{ YOUR_PREFIX }}
 ```
 
-* The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commerical AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commerical account that has the sufficient rights.
+* The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commercial AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commercial account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commercial account that has the sufficient rights.
 
 ```yaml
 env:
@@ -950,7 +950,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.2
         command:
         - /bin/sh
         - -c
