@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -54,6 +55,7 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 
 		// If all targets are filtered out, skip the endpoint.
 		if len(filteredTargets) == 0 {
+			log.WithField("endpoint", ep).Debugf("Skipping endpoint because all targets were filtered out")
 			continue
 		}
 
