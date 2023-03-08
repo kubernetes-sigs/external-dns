@@ -3,7 +3,7 @@ module sigs.k8s.io/external-dns
 go 1.19
 
 require (
-	cloud.google.com/go/compute v1.9.0
+	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/Azure/azure-sdk-for-go v66.0.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
