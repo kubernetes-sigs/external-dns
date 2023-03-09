@@ -511,7 +511,7 @@ func (p *AWSSDProvider) DeleteService(service *sd.Service) error {
 		label[endpoint.OwnerLabelKey] = p.ownerID
 		label[endpoint.AWSSDDescriptionLabel] = label.Serialize(false)
 
-		if aws.StringValue(service.Description) == label[endpoint.AWSSDDescriptionLabel] {
+		if strings.HasPrefix(aws.StringValue(service.Description), label[endpoint.AWSSDDescriptionLabel]) {
 			log.Infof("Deleting service \"%s\"", *service.Name)
 			_, err := p.client.DeleteService(&sd.DeleteServiceInput{
 				Id: aws.String(*service.Id),

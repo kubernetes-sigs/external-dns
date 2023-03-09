@@ -234,7 +234,7 @@ func main() {
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
@@ -261,7 +261,8 @@ func main() {
 				View:          cfg.InfobloxView,
 				MaxResults:    cfg.InfobloxMaxResults,
 				DryRun:        cfg.DryRun,
-				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
+				NameRegEx:     cfg.InfobloxNameRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
 			},

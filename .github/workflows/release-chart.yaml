@@ -10,9 +10,8 @@ on:
 permissions: {}
 jobs:
   release:
-
     permissions:
-      contents: write  #  to push chart release and create a release (helm/chart-releaser-action)
+      contents: write #  to push chart release and create a release (helm/chart-releaser-action)
 
     if: github.repository == 'kubernetes-sigs/external-dns'
     runs-on: ubuntu-latest
@@ -34,7 +33,7 @@ jobs:
 
       - name: Get changelog entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@5bfb30f7871d5c4cde50cd897314f37578043394
+        uses: mindsers/changelog-reader-action@b97ce03a10d9bdbb07beb491c76a5a01d78cd3ef
         with:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
@@ -42,7 +41,7 @@ jobs:
       - name: Create release notes
         run: |
           set -euo pipefail
-          cat <<"EOF" > charts/external-dns/_release-notes.md
+          cat <<"EOF" > charts/external-dns/RELEASE.md
           ${{ steps.changelog_reader.outputs.changes }}
           EOF
 
@@ -52,14 +51,15 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Set-up Helm
-        uses: azure/setup-helm@f382f75448129b3be48f8121b9857be18d815a82
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@98bccfd32b0f76149d188912ac8e45ddd3f8695f
+        uses: helm/chart-releaser-action@be16258da8010256c6e82849661221415f031968
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
-          CR_RELEASE_NOTES_FILE: _release-notes.md
+          CR_RELEASE_NOTES_FILE: RELEASE.md
+          CR_MAKE_RELEASE_LATEST: false

@@ -683,6 +683,12 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 				Name:        aws.String("service2"),
 				NamespaceId: aws.String("private"),
 			},
+			"srv3": {
+				Id:          aws.String("srv3"),
+				Description: aws.String("heritage=external-dns,external-dns/owner=owner-id,external-dns/resource=virtualservice/grpc-server/validate-grpc-server"),
+				Name:        aws.String("service3"),
+				NamespaceId: aws.String("private"),
+			},
 		},
 	}
 
@@ -693,9 +699,14 @@ func TestAWSSDProvider_DeleteService(t *testing.T) {
 
 	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "owner-id")
 
-	// delete fist service
+	// delete first service
 	err := provider.DeleteService(services["private"]["srv1"])
 	assert.NoError(t, err)
+	assert.Len(t, api.services["private"], 2)
+
+	// delete third service
+	err1 := provider.DeleteService(services["private"]["srv3"])
+	assert.NoError(t, err1)
 	assert.Len(t, api.services["private"], 1)
 
 	expectedServices := map[string]*sd.Service{
