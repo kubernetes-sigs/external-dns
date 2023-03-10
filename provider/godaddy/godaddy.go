@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -367,22 +367,6 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 	return nil
 }
 
-func (p *GDProvider) endpointEqual(l *endpoint.Endpoint, r *endpoint.Endpoint) bool {
-	if l.DNSName != r.DNSName || l.RecordType!= r.RecordType {
-		return false
-	}
-
-	if ! l.Targets.Same(r.Targets) {
-		return false
-	}
-
-	if l.RecordTTL != r.RecordTTL {
-		return false
-	}
-
-	return true
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if countTargets(changes) == 0 {
@@ -404,22 +388,42 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
 
-	for _, recOld := range changes.UpdateOld {
-		for _, recNew := range changes.UpdateNew {
-			if recOld.DNSName != recNew.DNSName {
-                continue
-            }
+	iOldSkip := make(map[int]bool)
+	iNewSkip := make(map[int]bool)
 
-			if ! p.endpointEqual(recOld, recNew) {
-				DeleteEndpoints := []*endpoint.Endpoint{recOld}
-				PatchEndpoints := []*endpoint.Endpoint{recNew}
-				if recOld.RecordType == recNew.RecordType {
-					allChanges = p.appendChange(gdReplace, PatchEndpoints, allChanges)
-				} else {
-					allChanges = p.appendChange(gdDelete, DeleteEndpoints, allChanges)
-					allChanges = p.appendChange(gdCreate, PatchEndpoints, allChanges)
-				}
+	for iOld, recOld := range changes.UpdateOld {
+		for iNew, recNew := range changes.UpdateNew {
+			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
+				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
+				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
+				iOldSkip[iOld] = true
+				iNewSkip[iNew] = true
+				break
 			}
+		}
+	}
+
+	for iOld, recOld := range changes.UpdateOld {
+		_, found := iOldSkip[iOld]
+		if found {
+			continue
+		}
+		for iNew, recNew := range changes.UpdateNew {
+			_, found := iNewSkip[iNew]
+			if found {
+				continue
+			}
+
+			if recOld.DNSName != recNew.DNSName {
+				continue
+			}
+
+			DeleteEndpoints := []*endpoint.Endpoint{recOld}
+			CreateEndpoints := []*endpoint.Endpoint{recNew}
+			allChanges = p.appendChange(gdDelete, DeleteEndpoints, allChanges)
+			allChanges = p.appendChange(gdCreate, CreateEndpoints, allChanges)
+
+			break
 		}
 	}
 
@@ -455,7 +459,6 @@ func (p *gdRecords) addRecord(client gdClient, endpoint endpoint.Endpoint, dnsNa
 
 			return err
 		}
-
 	}
 
 	return nil
@@ -492,7 +495,6 @@ func (p *gdRecords) replaceRecord(client gdClient, endpoint endpoint.Endpoint, d
 	}
 
 	var response GDErrorResponse
-
 
 	if dryRun {
 		log.Infof("[DryRun] - Replace record %s.%s of type %s %s", dnsName, p.zone, endpoint.RecordType, records)
@@ -540,7 +542,6 @@ func (p *gdRecords) deleteRecord(client gdClient, endpoint endpoint.Endpoint, dn
 			p.records = p.records[:len(p.records)-1]
 			p.changed = true
 		}
-
 	}
 
 	if dryRun {

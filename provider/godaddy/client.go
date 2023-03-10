@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"golang.org/x/time/rate"
+
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
 
@@ -230,7 +231,7 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
 		retryAfter, _ := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
 
-		jitter := rand.Int63n(int64(retryAfter))
+		jitter := rand.Int63n(retryAfter)
 		retryAfterSec := retryAfter + jitter/2
 
 		sleepTime := time.Duration(retryAfterSec) * time.Second
