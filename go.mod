@@ -8,7 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0
+	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.1
 	github.com/IBM/go-sdk-core/v5 v5.8.0
 	github.com/IBM/networking-go-sdk v0.36.0
 	github.com/StackExchange/dnscontrol/v3 v3.27.1
