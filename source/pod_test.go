@@ -459,12 +459,14 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
-			"pods with hostNetwore=false should be ignored",
+			"pods with hostNetwore=false should not be ignored",
 			"",
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
 				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "b.foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.b.foo.example.org", Targets: endpoint.Targets{"10.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -514,8 +516,8 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
-							hostnameAnnotationKey:         "a.foo.example.org",
+							internalHostnameAnnotationKey: "internal.b.foo.example.org",
+							hostnameAnnotationKey:         "b.foo.example.org",
 						},
 					},
 					Spec: corev1.PodSpec{
@@ -523,7 +525,7 @@ func TestPodSource(t *testing.T) {
 						NodeName:    "my-node2",
 					},
 					Status: corev1.PodStatus{
-						PodIP: "100.0.1.2",
+						PodIP: "10.0.1.2",
 					},
 				},
 			},
