@@ -63,6 +63,17 @@ var internalProxy = proxy{
 									},
 								},
 							},
+							MetadataStatic: proxyVirtualHostMetadataStatic{
+								Source: []proxyVirtualHostMetadataStaticSource{
+									{
+										ResourceKind: "*v1.Unknown",
+										ResourceRef: proxyVirtualHostMetadataSourceResourceRef{
+											Name:      "my-unknown-svc",
+											Namespace: "unknown",
+										},
+									},
+								},
+							},
 						},
 						{
 							Domains: []string{"c.test"},
@@ -72,6 +83,17 @@ var internalProxy = proxy{
 										Kind:      "*v1.VirtualService",
 										Name:      "my-internal-svc",
 										Namespace: "internal",
+									},
+								},
+							},
+							MetadataStatic: proxyVirtualHostMetadataStatic{
+								Source: []proxyVirtualHostMetadataStaticSource{
+									{
+										ResourceKind: "*v1.VirtualService",
+										ResourceRef: proxyVirtualHostMetadataSourceResourceRef{
+											Name:      "my-internal-svc",
+											Namespace: "internal",
+										},
 									},
 								},
 							},
