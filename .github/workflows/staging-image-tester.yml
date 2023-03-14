@@ -3,6 +3,8 @@ name: Build all images
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 permissions:
   contents: read  #  to fetch code (actions/checkout)
