@@ -90,9 +90,11 @@ IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS         = amd64 arm64 arm/v7
-DEFAULT_ARCH  = amd64
-SHELL         = /bin/bash
+ARCHS          = amd64 arm64 arm/v7
+ARCH          ?= amd64
+DEFAULT_ARCH   = amd64
+SHELL          = /bin/bash
+OUTPUT_TYPE   ?= docker
 
 
 build: build/$(BINARY)
