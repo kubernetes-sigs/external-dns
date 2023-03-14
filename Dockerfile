@@ -26,8 +26,7 @@ RUN go mod download
 COPY . .
 RUN make test build.$ARCH
 
-# final image
-FROM $ARCH/alpine:3.17
+FROM alpine:3.17
 
 RUN apk update && apk add "libcrypto3>=3.0.8-r0" "libssl3>=3.0.8-r0" && rm -rf /var/cache/apt/*
 

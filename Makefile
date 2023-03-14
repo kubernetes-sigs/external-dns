@@ -90,7 +90,8 @@ IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS         = amd64 arm64v8 arm32v7
+ARCHS         = amd64 arm64 arm/v7
+DEFAULT_ARCH  = amd64
 SHELL         = /bin/bash
 
 
@@ -99,15 +100,10 @@ build: build/$(BINARY)
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.push/multiarch:
+build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
-		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
-		docker pull $${arch}/alpine:3.17 ;\
-		docker pull golang:1.19 ;\
-		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
-		docker push $${image} ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
@@ -116,20 +112,34 @@ build.push/multiarch:
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
-build.push: build.docker
-	docker push "$(IMAGE):$(VERSION)"
+build.push:
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
 
-build.arm64v8:
+build.push-%:
+	$(MAKE) ARCH=$* build.push
+
+build.arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.arm32v7:
+build.arm/v7:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.docker:
+build.setup:
+	docker buildx inspect img-builder > /dev/null || docker buildx create --name img-builder --use
+
+build.docker: build.setup build.$(ARCH)
 	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
+	image="$(IMAGE):$(VERSION)-$(ARCH)"; \
+	docker buildx build \
+		--pull \
+		--output=type=$(OUTPUT_TYPE) \
+		--platform linux/$(ARCH) \
+		--build-arg ARCH="$(ARCH)" \
+		--build-arg VERSION="$(VERSION)" \
+		--tag $${image} .
 
 build.mini:
 	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
