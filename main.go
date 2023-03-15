@@ -134,7 +134,7 @@ func main() {
 		CFUsername:                     cfg.CFUsername,
 		CFPassword:                     cfg.CFPassword,
 		ContourLoadBalancerService:     cfg.ContourLoadBalancerService,
-		GlooNamespace:                  cfg.GlooNamespace,
+		GlooNamespaces:                 cfg.GlooNamespaces,
 		SkipperRouteGroupVersion:       cfg.SkipperRouteGroupVersion,
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,

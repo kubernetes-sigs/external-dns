@@ -25,7 +25,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.13.2
         args:
         - --source=gloo-proxy
-        - --gloo-namespace=custom-gloo-system # gloo system namespace. Omit to use the default (gloo-system)
+        - --gloo-namespaces=custom-gloo-system # comma separated gloo system namespace list. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
@@ -93,7 +93,7 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.13.2
         args:
         - --source=gloo-proxy
-        - --gloo-namespace=custom-gloo-system # gloo system namespace. Omit to use the default (gloo-system)
+        - --gloo-namespaces=custom-gloo-system # comma separated gloo system namespace list. Omit to use the default (gloo-system)
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier

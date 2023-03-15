@@ -81,15 +81,16 @@ type proxyVirtualHostMetadataSource struct {
 type glooSource struct {
 	dynamicKubeClient dynamic.Interface
 	kubeClient        kubernetes.Interface
-	glooNamespace     string
+	glooNamespaces    []string
 }
 
 // NewGlooSource creates a new glooSource with the given config
-func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, glooNamespace string) (Source, error) {
+func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, glooNamespaces string) (Source, error) {
+
 	return &glooSource{
 		dynamicKubeClient,
 		kubeClient,
-		glooNamespace,
+		strings.Split(glooNamespaces, ","),
 	}, nil
 }
 
@@ -100,33 +101,36 @@ func (gs *glooSource) AddEventHandler(ctx context.Context, handler func()) {
 func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 
-	proxies, err := gs.dynamicKubeClient.Resource(proxyGVR).Namespace(gs.glooNamespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, err
+	for _, ns := range gs.glooNamespaces {
+		proxies, err := gs.dynamicKubeClient.Resource(proxyGVR).Namespace(ns).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+		for _, obj := range proxies.Items {
+			proxy := proxy{}
+			jsonString, err := obj.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+			err = json.Unmarshal(jsonString, &proxy)
+			if err != nil {
+				return nil, err
+			}
+			log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
+			proxyTargets, err := gs.proxyTargets(ctx, proxy.Metadata.Name, ns)
+			if err != nil {
+				return nil, err
+			}
+			log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Metadata.Name, len(proxyTargets), proxyTargets)
+			proxyEndpoints, err := gs.generateEndpointsFromProxy(ctx, &proxy, proxyTargets)
+			if err != nil {
+				return nil, err
+			}
+			log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Metadata.Name, len(proxyEndpoints))
+			endpoints = append(endpoints, proxyEndpoints...)
+		}
 	}
-	for _, obj := range proxies.Items {
-		proxy := proxy{}
-		jsonString, err := obj.MarshalJSON()
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(jsonString, &proxy)
-		if err != nil {
-			return nil, err
-		}
-		log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
-		proxyTargets, err := gs.proxyTargets(ctx, proxy.Metadata.Name)
-		if err != nil {
-			return nil, err
-		}
-		log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Metadata.Name, len(proxyTargets), proxyTargets)
-		proxyEndpoints, err := gs.generateEndpointsFromProxy(ctx, &proxy, proxyTargets)
-		if err != nil {
-			return nil, err
-		}
-		log.Debugf("Gloo[%s]: Generate %d endpoint(s)", proxy.Metadata.Name, len(proxyEndpoints))
-		endpoints = append(endpoints, proxyEndpoints...)
-	}
+
 	return endpoints, nil
 }
 
@@ -168,8 +172,8 @@ func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHos
 	return annotations, nil
 }
 
-func (gs *glooSource) proxyTargets(ctx context.Context, name string) (endpoint.Targets, error) {
-	svc, err := gs.kubeClient.CoreV1().Services(gs.glooNamespace).Get(ctx, name, metav1.GetOptions{})
+func (gs *glooSource) proxyTargets(ctx context.Context, name string, namespace string) (endpoint.Targets, error) {
+	svc, err := gs.kubeClient.CoreV1().Services(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
