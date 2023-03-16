@@ -105,25 +105,17 @@ build/$(BINARY): $(SOURCES)
 build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
+		image="$(IMAGE):$(VERSION)-$$(echo $$arch | sed 's/\//-/g')" ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 	for arch in $(ARCHS); do \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
+		image="$(IMAGE):$(VERSION)-$$(echo $$arch | sed 's/\//-/g')" ;\
+		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$${image}" ;\
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
 build.image/multiarch: $(addprefix build.image-,$(ARCHS))
-	arch_specific_tags=()
-	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
-		arch_specific_tags+=( "--amend $${image}" ) ;\
-	done ;\
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
-	for arch in $(ARCHS); do \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
-	done;\
 
 build.image:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=docker build.docker
