@@ -114,7 +114,7 @@ build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
-build.local/multiarch: $(addprefix build.local-,$(ARCHS))
+build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
@@ -125,10 +125,10 @@ build.local/multiarch: $(addprefix build.local-,$(ARCHS))
 		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$${arch}" ;\
 	done;\
 
-build.local:
-	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=local build.docker
+build.image:
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=image build.docker
 
-build.local-%:
+build.image-%:
 	$(MAKE) ARCH=$* build.local
 
 
