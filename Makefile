@@ -128,6 +128,10 @@ build.local/multiarch: $(addprefix build.local-,$(ARCHS))
 build.local:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=local build.docker
 
+build.local-%:
+	$(MAKE) ARCH=$* build.local
+
+
 build.push:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
 
