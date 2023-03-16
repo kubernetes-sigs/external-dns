@@ -105,24 +105,24 @@ build/$(BINARY): $(SOURCES)
 build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		image="$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 	for arch in $(ARCHS); do \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)" ;\
+		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
 build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		image="$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 	for arch in $(ARCHS); do \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)" ;\
+		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$(subst /,-,$${arch})" ;\
 	done;\
 
 build.image:
@@ -147,7 +147,7 @@ build.push-arm64:
 	$(MAKE) ARCH=arm64 build.push
 
 build.push-arm/v7:
-	$(MAKE) ARCH=arm/b7 build.push
+	$(MAKE) ARCH=arm/v7 build.push
 
 build.arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
@@ -163,7 +163,7 @@ build.setup:
 
 build.docker: build.setup build.$(ARCH)
 	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
-	image="$(IMAGE):$(VERSION)-$(ARCH)"; \
+	image="$(IMAGE):$(VERSION)-$(subst /,-,$(ARCH))"; \
 	docker buildx build \
 		--pull \
 		--output=type=$(OUTPUT_TYPE) \
