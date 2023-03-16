@@ -24,7 +24,6 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN make test build.$ARCH
 
 FROM alpine:3.17
 
