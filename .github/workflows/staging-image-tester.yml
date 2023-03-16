@@ -34,10 +34,4 @@ jobs:
         go get -v -t -d ./...
 
     - name: Test
-      run: make release.staging
-
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
-      with:
-        path-to-profile: profile.cov
-      if: github.actor != 'nektos/act'
+      run: make build/multiarch

@@ -114,6 +114,17 @@ build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
+build/multiarch: $(addprefix build.push-,$(ARCHS))
+	arch_specific_tags=()
+	for arch in $(ARCHS); do \
+		image="$(IMAGE):$(VERSION)-$${arch}" ;\
+		arch_specific_tags+=( "--amend $${image}" ) ;\
+	done ;\
+	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
+	for arch in $(ARCHS); do \
+		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$${arch}" ;\
+	done;\
+
 build.push:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
 
