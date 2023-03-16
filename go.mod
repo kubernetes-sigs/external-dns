@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.11.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0
 	github.com/IBM/go-sdk-core/v5 v5.8.0
 	github.com/IBM/networking-go-sdk v0.36.0
@@ -39,8 +40,8 @@ require (
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
-	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
+	github.com/openshift/api v0.0.0-20210315202829-4b79815405ec
+	github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
 	github.com/oracle/oci-go-sdk v24.3.0+incompatible
 	github.com/ovh/go-ovh v1.1.0
 	github.com/pkg/errors v0.9.1
