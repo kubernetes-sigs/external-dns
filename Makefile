@@ -129,7 +129,7 @@ build.image:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=image build.docker
 
 build.image-%:
-	$(MAKE) ARCH=$* build.local
+	$(MAKE) ARCH=$* build.image
 
 
 build.push:
