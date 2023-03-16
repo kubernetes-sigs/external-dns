@@ -114,7 +114,7 @@ build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
 
-build/multiarch: $(addprefix build.push-,$(ARCHS))
+build.local/multiarch: $(addprefix build.local-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$${arch}" ;\
@@ -124,6 +124,9 @@ build/multiarch: $(addprefix build.push-,$(ARCHS))
 	for arch in $(ARCHS); do \
 		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$${arch}" ;\
 	done;\
+
+build.local:
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=local build.docker
 
 build.push:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
