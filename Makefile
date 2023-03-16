@@ -128,15 +128,26 @@ build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 build.image:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=image build.docker
 
-build.image-%:
-	$(MAKE) ARCH=$* build.image
+build.image-amd64:
+	$(MAKE) ARCH=amd64 build.image
 
+build.image-arm64:
+	$(MAKE) ARCH=arm64 build.image
+
+build.image-arm/v7:
+	$(MAKE) ARCH=arm/v7 build.image
 
 build.push:
 	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
 
-build.push-%:
-	$(MAKE) ARCH=$* build.push
+build.push-amd64:
+	$(MAKE) ARCH=amd64 build.push
+
+build.push-arm64:
+	$(MAKE) ARCH=arm64 build.push
+
+build.push-arm/v7:
+	$(MAKE) ARCH=arm/b7 build.push
 
 build.arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
