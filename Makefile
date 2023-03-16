@@ -126,7 +126,7 @@ build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 	done;\
 
 build.image:
-	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=image build.docker
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=docker build.docker
 
 build.image-amd64:
 	$(MAKE) ARCH=amd64 build.image
