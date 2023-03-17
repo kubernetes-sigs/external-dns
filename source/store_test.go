@@ -149,7 +149,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 
 	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 7, "should generate all seven sources")
+	suite.Len(sources, 8, "should generate all eight sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {
