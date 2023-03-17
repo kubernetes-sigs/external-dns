@@ -19,7 +19,7 @@
 cover:
 	go get github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
-	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
+	$(eval PKGS_DELIM := $(shell echo $(PKGS) | tr / -'))
 	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
@@ -105,12 +105,12 @@ build/$(BINARY): $(SOURCES)
 build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$$(echo $$arch | sed 's/\//-/g')" ;\
+		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
 		arch_specific_tags+=( "--amend $${image}" ) ;\
 	done ;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$$(echo $$arch | sed 's/\//-/g')" ;\
+		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
 		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$${image}" ;\
 	done;\
 	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
