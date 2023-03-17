@@ -34,4 +34,4 @@ jobs:
         go get -v -t -d ./...
 
     - name: Test
-      run: make build/multiarch
+      run: make build.image/multiarch
