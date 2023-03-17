@@ -173,8 +173,8 @@ clean:
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging
 
-release.staging:
+release.staging: test
 	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
-release.prod:
+release.prod: test
 	$(MAKE) build.push/multiarch
