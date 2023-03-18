@@ -174,7 +174,9 @@ clean:
 .PHONY: release.staging
 
 release.staging: test
+	apk add musl-dev gcc
 	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
 release.prod: test
+	apk add musl-dev gcc
 	$(MAKE) build.push/multiarch
