@@ -31,6 +31,8 @@ rbac:
   create: true
   additionalPermissions: []
 
+replicas: 1
+
 # Annotations to add to the Deployment
 deploymentAnnotations: {}
 

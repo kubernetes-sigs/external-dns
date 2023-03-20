@@ -10,7 +10,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicas | default 1 }}
   selector:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
