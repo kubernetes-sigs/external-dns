@@ -32,15 +32,13 @@ func NewGatewayTCPRouteSource(clients ClientGenerator, config *Config) (Source, 
 	})
 }
 
-type gatewayTCPRoute struct{ route *v1alpha2.TCPRoute }
+type gatewayTCPRoute struct{ route v1alpha2.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayTCPRoute) Object() kubeObject             { return rt.route }
-func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta   { return &rt.route.ObjectMeta }
-func (rt *gatewayTCPRoute) Hostnames() []v1beta1.Hostname  { return nil }
-func (rt *gatewayTCPRoute) Protocol() v1beta1.ProtocolType { return v1beta1.TCPProtocolType }
-func (rt *gatewayTCPRoute) RouteStatus() v1beta1.RouteStatus {
-	return v1b1RouteStatus(rt.route.Status.RouteStatus)
-}
+func (rt *gatewayTCPRoute) Object() kubeObject               { return &rt.route }
+func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
+func (rt *gatewayTCPRoute) Hostnames() []v1beta1.Hostname    { return nil }
+func (rt *gatewayTCPRoute) Protocol() v1beta1.ProtocolType   { return v1beta1.TCPProtocolType }
+func (rt *gatewayTCPRoute) RouteStatus() v1beta1.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayTCPRouteInformer struct {
 	informers_v1a2.TCPRouteInformer
@@ -53,54 +51,14 @@ func (inf gatewayTCPRouteInformer) List(namespace string, selector labels.Select
 	}
 	routes := make([]gatewayRoute, len(list))
 	for i, rt := range list {
-		routes[i] = &gatewayTCPRoute{rt}
+		// List results are supposed to be treated as read-only.
+		// We make a shallow copy since we're only interested in setting the TypeMeta.
+		clone := *rt
+		clone.TypeMeta = metav1.TypeMeta{
+			APIVersion: v1alpha2.GroupVersion.String(),
+			Kind:       "TCPRoute",
+		}
+		routes[i] = &gatewayTCPRoute{clone}
 	}
 	return routes, nil
-}
-
-func v1b1Hostnames(hostnames []v1alpha2.Hostname) []v1beta1.Hostname {
-	if len(hostnames) == 0 {
-		return nil
-	}
-	list := make([]v1beta1.Hostname, len(hostnames))
-	for i, s := range hostnames {
-		list[i] = v1beta1.Hostname(s)
-	}
-	return list
-}
-
-func v1b1RouteStatus(s v1alpha2.RouteStatus) v1beta1.RouteStatus {
-	return v1beta1.RouteStatus{
-		Parents: v1b1RouteParentStatuses(s.Parents),
-	}
-}
-
-func v1b1RouteParentStatuses(statuses []v1alpha2.RouteParentStatus) []v1beta1.RouteParentStatus {
-	if len(statuses) == 0 {
-		return nil
-	}
-	list := make([]v1beta1.RouteParentStatus, len(statuses))
-	for i, s := range statuses {
-		list[i] = v1b1RouteParentStatus(s)
-	}
-	return list
-}
-
-func v1b1RouteParentStatus(s v1alpha2.RouteParentStatus) v1beta1.RouteParentStatus {
-	return v1beta1.RouteParentStatus{
-		ParentRef:      v1b1ParentReference(s.ParentRef),
-		ControllerName: v1beta1.GatewayController(s.ControllerName),
-		Conditions:     s.Conditions,
-	}
-}
-
-func v1b1ParentReference(s v1alpha2.ParentReference) v1beta1.ParentReference {
-	return v1beta1.ParentReference{
-		Group:       (*v1beta1.Group)(s.Group),
-		Kind:        (*v1beta1.Kind)(s.Kind),
-		Namespace:   (*v1beta1.Namespace)(s.Namespace),
-		Name:        v1beta1.ObjectName(s.Name),
-		SectionName: (*v1beta1.SectionName)(s.SectionName),
-		Port:        (*v1beta1.PortNumber)(s.Port),
-	}
 }

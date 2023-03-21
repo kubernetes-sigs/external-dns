@@ -149,7 +149,7 @@ The following tutorials are provided:
 * [Akamai Edge DNS](docs/tutorials/akamai-edgedns.md)
 * [Alibaba Cloud](docs/tutorials/alibabacloud.md)
 * AWS
-	* [ALB Ingress Controller](docs/tutorials/alb-ingress.md)
+	* [AWS Load Balancer Controller](docs/tutorials/aws-load-balancer-controller.md)
 	* [Route53](docs/tutorials/aws.md)
 		* [Same domain for public and private Route53 zones](docs/tutorials/public-private-route53.md)
 	* [Cloud Map](docs/tutorials/aws-sd.md)

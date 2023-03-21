@@ -413,7 +413,7 @@ spec:
     spec:
       containers:
         - name: external-dns
-          image: k8s.gcr.io/external-dns/external-dns:v0.11.0
+          image: registry.k8s.io/external-dns/external-dns:v0.13.2
           args:
             - --source=service
             - --source=ingress
@@ -508,7 +508,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: k8s.gcr.io/external-dns/external-dns:v0.11.0
+          image: registry.k8s.io/external-dns/external-dns:v0.13.2
           args:
             - --source=service
             - --source=ingress
@@ -556,6 +556,10 @@ Annotations which are specific to AWS.
 ### alias
 
 `external-dns.alpha.kubernetes.io/alias` if set to `true` on an ingress, it will create an ALIAS record when the target is an ALIAS as well. To make the target an alias, the ingress needs to be configured correctly as described in [the docs](./nginx-ingress.md#with-a-separate-tcp-load-balancer). In particular, the argument `--publish-service=default/nginx-ingress-controller` has to be set on the `nginx-ingress-controller` container. If one uses the `nginx-ingress` Helm chart, this flag can be set with the `controller.publishService.enabled` configuration option.
+
+### target-hosted-zone
+
+`external-dns.alpha.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
 
 ## Verify ExternalDNS works (Service example)
 
@@ -833,6 +837,14 @@ You can configure Route53 to associate DNS records with healthchecks for automat
 
 Note: ExternalDNS does not support creating healthchecks, and assumes that `<health-check-id>` already exists.
 
+## Canonical Hosted Zones
+
+When creating ALIAS type records in Route53 it is required that external-dns be aware of the canonical hosted zone in which
+the specified hostname is created. External-dns is able to automatically identify the canonical hosted zone for many
+hostnames based upon known hostname suffixes which are defined in [aws.go](../../provider/aws/aws.go). If a hostname
+does not have a known suffix then the suffix can be added into `aws.go` or the [target-hosted-zone annotation](#target-hosted-zone)
+can be used to manually define the ID of the canonical hosted zone.
+
 ## Govcloud caveats
 
 Due to the special nature with how Route53 runs in Govcloud, there are a few tweaks in the deployment settings.
@@ -853,7 +865,7 @@ args:
 - --txt-prefix={{ YOUR_PREFIX }}
 ```
 
-* The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commerical AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commerical account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commerical account that has the sufficient rights.
+* The first two changes are needed if you use Route53 in Govcloud, which only supports private zones. There are also no cross account IAM whatsoever between Govcloud and commercial AWS accounts. If services and ingresses need to make Route 53 entries to an public zone in a commercial account, you will have set env variables of `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` with a key and secret to the commercial account that has the sufficient rights.
 
 ```yaml
 env:
@@ -950,7 +962,7 @@ A simple way to implement randomised startup is with an init container:
     spec:
       initContainers:
       - name: init-jitter
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.2
         command:
         - /bin/sh
         - -c

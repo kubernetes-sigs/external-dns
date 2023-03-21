@@ -172,7 +172,8 @@ func (p *DigitalOceanProvider) Records(ctx context.Context) ([]*endpoint.Endpoin
 					name = zone.Name
 				}
 
-				ep := endpoint.NewEndpoint(name, r.Type, r.Data)
+				ep := endpoint.NewEndpointWithTTL(name, r.Type, endpoint.TTL(r.TTL), r.Data)
+
 				endpoints = append(endpoints, ep)
 			}
 		}

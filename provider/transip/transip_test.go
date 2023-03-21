@@ -218,6 +218,18 @@ func (f fakeClient) Patch(request rest.Request) error {
 	return errors.New("PATCH not implemented")
 }
 
+func (f fakeClient) PatchWithResponse(request rest.Request) (rest.Response, error) {
+	return rest.Response{}, errors.New("PATCH with response not implemented")
+}
+
+func (f fakeClient) PostWithResponse(request rest.Request) (rest.Response, error) {
+	return rest.Response{}, errors.New("POST with response not implemented")
+}
+
+func (f fakeClient) PutWithResponse(request rest.Request) (rest.Response, error) {
+	return rest.Response{}, errors.New("PUT with response not implemented")
+}
+
 func TestProviderRecords(t *testing.T) {
 	// set up the fake REST client
 	client := &fakeClient{}

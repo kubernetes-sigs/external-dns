@@ -1,4 +1,4 @@
-name: Go
+name: Build all images
 
 on:
   push:
@@ -33,17 +33,5 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Install additional CI for nektos/act
-      run: |
-            apt update
-            apt install -y make gcc libc-dev git
-      if: github.actor == 'nektos/act'
-  
     - name: Test
-      run: make test
-
-    - name: Send coverage
-      uses: shogo82148/actions-goveralls@v1
-      with:
-        path-to-profile: profile.cov
-      if: github.actor != 'nektos/act'
+      run: make build.image/multiarch
