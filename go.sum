@@ -84,8 +84,8 @@ github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q
 github.com/F5Networks/f5-ipam-controller v0.1.6-0.20211217134627-c2be8b459270/go.mod h1:XBOjYUVRKG8q8atIpNmil/XF6RAGVekqfbeNQludcV4=
 github.com/F5Networks/k8s-bigip-ctlr/v2 v2.11.1 h1:/ZCtF9JC9VyTN2bdwtHnlpCoJOWxZON5Sh7QDtFlB1E=
 github.com/F5Networks/k8s-bigip-ctlr/v2 v2.11.1/go.mod h1:vdlVHq8oUD8W8yUr53RSZ9hKkOcboFcgvhS6nMKH+qc=
-github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0 h1:2gzVSELk4I4ncZNrsaKI6fvZ3to60iYnig+lTFcGCEM=
-github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0/go.mod h1:P9YNyJaJazc49fLNFG4uQ61VZVptykWqNU2vWLWcxu0=
+github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.2 h1:+aJ2KDiRtKrz300L06NYIFDy78+onRlOYRxMDZ/k4HE=
+github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.2/go.mod h1:T2Aj0zgcQBUID1KuRqCsQHey+zpKTL0UpyliBswB3QI=
 github.com/IBM/go-sdk-core/v5 v5.8.0 h1:Bn9BxTaKYKWpd+BDpVsL6XOOJl4QDgxux4gSdWi31vE=
 github.com/IBM/go-sdk-core/v5 v5.8.0/go.mod h1:+YbdhrjCHC84ls4MeBp+Hj4NZCni+tDAc0XQUqRO9Jc=
 github.com/IBM/networking-go-sdk v0.36.0 h1:ADntTsRM8DMZOxS9TYGTAL6i0zw9V2L7OeLFd9Czntk=
