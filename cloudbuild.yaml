@@ -13,6 +13,7 @@ steps:
     args:
       - -c
       - |
+        gcloud auth configure-docker
         /buildx-entrypoint version
         apk add musl-dev gcc
         make release.staging
