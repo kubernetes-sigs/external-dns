@@ -106,14 +106,10 @@ build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
 		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
-		arch_specific_tags+=( "--amend $${image}" ) ;\
+		arch_specific_tags+=( " $${image}" ) ;\
 	done ;\
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
-	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$${image}" ;\
-	done;\
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
+	echo $${arch_specific_tags[@]} ;\
+        DOCKER_CLI_EXPERIMENTAL=enabled docker buildx imagetools create --tag "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 
 build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 
@@ -154,7 +150,7 @@ build.setup:
 	docker buildx inspect img-builder > /dev/null || docker buildx create --name img-builder --use
 
 build.docker: build.setup build.$(ARCH)
-	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="$(ARCH)" .
 	image="$(IMAGE):$(VERSION)-$(subst /,-,$(ARCH))"; \
 	docker buildx build \
 		--pull \
