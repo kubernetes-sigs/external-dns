@@ -154,6 +154,8 @@ build.docker: build.setup build.$(ARCH)
 	image="$(IMAGE):$(VERSION)-$(subst /,-,$(ARCH))"; \
 	docker buildx build \
 		--pull \
+		--provenance=false \
+		--sbom=false \
 		--output=type=$(OUTPUT_TYPE) \
 		--platform linux/$(ARCH) \
 		--build-arg ARCH="$(ARCH)" \
