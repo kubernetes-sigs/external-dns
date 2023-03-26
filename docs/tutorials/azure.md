@@ -325,6 +325,8 @@ kubectl patch deployment external-dns --namespace "default" --patch \
 
 For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is somewhat similar to Pod Identity except that this managed identity is associated with a kubernetes service account.
 
+NOTE: after support for Workload Identity graduates to GA, this step will no longer be needed.
+
 #### Enable the Worload Identity feature
 
 To enable [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) preview feature, use the following commands:
@@ -415,21 +417,20 @@ $ az identity federated-credential create --name ${IDENTITY_NAME} --identity-nam
 
 #### Update labels and annotations on ExternalDNS service account
 
-To instruct Workload Identity webhook to inject a projected token into the ExternalDNS pod, the service account needs to have a label `azure.workload.identity/use: "true"` and an annotation `azure.workload.identity/client-id: <IDENTITY_CLIENT_ID>`:
+To instruct Workload Identity webhook to inject a projected token into the ExternalDNS pod, the pod needs to have a label `azure.workload.identity/use: "true"` (before Workload Identity 1.0.0, this label was supposed to be set on the service account instead). Also, the service account needs to have an annotation `azure.workload.identity/client-id: <IDENTITY_CLIENT_ID>`:
 
-To patch the existing serviceaccount, use the following command:
+To patch the existing serviceaccount and deployment, use the following command:
 
 ```bash
 $ kubectl patch serviceaccount external-dns --namespace "default" --patch \
- "{\"metadata\": {\"labels\": {\"azure.workload.identity/use\": \"true\"}, \"annotations\": {\"azure.workload.identity/client-id\": \"${IDENTITY_CLIENT_ID}\"}}}"
+ "{\"metadata\": {\"annotations\": {\"azure.workload.identity/client-id\": \"${IDENTITY_CLIENT_ID}\"}}}"
+$ kubectl patch deployment external-dns --namespace "default" --patch \
+ '{"spec": {"template": {"metadata": {"labels": {\"azure.workload.identity/use\": \"true\"}}}}}'
 ```
 
 NOTE: it's also possible to specify (or override) ClientID through `UserAssignedIdentityID` field in `azure.json`.
 
-If a pod with external-dns is already running, you need to restart it:
-```bash
-$ kubectl rollout restart deployment/external-dns
-```
+Make sure the external-dns pod restarted to reflect the configuration change.
 
 ## Ingress used with ExternalDNS
 
