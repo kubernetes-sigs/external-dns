@@ -20,4 +20,4 @@ jobs:
         uses: GrantBirki/json-yaml-validate@v1.2.0
         with:
           comment: "true" # enable comment mode
-          yaml_exclude_regex: "charts/external-dns/templates/.*"
+          yaml_exclude_regex: "(charts\/external-dns\/templates\/.*|mkdocs\\.yml)"
