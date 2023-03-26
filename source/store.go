@@ -43,35 +43,39 @@ var ErrSourceNotFound = errors.New("source not found")
 
 // Config holds shared configuration options for all Sources.
 type Config struct {
-	Namespace                      string
-	AnnotationFilter               string
-	LabelFilter                    labels.Selector
-	FQDNTemplate                   string
-	CombineFQDNAndAnnotation       bool
-	IgnoreHostnameAnnotation       bool
-	IgnoreIngressTLSSpec           bool
-	IgnoreIngressRulesSpec         bool
-	GatewayNamespace               string
-	GatewayLabelFilter             string
-	Compatibility                  string
-	PublishInternal                bool
-	PublishHostIP                  bool
-	AlwaysPublishNotReadyAddresses bool
-	ConnectorServer                string
-	CRDSourceAPIVersion            string
-	CRDSourceKind                  string
-	KubeConfig                     string
-	APIServerURL                   string
-	ServiceTypeFilter              []string
-	CFAPIEndpoint                  string
-	CFUsername                     string
-	CFPassword                     string
-	ContourLoadBalancerService     string
-	GlooNamespace                  string
-	SkipperRouteGroupVersion       string
-	RequestTimeout                 time.Duration
-	DefaultTargets                 []string
-	OCPRouterName                  string
+	Namespace                          string
+	AnnotationFilter                   string
+	LabelFilter                        labels.Selector
+	FQDNTemplate                       string
+	CombineFQDNAndAnnotation           bool
+	IgnoreHostnameAnnotation           bool
+	IgnoreIngressTLSSpec               bool
+	IgnoreIngressRulesSpec             bool
+	GatewayNamespace                   string
+	GatewayLabelFilter                 string
+	Compatibility                      string
+	PublishInternal                    bool
+	PublishHostIP                      bool
+	AlwaysPublishNotReadyAddresses     bool
+	ConnectorServer                    string
+	CRDSourceAPIVersion                string
+	CRDSourceKind                      string
+	KubeConfig                         string
+	APIServerURL                       string
+	ServiceTypeFilter                  []string
+	CFAPIEndpoint                      string
+	CFUsername                         string
+	CFPassword                         string
+	ContourLoadBalancerService         string
+	GlooNamespace                      string
+	SkipperRouteGroupVersion           string
+	RequestTimeout                     time.Duration
+	DefaultTargets                     []string
+	OCPRouterName                      string
+	UnstructuredSourceAPIVersion       string
+	UnstructuredSourceKind             string
+	UnstructuredSourceTargetJsonPath   string
+	UnstructuredSourceHostnameJsonPath string
 }
 
 // ClientGenerator provides clients
@@ -340,6 +344,26 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	case "unstructured":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewUnstructuredSource(
+			ctx,
+			dynamicClient,
+			kubernetesClient,
+			cfg.Namespace,
+			cfg.UnstructuredSourceAPIVersion,
+			cfg.UnstructuredSourceKind,
+			cfg.UnstructuredSourceTargetJsonPath,
+			cfg.UnstructuredSourceHostnameJsonPath,
+			cfg.LabelFilter,
+			cfg.AnnotationFilter)
 	}
 
 	return nil, ErrSourceNotFound

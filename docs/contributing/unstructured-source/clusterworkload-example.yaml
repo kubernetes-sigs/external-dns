@@ -1,0 +1,24 @@
+---
+
+apiVersion: example.com/v1alpha1
+kind: ClusterWorkload
+metadata:
+  name: my-workload-1
+  annotations:
+    example: my-workload-1
+    description: |
+      This example results in the creation of a single endpoint with
+      one, A-record targets, an IP4 address. The endpoint's DNS name
+      and TTL are derived from the spec and annotations below, and
+      since no record type is specified, the default type, A-record,
+      is used.
+
+      This example highlights that the unstructured source may be used
+      with cluster-scoped resources as well.
+    external-dns.alpha.kubernetes.io/ttl: 10m
+spec:
+  hostname: my-workload-1.example.com
+# kubectl is disallowed from editing the status sub-resource. it is included
+# here for completeness, but the example actually used curl to set the status
+status:
+  addr: 1.2.3.4

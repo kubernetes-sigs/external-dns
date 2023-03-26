@@ -1,0 +1,69 @@
+---
+
+apiVersion: example.com/v1alpha1
+kind: Workload
+metadata:
+  name: my-workload-1
+  annotations:
+    example: my-workload-1
+    description: |
+      This example results in the creation of a single endpoint with
+      one, A-record target, an IP4 address. The endpoint's DNS name
+      and TTL are derived from the annotations below, and since no
+      record type is specified, the default type, A-record, is used.
+    external-dns.alpha.kubernetes.io/hostname: my-workload-1.example.com
+    external-dns.alpha.kubernetes.io/ttl: 10m
+spec: {}
+# kubectl is disallowed from editing the status sub-resource. it is included
+# here for completeness, but the example actually used curl to set the status
+status:
+  addr: 1.2.3.4
+
+---
+
+apiVersion: example.com/v1alpha1
+kind: Workload
+metadata:
+  name: my-workload-2
+  annotations:
+    example: my-workload-2
+    description: |
+      This example results in the creation of three endpoints with
+      one, A-record target, an IP4 address. An endpoint is created
+      for each of the DNS names specified in the spec below.
+      Since no TTL or record type are specified, the default values
+      for each are used, a TTL of 0 and an A-record.
+spec:
+  hostname: my-workload-2.example.com
+  additionalHostnames:
+  - my-workload-2a.example.com
+  - my-workload-2b.example.com
+# kubectl is disallowed from editing the status sub-resource. it is included
+# here for completeness, but the example actually used curl to set the status
+status:
+  addr: 1.2.3.4
+
+---
+
+apiVersion: example.com/v1alpha1
+kind: Workload
+metadata:
+  name: my-workload-3
+  annotations:
+    example: my-workload-3
+    description: |
+      This example results in the creation of a single endpoint with
+      one four, A-record targets -- two IP4 addrs and two IP6 addrs.
+      The endpoint's DNS is derived from the spec below. Since no
+      TTL or record type are specified, the default values for each
+      are used, a TTL of 0 and an A-record.
+spec:
+  hostname: my-workload-3.example.com
+# kubectl is disallowed from editing the status sub-resource. it is included
+# here for completeness, but the example actually used curl to set the status
+status:
+  addr: 1.2.3.4
+  additionalAddrs:
+  - 5.6.7.8
+  - 2001:db8:0:1:1:1:1:1
+  - 2001:db8:0:1:1:1:1:2

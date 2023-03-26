@@ -1,0 +1,37 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-workload-1
+  annotations:
+    example: my-workload-1
+    description: |
+      This example results in the creation of a single endpoint with
+      one three, A-record targets -- one IP4 addr and two IP6 addrs.
+      The endpoint's DNS name and TTL are derived from the annotations
+      below, and since no record type is specified, the default type,
+      A-record, is used.
+    external-dns.alpha.kubernetes.io/hostname: my-workload-1.example.com
+    external-dns.alpha.kubernetes.io/ttl: 10m
+data:
+  ip4-addrs: 1.2.3.4
+  ip6-addrs: "2001:db8:0:1:1:1:1:1,2001:db8:0:1:1:1:1:2"
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-workload-2
+  annotations:
+    example: my-workload-2
+    description: |
+      This example results in the creation of two endpoints with
+      one, A-record targets, an IP4 address. An endpoint is created
+      for each of the DNS names specified in the annotation below.
+      Since no TTL or record type are specified, the default values
+      for each are used, a TTL of 0 and an A-record.
+    external-dns.alpha.kubernetes.io/hostname: my-workload-1.example.com, my-workload-2.example.com
+data:
+  ip4-addrs: 1.2.3.4

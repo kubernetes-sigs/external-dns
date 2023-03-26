@@ -23,6 +23,7 @@ import (
 	"math"
 	"net"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -50,6 +51,8 @@ const (
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
+	// The annotation used for defining the desired DNS record type
+	recordTypeAnnotationKey = "external-dns.alpha.kubernetes.io/record-type"
 	// The annotation used for switching to the alias record types e. g. AWS Alias records instead of a normal CNAME
 	aliasAnnotationKey = "external-dns.alpha.kubernetes.io/alias"
 	// The annotation used to determine the source of hostnames for ingresses.  This is an optional field - all
@@ -151,7 +154,65 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	if !exists {
 		return nil
 	}
-	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	return splitByWhitespaceAndComma(hostnameAnnotation)
+}
+
+func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
+	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
+	if !exists {
+		return nil
+	}
+	return splitByWhitespaceAndComma(internalHostnameAnnotation)
+}
+
+var reduceWhitespaceRx = regexp.MustCompile(`\s+`)
+
+// splitByWhitespaceAndComma accepts a comma or space delimited string of
+// possibly quoted elements and returns a slice of those elements,
+// unquoting them if necessary.
+func splitByWhitespaceAndComma(in string) []string {
+	// Ensure that any contiguous whitespace characters in the input string
+	// are replaced to a single space to make splitting on a single space
+	// character possible.
+	inReducedWS := reduceWhitespaceRx.ReplaceAllString(in, " ")
+
+	// Replace all instances of a single quote with a double quote or
+	// else the attempt at unquoting that occurs later will not work
+	// since strconv.Unquote interprets any single-quoted strings as
+	// a one-character literal.
+	noSingleQuotes := strings.Replace(inReducedWS, `'`, `"`, -1)
+
+	// Split the transformed input on a comma.
+	splitByComma := strings.Split(noSingleQuotes, ",")
+
+	// Iterate through the comma-separated strings, gathering the results
+	// as we go.
+	var result []string
+	for i := range splitByComma {
+		// Trim any leading and/or trailing whitespace chars.
+		noSurroundingWhitespace := strings.TrimSpace(splitByComma[i])
+
+		// Split the string by a single space char.
+		splitBySpace := strings.Split(noSurroundingWhitespace, " ")
+
+		for j := range splitBySpace {
+			// Unquote the string if possible.
+			possiblyQuoted := splitBySpace[j]
+			var unquotedString string
+			if u, err := strconv.Unquote(possiblyQuoted); err != nil {
+				unquotedString = possiblyQuoted
+			} else {
+				unquotedString = u
+			}
+
+			// Skip if the result is empty or a single whitespace char.
+			if len(unquotedString) >= 1 && unquotedString != " " {
+				result = append(result, unquotedString)
+			}
+		}
+	}
+
+	return result
 }
 
 func getAccessFromAnnotations(annotations map[string]string) string {
@@ -162,17 +223,13 @@ func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
 	return annotations[endpointsTypeAnnotationKey]
 }
 
-func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
-	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
-	if !exists {
-		return nil
-	}
-	return strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
-}
-
 func getAliasFromAnnotations(annotations map[string]string) bool {
 	aliasAnnotation, exists := annotations[aliasAnnotationKey]
 	return exists && aliasAnnotation == "true"
+}
+
+func getRecordTypeFromAnnotations(annotations map[string]string) string {
+	return annotations[recordTypeAnnotationKey]
 }
 
 func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {

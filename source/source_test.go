@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -103,5 +104,147 @@ func TestSuitableType(t *testing.T) {
 		if recordType != tc.expected {
 			t.Errorf("expected %s, got %s", tc.expected, recordType)
 		}
+	}
+}
+
+func Test_splitByWhitespaceAndComma(t *testing.T) {
+	// Run parallel with other top-level tests in this package.
+	t.Parallel()
+
+	testCases := []struct {
+		name          string
+		inputString   string
+		expectedSlice []string
+	}{
+		// single hostname
+		{
+			name:          "single hostname",
+			inputString:   "fu.bar",
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// single hostname with double quotes
+		{
+			name:          "single hostname with double quotes",
+			inputString:   `"fu.bar"`,
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// single hostname with single quotes
+		{
+			name:          "single hostname with single quotes",
+			inputString:   `'fu.bar'`,
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// single hostname and whitespace
+		{
+			name:          "single hostname with leading whitespace",
+			inputString:   "    fu.bar",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with trailing whitespace",
+			inputString:   "fu.bar   \t    ",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with leading and trailing whitespace",
+			inputString:   "  \tfu.bar     \n\r  ",
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// single hostname and commas
+		{
+			name:          "single hostname with leading comma",
+			inputString:   ",fu.bar",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with trailing comma",
+			inputString:   "fu.bar,",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with leading and trailing comma",
+			inputString:   ",fu.bar,",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with multiple leading and trailing commas",
+			inputString:   ",,fu.bar,,,",
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// single hostname and whitespace and commas
+		{
+			name:          "single hostname with leading whitespace and trailing comma",
+			inputString:   " fu.bar,",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with leading comma and trailing whitespace",
+			inputString:   ",fu.bar\n",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with leading and trailing whitespace and comma",
+			inputString:   ",\tfu.bar\r,",
+			expectedSlice: []string{"fu.bar"},
+		},
+		{
+			name:          "single hostname with multiple leading and trailing whitespace chars and commas",
+			inputString:   ",,\n   \r,\t\t fu.bar,,\r,       \t\t\t\t \n   \r\t",
+			expectedSlice: []string{"fu.bar"},
+		},
+
+		// two hostsnames and whitespace
+		{
+			name:          "two hostnames separated by a single whitespace char",
+			inputString:   "fu.bar hello.world",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+		{
+			name:          "two hostnames with leading whitespace separated by a single whitespace char",
+			inputString:   "   fu.bar hello.world",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+		{
+			name:          "two hostnames with trailing whitespace separated by a single whitespace char",
+			inputString:   "fu.bar hello.world    ",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+		{
+			name:          "two hostnames with leading and trailing whitespace separated by a single whitespace char",
+			inputString:   "   fu.bar hello.world    ",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+		{
+			name:          "two hostnames separated by multiple whitespace chars",
+			inputString:   "fu.bar  \t\t    hello.world",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+		{
+			name:          "two hostnames separated by multiple whitespace chars with leading and trailing whitespace separated by a single whitespace char",
+			inputString:   "  \t\n    fu.bar\r      hello.world\r  ",
+			expectedSlice: []string{"fu.bar", "hello.world"},
+		},
+
+		// the kitchen sink
+		{
+			name:          "the kitchen sink",
+			inputString:   "\n\n,\n\n   \t \"fu.bar\",,,,,,,,,\t\r, ,hello.world,'bye.bye',,,,",
+			expectedSlice: []string{"fu.bar", "hello.world", "bye.bye"},
+		},
+	}
+
+	for i := range testCases {
+		tc := testCases[i] // capture the range variable
+		t.Run(tc.name, func(t *testing.T) {
+			// All test cases should run in parallel.
+			t.Parallel()
+			actualSlice := splitByWhitespaceAndComma(tc.inputString)
+			require.ElementsMatch(t, tc.expectedSlice, actualSlice)
+		})
 	}
 }

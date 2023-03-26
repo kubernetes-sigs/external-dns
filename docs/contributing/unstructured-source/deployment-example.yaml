@@ -1,0 +1,32 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-workload-1
+  labels:
+    app: my-workload-1
+  annotations:
+    example: my-workload-1
+    description: |
+      This example results in the creation of two endpoints with
+      one, CNAME-record targets, a hostname. An endpoint is created
+      for each of the DNS names specified in the annotation below.
+      Since no TTL is specified, the default value, a TTL of 0, is
+      used.
+    external-dns.alpha.kubernetes.io/hostname: my-workload-1a.example.com my-workload-1b.example.com
+    external-dns.alpha.kubernetes.io/record-type: CNAME
+    external-dns.alpha.kubernetes.io/target: my-workload-1.example.com
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app: my-workload-1
+  template:
+    metadata:
+      labels:
+        app: my-workload-1
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
