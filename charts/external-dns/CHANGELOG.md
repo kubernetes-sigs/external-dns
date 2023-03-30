@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### All Changes
 - Added RBAC for Gateway-API resources to clusterrole [#3499](https://github.com/kubernetes-sigs/external-dns/pull/3499). [@michaelvl](https://github.com/MichaelVL)
 
+## [v1.12.2] - UNRELEASED
+
+### All Changes
+
+- Add RBAC to be able to support the F5 VirtualServer `Source` ([#3503](https://github.com/kubernetes-sigs/external-dns/pull/3503)) [@mikejoh](https://github.com/mikejoh)
+
 ## [v1.12.1] - 2023-02-06
 
 ### All Changes
