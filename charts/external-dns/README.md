@@ -69,6 +69,7 @@ The following table lists the configurable parameters of the _ExternalDNS_ chart
 | `logFormat`                        | Formats of the logs, available values are: `text`, `json`.                                                                                                                                                                                                                                                            | `text`                                      |
 | `interval`                         | The interval for DNS updates.                                                                                                                                                                                                                                                                                         | `1m`                                        |
 | `triggerLoopOnEvent`               | When enabled, triggers run loop on create/update/delete events in addition of regular interval.                                                                                                                                                                                                                       | `false`                                     |
+| `namespaced`                       | When enabled, external-dns runs on namespace scope. Additionally, Role and Rolebinding will be namespaced, too.                                                                                                                                                                                                       | `false`                                     |
 | `sources`                          | K8s resources type to be observed for new DNS entries.                                                                                                                                                                                                                                                                | See _values.yaml_                           |
 | `policy`                           | How DNS records are synchronized between sources and providers, available values are: `sync`, `upsert-only`.                                                                                                                                                                                                          | `upsert-only`                               |
 | `registry`                         | Registry Type, available types are: `txt`, `noop`.                                                                                                                                                                                                                                                                    | `txt`                                       |
@@ -82,3 +83,36 @@ The following table lists the configurable parameters of the _ExternalDNS_ chart
 | `secretConfiguration.mountPath`    | Mount path of secret configuration secret (this can be templated).                                                                                                                                                                                                                                                    | `""`                                        |
 | `secretConfiguration.data`         | Secret configuration secret data. Could be used to store DNS provider credentials.                                                                                                                                                                                                                                    | `{}`                                        |
 | `secretConfiguration.subPath`      | Sub-path of secret configuration secret (this can be templated).                                                                                                                                                                                                                                                      | `""`                                        |
+
+## Namespaced scoped installation
+
+external-dns supports running on a namespaced only scope, too. 
+If `namespaced=true` is defined, the helm chart will setup `Roles` and `RoleBindings` instead `ClusterRoles` and `ClusterRoleBindings`.
+
+### Limited supported
+Not all sources are supported in namespaced scope, since some sources depends on cluster-wide resources.
+For example: Source `node` isn't supported, since `kind: Node` has scope `Cluster`.
+Sources like `istio-virtualservice` only work, if all resources like `Gateway` and `VirtualService` are present in the same 
+namespaces as `external-dns`.
+
+The annotation `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP` is not supported.
+
+If `namespaced` is set to `true`, please ensure that `sources` my only contains supported sources (Default: `service,ingress`.
+
+### Support matrix
+
+| Source                 | Supported | Infos                  |
+|------------------------|-----------|------------------------|
+| `ingress`              | ✅         |                        |
+| `istio-gateway`        | ✅         |                        |
+| `istio-virtualservice` | ✅         |                        |
+| `contour-ingressroute` | ✅         |                        |
+| `crd`                  | ✅         |                        |
+| `kong-tcpingress`      | ✅         |                        |
+| `openshift-route`      | ✅         |                        |
+| `skipper-routegroup`   | ✅         |                        |
+| `gloo-proxy`           | ✅         |                        |
+| `contour-httpproxy`    | ✅         |                        |
+| `service`              | ⚠️️       | NodePort not supported |
+| `node`                 | ❌         |                        |
+| `pod`                  | ❌         |                        |
