@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sigs.k8s.io/external-dns/provider/adguardhome"
 	"syscall"
 	"time"
 
@@ -371,6 +372,15 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
+	case "adguardhome":
+		p, err = adguardhome.NewAdGuardHomeProvider(adguardhome.AdGuardHomeConfig{
+			Server:                cfg.AdguardHomeServer,
+			Username:              cfg.AdguardHomeUsername,
+			Password:              cfg.AdguardHomePassword,
+			TLSInsecureSkipVerify: cfg.AdguardHomeTLSInsecureSkipVerify,
+			DomainFilter:          domainFilter,
+			DryRun:                cfg.DryRun,
+		})
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
