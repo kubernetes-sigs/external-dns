@@ -3,6 +3,45 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: added
+          description: "Added support for ServiceMonitor relabelling."
+        - kind: changed
+          description: "Updated chart icon path."
+        - kind: added
+          description: "Added RBAC for Gateway-API resources to ClusterRole."
+        - kind: added
+          description: "Added RBAC for F5 VirtualServer to ClusterRole."
+        - kind: added
+          description: "Added support for running ExternalDNS with namespaced scope."
+        - kind: changed
+          description: "Updated _ExternalDNS_ version to [v0.13.4](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.4)."
+    apiVersion: v2
+    appVersion: 0.13.4
+    created: "2023-03-30T10:18:22.978884001Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 0619ea164e346e2f4b2f7f62206cbf8261a8cca21c342b8154e2e5c2c638b1a5
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.12.2/external-dns-1.12.2.tgz
+    version: 1.12.2
+  - annotations:
+      artifacthub.io/changes: |
         - kind: changed
           description: "Updated ExternalDNS version to v0.13.2."
         - kind: added
@@ -502,4 +541,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2023-02-06T18:13:26.171477031Z"
+generated: "2023-03-30T10:18:22.979101415Z"
