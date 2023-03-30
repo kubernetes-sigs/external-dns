@@ -60,6 +60,36 @@ rules:
     resources: ["dnsendpoints/status"]
     verbs: ["*"]
 {{- end }}
+{{- if or (has "gateway-httproute" .Values.sources) (has "gateway-grpcroute" .Values.sources) (has "gateway-tlsroute" .Values.sources) (has "gateway-tcproute" .Values.sources) (has "gateway-udproute" .Values.sources) }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["gateways"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-httproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["httproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-grpcroute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["grpcroutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-tlsroute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["tlsroutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-tcproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["tcproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "gateway-udproute" .Values.sources }}
+  - apiGroups: ["gateway.networking.k8s.io"]
+    resources: ["udproutes"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- if has "gloo-proxy" .Values.sources }}
   - apiGroups: ["gloo.solo.io","gateway.solo.io"]
     resources: ["proxies","virtualservices"]

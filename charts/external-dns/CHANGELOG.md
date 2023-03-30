@@ -7,15 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-<!-- ## [vX.Y.Z] - UNRELEASED
+## [v1.12.2] - UNRELEASED
 ### Highlights
 ### All Changes
-- Added
-- Updated
-- Changed
-- Fixed
-- Deprecated
-- Removed -->
+- Added RBAC for Gateway-API resources to clusterrole [#3499](https://github.com/kubernetes-sigs/external-dns/pull/3499). [@michaelvl](https://github.com/MichaelVL)
 
 ## [v1.12.1] - 2023-02-06
 
