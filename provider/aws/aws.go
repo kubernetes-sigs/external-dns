@@ -373,7 +373,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		for _, r := range resp.ResourceRecordSets {
 			newEndpoints := make([]*endpoint.Endpoint, 0)
 
-			if !provider.SupportedRecordType(aws.StringValue(r.Type)) {
+			if !p.SupportedRecordType(aws.StringValue(r.Type)) {
 				continue
 			}
 
@@ -1058,4 +1058,13 @@ func canonicalHostedZone(hostname string) string {
 // cleanZoneID removes the "/hostedzone/" prefix
 func cleanZoneID(id string) string {
 	return strings.TrimPrefix(id, "/hostedzone/")
+}
+
+func (p *AWSProvider) SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
 }

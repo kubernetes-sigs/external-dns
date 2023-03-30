@@ -109,7 +109,7 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 				return true
 			}
 			recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
-			if !provider.SupportedRecordType(recordType) {
+			if !p.SupportedRecordType(recordType) {
 				return true
 			}
 			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
@@ -188,6 +188,15 @@ func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
+}
+
+func (p *AzureProvider) SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
 }
 
 func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
@@ -377,6 +386,21 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				},
 			},
 		}, nil
+	case dns.MX:
+		mxRecords := make([]dns.MxRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			mxRecord, err := parseMxTarget[dns.MxRecord](target)
+			if err != nil {
+				return dns.RecordSet{}, err
+			}
+			mxRecords[i] = mxRecord
+		}
+		return dns.RecordSet{
+			RecordSetProperties: &dns.RecordSetProperties{
+				TTL:       to.Int64Ptr(ttl),
+				MxRecords: &mxRecords,
+			},
+		}, nil
 	case dns.TXT:
 		return dns.RecordSet{
 			RecordSetProperties: &dns.RecordSetProperties{
@@ -423,6 +447,16 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 	cnameRecord := properties.CnameRecord
 	if cnameRecord != nil && cnameRecord.Cname != nil {
 		return []string{*cnameRecord.Cname}
+	}
+
+	// Check for MX records
+	mxRecords := properties.MxRecords
+	if mxRecords != nil && len(*mxRecords) > 0 && (*mxRecords)[0].Exchange != nil {
+		targets := make([]string, len(*mxRecords))
+		for i, mxRecord := range *mxRecords {
+			targets[i] = fmt.Sprintf("%d %s", *mxRecord.Preference, *mxRecord.Exchange)
+		}
+		return targets
 	}
 
 	// Check for TXT records
