@@ -30,17 +30,16 @@ import (
 // Helper function (shared with test code)
 func parseMxTarget[T dns.MxRecord | privatedns.MxRecord](mxTarget string) (T, error) {
 	targetParts := strings.SplitN(mxTarget, " ", 2)
-
 	if len(targetParts) != 2 {
 		return T{}, fmt.Errorf("mx target needs to be of form '10 example.com'")
 	}
 
 	preferenceRaw, exchange := targetParts[0], targetParts[1]
 	preference, err := strconv.ParseInt(preferenceRaw, 10, 32)
-
 	if err != nil {
 		return T{}, fmt.Errorf("invalid preference specified")
 	}
+
 	return T{
 		Preference: to.Int32Ptr(int32(preference)),
 		Exchange:   to.StringPtr(exchange),
