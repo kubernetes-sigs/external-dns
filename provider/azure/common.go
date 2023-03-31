@@ -24,10 +24,8 @@ func parseMxTarget[T dns.MxRecord | privatedns.MxRecord](mxTarget string) (T, er
 	if err != nil {
 		return T{}, fmt.Errorf("invalid preference specified")
 	}
-	res := T{
+	return T{
 		Preference: to.Int32Ptr(int32(preference)),
 		Exchange:   to.StringPtr(exchange),
-	}
-
-	return res, nil
+	}, nil
 }
