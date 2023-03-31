@@ -6,7 +6,7 @@ For this tutorial, please make sure that you are using a version **> 0.7.2** of 
 
 ## Managing DNS with UltraDNS
 
-If you would like to read-up on the UltraDNS service, you can find additional details here: [Introduction to UltraDNS](https://docs.ultradns.neustar)
+If you would like to read-up on the UltraDNS service, you can find additional details here: [Introduction to UltraDNS](https://docs.ultradns.com/)
 
 Before proceeding, please create a new DNS Zone that you will create your records in for this tutorial process. For the examples in this tutorial, we will be using `example.com` as our Zone.
 
@@ -191,9 +191,9 @@ Once the service has an external IP assigned, ExternalDNS will notice the new se
 
 ## Verifying UltraDNS Records
 
-Please verify on the [UltraDNS UI](https://portal.ultradns.neustar) that the records are created under the zone "example.com".
+Please verify on the [UltraDNS UI](https://portal.ultradns.com/login) that the records are created under the zone "example.com".
 
-For more information on UltraDNS UI, refer to (https://docs.ultradns.neustar/mspuserguide.html).
+For more information on UltraDNS UI, refer to (https://docs.ultradns.com/menu.html).
 
 Select the zone that was created above (or select the appropriate zone if a different zone was used.)
 
@@ -265,7 +265,7 @@ $ kubectl create -f expose-apple-banana-app.yaml
 $ kubectl create -f external-dns.yaml
 ```
 - Depending on where you run your service from, it can take a few minutes for your cloud provider to create an external IP for the service.
-- Please verify on the [UltraDNS UI](https://portal.ultradns.neustar) that the records have been created under the zone "example.com".
+- Please verify on the [UltraDNS UI](https://portal.ultradns.com/login) that the records have been created under the zone "example.com".
 - Finally, you will need to clean up the deployment and service. Please verify on the UI afterwards that the records have been deleted from the zone "example.com":
 ```console
 $ kubectl delete -f apple-banana-echo.yaml
@@ -358,7 +358,7 @@ $ kubectl create -f apple-banana-echo.yaml
 $ kubectl create -f external-dns.yaml
 ```
 - Depending on where you run your service from, it can take a few minutes for your cloud provider to create an external IP for the service.
-- Please verify on the [UltraDNS UI](https://portal.ultradns.neustar), that the records have been created under the zone "example.com".
+- Please verify on the [UltraDNS UI](https://portal.ultradns.com/login), that the records have been created under the zone "example.com".
 - Finally, you will need to clean up the deployment and service. Please verify on the UI afterwards that the records have been deleted from the zone "example.com":
 ```console
 $ kubectl delete -f apple-banana-echo.yaml
@@ -629,7 +629,7 @@ $ kubectl create -f apple-banana-echo.yaml
 $ kubectl create -f external-dns.yaml
 ```
 - Depending on where you run your service from, it can take a few minutes for your cloud provider to create an external IP for the service.
-- Please verify on the [UltraDNS UI](https://portal.ultradns.neustar), that the records have been created under the zone "example.com".
+- Please verify on the [UltraDNS UI](https://portal.ultradns.com/login), that the records have been created under the zone "example.com".
 - Finally, you will need to clean up the deployment and service. Please verify on the UI afterwards that the records have been deleted from the zone "example.com":
 ```console 
 $ kubectl delete -f apple-banana-echo.yaml
