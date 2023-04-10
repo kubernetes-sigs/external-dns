@@ -24,12 +24,10 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
-RUN make test build.$ARCH
 
-# final image
-FROM $ARCH/alpine:3.17
+FROM alpine:3.17
 
-RUN apk update && apk add "libcrypto3>=3.0.8-r0" "libssl3>=3.0.8-r0" && rm -rf /var/cache/apt/*
+RUN apk update && apk add "libcrypto3>=3.0.8-r1" "libssl3>=3.0.8-r1" && rm -rf /var/cache/apt/*
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns

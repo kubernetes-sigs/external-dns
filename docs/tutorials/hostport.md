@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --log-level=debug
         - --source=service
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --log-level=debug
         - --source=service
