@@ -168,13 +168,16 @@ domainFilters: []
 
 provider: aws
 
+fqdnTemplate: ""
+
 extraArgs: []
 
 secretConfiguration:
   enabled: false
   mountPath: ""
   subPath: ""
-  data: {}
+  data:
+    {}
     # credentials: |
     #   [default]
     #   aws_access_key_id = $SECRET_ACCESS_KEY
