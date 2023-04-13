@@ -315,7 +315,6 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 					if ep.RecordType == "CNAME" {
 						t = provider.EnsureTrailingDot(t)
 					}
-
 					records = append(records, pgo.Record{Content: t})
 				}
 				rrset := pgo.RrSet{
