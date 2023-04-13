@@ -67,7 +67,7 @@ type Config struct {
 	CFUsername                     string
 	CFPassword                     string
 	ContourLoadBalancerService     string
-	GlooNamespaces                 string
+	GlooNamespace                  string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
 	DefaultTargets                 []string
@@ -288,7 +288,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespaces)
+		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespace)
 	case "openshift-route":
 		ocpClient, err := p.OpenShiftClient()
 		if err != nil {
