@@ -258,17 +258,15 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
-			if !isIPv6String(t) {
-				aTargets = append(aTargets, t)
-			} else {
-				continue
-			}
-		case endpoint.RecordTypeAAAA:
 			if isIPv6String(t) {
-				aaaaTargets = append(aaaaTargets, t)
-			} else {
 				continue
 			}
+			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			if !isIPv6String(t) {
+				continue
+			}
+			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
 		}

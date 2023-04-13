@@ -502,13 +502,12 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	}
 
 	for _, t := range targets {
-		if suitableType(t) == endpoint.RecordTypeA {
+		switch suitableType(t) {
+		case endpoint.RecordTypeA:
 			epA.Targets = append(epA.Targets, t)
-		}
-		if suitableType(t) == endpoint.RecordTypeAAAA {
+		case endpoint.RecordTypeAAAA:
 			epAAAA.Targets = append(epAAAA.Targets, t)
-		}
-		if suitableType(t) == endpoint.RecordTypeCNAME {
+		case endpoint.RecordTypeCNAME:
 			epCNAME.Targets = append(epCNAME.Targets, t)
 		}
 	}

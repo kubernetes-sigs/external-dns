@@ -378,13 +378,13 @@ func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string
 
 	// drop prefix
 	if strings.HasPrefix(lowerDNSName, pr.prefix) && pr.isPrefix() {
-		return pr.dropAffix(lowerDNSName), recordType == "AAAA"
+		return pr.dropAffix(lowerDNSName), recordType == endpoint.RecordTypeAAAA
 	}
 
 	// drop suffix
 	if pr.isSuffix() {
 		DNSName := strings.SplitN(lowerDNSName, ".", 2)
-		return pr.dropAffix(DNSName[0]) + "." + DNSName[1], recordType == "AAAA"
+		return pr.dropAffix(DNSName[0]) + "." + DNSName[1], recordType == endpoint.RecordTypeAAAA
 	}
 	return "", false
 }
