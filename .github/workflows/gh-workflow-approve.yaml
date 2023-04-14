@@ -18,20 +18,21 @@ jobs:
     steps:
       - name: Update PR
         uses: actions/github-script@d556feaca394842dc55e4734bf3bb9f685482fa0 # v6.3.3
+        continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           debug: ${{ secrets.ACTIONS_RUNNER_DEBUG }}
           script: |
-            const workflowRuns = await octokit.rest.actions.listWorkflowRunsForRepo({
+            const result = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               event: "pull_request",
               status: "action_required",
-              head_sha: context.sha,
+              head_sha: context.payload.pull_request.head.sha,
               per_page: 100
-            }).data.workflow_runs;
+            });
 
-            for (var run of workflowRuns) {
+            for (var run of result.data.workflow_runs) {
               await github.rest.actions.approveWorkflowRun({
                 owner: context.repo.owner,
                 repo: context.repo.repo,

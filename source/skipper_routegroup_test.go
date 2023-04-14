@@ -90,8 +90,9 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			}),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -113,12 +114,14 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "my.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "my.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -140,8 +143,9 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -163,9 +167,10 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName:   "rg1.k8s.example",
-					Targets:   endpoint.Targets([]string{"lb.example.org"}),
-					RecordTTL: endpoint.TTL(2189),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+					RecordTTL:  endpoint.TTL(2189),
 				},
 			},
 		},
@@ -185,8 +190,9 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"1.5.1.4"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets([]string{"1.5.1.4"}),
 				},
 			},
 		},
@@ -207,12 +213,14 @@ func TestEndpointsFromRouteGroups(t *testing.T) {
 			),
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"1.5.1.4"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets([]string{"1.5.1.4"}),
 				},
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -278,8 +286,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -308,12 +317,14 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg1.namespace1.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.namespace1.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -341,8 +352,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.namespace1.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.namespace1.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -370,8 +382,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -400,9 +413,10 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName:   "rg1.k8s.example",
-					Targets:   endpoint.Targets([]string{"lb.example.org"}),
-					RecordTTL: endpoint.TTL(2189),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
+					RecordTTL:  endpoint.TTL(2189),
 				},
 			},
 		},
@@ -430,12 +444,14 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"1.5.1.4"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets([]string{"1.5.1.4"}),
 				},
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -495,20 +511,24 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg2.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg2.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg3.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg3.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg.k8s.example",
-					Targets: endpoint.Targets([]string{"lb2.example.org"}),
+					DNSName:    "rg.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb2.example.org"}),
 				},
 			},
 		},
@@ -575,8 +595,9 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -643,12 +664,14 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg2.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg2.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},
@@ -701,12 +724,14 @@ func TestRouteGroupsEndpoints(t *testing.T) {
 			},
 			want: []*endpoint.Endpoint{
 				{
-					DNSName: "rg1.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg1.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 				{
-					DNSName: "rg3.k8s.example",
-					Targets: endpoint.Targets([]string{"lb.example.org"}),
+					DNSName:    "rg3.k8s.example",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets([]string{"lb.example.org"}),
 				},
 			},
 		},

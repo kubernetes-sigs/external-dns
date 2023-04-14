@@ -178,18 +178,21 @@ You can use the host label in the metric to figure out if the request was agains
 
 Here is the full list of available metrics provided by ExternalDNS:
 
-| Name                                                     | Description                                             | Type    |
-| -------------------------------------------------------- | ------------------------------------------------------- | ------- |
-| external_dns_controller_last_sync_timestamp_seconds      | Timestamp of last successful sync with the DNS provider | Gauge   |
-| external_dns_controller_last_reconcile_timestamp_seconds | Timestamp of last attempted sync with the DNS provider | Gauge   |
-| external_dns_registry_endpoints_total                    | Number of Endpoints in all sources                      | Gauge   |
-| external_dns_registry_errors_total                       | Number of Registry errors                               | Counter |
-| external_dns_source_endpoints_total                      | Number of Endpoints in the registry                     | Gauge   |
-| external_dns_source_errors_total                         | Number of Source errors                                 | Counter |
-| external_dns_controller_verified_records                 | Number of DNS A-records that exists both in             | Gauge   |
-|                                                          | source & registry                                       |         |
-| external_dns_registry_a_records                          | Number of A records in registry                         | Gauge   |
-| external_dns_source_a_records                            | Number of A records in source                           | Gauge   |
+| Name                                                     | Description                                                        | Type    |
+| -------------------------------------------------------- | ------------------------------------------------------------------ | ------- |
+| external_dns_controller_last_sync_timestamp_seconds      | Timestamp of last successful sync with the DNS provider            | Gauge   |
+| external_dns_controller_last_reconcile_timestamp_seconds | Timestamp of last attempted sync with the DNS provider             | Gauge   |
+| external_dns_registry_endpoints_total                    | Number of Endpoints in all sources                                 | Gauge   |
+| external_dns_registry_errors_total                       | Number of Registry errors                                          | Counter |
+| external_dns_source_endpoints_total                      | Number of Endpoints in the registry                                | Gauge   |
+| external_dns_source_errors_total                         | Number of Source errors                                            | Counter |
+| external_dns_controller_verified_aaaa_records            | Number of DNS AAAA-records that exists both in source and registry | Gauge   |
+| external_dns_controller_verified_a_records               | Number of DNS A-records that exists both in source and registry    | Gauge   |
+| external_dns_registry_aaaa_records                       | Number of AAAA records in registry                                 | Gauge   |
+| external_dns_registry_a_records                          | Number of A records in registry                                    | Gauge   |
+| external_dns_source_aaaa_records                         | Number of AAAA records in source                                   | Gauge   |
+| external_dns_source_a_records                            | Number of A records in source                                      | Gauge   |
+
 
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
 
@@ -206,7 +209,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.13.1
+  registry.k8s.io/external-dns/external-dns:v0.13.4
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 

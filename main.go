@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -233,7 +234,7 @@ func main() {
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
@@ -260,7 +261,8 @@ func main() {
 				View:          cfg.InfobloxView,
 				MaxResults:    cfg.InfobloxMaxResults,
 				DryRun:        cfg.DryRun,
-				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
+				NameRegEx:     cfg.InfobloxNameRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
 			},
@@ -311,7 +313,19 @@ func main() {
 		)
 	case "oci":
 		var config *oci.OCIConfig
-		config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		// if the instance-principals flag was set, and a compartment OCID was provided, then ignore the
+		// OCI config file, and provide a config that uses instance principal authentication.
+		if cfg.OCIAuthInstancePrincipal {
+			if len(cfg.OCICompartmentOCID) == 0 {
+				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
+			} else {
+				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+			}
+		} else {
+			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		}
+
 		if err == nil {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}

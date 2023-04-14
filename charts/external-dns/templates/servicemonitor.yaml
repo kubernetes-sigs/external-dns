@@ -1,9 +1,13 @@
-{{- if.Values.serviceMonitor.enabled -}}
+{{- if .Values.serviceMonitor.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "external-dns.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ default .Release.Namespace .Values.serviceMonitor.namespace }}
+  {{- with .Values.serviceMonitor.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   labels:
     {{- include "external-dns.labels" . | nindent 4 }}
   {{- with .Values.serviceMonitor.additionalLabels }}
@@ -23,7 +27,29 @@ spec:
       {{- with .Values.serviceMonitor.interval }}
       interval: {{ . }}
       {{- end }}
-      {{- with .Values.serviceMonitor.scrapeTimeout  }}
+      {{- with .Values.serviceMonitor.scheme }}
+      scheme: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.bearerTokenFile }}
+      bearerTokenFile: {{ . }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.tlsConfig }}
+      tlsConfig:
+        {{- toYaml .| nindent 8 }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.scrapeTimeout }}
       scrapeTimeout: {{ . }}
       {{- end }}
+      {{- with .Values.serviceMonitor.metricRelabelings }}
+      metricRelabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.serviceMonitor.relabelings }}
+      relabelings:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- with .Values.serviceMonitor.targetLabels }}
+  targetLabels:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 {{- end }}
