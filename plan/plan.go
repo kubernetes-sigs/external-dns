@@ -64,8 +64,15 @@ type Changes struct {
 	Delete []*endpoint.Endpoint
 }
 
+// planKey is a key for a row in `planTable`.
+type planKey struct {
+	dnsName       string
+	setIdentifier string
+	recordType    string
+}
+
 // planTable is a supplementary struct for Plan
-// each row correspond to a dnsName -> (current record + all desired records)
+// each row correspond to a planKey -> (current record + all desired records)
 /*
 planTable: (-> = target)
 --------------------------------------------------------
@@ -78,12 +85,12 @@ bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 1
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
 type planTable struct {
-	rows     map[string]map[string]map[string]*planTableRow
+	rows     map[planKey]*planTableRow
 	resolver ConflictResolver
 }
 
 func newPlanTable() planTable { // TODO: make resolver configurable
-	return planTable{map[string]map[string]map[string]*planTableRow{}, PerResource{}}
+	return planTable{map[planKey]*planTableRow{}, PerResource{}}
 }
 
 // planTableRow
@@ -99,31 +106,25 @@ func (t planTableRow) String() string {
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
-	dnsName := normalizeDNSName(e.DNSName)
-	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = make(map[string]map[string]*planTableRow)
-	}
-	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
-		t.rows[dnsName][e.SetIdentifier] = make(map[string]*planTableRow)
-	}
-	if _, ok := t.rows[e.SetIdentifier][e.RecordType]; !ok {
-		t.rows[dnsName][e.SetIdentifier][e.RecordType] = &planTableRow{}
-	}
-	t.rows[dnsName][e.SetIdentifier][e.RecordType].current = e
+	key := t.newPlanKey(e)
+	t.rows[key].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
-	dnsName := normalizeDNSName(e.DNSName)
-	if _, ok := t.rows[dnsName]; !ok {
-		t.rows[dnsName] = make(map[string]map[string]*planTableRow)
+	key := t.newPlanKey(e)
+	t.rows[key].candidates = append(t.rows[key].candidates, e)
+}
+
+func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
+	key := planKey{
+		dnsName:       normalizeDNSName(e.DNSName),
+		setIdentifier: e.SetIdentifier,
+		recordType:    e.RecordType,
 	}
-	if _, ok := t.rows[dnsName][e.SetIdentifier]; !ok {
-		t.rows[dnsName][e.SetIdentifier] = make(map[string]*planTableRow)
+	if _, ok := t.rows[key]; !ok {
+		t.rows[key] = &planTableRow{}
 	}
-	if _, ok := t.rows[dnsName][e.SetIdentifier][e.RecordType]; !ok {
-		t.rows[dnsName][e.SetIdentifier][e.RecordType] = &planTableRow{}
-	}
-	t.rows[dnsName][e.SetIdentifier][e.RecordType].candidates = append(t.rows[dnsName][e.SetIdentifier][e.RecordType].candidates, e)
+	return key
 }
 
 func (c *Changes) HasChanges() bool {
@@ -152,28 +153,24 @@ func (p *Plan) Calculate() *Plan {
 
 	changes := &Changes{}
 
-	for _, topRow := range t.rows {
-		for _, midRow := range topRow {
-			for _, row := range midRow {
-				if row.current == nil { // dns name not taken
-					changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
-				}
-				if row.current != nil && len(row.candidates) == 0 {
-					changes.Delete = append(changes.Delete, row.current)
-				}
+	for _, row := range t.rows {
+		if row.current == nil { // dns name not taken
+			changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
+		}
+		if row.current != nil && len(row.candidates) == 0 {
+			changes.Delete = append(changes.Delete, row.current)
+		}
 
-				// TODO: allows record type change, which might not be supported by all dns providers
-				if row.current != nil && len(row.candidates) > 0 { // dns name is taken
-					update := t.resolver.ResolveUpdate(row.current, row.candidates)
-					// compare "update" to "current" to figure out if actual update is required
-					if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
-						inheritOwner(row.current, update)
-						changes.UpdateNew = append(changes.UpdateNew, update)
-						changes.UpdateOld = append(changes.UpdateOld, row.current)
-					}
-					continue
-				}
+		// TODO: allows record type change, which might not be supported by all dns providers
+		if row.current != nil && len(row.candidates) > 0 { // dns name is taken
+			update := t.resolver.ResolveUpdate(row.current, row.candidates)
+			// compare "update" to "current" to figure out if actual update is required
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
+				inheritOwner(row.current, update)
+				changes.UpdateNew = append(changes.UpdateNew, update)
+				changes.UpdateOld = append(changes.UpdateOld, row.current)
 			}
+			continue
 		}
 	}
 	for _, pol := range p.Policies {
