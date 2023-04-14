@@ -58,8 +58,8 @@ require (
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.17.2
-	go.etcd.io/etcd/api/v3 v3.5.5
-	go.etcd.io/etcd/client/v3 v3.5.5
+	go.etcd.io/etcd/api/v3 v3.5.8
+	go.etcd.io/etcd/client/v3 v3.5.8
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.5.0
@@ -168,7 +168,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.5 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.8 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
