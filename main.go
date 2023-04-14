@@ -140,6 +140,7 @@ func main() {
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
+		UpdateEvents:                   cfg.UpdateEvents,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
