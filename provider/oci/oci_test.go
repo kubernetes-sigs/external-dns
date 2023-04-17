@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oracle/oci-go-sdk/common"
-	"github.com/oracle/oci-go-sdk/dns"
+	"github.com/oracle/oci-go-sdk/v65/common"
+	"github.com/oracle/oci-go-sdk/v65/dns"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
