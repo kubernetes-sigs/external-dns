@@ -78,6 +78,7 @@ func (suite *ServiceSuite) SetupTest() {
 		[]string{},
 		false,
 		labels.Everything(),
+		false,
 	)
 	suite.NoError(err, "should initialize service source")
 }
@@ -158,6 +159,7 @@ func testServiceSourceNewServiceSource(t *testing.T) {
 				ti.serviceTypesFilter,
 				false,
 				labels.Everything(),
+				false,
 			)
 
 			if ti.expectError {
@@ -174,25 +176,26 @@ func testServiceSourceEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		title                    string
-		targetNamespace          string
-		annotationFilter         string
-		svcNamespace             string
-		svcName                  string
-		svcType                  v1.ServiceType
-		compatibility            string
-		fqdnTemplate             string
-		combineFQDNAndAnnotation bool
-		ignoreHostnameAnnotation bool
-		labels                   map[string]string
-		annotations              map[string]string
-		clusterIP                string
-		externalIPs              []string
-		lbs                      []string
-		serviceTypesFilter       []string
-		expected                 []*endpoint.Endpoint
-		expectError              bool
-		serviceLabelSelector     string
+		title                       string
+		targetNamespace             string
+		annotationFilter            string
+		svcNamespace                string
+		svcName                     string
+		svcType                     v1.ServiceType
+		compatibility               string
+		fqdnTemplate                string
+		combineFQDNAndAnnotation    bool
+		ignoreHostnameAnnotation    bool
+		labels                      map[string]string
+		annotations                 map[string]string
+		clusterIP                   string
+		externalIPs                 []string
+		lbs                         []string
+		serviceTypesFilter          []string
+		expected                    []*endpoint.Endpoint
+		expectError                 bool
+		serviceLabelSelector        string
+		resolveLoadBalancerHostname bool
 	}{
 		{
 			title:              "no annotated services return no endpoints",
@@ -387,6 +390,24 @@ func testServiceSourceEndpoints(t *testing.T) {
 			serviceTypesFilter: []string{},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"lb.example.com"}},
+			},
+		},
+		{
+			title:        "annotated services return an endpoint with hostname then resolve hostname",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeLoadBalancer,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			externalIPs:                 []string{},
+			lbs:                         []string{"example.com"}, // Use a resolvable hostname for testing.
+			serviceTypesFilter:          []string{},
+			resolveLoadBalancerHostname: true,
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"93.184.216.34"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2606:2800:220:1:248:1893:25c8:1946"}},
 			},
 		},
 		{
@@ -1086,6 +1107,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				sourceLabel,
+				tc.resolveLoadBalancerHostname,
 			)
 
 			require.NoError(t, err)
@@ -1275,6 +1297,7 @@ func testMultipleServicesEndpoints(t *testing.T) {
 				tc.serviceTypesFilter,
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -1440,6 +1463,7 @@ func TestClusterIpServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labelSelector,
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2010,6 +2034,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2483,6 +2508,7 @@ func TestHeadlessServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2840,6 +2866,7 @@ func TestHeadlessServicesHostIP(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -2952,6 +2979,7 @@ func TestExternalServices(t *testing.T) {
 				[]string{},
 				tc.ignoreHostnameAnnotation,
 				labels.Everything(),
+				false,
 			)
 			require.NoError(t, err)
 
@@ -3006,6 +3034,7 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		[]string{},
 		false,
 		labels.Everything(),
+		false,
 	)
 	require.NoError(b, err)
 

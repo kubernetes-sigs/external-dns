@@ -166,6 +166,7 @@ type Config struct {
 	CFAPIEndpoint                     string
 	CFUsername                        string
 	CFPassword                        string
+	ResolveLoadBalancerHostname       bool
 	RFC2136Host                       string
 	RFC2136Port                       int
 	RFC2136Zone                       string
@@ -390,6 +391,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("server", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.APIServerURL).StringVar(&cfg.APIServerURL)
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
+	app.Flag("resolve-lb-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs").BoolVar(&cfg.ResolveLoadBalancerHostname)
 
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
