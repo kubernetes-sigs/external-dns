@@ -60,7 +60,7 @@ E.g.:
 Allow dynamic-group <dynamic-group-name> to manage dns in compartment id <target-compartment-OCID>
 ```
 
-You'll also need to add the `--oci-instance-principals=true` flag to enable
+You'll also need to add the `--oci-auth-instance-principal` flag to enable
 this type of authentication. Finally, you'll need to add the
 `--oci-compartment-ocid=ocid1.compartment.oc1...` flag to provide the OCID of
 the compartment containing the zone to be managed.
