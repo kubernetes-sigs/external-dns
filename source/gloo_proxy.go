@@ -86,7 +86,6 @@ type glooSource struct {
 
 // NewGlooSource creates a new glooSource with the given config
 func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, glooNamespaces string) (Source, error) {
-
 	return &glooSource{
 		dynamicKubeClient,
 		kubeClient,
@@ -130,7 +129,6 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			endpoints = append(endpoints, proxyEndpoints...)
 		}
 	}
-
 	return endpoints, nil
 }
 
