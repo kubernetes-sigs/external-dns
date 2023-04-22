@@ -323,29 +323,11 @@ kubectl patch deployment external-dns --namespace "default" --patch \
 
 ### Managed identity using Workload Identity
 
-For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container.  This process is somewhat similar to Pod Identity except that this managed identity is associated with a kubernetes service account.
-
-NOTE: after support for Workload Identity graduates to GA, this step will no longer be needed.
-
-#### Enable the Worload Identity feature
-
-To enable [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) preview feature, use the following commands:
-
-```bash
-$ az extension add --name aks-preview
-$ az extension update --name aks-preview
-$ az feature register --namespace "Microsoft.ContainerService" --name "EnableWorkloadIdentityPreview"
-
-# After several minutes, the feature should become registered. You can check that by periodically running the following command
-$ az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/EnableWorkloadIdentityPreview')].{Name:name,State:properties.state}"
-
-# Once the process is completed, refresh the registration of resource provider
-$ az provider register --namespace Microsoft.ContainerService
-```
+For this process, we will create a [managed identity](https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview) that will be explicitly used by the ExternalDNS container. This process is somewhat similar to Pod Identity except that this managed identity is associated with a kubernetes service account.
 
 #### Deploy OIDC issuer and Workload Identity services
 
-Once enabled, you can update your cluster and install needed services for the [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster) feature:
+Update your cluster to install [OIDC Issuer](https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer) and [Workload Identity](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster):
 
 ```bash
 $ AZURE_AKS_RESOURCE_GROUP="my-aks-cluster-group" # name of resource group where aks cluster was created
