@@ -83,7 +83,7 @@ The following table lists the configurable parameters of the _ExternalDNS_ chart
 | `secretConfiguration.mountPath`    | Mount path of secret configuration secret (this can be templated).                                                                                                                                                                                                                                                    | `""`                                        |
 | `secretConfiguration.data`         | Secret configuration secret data. Could be used to store DNS provider credentials.                                                                                                                                                                                                                                    | `{}`                                        |
 | `secretConfiguration.subPath`      | Sub-path of secret configuration secret (this can be templated).                                                                                                                                                                                                                                                      | `""`                                        |
-| `resolveLoadBalancerHostname`      | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs | `false`                                        |
+| `resolveServiceLoadBalancerHostname`      | Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs | `false`                                        |
 
 ## Namespaced scoped installation
 
