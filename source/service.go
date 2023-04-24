@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"text/template"
@@ -57,6 +58,7 @@ type serviceSource struct {
 	publishInternal                bool
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
+	resolveLoadBalancerHostname    bool
 	serviceInformer                coreinformers.ServiceInformer
 	endpointsInformer              coreinformers.EndpointsInformer
 	podInformer                    coreinformers.PodInformer
@@ -66,7 +68,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -137,6 +139,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
+		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 	}, nil
 }
 
@@ -480,7 +483,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		if useClusterIP {
 			targets = append(targets, extractServiceIps(svc)...)
 		} else {
-			targets = append(targets, extractLoadBalancerTargets(svc)...)
+			targets = append(targets, extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)...)
 		}
 	case v1.ServiceTypeClusterIP:
 		if sc.publishInternal {
@@ -540,7 +543,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
+func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
 	var (
 		targets     endpoint.Targets
 		externalIPs endpoint.Targets
@@ -552,7 +555,18 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			if resolveLoadBalancerHostname {
+				ips, err := net.LookupIP(lb.Hostname)
+				if err != nil {
+					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
+					continue
+				}
+				for _, ip := range ips {
+					targets = append(targets, ip.String())
+				}
+			} else {
+				targets = append(targets, lb.Hostname)
+			}
 		}
 	}
 

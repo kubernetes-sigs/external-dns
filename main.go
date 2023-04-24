@@ -141,6 +141,7 @@ func main() {
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
+		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
