@@ -20,6 +20,8 @@ Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-
 
 API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set.
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
+You may provide the Cloudflare API token through a file by setting the
+`CF_API_TOKEN="file:/path/to/token"`.
 
 When using API Token authentication, the token should be granted Zone `Read`, DNS `Edit` privileges, and access to `All zones`.
 
