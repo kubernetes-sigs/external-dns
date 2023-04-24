@@ -19,7 +19,6 @@ package cloudflare
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -159,9 +158,9 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	if os.Getenv("CF_API_TOKEN") != "" {
 		token := os.Getenv("CF_API_TOKEN")
 		if strings.HasPrefix(token, "file:") {
-			tokenBytes, err := ioutil.ReadFile(strings.TrimPrefix(token, "file:"))
+			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
 			if err != nil {
-				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %v", err)
+				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %w", err)
 			}
 			token = string(tokenBytes)
 		}
