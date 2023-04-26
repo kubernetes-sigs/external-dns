@@ -96,9 +96,6 @@ spec:
             - --domain-filter={{ . }}
             {{- end }}
             - --provider={{ tpl .Values.provider $ }}
-            {{- if .Values.resolveServiceLoadBalancerHostname }}
-            - --resolve-service-load-balancer-hostname
-            {{- end }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
