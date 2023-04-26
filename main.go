@@ -284,6 +284,9 @@ func main() {
 				NameRegEx:     cfg.InfobloxNameRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
+				TenantId:      cfg.InfobloxTenantId,
+				CloudApiOwned: cfg.InfobloxCloudApiOwned,
+				CMPType:       cfg.InfobloxCMPType,
 			},
 		)
 	case "dyn":

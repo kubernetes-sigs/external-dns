@@ -128,6 +128,9 @@ type Config struct {
 	InfobloxNameRegEx                  string
 	InfobloxCreatePTR                  bool
 	InfobloxCacheDuration              int
+	InfobloxTenantId                   string
+	InfobloxCloudApiOwned              string
+	InfobloxCMPType                    string
 	DynCustomerName                    string
 	DynUsername                        string
 	DynPassword                        string `secure:"yes"`
@@ -283,6 +286,9 @@ var defaultConfig = &Config{
 	InfobloxFQDNRegEx:           "",
 	InfobloxCreatePTR:           false,
 	InfobloxCacheDuration:       0,
+	InfobloxTenantId:            "",
+	InfobloxCloudApiOwned:       "",
+	InfobloxCMPType:             "",
 	OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 	InMemoryZones:               []string{},
 	OVHEndpoint:                 "ovh-eu",
@@ -503,6 +509,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("infoblox-name-regex", "Apply this regular expression as a filter on the name field for obtaining infoblox records. This is disabled by default.").Default(defaultConfig.InfobloxNameRegEx).StringVar(&cfg.InfobloxNameRegEx)
 	app.Flag("infoblox-create-ptr", "When using the Infoblox provider, create a ptr entry in addition to an entry").Default(strconv.FormatBool(defaultConfig.InfobloxCreatePTR)).BoolVar(&cfg.InfobloxCreatePTR)
 	app.Flag("infoblox-cache-duration", "When using the Infoblox provider, set the record TTL (0s to disable).").Default(strconv.Itoa(defaultConfig.InfobloxCacheDuration)).IntVar(&cfg.InfobloxCacheDuration)
+	app.Flag("infoblox-tenant-id", "When using the Infoblox provider, add Tenant Id as an extensible attribute. This is disabled by default.").Default(defaultConfig.InfobloxTenantId).StringVar(&cfg.InfobloxTenantId)
+	app.Flag("infoblox-cloudapi-owned", "When using the Infoblox provider, add Cloud Api Owned flag as an extensible attribute. Can be 'True' or 'False'. This is disabled by default.").Default(defaultConfig.InfobloxCloudApiOwned).StringVar(&cfg.InfobloxCloudApiOwned)
+	app.Flag("infoblox-cmp-type", "When using the Infoblox provider, add the CMP Type as an extensible attribute. This is disabled by default.").Default(defaultConfig.InfobloxCMPType).StringVar(&cfg.InfobloxCMPType)
 	app.Flag("dyn-customer-name", "When using the Dyn provider, specify the Customer Name").Default("").StringVar(&cfg.DynCustomerName)
 	app.Flag("dyn-username", "When using the Dyn provider, specify the Username").Default("").StringVar(&cfg.DynUsername)
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
