@@ -593,7 +593,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// STACKIT flags
 	app.Flag("stackit-project-id", "The STACKIT project id (required when --provider=stackit)").Default(defaultConfig.StackitProjectId).StringVar(&cfg.StackitProjectId)
 	app.Flag("stackit-client-token", "The STACKIT bearer token for authentication, specify the flag or use env EXTERNAL_DNS_STACKIT_CLIENT_TOKEN (default: '')").Default(defaultConfig.StackitBearerToken).StringVar(&cfg.StackitBearerToken)
-	app.Flag("stackit-base-url", "The STACKIT dns api url (default: https://api.dns.stackit.cloud)").Default(defaultConfig.StackitBaseUrl).StringVar(&cfg.StackitBaseUrl)
+	app.Flag("stackit-base-url", "The STACKIT dns api url (default: https://dns.api.stackit.cloud)").Default(defaultConfig.StackitBaseUrl).StringVar(&cfg.StackitBaseUrl)
 
 	_, err := app.Parse(args)
 	if err != nil {
