@@ -648,3 +648,9 @@ resource group:
 ```bash
 $ az group delete --name "MyDnsResourceGroup"
 ```
+
+## More tutorials
+
+A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE 
+
+![image](https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png)
