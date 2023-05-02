@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// nolint:staticcheck
+//nolint:staticcheck // Required due to the current dependency on a deprecated version of azure-sdk-for-go
 package azure
 
 import (
