@@ -176,6 +176,7 @@ The following tutorials are provided:
 * [Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [NS1](docs/tutorials/ns1.md)
 * [NS Record Creation with CRD Source](docs/tutorials/ns-record.md)
+* [MX Record Creation with CRD Source](docs/tutorials/mx-record.md)
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
