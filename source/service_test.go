@@ -1518,6 +1518,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1527,6 +1528,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1537,6 +1539,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1559,6 +1562,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1569,6 +1573,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1584,6 +1589,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.bar.example.com", Targets: endpoint.Targets{"0 50 30192 foo.bar.example.com"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.bar.example.com", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1593,6 +1599,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1603,6 +1610,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1619,6 +1627,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1627,6 +1636,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1636,6 +1646,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				Status: v1.NodeStatus{
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1652,6 +1663,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1661,6 +1673,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1671,6 +1684,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1691,6 +1705,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1700,6 +1715,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1710,6 +1726,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1731,6 +1748,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1740,6 +1758,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1750,6 +1769,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1768,6 +1788,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1777,6 +1798,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1787,6 +1809,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1804,7 +1827,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1"}},
+				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1"}},
+				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1817,6 +1842,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1830,6 +1856,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1846,7 +1873,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
+				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
+				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1859,6 +1888,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1872,6 +1902,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1888,7 +1919,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 				{DNSName: "bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}},
+				{DNSName: "bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -1901,6 +1934,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1914,6 +1948,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
@@ -1942,6 +1977,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1955,6 +1991,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
 					},
 				},
 			}},
