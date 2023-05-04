@@ -351,12 +351,12 @@ metadata:
     certmanager.k8s.io/acme-challenge-type: "dns01"
     certmanager.k8s.io/acme-dns01-provider: "route53"
     certmanager.k8s.io/cluster-issuer: "letsencrypt-production"
-    kubernetes.io/ingress.class: "external-ingress"
     kubernetes.io/tls-acme: "true"
   labels:
     app: app
   name: app-public
 spec:
+  ingressClassName: "external-ingress"
   rules:
   - host: app.domain.com
     http:
@@ -376,12 +376,11 @@ And reuse the requested certificate in private Service definition:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "internal-ingress"
   labels:
     app: app
   name: app-private
 spec:
+  ingressClassName: "internal-ingress"
   rules:
   - host: app.domain.com
     http:
