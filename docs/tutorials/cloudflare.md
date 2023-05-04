@@ -18,12 +18,18 @@ Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-
 
 >The Cloudflare API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Cloudflare, you can obtain your API key from the bottom of the "My Account" page, found here: [Go to My account](https://dash.cloudflare.com/profile).
 
-API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set. 
+API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set.
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
+You may provide the Cloudflare API token through a file by setting the
+`CF_API_TOKEN="file:/path/to/token"`.
 
 When using API Token authentication, the token should be granted Zone `Read`, DNS `Edit` privileges, and access to `All zones`.
 
 If you would like to further restrict the API permissions to a specific zone (or zones), you also need to use the `--zone-id-filter` so that the underlying API requests only access the zones that you explicitly specify, as opposed to accessing all zones.
+
+## Throttling
+
+Cloudflare API has a [global rate limit of 1,200 requests per five minutes](https://developers.cloudflare.com/fundamentals/api/reference/limits/). Running several fast polling ExternalDNS instances in a given account can easily hit that limit. The AWS Provider [docs](./aws.md#throttling) has some recommendations that can be followed here too, but in particular, consider passing `--cloudflare-dns-records-per-page` with a high value (maximum is 5,000).
 
 ## Deploy ExternalDNS
 
@@ -50,13 +56,14 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
         - --provider=cloudflare
         - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
+        - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
         env:
         - name: CF_API_KEY
           value: "YOUR_CLOUDFLARE_API_KEY"
@@ -81,7 +88,7 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
@@ -118,13 +125,14 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
         - --provider=cloudflare
         - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
+        - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
         env:
         - name: CF_API_KEY
           value: "YOUR_CLOUDFLARE_API_KEY"

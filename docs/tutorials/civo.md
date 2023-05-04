@@ -1,22 +1,20 @@
-# Setting up ExternalDNS for Services on Hetzner DNS
+# Setting up ExternalDNS for Services on Civo
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Hetzner DNS.
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Civo DNS Manager.
 
-Make sure to use **>=0.7.6** version of ExternalDNS for this tutorial.
+Make sure to use **>0.12.2** version of ExternalDNS for this tutorial.
 
-## Creating a Hetzner DNS zone
+## Managing DNS with Civo
 
-If you want to learn about how to use Hetzner's DNS service read the following tutorial series:
+If you want to learn about how to use Civo DNS Manager read the following tutorials:
 
-[An Introduction to Managing DNS](https://wiki.hetzner.de/index.php/DNS_Overview), and [Add a new DNS zone](https://wiki.hetzner.de/index.php/Getting_started).
+[An Introduction to Managing DNS](https://www.civo.com/learn/configure-dns)
 
-Create a new DNS zone where you want to create your records in. Let's use `example.com` as an example here.
+## Get Civo Token
 
-## Creating Hetzner Credentials
+Copy the token in the settings fo your account
 
-Generate a new personal token by going to [the API settings](https://dns.hetzner.com/settings/api-token) or follow [Generating an API access token](https://wiki.hetzner.de/index.php/API_access_token) if you need more information. Give the token a name and choose read and write access. The token needs to be passed to ExternalDNS so make a note of it for later use.
-
-The environment variable `HETZNER_TOKEN` will be needed to run ExternalDNS with Hetzner.
+The environment variable `CIVO_TOKEN` will be needed to run ExternalDNS with Civo.
 
 ## Deploy ExternalDNS
 
@@ -24,18 +22,18 @@ Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
 spec:
-  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: external-dns
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -43,24 +41,25 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=hetzner
+        - --provider=civo
         env:
-        - name: HETZNER_TOKEN
-          value: "YOUR_HETZNER_DNS_API_KEY"
+        - name: CIVO_TOKEN
+          value: "YOUR_CIVO_API_TOKEN"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
+
 ```yaml
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: external-dns
 ---
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
   name: external-dns
@@ -69,13 +68,13 @@ rules:
   resources: ["services","endpoints","pods"]
   verbs: ["get","watch","list"]
 - apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"] 
+  resources: ["ingresses"]
   verbs: ["get","watch","list"]
 - apiGroups: [""]
   resources: ["nodes"]
-  verbs: ["list","watch"]
+  verbs: ["list"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
   name: external-dns-viewer
@@ -93,12 +92,11 @@ kind: Deployment
 metadata:
   name: external-dns
 spec:
-  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: external-dns
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -107,16 +105,15 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --provider=hetzner
+        - --provider=civo
         env:
-        - name: HETZNER_TOKEN
-          value: "YOUR_HETZNER_DNS_API_KEY"
+        - name: CIVO_TOKEN
+          value: "YOUR_CIVO_API_TOKEN"
 ```
-
 
 ## Deploying an Nginx Service
 
@@ -128,7 +125,6 @@ kind: Deployment
 metadata:
   name: nginx
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: nginx
@@ -159,7 +155,7 @@ spec:
       targetPort: 80
 ```
 
-Note the annotation on the service; use the same hostname as the Hetzner DNS zone created above.
+Note the annotation on the service; use the same hostname as the Civo DNS zone created above.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS. Removing the annotation will cause ExternalDNS to remove the corresponding DNS records.
 
@@ -171,11 +167,11 @@ $ kubectl create -f nginx.yaml
 
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
 
-Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the Hetzner DNS records.
+Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize the Civo DNS records.
 
-## Verifying Hetzner DNS records
+## Verifying Civo DNS records
 
-Check your [Hetzner DNS UI](https://dns.hetzner.com/) to view the records for your Hetzner DNS zone.
+Check your [Civo UI](https://www.civo.com/account/dns) to view the records for your Civo DNS zone.
 
 Click on the zone for the one created above if a different domain was used.
 
@@ -183,7 +179,7 @@ This should show the external IP address of the service as the A record for your
 
 ## Cleanup
 
-Now that we have verified that ExternalDNS will automatically manage Hetzner DNS records, we can delete the tutorial's example:
+Now that we have verified that ExternalDNS will automatically manage Civo DNS records, we can delete the tutorial's example:
 
 ```
 $ kubectl delete service -f nginx.yaml

@@ -79,7 +79,7 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	}
 
 	// if non-empty record type is expected, check that it matches.
-	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
+	if endpoint.RecordType != expected.RecordType {
 		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
 	}
 

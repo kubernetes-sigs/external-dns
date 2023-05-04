@@ -272,11 +272,11 @@ func getCompleteZoneName(zone *domain.DNSZone) string {
 
 func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain.Record {
 	// no annotation results in a TTL of 0, default to 300 for consistency with other providers
-	var ttl = scalewyRecordTTL
+	ttl := scalewyRecordTTL
 	if ep.RecordTTL.IsConfigured() {
 		ttl = uint32(ep.RecordTTL)
 	}
-	var priority = scalewayDefaultPriority
+	priority := scalewayDefaultPriority
 	if prop, ok := ep.GetProviderSpecificProperty(scalewayPriorityKey); ok {
 		prio, err := strconv.ParseUint(prop.Value, 10, 32)
 		if err != nil {

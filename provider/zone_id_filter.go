@@ -43,3 +43,11 @@ func (f ZoneIDFilter) Match(zoneID string) bool {
 
 	return false
 }
+
+// IsConfigured returns true if DomainFilter is configured, false otherwise
+func (f ZoneIDFilter) IsConfigured() bool {
+	if len(f.ZoneIDs) == 1 {
+		return f.ZoneIDs[0] != ""
+	}
+	return len(f.ZoneIDs) > 0
+}

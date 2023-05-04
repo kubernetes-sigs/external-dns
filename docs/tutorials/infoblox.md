@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.
@@ -150,7 +150,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.
@@ -269,6 +269,14 @@ There is also the ability to filter results from the Infoblox zone_auth service 
 
 ```
 --infoblox-fqdn-regex=^staging.*test.com$
+```
+
+## Ability to filter A, Host, CNAME and TXT records from the by name using a regular expression
+
+Infoblox supports filtering records by name using a regular expression.  See the [Infoblox API document](https://www.infoblox.com/wp-content/uploads/infoblox-deployment-infoblox-rest-api.pdf) for examples.  To use this feature, set the parameter infoblox-name-regex for external-dns to a regular expression that makes sense for you.  For instance, if all your dns records end with `cluster1.example.com`, you can fetch records matching this style by setting the following:
+
+```
+--infoblox-name-regex=cluster1.example.com
 ```
 
 ## Infoblox PTR record support

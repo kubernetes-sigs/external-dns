@@ -19,12 +19,16 @@ package provider
 import "testing"
 
 func TestRecordTypeFilter(t *testing.T) {
-	var records = []struct {
+	records := []struct {
 		rtype  string
 		expect bool
 	}{
 		{
 			"A",
+			true,
+		},
+		{
+			"AAAA",
 			true,
 		},
 		{

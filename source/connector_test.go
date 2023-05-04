@@ -33,7 +33,6 @@ type ConnectorSuite struct {
 }
 
 func (suite *ConnectorSuite) SetupTest() {
-
 }
 
 func startServerToServeTargets(t *testing.T, endpoints []*endpoint.Endpoint) net.Listener {
@@ -91,7 +90,8 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			title:  "valid remote server",
 			server: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
@@ -103,12 +103,14 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			title:  "valid remote server with multiple endpoints",
 			server: true,
 			expected: []*endpoint.Endpoint{
-				{DNSName: "abc.example.org",
+				{
+					DNSName:    "abc.example.org",
 					Targets:    endpoint.Targets{"1.2.3.4"},
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
-				{DNSName: "xyz.example.org",
+				{
+					DNSName:    "xyz.example.org",
 					Targets:    endpoint.Targets{"abc.example.org"},
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  180,

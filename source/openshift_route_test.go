@@ -27,6 +27,7 @@ import (
 
 	routev1 "github.com/openshift/api/route/v1"
 	fake "github.com/openshift/client-go/route/clientset/versioned/fake"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -165,71 +166,64 @@ func testOcpRouteSourceNewOcpRouteSource(t *testing.T) {
 // testOcpRouteSourceEndpoints tests that various OCP routes generate the correct endpoints.
 func testOcpRouteSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
-		title                    string
-		targetNamespace          string
-		annotationFilter         string
-		fqdnTemplate             string
-		ignoreHostnameAnnotation bool
-		ocpRoute                 *routev1.Route
-		expected                 []*endpoint.Endpoint
-		expectError              bool
-		labelFilter              string
-		ocpRouterName            string
+		title         string
+		ocpRoute      *routev1.Route
+		expected      []*endpoint.Endpoint
+		expectError   bool
+		labelFilter   string
+		ocpRouterName string
 	}{
 		{
-			title:                    "route with basic hostname and route status target",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route with basic hostname and route status target",
 			ocpRoute: &routev1.Route{
-				Spec: routev1.RouteSpec{
-					Host: "my-domain.com",
-				},
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   "default",
-					Name:        "route-with-target",
-					Annotations: map[string]string{},
+					Namespace: "default",
+					Name:      "route-with-target",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
+							Host:                    "my-domain.com",
 							RouterCanonicalHostname: "apps.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
 						},
 					},
 				},
 			},
-			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "my-domain.com",
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"apps.my-domain.com",
 					},
 				},
 			},
-			expectError: false,
 		},
 		{
-			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterNames defined",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route with basic hostname, route status target and ocpRouterName defined",
 			ocpRoute: &routev1.Route{
-				Spec: routev1.RouteSpec{
-					Host: "my-domain.com",
-				},
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   "default",
-					Name:        "route-with-target",
-					Annotations: map[string]string{},
+					Namespace: "default",
+					Name:      "route-with-target",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
+							Host:                    "my-domain.com",
 							RouterName:              "default",
 							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
 						},
 					},
 				},
@@ -237,38 +231,44 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			ocpRouterName: "default",
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "my-domain.com",
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"router-default.my-domain.com",
 					},
 				},
 			},
-			expectError: false,
 		},
 		{
-			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterNames defined and two router canonical names",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route with basic hostname, route status target, one ocpRouterName and two router canonical names",
 			ocpRoute: &routev1.Route{
-				Spec: routev1.RouteSpec{
-					Host: "my-domain.com",
-				},
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   "default",
-					Name:        "route-with-target",
-					Annotations: map[string]string{},
+					Namespace: "default",
+					Name:      "route-with-target",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
+							Host:                    "my-domain.com",
 							RouterName:              "default",
 							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
 						},
 						{
+							Host:                    "my-domain.com",
 							RouterName:              "test",
 							RouterCanonicalHostname: "router-test.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
 						},
 					},
 				},
@@ -276,59 +276,136 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 			ocpRouterName: "default",
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "my-domain.com",
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"router-default.my-domain.com",
 					},
 				},
 			},
-			expectError: false,
 		},
 		{
-			title:                    "route with basic hostname and route status target with one RouterCanonicalHostname and one ocpRouterName defined and two router canonical names",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route not admitted by the given router",
+			ocpRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-target",
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-domain.com",
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+						{
+							Host:                    "my-domain.com",
+							RouterName:              "test",
+							RouterCanonicalHostname: "router-test.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionFalse,
+								},
+							},
+						},
+					},
+				},
+			},
+			ocpRouterName: "test",
+			expected:      []*endpoint.Endpoint{},
+		},
+		{
+			title: "route not admitted by any router",
 			ocpRoute: &routev1.Route{
 				Spec: routev1.RouteSpec{
 					Host: "my-domain.com",
 				},
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace:   "default",
-					Name:        "route-with-target",
-					Annotations: map[string]string{},
+					Namespace: "default",
+					Name:      "route-with-target",
 				},
 				Status: routev1.RouteStatus{
 					Ingress: []routev1.RouteIngress{
 						{
+							Host:                    "my-domain.com",
 							RouterName:              "default",
 							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionFalse,
+								},
+							},
 						},
 						{
+							Host:                    "my-domain.com",
 							RouterName:              "test",
 							RouterCanonicalHostname: "router-test.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionFalse,
+								},
+							},
 						},
 					},
 				},
 			},
-			ocpRouterName: "default",
-			expected: []*endpoint.Endpoint{
-				{
-					DNSName: "my-domain.com",
-					Targets: []string{
-						"router-default.my-domain.com",
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title: "route admitted by first appropriate router",
+			ocpRoute: &routev1.Route{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: "default",
+					Name:      "route-with-target",
+				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-domain.com",
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionFalse,
+								},
+							},
+						},
+						{
+							Host:                    "my-domain.com",
+							RouterName:              "test",
+							RouterCanonicalHostname: "router-test.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
 					},
 				},
 			},
-			expectError: false,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "my-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets: []string{
+						"router-test.my-domain.com",
+					},
+				},
+			},
 		},
 		{
-			title:                    "route with incorrect externalDNS controller annotation",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route with incorrect externalDNS controller annotation",
 			ocpRoute: &routev1.Route{
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
@@ -338,20 +415,11 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			ocpRouterName: "",
-			expected:      []*endpoint.Endpoint{},
-			expectError:   false,
+			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:                    "route with basic hostname and annotation target",
-			targetNamespace:          "",
-			annotationFilter:         "",
-			fqdnTemplate:             "",
-			ignoreHostnameAnnotation: false,
+			title: "route with basic hostname and annotation target",
 			ocpRoute: &routev1.Route{
-				Spec: routev1.RouteSpec{
-					Host: "my-annotation-domain.com",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-annotation-target",
@@ -359,27 +427,36 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 						"external-dns.alpha.kubernetes.io/target": "my.site.foo.com",
 					},
 				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-annotation-domain.com",
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
 			},
-			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "my-annotation-domain.com",
+					DNSName:    "my-annotation-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"my.site.foo.com",
 					},
 				},
 			},
-			expectError: false,
 		},
 		{
-			title:                    "route with matching labels",
-			labelFilter:              "app=web-external",
-			ignoreHostnameAnnotation: false,
+			title:       "route with matching labels",
+			labelFilter: "app=web-external",
 			ocpRoute: &routev1.Route{
-
-				Spec: routev1.RouteSpec{
-					Host: "my-annotation-domain.com",
-				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace: "default",
 					Name:      "route-with-matching-labels",
@@ -391,24 +468,36 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 						"name": "service-frontend",
 					},
 				},
+				Status: routev1.RouteStatus{
+					Ingress: []routev1.RouteIngress{
+						{
+							Host:                    "my-annotation-domain.com",
+							RouterName:              "default",
+							RouterCanonicalHostname: "router-default.my-domain.com",
+							Conditions: []routev1.RouteIngressCondition{
+								{
+									Type:   routev1.RouteAdmitted,
+									Status: corev1.ConditionTrue,
+								},
+							},
+						},
+					},
+				},
 			},
-			ocpRouterName: "",
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "my-annotation-domain.com",
+					DNSName:    "my-annotation-domain.com",
+					RecordType: endpoint.RecordTypeCNAME,
 					Targets: []string{
 						"my.site.foo.com",
 					},
 				},
 			},
-			expectError: false,
 		},
 		{
-			title:                    "route without matching labels",
-			labelFilter:              "app=web-external",
-			ignoreHostnameAnnotation: false,
+			title:       "route without matching labels",
+			labelFilter: "app=web-external",
 			ocpRoute: &routev1.Route{
-
 				Spec: routev1.RouteSpec{
 					Host: "my-annotation-domain.com",
 				},
@@ -424,9 +513,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			ocpRouterName: "",
-			expected:      []*endpoint.Endpoint{},
-			expectError:   false,
+			expected: []*endpoint.Endpoint{},
 		},
 	} {
 		tc := tc
@@ -451,7 +538,6 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				labelSelector,
 				tc.ocpRouterName,
 			)
-
 			require.NoError(t, err)
 
 			res, err := source.Endpoints(context.Background())

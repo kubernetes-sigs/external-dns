@@ -23,10 +23,10 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -116,7 +116,7 @@ func newRouteGroupClient(token, tokenPath string, timeout time.Duration) *routeG
 	cli.updateToken()
 
 	// cluster internal use custom CA to reach TLS endpoint
-	rootCA, err := ioutil.ReadFile(rootCAFile)
+	rootCA, err := os.ReadFile(rootCAFile)
 	if err != nil {
 		return cli
 	}
@@ -138,7 +138,7 @@ func (cli *routeGroupClient) updateToken() {
 		return
 	}
 
-	token, err := ioutil.ReadFile(cli.tokenFile)
+	token, err := os.ReadFile(cli.tokenFile)
 	if err != nil {
 		log.Errorf("Failed to read token from file (%s): %v", cli.tokenFile, err)
 		return

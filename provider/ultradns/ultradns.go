@@ -41,11 +41,14 @@ const (
 
 // global variables
 var sbPoolRunProbes = true
-var sbPoolActOnProbes = true
-var ultradnsPoolType = "rdpool"
-var accountName string
 
-//Setting custom headers for ultradns api calls
+var (
+	sbPoolActOnProbes = true
+	ultradnsPoolType  = "rdpool"
+	accountName       string
+)
+
+// Setting custom headers for ultradns api calls
 var customHeader = []udnssdk.CustomHeader{
 	{
 		Key:   "UltraClient",
@@ -145,7 +148,6 @@ func (p *UltraDNSProvider) Zones(ctx context.Context) ([]udnssdk.Zone, error) {
 			zoneKey.Zone = zone
 			zoneKey.AccountName = accountName
 			zones, err := p.fetchZones(ctx, zoneKey)
-
 			if err != nil {
 				return nil, err
 			}
@@ -489,7 +491,7 @@ func (p *UltraDNSProvider) newSBPoolObjectCreation(ctx context.Context, change *
 	return sbPoolObject, nil
 }
 
-//Creation of RDPoolObject
+// Creation of RDPoolObject
 func (p *UltraDNSProvider) newRDPoolObjectCreation(ctx context.Context, change *UltraDNSChanges) (rdPool udnssdk.RDPoolProfile, err error) {
 	rdPoolObject := udnssdk.RDPoolProfile{
 		Context:     udnssdk.RDPoolSchema,

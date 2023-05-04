@@ -745,7 +745,6 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilt
 	provider.dryRun = dryRun
 
 	return provider
-
 }
 
 func newGoogleProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, records []*endpoint.Endpoint) *GoogleProvider {

@@ -23,10 +23,8 @@ import (
 	"strings"
 )
 
-var (
-	// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
-	ErrInvalidHeritage = errors.New("heritage is unknown or not found")
-)
+// ErrInvalidHeritage is returned when heritage was not found, or different heritage is found
+var ErrInvalidHeritage = errors.New("heritage is unknown or not found")
 
 const (
 	heritage = "external-dns"
@@ -34,6 +32,8 @@ const (
 	OwnerLabelKey = "owner"
 	// ResourceLabelKey is the name of the label that identifies k8s resource which wants to acquire the DNS name
 	ResourceLabelKey = "resource"
+	// OwnedRecordLabelKey is the name of the label that identifies the record that is owned by the labeled TXT registry record
+	OwnedRecordLabelKey = "ownedRecord"
 
 	// AWSSDDescriptionLabel label responsible for storing raw owner/resource combination information in the Labels
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry

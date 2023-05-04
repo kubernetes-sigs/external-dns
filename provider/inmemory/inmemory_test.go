@@ -29,9 +29,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-var (
-	_ provider.Provider = &InMemoryProvider{}
-)
+var _ provider.Provider = &InMemoryProvider{}
 
 func TestInMemoryProvider(t *testing.T) {
 	t.Run("findByType", testInMemoryFindByType)
@@ -684,20 +682,17 @@ func testInMemoryApplyChanges(t *testing.T) {
 				"org": {
 					"example.org": []*inMemoryRecord{
 						{
-
 							Name:   "example.org",
 							Target: "8.8.8.8",
 							Type:   endpoint.RecordTypeA,
 						},
 						{
-
 							Name: "example.org",
 							Type: endpoint.RecordTypeTXT,
 						},
 					},
 					"foo.org": []*inMemoryRecord{
 						{
-
 							Name:   "foo.org",
 							Target: "4.4.4.4",
 							Type:   endpoint.RecordTypeCNAME,
@@ -792,7 +787,6 @@ func testInMemoryApplyChanges(t *testing.T) {
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
-
 			im := NewInMemoryProvider()
 			c := &inMemoryClient{}
 			c.zones = getInitData()

@@ -76,3 +76,42 @@ func TestSameFailures(t *testing.T) {
 		}
 	}
 }
+
+func TestIsLess(t *testing.T) {
+	testsA := []Targets{
+		{""},
+		{"1.2.3.4"},
+		{"1.2.3.4"},
+		{"example.org", "example.com"},
+		{"8.8.8.8", "8.8.4.4"},
+		{"1-2-3-4.example.org", "EXAMPLE.ORG"},
+		{"1-2-3-4.example.org", "EXAMPLE.ORG", "1.2.3.4"},
+		{"example.com", "example.org"},
+	}
+	testsB := []Targets{
+		{"", ""},
+		{"1-2-3-4.example.org"},
+		{"1.2.3.5"},
+		{"example.com", "examplea.org"},
+		{"8.8.8.8"},
+		{"1.2.3.4", "EXAMPLE.ORG"},
+		{"1-2-3-4.example.org", "EXAMPLE.ORG"},
+		{"example.com", "example.org"},
+	}
+	expected := []bool{
+		true,
+		true,
+		true,
+		true,
+		false,
+		false,
+		false,
+		false,
+	}
+
+	for i, d := range testsA {
+		if d.IsLess(testsB[i]) != expected[i] {
+			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
+		}
+	}
+}

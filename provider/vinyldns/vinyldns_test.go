@@ -37,9 +37,11 @@ type mockVinyldnsZoneInterface struct {
 
 var mockVinylDNSProvider vinyldnsProvider
 
-var vinylDNSZones []vinyldns.Zone
-var vinylDNSRecords []vinyldns.RecordSet
-var vinylDNSRecordSetUpdateResponse *vinyldns.RecordSetUpdateResponse
+var (
+	vinylDNSZones                   []vinyldns.Zone
+	vinylDNSRecords                 []vinyldns.RecordSet
+	vinylDNSRecordSetUpdateResponse *vinyldns.RecordSetUpdateResponse
+)
 
 func TestVinylDNSServices(t *testing.T) {
 	firstZone := vinyldns.Zone{

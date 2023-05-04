@@ -44,6 +44,8 @@ const (
 	hostnameAnnotationKey = "external-dns.alpha.kubernetes.io/hostname"
 	// The annotation used for specifying whether the public or private interface address is used
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
+	// The annotation used for specifying the type of endpoints to use for headless services
+	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
 	// The annotation used for defining the desired ingress target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
@@ -57,6 +59,11 @@ const (
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
+)
+
+const (
+	EndpointsTypeNodeExternalIP = "NodeExternalIP"
+	EndpointsTypeHostIP         = "HostIP"
 )
 
 // Provider-specific annotations
@@ -151,6 +158,10 @@ func getAccessFromAnnotations(annotations map[string]string) string {
 	return annotations[accessAnnotationKey]
 }
 
+func getEndpointsTypeFromAnnotations(annotations map[string]string) string {
+	return annotations[endpointsTypeAnnotationKey]
+}
+
 func getInternalHostnamesFromAnnotations(annotations map[string]string) []string {
 	internalHostnameAnnotation, exists := annotations[internalHostnameAnnotationKey]
 	if !exists {
@@ -196,6 +207,12 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 				Name:  fmt.Sprintf("scw/%s", attr),
 				Value: v,
 			})
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
+			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
+			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+				Name:  fmt.Sprintf("ibmcloud-%s", attr),
+				Value: v,
+			})
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier
@@ -222,8 +239,10 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A for IPs and type CNAME for everything else.
 func suitableType(target string) string {
-	if net.ParseIP(target) != nil {
+	if net.ParseIP(target) != nil && net.ParseIP(target).To4() != nil {
 		return endpoint.RecordTypeA
+	} else if net.ParseIP(target) != nil && net.ParseIP(target).To16() != nil {
+		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
 }
@@ -233,12 +252,21 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
+	var aaaaTargets endpoint.Targets
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
+			if isIPv6String(t) {
+				continue
+			}
 			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			if !isIPv6String(t) {
+				continue
+			}
+			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
 		}
@@ -257,6 +285,19 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		endpoints = append(endpoints, epA)
 	}
 
+	if len(aaaaTargets) > 0 {
+		epAAAA := &endpoint.Endpoint{
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          aaaaTargets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeAAAA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
+		}
+		endpoints = append(endpoints, epAAAA)
+	}
+
 	if len(cnameTargets) > 0 {
 		epCNAME := &endpoint.Endpoint{
 			DNSName:          strings.TrimSuffix(hostname, "."),
@@ -269,7 +310,6 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		}
 		endpoints = append(endpoints, epCNAME)
 	}
-
 	return endpoints
 }
 
@@ -330,4 +370,10 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		}
 	}
 	return nil
+}
+
+// isIPv6String returns if ip is IPv6.
+func isIPv6String(ip string) bool {
+	netIP := net.ParseIP(ip)
+	return netIP != nil && netIP.To4() == nil
 }

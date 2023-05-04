@@ -43,7 +43,7 @@ type VirtualServiceSuite struct {
 	source     Source
 	lbServices []*v1.Service
 	gwconfig   networkingv1alpha3.Gateway
-	vsconfig   networkingv1alpha3.VirtualService
+	vsconfig   *networkingv1alpha3.VirtualService
 }
 
 func (suite *VirtualServiceSuite) SetupTest() {
@@ -85,7 +85,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		gateways:  []string{"istio-system/foo-gateway-with-targets"},
 		dnsnames:  []string{"foo"},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), &suite.vsconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1alpha3().VirtualServices(suite.vsconfig.Namespace).Create(context.Background(), suite.vsconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.source, err = NewIstioVirtualServiceSource(
@@ -362,7 +362,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
 			gwconfig := ti.gwconfig.Config()
-			require.Equal(t, ti.expected, virtualServiceBindsToGateway(&vsconfig, &gwconfig, ti.vsHost))
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, &gwconfig, ti.vsHost))
 		})
 	}
 }
@@ -394,8 +394,9 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -416,8 +417,9 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 			},
 		},
@@ -439,12 +441,14 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
 				},
 				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"elb.com", "alb.com"},
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com", "alb.com"},
 				},
 			},
 		},
@@ -543,8 +547,9 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "foo.bar",
-					Targets: endpoint.Targets{"elb.com", "alb.com"},
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com", "alb.com"},
 				},
 			},
 		},
@@ -618,20 +623,24 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -665,8 +674,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 			},
 		},
@@ -702,20 +712,24 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -752,12 +766,14 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -790,8 +806,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 			},
 		},
@@ -858,8 +875,9 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 			},
 		},
@@ -917,12 +935,14 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "vs1.ext-dns.test.com",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "vs1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "vs1.ext-dns.test.com",
-					Targets: endpoint.Targets{"elb.com"},
+					DNSName:    "vs1.ext-dns.test.com",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"elb.com"},
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
@@ -1206,14 +1226,16 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName:   "example.org",
-					Targets:   endpoint.Targets{"8.8.8.8"},
-					RecordTTL: endpoint.TTL(6),
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordTTL:  endpoint.TTL(6),
 				},
 				{
-					DNSName:   "example2.org",
-					Targets:   endpoint.Targets{"8.8.8.8"},
-					RecordTTL: endpoint.TTL(1),
+					DNSName:    "example2.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+					RecordTTL:  endpoint.TTL(1),
 				},
 			},
 		},
@@ -1322,20 +1344,24 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "example.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "new.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "new.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 			ignoreHostnameAnnotation: true,
@@ -1454,7 +1480,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			t.Parallel()
 
 			var gateways []networkingv1alpha3.Gateway
-			var virtualservices []networkingv1alpha3.VirtualService
+			var virtualservices []*networkingv1alpha3.VirtualService
 
 			for _, gwItem := range ti.gwConfigs {
 				gateways = append(gateways, gwItem.Config())
@@ -1479,7 +1505,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			}
 
 			for _, virtualservice := range virtualservices {
-				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), &virtualservice, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1alpha3().VirtualServices(virtualservice.Namespace).Create(context.Background(), virtualservice, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1590,7 +1616,7 @@ type fakeVirtualServiceConfig struct {
 	exportTo    string
 }
 
-func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
+func (c fakeVirtualServiceConfig) Config() *networkingv1alpha3.VirtualService {
 	vs := istionetworking.VirtualService{
 		Gateways: c.gateways,
 		Hosts:    c.dnsnames,
@@ -1599,7 +1625,7 @@ func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
 		vs.ExportTo = []string{c.exportTo}
 	}
 
-	config := networkingv1alpha3.VirtualService{
+	return &networkingv1alpha3.VirtualService{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
@@ -1607,6 +1633,4 @@ func (c fakeVirtualServiceConfig) Config() networkingv1alpha3.VirtualService {
 		},
 		Spec: vs,
 	}
-
-	return config
 }
