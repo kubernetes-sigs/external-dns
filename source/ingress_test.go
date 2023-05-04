@@ -136,15 +136,15 @@ func TestNewIngressSource(t *testing.T) {
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
 		},
 		{
-			title:            "non-empty ingress class name list",
-			expectError:      false,
+			title:             "non-empty ingress class name list",
+			expectError:       false,
 			ingressClassNames: []string{"internal", "external"},
 		},
 		{
-			title:            "ingress class name and annotation filter jointly specified",
-			expectError:      true,
+			title:             "ingress class name and annotation filter jointly specified",
+			expectError:       true,
 			ingressClassNames: []string{"internal", "external"},
-			annotationFilter: "kubernetes.io/ingress.class=nginx",
+			annotationFilter:  "kubernetes.io/ingress.class=nginx",
 		},
 	} {
 		ti := ti
@@ -378,7 +378,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
 		ingressLabelSelector     labels.Selector
-		ingressClassNames   []string
+		ingressClassNames        []string
 	}{
 		{
 			title:           "no ingress",
@@ -1191,16 +1191,22 @@ func testIngressEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:                  "ingressClassName filtering",
-			targetNamespace:        "",
-			ingressClassNames:      []string{"public", "dmz"},
+			title:             "ingressClassName filtering",
+			targetNamespace:   "",
+			ingressClassNames: []string{"public", "dmz"},
 			ingressItems: []fakeIngress{
+				{
+					name:        "none",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"none.example.org"}},
+					ips:         []string{"1.0.0.0"},
+				},
 				{
 					name:             "fake-public",
 					namespace:        namespace,
 					tlsdnsnames:      [][]string{{"example.org"}},
 					ips:              []string{"1.2.3.4"},
-					ingressClassName: "public",
+					ingressClassName: "public", // match
 				},
 				{
 					name:             "fake-internal",
@@ -1214,16 +1220,56 @@ func testIngressEndpoints(t *testing.T) {
 					namespace:        namespace,
 					tlsdnsnames:      [][]string{{"dmz.example.org"}},
 					ips:              []string{"3.4.5.6"},
-					ingressClassName: "dmz",
+					ingressClassName: "dmz", // match
 				},
 				{
-					name:             "annotated-dmz",
-					namespace:        namespace,
-					tlsdnsnames:      [][]string{{"annodmz.example.org"}},
-					ips:              []string{"4.5.6.7"},
+					name:        "annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"annodmz.example.org"}},
+					ips:         []string{"4.5.6.7"},
 					annotations: map[string]string{
-						"kubernetes.io/ingress.class": "dmz",
+						"kubernetes.io/ingress.class": "dmz", // match
 					},
+				},
+				{
+					name:        "fake-internal-annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"int-annodmz.example.org"}},
+					ips:         []string{"5.6.7.8"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz", // match
+					},
+					ingressClassName: "internal",
+				},
+				{
+					name:        "fake-dmz-annotated-internal",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"dmz-annoint.example.org"}},
+					ips:         []string{"6.7.8.9"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "internal",
+					},
+					ingressClassName: "dmz", // match
+				},
+				{
+					name:        "empty-annotated-dmz",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"empty-annotdmz.example.org"}},
+					ips:         []string{"7.8.9.0"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "dmz", // match
+					},
+					ingressClassName: "",
+				},
+				{
+					name:        "empty-annotated-internal",
+					namespace:   namespace,
+					tlsdnsnames: [][]string{{"empty-annotint.example.org"}},
+					ips:         []string{"8.9.0.1"},
+					annotations: map[string]string{
+						"kubernetes.io/ingress.class": "internal",
+					},
+					ingressClassName: "",
 				},
 			},
 			expected: []*endpoint.Endpoint{
@@ -1239,9 +1285,21 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName: "annodmz.example.org",
 					Targets: endpoint.Targets{"4.5.6.7"},
 				},
+				{
+					DNSName: "int-annodmz.example.org",
+					Targets: endpoint.Targets{"5.6.7.8"},
+				},
+				{
+					DNSName: "dmz-annoint.example.org",
+					Targets: endpoint.Targets{"6.7.8.9"},
+				},
+				{
+					DNSName: "empty-annotdmz.example.org",
+					Targets: endpoint.Targets{"7.8.9.0"},
+				},
 			},
-                    },
-                    {
+		},
+		{
 			ingressLabelSelector: labels.SelectorFromSet(labels.Set{"app": "web-external"}),
 			title:                "ingress with matching labels",
 			targetNamespace:      "",
@@ -1339,7 +1397,7 @@ func (ing fakeIngress) Ingress() *networkv1.Ingress {
 			Labels:      ing.labels,
 		},
 		Spec: networkv1.IngressSpec{
-			Rules: []networkv1.IngressRule{},
+			Rules:            []networkv1.IngressRule{},
 			IngressClassName: &ing.ingressClassName,
 		},
 		Status: networkv1.IngressStatus{

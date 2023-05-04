@@ -45,6 +45,8 @@ const (
 	// Possible values for the ingress-hostname-source annotation
 	IngressHostnameSourceAnnotationOnlyValue   = "annotation-only"
 	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+
+	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
 )
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
@@ -238,11 +240,11 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 // class
 func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
 	// if no class filter is specified then there's nothing to do
-	if sc.ingressClassNames == nil {
+	if len(sc.ingressClassNames) == 0 {
 		return ingresses, nil
 	}
 
-	classNameReq, err := labels.NewRequirement("kubernetes.io/ingress.class", selection.In, sc.ingressClassNames)
+	classNameReq, err := labels.NewRequirement(IngressClassAnnotationKey, selection.In, sc.ingressClassNames)
 	if err != nil {
 		return nil, err
 	}
@@ -258,6 +260,7 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 		for _, nameFilter := range sc.ingressClassNames {
 			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
 				matched = true
+
 			} else if matchLabelSelector(selector, ingress.Annotations) {
 				matched = true
 			}
