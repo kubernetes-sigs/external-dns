@@ -213,7 +213,7 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `aws-zone-type` and either `ingress-class` or `annotation-filter` (depending on whether your cluster makes use of `ingressClassName`):
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -251,7 +251,7 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `aws-zone-type` and either `ingress-class` or `annotation-filter` (depending on whether your cluster makes use of `ingressClassName`):
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
 apiVersion: apps/v1beta2
@@ -280,8 +280,6 @@ spec:
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
         - --ingress-class=internal-ingress
-        # ... or, if you use annotations for ingress classes
-        # - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
         - --aws-zone-type=private
         image: registry.k8s.io/external-dns/external-dns:v0.13.4
         name: external-dns-private
@@ -291,21 +289,17 @@ spec:
 
 For this setup to work, you need to create two Ingress definitions for your application.
 
-At first, create a public Ingress definition (make sure to un-comment either the `annotations` or `ingressClassName` lines):
+At first, create a public Ingress definition:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  # uncomment if you use annotations for ingress classes
-  # annotations:
-  #   kubernetes.io/ingress.class: "external-ingress"
   labels:
     app: app
   name: app-public
 spec:
-  # uncomment if you use ingressClassName
-  # ingressClassName: external-ingress
+  ingressClassName: external-ingress
   rules:
   - host: app.domain.com
     http:
@@ -318,21 +312,17 @@ spec:
         pathType: Prefix
 ```
 
-Then create a private Ingress definition (again, make sure to un-comment either the `annotations` or `ingressClassName` lines):
+Then create a private Ingress definition:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  # uncomment if you use annotations for ingress classes
-  # annotations:
-  #   kubernetes.io/ingress.class: "internal-ingress"
   labels:
     app: app
   name: app-private
 spec:
-  # uncomment if you use ingressClassName
-  # ingressClassName: internal-ingress
+  ingressClassName: internal-ingress
   rules:
   - host: app.domain.com
     http:
