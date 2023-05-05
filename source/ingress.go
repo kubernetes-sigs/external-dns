@@ -258,9 +258,10 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 		var matched = false
 
 		for _, nameFilter := range sc.ingressClassNames {
-			if ingress.Spec.IngressClassName != nil && nameFilter == *ingress.Spec.IngressClassName {
-				matched = true
-
+			if ingress.Spec.IngressClassName != nil && len(*ingress.Spec.IngressClassName) > 0 {
+				if nameFilter == *ingress.Spec.IngressClassName {
+					matched = true
+				}
 			} else if matchLabelSelector(selector, ingress.Annotations) {
 				matched = true
 			}

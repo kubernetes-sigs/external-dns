@@ -1282,7 +1282,7 @@ func testIngressEndpoints(t *testing.T) {
 					tlsdnsnames: [][]string{{"int-annodmz.example.org"}},
 					ips:         []string{"5.6.7.8"},
 					annotations: map[string]string{
-						"kubernetes.io/ingress.class": "dmz", // match
+						"kubernetes.io/ingress.class": "dmz", // match but ignored (non-empty ingressClassName)
 					},
 					ingressClassName: "internal",
 				},
@@ -1302,7 +1302,7 @@ func testIngressEndpoints(t *testing.T) {
 					tlsdnsnames: [][]string{{"empty-annotdmz.example.org"}},
 					ips:         []string{"7.8.9.0"},
 					annotations: map[string]string{
-						"kubernetes.io/ingress.class": "dmz", // match
+						"kubernetes.io/ingress.class": "dmz", // match (empty ingressClassName)
 					},
 					ingressClassName: "",
 				},
@@ -1332,11 +1332,6 @@ func testIngressEndpoints(t *testing.T) {
 					DNSName:    "annodmz.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"4.5.6.7"},
-				},
-				{
-					DNSName:    "int-annodmz.example.org",
-					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"5.6.7.8"},
 				},
 				{
 					DNSName:    "dmz-annoint.example.org",
