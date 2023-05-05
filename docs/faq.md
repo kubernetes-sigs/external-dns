@@ -273,7 +273,7 @@ Note: the `--ingress-class` flag cannot be used at the same time as a `kubernete
 
 If you use annotations to indicate different ingress classes in your cluster, you can instead use an `--annotation-filter` flag to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
 
-However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source objects.
+However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
 If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
 
 **Note:** Filtering based on annotation or ingress class name means that the external-dns controller will receive all resources of that kind and then filter on the client-side.

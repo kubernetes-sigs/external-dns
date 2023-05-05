@@ -242,8 +242,6 @@ spec:
         - --registry=txt
         - --txt-owner-id=external-dns
         - --ingress-class=external-ingress
-        # ... or, if you use annotations for ingress classes
-        # - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
         - --aws-zone-type=public
         image: registry.k8s.io/external-dns/external-dns:v0.13.4
         name: external-dns-public
@@ -293,7 +291,7 @@ spec:
 
 For this setup to work, you need to create two Ingress definitions for your application.
 
-At first, create public Ingress definition (make sure to un-comment either the `annotations` or `ingressClassName` lines):
+At first, create a public Ingress definition (make sure to un-comment either the `annotations` or `ingressClassName` lines):
 
 ```yaml
 apiVersion: networking.k8s.io/v1
@@ -320,7 +318,7 @@ spec:
         pathType: Prefix
 ```
 
-Then create private Ingress definition (again, make sure to un-comment either the `annotations` or `ingressClassName` lines):
+Then create a private Ingress definition (again, make sure to un-comment either the `annotations` or `ingressClassName` lines):
 
 ```yaml
 apiVersion: networking.k8s.io/v1
