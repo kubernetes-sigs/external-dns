@@ -271,7 +271,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
 
-	targetsByHeadlessDomain := make(map[string]endpoint.Targets)
+	targetsByHeadlessDomainAndType := make(map[endpointKey]endpoint.Targets)
 	for _, subset := range endpointsObject.Subsets {
 		addresses := subset.Addresses
 		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
@@ -324,18 +324,29 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 						log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, address.IP)
 					}
 				}
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], targets...)
+				for _, target := range targets {
+					key := endpointKey{
+						dnsName:    headlessDomain,
+						recordType: suitableType(target),
+					}
+					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
+				}
 			}
 		}
 	}
 
-	headlessDomains := []string{}
-	for headlessDomain := range targetsByHeadlessDomain {
-		headlessDomains = append(headlessDomains, headlessDomain)
+	headlessKeys := []endpointKey{}
+	for headlessKey := range targetsByHeadlessDomainAndType {
+		headlessKeys = append(headlessKeys, headlessKey)
 	}
-	sort.Strings(headlessDomains)
-	for _, headlessDomain := range headlessDomains {
-		allTargets := targetsByHeadlessDomain[headlessDomain]
+	sort.Slice(headlessKeys, func(i, j int) bool {
+		if headlessKeys[i].dnsName != headlessKeys[j].dnsName {
+			return headlessKeys[i].dnsName < headlessKeys[j].dnsName
+		}
+		return headlessKeys[i].recordType < headlessKeys[j].recordType
+	})
+	for _, headlessKey := range headlessKeys {
+		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := []string{}
 
 		deduppedTargets := map[string]struct{}{}
@@ -350,9 +361,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 
 		if ttl.IsConfigured() {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessKey.dnsName, headlessKey.recordType, ttl, targets...))
 		} else {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.dnsName, headlessKey.recordType, targets...))
 		}
 	}
 
