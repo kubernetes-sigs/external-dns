@@ -3295,7 +3295,7 @@ func TestExternalServices(t *testing.T) {
 		expectError              bool
 	}{
 		{
-			"external services return an A endpoint for the external name that is an IP address",
+			"external services return an A endpoint for the external name that is an IPv4 address",
 			"",
 			"testing",
 			"foo",
@@ -3310,6 +3310,25 @@ func TestExternalServices(t *testing.T) {
 			"111.111.111.111",
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+		},
+		{
+			"external services return an AAAA endpoint for the external name that is an IPv6 address",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"2001:db8::111",
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", Targets: endpoint.Targets{"2001:db8::111"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 		},
