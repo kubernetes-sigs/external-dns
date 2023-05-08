@@ -85,11 +85,12 @@ type glooSource struct {
 }
 
 // NewGlooSource creates a new glooSource with the given config
-func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, glooNamespaces string) (Source, error) {
+func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
+	glooNamespaces []string) (Source, error) {
 	return &glooSource{
 		dynamicKubeClient,
 		kubeClient,
-		strings.Split(glooNamespaces, ","),
+		glooNamespaces,
 	}, nil
 }
 

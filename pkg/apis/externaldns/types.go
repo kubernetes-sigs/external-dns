@@ -48,7 +48,7 @@ type Config struct {
 	RequestTimeout                    time.Duration
 	DefaultTargets                    []string
 	ContourLoadBalancerService        string
-	GlooNamespace                     string
+	GlooNamespaces                    []string
 	SkipperRouteGroupVersion          string
 	Sources                           []string
 	Namespace                         string
@@ -207,7 +207,7 @@ var defaultConfig = &Config{
 	RequestTimeout:              time.Second * 30,
 	DefaultTargets:              []string{},
 	ContourLoadBalancerService:  "heptio-contour/contour",
-	GlooNamespace:               "gloo-system",
+	GlooNamespaces:              []string{"gloo-system"},
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
@@ -398,7 +398,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("contour-load-balancer", "The fully-qualified name of the Contour load balancer service. (default: heptio-contour/contour)").Default("heptio-contour/contour").StringVar(&cfg.ContourLoadBalancerService)
 
 	// Flags related to Gloo
-	app.Flag("gloo-namespace", "Coma separated list of gloo namespaces. (default: gloo-system)").Default("gloo-system").StringVar(&cfg.GlooNamespace)
+	app.Flag("gloo-namespace", "Set Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)").Default("gloo-system").StringsVar(&cfg.GlooNamespaces)
 
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
