@@ -936,7 +936,6 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--namespace=my-app`
   * `--label-filter=app in (my-app)`
   * `--ingress-class=nginx-external`
-  * `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)` - note that this filter would apply to services too.. (deprecated in favor of `--ingress-class`)
 * Limit services watched by type (not applicable to ingress or other types)
   * `--service-type-filter=LoadBalancer` default `all`
 * Limit the hosted zones considered
