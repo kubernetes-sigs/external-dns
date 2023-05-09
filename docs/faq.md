@@ -260,11 +260,11 @@ Sometimes you need to run an internal and an external dns service.
 The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external one to expose DNS to the internet.
 
 To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller. 
-Let's assume you have two ingress controllers, `nginx-internal` and `nginx-external`.
-You can then start two ExternalDNS providers, one with `--ingress-class=nginx-internal` and one with `--ingress-class=nginx-external`.
+Let's assume you have two ingress controllers, `internal` and `external`.
+You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
 
 If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
-`--ingress-class=nginx-internal --ingress-class=alb-ingress-internal`.
+`--ingress-class=internal --ingress-class=external`.
 
 The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
 The `spec.ingressClassName` tasks precedence over the annotation if both are supplied.
