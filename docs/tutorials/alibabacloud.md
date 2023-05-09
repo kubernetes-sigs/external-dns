@@ -233,9 +233,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: foo
-  annotations:
-    kubernetes.io/ingress.class: "nginx" # use the one that corresponds to your ingress controller.
 spec:
+  ingressClassName: nginx # use the one that corresponds to your ingress controller.
   rules:
   - host: foo.external-dns-test.com
     http:

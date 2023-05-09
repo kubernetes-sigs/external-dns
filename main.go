@@ -114,6 +114,7 @@ func main() {
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
+		IngressClassNames:              cfg.IngressClassNames,
 		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
