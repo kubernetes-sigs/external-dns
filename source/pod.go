@@ -76,11 +76,6 @@ func NewPodSource(ctx context.Context, kubeClient kubernetes.Interface, namespac
 func (*podSource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
-type endpointKey struct {
-	domain     string
-	recordType string
-}
-
 func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	pods, err := ps.podInformer.Lister().Pods(ps.namespace).List(labels.Everything())
 	if err != nil {
@@ -128,14 +123,14 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 	endpoints := []*endpoint.Endpoint{}
 	for key, targets := range endpointMap {
-		endpoints = append(endpoints, endpoint.NewEndpoint(key.domain, key.recordType, targets...))
+		endpoints = append(endpoints, endpoint.NewEndpoint(key.dnsName, key.recordType, targets...))
 	}
 	return endpoints, nil
 }
 
 func addToEndpointMap(endpointMap map[endpointKey][]string, domain string, recordType string, address string) {
 	key := endpointKey{
-		domain:     domain,
+		dnsName:    domain,
 		recordType: recordType,
 	}
 	if _, ok := endpointMap[key]; !ok {

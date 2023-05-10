@@ -76,11 +76,6 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 	}, nil
 }
 
-type endpointsKey struct {
-	dnsName    string
-	recordType string
-}
-
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
@@ -93,7 +88,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		return nil, err
 	}
 
-	endpoints := map[endpointsKey]*endpoint.Endpoint{}
+	endpoints := map[endpointKey]*endpoint.Endpoint{}
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
@@ -141,7 +136,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		ep.Labels = endpoint.NewLabels()
 		for _, addr := range addrs {
 			log.Debugf("adding endpoint %s target %s", ep, addr)
-			key := endpointsKey{
+			key := endpointKey{
 				dnsName:    ep.DNSName,
 				recordType: suitableType(addr),
 			}
