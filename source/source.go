@@ -86,6 +86,12 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
+// endpointKey is the type of a map key for separating endpoints or targets.
+type endpointKey struct {
+	dnsName    string
+	recordType string
+}
+
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
 	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]

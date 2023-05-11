@@ -54,6 +54,7 @@ type Config struct {
 	Namespace                          string
 	AnnotationFilter                   string
 	LabelFilter                        string
+	IngressClassNames                  []string
 	FQDNTemplate                       string
 	CombineFQDNAndAnnotation           bool
 	IgnoreHostnameAnnotation           bool
@@ -147,6 +148,8 @@ type Config struct {
 	TXTOwnerID                         string
 	TXTPrefix                          string
 	TXTSuffix                          string
+	TXTEncryptEnabled                  bool
+	TXTEncryptAESKey                   string
 	Interval                           time.Duration
 	MinEventSyncInterval               time.Duration
 	Once                               bool
@@ -216,6 +219,7 @@ var defaultConfig = &Config{
 	Namespace:                   "",
 	AnnotationFilter:            "",
 	LabelFilter:                 labels.Everything().String(),
+	IngressClassNames:           nil,
 	FQDNTemplate:                "",
 	CombineFQDNAndAnnotation:    false,
 	IgnoreHostnameAnnotation:    false,
@@ -295,6 +299,8 @@ var defaultConfig = &Config{
 	TXTCacheInterval:            0,
 	TXTWildcardReplacement:      "",
 	MinEventSyncInterval:        5 * time.Second,
+	TXTEncryptEnabled:           false,
+	TXTEncryptAESKey:            "",
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -413,6 +419,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently supported by source types CRD, ingress, service and openshift-route").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
+	app.Flag("ingress-class", "Require an ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when using fqdn-template is set (optional, default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
@@ -570,6 +577,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
+	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
+	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
 
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
