@@ -1390,6 +1390,20 @@ func TestClusterIpServices(t *testing.T) {
 			},
 		},
 		{
+			title:        "target annotated ClusterIp services return an endpoint with the specified AAAA",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+				targetAnnotationKey:   "2001:DB8::1",
+			},
+			clusterIP: "1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
+			},
+		},
+		{
 			title:        "multiple target annotated ClusterIp services return an endpoint with the specified CNAMES",
 			svcNamespace: "testing",
 			svcName:      "foo",
@@ -1401,6 +1415,21 @@ func TestClusterIpServices(t *testing.T) {
 			clusterIP: "1.2.3.4",
 			expected: []*endpoint.Endpoint{
 				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"bar.example.org", "baz.example.org"}},
+			},
+		},
+		{
+			title:        "multiple target annotated ClusterIp services return two endpoints with the specified CNAMES and AAAA",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+				targetAnnotationKey:   "bar.example.org.,baz.example.org.,2001:DB8::1",
+			},
+			clusterIP: "1.2.3.4",
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeCNAME, Targets: endpoint.Targets{"bar.example.org", "baz.example.org"}},
+				{DNSName: "foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
 			},
 		},
 		{
