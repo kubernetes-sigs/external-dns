@@ -44,12 +44,11 @@ func (suite *IngressSuite) SetupTest() {
 	fakeClient := fake.NewSimpleClientset()
 
 	suite.fooWithTargets = (fakeIngress{
-		name:        "foo-with-targets",
-		namespace:   "default",
-		dnsnames:    []string{"foo"},
-		ips:         []string{"8.8.8.8"},
-		hostnames:   []string{"v1"},
-		annotations: map[string]string{ALBDualstackAnnotationKey: ALBDualstackAnnotationValue},
+		name:      "foo-with-targets",
+		namespace: "default",
+		dnsnames:  []string{"foo"},
+		ips:       []string{"8.8.8.8"},
+		hostnames: []string{"v1"},
 	}).Ingress()
 	_, err := fakeClient.NetworkingV1().Ingresses(suite.fooWithTargets.Namespace).Create(context.Background(), suite.fooWithTargets, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
@@ -74,13 +73,6 @@ func (suite *IngressSuite) TestResourceLabelIsSet() {
 	endpoints, _ := suite.sc.Endpoints(context.Background())
 	for _, ep := range endpoints {
 		suite.Equal("ingress/default/foo-with-targets", ep.Labels[endpoint.ResourceLabelKey], "should set correct resource label")
-	}
-}
-
-func (suite *IngressSuite) TestDualstackLabelIsSet() {
-	endpoints, _ := suite.sc.Endpoints(context.Background())
-	for _, ep := range endpoints {
-		suite.Equal("true", ep.Labels[endpoint.DualstackLabelKey], "should set dualstack label to true")
 	}
 }
 

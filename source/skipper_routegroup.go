@@ -280,7 +280,6 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, eps)
 		sc.setRouteGroupResourceLabel(rg, eps)
-		sc.setRouteGroupDualstackLabel(rg, eps)
 		endpoints = append(endpoints, eps...)
 	}
 
@@ -325,16 +324,6 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 func (sc *routeGroupSource) setRouteGroupResourceLabel(rg *routeGroup, eps []*endpoint.Endpoint) {
 	for _, ep := range eps {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
-	}
-}
-
-func (sc *routeGroupSource) setRouteGroupDualstackLabel(rg *routeGroup, eps []*endpoint.Endpoint) {
-	val, ok := rg.Metadata.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to routegroup %s/%s.", rg.Metadata.Namespace, rg.Metadata.Name)
-		for _, ep := range eps {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
 	}
 }
 
