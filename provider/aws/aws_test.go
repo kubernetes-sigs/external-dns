@@ -558,18 +558,63 @@ func TestAWSCreateRecords(t *testing.T) {
 
 	require.NoError(t, provider.CreateRecords(context.Background(), records))
 
-	records, err := provider.Records(context.Background())
-	require.NoError(t, err)
-
-	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("create-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("create-test-custom-ttl.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, customTTL, "172.17.0.1"),
-		endpoint.NewEndpointWithTTL("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.example.com"),
-		endpoint.NewEndpointWithTTL("create-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific(providerSpecificAlias, "true"),
-		endpoint.NewEndpointWithTTL("create-test-cname-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "alias-target.zone-2.ext-dns-test-2.teapot.zalan.do").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific(providerSpecificAlias, "true"),
-		endpoint.NewEndpointWithTTL("create-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8", "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		{
+			Name:            aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+		{
+			Name:            aws.String("create-test-custom-ttl.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(60),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("172.17.0.1")}},
+		},
+		{
+			Name:            aws.String("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeCname),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("foo.example.com")}},
+		},
+		{
+			Name: aws.String("create-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeA),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("foo.eu-central-1.elb.amazonaws.com."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("Z215JYRZR1TBD5"),
+			},
+		},
+		{
+			Name:            aws.String("create-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}, {Value: aws.String("8.8.4.4")}},
+		},
+		{
+			Name:            aws.String("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeMx),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("10 mailhost1.example.com")}, {Value: aws.String("20 mailhost2.example.com")}},
+		},
+	})
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		{
+			Name:            aws.String("create-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+		},
+		{
+			Name: aws.String("create-test-cname-alias.zone-2.ext-dns-test-2.teapot.zalan.do."),
+			Type: aws.String(route53.RRTypeA),
+			AliasTarget: &route53.AliasTarget{
+				DNSName:              aws.String("alias-target.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				EvaluateTargetHealth: aws.Bool(true),
+				HostedZoneId:         aws.String("zone-2.ext-dns-test-2.teapot.zalan.do."),
+			},
+		},
 	})
 }
 
@@ -632,16 +677,45 @@ func TestAWSUpdateRecords(t *testing.T) {
 
 	require.NoError(t, provider.UpdateRecords(context.Background(), updatedRecords, currentRecords))
 
-	records, err := provider.Records(context.Background())
-	require.NoError(t, err)
-
-	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
-		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1"),
-		endpoint.NewEndpointWithTTL("update-test-a-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("create-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "4.3.2.1"),
-		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.foo.elb.amazonaws.com", "20 mailhost2.foo.elb.amazonaws.com"),
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		{
+			Name:            aws.String("update-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+		},
+		{
+			Name:            aws.String("update-test-a-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeCname),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("foo.elb.amazonaws.com")}},
+		},
+		{
+			Name:            aws.String("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeCname),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("bar.elb.amazonaws.com")}},
+		},
+		{
+			Name:            aws.String("create-test-multiple.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}, {Value: aws.String("4.3.2.1")}},
+		},
+		{
+			Name:            aws.String("update-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeMx),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}, {Value: aws.String("20 mailhost2.foo.elb.amazonaws.com")}},
+		},
+	})
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		{
+			Name:            aws.String("update-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("4.3.2.1")}},
+		},
 	})
 }
 
@@ -717,11 +791,8 @@ func TestAWSDeleteRecords(t *testing.T) {
 		endpoint.NewEndpoint("delete-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, "10 mailhost1.foo.elb.amazonaws.com", "20 mailhost2.foo.elb.amazonaws.com"),
 	}))
 
-	records, err := provider.Records(context.Background())
-
-	require.NoError(t, err)
-
-	validateEndpoints(t, records, []*endpoint.Endpoint{})
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{})
+	validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{})
 }
 
 func TestAWSApplyChanges(t *testing.T) {
@@ -934,29 +1005,134 @@ func TestAWSApplyChanges(t *testing.T) {
 		assert.Equal(t, 1, counter.calls["ListHostedZonesPages"], tt.name)
 		assert.Equal(t, tt.listRRSets, counter.calls["ListResourceRecordSetsPages"], tt.name)
 
-		records, err := provider.Records(ctx)
-		require.NoError(t, err, tt.name)
-
-		validateEndpoints(t, records, []*endpoint.Endpoint{
-			endpoint.NewEndpointWithTTL("create-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
-			endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
-			endpoint.NewEndpointWithTTL("create-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.4.4"),
-			endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1"),
-			endpoint.NewEndpointWithTTL("update-test-a-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true").WithProviderSpecific(providerSpecificAlias, "true"),
-			endpoint.NewEndpointWithTTL("update-test-alias-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "my-internal-host.example.com"),
-			endpoint.NewEndpointWithTTL("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.elb.amazonaws.com"),
-			endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "baz.elb.amazonaws.com"),
-			endpoint.NewEndpointWithTTL("create-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.elb.amazonaws.com"),
-			endpoint.NewEndpointWithTTL("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "baz.elb.amazonaws.com"),
-			endpoint.NewEndpointWithTTL("create-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8", "8.8.4.4"),
-			endpoint.NewEndpointWithTTL("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "4.3.2.1"),
-			endpoint.NewEndpointWithTTL("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
-			endpoint.NewEndpointWithTTL("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("simple-to-weighted").WithProviderSpecific(providerSpecificWeight, "10"),
-			endpoint.NewEndpointWithTTL("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("policy-change").WithProviderSpecific(providerSpecificRegion, "us-east-1"),
-			endpoint.NewEndpointWithTTL("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("after").WithProviderSpecific(providerSpecificWeight, "10"),
-			endpoint.NewEndpointWithTTL("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("no-change").WithProviderSpecific(providerSpecificWeight, "20"),
-			endpoint.NewEndpointWithTTL("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.foo.elb.amazonaws.com"),
-			endpoint.NewEndpointWithTTL("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "20 mailhost3.foo.elb.amazonaws.com"),
+		validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+			{
+				Name:            aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}},
+			},
+			{
+				Name:            aws.String("update-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			},
+			{
+				Name: aws.String("update-test-a-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type: aws.String(route53.RRTypeA),
+				AliasTarget: &route53.AliasTarget{
+					DNSName:              aws.String("foo.elb.amazonaws.com."),
+					EvaluateTargetHealth: aws.Bool(true),
+					HostedZoneId:         aws.String("zone-1.ext-dns-test-2.teapot.zalan.do."),
+				},
+			},
+			{
+				Name:            aws.String("update-test-alias-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeCname),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("my-internal-host.example.com")}},
+			},
+			{
+				Name:            aws.String("create-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeCname),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("foo.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeCname),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("baz.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("create-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeCname),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("foo.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeCname),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("baz.elb.amazonaws.com")}},
+			},
+			{
+				Name:            aws.String("weighted-to-simple.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+			},
+			{
+				Name:            aws.String("simple-to-weighted.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("simple-to-weighted"),
+				Weight:          aws.Int64(10),
+			},
+			{
+				Name:            aws.String("policy-change.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("policy-change"),
+				Region:          aws.String("us-east-1"),
+			},
+			{
+				Name:            aws.String("set-identifier-change.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("after"),
+				Weight:          aws.Int64(10),
+			},
+			{
+				Name:            aws.String("set-identifier-no-change.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
+				SetIdentifier:   aws.String("no-change"),
+				Weight:          aws.Int64(20),
+			},
+			{
+				Name:            aws.String("create-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeMx),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
+			},
+		})
+		validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+			{
+				Name:            aws.String("create-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.4.4")}},
+			},
+			{
+				Name:            aws.String("update-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("4.3.2.1")}},
+			},
+			{
+				Name:            aws.String("create-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}, {Value: aws.String("8.8.4.4")}},
+			},
+			{
+				Name:            aws.String("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeA),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}, {Value: aws.String("4.3.2.1")}},
+			},
+			{
+				Name:            aws.String("update-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do."),
+				Type:            aws.String(route53.RRTypeMx),
+				TTL:             aws.Int64(recordTTL),
+				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("20 mailhost3.foo.elb.amazonaws.com")}},
+			},
 		})
 	}
 }
@@ -1093,24 +1269,11 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 
 	require.NoError(t, provider.ApplyChanges(ctx, changes))
 
-	records, err := provider.Records(ctx)
-	require.NoError(t, err)
-
-	validateEndpoints(t, records, []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("update-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("delete-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
-		endpoint.NewEndpointWithTTL("update-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("delete-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("update-test-a-to-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.1.1.1"),
-		endpoint.NewEndpointWithTTL("update-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("delete-test-cname.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "qux.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("update-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("delete-test-cname-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "qux.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("update-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8", "8.8.4.4"),
-		endpoint.NewEndpointWithTTL("delete-test-multiple.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "4.3.2.1"),
-		endpoint.NewEndpointWithTTL("update-test-mx.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "20 mail.foo.elb.amazonaws.com"),
-		endpoint.NewEndpointWithTTL("delete-test-mx.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mail.bar.elb.amazonaws.com"),
-	})
+	validateRecords(t,
+		append(
+			listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+			listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")...),
+		originalRecords)
 }
 
 func TestAWSChangesByZones(t *testing.T) {
