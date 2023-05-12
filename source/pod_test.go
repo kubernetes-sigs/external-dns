@@ -526,6 +526,46 @@ func TestPodSource(t *testing.T) {
 				},
 			},
 		},
+		{
+			"split record for internal hostname annotation",
+			"",
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.b.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node1",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+						},
+					},
+				},
+			},
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org,internal.b.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+			},
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {

@@ -89,33 +89,46 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		if domain, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
-			addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-		}
-
-		if domain, ok := pod.Annotations[hostnameAnnotationKey]; ok {
-			node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
-			for _, address := range node.Status.Addresses {
-				recordType := suitableType(address.Address)
-				// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-				if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-					addToEndpointMap(endpointMap, domain, recordType, address.Address)
-				}
-			}
-		}
-
-		if ps.compatibility == "kops-dns-controller" {
-			if domain, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
+		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
+			domainList := splitHostnameAnnotation(domainAnnotation)
+			for _, domain := range domainList {
 				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-			}
 
-			if domain, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
+			}
+		}
+
+		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
+			domainList := splitHostnameAnnotation(domainAnnotation)
+			for _, domain := range domainList {
 				node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
 				for _, address := range node.Status.Addresses {
 					recordType := suitableType(address.Address)
 					// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
 					if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
 						addToEndpointMap(endpointMap, domain, recordType, address.Address)
+					}
+				}
+			}
+		}
+
+		if ps.compatibility == "kops-dns-controller" {
+			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerInternalHostnameAnnotationKey]; ok {
+				domainList := splitHostnameAnnotation(domainAnnotation)
+				for _, domain := range domainList {
+					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+				}
+			}
+
+			if domainAnnotation, ok := pod.Annotations[kopsDNSControllerHostnameAnnotationKey]; ok {
+				domainList := splitHostnameAnnotation(domainAnnotation)
+				for _, domain := range domainList {
+					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+					for _, address := range node.Status.Addresses {
+						recordType := suitableType(address.Address)
+						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+							addToEndpointMap(endpointMap, domain, recordType, address.Address)
+						}
 					}
 				}
 			}
