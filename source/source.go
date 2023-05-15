@@ -46,7 +46,7 @@ const (
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
-	// The annotation used for defining the desired ingress target
+	// The annotation used for defining the desired ingress/service target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
