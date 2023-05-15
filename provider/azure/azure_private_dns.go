@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// nolint:staticcheck
+//nolint:staticcheck // Required due to the current dependency on a deprecated version of azure-sdk-for-go
 package azure
 
 import (
@@ -367,6 +367,21 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 				},
 			},
 		}, nil
+	case privatedns.MX:
+		mxRecords := make([]privatedns.MxRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			mxRecord, err := parseMxTarget[privatedns.MxRecord](target)
+			if err != nil {
+				return privatedns.RecordSet{}, err
+			}
+			mxRecords[i] = mxRecord
+		}
+		return privatedns.RecordSet{
+			RecordSetProperties: &privatedns.RecordSetProperties{
+				TTL:       to.Int64Ptr(ttl),
+				MxRecords: &mxRecords,
+			},
+		}, nil
 	case privatedns.TXT:
 		return privatedns.RecordSet{
 			RecordSetProperties: &privatedns.RecordSetProperties{
@@ -405,6 +420,16 @@ func extractAzurePrivateDNSTargets(recordSet *privatedns.RecordSet) []string {
 	cnameRecord := properties.CnameRecord
 	if cnameRecord != nil && cnameRecord.Cname != nil {
 		return []string{*cnameRecord.Cname}
+	}
+
+	// Check for MX records
+	mxRecords := properties.MxRecords
+	if mxRecords != nil && len(*mxRecords) > 0 && (*mxRecords)[0].Exchange != nil {
+		targets := make([]string, len(*mxRecords))
+		for i, mxRecord := range *mxRecords {
+			targets[i] = fmt.Sprintf("%d %s", *mxRecord.Preference, *mxRecord.Exchange)
+		}
+		return targets
 	}
 
 	// Check for TXT records
