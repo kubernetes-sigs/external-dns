@@ -13,7 +13,7 @@ jobs:
     permissions:
       contents: write #  to push chart release and create a release (helm/chart-releaser-action)
 
-    if: github.repository == 'kubernetes-sigs/external-dns'
+    if: github.repository == 'adobe/external-dns'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,13 +30,6 @@ jobs:
           set -euo pipefail
           chart_version="$(grep -Po "(?<=^version: ).+" charts/external-dns/Chart.yaml)"
           echo "::set-output name=version::${chart_version}"
-
-      - name: Get changelog entry
-        id: changelog_reader
-        uses: mindsers/changelog-reader-action@b97ce03a10d9bdbb07beb491c76a5a01d78cd3ef
-        with:
-          path: charts/external-dns/CHANGELOG.md
-          version: "v${{ steps.chart_version.outputs.version }}"
 
       - name: Create release notes
         run: |

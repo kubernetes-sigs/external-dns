@@ -677,6 +677,23 @@ func TestCloudflareProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
+	_ = os.Unsetenv("CF_API_TOKEN")
+	tokenFile := "/tmp/cf_api_token"
+	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0644); err != nil {
+		t.Errorf("failed to write token file, %s", err)
+	}
+	_ = os.Setenv("CF_API_TOKEN", tokenFile)
+	_, err = NewCloudFlareProvider(
+		endpoint.NewDomainFilter([]string{"bar.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		true,
+		5000)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
 	_ = os.Unsetenv("CF_API_TOKEN")
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
@@ -689,6 +706,7 @@ func TestCloudflareProvider(t *testing.T) {
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
 	_, err = NewCloudFlareProvider(

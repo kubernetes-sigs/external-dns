@@ -25,7 +25,7 @@ RUN go mod download
 
 COPY . .
 
-FROM alpine:3.17
+FROM alpine:3.18
 
 RUN apk update && apk add "libcrypto3>=3.0.8-r1" "libssl3>=3.0.8-r1" && rm -rf /var/cache/apt/*
 

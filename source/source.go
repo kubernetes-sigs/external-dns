@@ -86,6 +86,12 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
+// endpointKey is the type of a map key for separating endpoints or targets.
+type endpointKey struct {
+	dnsName    string
+	recordType string
+}
+
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
 	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
@@ -239,8 +245,10 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A for IPs and type CNAME for everything else.
 func suitableType(target string) string {
-	if net.ParseIP(target) != nil {
+	if net.ParseIP(target) != nil && net.ParseIP(target).To4() != nil {
 		return endpoint.RecordTypeA
+	} else if net.ParseIP(target) != nil && net.ParseIP(target).To16() != nil {
+		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
 }
@@ -250,12 +258,21 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
+	var aaaaTargets endpoint.Targets
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
+			if isIPv6String(t) {
+				continue
+			}
 			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			if !isIPv6String(t) {
+				continue
+			}
+			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
 		}
@@ -274,6 +291,19 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		endpoints = append(endpoints, epA)
 	}
 
+	if len(aaaaTargets) > 0 {
+		epAAAA := &endpoint.Endpoint{
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          aaaaTargets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeAAAA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
+		}
+		endpoints = append(endpoints, epAAAA)
+	}
+
 	if len(cnameTargets) > 0 {
 		epCNAME := &endpoint.Endpoint{
 			DNSName:          strings.TrimSuffix(hostname, "."),
@@ -286,7 +316,6 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		}
 		endpoints = append(endpoints, epCNAME)
 	}
-
 	return endpoints
 }
 
@@ -347,4 +376,10 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		}
 	}
 	return nil
+}
+
+// isIPv6String returns if ip is IPv6.
+func isIPv6String(ip string) bool {
+	netIP := net.ParseIP(ip)
+	return netIP != nil && netIP.To4() == nil
 }

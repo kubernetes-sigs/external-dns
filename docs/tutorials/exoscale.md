@@ -109,9 +109,9 @@ kind: Ingress
 metadata:
   name: nginx
   annotations:
-    kubernetes.io/ingress.class: nginx
     external-dns.alpha.kubernetes.io/target: {{ Elastic-IP-address }}
 spec:
+  ingressClassName: nginx
   rules:
   - host: via-ingress.example.com
     http:
