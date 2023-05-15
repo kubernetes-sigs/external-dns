@@ -147,7 +147,6 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		if err := waitForCacheSync(context.Background(), informerFactory); err != nil {
 			return nil, err
 		}
-
 	}
 
 	// Transform the slice into a map so it will
@@ -179,7 +178,6 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 	for _, informer := range sc.informers {
-
 		services, err := informer.serviceInformer.Lister().Services(informer.namespace).List(sc.labelSelector)
 		if err != nil {
 			return nil, err
