@@ -435,6 +435,7 @@ func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway 
 		return
 	}
 
+	// Use kubeclient instead of informers to fetch services from gateway namespace
 	services, err := sc.kubeClient.CoreV1().Services(gateway.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
