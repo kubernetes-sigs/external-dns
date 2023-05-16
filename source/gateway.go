@@ -352,9 +352,15 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				for _, addr := range gw.gateway.Status.Addresses {
-					hostTargets[host] = append(hostTargets[host], addr.Value)
+				annots := meta.GetAnnotations()
+
+				targets := getTargetsFromTargetAnnotation(annots)
+				if len(targets) == 0 {
+					for _, addr := range gw.gateway.Status.Addresses {
+						hostTargets[host] = append(hostTargets[host], addr.Value)
+					}
 				}
+				hostTargets[host] = targets
 				match = true
 			}
 		}
