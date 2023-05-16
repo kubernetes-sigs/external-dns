@@ -93,7 +93,6 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
 				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
-
 			}
 		}
 
