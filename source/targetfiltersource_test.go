@@ -26,6 +26,47 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// echoSource is a Source that returns the endpoints passed in on creation.
+type echoSource struct {
+	endpoints []*endpoint.Endpoint
+}
+
+func (e *echoSource) AddEventHandler(ctx context.Context, handler func()) {
+}
+
+// Endpoints returns all of the endpoints passed in on creation
+func (e *echoSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	return e.endpoints, nil
+}
+
+// NewEchoSource creates a new echoSource.
+func NewEchoSource(endpoints []*endpoint.Endpoint) Source {
+	return &echoSource{endpoints: endpoints}
+}
+
+func TestEchoSourceReturnGivenSources(t *testing.T) {
+	startEndpoints := []*endpoint.Endpoint{{
+		DNSName:    "foo.bar.com",
+		RecordType: "A",
+		Targets:    endpoint.Targets{"1.2.3.4"},
+		RecordTTL:  endpoint.TTL(300),
+		Labels:     endpoint.Labels{},
+	}}
+	e := NewEchoSource(startEndpoints)
+
+	endpoints, err := e.Endpoints(context.Background())
+	if err != nil {
+		t.Errorf("Expected no error but got %s", err.Error())
+	}
+
+	for i, endpoint := range endpoints {
+		if endpoint != startEndpoints[i] {
+			t.Errorf("Expected %s but got %s", startEndpoints[i], endpoint)
+		}
+	}
+}
+
+
 func TestTargetFilterSource(t *testing.T) {
 	t.Parallel()
 
