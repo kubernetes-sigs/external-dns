@@ -51,9 +51,7 @@ type PlanTestSuite struct {
 	domainFilterFiltered2            *endpoint.Endpoint
 	domainFilterFiltered3            *endpoint.Endpoint
 	domainFilterExcluded             *endpoint.Endpoint
-	domainFilterFilteredTXT1         *endpoint.Endpoint
-	domainFilterFilteredTXT2         *endpoint.Endpoint
-	domainFilterExcludedTXT          *endpoint.Endpoint
+	forceUpdate                      *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -233,20 +231,11 @@ func (suite *PlanTestSuite) SetupTest() {
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
 	}
-	suite.domainFilterFilteredTXT1 = &endpoint.Endpoint{
-		DNSName:    "a-foo.domain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
-	}
-	suite.domainFilterFilteredTXT2 = &endpoint.Endpoint{
-		DNSName:    "cname-bar.domain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
-	}
-	suite.domainFilterExcludedTXT = &endpoint.Endpoint{
-		DNSName:    "cname-bar.otherdomain.tld",
-		Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-		RecordType: "TXT",
+	suite.forceUpdate = &endpoint.Endpoint{
+		DNSName:     "foo.domain.tld",
+		Targets:     endpoint.Targets{"1.2.3.5"},
+		RecordType:  "A",
+		ForceUpdate: true,
 	}
 }
 
@@ -661,19 +650,22 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
-func (suite *PlanTestSuite) TestMissing() {
-	missing := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2, suite.domainFilterExcludedTXT}
-	expectedCreate := []*endpoint.Endpoint{suite.domainFilterFilteredTXT1, suite.domainFilterFilteredTXT2}
+func (suite *PlanTestSuite) TestForceUpdate() {
+	current := []*endpoint.Endpoint{suite.forceUpdate}
+	desired := []*endpoint.Endpoint{suite.forceUpdate}
+	expectedUpdateOld := current
+	expectedUpdateNew := current
 
 	p := &Plan{
 		Policies:       []Policy{&SyncPolicy{}},
-		Missing:        missing,
-		DomainFilter:   endpoint.NewDomainFilter([]string{"domain.tld"}),
+		Current:        current,
+		Desired:        desired,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
 	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
 }
 
 func (suite *PlanTestSuite) TestAAAARecords() {
