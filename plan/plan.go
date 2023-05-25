@@ -176,7 +176,12 @@ func (p *Plan) Calculate() *Plan {
 			oldOwner := row.current.Labels[endpoint.OwnerLabelKey]
 			update := row.current
 			update.Labels[endpoint.OwnerLabelKey] = p.TXTOwner
-			log.Infof("find a record owner!=%s: it's DNSName: %s, old-owner: %s, type: %s\n", p.TXTOwner, row.current.DNSName, oldOwner, row.current.RecordType)
+			log.WithFields(log.Fields{
+				"previousOwner": oldOwner,
+				"newOwner":      p.TXTOwner,
+				"dnsName":       row.current.DNSName,
+				"recordType":    row.current.RecordType,
+			}).Info("Found record to migrate")
 			changes.UpdateNew = append(changes.UpdateNew, update)
 			changes.UpdateOld = append(changes.UpdateOld, row.current)
 			continue
