@@ -143,6 +143,8 @@ tolerations: []
 
 affinity: {}
 
+podDisruptionBudget: {}
+
 topologySpreadConstraints: []
 
 logLevel: info
