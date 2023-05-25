@@ -50,9 +50,6 @@ type TXTRegistry struct {
 
 	managedRecordTypes []string
 
-	// missingTXTRecords stores TXT records which are missing after the migration to the new format
-	missingTXTRecords []*endpoint.Endpoint
-
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
@@ -117,7 +114,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	missingEndpoints := []*endpoint.Endpoint{}
 
 	labelMap := map[string]endpoint.Labels{}
 	txtRecordsMap := map[string]struct{}{}
@@ -174,16 +170,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
-				missingDesiredTXTs := []*endpoint.Endpoint{}
 				for _, desiredTXT := range desiredTXTs {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
-						missingDesiredTXTs = append(missingDesiredTXTs, desiredTXT)
+						ep.ForceUpdate = true
 					}
-				}
-				if len(desiredTXTs) > len(missingDesiredTXTs) {
-					// Add missing TXT records only if those are managed (by externaldns) ones.
-					// The unmanaged record has both of the desired TXT records missing.
-					missingEndpoints = append(missingEndpoints, missingDesiredTXTs...)
 				}
 			}
 		}
@@ -195,15 +185,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		im.recordsCacheRefreshTime = time.Now()
 	}
 
-	im.missingTXTRecords = missingEndpoints
-
 	return endpoints, nil
-}
-
-// MissingRecords returns the TXT record to be created.
-// The missing records are collected during the run of Records method.
-func (im *TXTRegistry) MissingRecords() []*endpoint.Endpoint {
-	return im.missingTXTRecords
 }
 
 // generateTXTRecord generates both "old" and "new" TXT records.
