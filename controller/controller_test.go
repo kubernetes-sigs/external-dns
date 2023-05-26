@@ -224,6 +224,107 @@ func TestRunOnce(t *testing.T) {
 	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords))
 }
 
+// TestRun tests that Run correctly starts and stops
+func TestRun(t *testing.T) {
+	// Fake some desired endpoints coming from our source.
+	source := new(testutils.MockSource)
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+	source.On("Endpoints").Return([]*endpoint.Endpoint{
+		{
+			DNSName:    "create-record",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"1.2.3.4"},
+		},
+		{
+			DNSName:    "update-record",
+			RecordType: endpoint.RecordTypeA,
+			Targets:    endpoint.Targets{"8.8.4.4"},
+		},
+		{
+			DNSName:    "create-aaaa-record",
+			RecordType: endpoint.RecordTypeAAAA,
+			Targets:    endpoint.Targets{"2001:DB8::1"},
+		},
+		{
+			DNSName:    "update-aaaa-record",
+			RecordType: endpoint.RecordTypeAAAA,
+			Targets:    endpoint.Targets{"2001:DB8::2"},
+		},
+	}, nil)
+
+	// Fake some existing records in our DNS provider and validate some desired changes.
+	provider := newMockProvider(
+		[]*endpoint.Endpoint{
+			{
+				DNSName:    "update-record",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"8.8.8.8"},
+			},
+			{
+				DNSName:    "delete-record",
+				RecordType: endpoint.RecordTypeA,
+				Targets:    endpoint.Targets{"4.3.2.1"},
+			},
+			{
+				DNSName:    "update-aaaa-record",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:DB8::3"},
+			},
+			{
+				DNSName:    "delete-aaaa-record",
+				RecordType: endpoint.RecordTypeAAAA,
+				Targets:    endpoint.Targets{"2001:DB8::4"},
+			},
+		},
+		&plan.Changes{
+			Create: []*endpoint.Endpoint{
+				{DNSName: "create-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
+				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+			UpdateNew: []*endpoint.Endpoint{
+				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::2"}},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
+			},
+			UpdateOld: []*endpoint.Endpoint{
+				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+			},
+			Delete: []*endpoint.Endpoint{
+				{DNSName: "delete-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::4"}},
+				{DNSName: "delete-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"4.3.2.1"}},
+			},
+		},
+	)
+
+	r, err := registry.NewNoopRegistry(provider)
+	require.NoError(t, err)
+
+	// Run our controller once to trigger the validation.
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+	}
+	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	go func() {
+		ctrl.Run(ctx)
+		close(stopped)
+	}()
+	time.Sleep(2 * time.Second)
+	cancel() // start shutdown
+	<-stopped
+
+	// Validate that the mock source was called.
+	source.AssertExpectations(t)
+	// check the verified records
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords))
+}
+
 func valueFromMetric(metric prometheus.Gauge) uint64 {
 	ref := reflect.ValueOf(metric)
 	return reflect.Indirect(ref).FieldByName("valBits").Uint()
