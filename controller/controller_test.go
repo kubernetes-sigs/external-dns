@@ -433,6 +433,9 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
 				Targets:    endpoint.Targets{"1.1.1.1"},
+				Labels: map[string]string{
+					"owner": "me",
+				},
 			},
 			{
 				DNSName:    "create-record.unused.tld",
@@ -462,7 +465,6 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 						DNSName:    "some-record.used.tld",
 						RecordType: endpoint.RecordTypeA,
 						Targets:    endpoint.Targets{"8.8.8.8"},
-						Labels:     endpoint.Labels{},
 					},
 				},
 				UpdateNew: []*endpoint.Endpoint{
@@ -470,8 +472,9 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 						DNSName:    "some-record.used.tld",
 						RecordType: endpoint.RecordTypeA,
 						Targets:    endpoint.Targets{"1.1.1.1"},
+						// this ne new resolver will transfer existing labels
 						Labels: endpoint.Labels{
-							"owner": "",
+							"owner": "me",
 						},
 					},
 				},

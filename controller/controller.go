@@ -229,7 +229,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 			PropertyComparator: c.Registry.PropertyValuesEqual,
 			ManagedRecords:     c.ManagedRecordTypes,
 		}
-		missingRecordsPlan = missingRecordsPlan.Calculate()
+		missingRecordsPlan, err = missingRecordsPlan.CalculateWithError()
+		if err != nil {
+			sourceErrorsTotal.Inc()
+			deprecatedSourceErrors.Inc()
+			return err
+		}
 		if missingRecordsPlan.Changes.HasChanges() {
 			err = c.Registry.ApplyChanges(ctx, missingRecordsPlan.Changes)
 			if err != nil {
@@ -250,7 +255,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		ManagedRecords:     c.ManagedRecordTypes,
 	}
 
-	plan = plan.Calculate()
+	plan, err = plan.CalculateWithError()
+	if err != nil {
+		sourceErrorsTotal.Inc()
+		deprecatedSourceErrors.Inc()
+		return err
+	}
 
 	if plan.Changes.HasChanges() {
 		err = c.Registry.ApplyChanges(ctx, plan.Changes)

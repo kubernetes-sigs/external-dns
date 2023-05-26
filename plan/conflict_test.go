@@ -29,108 +29,850 @@ var _ ConflictResolver = PerResource{}
 type ResolverSuite struct {
 	// resolvers
 	perResource PerResource
-	// endpoints
-	fooV1Cname          *endpoint.Endpoint
-	fooV2Cname          *endpoint.Endpoint
-	fooV2CnameDuplicate *endpoint.Endpoint
-	fooA5               *endpoint.Endpoint
-	bar127A             *endpoint.Endpoint
-	bar192A             *endpoint.Endpoint
-	bar127AAnother      *endpoint.Endpoint
-	legacyBar192A       *endpoint.Endpoint // record created in AWS now without resource label
 	suite.Suite
 }
 
 func (suite *ResolverSuite) SetupTest() {
 	suite.perResource = PerResource{}
-	// initialize endpoints used in tests
-	suite.fooV1Cname = &endpoint.Endpoint{
-		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v1"},
-		RecordType: "CNAME",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
-		},
-	}
-	suite.fooV2Cname = &endpoint.Endpoint{
-		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
-		RecordType: "CNAME",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
-		},
-	}
-	suite.fooV2CnameDuplicate = &endpoint.Endpoint{
-		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
-		RecordType: "CNAME",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/foo-v2-duplicate",
-		},
-	}
-	suite.fooA5 = &endpoint.Endpoint{
-		DNSName:    "foo",
-		Targets:    endpoint.Targets{"5.5.5.5"},
-		RecordType: "A",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/foo-5",
-		},
-	}
-	suite.bar127A = &endpoint.Endpoint{
-		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
-		RecordType: "A",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/bar-127",
-		},
-	}
-	suite.bar127AAnother = &endpoint.Endpoint{ // TODO: remove this once we move to multiple targets under same endpoint
-		DNSName:    "bar",
-		Targets:    endpoint.Targets{"8.8.8.8"},
-		RecordType: "A",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/bar-127",
-		},
-	}
-	suite.bar192A = &endpoint.Endpoint{
-		DNSName:    "bar",
-		Targets:    endpoint.Targets{"192.168.0.1"},
-		RecordType: "A",
-		Labels: map[string]string{
-			endpoint.ResourceLabelKey: "ingress/default/bar-192",
-		},
-	}
-	suite.legacyBar192A = &endpoint.Endpoint{
-		DNSName:    "bar",
-		Targets:    endpoint.Targets{"192.168.0.1"},
-		RecordType: "A",
-	}
 }
 
-func (suite *ResolverSuite) TestStrictResolver() {
-	// test that perResource resolver picks min for create list
-	suite.Equal(suite.bar127A, suite.perResource.ResolveCreate([]*endpoint.Endpoint{suite.bar127A, suite.bar192A}), "should pick min one")
-	suite.Equal(suite.fooA5, suite.perResource.ResolveCreate([]*endpoint.Endpoint{suite.fooA5, suite.fooV1Cname}), "should pick min one")
-	suite.Equal(suite.fooV1Cname, suite.perResource.ResolveCreate([]*endpoint.Endpoint{suite.fooV2Cname, suite.fooV1Cname}), "should pick min one")
+func (suite *ResolverSuite) TestStrictResolveUpdateEmpty() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{}
+	candidates := []*endpoint.Endpoint{}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Empty(changes.Create)
+	suite.Empty(changes.UpdateNew)
+	suite.Empty(changes.UpdateOld)
+	suite.Empty(changes.Delete)
+}
 
-	// test that perResource resolver preserves resource if it still exists
-	suite.Equal(suite.bar127AAnother, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar127AAnother, suite.bar127A}), "should pick min for update when same resource endpoint occurs multiple times (remove after multiple-target support") // TODO:remove this test
-	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.bar127A, []*endpoint.Endpoint{suite.bar192A, suite.bar127A}), "should pick existing resource")
-	suite.Equal(suite.fooV2Cname, suite.perResource.ResolveUpdate(suite.fooV2Cname, []*endpoint.Endpoint{suite.fooV2Cname, suite.fooV2CnameDuplicate}), "should pick existing resource even if targets are same")
-	suite.Equal(suite.fooA5, suite.perResource.ResolveUpdate(suite.fooV1Cname, []*endpoint.Endpoint{suite.fooA5, suite.fooV2Cname}), "should pick new if resource was deleted")
-	// should actually get the updated record (note ttl is different)
-	newFooV1Cname := &endpoint.Endpoint{
-		DNSName:    suite.fooV1Cname.DNSName,
-		Targets:    suite.fooV1Cname.Targets,
-		Labels:     suite.fooV1Cname.Labels,
-		RecordType: suite.fooV1Cname.RecordType,
-		RecordTTL:  suite.fooV1Cname.RecordTTL + 1, // ttl is different
+func (suite *ResolverSuite) TestStrictResolveUpdateNothing() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
 	}
-	suite.Equal(newFooV1Cname, suite.perResource.ResolveUpdate(suite.fooV1Cname, []*endpoint.Endpoint{suite.fooA5, suite.fooV2Cname, newFooV1Cname}), "should actually pick same resource with updates")
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Empty(changes.Create)
+	suite.Empty(changes.UpdateNew)
+	suite.Empty(changes.UpdateOld)
+	suite.Empty(changes.Delete)
+}
 
-	// legacy record's resource value will not match any candidates resource label
-	// therefore pick minimum again
-	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.legacyBar192A, []*endpoint.Endpoint{suite.bar127A, suite.bar192A}), " legacy record's resource value will not match, should pick minimum")
+func (suite *ResolverSuite) TestStrictResolveUpdateSeeMerge() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.1"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+			Labels: map[string]string{
+				"server": "blaster",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws",
+					Value: "xxxxx",
+				},
+			},
+		},
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.2"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+			Labels: map[string]string{
+				"2blaster": "blaster",
+				"3blaster": "source",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "2blaster",
+					Value: "xxxxx",
+				},
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.3"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+			Labels: map[string]string{
+				"2blaster": "override",
+				"3blaster": "winner",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "3blaster",
+					Value: "xxxxx",
+				},
+			},
+		},
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.1"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+			Labels: map[string]string{
+				"a":        "b",
+				"1looser":  "1looser",
+				"3blaster": "1looser",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "x1",
+					Value: "x1",
+				},
+				{
+					Name:  "lower",
+					Value: "1.1.1.1",
+				},
+			},
+		},
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.1"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+			Labels: map[string]string{
+				"a":        "x2",
+				"1looser":  "1winner",
+				"c":        "d",
+				"3blaster": "2looser",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "x1",
+					Value: "x2",
+				},
+				{
+					Name:  "x2",
+					Value: "x2",
+				},
+			},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Create, 0)
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(changes.UpdateNew, []*endpoint.Endpoint{
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.1", "1.1.1.3"},
+			RecordType:    "A",
+			SetIdentifier: "server",
+			RecordTTL:     300,
+			Labels: map[string]string{
+				"3blaster": "winner",
+				"c":        "d",
+				"server":   "blaster",
+				"a":        "x2",
+				"1looser":  "1winner",
+				"2blaster": "override",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "x1",
+					Value: "x1",
+				},
+				{
+					Name:  "lower",
+					Value: "1.1.1.1",
+				},
+				{
+					Name:  "x2",
+					Value: "x2",
+				},
+				{
+					Name:  "3blaster",
+					Value: "xxxxx",
+				},
+			},
+		},
+	})
+	suite.Len(changes.UpdateOld, 2)
+	suite.Equal(changes.UpdateOld, current)
+	suite.Empty(changes.Delete)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateUpdateOld() {
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"server": "1.1.1.1",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"server": "1.1.1.2",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"server": "1.1.1.1",
+			},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Empty(changes.Create)
+	suite.Empty(changes.UpdateNew)
+	suite.Equal(changes.UpdateOld, []*endpoint.Endpoint{current[1]})
+	suite.Empty(changes.Delete)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateNothingDuplicated() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Empty(changes.Create)
+	suite.Empty(changes.UpdateNew)
+	suite.Empty(changes.UpdateOld)
+	suite.Empty(changes.Delete)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleCreate() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"v2"},
+			RecordType: "MX",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"v1"},
+			RecordType: "MX",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Create, 1)
+	suite.Equal(*changes.Create[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"v1", "v2"},
+		RecordType: "MX",
+		RecordTTL:  300,
+	})
+	suite.Empty(changes.UpdateNew)
+	suite.Empty(changes.UpdateOld)
+	suite.Empty(changes.Delete)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleCreateCNAMEError() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"v2"},
+			RecordType: "CNAME",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"v1"},
+			RecordType: "CNAME",
+			RecordTTL:  300,
+		},
+	}
+	_, err := suite.perResource.Resolve(current, candidates)
+	suite.ErrorContains(err, "inconsistent targets for")
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleDelete() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	candidates := []*endpoint.Endpoint{}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Empty(changes.UpdateNew)
+	suite.Empty(changes.UpdateOld)
+	suite.Equal(changes.Delete, current)
+	suite.Empty(changes.Create)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleUpdateTarget() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: endpoint.Labels{
+				"a": "b",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(*changes.UpdateOld[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: endpoint.Labels{
+			"a": "b",
+		},
+	})
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(*changes.UpdateNew[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.2"},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: endpoint.Labels{
+			"a": "b",
+		},
+	})
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleUpdateTTL() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: endpoint.Labels{
+				"a": "b",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  400,
+			Labels: endpoint.Labels{
+				"1-2": "1-2",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.3", "1.1.1.1", "1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  400,
+			Labels: endpoint.Labels{
+				"2-x": "3-x",
+			},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(changes.UpdateOld, current)
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(changes.UpdateNew[0], &endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2", "1.1.1.3"},
+		RecordType: "A",
+		RecordTTL:  400,
+		Labels: endpoint.Labels{
+			"a":   "b",
+			"1-2": "1-2",
+			"2-x": "3-x",
+		},
+	})
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleUpdateLabels() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"a": "b",
+				"u": "v",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels:     map[string]string{"a": "c"},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(*changes.UpdateOld[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: map[string]string{
+			"a": "b",
+			"u": "v",
+		},
+	})
+
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(*changes.UpdateNew[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		RecordTTL:  300,
+		Labels: map[string]string{
+			"a": "c",
+			"u": "v",
+		},
+	})
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSimpleUpdateProviderSpecific() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "a",
+					Value: "b",
+				},
+				{
+					Name:  "puh",
+					Value: "luh",
+				},
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "a",
+					Value: "c",
+				},
+				{
+					Name:  "hac",
+					Value: "sma",
+				},
+			},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(*changes.UpdateOld[0], *current[0])
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(*changes.UpdateNew[0], *candidates[0])
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateErrorRecordTTL() {
+	current := []*endpoint.Endpoint{}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.3"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  400,
+		},
+	}
+	_, err := suite.perResource.Resolve(current, candidates)
+	suite.ErrorContains(err, "inconsistent RecordTTL")
+}
+func (suite *ResolverSuite) TestStrictResolveUpdateErrorSetIdentifier() {
+	current := []*endpoint.Endpoint{}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.3"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "server",
+		},
+		{
+			DNSName:       "wl.example.com",
+			Targets:       endpoint.Targets{"1.1.1.1"},
+			RecordType:    "A",
+			RecordTTL:     300,
+			SetIdentifier: "x1",
+		},
+	}
+	_, err := suite.perResource.Resolve(current, candidates)
+	suite.ErrorContains(err, "cannot append endpoint")
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateMixed() {
+	// we delete other Types (is this right)
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"fd00::4"},
+			RecordType: "AAAA",
+			RecordTTL:  300,
+		},
+	}
+	_, err := suite.perResource.Resolve(current, candidates)
+	suite.ErrorContains(err, "cannot append endpoint")
+	// suite.Len(changes.UpdateNew, 0)
+	// suite.Len(changes.UpdateOld, 0)
+	// suite.Len(changes.Delete, 1)
+	// suite.Equal(*changes.Delete[0], *current[0])
+	// suite.Len(changes.Create, 1)
+	// suite.Equal(*changes.Create[0], *candidates[0])
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateMultipleCandidateTargets() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2", "1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(*changes.UpdateOld[0], *current[0])
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(*changes.UpdateNew[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2"},
+		RecordType: "A",
+		RecordTTL:  300,
+	})
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateSplitCandidateTargets() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+	suite.Len(changes.UpdateOld, 1)
+	suite.Equal(*changes.UpdateOld[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1"},
+		RecordType: "A",
+		RecordTTL:  300,
+	})
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(*changes.UpdateNew[0], endpoint.Endpoint{
+		DNSName:    "wl.example.com",
+		Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2"},
+		RecordType: "A",
+		RecordTTL:  300,
+	})
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateOldOnly() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"winner": "winner",
+				// "foo":    "bar",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"fix":    "box",
+				"winner": "looser",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"fix":    "box",
+				"stay":   "here",
+				"winner": "looser2",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"fix":    "box",
+				"stay":   "here",
+				"winner": "looser2",
+				// "foo":    "bar",
+			},
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+	suite.Len(changes.UpdateOld, 2)
+	suite.Equal(changes.UpdateOld, []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"winner": "winner",
+				// "foo":    "bar",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"fix":    "box",
+				"winner": "looser",
+			},
+		},
+	})
+
+	suite.Len(changes.UpdateNew, 0)
+
+}
+
+func (suite *ResolverSuite) TestStrictResolveUpdateOldMerge() {
+	// empty current and candidates -> create == empty, create == empty, delete == empty
+	current := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"winner": "winner",
+				"foo":    "bar",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1", "1.1.1.2"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"fix":    "box",
+				"winner": "looser",
+			},
+		},
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"stay":   "here",
+				"winner": "looser2",
+			},
+		},
+	}
+	candidates := []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+		},
+	}
+	changes, err := suite.perResource.Resolve(current, candidates)
+	suite.Nil(err)
+	suite.Len(changes.Delete, 0)
+	suite.Len(changes.Create, 0)
+	suite.Len(changes.UpdateNew, 1)
+	suite.Equal(changes.UpdateNew, []*endpoint.Endpoint{
+		{
+			DNSName:    "wl.example.com",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: "A",
+			RecordTTL:  300,
+			Labels: map[string]string{
+				"winner": "looser", //due to target sort 1.1.1.2
+				"stay":   "here",
+				"foo":    "bar",
+				"fix":    "box",
+			},
+		},
+	})
+	suite.Len(changes.UpdateOld, 3)
+	suite.Equal(changes.UpdateOld, current)
 }
 
 func TestConflictResolver(t *testing.T) {

@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -309,14 +310,18 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		ManagedRecords: managedRecords,
 	}
 
-	changes := plan.Calculate().Changes
+	plan, err = plan.CalculateWithError()
+	if err != nil {
+		t.Fatalf("cannot calculate plan, %s", err)
+	}
+	changes := plan.Changes
 
 	// Records other than A, CNAME and NS are not supported by planner, just create them
-	for _, endpoint := range endpoints {
-		if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" {
-			changes.Create = append(changes.Create, endpoint)
-		}
-	}
+	// for _, endpoint := range endpoints {
+	// 	if endpoint.RecordType != "A" && endpoint.RecordType != "CNAME" && endpoint.RecordType != "NS" {
+	// 		changes.Create = append(changes.Create, endpoint)
+	// 	}
+	// }
 
 	err = provider.ApplyChanges(context.Background(), changes)
 
@@ -369,7 +374,8 @@ func TestCloudflareCname(t *testing.T) {
 		{
 			RecordType: "CNAME",
 			DNSName:    "cname.bar.com",
-			Targets:    endpoint.Targets{"google.com", "facebook.com"},
+			// it's not possible to have multiple targets for a CNAME record
+			Targets: endpoint.Targets{"google.com" /* , "facebook.com" */},
 		},
 	}
 
@@ -381,17 +387,6 @@ func TestCloudflareCname(t *testing.T) {
 				Type:    "CNAME",
 				Name:    "cname.bar.com",
 				Content: "google.com",
-				TTL:     1,
-				Proxied: proxyDisabled,
-			},
-		},
-		{
-			Name:   "Create",
-			ZoneId: "001",
-			RecordData: cloudflare.DNSRecord{
-				Type:    "CNAME",
-				Name:    "cname.bar.com",
-				Content: "facebook.com",
 				TTL:     1,
 				Proxied: proxyDisabled,
 			},
@@ -596,7 +591,17 @@ func TestCloudflareSetProxied(t *testing.T) {
 					Proxied: testCase.proxiable,
 				},
 			},
-		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
+		},
+			[]string{
+				endpoint.RecordTypeCNAME,
+				endpoint.RecordTypeTXT,
+				endpoint.RecordTypeMX,
+				endpoint.RecordTypeNS,
+				"SPF",
+				"SRV",
+				endpoint.RecordTypeA,
+			},
+			testCase.recordType+" record on "+testCase.domain)
 	}
 }
 
@@ -1142,17 +1147,25 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 					SetIdentifier: c.SetIdentifier,
 					RecordTTL:     c.RecordTTL,
 					Labels:        c.Labels,
+					ProviderSpecific: []endpoint.ProviderSpecificProperty{
+						{
+							Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+							Value: strconv.FormatBool(test.ProviderProxiedByDefault),
+						},
+					},
 				})
 			}
 
-			plan := plan.Plan{
+			plan := &plan.Plan{
 				Current:            current,
 				Desired:            desired,
 				PropertyComparator: provider.PropertyValuesEqual,
 				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
 
-			plan = *plan.Calculate()
+			plan, err = plan.CalculateWithError()
+			assert.NoError(t, err, "should not fail")
+
 			assert.NotNil(t, plan.Changes, "should have plan")
 			if plan.Changes == nil {
 				return
@@ -1207,7 +1220,10 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
-	planned := plan.Calculate()
+	planned, err := plan.CalculateWithError()
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
 
 	err = provider.ApplyChanges(context.Background(), planned.Changes)
 
@@ -1255,7 +1271,7 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 				ZoneID:  "001",
 				Name:    "foobar.bar.com",
 				Type:    endpoint.RecordTypeA,
-				TTL:     1,
+				TTL:     0, // proxied has no ttl
 				Content: "1.2.3.4",
 				Proxied: proxyEnabled,
 			},
@@ -1296,7 +1312,10 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
-	planned := plan.Calculate()
+	planned, err := plan.CalculateWithError()
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
 
 	assert.Equal(t, 0, len(planned.Changes.Create), "no new changes should be here")
 	assert.Equal(t, 0, len(planned.Changes.UpdateNew), "no new changes should be here")

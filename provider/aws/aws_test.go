@@ -1860,7 +1860,8 @@ func TestAWSHealthTargetAnnotation(tt *testing.T) {
 				PropertyComparator: provider.PropertyValuesEqual,
 				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
-			plan = plan.Calculate()
+			plan, err := plan.CalculateWithError()
+			assert.NoError(t, err)
 			assert.Equal(t, test.shouldUpdate, len(plan.Changes.UpdateNew) == 1)
 		})
 	}

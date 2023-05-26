@@ -64,6 +64,13 @@ type Changes struct {
 	Delete []*endpoint.Endpoint
 }
 
+func (c *Changes) add(ac Changes) {
+	c.Create = append(c.Create, ac.Create...)
+	c.UpdateOld = append(c.UpdateOld, ac.UpdateOld...)
+	c.UpdateNew = append(c.UpdateNew, ac.UpdateNew...)
+	c.Delete = append(c.Delete, ac.Delete...)
+}
+
 // planKey is a key for a row in `planTable`.
 type planKey struct {
 	dnsName       string
@@ -84,6 +91,7 @@ bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 1
 --------------------------------------------------------
 "=", i.e. result of calculation relies on supplied ConflictResolver
 */
+
 type planTable struct {
 	rows     map[planKey]*planTableRow
 	resolver ConflictResolver
@@ -97,17 +105,17 @@ func newPlanTable() planTable { // TODO: make resolver configurable
 // current corresponds to the record currently occupying dns name on the dns provider
 // candidates corresponds to the list of records which would like to have this dnsName
 type planTableRow struct {
-	current    *endpoint.Endpoint
+	currents   []*endpoint.Endpoint
 	candidates []*endpoint.Endpoint
 }
 
 func (t planTableRow) String() string {
-	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
+	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.currents, t.candidates)
 }
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
-	t.rows[key].current = e
+	t.rows[key].currents = append(t.rows[key].currents, e)
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
@@ -116,10 +124,13 @@ func (t planTable) addCandidate(e *endpoint.Endpoint) {
 }
 
 func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
+	dnsName := normalizeDNSName(e.DNSName)
+	recordType := strings.ToUpper(strings.TrimSpace(e.RecordType))
+	setIdentifier := strings.TrimSpace(e.SetIdentifier)
 	key := planKey{
-		dnsName:       normalizeDNSName(e.DNSName),
-		setIdentifier: e.SetIdentifier,
-		recordType:    e.RecordType,
+		dnsName:       dnsName,
+		setIdentifier: setIdentifier,
+		recordType:    recordType,
 	}
 	if _, ok := t.rows[key]; !ok {
 		t.rows[key] = &planTableRow{}
@@ -137,13 +148,22 @@ func (c *Changes) HasChanges() bool {
 // Calculate computes the actions needed to move current state towards desired
 // state. It then passes those changes to the current policy for further
 // processing. It returns a copy of Plan with the changes populated.
-func (p *Plan) Calculate() *Plan {
+// func (p *Plan) Calculate() *Plan {
+// 	p, err := p.CalculateWithError()
+// 	if err != nil {
+// 		panic(fmt.Sprintf("CalculateWithError should not return an error:%v", err))
+// 	}
+// 	return p
+// }
+
+func (p *Plan) CalculateWithError() (*Plan, error) {
 	t := newPlanTable()
 
 	if p.DomainFilter == nil {
 		p.DomainFilter = endpoint.MatchAllDomainFilters(nil)
 	}
 
+	// dnsname and recordtype, setIdentifier is used to group records together
 	for _, current := range filterRecordsForPlan(p.Current, p.DomainFilter, p.ManagedRecords) {
 		t.addCurrent(current)
 	}
@@ -154,24 +174,41 @@ func (p *Plan) Calculate() *Plan {
 	changes := &Changes{}
 
 	for _, row := range t.rows {
-		if row.current == nil { // dns name not taken
-			changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
+		rowChanges, err := t.resolver.Resolve(row.currents, row.candidates)
+		if err != nil {
+			return nil, err
 		}
-		if row.current != nil && len(row.candidates) == 0 {
-			changes.Delete = append(changes.Delete, row.current)
-		}
+		changes.add(rowChanges)
 
-		// TODO: allows record type change, which might not be supported by all dns providers
-		if row.current != nil && len(row.candidates) > 0 { // dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				changes.UpdateNew = append(changes.UpdateNew, update)
-				changes.UpdateOld = append(changes.UpdateOld, row.current)
-			}
-			continue
-		}
+		// if row.currents == nil { // dns name not taken
+		// 	changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates)...)
+		// }
+		// if row.currents != nil && len(row.candidates) == 0 {
+		// 	changes.Delete = append(changes.Delete, row.currents...)
+		// }
+
+		// // TODO: allows record type change, which might not be supported by all dns providers
+		// if row.currents != nil && len(row.candidates) > 0 { // dns name is taken
+		// 	panic("not implemented")
+		// 	// creates, deletes := t.resolver.ResolveUpdate(row.currents, row.candidates)
+		// 	// if len(creates) > 0 {
+		// 	// 	changes.Create = append(changes.Create, creates...)
+		// 	// }
+		// 	// if len(deletes) > 0 {
+		// 	// 	changes.Delete = append(changes.Delete, deletes...)
+		// 	// }
+		// 	// // compare "update" to "current" to figure out if actual update is required
+		// 	// for _, current := range row.currents {
+		// 	// 	for _, update := range updates {
+		// 	// 		if shouldUpdateTTL(update, current) || targetChanged(update, current) || p.shouldUpdateProviderSpecific(update, current) {
+		// 	// 			inheritOwner(current, update)
+		// 	// 			changes.UpdateNew = append(changes.UpdateNew, update)
+		// 	// 			changes.UpdateOld = append(changes.UpdateOld, current)
+		// 	// 		}
+		// 	// 	}
+		// 	// }
+		// continue
+		// }
 	}
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
@@ -186,32 +223,32 @@ func (p *Plan) Calculate() *Plan {
 		Current:        p.Current,
 		Desired:        p.Desired,
 		Changes:        changes,
-		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
-	return plan
+	return plan, nil
 }
 
-func inheritOwner(from, to *endpoint.Endpoint) {
-	if to.Labels == nil {
-		to.Labels = map[string]string{}
-	}
-	if from.Labels == nil {
-		from.Labels = map[string]string{}
-	}
-	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
-}
+// func inheritOwner(from, to *endpoint.Endpoint) {
+// 	if to.Labels == nil {
+// 		to.Labels = map[string]string{}
+// 	}
+// 	if from.Labels == nil {
+// 		from.Labels = map[string]string{}
+// 	}
+// 	to.Labels[endpoint.OwnerLabelKey] = from.Labels[endpoint.OwnerLabelKey]
+// }
 
-func targetChanged(desired, current *endpoint.Endpoint) bool {
-	return !desired.Targets.Same(current.Targets)
-}
+// func targetChanged(desired, current *endpoint.Endpoint) bool {
+// 	return !desired.Targets.Same(current.Targets)
+// }
 
-func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
-	if !desired.RecordTTL.IsConfigured() {
-		return false
-	}
-	return desired.RecordTTL != current.RecordTTL
-}
+// func shouldUpdateTTL(desired, current *endpoint.Endpoint) bool {
+// 	if !desired.RecordTTL.IsConfigured() {
+// 		return false
+// 	}
+// 	return desired.RecordTTL != current.RecordTTL
+// }
 
 func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint) bool {
 	desiredProperties := map[string]endpoint.ProviderSpecificProperty{}
