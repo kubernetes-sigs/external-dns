@@ -29,10 +29,13 @@ func sortEndpoints(endpoints []*endpoint.Endpoint) {
 		sort.Strings([]string(ep.Targets))
 	}
 	sort.Slice(endpoints, func(i, k int) bool {
-		// Sort by DNSName and Targets
+		// Sort by DNSName, RecordType, and Targets
 		ei, ek := endpoints[i], endpoints[k]
 		if ei.DNSName != ek.DNSName {
 			return ei.DNSName < ek.DNSName
+		}
+		if ei.RecordType != ek.RecordType {
+			return ei.RecordType < ek.RecordType
 		}
 		// Targets are sorted ahead of time.
 		for j, ti := range ei.Targets {
@@ -79,7 +82,7 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 	}
 
 	// if non-empty record type is expected, check that it matches.
-	if expected.RecordType != "" && endpoint.RecordType != expected.RecordType {
+	if endpoint.RecordType != expected.RecordType {
 		t.Errorf("RecordType expected %q, got %q", expected.RecordType, endpoint.RecordType)
 	}
 

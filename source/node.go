@@ -88,7 +88,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		return nil, err
 	}
 
-	endpoints := map[string]*endpoint.Endpoint{}
+	endpoints := map[endpointKey]*endpoint.Endpoint{}
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
@@ -109,8 +109,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{
-			RecordType: "A", // hardcoded DNS record type
-			RecordTTL:  ttl,
+			RecordTTL: ttl,
 		}
 
 		if ns.fqdnTemplate != nil {
@@ -134,14 +133,19 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			return nil, fmt.Errorf("failed to get node address from %s: %s", node.Name, err.Error())
 		}
 
-		ep.Targets = endpoint.Targets(addrs)
 		ep.Labels = endpoint.NewLabels()
-
-		log.Debugf("adding endpoint %s", ep)
-		if _, ok := endpoints[ep.DNSName]; ok {
-			endpoints[ep.DNSName].Targets = append(endpoints[ep.DNSName].Targets, ep.Targets...)
-		} else {
-			endpoints[ep.DNSName] = ep
+		for _, addr := range addrs {
+			log.Debugf("adding endpoint %s target %s", ep, addr)
+			key := endpointKey{
+				dnsName:    ep.DNSName,
+				recordType: suitableType(addr),
+			}
+			if _, ok := endpoints[key]; !ok {
+				epCopy := *ep
+				epCopy.RecordType = key.recordType
+				endpoints[key] = &epCopy
+			}
+			endpoints[key].Targets = append(endpoints[key].Targets, addr)
 		}
 	}
 
@@ -163,13 +167,18 @@ func (ns *nodeSource) nodeAddresses(node *v1.Node) ([]string, error) {
 		v1.NodeExternalIP: {},
 		v1.NodeInternalIP: {},
 	}
+	var ipv6Addresses []string
 
 	for _, addr := range node.Status.Addresses {
 		addresses[addr.Type] = append(addresses[addr.Type], addr.Address)
+		// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+		if addr.Type == v1.NodeInternalIP && suitableType(addr.Address) == endpoint.RecordTypeAAAA {
+			ipv6Addresses = append(ipv6Addresses, addr.Address)
+		}
 	}
 
 	if len(addresses[v1.NodeExternalIP]) > 0 {
-		return addresses[v1.NodeExternalIP], nil
+		return append(addresses[v1.NodeExternalIP], ipv6Addresses...), nil
 	}
 
 	if len(addresses[v1.NodeInternalIP]) > 0 {

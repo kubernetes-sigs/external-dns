@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -155,7 +156,15 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		err    error
 	)
 	if os.Getenv("CF_API_TOKEN") != "" {
-		config, err = cloudflare.NewWithAPIToken(os.Getenv("CF_API_TOKEN"))
+		token := os.Getenv("CF_API_TOKEN")
+		if strings.HasPrefix(token, "file:") {
+			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %w", err)
+			}
+			token = string(tokenBytes)
+		}
+		config, err = cloudflare.NewWithAPIToken(token)
 	} else {
 		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	}

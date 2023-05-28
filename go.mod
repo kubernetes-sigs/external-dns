@@ -8,6 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/adal v0.9.21
 	github.com/Azure/go-autorest/autorest/to v0.4.0
+	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.11.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.0.0
 	github.com/IBM/go-sdk-core/v5 v5.8.0
 	github.com/IBM/networking-go-sdk v0.36.0
@@ -39,9 +40,9 @@ require (
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/openshift/api v0.0.0-20200605231317-fb2a6ca106ae
-	github.com/openshift/client-go v0.0.0-20200608144219-584632b8fc73
-	github.com/oracle/oci-go-sdk v24.3.0+incompatible
+	github.com/openshift/api v0.0.0-20210315202829-4b79815405ec
+	github.com/openshift/client-go v0.0.0-20210112165513-ebc401615f47
+	github.com/oracle/oci-go-sdk/v65 v65.35.0
 	github.com/ovh/go-ovh v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.1.6
@@ -57,8 +58,8 @@ require (
 	github.com/ultradns/ultradns-sdk-go v0.0.0-20200616202852-e62052662f60
 	github.com/vinyldns/go-vinyldns v0.0.0-20200211145900-fe8a3d82e556
 	github.com/vultr/govultr/v2 v2.17.2
-	go.etcd.io/etcd/api/v3 v3.5.5
-	go.etcd.io/etcd/client/v3 v3.5.5
+	go.etcd.io/etcd/api/v3 v3.5.8
+	go.etcd.io/etcd/client/v3 v3.5.8
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/net v0.7.0
 	golang.org/x/oauth2 v0.5.0
@@ -112,6 +113,7 @@ require (
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-resty/resty/v2 v2.1.1-0.20191201195748-d7b97669fe48 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
+	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
@@ -163,11 +165,12 @@ require (
 	github.com/schollz/progressbar/v3 v3.8.6 // indirect
 	github.com/smartystreets/go-aws-auth v0.0.0-20180515143844-0c1422d1fdb9 // indirect
 	github.com/smartystreets/gunit v1.3.4 // indirect
+	github.com/sony/gobreaker v0.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.5 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.8 // indirect
 	go.mongodb.org/mongo-driver v1.5.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
@@ -175,7 +178,7 @@ require (
 	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect

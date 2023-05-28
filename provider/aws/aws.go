@@ -86,6 +86,7 @@ var canonicalHostedZones = map[string]string{
 	"eu-west-3.elb.amazonaws.com":         "Z3Q77PNBQS71R4",
 	"eu-north-1.elb.amazonaws.com":        "Z23TAZ6LKFMNIO",
 	"eu-south-1.elb.amazonaws.com":        "Z3ULH7SSC9OV64",
+	"eu-south-2.elb.amazonaws.com":        "Z0956581394HF5D5LXGAP",
 	"sa-east-1.elb.amazonaws.com":         "Z2P70J7HTTTPLU",
 	"cn-north-1.elb.amazonaws.com.cn":     "Z1GDH35T77C1KE",
 	"cn-northwest-1.elb.amazonaws.com.cn": "ZM7IZAIOVVDZF",
@@ -115,6 +116,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.eu-west-3.amazonaws.com":         "Z1CMS0P5QUZ6D5",
 	"elb.eu-north-1.amazonaws.com":        "Z1UDT6IFJ4EJM",
 	"elb.eu-south-1.amazonaws.com":        "Z23146JA1KNAFP",
+	"elb.eu-south-2.amazonaws.com":        "Z1011216NVTVYADP1SSV",
 	"elb.sa-east-1.amazonaws.com":         "ZTK26PT1VY4CU",
 	"elb.cn-north-1.amazonaws.com.cn":     "Z3QFB96KMJ7ED6",
 	"elb.cn-northwest-1.amazonaws.com.cn": "ZQEIKTCZ8352D",
@@ -373,7 +375,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		for _, r := range resp.ResourceRecordSets {
 			newEndpoints := make([]*endpoint.Endpoint, 0)
 
-			if !provider.SupportedRecordType(aws.StringValue(r.Type)) {
+			if !p.SupportedRecordType(aws.StringValue(r.Type)) {
 				continue
 			}
 
@@ -1058,4 +1060,13 @@ func canonicalHostedZone(hostname string) string {
 // cleanZoneID removes the "/hostedzone/" prefix
 func cleanZoneID(id string) string {
 	return strings.TrimPrefix(id, "/hostedzone/")
+}
+
+func (p *AWSProvider) SupportedRecordType(recordType string) bool {
+	switch recordType {
+	case "MX":
+		return true
+	default:
+		return provider.SupportedRecordType(recordType)
+	}
 }

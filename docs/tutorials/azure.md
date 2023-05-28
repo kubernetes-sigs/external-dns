@@ -356,7 +356,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service
         - --source=ingress
@@ -424,7 +424,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.2
+          image: registry.k8s.io/external-dns/external-dns:v0.13.4
           args:
             - --source=service
             - --source=ingress
@@ -495,7 +495,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.2
+          image: registry.k8s.io/external-dns/external-dns:v0.13.4
           args:
             - --source=service
             - --source=ingress
@@ -560,9 +560,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: server.example.com
       http:
@@ -649,3 +648,9 @@ resource group:
 ```bash
 $ az group delete --name "MyDnsResourceGroup"
 ```
+
+## More tutorials
+
+A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE 
+
+![image](https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png)

@@ -20,6 +20,8 @@ Snippet from [Cloudflare - Getting Started](https://api.cloudflare.com/#getting-
 
 API Token will be preferred for authentication if `CF_API_TOKEN` environment variable is set.
 Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with Cloudflare.
+You may provide the Cloudflare API token through a file by setting the
+`CF_API_TOKEN="file:/path/to/token"`.
 
 When using API Token authentication, the token should be granted Zone `Read`, DNS `Edit` privileges, and access to `All zones`.
 
@@ -54,7 +56,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -123,7 +125,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.2
+        image: registry.k8s.io/external-dns/external-dns:v0.13.4
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.

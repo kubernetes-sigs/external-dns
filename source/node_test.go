@@ -128,6 +128,19 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"ipv6 node with fqdn returns one endpoint",
+			"",
+			"",
+			"node1.example.org",
+			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+			false,
+		},
+		{
 			"node with fqdn template returns endpoint with expanded hostname",
 			"",
 			"{{.Name}}.example.org",
@@ -167,6 +180,20 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"node with fqdn template returns two endpoints with dual-stack IP addresses and expanded hostname",
+			"",
+			"{{.Name}}.example.org",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+			false,
+		},
+		{
 			"node with both external and internal IP returns an endpoint with external IP",
 			"",
 			"",
@@ -180,6 +207,20 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
+			"node with both external, internal, and IPv6 IP returns endpoints with external IPs",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+			},
+			false,
+		},
+		{
 			"node with only internal IP returns an endpoint with internal IP",
 			"",
 			"",
@@ -189,6 +230,20 @@ func testNodeSourceEndpoints(t *testing.T) {
 			map[string]string{},
 			[]*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+			},
+			false,
+		},
+		{
+			"node with only internal IPs returns endpoints with internal IPs",
+			"",
+			"",
+			"node1",
+			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			map[string]string{},
+			map[string]string{},
+			[]*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
 			},
 			false,
 		},
@@ -318,7 +373,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			false,
 		},
 		{
-			"node with nil Lables returns valid endpoint",
+			"node with nil Labels returns valid endpoint",
 			"",
 			"",
 			"node1",

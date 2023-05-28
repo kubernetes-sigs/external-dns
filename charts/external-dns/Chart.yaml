@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.12.1
-appVersion: 0.13.2
+version: 1.12.2
+appVersion: 0.13.4
 keywords:
   - kubernetes
   - externaldns
@@ -12,7 +12,7 @@ keywords:
   - service
   - ingress
 home: https://github.com/kubernetes-sigs/external-dns/
-icon: https://github.com/kubernetes-sigs/external-dns/raw/master/img/external-dns.png
+icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
 sources:
   - https://github.com/kubernetes-sigs/external-dns/
 maintainers:
@@ -20,9 +20,15 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
-    - kind: changed
-      description: "Updated ExternalDNS version to v0.13.2."
     - kind: added
-      description: "Added secretConfiguration.subPath to mount specific files from secret as a sub-path."
+      description: "Added support for ServiceMonitor relabelling."
     - kind: changed
-      description: "Changed to use registry.k8s.io instead of k8s.gcr.io."
+      description: "Updated chart icon path."
+    - kind: added
+      description: "Added RBAC for Gateway-API resources to ClusterRole."
+    - kind: added
+      description: "Added RBAC for F5 VirtualServer to ClusterRole."
+    - kind: added
+      description: "Added support for running ExternalDNS with namespaced scope."
+    - kind: changed
+      description: "Updated _ExternalDNS_ version to [v0.13.4](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.4)."

@@ -398,7 +398,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 			labelSelector, err := labels.Parse(ti.labelFilter)
 			require.NoError(t, err)
 
-			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme)
+			// At present, client-go's fake.RESTClient (used by crd_test.go) is known to cause race conditions when used
+			// with informers: https://github.com/kubernetes/kubernetes/issues/95372
+			// So don't start the informer during testing.
+			startInformer := false
+
+			cs, err := NewCRDSource(restClient, ti.namespace, ti.kind, ti.annotationFilter, labelSelector, scheme, startInformer)
 			require.NoError(t, err)
 
 			receivedEndpoints, err := cs.Endpoints(context.Background())
