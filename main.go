@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/route53"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -184,7 +185,7 @@ func main() {
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var awsSession *session.Session
-	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" {
+	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
 		awsSession, err = aws.NewSession(
 			aws.AWSSessionConfig{
 				AssumeRole:           cfg.AWSAssumeRole,
@@ -395,6 +396,8 @@ func main() {
 
 	var r registry.Registry
 	switch cfg.Registry {
+	case "dynamodb":
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession), cfg.AWSDynamoDBTable, cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":

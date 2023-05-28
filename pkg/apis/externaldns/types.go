@@ -93,6 +93,7 @@ type Config struct {
 	AWSPreferCNAME                     bool
 	AWSZoneCacheDuration               time.Duration
 	AWSSDServiceCleanup                bool
+	AWSDynamoDBTable                   string
 	AzureConfigFile                    string
 	AzureResourceGroup                 string
 	AzureSubscriptionID                string
@@ -255,6 +256,7 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
 	AWSSDServiceCleanup:         false,
+	AWSDynamoDBTable:            "external-dns",
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
@@ -572,13 +574,14 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
-	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")
-	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
+	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "dynamodb", "aws-sd")
+	app.Flag("txt-owner-id", "When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
 	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
 	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
+	app.Flag("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")").Default(defaultConfig.AWSDynamoDBTable).StringVar(&cfg.AWSDynamoDBTable)
 
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
