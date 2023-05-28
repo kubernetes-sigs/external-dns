@@ -164,8 +164,9 @@ type ProviderSpecific []ProviderSpecificProperty
 
 // EndpointKey is the type of a map key for separating endpoints or targets.
 type EndpointKey struct {
-	DNSName    string
-	RecordType string
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
@@ -264,6 +265,15 @@ func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)
 			return
 		}
+	}
+}
+
+// Key returns the EndpointKey of the Endpoint.
+func (e *Endpoint) Key() EndpointKey {
+	return EndpointKey{
+		DNSName:       e.DNSName,
+		RecordType:    e.RecordType,
+		SetIdentifier: e.SetIdentifier,
 	}
 }
 
