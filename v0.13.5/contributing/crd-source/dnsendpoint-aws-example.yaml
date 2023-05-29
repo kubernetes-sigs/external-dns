@@ -1,0 +1,18 @@
+apiVersion: externaldns.k8s.io/v1alpha1
+kind: DNSEndpoint
+metadata:
+  name: examplednsrecord
+spec:
+  endpoints:
+  - dnsName: subdomain.foo.bar.com
+    providerSpecific:
+      - name: "aws/failover"
+        value: "PRIMARY"
+      - name: "aws/health-check-id"
+        value: "asdf1234-as12-as12-as12-asdf12345678" 
+      - name: "aws/evaluate-target-health"
+        value: "true"
+    recordType: CNAME
+    setIdentifier: some-unique-id
+    targets:
+    - other-subdomain.foo.bar.com
