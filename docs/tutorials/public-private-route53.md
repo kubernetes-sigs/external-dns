@@ -216,7 +216,7 @@ Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -254,7 +254,7 @@ Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
