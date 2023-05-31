@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.
@@ -150,7 +150,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service
         - --domain-filter=example.com       # (optional) limit to only example.com domains.

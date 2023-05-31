@@ -41,7 +41,7 @@ spec:
       # serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=ingress # or service or both
         - --provider=exoscale
