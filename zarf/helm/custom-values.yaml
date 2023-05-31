@@ -1,0 +1,15 @@
+rbac:
+  # Specifies whether RBAC resources should be created
+  create: false
+
+sources:
+  - service
+
+interval: 10s
+logLevel: debug
+extraArgs:
+  - --domain-filter=test.domain.net
+  - --namespace=default
+  - --service-type-filter=ExternalName
+
+provider: inmemory

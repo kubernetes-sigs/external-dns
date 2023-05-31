@@ -300,7 +300,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(virtualService, gateway, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gateway)
+		tgs, err := sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
 			return targets, err
 		}
@@ -429,19 +429,20 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 	return
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
 	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return
 	}
 
-	services, err := sc.serviceInformer.Lister().Services(sc.namespace).List(labels.Everything())
+	// Use kubeclient instead of informers to fetch services from gateway namespace
+	services, err := sc.kubeClient.CoreV1().Services(gateway.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	for _, service := range services {
+	for _, service := range services.Items {
 		if !gatewaySelectorMatchesServiceSelector(gateway.Spec.Selector, service.Spec.Selector) {
 			continue
 		}
