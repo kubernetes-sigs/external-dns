@@ -141,8 +141,6 @@ Create the following Ingress to expose the echoserver application to the Interne
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
   ingressClassName: skipper
@@ -181,7 +179,6 @@ kind: Ingress
 metadata:
   annotations:
     external-dns.alpha.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
-    kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
   ingressClassName: skipper
@@ -218,7 +215,6 @@ kind: Ingress
 metadata:
   annotations:
     alb.ingress.kubernetes.io/ip-address-type: dualstack
-    kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
   ingressClassName: skipper
@@ -256,7 +252,6 @@ kind: Ingress
 metadata:
   annotations:
     zalando.org/aws-load-balancer-type: nlb
-    kubernetes.io/ingress.class: skipper
   name: echoserver
 spec:
   ingressClassName: skipper
