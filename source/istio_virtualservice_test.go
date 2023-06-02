@@ -26,11 +26,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/fake"
+
 	istionetworking "istio.io/api/networking/v1alpha3"
 	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -42,7 +43,7 @@ type VirtualServiceSuite struct {
 	suite.Suite
 	source     Source
 	lbServices []*v1.Service
-	gwconfig   networkingv1alpha3.Gateway
+	gwconfig   *networkingv1alpha3.Gateway
 	vsconfig   *networkingv1alpha3.VirtualService
 }
 
@@ -76,7 +77,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		namespace: "istio-system",
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), &suite.gwconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
@@ -362,7 +363,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
 			gwconfig := ti.gwconfig.Config()
-			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, &gwconfig, ti.vsHost))
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, gwconfig, ti.vsHost))
 		})
 	}
 }
@@ -1479,7 +1480,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			var gateways []networkingv1alpha3.Gateway
+			var gateways []*networkingv1alpha3.Gateway
 			var virtualservices []*networkingv1alpha3.VirtualService
 
 			for _, gwItem := range ti.gwConfigs {
@@ -1500,7 +1501,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1579,7 +1580,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 
 	for _, gw := range gwList {
 		gwObj := gw.Config()
-		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), &gwObj, metav1.CreateOptions{})
+		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}

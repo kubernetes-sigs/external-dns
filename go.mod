@@ -67,8 +67,8 @@ require (
 	google.golang.org/api v0.110.0
 	gopkg.in/ns1/ns1-go.v2 v2.7.4
 	gopkg.in/yaml.v2 v2.4.0
-	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
-	istio.io/client-go v0.0.0-20210128182905-ee2edd059e02
+	istio.io/api v0.0.0-20230322183722-d5ba2da6d5a0
+	istio.io/client-go v1.17.2-0.20230322184722-9a3ad952dcd3
 	k8s.io/api v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/client-go v0.26.0
@@ -193,7 +193,6 @@ require (
 	gopkg.in/resty.v1 v1.12.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	istio.io/gogo-genproto v0.0.0-20190930162913-45029607206a // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
 	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d // indirect
