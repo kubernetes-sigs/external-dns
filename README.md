@@ -63,11 +63,10 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Plural](https://www.plural.sh/)
 * [Pi-hole](https://pi-hole.net/)
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones. We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
-`--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
-`--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
+`--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`.
 
 ## Status of providers
 
@@ -237,17 +236,17 @@ If the service is not of type Loadbalancer you need the --publish-internal-servi
 Locally run a single sync loop of ExternalDNS.
 
 ```console
-external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
+external-dns --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
 This should output the DNS records it will modify to match the managed zone with the DNS records you desire. It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
 
-Note: TXT records will have `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
+Note: TXT records will have the `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
 
 Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
 ```console
-external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
+external-dns --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
 ```
 
 Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
