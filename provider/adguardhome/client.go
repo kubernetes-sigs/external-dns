@@ -152,7 +152,7 @@ func (c *adGuardHomeClient) listRecords(ctx context.Context) ([]*endpoint.Endpoi
 	out := make([]*endpoint.Endpoint, 0)
 	for _, rec := range entries {
 		if c.cfg.DomainFilter.IsConfigured() && !c.cfg.DomainFilter.Match(rec.Domain) {
-			log.Infof("Skipping %s that does not match domain filter", rec.Domain)
+			log.Debugf("Skipping %s that does not match domain filter", rec.Domain)
 			continue
 		}
 		out = append(out, &endpoint.Endpoint{

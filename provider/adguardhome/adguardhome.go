@@ -57,27 +57,27 @@ func NewAdGuardHomeProvider(cfg AdGuardHomeConfig) (*AdGuardHomeProvider, error)
 // Records implements Provider, populating a slice of endpoints from
 // AdGuardHome local DNS.
 func (p *AdGuardHomeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	debug, err := p.api.listRecords(ctx)
-	log.Infof("Records: %s", debug)
-	return debug, err
+	records, err := p.api.listRecords(ctx)
+	log.Debugf("Records: %s", records)
+	return records, err
 }
 
 // ApplyChanges implements Provider, syncing desired state with the AdGuardHome server Local DNS.
 func (p *AdGuardHomeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Infof("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
+	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	for _, ep := range changes.Create {
 		if err := p.api.createRecord(ctx, ep); err != nil {
 			return err
 		}
-		log.Infof("CREATE: %s", ep)
+		log.Debugf("CREATE: %s", ep)
 	}
 
 	for _, ep := range changes.Delete {
 		if err := p.api.deleteRecord(ctx, ep); err != nil {
 			return err
 		}
-		log.Infof("DELETE: %s", ep)
+		log.Debugf("DELETE: %s", ep)
 	}
 
 	for i, new := range changes.UpdateNew {
@@ -85,7 +85,7 @@ func (p *AdGuardHomeProvider) ApplyChanges(ctx context.Context, changes *plan.Ch
 		if err := p.api.updateRecord(ctx, old, new); err != nil {
 			return err
 		}
-		log.Infof("Old: %s -> New: %s", old, new)
+		log.Debugf("Old: %s -> New: %s", old, new)
 	}
 	return nil
 }
