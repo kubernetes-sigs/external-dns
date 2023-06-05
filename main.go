@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/adguardhome"
 	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
@@ -359,6 +360,17 @@ func main() {
 				Server:                cfg.PiholeServer,
 				Password:              cfg.PiholePassword,
 				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+				DomainFilter:          domainFilter,
+				DryRun:                cfg.DryRun,
+			},
+		)
+	case "adguardhome":
+		p, err = adguardhome.NewAdGuardHomeProvider(
+			adguardhome.AdGuardHomeConfig{
+				Server:                cfg.AdGuardHomeServer,
+				Username:              cfg.AdGuardHomeUsername,
+				Password:              cfg.AdGuardHomePassword,
+				TLSInsecureSkipVerify: cfg.AdGuardHomeTLSInsecureSkipVerify,
 				DomainFilter:          domainFilter,
 				DryRun:                cfg.DryRun,
 			},
