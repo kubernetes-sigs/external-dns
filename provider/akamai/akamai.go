@@ -199,7 +199,7 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 	}
 
 	for _, zone := range resp.Zones {
-		if p.domainFilter.Match(zone.Zone) || !p.domainFilter.IsConfigured() {
+		if p.domainFilter.Match(zone.Zone) {
 			filteredZones.Zones = append(filteredZones.Zones, akamaiZone{ContractID: zone.ContractId, Zone: zone.Zone})
 			log.Debugf("Fetched zone: '%s' (ZoneID: %s)", zone.Zone, zone.ContractId)
 		}
