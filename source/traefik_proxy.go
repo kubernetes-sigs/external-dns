@@ -163,7 +163,7 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 	for _, ingressRouteObj := range irs {
 		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
 		if !ok {
-			return nil, errors.New("could not convert")
+			return nil, errors.New("could not convert IngressRoute object to unstructured")
 		}
 
 		ingressRoute := &IngressRoute{}
@@ -174,7 +174,7 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 		ingressRoutes = append(ingressRoutes, ingressRoute)
 	}
 
-	ingressRoutes, err = ts.filterByAnnotationsIngressRoute(ingressRoutes)
+	ingressRoutes, err = ts.filterIngressRouteByAnnotation(ingressRoutes)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to filter IngressRoute")
 	}
@@ -213,34 +213,34 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	var ingressRoutes []*IngressRouteTCP
-	for _, ingressRouteObj := range irs {
-		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
+	var ingressRouteTCPs []*IngressRouteTCP
+	for _, ingressRouteTCPObj := range irs {
+		unstructuredHost, ok := ingressRouteTCPObj.(*unstructured.Unstructured)
 		if !ok {
-			return nil, errors.New("could not convert")
+			return nil, errors.New("could not convert IngressRouteTCP object to unstructured")
 		}
 
-		ingressRoute := &IngressRouteTCP{}
-		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRoute, nil)
+		ingressRouteTCP := &IngressRouteTCP{}
+		err := ts.unstructuredConverter.scheme.Convert(unstructuredHost, ingressRouteTCP, nil)
 		if err != nil {
 			return nil, err
 		}
-		ingressRoutes = append(ingressRoutes, ingressRoute)
+		ingressRouteTCPs = append(ingressRouteTCPs, ingressRouteTCP)
 	}
 
-	ingressRoutes, err = ts.filterByAnnotationsIngressRouteTCP(ingressRoutes)
+	ingressRouteTCPs, err = ts.filterIngressRouteTcpByAnnotations(ingressRouteTCPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
+		return nil, errors.Wrap(err, "failed to filter IngressRouteTCP")
 	}
 
-	for _, ingressRoute := range ingressRoutes {
+	for _, ingressRouteTCP := range ingressRouteTCPs {
 		var targets endpoint.Targets
 
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRoute.Annotations)...)
+		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteTCP.Annotations)...)
 
-		fullname := fmt.Sprintf("%s/%s", ingressRoute.Namespace, ingressRoute.Name)
+		fullname := fmt.Sprintf("%s/%s", ingressRouteTCP.Namespace, ingressRouteTCP.Name)
 
-		ingressEndpoints, err := ts.endpointsFromIngressRouteTCP(ingressRoute, targets)
+		ingressEndpoints, err := ts.endpointsFromIngressRouteTCP(ingressRouteTCP, targets)
 		if err != nil {
 			return nil, err
 		}
@@ -249,9 +249,9 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
-		ts.setResourceLabelIngressRouteTCP(ingressRoute, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteTCP(ingressRoute, ingressEndpoints)
+		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
+		ts.setResourceLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
+		ts.setDualstackLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -267,11 +267,11 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	var ingressRoutes []*IngressRouteUDP
-	for _, ingressRouteObj := range irs {
-		unstructuredHost, ok := ingressRouteObj.(*unstructured.Unstructured)
+	var ingressRouteUDPs []*IngressRouteUDP
+	for _, ingressRouteUDPObj := range irs {
+		unstructuredHost, ok := ingressRouteUDPObj.(*unstructured.Unstructured)
 		if !ok {
-			return nil, errors.New("could not convert")
+			return nil, errors.New("could not convert IngressRouteUDP object to unstructured")
 		}
 
 		ingressRoute := &IngressRouteUDP{}
@@ -279,22 +279,22 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
-		ingressRoutes = append(ingressRoutes, ingressRoute)
+		ingressRouteUDPs = append(ingressRouteUDPs, ingressRoute)
 	}
 
-	ingressRoutes, err = ts.filterByAnnotationsIngressRouteUDP(ingressRoutes)
+	ingressRouteUDPs, err = ts.filterIngressRouteUdpByAnnotations(ingressRouteUDPs)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to filter IngressRoute")
+		return nil, errors.Wrap(err, "failed to filter IngressRouteUDP")
 	}
 
-	for _, ingressRoute := range ingressRoutes {
+	for _, ingressRouteUDP := range ingressRouteUDPs {
 		var targets endpoint.Targets
 
-		targets = append(targets, getTargetsFromTargetAnnotation(ingressRoute.Annotations)...)
+		targets = append(targets, getTargetsFromTargetAnnotation(ingressRouteUDP.Annotations)...)
 
-		fullname := fmt.Sprintf("%s/%s", ingressRoute.Namespace, ingressRoute.Name)
+		fullname := fmt.Sprintf("%s/%s", ingressRouteUDP.Namespace, ingressRouteUDP.Name)
 
-		ingressEndpoints, err := ts.endpointsFromIngressRouteUDP(ingressRoute, targets)
+		ingressEndpoints, err := ts.endpointsFromIngressRouteUDP(ingressRouteUDP, targets)
 		if err != nil {
 			return nil, err
 		}
@@ -303,17 +303,17 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 			continue
 		}
 
-		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
-		ts.setResourceLabelIngressRouteUDP(ingressRoute, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteUDP(ingressRoute, ingressEndpoints)
+		log.Debugf("Endpoints generated from IngressRouteUDP: %s: %v", fullname, ingressEndpoints)
+		ts.setResourceLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
+		ts.setDualstackLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
 	return endpoints, nil
 }
 
-// filterByAnnotations filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*IngressRoute) ([]*IngressRoute, error) {
+// filterIngressRouteByAnnotation filters a list of IngressRoute by a given annotation selector.
+func (ts *traefikSource) filterIngressRouteByAnnotation(ingressRoutes []*IngressRoute) ([]*IngressRoute, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -343,8 +343,8 @@ func (ts *traefikSource) filterByAnnotationsIngressRoute(ingressRoutes []*Ingres
 	return filteredList, nil
 }
 
-// filterByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
+// filterIngressRouteTcpByAnnotations filters a list of IngressRouteTCP by a given annotation selector.
+func (ts *traefikSource) filterIngressRouteTcpByAnnotations(ingressRoutes []*IngressRouteTCP) ([]*IngressRouteTCP, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -374,8 +374,8 @@ func (ts *traefikSource) filterByAnnotationsIngressRouteTCP(ingressRoutes []*Ing
 	return filteredList, nil
 }
 
-// filterByAnnotations filters a list of IngressRoute by a given annotation selector.
-func (ts *traefikSource) filterByAnnotationsIngressRouteUDP(ingressRoutes []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
+// filterIngressRouteUdpByAnnotations filters a list of IngressRoute by a given annotation selector.
+func (ts *traefikSource) filterIngressRouteUdpByAnnotations(ingressRoutes []*IngressRouteUDP) ([]*IngressRouteUDP, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(ts.annotationFilter)
 	if err != nil {
 		return nil, err
