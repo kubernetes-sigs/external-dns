@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### All Changes
 
-- Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5). ([#TODO](https://github.com/kubernetes-sigs/external-dns/pull/TODO)) [@GMartinez-Sisti](https://github.com/GMartinez-Sisti)
+- Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5). ([#3661](https://github.com/kubernetes-sigs/external-dns/pull/3661)) [@GMartinez-Sisti](https://github.com/GMartinez-Sisti)
 - Resolve LB-type Service hostname to create A/AAAA instead of CNAME. ([#3554](https://github.com/kubernetes-sigs/external-dns/pull/3554)) [@cxuu](https://github.com/cxuu)
 - Adding missing gateway-httproute cluster role permission. ([#3541](https://github.com/kubernetes-sigs/external-dns/pull/3541)) [@nicon89](https://github.com/nicon89)
 
