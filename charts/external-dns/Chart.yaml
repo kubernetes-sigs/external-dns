@@ -23,6 +23,4 @@ annotations:
     - kind: changed
       description: "Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5)."
     - kind: changed
-      description: "Resolve LB-type Service hostname to create A/AAAA instead of CNAME."
-    - kind: changed
       description: "Adding missing gateway-httproute cluster role permission."
