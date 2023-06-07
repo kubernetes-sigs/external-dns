@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ type AdGuardHomeConfig struct {
 	Username string
 	// An optional password if the server is protected.
 	Password string
-	// Disable verification of TLS certificates.
-	TLSInsecureSkipVerify bool
 	// A filter to apply when looking up and applying records.
 	DomainFilter endpoint.DomainFilter
 	// Do nothing and log what would have changed to stdout.
@@ -64,20 +62,20 @@ func (p *AdGuardHomeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint
 
 // ApplyChanges implements Provider, syncing desired state with the AdGuardHome server Local DNS.
 func (p *AdGuardHomeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
+	log.Infof("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	for _, ep := range changes.Create {
 		if err := p.api.createRecord(ctx, ep); err != nil {
 			return err
 		}
-		log.Debugf("CREATE: %s", ep)
+		log.Infof("CREATE: %s", ep)
 	}
 
 	for _, ep := range changes.Delete {
 		if err := p.api.deleteRecord(ctx, ep); err != nil {
 			return err
 		}
-		log.Debugf("DELETE: %s", ep)
+		log.Infof("DELETE: %s", ep)
 	}
 
 	for i, new := range changes.UpdateNew {
@@ -85,7 +83,7 @@ func (p *AdGuardHomeProvider) ApplyChanges(ctx context.Context, changes *plan.Ch
 		if err := p.api.updateRecord(ctx, old, new); err != nil {
 			return err
 		}
-		log.Debugf("Old: %s -> New: %s", old, new)
+		log.Infof("Old: %s -> New: %s", old, new)
 	}
 	return nil
 }

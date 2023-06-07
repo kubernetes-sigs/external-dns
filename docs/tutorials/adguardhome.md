@@ -1,19 +1,18 @@
 # Setting up ExternalDNS for AdGuard Home
 
 This tutorial describes how to setup ExternalDNS to sync records with AdGuard Home's Custom DNS.
-AdGuard Home has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A or CNAME records.
+AdGuard Home has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A, AAAA or CNAME records.
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
 ## Minimum Required AdGuard Home Version
 
 Since this provider is built on the [new `/control/rewrite/update` endpoint in AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/commit/0393e4109624395bb97af146f2d0e48ea3d7c37b), it currently requires running an edge version or, once available, a v0.108+ release.
 
-
 ## Deploy ExternalDNS
 
 You can skip to the [manifest](#externaldns-manifest) if authentication is disabled on your AdGuard Home instance or you don't want to use secrets.
 
-If your AdGuard Home server's admin dashboard is protected by a password, you'll likely want to create a secret first containing its value. 
+If your AdGuard Home server's admin dashboard is protected by a password, you'll likely want to create a secret first containing its value.
 This is optional since you _do_ retain the option to pass it as a flag with `--adguardhome-password`.
 
 You can create the secret with:
@@ -27,7 +26,7 @@ Replacing **"supersecret"** with the actual password to your AdGuard Home server
 
 ### ExternalDNS Manifest
 
-Apply the following manifest to deploy ExternalDNS, editing values for your environment accordingly. 
+Apply the following manifest to deploy ExternalDNS, editing values for your environment accordingly.
 Be sure to change the namespace in the `ClusterRoleBinding` if you are using a namespace other than **default**.
 
 ```yaml
@@ -109,10 +108,9 @@ spec:
 
 ### Arguments
 
- - `--adguardhome-server (env: EXTERNAL_DNS_ADGUARDHOME_SERVER)` - The address of the AdGuard Home web server
- - `--adguardhome-username (env: EXTERNAL_DNS_ADGUARDHOME_USERNAME)` - The username to the AdGuard Home web server
- - `--adguardhome-password (env: EXTERNAL_DNS_ADGUARDHOME_PASSWORD)` - The password to the AdGuard Home web server
- - `--adguardhome-tls-skip-verify (env: EXTERNAL_DNS_ADGUARDHOME_TLS_SKIP_VERIFY)` - Skip verification of any TLS certificates served by the AdGuard Home web server.
+- `--adguardhome-server (env: EXTERNAL_DNS_ADGUARDHOME_SERVER)` - The address of the AdGuard Home web server
+- `--adguardhome-username (env: EXTERNAL_DNS_ADGUARDHOME_USERNAME)` - The username to the AdGuard Home web server
+- `--adguardhome-password (env: EXTERNAL_DNS_ADGUARDHOME_PASSWORD)` - The password to the AdGuard Home web server
 
 ## Verify ExternalDNS Works
 
@@ -126,7 +124,6 @@ kind: Ingress
 metadata:
   name: foo
 spec:
-  ingressClassName: nginx
   rules:
   - host: foo.bar.com
     http:
@@ -142,7 +139,7 @@ spec:
 
 ### Service Example
 
-The below sample application can be used to verify Services work.
+The below sample application can be used to verify services work.
 For services ExternalDNS will look for the annotation `external-dns.alpha.kubernetes.io/hostname` on the service and use the corresponding value.
 
 ```yaml
@@ -150,7 +147,7 @@ For services ExternalDNS will look for the annotation `external-dns.alpha.kubern
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx
+  name: my-application
   annotations:
     external-dns.alpha.kubernetes.io/hostname: nginx.external-dns-test.homelab.com
 spec:
@@ -165,19 +162,19 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx
+  name: my-application
 spec:
   selector:
     matchLabels:
-      app: nginx
+      app: my-application
   template:
     metadata:
       labels:
-        app: nginx
+        app: my-application
     spec:
       containers:
-      - image: nginx
-        name: nginx
+      - image: my-application
+        name: my-application
         ports:
         - containerPort: 80
           name: http

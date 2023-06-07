@@ -367,12 +367,11 @@ func main() {
 	case "adguardhome":
 		p, err = adguardhome.NewAdGuardHomeProvider(
 			adguardhome.AdGuardHomeConfig{
-				Server:                cfg.AdGuardHomeServer,
-				Username:              cfg.AdGuardHomeUsername,
-				Password:              cfg.AdGuardHomePassword,
-				TLSInsecureSkipVerify: cfg.AdGuardHomeTLSInsecureSkipVerify,
-				DomainFilter:          domainFilter,
-				DryRun:                cfg.DryRun,
+				Server:       cfg.AdGuardHomeServer,
+				Username:     cfg.AdGuardHomeUsername,
+				Password:     cfg.AdGuardHomePassword,
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
 			},
 		)
 	case "ibmcloud":

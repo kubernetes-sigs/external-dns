@@ -576,7 +576,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("adguardhome-server", "When using the AdGuardHome provider, the base URL of the AdGuardHome web server (required when --provider=adguardhome)").Default(defaultConfig.AdGuardHomeServer).StringVar(&cfg.AdGuardHomeServer)
 	app.Flag("adguardhome-username", "When using the AdGuardHome provider, the username to the server if it is protected").Default(defaultConfig.AdGuardHomeUsername).StringVar(&cfg.AdGuardHomeUsername)
 	app.Flag("adguardhome-password", "When using the AdGuardHome provider, the password to the server if it is protected").Default(defaultConfig.AdGuardHomePassword).StringVar(&cfg.AdGuardHomePassword)
-	app.Flag("adguardhome-tls-skip-verify", "When using the AdGuardHome provider, disable verification of any TLS certificates").BoolVar(&cfg.AdGuardHomeTLSInsecureSkipVerify)
 
 	// Flags related to the Plural provider
 	app.Flag("plural-cluster", "When using the plural provider, specify the cluster name you're running with").Default(defaultConfig.PluralCluster).StringVar(&cfg.PluralCluster)

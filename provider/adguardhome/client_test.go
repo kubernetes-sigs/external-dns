@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -104,17 +104,44 @@ func TestAdGuardHomeClient_CreateRecord(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	// Create a sample endpoint
-	endpoint := &endpoint.Endpoint{
+	// Test unsupported record type
+	err = client.createRecord(context.Background(), &endpoint.Endpoint{
 		DNSName:    "example.com",
 		Targets:    []string{"192.168.0.1"},
-		RecordType: endpoint.RecordTypeA,
-	}
+		RecordType: "MX",
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "unsupported record type: MX for example.com", err.Error())
 
-	// Call the createRecord method
-	err = client.createRecord(context.Background(), endpoint)
+	// Test unsupported record type
+	err = client.createRecord(context.Background(), &endpoint.Endpoint{
+		DNSName:    "example.com",
+		Targets:    []string{"192.168.0.1"},
+		RecordType: "TXT",
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "unsupported record type: TXT for example.com", err.Error())
 
-	// Verify the result
+	// Test supported record types
+	err = client.createRecord(context.Background(), &endpoint.Endpoint{
+		DNSName:    "example.com",
+		Targets:    []string{"192.168.0.1"},
+		RecordType: "A",
+	})
+	assert.NoError(t, err)
+
+	err = client.createRecord(context.Background(), &endpoint.Endpoint{
+		DNSName:    "example.com",
+		Targets:    []string{"2001:db8::1"},
+		RecordType: "AAAA",
+	})
+	assert.NoError(t, err)
+
+	err = client.createRecord(context.Background(), &endpoint.Endpoint{
+		DNSName:    "example.com",
+		Targets:    []string{"target.example.net"},
+		RecordType: "CNAME",
+	})
 	assert.NoError(t, err)
 }
 

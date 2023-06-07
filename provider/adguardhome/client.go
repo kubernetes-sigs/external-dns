@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2023 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package adguardhome
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,13 +80,7 @@ func newAdGuardHomeClient(cfg AdGuardHomeConfig) (adGuardHomeAPI, error) {
 	}
 
 	httpClient := instrumented_http.NewClient(
-		&http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: cfg.TLSInsecureSkipVerify,
-				},
-			},
-		},
+		&http.Client{},
 		&instrumented_http.Callbacks{})
 
 	client := &adGuardHomeClient{
@@ -165,17 +158,21 @@ func (c *adGuardHomeClient) listRecords(ctx context.Context) ([]*endpoint.Endpoi
 }
 
 func (c *adGuardHomeClient) handleRecord(ctx context.Context, ep *endpoint.Endpoint, action string) error {
+	if c.cfg.DryRun {
+		return nil
+	}
+
 	record := adGuardHomeEntry{
 		Domain: ep.DNSName,
 		Answer: ep.Targets[0],
 	}
 
-	url := c.BaseURL.ResolveReference(&url.URL{Path: "/control/rewrite/" + action})
 	body, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
 
+	url := c.BaseURL.ResolveReference(&url.URL{Path: "/control/rewrite/" + action})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url.String(), bytes.NewBuffer(body))
 	if err != nil {
 		return err
@@ -189,6 +186,9 @@ func (c *adGuardHomeClient) handleRecord(ctx context.Context, ep *endpoint.Endpo
 }
 
 func (c *adGuardHomeClient) createRecord(ctx context.Context, ep *endpoint.Endpoint) error {
+	if ep.RecordType != "A" && ep.RecordType != "AAAA" && ep.RecordType != "CNAME" {
+		return fmt.Errorf("unsupported record type: %s for %s", ep.RecordType, ep.DNSName)
+	}
 	return c.handleRecord(ctx, ep, "add")
 }
 
@@ -197,6 +197,10 @@ func (c *adGuardHomeClient) deleteRecord(ctx context.Context, ep *endpoint.Endpo
 }
 
 func (c *adGuardHomeClient) updateRecord(ctx context.Context, oldEp, newEp *endpoint.Endpoint) error {
+	if c.cfg.DryRun {
+		return nil
+	}
+
 	record := adGuardHomeUpdateEntry{
 		Target: adGuardHomeEntry{
 			Domain: oldEp.DNSName,
@@ -207,12 +211,12 @@ func (c *adGuardHomeClient) updateRecord(ctx context.Context, oldEp, newEp *endp
 			Answer: newEp.Targets[0],
 		},
 	}
-	url := c.BaseURL.ResolveReference(&url.URL{Path: "/control/rewrite/update"})
 	body, err := json.Marshal(record)
 	if err != nil {
 		return err
 	}
 
+	url := c.BaseURL.ResolveReference(&url.URL{Path: "/control/rewrite/update"})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url.String(), bytes.NewBuffer(body))
 	if err != nil {
 		return err
