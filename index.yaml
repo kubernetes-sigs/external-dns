@@ -3,6 +3,37 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: changed
+          description: "Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5)."
+        - kind: changed
+          description: "Adding missing gateway-httproute cluster role permission."
+    apiVersion: v2
+    appVersion: 0.13.5
+    created: "2023-06-07T19:42:44.684700411Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: f89bb166fc3c05c9c7bbae62b97b3ab385b555c1d30920a683678671ac18f9b3
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.13.0/external-dns-1.13.0.tgz
+    version: 1.13.0
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Added support for ServiceMonitor relabelling."
         - kind: changed
@@ -541,4 +572,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2023-03-30T10:18:22.979101415Z"
+generated: "2023-06-07T19:42:44.684824613Z"
