@@ -494,7 +494,7 @@ func TestAWSRecords(t *testing.T) {
 	records, err := provider.Records(context.Background())
 	require.NoError(t, err)
 
-	validateEndpoints(t, records, []*endpoint.Endpoint{
+	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("list-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
 		endpoint.NewEndpointWithTTL("list-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
 		endpoint.NewEndpointWithTTL("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8"),
@@ -511,7 +511,7 @@ func TestAWSRecords(t *testing.T) {
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationContinentCode, "EU"),
 		endpoint.NewEndpointWithTTL("geolocation-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificGeolocationCountryCode, "DE"),
 		endpoint.NewEndpointWithTTL("geolocation-subdivision-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificGeolocationSubdivisionCode, "NY"),
-		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id"),
+		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "foo.example.com").WithSetIdentifier("test-set-1").WithProviderSpecific(providerSpecificWeight, "10").WithProviderSpecific(providerSpecificHealthCheckID, "foo-bar-healthcheck-id").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpointWithTTL("healthcheck-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "4.3.2.1").WithSetIdentifier("test-set-2").WithProviderSpecific(providerSpecificWeight, "20").WithProviderSpecific(providerSpecificHealthCheckID, "abc-def-healthcheck-id"),
 		endpoint.NewEndpointWithTTL("mail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 mailhost1.example.com", "20 mailhost2.example.com"),
 	})
@@ -529,11 +529,11 @@ func TestAWSAdjustEndpoints(t *testing.T) {
 		endpoint.NewEndpoint("cname-test-elb-no-eth.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "false"), // eth = evaluate target health
 	}
 
-	provider.AdjustEndpoints(records)
+	records = provider.AdjustEndpoints(records)
 
-	validateEndpoints(t, records, []*endpoint.Endpoint{
+	validateEndpoints(t, provider, records, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("a-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, "8.8.8.8"),
-		endpoint.NewEndpoint("cname-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.example.com"),
+		endpoint.NewEndpoint("cname-test.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.example.com").WithProviderSpecific(providerSpecificAlias, "false"),
 		endpoint.NewEndpoint("cname-test-alias.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "alias-target.zone-2.ext-dns-test-2.teapot.zalan.do").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpoint("cname-test-elb.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true").WithProviderSpecific(providerSpecificEvaluateTargetHealth, "true"),
 		endpoint.NewEndpoint("cname-test-elb-no-alias.zone-2.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeCNAME, "foo.eu-central-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "false"),
@@ -1426,7 +1426,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 	records, err := provider.Records(ctx)
 	require.NoError(t, err)
 
-	validateEndpoints(t, records, endpoints)
+	validateEndpoints(t, provider, records, endpoints)
 }
 
 func TestAWSsubmitChangesError(t *testing.T) {
@@ -1607,8 +1607,11 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 	require.Equal(t, 0, len(batchCs))
 }
 
-func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
+func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
 	assert.True(t, testutils.SameEndpoints(endpoints, expected), "actual and expected endpoints don't match. %+v:%+v", endpoints, expected)
+
+	normalized := provider.AdjustEndpoints(endpoints)
+	assert.True(t, testutils.SameEndpoints(normalized, expected), "actual and normalized endpoints don't match. %+v:%+v", endpoints, normalized)
 }
 
 func validateAWSZones(t *testing.T, zones map[string]*route53.HostedZone, expected map[string]*route53.HostedZone) {
@@ -1840,51 +1843,6 @@ func TestAWSSuitableZones(t *testing.T) {
 	}
 }
 
-func TestAWSHealthTargetAnnotation(tt *testing.T) {
-	comparator := func(name, previous, current string) bool {
-		return previous == current
-	}
-	for _, test := range []struct {
-		name               string
-		current            *endpoint.Endpoint
-		desired            *endpoint.Endpoint
-		propertyComparator func(name, previous, current string) bool
-		shouldUpdate       bool
-	}{
-		{
-			name: "skip AWS target health",
-			current: &endpoint.Endpoint{
-				RecordType: "A",
-				DNSName:    "foo.com",
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "aws/evaluate-target-health", Value: "true"},
-				},
-			},
-			desired: &endpoint.Endpoint{
-				DNSName:    "foo.com",
-				RecordType: "A",
-				ProviderSpecific: []endpoint.ProviderSpecificProperty{
-					{Name: "aws/evaluate-target-health", Value: "false"},
-				},
-			},
-			propertyComparator: comparator,
-			shouldUpdate:       false,
-		},
-	} {
-		tt.Run(test.name, func(t *testing.T) {
-			provider := &AWSProvider{}
-			plan := &plan.Plan{
-				Current:            []*endpoint.Endpoint{test.current},
-				Desired:            []*endpoint.Endpoint{test.desired},
-				PropertyComparator: provider.PropertyValuesEqual,
-				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-			}
-			plan = plan.Calculate()
-			assert.Equal(t, test.shouldUpdate, len(plan.Changes.UpdateNew) == 1)
-		})
-	}
-}
-
 func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone) {
 	params := &route53.CreateHostedZoneInput{
 		CallerReference:  aws.String("external-dns.alpha.kubernetes.io/test-zone"),
@@ -1908,7 +1866,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []*route53.Resou
 	endpoints, err := provider.Records(ctx)
 	require.NoError(t, err)
 
-	validateEndpoints(t, endpoints, []*endpoint.Endpoint{})
+	validateEndpoints(t, provider, endpoints, []*endpoint.Endpoint{})
 
 	var changes Route53Changes
 	for _, record := range records {
@@ -2071,13 +2029,13 @@ func TestRequiresDeleteCreate(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"foo.bar."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
 
 	oldRecordType := endpoint.NewEndpointWithTTL("recordType", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "8.8.8.8")
-	newRecordType := endpoint.NewEndpointWithTTL("recordType", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar")
+	newRecordType := endpoint.NewEndpointWithTTL("recordType", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar").WithProviderSpecific(providerSpecificAlias, "false")
 
 	assert.False(t, provider.requiresDeleteCreate(oldRecordType, oldRecordType), "actual and expected endpoints don't match. %+v:%+v", oldRecordType, oldRecordType)
 	assert.True(t, provider.requiresDeleteCreate(oldRecordType, newRecordType), "actual and expected endpoints don't match. %+v:%+v", oldRecordType, newRecordType)
 
-	oldCNAMEAlias := endpoint.NewEndpointWithTTL("CNAMEAlias", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar")
-	newCNAMEAlias := endpoint.NewEndpointWithTTL("CNAMEAlias", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.us-east-1.elb.amazonaws.com")
+	oldCNAMEAlias := endpoint.NewEndpointWithTTL("CNAMEAlias", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar").WithProviderSpecific(providerSpecificAlias, "false")
+	newCNAMEAlias := endpoint.NewEndpointWithTTL("CNAMEAlias", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "bar.us-east-1.elb.amazonaws.com").WithProviderSpecific(providerSpecificAlias, "true")
 
 	assert.False(t, provider.requiresDeleteCreate(oldCNAMEAlias, oldCNAMEAlias), "actual and expected endpoints don't match. %+v:%+v", oldCNAMEAlias, oldCNAMEAlias.DNSName)
 	assert.True(t, provider.requiresDeleteCreate(oldCNAMEAlias, newCNAMEAlias), "actual and expected endpoints don't match. %+v:%+v", oldCNAMEAlias, newCNAMEAlias)

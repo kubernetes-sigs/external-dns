@@ -47,10 +47,12 @@ const (
 	// As we are using the standard AWS client, this should already be compliant.
 	// Hence, ifever AWS decides to raise this limit, we will automatically reduce the pressure on rate limits
 	route53PageSize = "300"
-	// provider specific key that designates whether an AWS ALIAS record has the EvaluateTargetHealth
-	// field set to true.
-	providerSpecificAlias                      = "alias"
-	providerSpecificTargetHostedZone           = "aws/target-hosted-zone"
+	// providerSpecificAlias specifies whether a CNAME endpoint maps to an AWS ALIAS record.
+	providerSpecificAlias            = "alias"
+	providerSpecificTargetHostedZone = "aws/target-hosted-zone"
+	// providerSpecificEvaluateTargetHealth specifies whether an AWS ALIAS record
+	// has the EvaluateTargetHealth field set to true. Present iff the endpoint
+	// has a `providerSpecificAlias` value of `true`.
 	providerSpecificEvaluateTargetHealth       = "aws/evaluate-target-health"
 	providerSpecificWeight                     = "aws/weight"
 	providerSpecificRegion                     = "aws/region"
@@ -283,13 +285,6 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	return provider, nil
 }
 
-func (p *AWSProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == "aws/evaluate-target-health" {
-		return true
-	}
-	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
-}
-
 // Zones returns the list of hosted zones.
 func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone, error) {
 	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
@@ -390,7 +385,11 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 					targets[idx] = aws.StringValue(rr.Value)
 				}
 
-				newEndpoints = append(newEndpoints, endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...))
+				ep := endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...)
+				if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
+					ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
+				}
+				newEndpoints = append(newEndpoints, ep)
 			}
 
 			if r.AliasTarget != nil {
@@ -466,8 +465,12 @@ func (p *AWSProvider) requiresDeleteCreate(old *endpoint.Endpoint, new *endpoint
 	}
 
 	// an ALIAS record change to/from a CNAME
-	if old.RecordType == endpoint.RecordTypeCNAME && useAlias(old, p.preferCNAME) != useAlias(new, p.preferCNAME) {
-		return true
+	if old.RecordType == endpoint.RecordTypeCNAME {
+		oldAlias, _ := old.GetProviderSpecificProperty(providerSpecificAlias)
+		newAlias, _ := new.GetProviderSpecificProperty(providerSpecificAlias)
+		if oldAlias != newAlias {
+			return true
+		}
 	}
 
 	// a set identifier change
@@ -667,23 +670,29 @@ func (p *AWSProvider) newChanges(action string, endpoints []*endpoint.Endpoint) 
 func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	for _, ep := range endpoints {
 		alias := false
-		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
+		if ep.RecordType != endpoint.RecordTypeCNAME {
+			ep.DeleteProviderSpecificProperty(providerSpecificAlias)
+		} else if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
 			alias = aliasString == "true"
-		} else if useAlias(ep, p.preferCNAME) {
-			alias = true
-			log.Debugf("Modifying endpoint: %v, setting %s=true", ep, providerSpecificAlias)
-			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
-				Name:  providerSpecificAlias,
-				Value: "true",
-			})
+			if !alias && aliasString != "false" {
+				ep.SetProviderSpecificProperty(providerSpecificAlias, "false")
+			}
+		} else {
+			alias = useAlias(ep, p.preferCNAME)
+			log.Debugf("Modifying endpoint: %v, setting %s=%v", ep, providerSpecificAlias, alias)
+			ep.SetProviderSpecificProperty(providerSpecificAlias, strconv.FormatBool(alias))
 		}
 
-		if _, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); alias && !ok {
-			log.Debugf("Modifying endpoint: %v, setting %s=%t", ep, providerSpecificEvaluateTargetHealth, p.evaluateTargetHealth)
-			ep.ProviderSpecific = append(ep.ProviderSpecific, endpoint.ProviderSpecificProperty{
-				Name:  providerSpecificEvaluateTargetHealth,
-				Value: fmt.Sprintf("%t", p.evaluateTargetHealth),
-			})
+		if alias {
+			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
+				if prop != "true" && prop != "false" {
+					ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, "false")
+				}
+			} else {
+				ep.SetProviderSpecificProperty(providerSpecificEvaluateTargetHealth, strconv.FormatBool(p.evaluateTargetHealth))
+			}
+		} else {
+			ep.DeleteProviderSpecificProperty(providerSpecificEvaluateTargetHealth)
 		}
 	}
 	return endpoints

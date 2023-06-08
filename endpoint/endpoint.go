@@ -222,11 +222,7 @@ func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 // warrant its own field on the Endpoint object itself. It differs from Labels in the fact that it's
 // not persisted in the Registry but only kept in memory during a single record synchronization.
 func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
-	if e.ProviderSpecific == nil {
-		e.ProviderSpecific = ProviderSpecific{}
-	}
-
-	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+	e.SetProviderSpecificProperty(key, value)
 	return e
 }
 
@@ -238,6 +234,30 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
+func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
+	for i, providerSpecific := range e.ProviderSpecific {
+		if providerSpecific.Name == key {
+			e.ProviderSpecific[i] = ProviderSpecificProperty{
+				Name:  key,
+				Value: value,
+			}
+			return
+		}
+	}
+
+	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+}
+
+func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
+	for i, providerSpecific := range e.ProviderSpecific {
+		if providerSpecific.Name == key {
+			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)
+			return
+		}
+	}
 }
 
 func (e *Endpoint) String() string {
