@@ -236,15 +236,6 @@ type AWSConfig struct {
 func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
 
-	config.WithHTTPClient(
-		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		}),
-	)
-
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
 		SharedConfigState: session.SharedConfigEnable,
@@ -252,6 +243,15 @@ func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate AWS session")
 	}
+
+	session.Config.WithHTTPClient(
+		instrumented_http.NewClient(session.Config.HTTPClient, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		}),
+	)
 
 	if awsConfig.AssumeRole != "" {
 		if awsConfig.AssumeRoleExternalID != "" {

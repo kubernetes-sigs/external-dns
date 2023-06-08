@@ -17,9 +17,20 @@ limitations under the License.
 package aws
 
 import (
+	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/pem"
 	"fmt"
+	"math/big"
 	"net"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -28,6 +39,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/route53"
+	"github.com/linki/instrumented_http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -2074,4 +2086,106 @@ func TestRequiresDeleteCreate(t *testing.T) {
 
 	assert.False(t, provider.requiresDeleteCreate(oldSetIdentifier, oldSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, oldSetIdentifier)
 	assert.True(t, provider.requiresDeleteCreate(oldSetIdentifier, newSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, newSetIdentifier)
+}
+
+func TestNewAWSProvider(t *testing.T) {
+	t.Run("should create provider that accepts AWS_CA_BUNDLE env var with instrumented client", func(t *testing.T) {
+		caFileName, serverTLSConf := setupCACertFile(t)
+		err := os.Setenv("AWS_CA_BUNDLE", caFileName)
+		require.NoError(t, err)
+
+		p, err := NewAWSProvider(AWSConfig{})
+		require.NoError(t, err)
+		// assert provider has real client
+		client, ok := p.client.(*route53.Route53)
+		require.True(t, ok)
+		// transport should contain instrumented http
+		_, ok = client.Config.HTTPClient.Transport.(*instrumented_http.Transport)
+		require.True(t, ok)
+
+		// ensure client can connect to tls server
+		tlsServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+		tlsServer.TLS = serverTLSConf
+		tlsServer.StartTLS()
+		resp, err := client.Config.HTTPClient.Get(tlsServer.URL)
+		require.NoError(t, err)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+	})
+}
+
+func setupCACertFile(t *testing.T) (string, *tls.Config) {
+	tempfile, err := os.CreateTemp(os.TempDir(), "ca-bundle")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := os.Remove(tempfile.Name())
+		require.NoError(t, err)
+	})
+
+	serverCertConf := setupCerts(t, tempfile)
+	err = tempfile.Close()
+	require.NoError(t, err)
+	return tempfile.Name(), serverCertConf
+}
+
+func setupCerts(t testing.TB, file *os.File) *tls.Config {
+	// setup CA certificate
+	ca := &x509.Certificate{
+		SerialNumber: big.NewInt(int64(time.Now().Year())),
+		Subject: pkix.Name{
+			Organization: []string{"Company, INC."},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().AddDate(10, 0, 0),
+		IsCA:                  true,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
+		BasicConstraintsValid: true,
+	}
+
+	caPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	caBytes, err := x509.CreateCertificate(rand.Reader, ca, ca, &caPrivKey.PublicKey, caPrivKey)
+	require.NoError(t, err)
+	// PEM encode and save to file
+	err = pem.Encode(file, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: caBytes,
+	})
+	require.NoError(t, err)
+
+	// setup server cert
+	serverCert := &x509.Certificate{
+		SerialNumber: big.NewInt(int64(time.Now().Year())),
+		Subject: pkix.Name{
+			Organization: []string{"Company, INC."},
+		},
+		IPAddresses: []net.IP{net.ParseIP("127.0.0.1")},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().AddDate(1, 0, 0),
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+	}
+	serverPrivKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	serverCertBytes, err := x509.CreateCertificate(rand.Reader, serverCert, ca, &serverPrivKey.PublicKey, caPrivKey)
+	require.NoError(t, err)
+	serverCertPEM := &bytes.Buffer{}
+	err = pem.Encode(serverCertPEM, &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: serverCertBytes,
+	})
+	require.NoError(t, err)
+	serverPrivKeyPEM := &bytes.Buffer{}
+	err = pem.Encode(serverPrivKeyPEM, &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(serverPrivKey),
+	})
+	require.NoError(t, err)
+
+	cert, err := tls.X509KeyPair(serverCertPEM.Bytes(), serverPrivKeyPEM.Bytes())
+	require.NoError(t, err)
+	serverCertConf := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
+	return serverCertConf
 }
