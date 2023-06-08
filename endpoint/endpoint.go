@@ -230,14 +230,14 @@ func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
 	return e
 }
 
-// GetProviderSpecificProperty returns a ProviderSpecificProperty if the property exists.
-func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProperty, bool) {
+// GetProviderSpecificProperty returns the value of a ProviderSpecificProperty if the property exists.
+func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	for _, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
-			return providerSpecific, true
+			return providerSpecific.Value, true
 		}
 	}
-	return ProviderSpecificProperty{}, false
+	return "", false
 }
 
 func (e *Endpoint) String() string {

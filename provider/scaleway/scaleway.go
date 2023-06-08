@@ -278,9 +278,9 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	}
 	priority := scalewayDefaultPriority
 	if prop, ok := ep.GetProviderSpecificProperty(scalewayPriorityKey); ok {
-		prio, err := strconv.ParseUint(prop.Value, 10, 32)
+		prio, err := strconv.ParseUint(prop, 10, 32)
 		if err != nil {
-			log.Errorf("Failed parsing value of %s: %s: %v; using priority of %d", scalewayPriorityKey, prop.Value, err, scalewayDefaultPriority)
+			log.Errorf("Failed parsing value of %s: %s: %v; using priority of %d", scalewayPriorityKey, prop, err, scalewayDefaultPriority)
 		} else {
 			priority = uint32(prio)
 		}
