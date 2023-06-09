@@ -34,7 +34,7 @@ type mockAPIService struct {
 }
 
 func NewMockService(privateZones []*privatedns.PrivateZone, privateZoneRecords map[string][]*privatedns.PrivateZoneRecord, dnspodDomains []*dnspod.DomainListItem, dnspodRecords map[string][]*dnspod.RecordListItem) *mockAPIService {
-	rand.Seed(time.Now().Unix())
+	rand.New(rand.NewSource(time.Now().Unix()))
 	return &mockAPIService{
 		privateZones:       privateZones,
 		privateZoneRecords: privateZoneRecords,

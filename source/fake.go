@@ -41,7 +41,7 @@ const (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // NewFakeSource creates a new fakeSource with the given config.
