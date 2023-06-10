@@ -26,7 +26,6 @@ import (
 // TargetFilterInterface defines the interface to select matching targets for a specific provider or runtime
 type TargetFilterInterface interface {
 	Match(target string) bool
-	IsConfigured() bool
 }
 
 // TargetNetFilter holds a lists of valid target names
@@ -61,11 +60,6 @@ func NewTargetNetFilterWithExclusions(targetFilterNets []string, excludeNets []s
 	return TargetNetFilter{FilterNets: prepareTargetFilters(targetFilterNets), excludeNets: prepareTargetFilters(excludeNets)}
 }
 
-// NewTargetNetFilter returns a new TargetNetFilter given a comma separated list of targets
-func NewTargetNetFilter(targetFilterNets []string) TargetNetFilter {
-	return TargetNetFilter{FilterNets: prepareTargetFilters(targetFilterNets)}
-}
-
 // Match checks whether a target can be found in the TargetNetFilter.
 func (tf TargetNetFilter) Match(target string) bool {
 	return matchTargetNetFilter(tf.FilterNets, target, true) && !matchTargetNetFilter(tf.excludeNets, target, false)
@@ -88,12 +82,4 @@ func matchTargetNetFilter(filters []*net.IPNet, target string, emptyval bool) bo
 	}
 
 	return false
-}
-
-// IsConfigured returns true if TargetFilter is configured, false otherwise
-func (tf TargetNetFilter) IsConfigured() bool {
-	if len(tf.FilterNets) == 1 {
-		return tf.FilterNets[0].Network() != ""
-	}
-	return len(tf.FilterNets) > 0
 }

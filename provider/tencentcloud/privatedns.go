@@ -119,7 +119,7 @@ func (p *TencentCloudProvider) getPrivateZones() ([]*privatedns.PrivateZone, err
 
 	privateZonesFilter := make([]*privatedns.PrivateZone, 0)
 	for _, privateZone := range privateZones {
-		if p.domainFilter.IsConfigured() && !p.domainFilter.Match(*privateZone.Domain) {
+		if !p.domainFilter.Match(*privateZone.Domain) {
 			continue
 		}
 		privateZonesFilter = append(privateZonesFilter, privateZone)
