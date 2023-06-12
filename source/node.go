@@ -130,7 +130,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		addrs, err := ns.nodeAddresses(node)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get node address from %s: %s", node.Name, err.Error())
+			return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
 		}
 
 		ep.Labels = endpoint.NewLabels()

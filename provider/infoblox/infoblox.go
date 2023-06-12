@@ -187,7 +187,7 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch zones: %s", err)
+		return nil, fmt.Errorf("could not fetch zones: %w", err)
 	}
 
 	for _, zone := range zones {
@@ -211,7 +211,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objA.Zone = zone.Fqdn
 		err = p.client.GetObject(objA, "", searchParams, &resA)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch A records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resA {
 			// Check if endpoint already exists and add to existing endpoint if it does
@@ -257,7 +257,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objH.Zone = zone.Fqdn
 		err = p.client.GetObject(objH, "", searchParams, &resH)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch host records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
@@ -279,7 +279,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objC.Zone = zone.Fqdn
 		err = p.client.GetObject(objC, "", searchParams, &resC)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resC {
 			logrus.Debugf("Record='%s' CNAME:'%s'", res.Name, res.Canonical)
@@ -298,7 +298,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 				objP.View = p.view
 				err = p.client.GetObject(objP, "", searchParams, &resP)
 				if err != nil && !isNotFoundError(err) {
-					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
+					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %w", zone.Fqdn, err)
 				}
 				for _, res := range resP {
 					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
@@ -315,7 +315,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		)
 		err = p.client.GetObject(objT, "", searchParams, &resT)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resT {
 			// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
