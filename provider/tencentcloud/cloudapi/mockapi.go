@@ -18,7 +18,6 @@ package cloudapi
 
 import (
 	"math/rand"
-	"time"
 
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	dnspod "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod/v20210323"
@@ -34,7 +33,6 @@ type mockAPIService struct {
 }
 
 func NewMockService(privateZones []*privatedns.PrivateZone, privateZoneRecords map[string][]*privatedns.PrivateZoneRecord, dnspodDomains []*dnspod.DomainListItem, dnspodRecords map[string][]*dnspod.RecordListItem) *mockAPIService {
-	rand.Seed(time.Now().Unix())
 	return &mockAPIService{
 		privateZones:       privateZones,
 		privateZoneRecords: privateZoneRecords,

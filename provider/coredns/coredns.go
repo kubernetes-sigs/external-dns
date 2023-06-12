@@ -37,10 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 const (
 	priority    = 10 // default priority when nothing is set
 	etcdTimeout = 5 * time.Second

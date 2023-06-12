@@ -46,7 +46,7 @@ const (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // RDNSClient is an interface to work with Rancher DNS(RDNS) records in etcdv3 backend.

@@ -23,7 +23,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v4
       with:
-        go-version: 1.19
+        go-version: '1.20'
       id: go
 
     - name: Check out code into the Go module directory
@@ -38,7 +38,7 @@ jobs:
             apt update
             apt install -y make gcc libc-dev git
       if: github.actor == 'nektos/act'
-  
+
     - name: Test
       run: make test
 
