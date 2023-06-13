@@ -6,6 +6,7 @@ The DynamoDB registry stores DNS record metadata in an AWS DynamoDB table.
 
 By default, the DynamoDB registry stores data in the table named `external-dns`.
 A different table may be specified using the `--dynamodb-table` flag.
+A different region may be specified using the `--dynamodb-region` flag.
 
 The table must have a partition (hash) key named `k` and string type.
 The table must not have a sort (range) key.

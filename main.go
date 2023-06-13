@@ -25,6 +25,7 @@ import (
 	"syscall"
 	"time"
 
+	awsSDK "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -397,7 +398,11 @@ func main() {
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession), cfg.AWSDynamoDBTable, cfg.TXTCacheInterval)
+		config := awsSDK.NewConfig()
+		if cfg.AWSDynamoDBRegion != "" {
+			config = config.WithRegion(cfg.AWSDynamoDBRegion)
+		}
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession, config), cfg.AWSDynamoDBTable, cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
