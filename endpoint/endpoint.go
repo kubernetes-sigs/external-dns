@@ -251,6 +251,7 @@ func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
 	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
 }
 
+// DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
 func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
