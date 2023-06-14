@@ -42,6 +42,11 @@ type NextDNSConfig struct {
 	DomainFilter     endpoint.DomainFilter
 }
 
+type nextDNSEntryKey struct {
+	Target     string
+	RecordType string
+}
+
 func NewNextDNSProvider(cfg NextDNSConfig) (*NextDnsProvider, error) {
 	if cfg.NextDNSAPIKey == "" {
 		return nil, errors.New("no nextdns api key provided")
@@ -62,80 +67,88 @@ func NewNextDNSProvider(cfg NextDNSConfig) (*NextDnsProvider, error) {
 
 func (p *NextDnsProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 
-	for _, change := range changes.Delete {
-		id, exists := change.GetProviderSpecificProperty("id")
-		switch change.RecordType {
-		case "A":
-			fallthrough
-		case "CNAME":
-			if exists {
-				if p.dryRun {
-					log.Infof("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
-				} else {
-					log.Debugf("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
-					p.api.Delete(ctx, &api.DeleteRewritesRequest{
-						ProfileID: p.profileId,
-						ID:        id.Value,
-					})
+	for _, ep := range changes.Delete {
+		if err := deleteRecord(ep, p, ctx); err != nil {
+			return err
+		}
+	}
+
+	// Handle updated state - there are no endpoints for updating in place.
+	updateNew := make(map[nextDNSEntryKey]*endpoint.Endpoint)
+	for _, ep := range changes.UpdateNew {
+		key := nextDNSEntryKey{ep.DNSName, ep.RecordType}
+		updateNew[key] = ep
+	}
+
+	for _, ep := range changes.UpdateOld {
+		// Check if this existing entry has an exact match for an updated entry and skip it if so.
+		key := nextDNSEntryKey{ep.DNSName, ep.RecordType}
+		if newRecord := updateNew[key]; newRecord != nil {
+			if newRecord.Targets[0] == ep.Targets[0] {
+				delete(updateNew, key)
+				continue
+			}
+		}
+		if err := deleteRecord(ep, p, ctx); err != nil {
+			return err
+		}
+	}
+
+	for _, ep := range changes.Create {
+		if err := createRecord(ep, p, ctx); err != nil {
+			return err
+		}
+	}
+
+	for _, ep := range updateNew {
+		if err := createRecord(ep, p, ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func deleteRecord(ep *endpoint.Endpoint, p *NextDnsProvider, ctx context.Context) error {
+	id, exists := ep.GetProviderSpecificProperty("id")
+	switch ep.RecordType {
+	case "A":
+		fallthrough
+	case "CNAME":
+		if exists {
+			if p.dryRun {
+				log.Infof("DELETE[%s]: %s -> %s", id, ep.DNSName, ep.Targets[0])
+			} else {
+				log.Debugf("DELETE[%s]: %s -> %s", id, ep.DNSName, ep.Targets[0])
+				if err := p.api.Delete(ctx, &api.DeleteRewritesRequest{
+					ProfileID: p.profileId,
+					ID:        id.Value,
+				}); err != nil {
+					return err
 				}
 			}
 		}
 	}
+	return nil
+}
 
-	for _, change := range changes.UpdateOld {
-		id, exists := change.GetProviderSpecificProperty("id")
-		switch change.RecordType {
-		case "A":
-			fallthrough
-		case "CNAME":
-			if exists {
-				if p.dryRun {
-					log.Infof("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
-				} else {
-					log.Debugf("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
-					p.api.Delete(ctx, &api.DeleteRewritesRequest{
-						ProfileID: p.profileId,
-						ID:        id.Value,
-					})
-				}
-			}
-		}
-	}
-
-	for _, change := range changes.UpdateNew {
-		switch change.RecordType {
-		case "A":
-			fallthrough
-		case "CNAME":
-			if p.dryRun {
-				log.Infof("CREATE: %s -> %s", change.DNSName, change.Targets[0])
-			} else {
-				log.Debugf("CREATE: %s -> %s", change.DNSName, change.Targets[0])
-				p.api.Create(ctx, &api.CreateRewritesRequest{
-					ProfileID: p.profileId,
-					Rewrites: &api.Rewrites{
-						Name:    change.DNSName,
-						Content: change.Targets[0],
-					}})
-			}
-		}
-	}
-
-	for _, change := range changes.Create {
-		switch change.RecordType {
-		case "A":
-			fallthrough
-		case "CNAME":
-			if p.dryRun {
-				log.Infof("CREATE: %s -> %s", change.DNSName, change.Targets[0])
-			} else {
-				log.Debugf("CREATE: %s -> %s", change.DNSName, change.Targets[0])
-				p.api.Create(ctx, &api.CreateRewritesRequest{
-					ProfileID: p.profileId,
-					Rewrites: &api.Rewrites{
-						Name:    change.DNSName,
-						Content: change.Targets[0],
-					}})
+func createRecord(ep *endpoint.Endpoint, p *NextDnsProvider, ctx context.Context) error {
+	switch ep.RecordType {
+	case "A":
+		fallthrough
+	case "CNAME":
+		if p.dryRun {
+			log.Infof("CREATE: %s -> %s", ep.DNSName, ep.Targets[0])
+		} else {
+			log.Debugf("CREATE: %s -> %s", ep.DNSName, ep.Targets[0])
+			if _, err := p.api.Create(ctx, &api.CreateRewritesRequest{
+				ProfileID: p.profileId,
+				Rewrites: &api.Rewrites{
+					Name:    ep.DNSName,
+					Content: ep.Targets[0],
+				}},
+			); err != nil {
+				return err
 			}
 		}
 	}
