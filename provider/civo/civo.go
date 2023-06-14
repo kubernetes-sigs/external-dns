@@ -178,7 +178,7 @@ func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) e
 		log.Info("All records are already up to date")
 		return nil
 	}
-	
+
 	for _, change := range changes.Creates {
 		logFields := log.Fields{
 			"Type":     change.Options.Type,
