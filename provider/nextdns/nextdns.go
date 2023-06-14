@@ -18,6 +18,7 @@ package nextdns
 
 import (
 	"context"
+	"errors"
 
 	api "github.com/amalucelli/nextdns-go/nextdns"
 	log "github.com/sirupsen/logrus"
@@ -42,6 +43,13 @@ type NextDNSConfig struct {
 }
 
 func NewNextDNSProvider(cfg NextDNSConfig) (*NextDnsProvider, error) {
+	if cfg.NextDNSAPIKey == "" {
+		return nil, errors.New("no nextdns api key provided")
+	}
+	if cfg.NextDNSProfileId == "" {
+		return nil, errors.New("no nextdns profile id provided")
+	}
+
 	client, _ := api.New(api.WithAPIKey(cfg.NextDNSAPIKey))
 
 	return &NextDnsProvider{
@@ -64,6 +72,7 @@ func (p *NextDnsProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 				if p.dryRun {
 					log.Infof("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
 				} else {
+					log.Debugf("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
 					p.api.Delete(ctx, &api.DeleteRewritesRequest{
 						ProfileID: p.profileId,
 						ID:        id.Value,
@@ -83,6 +92,7 @@ func (p *NextDnsProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 				if p.dryRun {
 					log.Infof("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
 				} else {
+					log.Debugf("DELETE[%s]: %s -> %s", id, change.DNSName, change.Targets[0])
 					p.api.Delete(ctx, &api.DeleteRewritesRequest{
 						ProfileID: p.profileId,
 						ID:        id.Value,
@@ -100,6 +110,7 @@ func (p *NextDnsProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 			if p.dryRun {
 				log.Infof("CREATE: %s -> %s", change.DNSName, change.Targets[0])
 			} else {
+				log.Debugf("CREATE: %s -> %s", change.DNSName, change.Targets[0])
 				p.api.Create(ctx, &api.CreateRewritesRequest{
 					ProfileID: p.profileId,
 					Rewrites: &api.Rewrites{
@@ -118,6 +129,7 @@ func (p *NextDnsProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 			if p.dryRun {
 				log.Infof("CREATE: %s -> %s", change.DNSName, change.Targets[0])
 			} else {
+				log.Debugf("CREATE: %s -> %s", change.DNSName, change.Targets[0])
 				p.api.Create(ctx, &api.CreateRewritesRequest{
 					ProfileID: p.profileId,
 					Rewrites: &api.Rewrites{
@@ -142,7 +154,7 @@ func (p *NextDnsProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	for _, rewrite := range rewrites {
 		endpoint := endpoint.NewEndpoint(rewrite.Name, rewrite.Type, rewrite.Content).WithProviderSpecific("id", rewrite.ID)
 		out = append(out, endpoint)
-		log.Infof("Found rewrite [%s]: %s -> %s", rewrite.ID, rewrite.Name, rewrite.Content)
+		log.Debugf("Found rewrite [%s]: %s -> %s", rewrite.ID, rewrite.Name, rewrite.Content)
 	}
 
 	return out, nil
