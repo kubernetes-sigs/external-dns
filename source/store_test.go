@@ -145,6 +145,21 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 				Version:  "v1alpha1",
 				Resource: "ingressrouteudps",
 			}: "IngressRouteUDPList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressroutes",
+			}: "IngressRouteList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressroutetcps",
+			}: "IngressRouteTCPList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressrouteudps",
+			}: "IngressRouteUDPList",
 		}), nil)
 
 	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, minimalConfig)
