@@ -868,71 +868,75 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 	})
 	expectedRecords := []*endpoint.Endpoint{
 		{
-			DNSName:     "oldformat.test-zone.example.org",
-			Targets:     endpoint.Targets{"foo.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeCNAME,
-			ForceUpdate: true,
+			DNSName:    "oldformat.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
-		},
-		{
-			DNSName:     "oldformat2.test-zone.example.org",
-			Targets:     endpoint.Targets{"bar.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: true,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
 			},
 		},
 		{
-			DNSName:     "newformat.test-zone.example.org",
-			Targets:     endpoint.Targets{"foobar.nameserver.com"},
-			RecordType:  endpoint.RecordTypeNS,
-			ForceUpdate: false,
+			DNSName:    "oldformat2.test-zone.example.org",
+			Targets:    endpoint.Targets{"bar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
+			},
+		},
+		{
+			DNSName:    "newformat.test-zone.example.org",
+			Targets:    endpoint.Targets{"foobar.nameserver.com"},
+			RecordType: endpoint.RecordTypeNS,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		// Only TXT records with the wrong heritage are returned by Records()
 		{
-			DNSName:     "noheritage.test-zone.example.org",
-			Targets:     endpoint.Targets{"random"},
-			RecordType:  endpoint.RecordTypeTXT,
-			ForceUpdate: false,
+			DNSName:    "noheritage.test-zone.example.org",
+			Targets:    endpoint.Targets{"random"},
+			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				// No owner because it's not external-dns heritage
 				endpoint.OwnerLabelKey: "",
 			},
 		},
 		{
-			DNSName:     "oldformat-otherowner.test-zone.example.org",
-			Targets:     endpoint.Targets{"bar.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: false,
+			DNSName:    "oldformat-otherowner.test-zone.example.org",
+			Targets:    endpoint.Targets{"bar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				// Records() retrieves all the records of the zone, no matter the owner
 				endpoint.OwnerLabelKey: "otherowner",
 			},
 		},
 		{
-			DNSName:     "unmanaged1.test-zone.example.org",
-			Targets:     endpoint.Targets{"unmanaged1.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: false,
+			DNSName:    "unmanaged1.test-zone.example.org",
+			Targets:    endpoint.Targets{"unmanaged1.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
 		},
 		{
-			DNSName:     "unmanaged2.test-zone.example.org",
-			Targets:     endpoint.Targets{"unmanaged2.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeCNAME,
-			ForceUpdate: false,
+			DNSName:    "unmanaged2.test-zone.example.org",
+			Targets:    endpoint.Targets{"unmanaged2.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
-			DNSName:     "this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org",
-			Targets:     endpoint.Targets{"foo.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeCNAME,
-			ForceUpdate: false,
+			DNSName:    "this-is-a-63-characters-long-label-that-we-do-expect-will-work.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
@@ -967,64 +971,69 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 	})
 	expectedRecords := []*endpoint.Endpoint{
 		{
-			DNSName:     "oldformat.test-zone.example.org",
-			Targets:     endpoint.Targets{"foo.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeCNAME,
-			ForceUpdate: true,
+			DNSName:    "oldformat.test-zone.example.org",
+			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
+			},
 		},
 		{
-			DNSName:     "oldformat2.test-zone.example.org",
-			Targets:     endpoint.Targets{"bar.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: true,
+			DNSName:    "oldformat2.test-zone.example.org",
+			Targets:    endpoint.Targets{"bar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
+			},
+		},
+		{
+			DNSName:    "newformat.test-zone.example.org",
+			Targets:    endpoint.Targets{"foobar.nameserver.com"},
+			RecordType: endpoint.RecordTypeNS,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 		{
-			DNSName:     "newformat.test-zone.example.org",
-			Targets:     endpoint.Targets{"foobar.nameserver.com"},
-			RecordType:  endpoint.RecordTypeNS,
-			ForceUpdate: false,
-			Labels: map[string]string{
-				endpoint.OwnerLabelKey: "owner",
-			},
-		},
-		{
-			DNSName:     "noheritage.test-zone.example.org",
-			Targets:     endpoint.Targets{"random"},
-			RecordType:  endpoint.RecordTypeTXT,
-			ForceUpdate: false,
+			DNSName:    "noheritage.test-zone.example.org",
+			Targets:    endpoint.Targets{"random"},
+			RecordType: endpoint.RecordTypeTXT,
 			Labels: map[string]string{
 				// No owner because it's not external-dns heritage
 				endpoint.OwnerLabelKey: "",
 			},
 		},
 		{
-			DNSName:     "oldformat-otherowner.test-zone.example.org",
-			Targets:     endpoint.Targets{"bar.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: false,
+			DNSName:    "oldformat-otherowner.test-zone.example.org",
+			Targets:    endpoint.Targets{"bar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				// All the records of the zone are retrieved, no matter the owner
 				endpoint.OwnerLabelKey: "otherowner",
 			},
 		},
 		{
-			DNSName:     "unmanaged1.test-zone.example.org",
-			Targets:     endpoint.Targets{"unmanaged1.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeA,
-			ForceUpdate: false,
+			DNSName:    "unmanaged1.test-zone.example.org",
+			Targets:    endpoint.Targets{"unmanaged1.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeA,
 		},
 		{
-			DNSName:     "unmanaged2.test-zone.example.org",
-			Targets:     endpoint.Targets{"unmanaged2.loadbalancer.com"},
-			RecordType:  endpoint.RecordTypeCNAME,
-			ForceUpdate: false,
+			DNSName:    "unmanaged2.test-zone.example.org",
+			Targets:    endpoint.Targets{"unmanaged2.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
 
