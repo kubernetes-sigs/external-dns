@@ -164,6 +164,7 @@ type Config struct {
 	ExoscaleEndpoint                   string
 	ExoscaleAPIKey                     string `secure:"yes"`
 	ExoscaleAPISecret                  string `secure:"yes"`
+	ExoscaleAPIEnvironment             string
 	ExoscaleAPIZone                    string
 	CRDSourceAPIVersion                string
 	CRDSourceKind                      string
