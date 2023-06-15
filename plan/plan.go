@@ -163,7 +163,7 @@ func (p *Plan) Calculate() *Plan {
 		if row.current != nil && len(row.candidates) > 0 { // dns name is taken
 			update := t.resolver.ResolveUpdate(row.current, row.candidates)
 			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) || row.current.ForceUpdate {
+			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
 				inheritOwner(row.current, update)
 				changes.UpdateNew = append(changes.UpdateNew, update)
 				changes.UpdateOld = append(changes.UpdateOld, row.current)

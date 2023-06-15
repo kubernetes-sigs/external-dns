@@ -51,7 +51,6 @@ type PlanTestSuite struct {
 	domainFilterFiltered2            *endpoint.Endpoint
 	domainFilterFiltered3            *endpoint.Endpoint
 	domainFilterExcluded             *endpoint.Endpoint
-	forceUpdate                      *endpoint.Endpoint
 }
 
 func (suite *PlanTestSuite) SetupTest() {
@@ -230,12 +229,6 @@ func (suite *PlanTestSuite) SetupTest() {
 		DNSName:    "foo.ex.domain.tld",
 		Targets:    endpoint.Targets{"1.1.1.1"},
 		RecordType: "A",
-	}
-	suite.forceUpdate = &endpoint.Endpoint{
-		DNSName:     "foo.domain.tld",
-		Targets:     endpoint.Targets{"1.2.3.5"},
-		RecordType:  "A",
-		ForceUpdate: true,
 	}
 }
 
@@ -648,24 +641,6 @@ func (suite *PlanTestSuite) TestDomainFiltersUpdate() {
 	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
 	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
-}
-
-func (suite *PlanTestSuite) TestForceUpdate() {
-	current := []*endpoint.Endpoint{suite.forceUpdate}
-	desired := []*endpoint.Endpoint{suite.forceUpdate}
-	expectedUpdateOld := current
-	expectedUpdateNew := current
-
-	p := &Plan{
-		Policies:       []Policy{&SyncPolicy{}},
-		Current:        current,
-		Desired:        desired,
-		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
-	}
-
-	changes := p.Calculate().Changes
-	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
-	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
 }
 
 func (suite *PlanTestSuite) TestAAAARecords() {

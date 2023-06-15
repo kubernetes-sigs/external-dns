@@ -170,8 +170,6 @@ type Endpoint struct {
 	Targets Targets `json:"targets,omitempty"`
 	// RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
 	RecordType string `json:"recordType,omitempty"`
-	// Force planner to update record
-	ForceUpdate bool `json:"forceUpdate,omitempty"`
 	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
 	SetIdentifier string `json:"setIdentifier,omitempty"`
 	// TTL for the record
@@ -204,12 +202,11 @@ func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) 
 	}
 
 	return &Endpoint{
-		DNSName:     strings.TrimSuffix(dnsName, "."),
-		Targets:     cleanTargets,
-		RecordType:  recordType,
-		ForceUpdate: false,
-		Labels:      NewLabels(),
-		RecordTTL:   ttl,
+		DNSName:    strings.TrimSuffix(dnsName, "."),
+		Targets:    cleanTargets,
+		RecordType: recordType,
+		Labels:     NewLabels(),
+		RecordTTL:  ttl,
 	}
 }
 

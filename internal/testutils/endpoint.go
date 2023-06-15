@@ -63,8 +63,7 @@ func SameEndpoint(a, b *endpoint.Endpoint) bool {
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
 		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey] &&
 		a.Labels[endpoint.OwnedRecordLabelKey] == b.Labels[endpoint.OwnedRecordLabelKey] &&
-		SameProviderSpecific(a.ProviderSpecific, b.ProviderSpecific) &&
-		a.ForceUpdate == b.ForceUpdate
+		SameProviderSpecific(a.ProviderSpecific, b.ProviderSpecific)
 }
 
 // SameEndpoints compares two slices of endpoints regardless of order
