@@ -43,8 +43,11 @@ shareProcessNamespace: false
 
 podSecurityContext:
   fsGroup: 65534
+  seccompProfile:
+    type: RuntimeDefault
 
 securityContext:
+  allowPrivilegeEscalation: false
   runAsNonRoot: true
   runAsUser: 65534
   readOnlyRootFilesystem: true
