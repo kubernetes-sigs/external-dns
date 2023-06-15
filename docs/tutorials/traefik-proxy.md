@@ -51,7 +51,7 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list","watch"]
-- apiGroups: ["traefik.containo.us"]
+- apiGroups: ["traefik.containo.us","traefik.io"]
   resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
   verbs: ["get","watch","list"]
 ---
