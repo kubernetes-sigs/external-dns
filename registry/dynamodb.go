@@ -201,7 +201,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 				key := fromDynamoKey(request.Parameters[0])
 				for i, endpoint := range filteredChanges.Create {
 					if endpoint.Key() == key {
-						log.Warnf("Skipping endpoint %v because owner does not match", endpoint)
+						log.Infof("Skipping endpoint %v because owner does not match", endpoint)
 						filteredChanges.Create = append(filteredChanges.Create[:i], filteredChanges.Create[i+1:]...)
 						// The dynamodb insertion failed; remove from our cache.
 						im.removeFromCache(endpoint)
@@ -257,10 +257,6 @@ func (im *DynamoDBRegistry) PropertyValuesEqual(name string, previous string, cu
 func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.provider.AdjustEndpoints(endpoints)
 }
-
-/**
-  DynamoDB registry-specific private methods.
-*/
 
 func (im *DynamoDBRegistry) readLabels(ctx context.Context) error {
 	table, err := im.dynamodbAPI.DescribeTableWithContext(ctx, &dynamodb.DescribeTableInput{
@@ -428,7 +424,6 @@ func (im *DynamoDBRegistry) addToCache(ep *endpoint.Endpoint) {
 
 func (im *DynamoDBRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	if im.recordsCache == nil || ep == nil {
-		// return early.
 		return
 	}
 

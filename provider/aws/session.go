@@ -17,6 +17,7 @@ limitations under the License.
 package aws
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -24,7 +25,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/linki/instrumented_http"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -54,7 +54,7 @@ func NewSession(awsConfig AWSSessionConfig) (*session.Session, error) {
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to instantiate AWS session")
+		return nil, fmt.Errorf("instantiating AWS session: %w", err)
 	}
 
 	if awsConfig.AssumeRole != "" {
