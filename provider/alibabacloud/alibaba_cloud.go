@@ -661,20 +661,41 @@ func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Recor
 
 func (p *AlibabaCloudProvider) splitDNSName(fullName string) (rr string, domain string) {
 	name := strings.TrimSuffix(fullName, ".")
-	parts := strings.Split(name, ".")
-	if len(parts) < 2 {
-		rr = name
-		domain = ""
-	} else {
-		domain = parts[len(parts)-2] + "." + parts[len(parts)-1]
-		rrIndex := strings.Index(name, domain)
-		if rrIndex < 1 {
-			rrIndex = 1
-		}
-		rr = name[0 : rrIndex-1]
+
+	var found bool
+	domainNames, tmpErr := p.getDomainList()
+	if tmpErr != nil {
+		log.Errorf("AlibabaCloudProvider getDomainList error %v", tmpErr)
 	}
-	if rr == "" {
-		rr = nullHostAlibabaCloud
+	for _, tmpDomainName := range domainNames {
+		if strings.HasSuffix(name, "."+tmpDomainName) {
+			rr = name[0 : len(name)-len(tmpDomainName)-1]
+			domain = tmpDomainName
+			found = true
+			break
+		} else if name == tmpDomainName {
+			domain = tmpDomainName
+			rr = ""
+			found = true
+		}
+	}
+
+	if !found {
+		parts := strings.Split(name, ".")
+		if len(parts) < 2 {
+			rr = name
+			domain = ""
+		} else {
+			domain = parts[len(parts)-2] + "." + parts[len(parts)-1]
+			rrIndex := strings.Index(name, domain)
+			if rrIndex < 1 {
+				rrIndex = 1
+			}
+			rr = name[0 : rrIndex-1]
+		}
+		if rr == "" {
+			rr = nullHostAlibabaCloud
+		}
 	}
 	return
 }
