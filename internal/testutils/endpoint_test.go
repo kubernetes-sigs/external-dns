@@ -19,11 +19,12 @@ package testutils
 import (
 	"fmt"
 	"sort"
+	"testing"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func ExampleSameEndpoints() {
+func TestExampleSameEndpoints(t *testing.T) {
 	eps := []*endpoint.Endpoint{
 		{
 			DNSName: "example.org",
