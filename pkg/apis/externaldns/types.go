@@ -538,7 +538,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
 
 	// Flags related to Exoscale provider
-	app.Flag("exoscale-apienv", "When using Exoscale prvider, specify the API environment (optional)").Default(defaultConfig.ExoscaleAPIEnvironment).StringVar(&cfg.ExoscaleAPIEnvironment)
+	app.Flag("exoscale-apienv", "When using Exoscale provider, specify the API environment (optional)").Default(defaultConfig.ExoscaleAPIEnvironment).StringVar(&cfg.ExoscaleAPIEnvironment)
 	app.Flag("exoscale-apizone", "When using Exoscale provider, specify the API Zone (optional)").Default(defaultConfig.ExoscaleAPIZone).StringVar(&cfg.ExoscaleAPIZone)
 	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default(defaultConfig.ExoscaleAPIKey).StringVar(&cfg.ExoscaleAPIKey)
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
