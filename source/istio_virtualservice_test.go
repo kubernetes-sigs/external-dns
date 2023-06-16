@@ -71,7 +71,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		suite.NoError(err, "should succeed")
 	}
 
-	suite.gwconfig = (fakeGatewayConfig{
+	suite.gwconfig = *(fakeGatewayConfig{
 		name:      "foo-gateway-with-targets",
 		namespace: "istio-system",
 		dnsnames:  [][]string{{"*"}},
@@ -362,7 +362,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
 			gwconfig := ti.gwconfig.Config()
-			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, &gwconfig, ti.vsHost))
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, gwconfig, ti.vsHost))
 		})
 	}
 }
@@ -1479,7 +1479,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			var gateways []networkingv1alpha3.Gateway
+			var gateways []*networkingv1alpha3.Gateway
 			var virtualservices []*networkingv1alpha3.VirtualService
 
 			for _, gwItem := range ti.gwConfigs {
@@ -1500,7 +1500,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1579,7 +1579,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 
 	for _, gw := range gwList {
 		gwObj := gw.Config()
-		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), &gwObj, metav1.CreateOptions{})
+		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}

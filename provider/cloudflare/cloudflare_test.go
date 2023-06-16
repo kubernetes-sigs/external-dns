@@ -130,7 +130,7 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 	}
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (*cloudflare.DNSRecordResponse, error) {
+func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error) {
 	recordData := getDNSRecordFromRecordParams(rp)
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
@@ -141,7 +141,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudfla
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		zone[rp.ID] = recordData
 	}
-	return nil, nil
+	return cloudflare.DNSRecord{}, nil
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error) {
@@ -680,7 +680,7 @@ func TestCloudflareProvider(t *testing.T) {
 
 	_ = os.Unsetenv("CF_API_TOKEN")
 	tokenFile := "/tmp/cf_api_token"
-	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0644); err != nil {
+	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
 		t.Errorf("failed to write token file, %s", err)
 	}
 	_ = os.Setenv("CF_API_TOKEN", tokenFile)
