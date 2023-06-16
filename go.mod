@@ -49,7 +49,7 @@ require (
 	github.com/projectcontour/contour v1.23.2
 	github.com/prometheus/client_golang v1.16.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.2
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.599
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.344
@@ -66,7 +66,7 @@ require (
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 	google.golang.org/api v0.128.0
-	gopkg.in/ns1/ns1-go.v2 v2.7.4
+	gopkg.in/ns1/ns1-go.v2 v2.7.6
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v0.0.0-20210128181506-0c4b8e54850f
 	istio.io/client-go v0.0.0-20210128182905-ee2edd059e02
