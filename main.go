@@ -57,6 +57,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
+	"sigs.k8s.io/external-dns/provider/mikrotik"
 	"sigs.k8s.io/external-dns/provider/ns1"
 	"sigs.k8s.io/external-dns/provider/oci"
 	"sigs.k8s.io/external-dns/provider/ovh"
@@ -353,6 +354,19 @@ func main() {
 		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+	case "mikrotik":
+		p, err = mikrotik.NewMikrotikProvider(
+			mikrotik.MikrotikConfig{
+				Server:                cfg.MikrotikServer,
+				Username:              cfg.MikrotikUsername,
+				Password:              cfg.MikrotikPassword,
+				TLSInsecureSkipVerify: cfg.MikrotikTLSInsecureSkipVerify,
+				DomainFilter:          domainFilter,
+				MinimumTTL:            endpoint.TTL(cfg.MikrotikMinimumTTL),
+				DryRun:                cfg.DryRun,
+				OwnerId:               cfg.TXTOwnerID,
+			},
+		)
 	case "pihole":
 		p, err = pihole.NewPiholeProvider(
 			pihole.PiholeConfig{
