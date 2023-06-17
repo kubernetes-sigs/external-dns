@@ -1150,10 +1150,9 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 			desired = provider.AdjustEndpoints(desired)
 
 			plan := plan.Plan{
-				Current:            current,
-				Desired:            desired,
-				PropertyComparator: provider.PropertyValuesEqual,
-				ManagedRecords:     []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+				Current:        current,
+				Desired:        desired,
+				ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 			}
 
 			plan = *plan.Calculate()

@@ -217,12 +217,11 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
 
 	plan := &plan.Plan{
-		Policies:           []plan.Policy{c.Policy},
-		Current:            records,
-		Desired:            endpoints,
-		DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
-		PropertyComparator: c.Registry.PropertyValuesEqual,
-		ManagedRecords:     c.ManagedRecordTypes,
+		Policies:       []plan.Policy{c.Policy},
+		Current:        records,
+		Desired:        endpoints,
+		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+		ManagedRecords: c.ManagedRecordTypes,
 	}
 
 	plan = plan.Calculate()

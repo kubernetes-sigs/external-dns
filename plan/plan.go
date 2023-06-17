@@ -44,8 +44,6 @@ type Plan struct {
 	Changes *Changes
 	// DomainFilter matches DNS names
 	DomainFilter endpoint.DomainFilterInterface
-	// Property comparator compares custom properties of providers
-	PropertyComparator PropertyComparator
 	// DNS record types that will be considered for management
 	ManagedRecords []string
 }
@@ -217,21 +215,9 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 	if current.ProviderSpecific != nil {
 		for _, c := range current.ProviderSpecific {
 			if d, ok := desiredProperties[c.Name]; ok {
-				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, c.Value, d.Value) {
-						return true
-					}
-				} else if c.Value != d.Value {
-					return true
-				}
+				return c.Value != d.Value
 			} else {
-				if p.PropertyComparator != nil {
-					if !p.PropertyComparator(c.Name, c.Value, "") {
-						return true
-					}
-				} else if c.Value != "" {
-					return true
-				}
+				return c.Value != ""
 			}
 		}
 	}
