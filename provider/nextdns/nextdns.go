@@ -122,7 +122,7 @@ func deleteRecord(ep *endpoint.Endpoint, p *NextDnsProvider, ctx context.Context
 				log.Debugf("DELETE[%s]: %s -> %s", id, ep.DNSName, ep.Targets[0])
 				if err := p.api.Delete(ctx, &api.DeleteRewritesRequest{
 					ProfileID: p.profileId,
-					ID:        id.Value,
+					ID:        id,
 				}); err != nil {
 					return err
 				}

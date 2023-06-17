@@ -108,7 +108,7 @@ func TestRecords(t *testing.T) {
 		assert.Equal(t, record.Targets[0], fmt.Sprintf("192.168.0.%d", i+1))
 		assert.Equal(t, record.RecordType, "A")
 		id, _ := record.GetProviderSpecificProperty("id")
-		assert.Equal(t, id.Value, fmt.Sprintf("test-%d", i+1))
+		assert.Equal(t, id, fmt.Sprintf("test-%d", i+1))
 	}
 }
 
@@ -223,4 +223,49 @@ func TestDryRun_ApplyChanges(t *testing.T) {
 
 	mockRewrite.AssertNumberOfCalls(t, "Create", 0)
 	mockRewrite.AssertNumberOfCalls(t, "Delete", 0)
+}
+
+func TestOldMatchesNew_ApplyChanges(t *testing.T) {
+	mockRewrite := &RewriteServiceStub{}
+	mockRewrite.On("Create", mock.Anything, mock.Anything).Return("test-id")
+	mockRewrite.On("Delete", mock.Anything, mock.Anything).Return(nil)
+	provider := &NextDnsProvider{
+		api:       mockRewrite,
+		profileId: "test",
+	}
+	
+	changes := &plan.Changes{
+		UpdateOld: []*endpoint.Endpoint{
+			{
+				DNSName:    "test1.example.com",
+				Targets:    []string{"192.168.1.1"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{endpoint.ProviderSpecificProperty{Name: "id", Value: "test-id"}},
+			},
+			{
+				DNSName:    "test2.example.com",
+				Targets:    []string{"192.168.1.2"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{endpoint.ProviderSpecificProperty{Name: "id", Value: "test-id"}},
+			},
+		},
+		UpdateNew: []*endpoint.Endpoint{
+			{
+				DNSName:    "test1.example.com",
+				Targets:    []string{"192.168.1.1"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{endpoint.ProviderSpecificProperty{Name: "id", Value: "test-id"}},
+			},
+			{
+				DNSName:    "test2.example.com",
+				Targets:    []string{"10.0.0.1"},
+				RecordType: endpoint.RecordTypeA,
+				ProviderSpecific: endpoint.ProviderSpecific{endpoint.ProviderSpecificProperty{Name: "id", Value: "test-id"}},
+			},
+		},
+	}
+	provider.ApplyChanges(context.Background(), changes)
+
+	mockRewrite.AssertNumberOfCalls(t, "Create", 1)
+	mockRewrite.AssertNumberOfCalls(t, "Delete", 1)
 }
