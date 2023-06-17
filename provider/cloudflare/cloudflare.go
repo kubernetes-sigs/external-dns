@@ -297,14 +297,6 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	return p.submitChanges(ctx, cloudflareChanges)
 }
 
-func (p *CloudFlareProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == source.CloudflareProxiedKey {
-		return plan.CompareBoolean(p.proxiedByDefault, name, previous, current)
-	}
-
-	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
-}
-
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
 func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
@@ -379,9 +371,12 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
-		if shouldBeProxied(e, p.proxiedByDefault) {
+		proxied := shouldBeProxied(e, p.proxiedByDefault)
+		if proxied {
 			e.RecordTTL = 0
 		}
+		e.SetProviderSpecificProperty(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
 	return adjustedEndpoints

@@ -302,6 +302,8 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		t.Fatalf("cannot fetch records, %s", err)
 	}
 
+	endpoints = provider.AdjustEndpoints(endpoints)
+
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
@@ -1145,6 +1147,8 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				})
 			}
 
+			desired = provider.AdjustEndpoints(desired)
+
 			plan := plan.Plan{
 				Current:            current,
 				Desired:            desired,
@@ -1188,7 +1192,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 
 	plan := &plan.Plan{
 		Current: records,
-		Desired: []*endpoint.Endpoint{
+		Desired: provider.AdjustEndpoints([]*endpoint.Endpoint{
 			{
 				DNSName:    "foobar.bar.com",
 				Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
@@ -1202,7 +1206,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 					},
 				},
 			},
-		},
+		}),
 		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
