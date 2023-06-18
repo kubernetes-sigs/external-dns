@@ -286,9 +286,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 // PropertyValuesEqual compares two attribute values for equality
 func (im *TXTRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == "txt/force-update" {
-		return false
-	}
 	return im.provider.PropertyValuesEqual(name, previous, current)
 }
 
