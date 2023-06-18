@@ -89,16 +89,16 @@ func (p *ProviderAPIServer) propertyValuesEqualHandler(w http.ResponseWriter, re
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 	b := p.provider.PropertyValuesEqual(pve.Name, pve.Previous, pve.Current)
 	r := PropertyValuesEqualsResponse{
 		Equals: b,
 	}
-	out, err := json.Marshal(&r)
-	if err != nil {
-		log.Error(err)
+	if err := json.NewEncoder(w).Encode(&r); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(out)
 }
 
 func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
@@ -113,13 +113,12 @@ func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *h
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	pve = p.provider.AdjustEndpoints(pve)
-	out, err := json.Marshal(&pve)
-	if err != nil {
-		log.Error(err)
-	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(out)
+	pve = p.provider.AdjustEndpoints(pve)
+	if err := json.NewEncoder(w).Encode(&pve); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 }
 
 func (p *ProviderAPIServer) negotiate(w http.ResponseWriter, req *http.Request) {

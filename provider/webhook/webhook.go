@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -176,18 +175,10 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		return nil, fmt.Errorf("failed to get records with code %d", resp.StatusCode)
 	}
 
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		recordsErrorsGauge.Inc()
-		log.Debugf("Failed to read response body: %s", err.Error())
-		return nil, err
-	}
-
 	endpoints := []*endpoint.Endpoint{}
-	err = json.Unmarshal(b, &endpoints)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
 		recordsErrorsGauge.Inc()
-		log.Debugf("Failed to unmarshal response body: %s", err.Error())
+		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
 	return endpoints, nil
@@ -201,14 +192,15 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Failed to join path: %s", err.Error())
 		return err
 	}
-	b, err := json.Marshal(changes)
-	if err != nil {
+
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(changes); err != nil {
 		applyChangesErrorsGauge.Inc()
-		log.Debugf("Failed to marshal changes: %s", err.Error())
+		log.Debugf("Failed to encode changes: %s", err.Error())
 		return err
 	}
 
-	req, err := http.NewRequest("POST", u, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		applyChangesErrorsGauge.Inc()
 		log.Debugf("Failed to create request: %s", err.Error())
@@ -241,18 +233,19 @@ func (p WebhookProvider) PropertyValuesEqual(name string, previous string, curre
 		log.Debugf("Failed to join path: %s", err)
 		return true
 	}
-	b, err := json.Marshal(&PropertyValuesEqualRequest{
+
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(&PropertyValuesEqualRequest{
 		Name:     name,
 		Previous: previous,
 		Current:  current,
-	})
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Debugf("Failed to marshal request: %s", err)
+	}); err != nil {
+		adjustEndpointsErrorsGauge.Inc()
+		log.Debugf("Failed to encode, %s", err)
 		return true
 	}
 
-	req, err := http.NewRequest("POST", u, bytes.NewBuffer(b))
+	req, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		propertyValuesEqualErrorsGauge.Inc()
 		log.Debugf("Failed to create request: %s", err)
@@ -273,19 +266,13 @@ func (p WebhookProvider) PropertyValuesEqual(name string, previous string, curre
 		return true
 	}
 
-	respoBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Errorf("Failed to read body: %v", err)
-		return true
-	}
 	r := PropertyValuesEqualResponse{}
-	err = json.Unmarshal(respoBody, &r)
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Errorf("Failed to unmarshal body: %v", err)
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		recordsErrorsGauge.Inc()
+		log.Debugf("Failed to decode response body: %s", err.Error())
 		return true
 	}
+
 	return r.Equals
 }
 
@@ -300,13 +287,15 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.End
 		log.Debugf("Failed to join path, %s", err)
 		return endpoints
 	}
-	b, err := json.Marshal(e)
-	if err != nil {
+
+	b := new(bytes.Buffer)
+	if err := json.NewEncoder(b).Encode(e); err != nil {
 		adjustEndpointsErrorsGauge.Inc()
-		log.Debugf("Failed to marshal endpoints, %s", err)
+		log.Debugf("Failed to encode endpoints, %s", err)
 		return endpoints
 	}
-	req, err := http.NewRequest("POST", u, bytes.NewBuffer(b))
+
+	req, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to create new HTTP request, %s", err)
@@ -327,19 +316,12 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.End
 		return endpoints
 	}
 
-	b, err = io.ReadAll(resp.Body)
-	if err != nil {
-		adjustEndpointsErrorsGauge.Inc()
-		log.Debugf("Failed to read response body, %s", err)
+	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+		recordsErrorsGauge.Inc()
+		log.Debugf("Failed to decode response body: %s", err.Error())
 		return endpoints
 	}
 
-	err = json.Unmarshal(b, &endpoints)
-	if err != nil {
-		adjustEndpointsErrorsGauge.Inc()
-		log.Debugf("Faile to unmarshal response body, %s", err)
-		return endpoints
-	}
 	return endpoints
 }
 
