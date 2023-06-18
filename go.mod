@@ -19,6 +19,7 @@ require (
 	github.com/ans-group/sdk-go v1.10.4
 	github.com/aws/aws-sdk-go v1.44.136
 	github.com/bodgit/tsig v1.2.2
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/civo/civogo v0.3.14
 	github.com/cloudflare/cloudflare-go v0.58.1
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381

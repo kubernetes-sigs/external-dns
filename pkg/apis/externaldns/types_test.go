@@ -129,6 +129,9 @@ var (
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
 		TencentCloudZoneType:        "",
+		PluginProviderURL:           "http://localhost:8888",
+		PluginProviderReadTimeout:   5 * time.Second,
+		PluginProviderWriteTimeout:  10 * time.Second,
 	}
 
 	overriddenConfig = &Config{
@@ -239,6 +242,9 @@ var (
 		IBMCloudConfigFile:          "ibmcloud.json",
 		TencentCloudConfigFile:      "tencent-cloud.json",
 		TencentCloudZoneType:        "private",
+		PluginProviderURL:           "http://localhost:8888",
+		PluginProviderReadTimeout:   5 * time.Second,
+		PluginProviderWriteTimeout:  10 * time.Second,
 	}
 )
 
