@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package webhook
 
 import (
 	"bytes"
@@ -30,25 +30,25 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-type FakePluginProvider struct{}
+type FakeWebhookProvider struct{}
 
-func (p FakePluginProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p FakeWebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return []*endpoint.Endpoint{}, nil
 }
 
-func (p FakePluginProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p FakeWebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	return nil
 }
 
-func (p FakePluginProvider) PropertyValuesEqual(name string, previous string, current string) bool {
+func (p FakeWebhookProvider) PropertyValuesEqual(name string, previous string, current string) bool {
 	return false
 }
 
-func (p FakePluginProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return endpoints
 }
 
-func (p FakePluginProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p FakeWebhookProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return endpoint.DomainFilter{}
 }
 
@@ -57,7 +57,7 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
 	res := w.Result()
@@ -69,7 +69,7 @@ func TestRecordsHandlerApplyChangesWithBadRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
 	res := w.Result()
@@ -95,7 +95,7 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
 	res := w.Result()
@@ -107,7 +107,7 @@ func TestPropertyValuesEqualHandlerWithInvalidRequests(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.propertyValuesEqualHandler(w, req)
 	res := w.Result()
@@ -135,7 +135,7 @@ func TestPropertyValuesEqualWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.propertyValuesEqualHandler(w, req)
 	res := w.Result()
@@ -148,7 +148,7 @@ func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.adjustEndpointsHandler(w, req)
 	res := w.Result()
@@ -179,7 +179,7 @@ func TestAdjustEndpointsWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.adjustEndpointsHandler(w, req)
 	res := w.Result()
@@ -191,7 +191,7 @@ func TestNegotiate(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	w := httptest.NewRecorder()
 	providerAPIServer := &ProviderAPIServer{
-		provider: &FakePluginProvider{},
+		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.negotiate(w, req)
 	res := w.Result()
@@ -202,7 +202,7 @@ func TestNegotiate(t *testing.T) {
 
 func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
-	go StartHTTPApi(FakePluginProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
+	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
 	<-startedChan
 	resp, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)

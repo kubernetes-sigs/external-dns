@@ -62,7 +62,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/ovh"
 	"sigs.k8s.io/external-dns/provider/pdns"
 	"sigs.k8s.io/external-dns/provider/pihole"
-	"sigs.k8s.io/external-dns/provider/plugin"
 	"sigs.k8s.io/external-dns/provider/plural"
 	"sigs.k8s.io/external-dns/provider/rcode0"
 	"sigs.k8s.io/external-dns/provider/rdns"
@@ -74,6 +73,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
+	"sigs.k8s.io/external-dns/provider/webhook"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -372,9 +372,9 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
-	case "plugin":
+	case "webhook":
 		startedChan := make(chan struct{})
-		if cfg.RunAWSProviderAsPlugin {
+		if cfg.RunAWSProviderAsWebhook {
 			awsProvider, awsErr := aws.NewAWSProvider(aws.AWSConfig{
 				DomainFilter:         domainFilter,
 				ZoneIDFilter:         zoneIDFilter,
@@ -393,10 +393,10 @@ func main() {
 			if awsErr != nil {
 				log.Fatal(awsErr)
 			}
-			go plugin.StartHTTPApi(awsProvider, startedChan, cfg.PluginProviderReadTimeout, cfg.PluginProviderWriteTimeout, "127.0.0.1:8888")
+			go webhook.StartHTTPApi(awsProvider, startedChan, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
 			<-startedChan
 		}
-		p, err = plugin.NewPluginProvider(cfg.PluginProviderURL)
+		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}

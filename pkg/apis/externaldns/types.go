@@ -205,10 +205,10 @@ type Config struct {
 	PiholeTLSInsecureSkipVerify        bool
 	PluralCluster                      string
 	PluralProvider                     string
-	PluginProviderURL                  string
-	RunAWSProviderAsPlugin             bool
-	PluginProviderReadTimeout          time.Duration
-	PluginProviderWriteTimeout         time.Duration
+	WebhookProviderURL                 string
+	RunAWSProviderAsWebhook            bool
+	WebhookProviderReadTimeout         time.Duration
+	WebhookProviderWriteTimeout        time.Duration
 }
 
 var defaultConfig = &Config{
@@ -354,9 +354,9 @@ var defaultConfig = &Config{
 	PiholeTLSInsecureSkipVerify: false,
 	PluralCluster:               "",
 	PluralProvider:              "",
-	PluginProviderURL:           "http://localhost:8888",
-	PluginProviderReadTimeout:   5 * time.Second,
-	PluginProviderWriteTimeout:  10 * time.Second,
+	WebhookProviderURL:          "http://localhost:8888",
+	WebhookProviderReadTimeout:  5 * time.Second,
+	WebhookProviderWriteTimeout: 10 * time.Second,
 }
 
 // NewConfig returns new Config object
@@ -448,7 +448,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "plugin"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
@@ -600,11 +600,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
 
-	// Plugin provider
-	app.Flag("plugin-provider-url", "[EXPERIMENTAL] The URL of the remote endpoint to call for the plugin provider (default: http://localhost:8888)").Default(defaultConfig.PluginProviderURL).StringVar(&cfg.PluginProviderURL)
-	app.Flag("run-aws-provider-as-plugin", "[EXPERIMENTAL] When enabled, the AWS provider will be run as a plugin (default: false). To be used together with 'plugin' as provider.").BoolVar(&cfg.RunAWSProviderAsPlugin)
-	app.Flag("plugin-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the plugin provider in duration format (default: 5s)").Default(defaultConfig.PluginProviderReadTimeout.String()).DurationVar(&cfg.PluginProviderReadTimeout)
-	app.Flag("plugin-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the plugin provider in duration format (default: 10s)").Default(defaultConfig.PluginProviderWriteTimeout.String()).DurationVar(&cfg.PluginProviderWriteTimeout)
+	// Webhook provider
+	app.Flag("webhook-provider-url", "[EXPERIMENTAL] The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)").Default(defaultConfig.WebhookProviderURL).StringVar(&cfg.WebhookProviderURL)
+	app.Flag("run-aws-provider-as-webhook", "[EXPERIMENTAL] When enabled, the AWS provider will be run as a webhook (default: false). To be used together with 'webhook' as provider.").BoolVar(&cfg.RunAWSProviderAsWebhook)
+	app.Flag("webhook-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
+	app.Flag("webhook-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
 
 	_, err := app.Parse(args)
 	if err != nil {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package webhook
 
 import (
 	"context"
@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestWronglyConfiguredNewPluginProvider(t *testing.T) {
+func TestWronglyConfiguredNewWebhookProvider(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(varyHeader, contentTypeHeader)
@@ -42,7 +42,7 @@ func TestWronglyConfiguredNewPluginProvider(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	_, err := NewPluginProvider(svr.URL)
+	_, err := NewWebhookProvider(svr.URL)
 	require.Error(t, err)
 }
 
@@ -60,7 +60,7 @@ func TestRecords(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewPluginProvider(svr.URL)
+	provider, err := NewWebhookProvider(svr.URL)
 	require.Nil(t, err)
 	endpoints, err := provider.Records(context.TODO())
 	require.Nil(t, err)
@@ -87,7 +87,7 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewPluginProvider(svr.URL)
+	provider, err := NewWebhookProvider(svr.URL)
 	require.Nil(t, err)
 	err = provider.ApplyChanges(context.TODO(), nil)
 	require.Nil(t, err)
@@ -113,7 +113,7 @@ func TestPropertyValuesEqual(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewPluginProvider(svr.URL)
+	provider, err := NewWebhookProvider(svr.URL)
 	require.Nil(t, err)
 	b := provider.PropertyValuesEqual("name", "previous", "current")
 	require.Equal(t, false, b)
@@ -147,7 +147,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewPluginProvider(svr.URL)
+	provider, err := NewWebhookProvider(svr.URL)
 	require.Nil(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package plugin
+package webhook
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ import (
 )
 
 const (
-	mediaTypeFormatAndVersion = "application/external.dns.plugin+json;version=1"
+	mediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
 	contentTypeHeader         = "Content-Type"
 	acceptHeader              = "Accept"
 	varyHeader                = "Vary"
@@ -45,7 +45,7 @@ var (
 	recordsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: "plugin_provider",
+			Subsystem: "webhook_provider",
 			Name:      "records_errors",
 			Help:      "Errors with Records method",
 		},
@@ -53,7 +53,7 @@ var (
 	applyChangesErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: "plugin_provider",
+			Subsystem: "webhook_provider",
 			Name:      "applychanges_errors",
 			Help:      "Errors with ApplyChanges method",
 		},
@@ -61,7 +61,7 @@ var (
 	propertyValuesEqualErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: "plugin_provider",
+			Subsystem: "webhook_provider",
 			Name:      "propertyvaluesequal_errors",
 			Help:      "Errors with PropertyValuesEqual method",
 		},
@@ -69,14 +69,14 @@ var (
 	adjustEndpointsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
-			Subsystem: "plugin_provider",
+			Subsystem: "webhook_provider",
 			Name:      "adjustendpointsgauge_errors",
 			Help:      "Errors with AdjustEndpoints method",
 		},
 	)
 )
 
-type PluginProvider struct {
+type WebhookProvider struct {
 	client          *http.Client
 	remoteServerURL *url.URL
 }
@@ -98,7 +98,7 @@ func init() {
 	prometheus.MustRegister(adjustEndpointsErrorsGauge)
 }
 
-func NewPluginProvider(u string) (*PluginProvider, error) {
+func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func NewPluginProvider(u string) (*PluginProvider, error) {
 	err = backoff.Retry(func() error {
 		resp, err = client.Do(req)
 		if err != nil {
-			log.Debugf("Failed to connect to plugin api: %v", err)
+			log.Debugf("Failed to connect to webhook api: %v", err)
 			return err
 		}
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
@@ -127,7 +127,7 @@ func NewPluginProvider(u string) (*PluginProvider, error) {
 	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries))
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to plugin api: %v", err)
+		return nil, fmt.Errorf("failed to connect to webhook api: %v", err)
 	}
 
 	vary := resp.Header.Get(varyHeader)
@@ -141,14 +141,14 @@ func NewPluginProvider(u string) (*PluginProvider, error) {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", contentType)
 	}
 
-	return &PluginProvider{
+	return &WebhookProvider{
 		client:          client,
 		remoteServerURL: parsedURL,
 	}, nil
 }
 
 // Records will make a GET call to remoteServerURL/records and return the results
-func (p PluginProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	u, err := url.JoinPath(p.remoteServerURL.String(), "records")
 	if err != nil {
 		recordsErrorsGauge.Inc()
@@ -194,7 +194,7 @@ func (p PluginProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 }
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
-func (p PluginProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	u, err := url.JoinPath(p.remoteServerURL.String(), "records")
 	if err != nil {
 		applyChangesErrorsGauge.Inc()
@@ -234,7 +234,7 @@ func (p PluginProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 // `{propertyvaluesequal: true}`
 // Errors in anything technically happening from the provider will return true so that no update is performed.
 // Errors will also be logged and exposed as metrics so that it is possible to alert on them if needed.
-func (p PluginProvider) PropertyValuesEqual(name string, previous string, current string) bool {
+func (p WebhookProvider) PropertyValuesEqual(name string, previous string, current string) bool {
 	u, err := url.JoinPath(p.remoteServerURL.String(), "propertyvaluesequal")
 	if err != nil {
 		propertyValuesEqualErrorsGauge.Inc()
@@ -292,7 +292,7 @@ func (p PluginProvider) PropertyValuesEqual(name string, previous string, curren
 // AdjustEndpoints will call the provider doing a POST on `/adjustendpoints` which will return a list of modified endpoints
 // based on a provider specific requirement.
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
-func (p PluginProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
 	u, err := url.JoinPath(p.remoteServerURL.String(), "adjustendpoints")
 	if err != nil {
@@ -344,6 +344,6 @@ func (p PluginProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.Endp
 }
 
 // GetDomainFilter is the default implementation of GetDomainFilter.
-func (p PluginProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return endpoint.DomainFilter{}
 }
