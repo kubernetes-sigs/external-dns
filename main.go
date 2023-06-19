@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -412,7 +413,11 @@ func main() {
 	if cfg.Once {
 		err := ctrl.RunOnce(ctx)
 		if err != nil {
-			log.Fatal(err)
+			if strings.Contains(err.Error(), "Throttling: Rate exceeded") {
+				log.Error(err)
+			} else {
+				log.Fatal(err)
+			}
 		}
 
 		os.Exit(0)
