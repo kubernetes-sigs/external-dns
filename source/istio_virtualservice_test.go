@@ -1751,7 +1751,13 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			if tt.want != nil && got != nil {
+				tt.want.Spec.ProtoReflect()
+				tt.want.Status.ProtoReflect()
+				assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			} else {
+				assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			}
 		})
 	}
 }

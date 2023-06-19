@@ -214,7 +214,6 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
 		return nil, nil
 	}
-
 	return gateway, nil
 }
 
