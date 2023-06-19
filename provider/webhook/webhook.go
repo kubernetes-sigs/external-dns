@@ -148,12 +148,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 
 // Records will make a GET call to remoteServerURL/records and return the results
 func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	u, err := url.JoinPath(p.remoteServerURL.String(), "records")
-	if err != nil {
-		recordsErrorsGauge.Inc()
-		log.Debugf("Failed to join path: %s", err.Error())
-		return nil, err
-	}
+	u := p.remoteServerURL.JoinPath("records").String()
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		recordsErrorsGauge.Inc()
@@ -186,12 +181,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	u, err := url.JoinPath(p.remoteServerURL.String(), "records")
-	if err != nil {
-		applyChangesErrorsGauge.Inc()
-		log.Debugf("Failed to join path: %s", err.Error())
-		return err
-	}
+	u := p.remoteServerURL.JoinPath("records").String()
 
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(changes); err != nil {
@@ -227,12 +217,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // Errors in anything technically happening from the provider will return true so that no update is performed.
 // Errors will also be logged and exposed as metrics so that it is possible to alert on them if needed.
 func (p WebhookProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	u, err := url.JoinPath(p.remoteServerURL.String(), "propertyvaluesequal")
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Debugf("Failed to join path: %s", err)
-		return true
-	}
+	u := p.remoteServerURL.JoinPath("records").String()
 
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(&PropertyValuesEqualRequest{
