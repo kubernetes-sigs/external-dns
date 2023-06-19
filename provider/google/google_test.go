@@ -237,6 +237,17 @@ func TestGoogleZonesVisibilityFilterPrivate(t *testing.T) {
 	})
 }
 
+func TestGoogleZonesVisibilityFilterPrivatePeering(t *testing.T) {
+	provider := newGoogleProviderZoneOverlap(t, endpoint.NewDomainFilter([]string{"svc.local."}), provider.NewZoneIDFilter([]string{""}), provider.NewZoneTypeFilter("private"), false, []*endpoint.Endpoint{})
+
+	zones, err := provider.Zones(context.Background())
+	require.NoError(t, err)
+	
+	validateZones(t, zones, map[string]*dns.ManagedZone{
+		"svc-local": {Name: "svc-local", DnsName: "svc.local.", Id: 1005, Visibility: "private"},
+	})
+}
+
 func TestGoogleZones(t *testing.T) {
 	provider := newGoogleProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.gcp.zalan.do."}), provider.NewZoneIDFilter([]string{""}), false, []*endpoint.Endpoint{})
 
@@ -744,6 +755,22 @@ func newGoogleProviderZoneOverlap(t *testing.T, domainFilter endpoint.DomainFilt
 		Visibility: "private",
 	})
 
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:       "svc-local",
+		DnsName:    "svc.local.",
+		Id:         10005,
+		Visibility: "private",
+	})
+
+	createZone(t, provider, &dns.ManagedZone{
+		Name:       "svc-local-peer",
+		DnsName:    "svc.local.",
+		Id:         10006,
+		Visibility: "private",
+		PeeringConfig: &dns.ManagedZonePeeringConfig{TargetNetwork: nil},
+	})
+	
 	provider.dryRun = dryRun
 
 	return provider
