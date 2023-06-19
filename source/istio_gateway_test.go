@@ -1302,7 +1302,7 @@ type fakeGatewayConfig struct {
 }
 
 func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
-	gw := networkingv1alpha3.Gateway{
+	gw := &networkingv1alpha3.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
@@ -1323,5 +1323,5 @@ func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
 
 	gw.Spec.Servers = servers
 
-	return &gw
+	return gw
 }
