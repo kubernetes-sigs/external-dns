@@ -17,7 +17,7 @@ limitations under the License.
 package provider
 
 import (
-	"io/ioutil"
+	"io"
 	"os"
 	"testing"
 
@@ -26,7 +26,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	log.SetOutput(ioutil.Discard)
+	log.SetOutput(io.Discard)
 	os.Exit(m.Run())
 }
 

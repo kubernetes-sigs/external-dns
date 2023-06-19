@@ -75,9 +75,11 @@ func (m *mockDigitalOceanClient) CreateRecord(context.Context, string, *godo.Dom
 func (m *mockDigitalOceanClient) Delete(context.Context, string) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanClient) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanClient) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
@@ -157,9 +159,11 @@ func (m *mockDigitalOceanRecordsFail) CreateRecord(context.Context, string, *god
 func (m *mockDigitalOceanRecordsFail) Delete(context.Context, string) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanRecordsFail) DeleteRecord(ctx context.Context, domain string, id int) (*godo.Response, error) {
 	return nil, nil
 }
+
 func (m *mockDigitalOceanRecordsFail) EditRecord(ctx context.Context, domain string, id int, editRequest *godo.DomainRecordEditRequest) (*godo.DomainRecord, *godo.Response, error) {
 	return &godo.DomainRecord{ID: 1}, nil, nil
 }
@@ -329,6 +333,17 @@ func TestDigitalOceanMakeDomainEditRequest(t *testing.T) {
 		Data: "bar.example.com.",
 		TTL:  digitalOceanRecordTTL,
 	}, r3)
+
+	// Ensure that custom TTLs can be set
+	customTTL := 600
+	r4 := makeDomainEditRequest("example.com", "foo.example.com", endpoint.RecordTypeCNAME,
+		"bar.example.com.", customTTL)
+	assert.Equal(t, &godo.DomainRecordEditRequest{
+		Type: endpoint.RecordTypeCNAME,
+		Name: "foo",
+		Data: "bar.example.com.",
+		TTL:  customTTL,
+	}, r4)
 }
 
 func TestDigitalOceanApplyChanges(t *testing.T) {

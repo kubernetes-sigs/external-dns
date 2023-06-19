@@ -34,7 +34,7 @@ As stated in the README, we are currently looking for stable maintainers for tho
 
 ### Which Kubernetes objects are supported?
 
-Services exposed via `type=LoadBalancer`, `type=ExternalName` and for the hostnames defined in Ingress objects as well as headless hostPort services. An initial effort to support type `NodePort` was started as of May 2018 and it is in progress at the time of writing.
+Services exposed via `type=LoadBalancer`, `type=ExternalName`, `type=NodePort`, and for the hostnames defined in Ingress objects as well as [headless hostPort](tutorials/hostport.md) services.
 
 ### How do I specify a DNS name for my Kubernetes objects?
 
@@ -88,7 +88,7 @@ ExternalDNS will allow you to opt into any Services and Ingresses that you want 
 
 ### I'm afraid you will mess up my DNS records!
 
-ExternalDNS since v0.3 implements the concept of owning DNS records. This means that ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
+Since v0.3, ExternalDNS can be configured to use an ownership registry. When this option is enabled, ExternalDNS will keep track of which records it has control over, and will never modify any records over which it doesn't have control. This is a fundamental requirement to operate ExternalDNS safely when there might be other actors creating DNS records in the same target space.
 
 For now ExternalDNS uses TXT records to label owned records, and there might be other alternatives coming in the future releases.
 
@@ -178,16 +178,18 @@ You can use the host label in the metric to figure out if the request was agains
 
 Here is the full list of available metrics provided by ExternalDNS:
 
-| Name                                                | Description                                             | Type    |
-| --------------------------------------------------- | ------------------------------------------------------- | ------- |
-| external_dns_controller_last_sync_timestamp_seconds | Timestamp of last successful sync with the DNS provider | Gauge   |
-| external_dns_registry_endpoints_total               | Number of Endpoints in all sources                      | Gauge   |
-| external_dns_registry_errors_total                  | Number of Registry errors                               | Counter |
-| external_dns_source_endpoints_total                 | Number of Endpoints in the registry                     | Gauge   |
-| external_dns_source_errors_total                    | Number of Source errors                                 | Counter |
-| external_dns_controller_verified_records            | Number of DNS A-records that exists both in             | Gauge   |
-|                                                     | source & registry                                       |         |
+| Name                                                | Description                                                        | Type    |
+| --------------------------------------------------- | ------------------------------------------------------------------ | ------- |
+| external_dns_controller_last_sync_timestamp_seconds | Timestamp of last successful sync with the DNS provider            | Gauge   |
+| external_dns_registry_endpoints_total               | Number of Endpoints in all sources                                 | Gauge   |
+| external_dns_registry_errors_total                  | Number of Registry errors                                          | Counter |
+| external_dns_source_endpoints_total                 | Number of Endpoints in the registry                                | Gauge   |
+| external_dns_source_errors_total                    | Number of Source errors                                            | Counter |
+| external_dns_controller_verified_aaaa_records       | Number of DNS AAAA-records that exists both in source and registry | Gauge   |
+| external_dns_controller_verified_a_records          | Number of DNS A-records that exists both in source and registry    | Gauge   |
+| external_dns_registry_aaaa_records                  | Number of AAAA records in registry                         | Gauge   |
 | external_dns_registry_a_records                     | Number of A records in registry                         | Gauge   |
+| external_dns_source_aaaa_records                    | Number of AAAA records in source                           | Gauge   |
 | external_dns_source_a_records                       | Number of A records in source                           | Gauge   |
 
 ### How can I run ExternalDNS under a specific GCP Service Account, e.g. to access DNS records in other projects?
@@ -205,7 +207,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  k8s.gcr.io/external-dns/external-dns:v0.7.6
+  registry.k8s.io/external-dns/external-dns:v0.13.5
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -255,24 +257,33 @@ spec:
 ### Running an internal and external dns service
 
 Sometimes you need to run an internal and an external dns service.
-The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
-one to expose DNS to the internet.
+The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external one to expose DNS to the internet.
 
-To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
-an instance of an ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
-and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
+To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller. 
+Let's assume you have two ingress controllers, `internal` and `external`.
+You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
 
-If you need to search for multiple values of said annotation, you can provide a comma separated list, like so:
-`--annotation-filter=kubernetes.io/ingress.class in (nginx-internal, alb-ingress-internal)`.
+If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
+`--ingress-class=internal --ingress-class=external`.
 
-Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
-If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
+The `spec.ingressClassName` tasks precedence over the annotation if both are supplied.
 
-**Note:** Filtering based on annotation means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
-In larger clusters with many resources which change frequently this can cause performance issues. If only some resources need to be managed by an instance
-of external-dns then label filtering can be used instead of annotation filtering. This means that only those resources which match the selector specified
-in `--label-filter` will be passed to the controller.
+**Backward compatibility**
+
+The previous `--annotation-filter` flag can still be used to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
+
+However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
+If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+
+Note: the `--ingress-class` flag cannot be used at the same time as the `--annotation-filter=kubernetes.io/ingress.class in (...)` flag; if you do this an error will be raised.
+
+**Performance considerations**
+
+Filtering based on ingress class name or annotations means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
+In larger clusters with many resources which change frequently this can cause performance issues. 
+If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering). 
+This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
 
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 
@@ -283,6 +294,9 @@ To accomplish this, set this annotation on your service: `external-dns.alpha.kub
 Conversely, to force the public IP: `external-dns.alpha.kubernetes.io/access=public`
 
 If this annotation is not set, and the node has both public and private IP addresses, then the public IP will be used by default.
+
+Some loadbalancer implementations assign multiple IP addresses as external addresses. You can filter the generated targets by their networks
+using `--target-net-filter=10.0.0.0/8` or `--exclude-target-net=10.0.0.0/8`.
 
 ### Can external-dns manage(add/remove) records in a hosted zone which is setup in different AWS account?
 
@@ -298,7 +312,7 @@ Separate them by `,`.
 When we tag a new release, we push a container image to the Kubernetes projects official container registry with the following name:
 
 ```
-k8s.gcr.io/external-dns/external-dns
+registry.k8s.io/external-dns/external-dns
 ```
 
 As tags, you use the external-dns release of choice(i.e. `v0.7.6`). A `latest` tag is not provided in the container registry.

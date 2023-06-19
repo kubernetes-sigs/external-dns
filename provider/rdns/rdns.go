@@ -22,7 +22,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
@@ -47,7 +46,7 @@ const (
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 }
 
 // RDNSClient is an interface to work with Rancher DNS(RDNS) records in etcdv3 backend.
@@ -296,7 +295,7 @@ func newEtcdv3Client() (RDNSClient, error) {
 		if cert != "" {
 			cert, err := tls.LoadX509KeyPair(cert, key)
 			if err != nil {
-				return nil, fmt.Errorf("could not load TLS cert: %s", err)
+				return nil, fmt.Errorf("could not load TLS cert: %w", err)
 			}
 			certificates = append(certificates, cert)
 		}
@@ -309,13 +308,13 @@ func newEtcdv3Client() (RDNSClient, error) {
 
 		if ca != "" {
 			roots := x509.NewCertPool()
-			pem, err := ioutil.ReadFile(ca)
+			pem, err := os.ReadFile(ca)
 			if err != nil {
-				return nil, fmt.Errorf("error reading %s: %s", ca, err)
+				return nil, fmt.Errorf("error reading %s: %w", ca, err)
 			}
 			ok := roots.AppendCertsFromPEM(pem)
 			if !ok {
-				return nil, fmt.Errorf("could not read root certs: %s", err)
+				return nil, fmt.Errorf("could not read root certs: %w", err)
 			}
 			config.RootCAs = roots
 		}
@@ -348,7 +347,7 @@ func (c etcdv3Client) Get(key string) ([]RDNSRecord, error) {
 	for _, v := range result.Kvs {
 		r := new(RDNSRecord)
 		if err := json.Unmarshal(v.Value, r); err != nil {
-			return nil, fmt.Errorf("%s: %s", v.Key, err.Error())
+			return nil, fmt.Errorf("%s: %w", v.Key, err)
 		}
 		r.Key = string(v.Key)
 		rs = append(rs, *r)
@@ -413,7 +412,7 @@ func (c etcdv3Client) aggregationRecords(result *clientv3.GetResponse) ([]RDNSRe
 	for _, n := range result.Kvs {
 		r := new(RDNSRecord)
 		if err := json.Unmarshal(n.Value, r); err != nil {
-			return nil, fmt.Errorf("%s: %s", n.Key, err.Error())
+			return nil, fmt.Errorf("%s: %w", n.Key, err)
 		}
 
 		r.Key = string(n.Key)

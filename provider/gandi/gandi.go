@@ -16,11 +16,11 @@ package gandi
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/go-gandi/go-gandi"
+	"github.com/go-gandi/go-gandi/config"
 	"github.com/go-gandi/go-gandi/livedns"
 	log "github.com/sirupsen/logrus"
 
@@ -58,15 +58,16 @@ func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, d
 	}
 	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
 
-	g := gandi.Config{
+	g := config.Config{
+		APIKey:    key,
 		SharingID: sharingID,
 		Debug:     false,
 		// dry-run doesn't work but it won't hurt passing the flag
 		DryRun: dryRun,
 	}
 
-	liveDNSClient := gandi.NewLiveDNSClient(key, g)
-	domainClient := gandi.NewDomainClient(key, g)
+	liveDNSClient := gandi.NewLiveDNSClient(g)
+	domainClient := gandi.NewDomainClient(g)
 
 	gandiProvider := &GandiProvider{
 		LiveDNSClient: NewLiveDNSClient(liveDNSClient),
@@ -119,11 +120,17 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 					name = zone
 				}
 
-				if len(r.RrsetValues) > 1 {
-					return nil, fmt.Errorf("can't handle multiple values for rrset %s", name)
-				}
+				for _, v := range r.RrsetValues {
+					log.WithFields(log.Fields{
+						"record": r.RrsetName,
+						"type":   r.RrsetType,
+						"value":  v,
+						"ttl":    r.RrsetTTL,
+						"zone":   zone,
+					}).Debug("Returning endpoint record")
 
-				endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, r.RrsetValues[0]))
+					endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, v))
+				}
 			}
 		}
 	}

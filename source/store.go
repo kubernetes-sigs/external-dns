@@ -35,6 +35,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 )
 
 // ErrSourceNotFound is returned when a requested source doesn't exist.
@@ -45,11 +46,14 @@ type Config struct {
 	Namespace                      string
 	AnnotationFilter               string
 	LabelFilter                    labels.Selector
+	IngressClassNames              []string
 	FQDNTemplate                   string
 	CombineFQDNAndAnnotation       bool
 	IgnoreHostnameAnnotation       bool
 	IgnoreIngressTLSSpec           bool
 	IgnoreIngressRulesSpec         bool
+	GatewayNamespace               string
+	GatewayLabelFilter             string
 	Compatibility                  string
 	PublishInternal                bool
 	PublishHostIP                  bool
@@ -69,11 +73,14 @@ type Config struct {
 	RequestTimeout                 time.Duration
 	DefaultTargets                 []string
 	OCPRouterName                  string
+	UpdateEvents                   bool
+	ResolveLoadBalancerHostname    bool
 }
 
 // ClientGenerator provides clients
 type ClientGenerator interface {
 	KubeClient() (kubernetes.Interface, error)
+	GatewayClient() (gateway.Interface, error)
 	IstioClient() (istioclient.Interface, error)
 	CloudFoundryClient(cfAPPEndpoint string, cfUsername string, cfPassword string) (*cfclient.Client, error)
 	DynamicKubernetesClient() (dynamic.Interface, error)
@@ -87,11 +94,13 @@ type SingletonClientGenerator struct {
 	APIServerURL    string
 	RequestTimeout  time.Duration
 	kubeClient      kubernetes.Interface
+	gatewayClient   gateway.Interface
 	istioClient     *istioclient.Clientset
 	cfClient        *cfclient.Client
 	dynKubeClient   dynamic.Interface
 	openshiftClient openshift.Interface
 	kubeOnce        sync.Once
+	gatewayOnce     sync.Once
 	istioOnce       sync.Once
 	cfOnce          sync.Once
 	dynCliOnce      sync.Once
@@ -105,6 +114,28 @@ func (p *SingletonClientGenerator) KubeClient() (kubernetes.Interface, error) {
 		p.kubeClient, err = NewKubeClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
 	})
 	return p.kubeClient, err
+}
+
+// GatewayClient generates a gateway client if it was not created before
+func (p *SingletonClientGenerator) GatewayClient() (gateway.Interface, error) {
+	var err error
+	p.gatewayOnce.Do(func() {
+		p.gatewayClient, err = newGatewayClient(p.KubeConfig, p.APIServerURL, p.RequestTimeout)
+	})
+	return p.gatewayClient, err
+}
+
+func newGatewayClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (gateway.Interface, error) {
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gateway.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("Created GatewayAPI client %s", config.Host)
+	return client, nil
 }
 
 // IstioClient generates an istio go client if it was not created before
@@ -186,19 +217,29 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter)
+		return NewServiceSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.Compatibility, cfg.PublishInternal, cfg.PublishHostIP, cfg.AlwaysPublishNotReadyAddresses, cfg.ServiceTypeFilter, cfg.IgnoreHostnameAnnotation, cfg.LabelFilter, cfg.ResolveLoadBalancerHostname)
 	case "ingress":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
-		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter)
+		return NewIngressSource(ctx, client, cfg.Namespace, cfg.AnnotationFilter, cfg.FQDNTemplate, cfg.CombineFQDNAndAnnotation, cfg.IgnoreHostnameAnnotation, cfg.IgnoreIngressTLSSpec, cfg.IgnoreIngressRulesSpec, cfg.LabelFilter, cfg.IngressClassNames)
 	case "pod":
 		client, err := p.KubeClient()
 		if err != nil {
 			return nil, err
 		}
 		return NewPodSource(ctx, client, cfg.Namespace, cfg.Compatibility)
+	case "gateway-httproute":
+		return NewGatewayHTTPRouteSource(p, cfg)
+	case "gateway-grpcroute":
+		return NewGatewayGRPCRouteSource(p, cfg)
+	case "gateway-tlsroute":
+		return NewGatewayTLSRouteSource(p, cfg)
+	case "gateway-tcproute":
+		return NewGatewayTCPRouteSource(p, cfg)
+	case "gateway-udproute":
+		return NewGatewayUDPRouteSource(p, cfg)
 	case "istio-gateway":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {
@@ -251,6 +292,16 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespace)
+	case "traefik-proxy":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewTraefikSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	case "openshift-route":
 		ocpClient, err := p.OpenShiftClient()
 		if err != nil {
@@ -270,7 +321,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, cfg.LabelFilter, scheme)
+		return NewCRDSource(crdClient, cfg.Namespace, cfg.CRDSourceKind, cfg.AnnotationFilter, cfg.LabelFilter, scheme, cfg.UpdateEvents)
 	case "skipper-routegroup":
 		apiServerURL := cfg.APIServerURL
 		tokenPath := ""
@@ -292,8 +343,36 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 			return nil, err
 		}
 		return NewKongTCPIngressSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
+	case "f5-virtualserver":
+		kubernetesClient, err := p.KubeClient()
+		if err != nil {
+			return nil, err
+		}
+		dynamicClient, err := p.DynamicKubernetesClient()
+		if err != nil {
+			return nil, err
+		}
+		return NewF5VirtualServerSource(ctx, dynamicClient, kubernetesClient, cfg.Namespace, cfg.AnnotationFilter)
 	}
+
 	return nil, ErrSourceNotFound
+}
+
+func instrumentedRESTConfig(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*rest.Config, error) {
+	config, err := GetRestConfig(kubeConfig, apiServerURL)
+	if err != nil {
+		return nil, err
+	}
+	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
+			PathProcessor: func(path string) string {
+				parts := strings.Split(path, "/")
+				return parts[len(parts)-1]
+			},
+		})
+	}
+	config.Timeout = requestTimeout
+	return config, nil
 }
 
 // GetRestConfig returns the rest clients config to get automatically
@@ -331,28 +410,15 @@ func GetRestConfig(kubeConfig, apiServerURL string) (*rest.Config, error) {
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewKubeClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*kubernetes.Clientset, error) {
 	log.Infof("Instantiating new Kubernetes client")
-	config, err := GetRestConfig(kubeConfig, apiServerURL)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.Timeout = requestTimeout
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created Kubernetes client %s", config.Host)
-
 	return client, nil
 }
 
@@ -388,35 +454,15 @@ func NewIstioClient(kubeConfig string, apiServerURL string) (*istioclient.Client
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (dynamic.Interface, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	config.Timeout = requestTimeout
-
 	client, err := dynamic.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created Dynamic Kubernetes client %s", config.Host)
-
 	return client, nil
 }
 
@@ -424,34 +470,14 @@ func NewDynamicKubernetesClient(kubeConfig, apiServerURL string, requestTimeout 
 // uses APIServerURL and KubeConfig attributes to connect to the cluster. If
 // KubeConfig isn't provided it defaults to using the recommended default.
 func NewOpenShiftClient(kubeConfig, apiServerURL string, requestTimeout time.Duration) (*openshift.Clientset, error) {
-	if kubeConfig == "" {
-		if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
-			kubeConfig = clientcmd.RecommendedHomeFile
-		}
-	}
-
-	config, err := clientcmd.BuildConfigFromFlags(apiServerURL, kubeConfig)
+	config, err := instrumentedRESTConfig(kubeConfig, apiServerURL, requestTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	config.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
-		return instrumented_http.NewTransport(rt, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		})
-	}
-
-	config.Timeout = requestTimeout
-
 	client, err := openshift.NewForConfig(config)
 	if err != nil {
 		return nil, err
 	}
-
 	log.Infof("Created OpenShift client %s", config.Host)
-
 	return client, nil
 }

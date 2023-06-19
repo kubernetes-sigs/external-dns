@@ -18,15 +18,15 @@ package azure
 
 import (
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/azure"
-	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
+
+	"github.com/Azure/go-autorest/autorest/azure"
 )
 
 func TestGetAzureEnvironmentConfig(t *testing.T) {
-	tmp, err := ioutil.TempFile("", "azureconf")
+	tmp, err := os.CreateTemp("", "azureconf")
 	if err != nil {
 		t.Errorf("couldn't write temp file %v", err)
 	}

@@ -37,22 +37,22 @@ func TestZoneTypeFilterMatch(t *testing.T) {
 		zones          []interface{}
 	}{
 		{
-			"", true, []interface{}{ publicZoneStr, privateZoneStr, &route53.HostedZone{} },
+			"", true, []interface{}{publicZoneStr, privateZoneStr, &route53.HostedZone{}},
 		},
 		{
-			"public", true, []interface{}{ publicZoneStr, publicZoneAWS, &route53.HostedZone{} },
+			"public", true, []interface{}{publicZoneStr, publicZoneAWS, &route53.HostedZone{}},
 		},
 		{
-			"public", false, []interface{}{ privateZoneStr, privateZoneAWS },
+			"public", false, []interface{}{privateZoneStr, privateZoneAWS},
 		},
 		{
-			"private", true, []interface{}{ privateZoneStr, privateZoneAWS },
+			"private", true, []interface{}{privateZoneStr, privateZoneAWS},
 		},
 		{
-			"private", false, []interface{}{ publicZoneStr, publicZoneAWS, &route53.HostedZone{} },
+			"private", false, []interface{}{publicZoneStr, publicZoneAWS, &route53.HostedZone{}},
 		},
 		{
-			"unknown", false, []interface{}{ publicZoneStr },
+			"unknown", false, []interface{}{publicZoneStr},
 		},
 	} {
 		zoneTypeFilter := NewZoneTypeFilter(tc.zoneTypeFilter)

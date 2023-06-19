@@ -193,14 +193,13 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 		queryArgs.ContractIds = strings.Join(p.zoneIDFilter.ZoneIDs, ",")
 	}
 	resp, err := p.client.ListZones(queryArgs) // retrieve all primary zones filtered by contract ids
-
 	if err != nil {
 		log.Errorf("Failed to fetch zones from Akamai")
 		return filteredZones, err
 	}
 
 	for _, zone := range resp.Zones {
-		if p.domainFilter.Match(zone.Zone) || !p.domainFilter.IsConfigured() {
+		if p.domainFilter.Match(zone.Zone) {
 			filteredZones.Zones = append(filteredZones.Zones, akamaiZone{ContractID: zone.ContractId, Zone: zone.Zone})
 			log.Debugf("Fetched zone: '%s' (ZoneID: %s)", zone.Zone, zone.ContractId)
 		}
@@ -215,7 +214,7 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 	return filteredZones, nil
 }
 
-//Records returns the list of records in a given zone.
+// Records returns the list of records in a given zone.
 func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.fetchZones() // returns a filtered set of zones
 	if err != nil {
@@ -242,7 +241,7 @@ func (p AkamaiProvider) Records(context.Context) (endpoints []*endpoint.Endpoint
 				continue
 			}
 			var temp interface{} = int64(recordset.TTL)
-			var ttl = endpoint.TTL(temp.(int64))
+			ttl := endpoint.TTL(temp.(int64))
 			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(recordset.Name,
 				recordset.Type,
 				ttl,
@@ -359,7 +358,7 @@ func trimTxtRdata(rdata []string, rtype string) []string {
 
 func ttlAsInt(src endpoint.TTL) int {
 	var temp interface{} = int64(src)
-	var temp64 = temp.(int64)
+	temp64 := temp.(int64)
 	var ttl int = edgeDNSRecordTTL
 	if temp64 > 0 && temp64 <= int64(maxInt) {
 		ttl = int(temp64)
@@ -427,7 +426,7 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
 			if _, ok := err.(*dns.RecordError); !ok {
-				return fmt.Errorf("endpoint deletion. record validation failed. error: %s", err.Error())
+				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
 			}
 			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)
 			continue

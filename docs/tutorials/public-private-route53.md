@@ -213,10 +213,10 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `annotation-filter` and `aws-zone-type`:
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -241,9 +241,9 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=external-dns
-        - --annotation-filter=kubernetes.io/ingress.class in (external-ingress)
+        - --ingress-class=external-ingress
         - --aws-zone-type=public
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         name: external-dns-public
 ```
 
@@ -251,10 +251,10 @@ spec:
 
 Consult [AWS ExternalDNS setup docs](aws.md) for installation guidelines.
 
-In ExternalDNS containers args, make sure to specify `annotation-filter` and `aws-zone-type`:
+In ExternalDNS containers args, make sure to specify `aws-zone-type` and `ingress-class`:
 
 ```yaml
-apiVersion: apps/v1beta2
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
@@ -279,56 +279,60 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=dev.k8s.nexus
-        - --annotation-filter=kubernetes.io/ingress.class in (internal-ingress)
+        - --ingress-class=internal-ingress
         - --aws-zone-type=private
-        image: k8s.gcr.io/external-dns/external-dns:v0.7.6
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         name: external-dns-private
 ```
 
 ## Create application Service definitions
 
-For this setup to work, you've to create two Service definitions for your application.
+For this setup to work, you need to create two Ingress definitions for your application.
 
-At first, create public Service definition:
+At first, create a public Ingress definition:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "external-ingress"
   labels:
     app: app
   name: app-public
 spec:
+  ingressClassName: external-ingress
   rules:
   - host: app.domain.com
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
-Then create private Service definition:
+Then create a private Ingress definition:
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "internal-ingress"
   labels:
     app: app
   name: app-private
 spec:
+  ingressClassName: internal-ingress
   rules:
   - host: app.domain.com
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
 ```
 
 Additionally, you may leverage [cert-manager](https://github.com/jetstack/cert-manager) to automatically issue SSL certificates from [Let's Encrypt](https://letsencrypt.org/). To do that, request a certificate in public service definition:
@@ -341,19 +345,22 @@ metadata:
     certmanager.k8s.io/acme-challenge-type: "dns01"
     certmanager.k8s.io/acme-dns01-provider: "route53"
     certmanager.k8s.io/cluster-issuer: "letsencrypt-production"
-    kubernetes.io/ingress.class: "external-ingress"
     kubernetes.io/tls-acme: "true"
   labels:
     app: app
   name: app-public
 spec:
+  ingressClassName: "external-ingress"
   rules:
   - host: app.domain.com
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
   tls:
   - hosts:
     - app.domain.com
@@ -366,19 +373,21 @@ And reuse the requested certificate in private Service definition:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  annotations:
-    kubernetes.io/ingress.class: "internal-ingress"
   labels:
     app: app
   name: app-private
 spec:
+  ingressClassName: "internal-ingress"
   rules:
   - host: app.domain.com
     http:
       paths:
       - backend:
-          serviceName: app
-          servicePort: 80
+          service:
+            name: app
+            port:
+              number: 80
+        pathType: Prefix
   tls:
   - hosts:
     - app.domain.com

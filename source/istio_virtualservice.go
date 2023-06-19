@@ -23,12 +23,12 @@ import (
 	"strings"
 	"text/template"
 
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-
 	log "github.com/sirupsen/logrus"
+	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -77,7 +77,7 @@ func NewIstioVirtualServiceSource(
 	// Set resync period to 0, to prevent processing when nothing has changed
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
-	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
+	istioInformerFactory := istioinformers.NewSharedInformerFactoryWithOptions(istioClient, 0, istioinformers.WithNamespace(namespace))
 	virtualServiceInformer := istioInformerFactory.Networking().V1alpha3().VirtualServices()
 
 	// Add default resource event handlers to properly initialize informer.
@@ -124,12 +124,10 @@ func NewIstioVirtualServiceSource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all VirtualService resources in the source's namespace(s).
 func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	virtualServiceList, err := sc.istioClient.NetworkingV1alpha3().VirtualServices(sc.namespace).List(ctx, metav1.ListOptions{})
+	virtualServices, err := sc.virtualserviceInformer.Lister().VirtualServices(sc.namespace).List(labels.Everything())
 	if err != nil {
 		return nil, err
 	}
-
-	virtualServices := virtualServiceList.Items
 	virtualServices, err = sc.filterByAnnotations(virtualServices)
 	if err != nil {
 		return nil, err
@@ -189,36 +187,39 @@ func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler fun
 	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
-func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService networkingv1alpha3.VirtualService) *networkingv1alpha3.Gateway {
+func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService *networkingv1alpha3.VirtualService) (*networkingv1alpha3.Gateway, error) {
 	if gatewayStr == "" || gatewayStr == IstioMeshGateway {
 		// This refers to "all sidecars in the mesh"; ignore.
-		return nil
+		return nil, nil
 	}
 
 	namespace, name, err := parseGateway(gatewayStr)
 	if err != nil {
 		log.Debugf("Failed parsing gatewayStr %s of VirtualService %s/%s", gatewayStr, virtualService.Namespace, virtualService.Name)
-		return nil
+		return nil, err
 	}
 	if namespace == "" {
 		namespace = virtualService.Namespace
 	}
 
 	gateway, err := sc.istioClient.NetworkingV1alpha3().Gateways(namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
+	if errors.IsNotFound(err) {
+		log.Warnf("VirtualService (%s/%s) references non-existent gateway: %s ", virtualService.Namespace, virtualService.Name, gatewayStr)
+		return nil, nil
+	} else if err != nil {
 		log.Errorf("Failed retrieving gateway %s referenced by VirtualService %s/%s: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
-		return nil
+		return nil, err
 	}
 	if gateway == nil {
 		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
-		return nil
+		return nil, nil
 	}
 
-	return gateway
+	return gateway, nil
 }
 
-func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
-	hostnames, err := execTemplate(sc.fqdnTemplate, &virtualService)
+func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtualService *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
+	hostnames, err := execTemplate(sc.fqdnTemplate, virtualService)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +243,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *virtualServiceSource) filterByAnnotations(virtualservices []networkingv1alpha3.VirtualService) ([]networkingv1alpha3.VirtualService, error) {
+func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkingv1alpha3.VirtualService) ([]*networkingv1alpha3.VirtualService, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -257,7 +258,7 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []networking
 		return virtualservices, nil
 	}
 
-	var filteredList []networkingv1alpha3.VirtualService
+	var filteredList []*networkingv1alpha3.VirtualService
 
 	for _, virtualservice := range virtualservices {
 		// convert the annotations to an equivalent label selector
@@ -272,7 +273,7 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []networking
 	return filteredList, nil
 }
 
-func (sc *virtualServiceSource) setResourceLabel(virtualservice networkingv1alpha3.VirtualService, endpoints []*endpoint.Endpoint) {
+func (sc *virtualServiceSource) setResourceLabel(virtualservice *networkingv1alpha3.VirtualService, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
 	}
@@ -288,15 +289,18 @@ func appendUnique(targets []string, target string) []string {
 	return append(targets, target)
 }
 
-func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
+func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService *networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
 	for _, gateway := range virtualService.Spec.Gateways {
-		gateway := sc.getGateway(ctx, gateway, virtualService)
+		gateway, err := sc.getGateway(ctx, gateway, virtualService)
+		if err != nil {
+			return nil, err
+		}
 		if gateway == nil {
 			continue
 		}
-		if !virtualServiceBindsToGateway(&virtualService, gateway, vsHost) {
+		if !virtualServiceBindsToGateway(virtualService, gateway, vsHost) {
 			continue
 		}
 		tgs, err := sc.targetsFromGateway(gateway)
@@ -312,7 +316,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 }
 
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
-func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
+func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	ttl, err := getTTLFromAnnotations(virtualservice.Annotations)

@@ -43,14 +43,17 @@ func (m *MockDomainClient) ListDomains(ctx context.Context, opts *linodego.ListO
 	args := m.Called(ctx, opts)
 	return args.Get(0).([]linodego.Domain), args.Error(1)
 }
+
 func (m *MockDomainClient) CreateDomainRecord(ctx context.Context, domainID int, opts linodego.DomainRecordCreateOptions) (*linodego.DomainRecord, error) {
 	args := m.Called(ctx, domainID, opts)
 	return args.Get(0).(*linodego.DomainRecord), args.Error(1)
 }
+
 func (m *MockDomainClient) DeleteDomainRecord(ctx context.Context, domainID int, recordID int) error {
 	args := m.Called(ctx, domainID, recordID)
 	return args.Error(0)
 }
+
 func (m *MockDomainClient) UpdateDomainRecord(ctx context.Context, domainID int, recordID int, opts linodego.DomainRecordUpdateOptions) (*linodego.DomainRecord, error) {
 	args := m.Called(ctx, domainID, recordID, opts)
 	return args.Get(0).(*linodego.DomainRecord), args.Error(1)

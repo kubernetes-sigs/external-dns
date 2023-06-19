@@ -2,15 +2,22 @@
 timeout: 5000s
 options:
   substitution_option: ALLOW_LOOSE
+  machineType: 'N1_HIGHCPU_8'
 steps:
-  - name: "gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20211118-2f2d816b90"
-    entrypoint: make
+  - name: "gcr.io/k8s-staging-test-infra/gcb-docker-gcloud:v20230206-8160eea68e"
+    entrypoint: bash
     env:
       - DOCKER_CLI_EXPERIMENTAL=enabled
       - VERSION=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
+      - HOME=/root
     args:
-      - release.staging
+      - -c
+      - |
+        gcloud auth configure-docker
+        /buildx-entrypoint version
+        apk add musl-dev gcc
+        make release.staging
 substitutions:
   # _GIT_TAG will be filled with a git-based tag for the image, of the form vYYYYMMDD-hash, and
   # can be used as a substitution

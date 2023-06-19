@@ -42,6 +42,13 @@ func (b byAllFields) Less(i, j int) bool {
 	if b[i].DNSName == b[j].DNSName {
 		// This rather bad, we need a more complex comparison for Targets, which considers all elements
 		if b[i].Targets.Same(b[j].Targets) {
+			if b[i].RecordType == (b[j].RecordType) {
+				sa := b[i].ProviderSpecific
+				sb := b[j].ProviderSpecific
+				sort.Sort(byNames(sa))
+				sort.Sort(byNames(sb))
+				return reflect.DeepEqual(sa, sb)
+			}
 			return b[i].RecordType <= b[j].RecordType
 		}
 		return b[i].Targets.String() <= b[j].Targets.String()
@@ -55,6 +62,7 @@ func SameEndpoint(a, b *endpoint.Endpoint) bool {
 	return a.DNSName == b.DNSName && a.Targets.Same(b.Targets) && a.RecordType == b.RecordType && a.SetIdentifier == b.SetIdentifier &&
 		a.Labels[endpoint.OwnerLabelKey] == b.Labels[endpoint.OwnerLabelKey] && a.RecordTTL == b.RecordTTL &&
 		a.Labels[endpoint.ResourceLabelKey] == b.Labels[endpoint.ResourceLabelKey] &&
+		a.Labels[endpoint.OwnedRecordLabelKey] == b.Labels[endpoint.OwnedRecordLabelKey] &&
 		SameProviderSpecific(a.ProviderSpecific, b.ProviderSpecific)
 }
 

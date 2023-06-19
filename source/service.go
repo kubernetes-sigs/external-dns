@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"net"
 	"sort"
 	"strings"
 	"text/template"
@@ -57,6 +58,7 @@ type serviceSource struct {
 	publishInternal                bool
 	publishHostIP                  bool
 	alwaysPublishNotReadyAddresses bool
+	resolveLoadBalancerHostname    bool
 	serviceInformer                coreinformers.ServiceInformer
 	endpointsInformer              coreinformers.EndpointsInformer
 	podInformer                    coreinformers.PodInformer
@@ -66,7 +68,7 @@ type serviceSource struct {
 }
 
 // NewServiceSource creates a new serviceSource with the given config.
-func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector) (Source, error) {
+func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, compatibility string, publishInternal bool, publishHostIP bool, alwaysPublishNotReadyAddresses bool, serviceTypeFilter []string, ignoreHostnameAnnotation bool, labelSelector labels.Selector, resolveLoadBalancerHostname bool) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -137,6 +139,7 @@ func NewServiceSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		nodeInformer:                   nodeInformer,
 		serviceTypeFilter:              serviceTypes,
 		labelSelector:                  labelSelector,
+		resolveLoadBalancerHostname:    resolveLoadBalancerHostname,
 	}, nil
 }
 
@@ -213,7 +216,10 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		})
 		// Use stable sort to not disrupt the order of services
 		sort.SliceStable(endpoints, func(i, j int) bool {
-			return endpoints[i].DNSName < endpoints[j].DNSName
+			if endpoints[i].DNSName != endpoints[j].DNSName {
+				return endpoints[i].DNSName < endpoints[j].DNSName
+			}
+			return endpoints[i].RecordType < endpoints[j].RecordType
 		})
 		mergedEndpoints := []*endpoint.Endpoint{}
 		mergedEndpoints = append(mergedEndpoints, endpoints[0])
@@ -259,11 +265,13 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	pods, err := sc.podInformer.Lister().Pods(svc.Namespace).List(selector)
 	if err != nil {
-		log.Errorf("List Pods of service[%s] error:%v", svc.GetName(), err)
+		log.Errorf("List pods of service[%s] error: %v", svc.GetName(), err)
 		return endpoints
 	}
 
-	targetsByHeadlessDomain := make(map[string][]string)
+	endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
+
+	targetsByHeadlessDomainAndType := make(map[endpointKey]endpoint.Targets)
 	for _, subset := range endpointsObject.Subsets {
 		addresses := subset.Addresses
 		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
@@ -294,26 +302,51 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			}
 
 			for _, headlessDomain := range headlessDomains {
-				var ep string
-				if sc.publishHostIP {
-					ep = pod.Status.HostIP
-					log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, ep)
-				} else {
-					ep = address.IP
-					log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, ep)
+				targets := getTargetsFromTargetAnnotation(pod.Annotations)
+				if len(targets) == 0 {
+					if endpointsType == EndpointsTypeNodeExternalIP {
+						node, err := sc.nodeInformer.Lister().Get(pod.Spec.NodeName)
+						if err != nil {
+							log.Errorf("Get node[%s] of pod[%s] error: %v; not adding any NodeExternalIP endpoints", pod.Spec.NodeName, pod.GetName(), err)
+							return endpoints
+						}
+						for _, address := range node.Status.Addresses {
+							if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+								targets = append(targets, address.Address)
+								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
+							}
+						}
+					} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
+						targets = endpoint.Targets{pod.Status.HostIP}
+						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
+					} else {
+						targets = endpoint.Targets{address.IP}
+						log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, address.IP)
+					}
 				}
-				targetsByHeadlessDomain[headlessDomain] = append(targetsByHeadlessDomain[headlessDomain], ep)
+				for _, target := range targets {
+					key := endpointKey{
+						dnsName:    headlessDomain,
+						recordType: suitableType(target),
+					}
+					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
+				}
 			}
 		}
 	}
 
-	headlessDomains := []string{}
-	for headlessDomain := range targetsByHeadlessDomain {
-		headlessDomains = append(headlessDomains, headlessDomain)
+	headlessKeys := []endpointKey{}
+	for headlessKey := range targetsByHeadlessDomainAndType {
+		headlessKeys = append(headlessKeys, headlessKey)
 	}
-	sort.Strings(headlessDomains)
-	for _, headlessDomain := range headlessDomains {
-		allTargets := targetsByHeadlessDomain[headlessDomain]
+	sort.Slice(headlessKeys, func(i, j int) bool {
+		if headlessKeys[i].dnsName != headlessKeys[j].dnsName {
+			return headlessKeys[i].dnsName < headlessKeys[j].dnsName
+		}
+		return headlessKeys[i].recordType < headlessKeys[j].recordType
+	})
+	for _, headlessKey := range headlessKeys {
+		allTargets := targetsByHeadlessDomainAndType[headlessKey]
 		targets := []string{}
 
 		deduppedTargets := map[string]struct{}{}
@@ -328,9 +361,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 
 		if ttl.IsConfigured() {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessDomain, endpoint.RecordTypeA, ttl, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessKey.dnsName, headlessKey.recordType, ttl, targets...))
 		} else {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessDomain, endpoint.RecordTypeA, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.dnsName, headlessKey.recordType, targets...))
 		}
 	}
 
@@ -440,6 +473,14 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		DNSName:    hostname,
 	}
 
+	epAAAA := &endpoint.Endpoint{
+		RecordTTL:  ttl,
+		RecordType: endpoint.RecordTypeAAAA,
+		Labels:     endpoint.NewLabels(),
+		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
+		DNSName:    hostname,
+	}
+
 	epCNAME := &endpoint.Endpoint{
 		RecordTTL:  ttl,
 		RecordType: endpoint.RecordTypeCNAME,
@@ -451,43 +492,52 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 	var endpoints []*endpoint.Endpoint
 	var targets endpoint.Targets
 
-	switch svc.Spec.Type {
-	case v1.ServiceTypeLoadBalancer:
-		if useClusterIP {
-			targets = append(targets, extractServiceIps(svc)...)
-		} else {
-			targets = append(targets, extractLoadBalancerTargets(svc)...)
+	targets = getTargetsFromTargetAnnotation(svc.Annotations)
+
+	if len(targets) == 0 {
+		switch svc.Spec.Type {
+		case v1.ServiceTypeLoadBalancer:
+			if useClusterIP {
+				targets = append(targets, extractServiceIps(svc)...)
+			} else {
+				targets = append(targets, extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)...)
+			}
+		case v1.ServiceTypeClusterIP:
+			if sc.publishInternal {
+				targets = append(targets, extractServiceIps(svc)...)
+			}
+			if svc.Spec.ClusterIP == v1.ClusterIPNone {
+				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
+			}
+		case v1.ServiceTypeNodePort:
+			// add the nodeTargets and extract an SRV endpoint
+			targets, err = sc.extractNodePortTargets(svc)
+			if err != nil {
+				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
+				return endpoints
+			}
+			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, hostname, ttl)...)
+		case v1.ServiceTypeExternalName:
+			targets = append(targets, extractServiceExternalName(svc)...)
 		}
-	case v1.ServiceTypeClusterIP:
-		if sc.publishInternal {
-			targets = append(targets, extractServiceIps(svc)...)
-		}
-		if svc.Spec.ClusterIP == v1.ClusterIPNone {
-			endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-		}
-	case v1.ServiceTypeNodePort:
-		// add the nodeTargets and extract an SRV endpoint
-		targets, err = sc.extractNodePortTargets(svc)
-		if err != nil {
-			log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
-			return endpoints
-		}
-		endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, targets, hostname, ttl)...)
-	case v1.ServiceTypeExternalName:
-		targets = append(targets, extractServiceExternalName(svc)...)
 	}
 
 	for _, t := range targets {
-		if suitableType(t) == endpoint.RecordTypeA {
+		switch suitableType(t) {
+		case endpoint.RecordTypeA:
 			epA.Targets = append(epA.Targets, t)
-		}
-		if suitableType(t) == endpoint.RecordTypeCNAME {
+		case endpoint.RecordTypeAAAA:
+			epAAAA.Targets = append(epAAAA.Targets, t)
+		case endpoint.RecordTypeCNAME:
 			epCNAME.Targets = append(epCNAME.Targets, t)
 		}
 	}
 
 	if len(epA.Targets) > 0 {
 		endpoints = append(endpoints, epA)
+	}
+	if len(epAAAA.Targets) > 0 {
+		endpoints = append(endpoints, epAAAA)
 	}
 	if len(epCNAME.Targets) > 0 {
 		endpoints = append(endpoints, epCNAME)
@@ -511,7 +561,7 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
-func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
+func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
 	var (
 		targets     endpoint.Targets
 		externalIPs endpoint.Targets
@@ -523,7 +573,18 @@ func extractLoadBalancerTargets(svc *v1.Service) endpoint.Targets {
 			targets = append(targets, lb.IP)
 		}
 		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			if resolveLoadBalancerHostname {
+				ips, err := net.LookupIP(lb.Hostname)
+				if err != nil {
+					log.Errorf("Unable to resolve %q: %v", lb.Hostname, err)
+					continue
+				}
+				for _, ip := range ips {
+					targets = append(targets, ip.String())
+				}
+			} else {
+				targets = append(targets, lb.Hostname)
+			}
 		}
 	}
 
@@ -544,6 +605,7 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	var (
 		internalIPs endpoint.Targets
 		externalIPs endpoint.Targets
+		ipv6IPs     endpoint.Targets
 		nodes       []*v1.Node
 		err         error
 	)
@@ -591,24 +653,27 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
+				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
+					ipv6IPs = append(ipv6IPs, address.Address)
+				}
 			}
 		}
 	}
 
 	access := getAccessFromAnnotations(svc.Annotations)
 	if access == "public" {
-		return externalIPs, nil
+		return append(externalIPs, ipv6IPs...), nil
 	}
 	if access == "private" {
 		return internalIPs, nil
 	}
 	if len(externalIPs) > 0 {
-		return externalIPs, nil
+		return append(externalIPs, ipv6IPs...), nil
 	}
 	return internalIPs, nil
 }
 
-func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, nodeTargets endpoint.Targets, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
+func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname string, ttl endpoint.TTL) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	for _, port := range svc.Spec.Ports {

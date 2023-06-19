@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -382,8 +383,8 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *InfobloxProvider {
-	return &InfobloxProvider{
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
+	return &ProviderConfig{
 		client:       client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
@@ -418,7 +419,6 @@ func TestInfobloxRecords(t *testing.T) {
 
 	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
 	actual, err := providerCfg.Records(context.Background())
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -470,7 +470,6 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 }
 
 func TestInfobloxRecordsReverse(t *testing.T) {
-
 	client := mockIBConnector{
 		mockInfobloxZones: &[]ibclient.ZoneAuth{
 			createMockInfobloxZone("10.0.0.0/24"),
@@ -484,7 +483,6 @@ func TestInfobloxRecordsReverse(t *testing.T) {
 
 	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
 	actual, err := providerCfg.Records(context.Background())
-
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -689,16 +687,19 @@ func TestInfobloxReverseZones(t *testing.T) {
 }
 
 func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
-		Username: "user",
-		Password: "abcd",
-		Version:  "2.3.1",
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
-	requestBuilder.Init(hostConfig)
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
+	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
 
@@ -711,17 +712,47 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 	assert.True(t, req.URL.Query().Get("fqdn~") == "")
 }
 
-func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
-	hostConfig := ibclient.HostConfig{
-		Host:     "localhost",
-		Port:     "8080",
-		Username: "user",
-		Password: "abcd",
-		Version:  "2.3.1",
+func TestExtendedRequestNameRegExBuilder(t *testing.T) {
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(54321, "")
-	requestBuilder.Init(hostConfig)
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(0, "", "^staging.*test.com$")
+	requestBuilder.Init(hostCfg, authCfg)
+
+	obj := ibclient.NewEmptyRecordCNAME()
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "^staging.*test.com$")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "")
+}
+
+
+func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
+	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewEmptyRecordCNAME()
 	obj.Zone = "foo.bar.com"
@@ -733,6 +764,38 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
+}
+
+func TestGetObject(t *testing.T) {
+	hostCfg := ibclient.HostConfig{}
+	authCfg := ibclient.AuthConfig{}
+	transportConfig := ibclient.TransportConfig{}
+	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com", "")
+	requestor := mockRequestor{}
+	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
+
+	providerConfig := newInfobloxProvider(endpoint.NewDomainFilter([]string{"mysite.com"}), provider.NewZoneIDFilter([]string{""}), true, true, client)
+
+	providerConfig.deleteRecords(infobloxChangeMap{
+		"myzone.com": []*endpoint.Endpoint{
+			endpoint.NewEndpoint("deletethisrecord.com", endpoint.RecordTypeA, "1.2.3.4"),
+		},
+	})
+
+	requestQuery := requestor.request.URL.Query()
+	assert.True(t, requestQuery.Has("name"), "Expected the request to filter objects by name")
+}
+
+// Mock requestor that doesn't send request
+type mockRequestor struct {
+	request *http.Request
+}
+
+func (r *mockRequestor) Init(ibclient.AuthConfig, ibclient.TransportConfig) {}
+func (r *mockRequestor) SendRequest(req *http.Request) (res []byte, err error) {
+	res = []byte("[{}]")
+	r.request = req
+	return
 }
 
 func validateEndpoints(t *testing.T, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {

@@ -52,7 +52,7 @@ var proxyEnabled *bool = boolPtr(true)
 // proxyDisabled is a pointer to a bool false showing the record should not be proxied through cloudflare
 var proxyDisabled *bool = boolPtr(false)
 
-var cloudFlareTypeNotSupported = map[string]bool{
+var recordTypeProxyNotSupported = map[string]bool{
 	"LOC": true,
 	"MX":  true,
 	"NS":  true,
@@ -68,10 +68,10 @@ type cloudFlareDNS interface {
 	ListZones(ctx context.Context, zoneID ...string) ([]cloudflare.Zone, error)
 	ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error)
 	ZoneDetails(ctx context.Context, zoneID string) (cloudflare.Zone, error)
-	DNSRecords(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error)
-	CreateDNSRecord(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error)
-	DeleteDNSRecord(ctx context.Context, zoneID, recordID string) error
-	UpdateDNSRecord(ctx context.Context, zoneID, recordID string, rr cloudflare.DNSRecord) error
+	ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error)
+	CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (*cloudflare.DNSRecordResponse, error)
+	DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error
+	UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error
 }
 
 type zoneService struct {
@@ -90,18 +90,20 @@ func (z zoneService) ZoneIDByName(zoneName string) (string, error) {
 	return z.service.ZoneIDByName(zoneName)
 }
 
-func (z zoneService) CreateDNSRecord(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) (*cloudflare.DNSRecordResponse, error) {
-	return z.service.CreateDNSRecord(ctx, zoneID, rr)
+func (z zoneService) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (*cloudflare.DNSRecordResponse, error) {
+	return z.service.CreateDNSRecord(ctx, rc, rp)
 }
 
-func (z zoneService) DNSRecords(ctx context.Context, zoneID string, rr cloudflare.DNSRecord) ([]cloudflare.DNSRecord, error) {
-	return z.service.DNSRecords(ctx, zoneID, rr)
+func (z zoneService) ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error) {
+	return z.service.ListDNSRecords(ctx, rc, rp)
 }
-func (z zoneService) UpdateDNSRecord(ctx context.Context, zoneID, recordID string, rr cloudflare.DNSRecord) error {
-	return z.service.UpdateDNSRecord(ctx, zoneID, recordID, rr)
+
+func (z zoneService) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
+	return z.service.UpdateDNSRecord(ctx, rc, rp)
 }
-func (z zoneService) DeleteDNSRecord(ctx context.Context, zoneID, recordID string) error {
-	return z.service.DeleteDNSRecord(ctx, zoneID, recordID)
+
+func (z zoneService) DeleteDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, recordID string) error {
+	return z.service.DeleteDNSRecord(ctx, rc, recordID)
 }
 
 func (z zoneService) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
@@ -121,7 +123,7 @@ type CloudFlareProvider struct {
 	zoneIDFilter      provider.ZoneIDFilter
 	proxiedByDefault  bool
 	DryRun            bool
-	PaginationOptions cloudflare.PaginationOptions
+	DNSRecordsPerPage int
 }
 
 // cloudFlareChange differentiates between ChangActions
@@ -130,15 +132,39 @@ type cloudFlareChange struct {
 	ResourceRecord cloudflare.DNSRecord
 }
 
+// RecordParamsTypes is a typeset of the possible Record Params that can be passed to cloudflare-go library
+type RecordParamsTypes interface {
+	cloudflare.UpdateDNSRecordParams | cloudflare.CreateDNSRecordParams
+}
+
+// getRecordParam is a generic function that returns the appropriate Record Param based on the cloudFlareChange passed in
+func getRecordParam[T RecordParamsTypes](cfc cloudFlareChange) T {
+	return T{
+		Name:    cfc.ResourceRecord.Name,
+		TTL:     cfc.ResourceRecord.TTL,
+		Proxied: cfc.ResourceRecord.Proxied,
+		Type:    cfc.ResourceRecord.Type,
+		Content: cfc.ResourceRecord.Content,
+	}
+}
+
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zonesPerPage int, proxiedByDefault bool, dryRun bool) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
 		err    error
 	)
 	if os.Getenv("CF_API_TOKEN") != "" {
-		config, err = cloudflare.NewWithAPIToken(os.Getenv("CF_API_TOKEN"))
+		token := os.Getenv("CF_API_TOKEN")
+		if strings.HasPrefix(token, "file:") {
+			tokenBytes, err := os.ReadFile(strings.TrimPrefix(token, "file:"))
+			if err != nil {
+				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %w", err)
+			}
+			token = string(tokenBytes)
+		}
+		config, err = cloudflare.NewWithAPIToken(token)
 	} else {
 		config, err = cloudflare.New(os.Getenv("CF_API_KEY"), os.Getenv("CF_API_EMAIL"))
 	}
@@ -146,16 +172,13 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
 	}
 	provider := &CloudFlareProvider{
-		//Client: config,
-		Client:           zoneService{config},
-		domainFilter:     domainFilter,
-		zoneIDFilter:     zoneIDFilter,
-		proxiedByDefault: proxiedByDefault,
-		DryRun:           dryRun,
-		PaginationOptions: cloudflare.PaginationOptions{
-			PerPage: zonesPerPage,
-			Page:    1,
-		},
+		// Client: config,
+		Client:            zoneService{config},
+		domainFilter:      domainFilter,
+		zoneIDFilter:      zoneIDFilter,
+		proxiedByDefault:  proxiedByDefault,
+		DryRun:            dryRun,
+		DNSRecordsPerPage: dnsRecordsPerPage,
 	}
 	return provider, nil
 }
@@ -163,7 +186,6 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 // Zones returns the list of hosted zones.
 func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, error) {
 	result := []cloudflare.Zone{}
-	p.PaginationOptions.Page = 1
 
 	// if there is a zoneIDfilter configured
 	// && if the filter isn't just a blank string (used in tests)
@@ -174,7 +196,7 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 			detailResponse, err := p.Client.ZoneDetails(ctx, zoneID)
 			if err != nil {
 				log.Errorf("zone %s lookup failed, %v", zoneID, err)
-				continue
+				return result, err
 			}
 			log.WithFields(log.Fields{
 				"zoneName": detailResponse.Name,
@@ -212,7 +234,7 @@ func (p *CloudFlareProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 	endpoints := []*endpoint.Endpoint{}
 	for _, zone := range zones {
-		records, err := p.Client.DNSRecords(ctx, zone.ID, cloudflare.DNSRecord{})
+		records, err := p.listDNSRecordsWithAutoPagination(ctx, zone.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -241,16 +263,16 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
+		for _, a := range remove {
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
+		}
+
 		for _, a := range add {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, desired, a))
 		}
 
 		for _, a := range leave {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareUpdate, desired, a))
-		}
-
-		for _, a := range remove {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
 		}
 	}
 
@@ -286,7 +308,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	changesByZone := p.changesByZone(zones, changes)
 
 	for zoneID, changes := range changesByZone {
-		records, err := p.Client.DNSRecords(ctx, zoneID, cloudflare.DNSRecord{})
+		records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 		if err != nil {
 			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
@@ -305,13 +327,16 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				continue
 			}
 
+			resourceContainer := cloudflare.ZoneIdentifier(zoneID)
 			if change.Action == cloudFlareUpdate {
 				recordID := p.getRecordID(records, change.ResourceRecord)
 				if recordID == "" {
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				err := p.Client.UpdateDNSRecord(ctx, zoneID, recordID, change.ResourceRecord)
+				recordParam := getRecordParam[cloudflare.UpdateDNSRecordParams](*change)
+				recordParam.ID = recordID
+				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
@@ -321,12 +346,13 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to find previous record: %v", change.ResourceRecord)
 					continue
 				}
-				err := p.Client.DeleteDNSRecord(ctx, zoneID, recordID)
+				err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
 				if err != nil {
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
 				}
 			} else if change.Action == cloudFlareCreate {
-				_, err := p.Client.CreateDNSRecord(ctx, zoneID, change.ResourceRecord)
+				recordParam := getRecordParam[cloudflare.CreateDNSRecordParams](*change)
+				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
@@ -399,6 +425,26 @@ func (p *CloudFlareProvider) newCloudFlareChange(action string, endpoint *endpoi
 	}
 }
 
+// listDNSRecords performs automatic pagination of results on requests to cloudflare.ListDNSRecords with custom per_page values
+func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
+	var records []cloudflare.DNSRecord
+	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
+	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
+	for {
+		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
+		if err != nil {
+			return nil, err
+		}
+
+		records = append(records, pageRecords...)
+		params.ResultInfo = resultInfo.Next()
+		if params.ResultInfo.Done() {
+			break
+		}
+	}
+	return records, nil
+}
+
 func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
@@ -414,7 +460,7 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 		}
 	}
 
-	if cloudFlareTypeNotSupported[endpoint.RecordType] || strings.Contains(endpoint.DNSName, "*") {
+	if recordTypeProxyNotSupported[endpoint.RecordType] {
 		proxied = false
 	}
 	return proxied

@@ -24,39 +24,20 @@ import (
 // DomainFilterInterface defines the interface to select matching domains for a specific provider or runtime
 type DomainFilterInterface interface {
 	Match(domain string) bool
-	IsConfigured() bool
 }
 
 type MatchAllDomainFilters []DomainFilterInterface
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
-	if !f.IsConfigured() {
-		return true
-	}
 	for _, filter := range f {
 		if filter == nil {
 			continue
 		}
-		if filter.IsConfigured() && !filter.Match(domain) {
+		if !filter.Match(domain) {
 			return false
 		}
 	}
 	return true
-}
-
-func (f MatchAllDomainFilters) IsConfigured() bool {
-	if f == nil {
-		return false
-	}
-	for _, filter := range f {
-		if filter == nil {
-			continue
-		}
-		if filter.IsConfigured() {
-			return true
-		}
-	}
-	return len(f) > 0
 }
 
 // DomainFilter holds a lists of valid domain names
@@ -73,9 +54,11 @@ type DomainFilter struct {
 
 // prepareFilters provides consistent trimming for filters/exclude params
 func prepareFilters(filters []string) []string {
-	fs := make([]string, len(filters))
-	for i, domain := range filters {
-		fs[i] = strings.ToLower(strings.TrimSuffix(strings.TrimSpace(domain), "."))
+	var fs []string
+	for _, filter := range filters {
+		if domain := strings.ToLower(strings.TrimSuffix(strings.TrimSpace(filter), ".")); domain != "" {
+			fs = append(fs, domain)
+		}
 	}
 	return fs
 }
@@ -98,7 +81,7 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 // Match checks whether a domain can be found in the DomainFilter.
 // RegexFilter takes precedence over Filters
 func (df DomainFilter) Match(domain string) bool {
-	if df.regex != nil && df.regex.String() != "" {
+	if df.regex != nil && df.regex.String() != "" || df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return matchRegex(df.regex, df.regexExclusion, domain)
 	}
 
@@ -113,12 +96,13 @@ func matchFilter(filters []string, domain string, emptyval bool) bool {
 		return emptyval
 	}
 
+	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
 	for _, filter := range filters {
-		strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
-
 		if filter == "" {
-			return emptyval
-		} else if strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter) {
+			continue
+		}
+
+		if strings.HasPrefix(filter, ".") && strings.HasSuffix(strippedDomain, filter) {
 			return true
 		} else if strings.Count(strippedDomain, ".") == strings.Count(filter, ".") {
 			if strippedDomain == filter {
@@ -146,35 +130,32 @@ func matchRegex(regex *regexp.Regexp, negativeRegex *regexp.Regexp, domain strin
 
 // MatchParent checks wether DomainFilter matches a given parent domain.
 func (df DomainFilter) MatchParent(domain string) bool {
-	if !df.IsConfigured() {
+	if matchFilter(df.exclude, domain, false) {
+		return false
+	}
+	if len(df.Filters) == 0 {
 		return true
 	}
 
+	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
 	for _, filter := range df.Filters {
-		if strings.HasPrefix(filter, ".") {
+		if filter == "" || strings.HasPrefix(filter, ".") {
 			// We don't check parents if the filter is prefixed with "."
 			continue
 		}
-
-		if filter == "" {
-			return true
-		}
-
-		strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
-		if strings.HasSuffix(filter, "."+strippedDomain) && !matchFilter(df.exclude, domain, false) {
+		if strings.HasSuffix(filter, "."+strippedDomain) {
 			return true
 		}
 	}
-
 	return false
 }
 
-// IsConfigured returns true if DomainFilter is configured, false otherwise
+// IsConfigured returns true if any inclusion or exclusion rules have been specified.
 func (df DomainFilter) IsConfigured() bool {
 	if df.regex != nil && df.regex.String() != "" {
 		return true
-	} else if len(df.Filters) == 1 {
-		return df.Filters[0] != ""
+	} else if df.regexExclusion != nil && df.regexExclusion.String() != "" {
+		return true
 	}
-	return len(df.Filters) > 0
+	return len(df.Filters) > 0 || len(df.exclude) > 0
 }

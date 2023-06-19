@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -174,7 +173,7 @@ func TestNewDesignateProvider(t *testing.T) {
 		Type:  "CERTIFICATE",
 		Bytes: ts.Certificate().Raw,
 	}
-	tmpfile, err := ioutil.TempFile("", "os-test.crt")
+	tmpfile, err := os.CreateTemp("", "os-test.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,17 +274,7 @@ func TestDesignateRecords(t *testing.T) {
 		{
 			DNSName:    "srv.test.net",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.1"},
-			Labels: map[string]string{
-				designateRecordSetID:     rs21ID,
-				designateZoneID:          zone2ID,
-				designateOriginalRecords: "10.2.1.1\00010.2.1.2",
-			},
-		},
-		{
-			DNSName:    "srv.test.net",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"10.2.1.2"},
+			Targets:    endpoint.Targets{"10.2.1.1", "10.2.1.2"},
 			Labels: map[string]string{
 				designateRecordSetID:     rs21ID,
 				designateZoneID:          zone2ID,
@@ -329,7 +318,6 @@ func TestDesignateCreateRecords(t *testing.T) {
 }
 
 func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*recordsets.RecordSet {
-
 	for i, zoneName := range []string{"example.com.", "test.net."} {
 		client.AddZone(zones.Zone{
 			ID:     fmt.Sprintf("zone-%d", i+1),
@@ -338,6 +326,19 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 			Status: "ACTIVE",
 		})
 	}
+
+	_, err := client.CreateRecordSet("zone-1", recordsets.CreateOpts{
+		Name:        "www.example.com.",
+		Description: "",
+		Records:     []string{"foo"},
+		TTL:         60,
+		Type:        endpoint.RecordTypeTXT,
+	})
+
+	if err != nil {
+		t.Fatal("failed to prefil records")
+	}
+
 	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName:    "www.example.com",
@@ -411,7 +412,7 @@ func testDesignateCreateRecords(t *testing.T, client *fakeDesignateClient) []*re
 	expectedCopy := make([]*recordsets.RecordSet, len(expected))
 	copy(expectedCopy, expected)
 
-	err := client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Create: endpoints})
+	err = client.ToProvider().ApplyChanges(context.Background(), &plan.Changes{Create: endpoints})
 	if err != nil {
 		t.Fatal(err)
 	}

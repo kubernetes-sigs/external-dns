@@ -158,7 +158,6 @@ func (p *LinodeProvider) fetchZones(ctx context.Context) ([]linodego.Domain, err
 	var zones []linodego.Domain
 
 	allZones, err := p.Client.ListDomains(ctx, linodego.NewListOptions(0, ""))
-
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +261,6 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	recordsByZoneID := make(map[string][]linodego.DomainRecord)
 
 	zones, err := p.fetchZones(ctx)
-
 	if err != nil {
 		return err
 	}
@@ -279,7 +277,6 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	// Fetch records for each zone
 	for _, zone := range zones {
 		records, err := p.fetchRecords(ctx, zone.ID)
-
 		if err != nil {
 			return err
 		}
@@ -322,7 +319,6 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			recordType, err := convertRecordType(ep.RecordType)
-
 			if err != nil {
 				return err
 			}
@@ -371,7 +367,6 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			recordType, err := convertRecordType(ep.RecordType)
-
 			if err != nil {
 				return err
 			}
