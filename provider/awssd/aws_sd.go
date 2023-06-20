@@ -62,7 +62,7 @@ var (
 type AWSSDClient interface {
 	CreateService(input *sd.CreateServiceInput) (*sd.CreateServiceOutput, error)
 	DeregisterInstance(input *sd.DeregisterInstanceInput) (*sd.DeregisterInstanceOutput, error)
-	DiscoverInstances(input *sd.DiscoverInstancesInput) (*sd.DiscoverInstancesOutput, error)
+	DiscoverInstancesWithContext(ctx aws.Context, input *sd.DiscoverInstancesInput, opts ...request.Option) (*sd.DiscoverInstancesOutput, error)
 	ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error
 	ListServicesPages(input *sd.ListServicesInput, fn func(*sd.ListServicesOutput, bool) bool) error
 	RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error)
@@ -164,21 +164,22 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 		}
 
 		for _, srv := range services {
-			instances, err := p.DiscoverInstancesByServiceName(ns.Name, srv.Name)
+			resp, err := p.client.DiscoverInstancesWithContext(ctx, &sd.DiscoverInstancesInput{
+				NamespaceName: ns.Name,
+				ServiceName:   srv.Name,
+			})
 			if err != nil {
 				return nil, err
 			}
 
-			if len(instances) > 0 {
-				ep := p.instancesToEndpoint(ns, srv, instances)
-				endpoints = append(endpoints, ep)
-			}
-			if len(instances) == 0 {
-				err = p.DeleteService(srv)
-				if err != nil {
-					log.Warnf("Failed to delete service \"%s\", error: %s", aws.StringValue(srv.Name), err)
+			if len(resp.Instances) == 0 {
+				if err := p.DeleteService(srv); err != nil {
+					log.Warnf("Failed to delete service %q, error: %s", aws.StringValue(srv.Name), err)
 				}
+				continue
 			}
+
+			endpoints = append(endpoints, p.instancesToEndpoint(ns, srv, resp.Instances))
 		}
 	}
 
@@ -414,23 +415,6 @@ func (p *AWSSDProvider) ListServicesByNamespaceID(namespaceID *string) (map[stri
 	return servicesMap, nil
 }
 
-// DiscoverInstancesByServiceID returns list of instances registered in given service.
-func (p *AWSSDProvider) DiscoverInstancesByServiceName(namespaceName, serviceName *string) ([]*sd.HttpInstanceSummary, error) {
-	instances := make([]*sd.HttpInstanceSummary, 0)
-
-	resp, err := p.client.DiscoverInstances(&sd.DiscoverInstancesInput{
-		NamespaceName: namespaceName,
-		ServiceName:   serviceName,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	instances = append(instances, resp.Instances...)
-
-	return instances, nil
-}
-
 // CreateService creates a new service in AWS API. Returns the created service.
 func (p *AWSSDProvider) CreateService(namespaceID *string, srvName *string, ep *endpoint.Endpoint) (*sd.Service, error) {
 	log.Infof("Creating a new service \"%s\" in \"%s\" namespace", *srvName, *namespaceID)
@@ -617,19 +601,6 @@ func serviceToServiceSummary(service *sd.Service) *sd.ServiceSummary {
 		InstanceCount:           service.InstanceCount,
 		Name:                    service.Name,
 		Type:                    service.Type,
-	}
-}
-
-// nolint: deadcode
-// used from unit test
-func instanceToHTTPInstanceSummary(instance *sd.Instance) *sd.HttpInstanceSummary {
-	if instance == nil {
-		return nil
-	}
-
-	return &sd.HttpInstanceSummary{
-		InstanceId: instance.Id,
-		Attributes: instance.Attributes,
 	}
 }
 
