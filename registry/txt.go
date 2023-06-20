@@ -96,7 +96,7 @@ func getSupportedTypes() []string {
 	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}
 }
 
-func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 

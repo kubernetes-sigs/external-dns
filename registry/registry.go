@@ -34,7 +34,7 @@ type Registry interface {
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	PropertyValuesEqual(attribute string, previous string, current string) bool
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
-	GetDomainFilter() endpoint.DomainFilterInterface
+	GetDomainFilter() endpoint.DomainFilter
 }
 
 // TODO(ideahitme): consider moving this to Plan

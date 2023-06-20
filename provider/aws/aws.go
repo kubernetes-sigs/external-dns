@@ -517,11 +517,11 @@ func (p *AWSProvider) createUpdateChanges(newEndpoints, oldEndpoints []*endpoint
 }
 
 // GetDomainFilter generates a filter to exclude any domain that is not controlled by the provider
-func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilter {
 	zones, err := p.Zones(context.Background())
 	if err != nil {
 		log.Errorf("failed to list zones: %v", err)
-		return &endpoint.DomainFilter{}
+		return endpoint.DomainFilter{}
 	}
 	zoneNames := []string(nil)
 	for _, z := range zones {

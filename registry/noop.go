@@ -36,7 +36,7 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 	}, nil
 }
 
-func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 

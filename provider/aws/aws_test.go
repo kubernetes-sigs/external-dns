@@ -319,7 +319,7 @@ func TestAWSRecordsFilter(t *testing.T) {
 	assert.NotNil(t, domainFilter)
 	require.IsType(t, endpoint.DomainFilter{}, domainFilter)
 	count := 0
-	filters := domainFilter.(endpoint.DomainFilter).Filters
+	filters := domainFilter.Filters
 	for _, tld := range []string{
 		"zone-4.ext-dns-test-3.teapot.zalan.do",
 		".zone-4.ext-dns-test-3.teapot.zalan.do",
