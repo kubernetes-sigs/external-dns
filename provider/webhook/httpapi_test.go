@@ -187,24 +187,10 @@ func TestAdjustEndpointsWithValidRequest(t *testing.T) {
 	require.NotNil(t, res.Body)
 }
 
-func TestNegotiate(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	w := httptest.NewRecorder()
-	providerAPIServer := &ProviderAPIServer{
-		provider: &FakeWebhookProvider{},
-	}
-	providerAPIServer.negotiate(w, req)
-	res := w.Result()
-	require.Equal(t, contentTypeHeader, res.Header.Get(varyHeader))
-	require.Equal(t, mediaTypeFormatAndVersion, res.Header.Get(contentTypeHeader))
-	require.Equal(t, http.StatusOK, res.StatusCode)
-}
-
 func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
 	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
 	<-startedChan
-	resp, err := http.Get("http://127.0.0.1:8887")
+	_, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)
-	require.Equal(t, mediaTypeFormatAndVersion, resp.Header.Get(contentTypeHeader))
 }

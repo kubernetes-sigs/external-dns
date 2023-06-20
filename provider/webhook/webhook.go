@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 
-	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -103,42 +102,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, err
 	}
 
-	// negotiate API information
-	req, err := http.NewRequest("GET", u, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
-
 	client := &http.Client{}
-	var resp *http.Response
-	err = backoff.Retry(func() error {
-		resp, err = client.Do(req)
-		if err != nil {
-			log.Debugf("Failed to connect to webhook api: %v", err)
-			return err
-		}
-		// we currently only use 200 as success, but considering okay all 2XX for future usage
-		if resp.StatusCode >= 300 && resp.StatusCode < 500 {
-			return backoff.Permanent(fmt.Errorf("status code < 500"))
-		}
-		return nil
-	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries))
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to webhook api: %v", err)
-	}
-
-	vary := resp.Header.Get(varyHeader)
-	contentType := resp.Header.Get(contentTypeHeader)
-
-	if vary != contentTypeHeader {
-		return nil, fmt.Errorf("wrong vary value returned from server: %s", vary)
-	}
-
-	if contentType != mediaTypeFormatAndVersion {
-		return nil, fmt.Errorf("wrong content type returned from server: %s", contentType)
-	}
 
 	return &WebhookProvider{
 		client:          client,
@@ -196,6 +160,9 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Failed to create request: %s", err.Error())
 		return err
 	}
+
+	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
+
 	resp, err := p.client.Do(req)
 	if err != nil {
 		applyChangesErrorsGauge.Inc()
@@ -236,7 +203,10 @@ func (p WebhookProvider) PropertyValuesEqual(name string, previous string, curre
 		log.Debugf("Failed to create request: %s", err)
 		return true
 	}
+
+	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
 	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+
 	resp, err := p.client.Do(req)
 	if err != nil {
 		propertyValuesEqualErrorsGauge.Inc()
@@ -286,7 +256,10 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.End
 		log.Debugf("Failed to create new HTTP request, %s", err)
 		return endpoints
 	}
+
+	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
 	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+
 	resp, err := p.client.Do(req)
 	if err != nil {
 		adjustEndpointsErrorsGauge.Inc()

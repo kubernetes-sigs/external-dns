@@ -23,7 +23,7 @@ The following table represents the methods to implement mapped to their HTTP met
 | PropertyValuesEqual | POST | /propertyvaluesequal |
 | AdjustEndpoints | POST | /adjustendpoints |
 
-Additionally, the server needs to respond to `GET` requests on `/` to negotiate versions by content type as described in [this document](http://opensource.zalando.com/restful-api-guidelines/#114). The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Vary` header including the value `Content-Type` and a `Content-Type` header specifying the supported media type format and version.
+The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.
 
 **NOTE**: only `5xx` responses will be retried and only `200` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS' side.
 

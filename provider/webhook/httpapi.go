@@ -53,7 +53,7 @@ func (p *ProviderAPIServer) recordsHandler(w http.ResponseWriter, req *http.Requ
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(records)
 		return
@@ -90,7 +90,7 @@ func (p *ProviderAPIServer) propertyValuesEqualHandler(w http.ResponseWriter, re
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 	b := p.provider.PropertyValuesEqual(pve.Name, pve.Previous, pve.Current)
 	r := PropertyValuesEqualsResponse{
 		Equals: b,
@@ -113,18 +113,12 @@ func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *h
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 	pve = p.provider.AdjustEndpoints(pve)
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-}
-
-func (p *ProviderAPIServer) negotiate(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set(varyHeader, contentTypeHeader)
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	w.WriteHeader(http.StatusOK)
 }
 
 // StartHTTPApi starts a HTTP server given any provider.
@@ -141,7 +135,6 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 	}
 
 	m := http.NewServeMux()
-	m.HandleFunc("/", p.negotiate)
 	m.HandleFunc("/records", p.recordsHandler)
 	m.HandleFunc("/propertyvaluesequal", p.propertyValuesEqualHandler)
 	m.HandleFunc("/adjustendpoints", p.adjustEndpointsHandler)
