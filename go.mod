@@ -15,9 +15,9 @@ require (
 	github.com/StackExchange/dnscontrol/v3 v3.31.6
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.377
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.380
 	github.com/ans-group/sdk-go v1.16.5
-	github.com/aws/aws-sdk-go v1.44.283
+	github.com/aws/aws-sdk-go v1.44.285
 	github.com/bodgit/tsig v1.2.2
 	github.com/civo/civogo v0.3.14
 	github.com/cloudflare/cloudflare-go v0.69.0
@@ -36,11 +36,11 @@ require (
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.17.0
 	github.com/maxatome/go-testdeep v1.13.0
-	github.com/miekg/dns v1.1.54
+	github.com/miekg/dns v1.1.55
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
 	github.com/oracle/oci-go-sdk/v65 v65.41.0
 	github.com/ovh/go-ovh v1.4.1
@@ -51,9 +51,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.682
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.682
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.682
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.684
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.684
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.684
 	github.com/transip/gotransip/v6 v6.20.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -70,9 +70,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v0.0.0-20230524015941-fa6c5f7916bf
 	istio.io/client-go v1.18.0
-	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.2
-	k8s.io/client-go v0.27.2
+	k8s.io/api v0.27.3
+	k8s.io/apimachinery v0.27.3
+	k8s.io/client-go v0.27.3
 	sigs.k8s.io/gateway-api v0.7.1
 )
 
