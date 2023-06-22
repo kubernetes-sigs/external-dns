@@ -51,6 +51,9 @@ spec:
         - --exoscale-apisecret={{ api-secret }}
 ```
 
+Optionaly you can also specify [API Zone](https://community.exoscale.com/documentation/platform/exoscale-datacenter-zones/)
+with `--exoscale-apizone` and select *staging* API environment with `--exoscale-apienv` arguments.
+
 ## RBAC
 
 If your cluster is RBAC enabled, you also need to setup the following, before you can run external-dns:
