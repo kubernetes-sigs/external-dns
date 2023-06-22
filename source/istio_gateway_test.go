@@ -321,6 +321,28 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "service with externalIPs returns a single endpoint with a targets",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"1.2.3.4"},
+					namespace:   "",
+					name:        "gateway1",
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"}, // Kubernetes requires removal of trailing dot
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -1256,11 +1278,12 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService) (*gatewa
 }
 
 type fakeIngressGatewayService struct {
-	ips       []string
-	hostnames []string
-	namespace string
-	name      string
-	selector  map[string]string
+	ips         []string
+	hostnames   []string
+	externalIPs []string
+	namespace   string
+	name        string
+	selector    map[string]string
 }
 
 func (ig fakeIngressGatewayService) Service() *v1.Service {
@@ -1288,6 +1311,9 @@ func (ig fakeIngressGatewayService) Service() *v1.Service {
 		svc.Status.LoadBalancer.Ingress = append(svc.Status.LoadBalancer.Ingress, v1.LoadBalancerIngress{
 			Hostname: hostname,
 		})
+	}
+	for _, ip := range ig.externalIPs {
+		svc.Spec.ExternalIPs = append(svc.Spec.ExternalIPs, ip)
 	}
 
 	return svc

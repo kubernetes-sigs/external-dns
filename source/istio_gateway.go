@@ -28,7 +28,6 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -258,7 +257,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway networkingv1alpha3.Gateway) 
 			}
 		}
 
-		if service.Spec.Type == corev1.ServiceTypeLoadBalancer && service.Spec.ExternalIPs != nil {
+		if service.Spec.ExternalIPs != nil {
 			for _, ext := range service.Spec.ExternalIPs {
 				targets = append(targets, ext)
 			}

@@ -557,6 +557,37 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "service with externalIPs returns a single endpoint with a targets",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"1.2.3.4"},
+					namespace:   "",
+					name:        "service1",
+					selector: map[string]string{
+						"app": "myservice",
+					},
+				},
+			},
+			gwconfig: fakeGatewayConfig{
+				name:     "mygw",
+				dnsnames: [][]string{{"foo.bar"}},
+				selector: map[string]string{
+					"app": "myservice",
+				},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.2.3.4"},
+				},
+			},
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {

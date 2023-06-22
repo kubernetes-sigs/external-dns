@@ -28,7 +28,6 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -456,11 +455,11 @@ func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1alpha3.G
 			} else if lb.Hostname != "" {
 				targets = append(targets, lb.Hostname)
 			}
+		}
 
-			if service.Spec.Type == corev1.ServiceTypeLoadBalancer && service.Spec.ExternalIPs != nil {
-				for _, ext := range service.Spec.ExternalIPs {
-					targets = append(targets, ext)
-				}
+		if service.Spec.ExternalIPs != nil {
+			for _, ext := range service.Spec.ExternalIPs {
+				targets = append(targets, ext)
 			}
 		}
 	}
