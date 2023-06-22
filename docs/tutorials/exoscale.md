@@ -49,10 +49,12 @@ spec:
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
         - --exoscale-apikey={{ api-key}}
         - --exoscale-apisecret={{ api-secret }}
+        # - --exoscale-apizone={{ api-zone }}
+        # - --exoscale-apienv={{ api-env }}
 ```
 
-Optionaly you can also specify [API Zone](https://community.exoscale.com/documentation/platform/exoscale-datacenter-zones/)
-with `--exoscale-apizone` and select *staging* API environment with `--exoscale-apienv` arguments.
+Optional arguments `--exoscale-apizone` and `--exoscale-apienv` define [Exoscale API Zone](https://community.exoscale.com/documentation/platform/exoscale-datacenter-zones/)
+(default `ch-gva-2`) and Exoscale API environment (default `api`, can be used to target non-production API server) respectively.
 
 ## RBAC
 
