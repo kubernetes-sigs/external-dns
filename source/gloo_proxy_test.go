@@ -220,7 +220,7 @@ func TestGlooSource(t *testing.T) {
 			proxyGVR: "ProxyList",
 		})
 
-	source, err := NewGlooSource(fakeDynamicClient, fakeKubernetesClient, defaultGlooNamespace)
+	source, err := NewGlooSource(fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
 	assert.NoError(t, err)
 	assert.NotNil(t, source)
 
