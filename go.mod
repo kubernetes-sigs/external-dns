@@ -11,16 +11,16 @@ require (
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.13.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.1.0
 	github.com/IBM/go-sdk-core/v5 v5.13.4
-	github.com/IBM/networking-go-sdk v0.42.0
+	github.com/IBM/networking-go-sdk v0.42.1
 	github.com/StackExchange/dnscontrol/v3 v3.31.6
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.380
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.382
 	github.com/ans-group/sdk-go v1.16.5
-	github.com/aws/aws-sdk-go v1.44.285
+	github.com/aws/aws-sdk-go v1.44.288
 	github.com/bodgit/tsig v1.2.2
-	github.com/civo/civogo v0.3.14
-	github.com/cloudflare/cloudflare-go v0.69.0
+	github.com/civo/civogo v0.3.37
+	github.com/cloudflare/cloudflare-go v0.70.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
@@ -30,19 +30,19 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.6.0
 	github.com/google/go-cmp v0.5.9
-	github.com/gophercloud/gophercloud v1.4.0
+	github.com/gophercloud/gophercloud v1.5.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client/v2 v2.3.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.17.0
+	github.com/linode/linodego v1.17.2
 	github.com/maxatome/go-testdeep v1.13.0
 	github.com/miekg/dns v1.1.55
 	github.com/nesv/go-dynect v0.6.0
 	github.com/nic-at/rc0go v1.1.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/openshift/api v0.0.0-20230607130528-611114dca681
-	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.41.0
+	github.com/openshift/api v3.9.0+incompatible
+	github.com/openshift/client-go v3.9.0+incompatible
+	github.com/oracle/oci-go-sdk/v65 v65.41.1
 	github.com/ovh/go-ovh v1.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.3.17
@@ -51,9 +51,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.684
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.684
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.684
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.686
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.686
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.686
 	github.com/transip/gotransip/v6 v6.20.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -115,6 +115,7 @@ require (
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
+	github.com/golang/glog v1.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
@@ -128,7 +129,7 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.3 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
