@@ -25,11 +25,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/linki/instrumented_http"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
@@ -226,49 +223,15 @@ type AWSConfig struct {
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
-	AssumeRole           string
-	AssumeRoleExternalID string
-	APIRetries           int
 	PreferCNAME          bool
 	DryRun               bool
 	ZoneCacheDuration    time.Duration
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
-func NewAWSProvider(awsConfig AWSConfig) (*AWSProvider, error) {
-	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
-
-	config.WithHTTPClient(
-		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		}),
-	)
-
-	session, err := session.NewSessionWithOptions(session.Options{
-		Config:            *config,
-		SharedConfigState: session.SharedConfigEnable,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to instantiate AWS session")
-	}
-
-	if awsConfig.AssumeRole != "" {
-		if awsConfig.AssumeRoleExternalID != "" {
-			log.Infof("Assuming role: %s with external id %s", awsConfig.AssumeRole, awsConfig.AssumeRoleExternalID)
-			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole, func(p *stscreds.AssumeRoleProvider) {
-				p.ExternalID = &awsConfig.AssumeRoleExternalID
-			}))
-		} else {
-			log.Infof("Assuming role: %s", awsConfig.AssumeRole)
-			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
-		}
-	}
-
+func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error) {
 	provider := &AWSProvider{
-		client:               route53.New(session),
+		client:               client,
 		domainFilter:         awsConfig.DomainFilter,
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,

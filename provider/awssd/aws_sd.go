@@ -25,15 +25,10 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
-	"github.com/linki/instrumented_http"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
-	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -86,42 +81,9 @@ type AWSSDProvider struct {
 }
 
 // NewAWSSDProvider initializes a new AWS Cloud Map based Provider.
-func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, assumeRole string, assumeRoleExternalID string, dryRun, cleanEmptyService bool, ownerID string) (*AWSSDProvider, error) {
-	config := aws.NewConfig()
-
-	config = config.WithHTTPClient(
-		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		}),
-	)
-
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config:            *config,
-		SharedConfigState: session.SharedConfigEnable,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if assumeRole != "" {
-		if assumeRoleExternalID != "" {
-			log.Infof("Assuming role %q with external ID %q", assumeRole, assumeRoleExternalID)
-			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole, func(p *stscreds.AssumeRoleProvider) {
-				p.ExternalID = &assumeRoleExternalID
-			}))
-		} else {
-			log.Infof("Assuming role: %s", assumeRole)
-			sess.Config.WithCredentials(stscreds.NewCredentials(sess, assumeRole))
-		}
-	}
-
-	sess.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler("ExternalDNS", externaldns.Version))
-
+func NewAWSSDProvider(domainFilter endpoint.DomainFilter, namespaceType string, dryRun, cleanEmptyService bool, ownerID string, client AWSSDClient) (*AWSSDProvider, error) {
 	provider := &AWSSDProvider{
-		client:              sd.New(sess),
+		client:              client,
 		dryRun:              dryRun,
 		namespaceFilter:     domainFilter,
 		namespaceTypeFilter: newSdNamespaceFilter(namespaceType),

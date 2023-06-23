@@ -271,7 +271,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 	endpointsType := getEndpointsTypeFromAnnotations(svc.Annotations)
 
-	targetsByHeadlessDomainAndType := make(map[endpointKey]endpoint.Targets)
+	targetsByHeadlessDomainAndType := make(map[endpoint.EndpointKey]endpoint.Targets)
 	for _, subset := range endpointsObject.Subsets {
 		addresses := subset.Addresses
 		if svc.Spec.PublishNotReadyAddresses || sc.alwaysPublishNotReadyAddresses {
@@ -325,9 +325,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 					}
 				}
 				for _, target := range targets {
-					key := endpointKey{
-						dnsName:    headlessDomain,
-						recordType: suitableType(target),
+					key := endpoint.EndpointKey{
+						DNSName:    headlessDomain,
+						RecordType: suitableType(target),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -335,15 +335,15 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 	}
 
-	headlessKeys := []endpointKey{}
+	headlessKeys := []endpoint.EndpointKey{}
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
 	}
 	sort.Slice(headlessKeys, func(i, j int) bool {
-		if headlessKeys[i].dnsName != headlessKeys[j].dnsName {
-			return headlessKeys[i].dnsName < headlessKeys[j].dnsName
+		if headlessKeys[i].DNSName != headlessKeys[j].DNSName {
+			return headlessKeys[i].DNSName < headlessKeys[j].DNSName
 		}
-		return headlessKeys[i].recordType < headlessKeys[j].recordType
+		return headlessKeys[i].RecordType < headlessKeys[j].RecordType
 	})
 	for _, headlessKey := range headlessKeys {
 		allTargets := targetsByHeadlessDomainAndType[headlessKey]
@@ -361,9 +361,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 		}
 
 		if ttl.IsConfigured() {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessKey.dnsName, headlessKey.recordType, ttl, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...))
 		} else {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.dnsName, headlessKey.recordType, targets...))
+			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...))
 		}
 	}
 
