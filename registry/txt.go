@@ -321,7 +321,9 @@ func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMap
 	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
 }
 
-func extractRecordType(name string) (baseName, recordType string) {
+// extractRecordTypeDefaultPosition extracts record type from the default position
+// when not using '%{record_type}' in the prefix/suffix
+func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
 	nameS := strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
 		if nameS[0] == strings.ToLower(t) {
@@ -331,32 +333,34 @@ func extractRecordType(name string) (baseName, recordType string) {
 	return name, ""
 }
 
-// dropAffix strips TXT record to find an endpoint name it manages
-// It takes into consideration a fact that it could contain record type
-// So it gets stripped first
-func (pr affixNameMapper) dropAffix(name string) string {
+// dropAffixExtractType strips TXT record to find an endpoint name it manages
+// it also returns the record type
+func (pr affixNameMapper) dropAffixExtractType(name string) (string, string) {
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
 			t = strings.ToLower(t)
 			iPrefix := strings.ReplaceAll(pr.prefix, recordTemplate, t)
 			iSuffix := strings.ReplaceAll(pr.suffix, recordTemplate, t)
+
 			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
-				return strings.TrimPrefix(name, iPrefix)
+				return strings.TrimPrefix(name, iPrefix), t
 			}
 
 			if pr.isSuffix() && strings.HasSuffix(name, iSuffix) {
-				return strings.TrimSuffix(name, iSuffix)
+				return strings.TrimSuffix(name, iSuffix), t
 			}
 		}
 	}
+
 	if strings.HasPrefix(name, pr.prefix) && pr.isPrefix() {
-		return strings.TrimPrefix(name, pr.prefix)
+		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, pr.prefix))
 	}
 
 	if strings.HasSuffix(name, pr.suffix) && pr.isSuffix() {
-		return strings.TrimSuffix(name, pr.suffix)
+		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, pr.suffix))
 	}
-	return ""
+
+	return "", ""
 }
 
 func (pr affixNameMapper) dropAffixTemplate(name string) string {
@@ -372,17 +376,22 @@ func (pr affixNameMapper) isSuffix() bool {
 }
 
 func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string, isAAAA bool) {
-	lowerDNSName, recordType := extractRecordType(strings.ToLower(txtDNSName))
+	lowerDNSName := strings.ToLower(txtDNSName)
 
 	// drop prefix
-	if strings.HasPrefix(lowerDNSName, pr.prefix) && pr.isPrefix() {
-		return pr.dropAffix(lowerDNSName), recordType == endpoint.RecordTypeAAAA
+	if pr.isPrefix() {
+		r, rType := pr.dropAffixExtractType(lowerDNSName)
+		return r, rType == endpoint.RecordTypeAAAA
 	}
 
 	// drop suffix
 	if pr.isSuffix() {
-		DNSName := strings.SplitN(lowerDNSName, ".", 2)
-		return pr.dropAffix(DNSName[0]) + "." + DNSName[1], recordType == endpoint.RecordTypeAAAA
+		dc := strings.Count(pr.suffix, ".")
+		DNSName := strings.SplitN(lowerDNSName, ".", 2+dc)
+		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
+
+		r, rType := pr.dropAffixExtractType(domainWithSuffix)
+		return r + "." + DNSName[1+dc], rType == endpoint.RecordTypeAAAA
 	}
 	return "", false
 }

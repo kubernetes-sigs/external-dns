@@ -114,7 +114,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 			newEndpointWithOwner("dualstack.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
 			newEndpointWithOwner("txt.dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
-			newEndpointWithOwner("aaaa-txt.dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("txt.aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -216,13 +216,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+	assert.ElementsMatch(t, expectedRecords, records)
 
 	// Ensure prefix is case-insensitive
 	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "", []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
+	assert.ElementsMatch(t, expectedRecords, records)
 }
 
 func testTXTRegistryRecordsSuffixed(t *testing.T) {
@@ -1116,8 +1116,8 @@ func TestDropPrefix(t *testing.T) {
 	aRecord := "foo-a-test.example.com"
 	expectedCnameRecord := "test.example.com"
 	expectedARecord := "test.example.com"
-	actualCnameRecord := mapper.dropAffix(cnameRecord)
-	actualARecord := mapper.dropAffix(aRecord)
+	actualCnameRecord, _ := mapper.dropAffixExtractType(cnameRecord)
+	actualARecord, _ := mapper.dropAffixExtractType(aRecord)
 	assert.Equal(t, expectedCnameRecord, actualCnameRecord)
 	assert.Equal(t, expectedARecord, actualARecord)
 }
@@ -1127,11 +1127,12 @@ func TestDropSuffix(t *testing.T) {
 	aRecord := "test-a-foo.example.com"
 	expectedARecord := "test.example.com"
 	r := strings.SplitN(aRecord, ".", 2)
-	actualARecord := mapper.dropAffix(r[0]) + "." + r[1]
+	rClean, _ := mapper.dropAffixExtractType(r[0])
+	actualARecord := rClean + "." + r[1]
 	assert.Equal(t, expectedARecord, actualARecord)
 }
 
-func TestExtractRecordType(t *testing.T) {
+func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 	tests := []struct {
 		input        string
 		expectedName string
@@ -1160,9 +1161,89 @@ func TestExtractRecordType(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
-			actualName, actualType := extractRecordType(tc.input)
+			actualName, actualType := extractRecordTypeDefaultPosition(tc.input)
 			assert.Equal(t, tc.expectedName, actualName)
 			assert.Equal(t, tc.expectedType, actualType)
+		})
+	}
+}
+
+func TestToEndpointNameNewTXT(t *testing.T) {
+	type testCase struct {
+		name       string
+		mapper     affixNameMapper
+		domain     string
+		recordType string
+	}
+
+	testCases := []testCase{
+		{
+			name:       "prefix",
+			mapper:     newaffixNameMapper("foo", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+		{
+			name:       "suffix",
+			mapper:     newaffixNameMapper("", "foo", ""),
+			domain:     "example.com",
+			recordType: "AAAA",
+		},
+		{
+			name:       "prefix with dash",
+			mapper:     newaffixNameMapper("foo-", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+		{
+			name:       "suffix with dash",
+			mapper:     newaffixNameMapper("", "-foo", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "prefix with dot",
+			mapper:     newaffixNameMapper("foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "suffix with dot",
+			mapper:     newaffixNameMapper("", ".foo", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "templated prefix",
+			mapper:     newaffixNameMapper("%{record_type}-foo", "", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+		{
+			name:       "templated suffix",
+			mapper:     newaffixNameMapper("", "foo-%{record_type}", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+		{
+			name:       "templated prefix with dot",
+			mapper:     newaffixNameMapper("%{record_type}foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "templated suffix with dot",
+			mapper:     newaffixNameMapper("", ".foo%{record_type}", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			txtName := tc.mapper.toNewTXTName(tc.domain, tc.recordType)
+			res, _ := tc.mapper.toEndpointName(txtName)
+			assert.Equal(t, tc.domain, res)
 		})
 	}
 }
