@@ -46,7 +46,7 @@ type VirtualServiceSuite struct {
 	suite.Suite
 	source     Source
 	lbServices []*v1.Service
-	gwconfig   networkingv1alpha3.Gateway
+	gwconfig   *networkingv1alpha3.Gateway
 	vsconfig   *networkingv1alpha3.VirtualService
 }
 
@@ -80,7 +80,7 @@ func (suite *VirtualServiceSuite) SetupTest() {
 		namespace: "istio-system",
 		dnsnames:  [][]string{{"*"}},
 	}).Config()
-	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), &suite.gwconfig, metav1.CreateOptions{})
+	_, err = fakeIstioClient.NetworkingV1alpha3().Gateways(suite.gwconfig.Namespace).Create(context.Background(), suite.gwconfig, metav1.CreateOptions{})
 	suite.NoError(err, "should succeed")
 
 	suite.vsconfig = (fakeVirtualServiceConfig{
@@ -366,7 +366,7 @@ func testVirtualServiceBindsToGateway(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			vsconfig := ti.vsconfig.Config()
 			gwconfig := ti.gwconfig.Config()
-			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, &gwconfig, ti.vsHost))
+			require.Equal(t, ti.expected, virtualServiceBindsToGateway(vsconfig, gwconfig, ti.vsHost))
 		})
 	}
 }
@@ -1483,7 +1483,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
 
-			var gateways []networkingv1alpha3.Gateway
+			var gateways []*networkingv1alpha3.Gateway
 			var virtualservices []*networkingv1alpha3.VirtualService
 
 			for _, gwItem := range ti.gwConfigs {
@@ -1504,7 +1504,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 
 			for _, gateway := range gateways {
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), &gateway, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gateway.Namespace).Create(context.Background(), gateway, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1585,7 +1585,7 @@ func newTestVirtualServiceSource(loadBalancerList []fakeIngressGatewayService, g
 		gwObj := gw.Config()
 		// use create instead of add
 		// https://github.com/kubernetes/client-go/blob/92512ee2b8cf6696e9909245624175b7f0c971d9/testing/fixture.go#LL336C3-L336C52
-		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), &gwObj, metav1.CreateOptions{})
+		_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(gw.namespace).Create(context.Background(), gwObj, metav1.CreateOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -1637,7 +1637,7 @@ func (c fakeVirtualServiceConfig) Config() *networkingv1alpha3.VirtualService {
 			Namespace:   c.namespace,
 			Annotations: c.annotations,
 		},
-		Spec: vs,
+		Spec: *vs.DeepCopy(),
 	}
 }
 
@@ -1751,7 +1751,13 @@ func TestVirtualServiceSourceGetGateway(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
-			assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			if tt.want != nil && got != nil {
+				tt.want.Spec.ProtoReflect()
+				tt.want.Status.ProtoReflect()
+				assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			} else {
+				assert.Equalf(t, tt.want, got, "getGateway(%v, %v, %v)", tt.args.ctx, tt.args.gatewayStr, tt.args.virtualService)
+			}
 		})
 	}
 }
