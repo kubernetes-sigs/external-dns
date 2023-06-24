@@ -24,7 +24,7 @@ as Kubernetes does with the AWS cloud provider.
 In the examples that follow, it is assumed that you configured the ALB Ingress
 Controller with the `ingress-class=alb` argument (not to be confused with the
 same argument to ExternalDNS) so that the controller will only respect Ingress
-objects with the `kubernetes.io/ingress.class` annotation set to "alb".
+objects with the `ingressClassName` field set to "alb".
 
 ## Deploy an example application
 
@@ -80,7 +80,6 @@ kind: Ingress
 metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
-    kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
   ingressClassName: alb
@@ -120,7 +119,6 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     external-dns.alpha.kubernetes.io/hostname: echoserver.mycluster.example.org, echoserver.example.org
-    kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
   ingressClassName: alb
@@ -159,7 +157,6 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/ip-address-type: dualstack
-    kubernetes.io/ingress.class: alb
   name: echoserver
 spec:
   ingressClassName: alb

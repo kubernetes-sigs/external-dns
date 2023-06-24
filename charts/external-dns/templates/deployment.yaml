@@ -89,6 +89,9 @@ spec:
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
             {{- end }}
+            {{- if .Values.namespaced }}
+            - --namespace={{ .Release.Namespace }}
+            {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}

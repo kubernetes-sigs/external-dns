@@ -122,6 +122,17 @@ func cNameRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetPr
 	}
 }
 
+func mxRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
+	mxRecords := make([]dns.MxRecord, len(values))
+	for i, target := range values {
+		mxRecords[i], _ = parseMxTarget[dns.MxRecord](target)
+	}
+	return &dns.RecordSetProperties{
+		TTL:       to.Int64Ptr(ttl),
+		MxRecords: &mxRecords,
+	}
+}
+
 func txtRecordSetPropertiesGetter(values []string, ttl int64) *dns.RecordSetProperties {
 	return &dns.RecordSetProperties{
 		TTL: to.Int64Ptr(ttl),
@@ -155,6 +166,8 @@ func createMockRecordSetMultiWithTTL(name, recordType string, ttl int64, values 
 		getterFunc = aRecordSetPropertiesGetter
 	case endpoint.RecordTypeCNAME:
 		getterFunc = cNameRecordSetPropertiesGetter
+	case endpoint.RecordTypeMX:
+		getterFunc = mxRecordSetPropertiesGetter
 	case endpoint.RecordTypeTXT:
 		getterFunc = txtRecordSetPropertiesGetter
 	default:
@@ -271,6 +284,7 @@ func TestAzureRecord(t *testing.T) {
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com"),
 		})
 	if err != nil {
 		t.Fatal(err)
@@ -287,6 +301,7 @@ func TestAzureRecord(t *testing.T) {
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -305,6 +320,7 @@ func TestAzureMultiRecord(t *testing.T) {
 			createMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+			createMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 		})
 	if err != nil {
 		t.Fatal(err)
@@ -321,6 +337,7 @@ func TestAzureMultiRecord(t *testing.T) {
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -332,8 +349,6 @@ func TestAzureApplyChanges(t *testing.T) {
 	testAzureApplyChangesInternal(t, false, &recordsClient)
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, ""),
-		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, ""),
 		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, ""),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
@@ -349,6 +364,9 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
 		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
+		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 	})
 }
 
@@ -410,17 +428,21 @@ func testAzureApplyChangesInternal(t *testing.T, dryRun bool, client RecordSetsC
 		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
+		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
 	}
 
 	currentRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("old.example.com", endpoint.RecordTypeA, "121.212.121.212"),
 		endpoint.NewEndpoint("oldcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("old.nope.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("oldmail.example.com", endpoint.RecordTypeMX, "20 foo.other.com"),
 	}
 	updatedRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
 		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
 		endpoint.NewEndpoint("new.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
@@ -455,6 +477,7 @@ func TestAzureNameFilter(t *testing.T) {
 			createMockRecordSetWithTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
 			createMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createMockRecordSetWithTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
 			createMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 		})
 	if err != nil {
@@ -470,6 +493,7 @@ func TestAzureNameFilter(t *testing.T) {
 		endpoint.NewEndpointWithTTL("test.nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpointWithTTL("mail.nginx.example.com", endpoint.RecordTypeMX, recordTTL, "20 example.com"),
 	}
 
 	validateAzureEndpoints(t, actual, expected)
@@ -481,8 +505,6 @@ func TestAzureApplyChangesZoneName(t *testing.T) {
 	testAzureApplyChangesInternalZoneName(t, false, &recordsClient)
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
-		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, ""),
-		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
 		endpoint.NewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, ""),
 		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
 	})

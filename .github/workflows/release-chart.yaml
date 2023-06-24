@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           chart_version="$(grep -Po "(?<=^version: ).+" charts/external-dns/Chart.yaml)"
-          echo "::set-output name=version::${chart_version}"
+          echo "version=${chart_version}" >> $GITHUB_OUTPUT
 
       - name: Get changelog entry
         id: changelog_reader

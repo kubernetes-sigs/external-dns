@@ -199,7 +199,7 @@ func (p AkamaiProvider) fetchZones() (akamaiZones, error) {
 	}
 
 	for _, zone := range resp.Zones {
-		if p.domainFilter.Match(zone.Zone) || !p.domainFilter.IsConfigured() {
+		if p.domainFilter.Match(zone.Zone) {
 			filteredZones.Zones = append(filteredZones.Zones, akamaiZone{ContractID: zone.ContractId, Zone: zone.Zone})
 			log.Debugf("Fetched zone: '%s' (ZoneID: %s)", zone.Zone, zone.ContractId)
 		}
@@ -426,7 +426,7 @@ func (p AkamaiProvider) deleteRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 		rec, err := p.client.GetRecord(zoneName, recName, endpoint.RecordType)
 		if err != nil {
 			if _, ok := err.(*dns.RecordError); !ok {
-				return fmt.Errorf("endpoint deletion. record validation failed. error: %s", err.Error())
+				return fmt.Errorf("endpoint deletion. record validation failed. error: %w", err)
 			}
 			log.Infof("Endpoint deletion. Record doesn't exist. Name: %s, Type: %s", recName, endpoint.RecordType)
 			continue

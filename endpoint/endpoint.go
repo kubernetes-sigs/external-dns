@@ -30,6 +30,8 @@ import (
 const (
 	// RecordTypeA is a RecordType enum value
 	RecordTypeA = "A"
+	// RecordTypeAAAA is a RecordType enum value
+	RecordTypeAAAA = "AAAA"
 	// RecordTypeCNAME is a RecordType enum value
 	RecordTypeCNAME = "CNAME"
 	// RecordTypeTXT is a RecordType enum value
@@ -40,6 +42,8 @@ const (
 	RecordTypeNS = "NS"
 	// RecordTypePTR is a RecordType enum value
 	RecordTypePTR = "PTR"
+	// RecordTypeMX is a RecordType enum value
+	RecordTypeMX = "MX"
 )
 
 // TTL is a structure defining the TTL of a DNS record
@@ -158,13 +162,20 @@ type ProviderSpecificProperty struct {
 // ProviderSpecific holds configuration which is specific to individual DNS providers
 type ProviderSpecific []ProviderSpecificProperty
 
+// EndpointKey is the type of a map key for separating endpoints or targets.
+type EndpointKey struct {
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
+}
+
 // Endpoint is a high-level way of a connection between a service and an IP
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string `json:"dnsName,omitempty"`
 	// The targets the DNS record points to
 	Targets Targets `json:"targets,omitempty"`
-	// RecordType type of record, e.g. CNAME, A, SRV, TXT etc
+	// RecordType type of record, e.g. CNAME, A, AAAA, SRV, TXT etc
 	RecordType string `json:"recordType,omitempty"`
 	// Identifier to distinguish multiple records with the same name and type (e.g. Route53 records with routing policies other than 'simple')
 	SetIdentifier string `json:"setIdentifier,omitempty"`
@@ -218,22 +229,52 @@ func (e *Endpoint) WithSetIdentifier(setIdentifier string) *Endpoint {
 // warrant its own field on the Endpoint object itself. It differs from Labels in the fact that it's
 // not persisted in the Registry but only kept in memory during a single record synchronization.
 func (e *Endpoint) WithProviderSpecific(key, value string) *Endpoint {
-	if e.ProviderSpecific == nil {
-		e.ProviderSpecific = ProviderSpecific{}
-	}
-
-	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+	e.SetProviderSpecificProperty(key, value)
 	return e
 }
 
-// GetProviderSpecificProperty returns a ProviderSpecificProperty if the property exists.
-func (e *Endpoint) GetProviderSpecificProperty(key string) (ProviderSpecificProperty, bool) {
+// GetProviderSpecificProperty returns the value of a ProviderSpecificProperty if the property exists.
+func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 	for _, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
-			return providerSpecific, true
+			return providerSpecific.Value, true
 		}
 	}
-	return ProviderSpecificProperty{}, false
+	return "", false
+}
+
+// SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
+func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
+	for i, providerSpecific := range e.ProviderSpecific {
+		if providerSpecific.Name == key {
+			e.ProviderSpecific[i] = ProviderSpecificProperty{
+				Name:  key,
+				Value: value,
+			}
+			return
+		}
+	}
+
+	e.ProviderSpecific = append(e.ProviderSpecific, ProviderSpecificProperty{Name: key, Value: value})
+}
+
+// DeleteProviderSpecificProperty deletes any ProviderSpecificProperty of the specified name.
+func (e *Endpoint) DeleteProviderSpecificProperty(key string) {
+	for i, providerSpecific := range e.ProviderSpecific {
+		if providerSpecific.Name == key {
+			e.ProviderSpecific = append(e.ProviderSpecific[:i], e.ProviderSpecific[i+1:]...)
+			return
+		}
+	}
+}
+
+// Key returns the EndpointKey of the Endpoint.
+func (e *Endpoint) Key() EndpointKey {
+	return EndpointKey{
+		DNSName:       e.DNSName,
+		RecordType:    e.RecordType,
+		SetIdentifier: e.SetIdentifier,
+	}
 }
 
 func (e *Endpoint) String() string {

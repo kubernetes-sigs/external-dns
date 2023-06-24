@@ -125,11 +125,46 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 				Version:  "v1beta1",
 				Resource: "tcpingresses",
 			}: "TCPIngressesList",
+			{
+				Group:    "cis.f5.com",
+				Version:  "v1",
+				Resource: "virtualservers",
+			}: "VirtualServersList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressroutes",
+			}: "IngressRouteList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressroutetcps",
+			}: "IngressRouteTCPList",
+			{
+				Group:    "traefik.containo.us",
+				Version:  "v1alpha1",
+				Resource: "ingressrouteudps",
+			}: "IngressRouteUDPList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressroutes",
+			}: "IngressRouteList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressroutetcps",
+			}: "IngressRouteTCPList",
+			{
+				Group:    "traefik.io",
+				Version:  "v1alpha1",
+				Resource: "ingressrouteudps",
+			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "fake"}, minimalConfig)
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, minimalConfig)
 	suite.NoError(err, "should not generate errors")
-	suite.Len(sources, 6, "should generate all six sources")
+	suite.Len(sources, 8, "should generate all eight sources")
 }
 
 func (suite *ByNamesTestSuite) TestOnlyFake() {

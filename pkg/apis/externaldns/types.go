@@ -43,162 +43,170 @@ var Version = "unknown"
 
 // Config is a project-wide configuration
 type Config struct {
-	APIServerURL                      string
-	KubeConfig                        string
-	RequestTimeout                    time.Duration
-	DefaultTargets                    []string
-	ContourLoadBalancerService        string
-	GlooNamespaces                    []string
-	SkipperRouteGroupVersion          string
-	Sources                           []string
-	Namespace                         string
-	AnnotationFilter                  string
-	LabelFilter                       string
-	FQDNTemplate                      string
-	CombineFQDNAndAnnotation          bool
-	IgnoreHostnameAnnotation          bool
-	IgnoreIngressTLSSpec              bool
-	IgnoreIngressRulesSpec            bool
-	GatewayNamespace                  string
-	GatewayLabelFilter                string
-	Compatibility                     string
-	PublishInternal                   bool
-	PublishHostIP                     bool
-	AlwaysPublishNotReadyAddresses    bool
-	ConnectorSourceServer             string
-	Provider                          string
-	GoogleProject                     string
-	GoogleBatchChangeSize             int
-	GoogleBatchChangeInterval         time.Duration
-	GoogleZoneVisibility              string
-	DomainFilter                      []string
-	ExcludeDomains                    []string
-	RegexDomainFilter                 *regexp.Regexp
-	RegexDomainExclusion              *regexp.Regexp
-	ZoneNameFilter                    []string
-	ZoneIDFilter                      []string
-	TargetNetFilter                   []string
-	ExcludeTargetNets                 []string
-	AlibabaCloudConfigFile            string
-	AlibabaCloudZoneType              string
-	AWSZoneType                       string
-	AWSZoneTagFilter                  []string
-	AWSAssumeRole                     string
-	AWSAssumeRoleExternalID           string
-	AWSBatchChangeSize                int
-	AWSBatchChangeInterval            time.Duration
-	AWSEvaluateTargetHealth           bool
-	AWSAPIRetries                     int
-	AWSPreferCNAME                    bool
-	AWSZoneCacheDuration              time.Duration
-	AWSSDServiceCleanup               bool
-	AzureConfigFile                   string
-	AzureResourceGroup                string
-	AzureSubscriptionID               string
-	AzureUserAssignedIdentityClientID string
-	BluecatDNSConfiguration           string
-	BluecatConfigFile                 string
-	BluecatDNSView                    string
-	BluecatGatewayHost                string
-	BluecatRootZone                   string
-	BluecatDNSServerName              string
-	BluecatDNSDeployType              string
-	BluecatSkipTLSVerify              bool
-	CloudflareProxied                 bool
-	CloudflareDNSRecordsPerPage       int
-	CoreDNSPrefix                     string
-	RcodezeroTXTEncrypt               bool
-	AkamaiServiceConsumerDomain       string
-	AkamaiClientToken                 string
-	AkamaiClientSecret                string
-	AkamaiAccessToken                 string
-	AkamaiEdgercPath                  string
-	AkamaiEdgercSection               string
-	InfobloxGridHost                  string
-	InfobloxWapiPort                  int
-	InfobloxWapiUsername              string
-	InfobloxWapiPassword              string `secure:"yes"`
-	InfobloxWapiVersion               string
-	InfobloxSSLVerify                 bool
-	InfobloxView                      string
-	InfobloxMaxResults                int
-	InfobloxFQDNRegEx                 string
-	InfobloxNameRegEx                 string
-	InfobloxCreatePTR                 bool
-	InfobloxCacheDuration             int
-	DynCustomerName                   string
-	DynUsername                       string
-	DynPassword                       string `secure:"yes"`
-	DynMinTTLSeconds                  int
-	OCIConfigFile                     string
-	InMemoryZones                     []string
-	OVHEndpoint                       string
-	OVHApiRateLimit                   int
-	PDNSServer                        string
-	PDNSAPIKey                        string `secure:"yes"`
-	PDNSTLSEnabled                    bool
-	TLSCA                             string
-	TLSClientCert                     string
-	TLSClientCertKey                  string
-	Policy                            string
-	Registry                          string
-	TXTOwnerID                        string
-	TXTPrefix                         string
-	TXTSuffix                         string
-	Interval                          time.Duration
-	MinEventSyncInterval              time.Duration
-	Once                              bool
-	DryRun                            bool
-	UpdateEvents                      bool
-	LogFormat                         string
-	MetricsAddress                    string
-	LogLevel                          string
-	TXTCacheInterval                  time.Duration
-	TXTWildcardReplacement            string
-	ExoscaleEndpoint                  string
-	ExoscaleAPIKey                    string `secure:"yes"`
-	ExoscaleAPISecret                 string `secure:"yes"`
-	CRDSourceAPIVersion               string
-	CRDSourceKind                     string
-	ServiceTypeFilter                 []string
-	CFAPIEndpoint                     string
-	CFUsername                        string
-	CFPassword                        string
-	RFC2136Host                       string
-	RFC2136Port                       int
-	RFC2136Zone                       string
-	RFC2136Insecure                   bool
-	RFC2136GSSTSIG                    bool
-	RFC2136KerberosRealm              string
-	RFC2136KerberosUsername           string
-	RFC2136KerberosPassword           string `secure:"yes"`
-	RFC2136TSIGKeyName                string
-	RFC2136TSIGSecret                 string `secure:"yes"`
-	RFC2136TSIGSecretAlg              string
-	RFC2136TAXFR                      bool
-	RFC2136MinTTL                     time.Duration
-	RFC2136BatchChangeSize            int
-	NS1Endpoint                       string
-	NS1IgnoreSSL                      bool
-	NS1MinTTLSeconds                  int
-	TransIPAccountName                string
-	TransIPPrivateKeyFile             string
-	DigitalOceanAPIPageSize           int
-	ManagedDNSRecordTypes             []string
-	GoDaddyAPIKey                     string `secure:"yes"`
-	GoDaddySecretKey                  string `secure:"yes"`
-	GoDaddyTTL                        int64
-	GoDaddyOTE                        bool
-	OCPRouterName                     string
-	IBMCloudProxied                   bool
-	IBMCloudConfigFile                string
-	TencentCloudConfigFile            string
-	TencentCloudZoneType              string
-	PiholeServer                      string
-	PiholePassword                    string `secure:"yes"`
-	PiholeTLSInsecureSkipVerify       bool
-	PluralCluster                     string
-	PluralProvider                    string
+	APIServerURL                       string
+	KubeConfig                         string
+	RequestTimeout                     time.Duration
+	DefaultTargets                     []string
+	ContourLoadBalancerService         string
+	GlooNamespaces                     []string
+	SkipperRouteGroupVersion           string
+	Sources                            []string
+	Namespace                          string
+	AnnotationFilter                   string
+	LabelFilter                        string
+	IngressClassNames                  []string
+	FQDNTemplate                       string
+	CombineFQDNAndAnnotation           bool
+	IgnoreHostnameAnnotation           bool
+	IgnoreIngressTLSSpec               bool
+	IgnoreIngressRulesSpec             bool
+	GatewayNamespace                   string
+	GatewayLabelFilter                 string
+	Compatibility                      string
+	PublishInternal                    bool
+	PublishHostIP                      bool
+	AlwaysPublishNotReadyAddresses     bool
+	ConnectorSourceServer              string
+	Provider                           string
+	GoogleProject                      string
+	GoogleBatchChangeSize              int
+	GoogleBatchChangeInterval          time.Duration
+	GoogleZoneVisibility               string
+	DomainFilter                       []string
+	ExcludeDomains                     []string
+	RegexDomainFilter                  *regexp.Regexp
+	RegexDomainExclusion               *regexp.Regexp
+	ZoneNameFilter                     []string
+	ZoneIDFilter                       []string
+	TargetNetFilter                    []string
+	ExcludeTargetNets                  []string
+	AlibabaCloudConfigFile             string
+	AlibabaCloudZoneType               string
+	AWSZoneType                        string
+	AWSZoneTagFilter                   []string
+	AWSAssumeRole                      string
+	AWSAssumeRoleExternalID            string
+	AWSBatchChangeSize                 int
+	AWSBatchChangeInterval             time.Duration
+	AWSEvaluateTargetHealth            bool
+	AWSAPIRetries                      int
+	AWSPreferCNAME                     bool
+	AWSZoneCacheDuration               time.Duration
+	AWSSDServiceCleanup                bool
+	AWSDynamoDBRegion                  string
+	AWSDynamoDBTable                   string
+	AzureConfigFile                    string
+	AzureResourceGroup                 string
+	AzureSubscriptionID                string
+	AzureUserAssignedIdentityClientID  string
+	BluecatDNSConfiguration            string
+	BluecatConfigFile                  string
+	BluecatDNSView                     string
+	BluecatGatewayHost                 string
+	BluecatRootZone                    string
+	BluecatDNSServerName               string
+	BluecatDNSDeployType               string
+	BluecatSkipTLSVerify               bool
+	CloudflareProxied                  bool
+	CloudflareDNSRecordsPerPage        int
+	CoreDNSPrefix                      string
+	RcodezeroTXTEncrypt                bool
+	AkamaiServiceConsumerDomain        string
+	AkamaiClientToken                  string
+	AkamaiClientSecret                 string
+	AkamaiAccessToken                  string
+	AkamaiEdgercPath                   string
+	AkamaiEdgercSection                string
+	InfobloxGridHost                   string
+	InfobloxWapiPort                   int
+	InfobloxWapiUsername               string
+	InfobloxWapiPassword               string `secure:"yes"`
+	InfobloxWapiVersion                string
+	InfobloxSSLVerify                  bool
+	InfobloxView                       string
+	InfobloxMaxResults                 int
+	InfobloxFQDNRegEx                  string
+	InfobloxNameRegEx                  string
+	InfobloxCreatePTR                  bool
+	InfobloxCacheDuration              int
+	DynCustomerName                    string
+	DynUsername                        string
+	DynPassword                        string `secure:"yes"`
+	DynMinTTLSeconds                   int
+	OCIConfigFile                      string
+	OCICompartmentOCID                 string
+	OCIAuthInstancePrincipal           bool
+	InMemoryZones                      []string
+	OVHEndpoint                        string
+	OVHApiRateLimit                    int
+	PDNSServer                         string
+	PDNSAPIKey                         string `secure:"yes"`
+	PDNSTLSEnabled                     bool
+	TLSCA                              string
+	TLSClientCert                      string
+	TLSClientCertKey                   string
+	Policy                             string
+	Registry                           string
+	TXTOwnerID                         string
+	TXTPrefix                          string
+	TXTSuffix                          string
+	TXTEncryptEnabled                  bool
+	TXTEncryptAESKey                   string
+	Interval                           time.Duration
+	MinEventSyncInterval               time.Duration
+	Once                               bool
+	DryRun                             bool
+	UpdateEvents                       bool
+	LogFormat                          string
+	MetricsAddress                     string
+	LogLevel                           string
+	TXTCacheInterval                   time.Duration
+	TXTWildcardReplacement             string
+	ExoscaleEndpoint                   string
+	ExoscaleAPIKey                     string `secure:"yes"`
+	ExoscaleAPISecret                  string `secure:"yes"`
+	CRDSourceAPIVersion                string
+	CRDSourceKind                      string
+	ServiceTypeFilter                  []string
+	CFAPIEndpoint                      string
+	CFUsername                         string
+	CFPassword                         string
+	ResolveServiceLoadBalancerHostname bool
+	RFC2136Host                        string
+	RFC2136Port                        int
+	RFC2136Zone                        string
+	RFC2136Insecure                    bool
+	RFC2136GSSTSIG                     bool
+	RFC2136KerberosRealm               string
+	RFC2136KerberosUsername            string
+	RFC2136KerberosPassword            string `secure:"yes"`
+	RFC2136TSIGKeyName                 string
+	RFC2136TSIGSecret                  string `secure:"yes"`
+	RFC2136TSIGSecretAlg               string
+	RFC2136TAXFR                       bool
+	RFC2136MinTTL                      time.Duration
+	RFC2136BatchChangeSize             int
+	NS1Endpoint                        string
+	NS1IgnoreSSL                       bool
+	NS1MinTTLSeconds                   int
+	TransIPAccountName                 string
+	TransIPPrivateKeyFile              string
+	DigitalOceanAPIPageSize            int
+	ManagedDNSRecordTypes              []string
+	GoDaddyAPIKey                      string `secure:"yes"`
+	GoDaddySecretKey                   string `secure:"yes"`
+	GoDaddyTTL                         int64
+	GoDaddyOTE                         bool
+	OCPRouterName                      string
+	IBMCloudProxied                    bool
+	IBMCloudConfigFile                 string
+	TencentCloudConfigFile             string
+	TencentCloudZoneType               string
+	PiholeServer                       string
+	PiholePassword                     string `secure:"yes"`
+	PiholeTLSInsecureSkipVerify        bool
+	PluralCluster                      string
+	PluralProvider                     string
 }
 
 var defaultConfig = &Config{
@@ -213,6 +221,7 @@ var defaultConfig = &Config{
 	Namespace:                   "",
 	AnnotationFilter:            "",
 	LabelFilter:                 labels.Everything().String(),
+	IngressClassNames:           nil,
 	FQDNTemplate:                "",
 	CombineFQDNAndAnnotation:    false,
 	IgnoreHostnameAnnotation:    false,
@@ -248,6 +257,8 @@ var defaultConfig = &Config{
 	AWSPreferCNAME:              false,
 	AWSZoneCacheDuration:        0 * time.Second,
 	AWSSDServiceCleanup:         false,
+	AWSDynamoDBRegion:           "",
+	AWSDynamoDBTable:            "external-dns",
 	AzureConfigFile:             "/etc/kubernetes/azure.json",
 	AzureResourceGroup:          "",
 	AzureSubscriptionID:         "",
@@ -292,6 +303,8 @@ var defaultConfig = &Config{
 	TXTCacheInterval:            0,
 	TXTWildcardReplacement:      "",
 	MinEventSyncInterval:        5 * time.Second,
+	TXTEncryptEnabled:           false,
+	TXTEncryptAESKey:            "",
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -327,7 +340,7 @@ var defaultConfig = &Config{
 	TransIPAccountName:          "",
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
-	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
 	GoDaddyAPIKey:               "",
 	GoDaddySecretKey:            "",
 	GoDaddyTTL:                  600,
@@ -388,6 +401,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("server", "The Kubernetes API server to connect to (default: auto-detect)").Default(defaultConfig.APIServerURL).StringVar(&cfg.APIServerURL)
 	app.Flag("kubeconfig", "Retrieve target cluster configuration from a Kubernetes configuration file (default: auto-detect)").Default(defaultConfig.KubeConfig).StringVar(&cfg.KubeConfig)
 	app.Flag("request-timeout", "Request timeout when calling Kubernetes APIs. 0s means no timeout").Default(defaultConfig.RequestTimeout.String()).DurationVar(&cfg.RequestTimeout)
+	app.Flag("resolve-service-load-balancer-hostname", "Resolve the hostname of LoadBalancer-type Service object to IP addresses in order to create DNS A/AAAA records instead of CNAMEs").BoolVar(&cfg.ResolveServiceLoadBalancerHostname)
 
 	// Flags related to cloud foundry
 	app.Flag("cf-api-endpoint", "The fully-qualified domain name of the cloud foundry instance you are targeting").Default(defaultConfig.CFAPIEndpoint).StringVar(&cfg.CFAPIEndpoint)
@@ -404,11 +418,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing source
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "traefik-proxy")
 	app.Flag("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.").StringVar(&cfg.OCPRouterName)
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
 	app.Flag("label-filter", "Filter sources managed by external-dns via label selector when listing all resources; currently supported by source types CRD, ingress, service and openshift-route").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
+	app.Flag("ingress-class", "Require an ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
 	app.Flag("ignore-hostname-annotation", "Ignore hostname annotation when generating DNS names, valid only when using fqdn-template is set (optional, default: false)").BoolVar(&cfg.IgnoreHostnameAnnotation)
@@ -424,7 +439,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
-	app.Flag("managed-record-types", "Comma separated list of record types to manage (default: A, CNAME) (supported records: CNAME, A, NS").Default("A", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
+	app.Flag("managed-record-types", "Record types to manage; specify multiple times to include many; (default: A, AAAA, CNAME) (supported records: CNAME, A, AAAA, NS").Default("A", "AAAA", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
 	app.Flag("default-targets", "Set globally default IP address that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
@@ -446,12 +461,12 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
-	app.Flag("aws-assume-role", "When using the AWS provider, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
-	app.Flag("aws-assume-role-external-id", "When using the AWS provider and assuming a role then specify this external ID` (optional)").Default(defaultConfig.AWSAssumeRoleExternalID).StringVar(&cfg.AWSAssumeRoleExternalID)
+	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
+	app.Flag("aws-assume-role-external-id", "When using the AWS API and assuming a role then specify this external ID` (optional)").Default(defaultConfig.AWSAssumeRoleExternalID).StringVar(&cfg.AWSAssumeRoleExternalID)
 	app.Flag("aws-batch-change-size", "When using the AWS provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSize)).IntVar(&cfg.AWSBatchChangeSize)
 	app.Flag("aws-batch-change-interval", "When using the AWS provider, set the interval between batch changes.").Default(defaultConfig.AWSBatchChangeInterval.String()).DurationVar(&cfg.AWSBatchChangeInterval)
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
-	app.Flag("aws-api-retries", "When using the AWS provider, set the maximum number of retries for API calls before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
+	app.Flag("aws-api-retries", "When using the AWS API, set the maximum number of retries before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
@@ -498,6 +513,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("dyn-password", "When using the Dyn provider, specify the password").Default("").StringVar(&cfg.DynPassword)
 	app.Flag("dyn-min-ttl", "Minimal TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is lower than this.").IntVar(&cfg.DynMinTTLSeconds)
 	app.Flag("oci-config-file", "When using the OCI provider, specify the OCI configuration file (required when --provider=oci").Default(defaultConfig.OCIConfigFile).StringVar(&cfg.OCIConfigFile)
+	app.Flag("oci-compartment-ocid", "When using the OCI provider, specify the OCID of the OCI compartment containing all managed zones and records.  Required when using OCI IAM instance principal authentication.").StringVar(&cfg.OCICompartmentOCID)
+	app.Flag("oci-auth-instance-principal", "When using the OCI provider, specify whether OCI IAM instance principal authentication should be used (instead of key-based auth via the OCI config file).").Default(strconv.FormatBool(defaultConfig.OCIAuthInstancePrincipal)).BoolVar(&cfg.OCIAuthInstancePrincipal)
 	app.Flag("rcodezero-txt-encrypt", "When using the Rcodezero provider with txt registry option, set if TXT rrs are encrypted (default: false)").Default(strconv.FormatBool(defaultConfig.RcodezeroTXTEncrypt)).BoolVar(&cfg.RcodezeroTXTEncrypt)
 	app.Flag("inmemory-zone", "Provide a list of pre-configured zones for the inmemory provider; specify multiple times for multiple zones (optional)").Default("").StringsVar(&cfg.InMemoryZones)
 	app.Flag("ovh-endpoint", "When using the OVH provider, specify the endpoint (default: ovh-eu)").Default(defaultConfig.OVHEndpoint).StringVar(&cfg.OVHEndpoint)
@@ -559,11 +576,15 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("policy", "Modify how DNS records are synchronized between sources and providers (default: sync, options: sync, upsert-only, create-only)").Default(defaultConfig.Policy).EnumVar(&cfg.Policy, "sync", "upsert-only", "create-only")
 
 	// Flags related to the registry
-	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "aws-sd")
-	app.Flag("txt-owner-id", "When using the TXT registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
+	app.Flag("registry", "The registry implementation to use to keep track of DNS record ownership (default: txt, options: txt, noop, dynamodb, aws-sd)").Default(defaultConfig.Registry).EnumVar(&cfg.Registry, "txt", "noop", "dynamodb", "aws-sd")
+	app.Flag("txt-owner-id", "When using the TXT or DynamoDB registry, a name that identifies this instance of ExternalDNS (default: default)").Default(defaultConfig.TXTOwnerID).StringVar(&cfg.TXTOwnerID)
 	app.Flag("txt-prefix", "When using the TXT registry, a custom string that's prefixed to each ownership DNS record (optional). Could contain record type template like '%{record_type}-prefix-'. Mutual exclusive with txt-suffix!").Default(defaultConfig.TXTPrefix).StringVar(&cfg.TXTPrefix)
 	app.Flag("txt-suffix", "When using the TXT registry, a custom string that's suffixed to the host portion of each ownership DNS record (optional). Could contain record type template like '-%{record_type}-suffix'. Mutual exclusive with txt-prefix!").Default(defaultConfig.TXTSuffix).StringVar(&cfg.TXTSuffix)
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
+	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
+	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
+	app.Flag("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)").Default(cfg.AWSDynamoDBRegion).StringVar(&cfg.AWSDynamoDBRegion)
+	app.Flag("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")").Default(defaultConfig.AWSDynamoDBTable).StringVar(&cfg.AWSDynamoDBTable)
 
 	// Flags related to the main control loop
 	app.Flag("txt-cache-interval", "The interval between cache synchronizations in duration format (default: disabled)").Default(defaultConfig.TXTCacheInterval.String()).DurationVar(&cfg.TXTCacheInterval)
