@@ -562,12 +562,12 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 }
 
 func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
-	var (
-		targets     endpoint.Targets
-		externalIPs endpoint.Targets
-	)
+	if len(svc.Spec.ExternalIPs) > 0 {
+		return svc.Spec.ExternalIPs
+	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
+	var targets endpoint.Targets
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			targets = append(targets, lb.IP)
@@ -586,16 +586,6 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 				targets = append(targets, lb.Hostname)
 			}
 		}
-	}
-
-	if svc.Spec.ExternalIPs != nil {
-		for _, ext := range svc.Spec.ExternalIPs {
-			externalIPs = append(externalIPs, ext)
-		}
-	}
-
-	if len(externalIPs) > 0 {
-		return externalIPs
 	}
 
 	return targets
