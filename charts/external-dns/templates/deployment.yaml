@@ -78,7 +78,15 @@ spec:
             {{- end }}
             - --policy={{ .Values.policy }}
             - --registry={{ .Values.registry }}
-            {{- if eq .Values.registry "txt" }}
+            {{- if eq .Values.registry "dynamodb" }}
+            {{- if .Values.dynamodbRegion }}
+            - --dynamodb-region={{ .Values.dynamodbRegion }}
+            {{- end }}
+            {{- if .Values.dynamodbTable }}
+            - --dynamodb-table={{ .Values.dynamodbTable }}
+            {{- end }}
+            {{- end }}
+            {{- if has .Values.registry (list "dynamodb" "txt") }}
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}

@@ -162,9 +162,21 @@ sources:
 
 policy: upsert-only
 
+# Specifies the registry for storing ownership and labels.
+# Valid values are "aws-sd", "noop", "dynamodb", and "txt".
 registry: txt
+# When using the "dynamodb" registry, specifies the AWS region of the DynamoDB table.
+# Defaults to the default AWS region.
+dynamodbRegion:
+# When using the "dynamodb" registry, specifies the name of the DynamoDB table.
+# Defaults to "external-dns".
+dynamodbTable: "external-dns"
+# When using the "txt" or "dynamodb" registry, specifies a name that
+# uniquely identifies this instance of external-dns.
 txtOwnerId: ""
+# Specifies a prefix for the domain names of TXT records created by the "txt" registry. Optional.
 txtPrefix: ""
+# Specifies a suffix for the domain names of TXT records created by the "txt" registry. Optional.
 txtSuffix: ""
 
 domainFilters: []
