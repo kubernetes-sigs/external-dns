@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,13 +34,13 @@ import (
 const (
 	gdMinimalTTL = 600
 	gdCreate     = 0
-	gdUpdate     = 1
+	gdReplace    = 1
 	gdDelete     = 2
 )
 
 var actionNames = []string{
 	"create",
-	"update",
+	"replace",
 	"delete",
 }
 
@@ -82,9 +82,8 @@ type gdRecordField struct {
 	Service  *string `json:"service,omitempty"`
 }
 
-type gdUpdateRecordField struct {
+type gdReplaceRecordField struct {
 	Data     string  `json:"data"`
-	Name     string  `json:"name"`
 	TTL      int64   `json:"ttl"`
 	Port     *int    `json:"port,omitempty"`
 	Priority *int    `json:"priority,omitempty"`
@@ -247,7 +246,7 @@ func (p *GDProvider) records(ctx *context.Context, zone string, all bool) (*gdRe
 
 			results.records = append(results.records, rec)
 		} else {
-			log.Infof("GoDaddy: Discard record %s for %s is %+v", rec.Name, zone, rec)
+			log.Infof("GoDaddy: Ignore record %s for %s is %+v", rec.Name, zone, rec)
 		}
 	}
 
@@ -347,28 +346,20 @@ func (p *GDProvider) changeAllRecords(endpoints []gdEndpoint, zoneRecords []*gdR
 			log.Debugf("Skipping record %s because no hosted zone matching record DNS Name was detected", dnsName)
 		} else {
 			dnsName = strings.TrimSuffix(dnsName, "."+zone)
+			if dnsName == zone {
+				dnsName = ""
+			}
 
 			if e.endpoint.RecordType == endpoint.RecordTypeA && (len(dnsName) == 0) {
 				dnsName = "@"
 			}
 
-			for _, target := range e.endpoint.Targets {
-				change := gdRecordField{
-					Type: e.endpoint.RecordType,
-					Name: dnsName,
-					TTL:  p.ttl,
-					Data: target,
-				}
+			e.endpoint.RecordTTL = endpoint.TTL(maxOf(gdMinimalTTL, int64(e.endpoint.RecordTTL)))
 
-				if e.endpoint.RecordTTL.IsConfigured() {
-					change.TTL = maxOf(gdMinimalTTL, int64(e.endpoint.RecordTTL))
-				}
+			if err := zoneRecord.applyEndpoint(e.action, p.client, *e.endpoint, dnsName, p.DryRun); err != nil {
+				log.Errorf("Unable to apply change %s on record %s type %s, %v", actionNames[e.action], dnsName, e.endpoint.RecordType, err)
 
-				if err := zoneRecord.applyChange(e.action, p.client, change, p.DryRun); err != nil {
-					log.Errorf("Unable to apply change %s on record %s, %v", actionNames[e.action], change, err)
-
-					return err
-				}
+				return err
 			}
 		}
 	}
@@ -393,11 +384,49 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 		changedZoneRecords[i] = &records[i]
 	}
 
-	allChanges := make([]gdEndpoint, 0, countTargets(changes))
+	var allChanges []gdEndpoint
 
 	allChanges = p.appendChange(gdDelete, changes.Delete, allChanges)
-	allChanges = p.appendChange(gdDelete, changes.UpdateOld, allChanges)
-	allChanges = p.appendChange(gdCreate, changes.UpdateNew, allChanges)
+
+	iOldSkip := make(map[int]bool)
+	iNewSkip := make(map[int]bool)
+
+	for iOld, recOld := range changes.UpdateOld {
+		for iNew, recNew := range changes.UpdateNew {
+			if recOld.DNSName == recNew.DNSName && recOld.RecordType == recNew.RecordType {
+				ReplaceEndpoints := []*endpoint.Endpoint{recNew}
+				allChanges = p.appendChange(gdReplace, ReplaceEndpoints, allChanges)
+				iOldSkip[iOld] = true
+				iNewSkip[iNew] = true
+				break
+			}
+		}
+	}
+
+	for iOld, recOld := range changes.UpdateOld {
+		_, found := iOldSkip[iOld]
+		if found {
+			continue
+		}
+		for iNew, recNew := range changes.UpdateNew {
+			_, found := iNewSkip[iNew]
+			if found {
+				continue
+			}
+
+			if recOld.DNSName != recNew.DNSName {
+				continue
+			}
+
+			DeleteEndpoints := []*endpoint.Endpoint{recOld}
+			CreateEndpoints := []*endpoint.Endpoint{recNew}
+			allChanges = p.appendChange(gdDelete, DeleteEndpoints, allChanges)
+			allChanges = p.appendChange(gdCreate, CreateEndpoints, allChanges)
+
+			break
+		}
+	}
+
 	allChanges = p.appendChange(gdCreate, changes.Create, allChanges)
 
 	log.Infof("GoDaddy: %d changes will be done", len(allChanges))
@@ -409,18 +438,73 @@ func (p *GDProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) er
 	return nil
 }
 
-func (p *gdRecords) addRecord(client gdClient, change gdRecordField, dryRun bool) error {
+func (p *gdRecords) addRecord(client gdClient, endpoint endpoint.Endpoint, dnsName string, dryRun bool) error {
+	var response GDErrorResponse
+	for _, target := range endpoint.Targets {
+		change := gdRecordField{
+			Type: endpoint.RecordType,
+			Name: dnsName,
+			TTL:  int64(endpoint.RecordTTL),
+			Data: target,
+		}
+
+		p.records = append(p.records, change)
+		p.changed = true
+
+		log.Debugf("GoDaddy: Add an entry %s to zone %s", change.String(), p.zone)
+		if dryRun {
+			log.Infof("[DryRun] - Add record %s.%s of type %s %s", change.Name, p.zone, change.Type, toString(change))
+		} else if err := client.Patch(fmt.Sprintf("/v1/domains/%s/records", p.zone), []gdRecordField{change}, &response); err != nil {
+			log.Errorf("Add record %s.%s of type %s failed: %s", change.Name, p.zone, change.Type, response)
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *gdRecords) replaceRecord(client gdClient, endpoint endpoint.Endpoint, dnsName string, dryRun bool) error {
+	changed := []gdReplaceRecordField{}
+	records := []string{}
+
+	for _, target := range endpoint.Targets {
+		change := gdRecordField{
+			Type: endpoint.RecordType,
+			Name: dnsName,
+			TTL:  int64(endpoint.RecordTTL),
+			Data: target,
+		}
+
+		for index, record := range p.records {
+			if record.Type == change.Type && record.Name == change.Name {
+				p.records[index] = change
+				p.changed = true
+			}
+		}
+		records = append(records, target)
+		changed = append(changed, gdReplaceRecordField{
+			Data:     change.Data,
+			TTL:      change.TTL,
+			Port:     change.Port,
+			Priority: change.Priority,
+			Weight:   change.Weight,
+			Protocol: change.Protocol,
+			Service:  change.Service,
+		})
+	}
+
 	var response GDErrorResponse
 
-	log.Debugf("GoDaddy: Add an entry %s to zone %s", change.String(), p.zone)
-
-	p.records = append(p.records, change)
-	p.changed = true
-
 	if dryRun {
-		log.Infof("[DryRun] - Add record %s.%s of type %s %s", change.Name, p.zone, change.Type, toString(change))
-	} else if err := client.Patch(fmt.Sprintf("/v1/domains/%s/records", p.zone), []gdRecordField{change}, &response); err != nil {
-		log.Errorf("Add record %s.%s of type %s failed: %s", change.Name, p.zone, change.Type, response)
+		log.Infof("[DryRun] - Replace record %s.%s of type %s %s", dnsName, p.zone, endpoint.RecordType, records)
+
+		return nil
+	}
+
+	log.Debugf("Replace record %s.%s of type %s %s", dnsName, p.zone, endpoint.RecordType, records)
+	if err := client.Put(fmt.Sprintf("/v1/domains/%s/records/%s/%s", p.zone, endpoint.RecordType, dnsName), changed, &response); err != nil {
+		log.Errorf("Replace record %s.%s of type %s failed: %v", dnsName, p.zone, endpoint.RecordType, response)
 
 		return err
 	}
@@ -428,83 +512,62 @@ func (p *gdRecords) addRecord(client gdClient, change gdRecordField, dryRun bool
 	return nil
 }
 
-func (p *gdRecords) updateRecord(client gdClient, change gdRecordField, dryRun bool) error {
-	log.Debugf("GoDaddy: Update an entry %s to zone %s", change.String(), p.zone)
+// Remove one record from the record list
+func (p *gdRecords) deleteRecord(client gdClient, endpoint endpoint.Endpoint, dnsName string, dryRun bool) error {
+	records := []string{}
 
-	for index, record := range p.records {
-		if record.Type == change.Type && record.Name == change.Name {
-			var response GDErrorResponse
+	for _, target := range endpoint.Targets {
+		change := gdRecordField{
+			Type: endpoint.RecordType,
+			Name: dnsName,
+			TTL:  int64(endpoint.RecordTTL),
+			Data: target,
+		}
+		records = append(records, target)
 
-			p.records[index] = change
-			p.changed = true
+		log.Debugf("GoDaddy: Delete an entry %s from zone %s", change.String(), p.zone)
 
-			changed := []gdUpdateRecordField{{
-				Data:     change.Data,
-				Name:     change.Name,
-				TTL:      change.TTL,
-				Port:     change.Port,
-				Priority: change.Priority,
-				Weight:   change.Weight,
-				Protocol: change.Protocol,
-				Service:  change.Service,
-			}}
+		deleteIndex := -1
 
-			if dryRun {
-				log.Infof("[DryRun] - Update record %s.%s of type %s %s", change.Name, p.zone, change.Type, toString(changed))
-			} else if err := client.Patch(fmt.Sprintf("/v1/domains/%s/records/%s", p.zone, change.Type), changed, &response); err != nil {
-				log.Errorf("Update record %s.%s of type %s failed: %v", change.Name, p.zone, change.Type, response)
-
-				return err
+		for index, record := range p.records {
+			if record.Type == change.Type && record.Name == change.Name && record.Data == change.Data {
+				deleteIndex = index
+				break
 			}
 		}
+
+		if deleteIndex >= 0 {
+			p.records[deleteIndex] = p.records[len(p.records)-1]
+
+			p.records = p.records[:len(p.records)-1]
+			p.changed = true
+		}
+	}
+
+	if dryRun {
+		log.Infof("[DryRun] - Delete record %s.%s of type %s %s", dnsName, p.zone, endpoint.RecordType, records)
+
+		return nil
+	}
+
+	var response GDErrorResponse
+	if err := client.Delete(fmt.Sprintf("/v1/domains/%s/records/%s/%s", p.zone, endpoint.RecordType, dnsName), &response); err != nil {
+		log.Errorf("Delete record %s.%s of type %s failed: %v", dnsName, p.zone, endpoint.RecordType, response)
+
+		return err
 	}
 
 	return nil
 }
 
-// Remove one record from the record list
-func (p *gdRecords) deleteRecord(client gdClient, change gdRecordField, dryRun bool) error {
-	log.Debugf("GoDaddy: Delete an entry %s to zone %s", change.String(), p.zone)
-
-	deleteIndex := -1
-
-	for index, record := range p.records {
-		if record.Type == change.Type && record.Name == change.Name && record.Data == change.Data {
-			deleteIndex = index
-			break
-		}
-	}
-
-	if deleteIndex >= 0 {
-		var response GDErrorResponse
-
-		p.records[deleteIndex] = p.records[len(p.records)-1]
-
-		p.records = p.records[:len(p.records)-1]
-		p.changed = true
-
-		if dryRun {
-			log.Infof("[DryRun] - Delete record %s.%s of type %s %s", change.Name, p.zone, change.Type, toString(change))
-		} else if err := client.Delete(fmt.Sprintf("/v1/domains/%s/records/%s/%s", p.zone, change.Type, change.Name), &response); err != nil {
-			log.Errorf("Delete record %s.%s of type %s failed: %v", change.Name, p.zone, change.Type, response)
-
-			return err
-		}
-	} else {
-		log.Warnf("GoDaddy: record in zone %s not found %s to delete", p.zone, change.String())
-	}
-
-	return nil
-}
-
-func (p *gdRecords) applyChange(action int, client gdClient, change gdRecordField, dryRun bool) error {
+func (p *gdRecords) applyEndpoint(action int, client gdClient, endpoint endpoint.Endpoint, dnsName string, dryRun bool) error {
 	switch action {
 	case gdCreate:
-		return p.addRecord(client, change, dryRun)
-	case gdUpdate:
-		return p.updateRecord(client, change, dryRun)
+		return p.addRecord(client, endpoint, dnsName, dryRun)
+	case gdReplace:
+		return p.replaceRecord(client, endpoint, dnsName, dryRun)
 	case gdDelete:
-		return p.deleteRecord(client, change, dryRun)
+		return p.deleteRecord(client, endpoint, dnsName, dryRun)
 	}
 
 	return nil

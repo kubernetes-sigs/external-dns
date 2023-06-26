@@ -64,11 +64,10 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [Pi-hole](https://pi-hole.net/)
 * [STACKIT DNS](https://docs.stackit.cloud)
 
-From this release, ExternalDNS can become aware of the records it is managing (enabled via `--registry=txt`), therefore ExternalDNS can safely manage non-empty hosted zones. We strongly encourage you to use `v0.5` (or greater) with `--registry=txt` enabled and `--txt-owner-id` set to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
+ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones. We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
 Note that all flags can be replaced with environment variables; for instance,
-`--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`, or
-`--registry txt` could be replaced with `EXTERNAL_DNS_REGISTRY=txt`.
+`--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`.
 
 ## Status of providers
 
@@ -178,6 +177,7 @@ The following tutorials are provided:
 * [Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
 * [NS1](docs/tutorials/ns1.md)
 * [NS Record Creation with CRD Source](docs/tutorials/ns-record.md)
+* [MX Record Creation with CRD Source](docs/tutorials/mx-record.md)
 * [OpenStack Designate](docs/tutorials/designate.md)
 * [Oracle Cloud Infrastructure (OCI) DNS](docs/tutorials/oracle.md)
 * [PowerDNS](docs/tutorials/pdns.md)
@@ -239,17 +239,17 @@ If the service is not of type Loadbalancer you need the --publish-internal-servi
 Locally run a single sync loop of ExternalDNS.
 
 ```console
-external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
+external-dns --txt-owner-id my-cluster-id --provider google --google-project example-project --source service --once --dry-run
 ```
 
 This should output the DNS records it will modify to match the managed zone with the DNS records you desire. It also assumes you are running in the `default` namespace. See the [FAQ](docs/faq.md) for more information regarding namespaces.
 
-Note: TXT records will have `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
+Note: TXT records will have the `my-cluster-id` value embedded. Those are used to ensure that ExternalDNS is aware of the records it manages.
 
 Once you're satisfied with the result, you can run ExternalDNS like you would run it in your cluster: as a control loop, and **not in dry-run** mode:
 
 ```console
-external-dns --registry txt --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
+external-dns --txt-owner-id my-cluster-id --provider google --google-project example-project --source service
 ```
 
 Check that ExternalDNS has created the desired DNS record for your Service and that it points to its load balancer's IP. Then try to resolve it:
@@ -272,71 +272,6 @@ The [tutorials](docs/tutorials) section contains examples, including Ingress res
 If using a txt registry and attempting to use a CNAME the `--txt-prefix` must be set to avoid conflicts.  Changing `--txt-prefix` will result in lost ownership over previously created records.
 
 If `externalIPs` list is defined for a `LoadBalancer` service, this list will be used instead of an assigned load balancer IP to create a DNS record. It's useful when you run bare metal Kubernetes clusters behind NAT or in a similar setup, where a load balancer IP differs from a public IP (e.g. with [MetalLB](https://metallb.universe.tf)).
-
-# Roadmap
-
-ExternalDNS was built with extensibility in mind. Adding and experimenting with new DNS providers and sources of desired DNS records should be as easy as possible. It should also be possible to modify how ExternalDNS behaves—e.g. whether it should add records but never delete them.
-
-Here's a rough outline on what is to come (subject to change):
-
-### v0.1
-
-- [x] Support for Google CloudDNS
-- [x] Support for Kubernetes Services
-
-### v0.2
-
-- [x] Support for AWS Route 53
-- [x] Support for Kubernetes Ingresses
-
-### v0.3
-
-- [x] Support for AWS Route 53 via ALIAS
-- [x] Support for multiple zones
-- [x] Ownership System
-
-### v0.4
-
-- [x] Support for AzureDNS
-- [x] Support for CloudFlare
-- [x] Support for DigitalOcean
-- [x] Multiple DNS names per Service
-
-### v0.5
-
-- [x] Support for creating DNS records to multiple targets (for Google and AWS)
-- [x] Support for OpenStack Designate
-- [x] Support for PowerDNS
-- [x] Support for Linode
-- [x] Support for RcodeZero
-- [x] Support for NS1
-- [x] Support for TransIP
-- [x] Support for Azure Private DNS
-
-### v0.6
-
-- [ ] Ability to replace kOps' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller) (This could also directly become `v1.0`)
-- [x] Support for OVH
-
-### v1.0
-
-- [ ] Ability to replace kOps' [DNS Controller](https://github.com/kubernetes/kops/tree/HEAD/dns-controller)
-	- [x] Add support for pod source
-	- [x] Add support for DNS Controller annotations for pod and service sources
-	- [ ] Add support for kOps gossip provider
-- [x] Ability to replace Zalando's [Mate](https://github.com/linki/mate)
-- [x] Ability to replace Molecule Software's [route53-kubernetes](https://github.com/wearemolecule/route53-kubernetes)
-
-### Yet to be defined
-
-* Support for CoreDNS
-* Support for record weights
-* Support for different behavioral policies
-* Support for Services with `type=NodePort`
-* Support for CRDs
-* Support for more advanced DNS record configurations
-
-Have a look at [the milestones](https://github.com/kubernetes-sigs/external-dns/milestones) to get an idea of where we currently stand.
 
 ## Contributing
 

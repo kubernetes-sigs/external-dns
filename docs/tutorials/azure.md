@@ -50,7 +50,7 @@ The following fields are used:
 * `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
 * `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 * `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
-* `aadClientID` and `aaClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
+* `aadClientID` and `aadClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
 
@@ -356,7 +356,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service
         - --source=ingress
@@ -424,7 +424,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.4
+          image: registry.k8s.io/external-dns/external-dns:v0.13.5
           args:
             - --source=service
             - --source=ingress
@@ -495,7 +495,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.4
+          image: registry.k8s.io/external-dns/external-dns:v0.13.5
           args:
             - --source=service
             - --source=ingress
@@ -648,3 +648,9 @@ resource group:
 ```bash
 $ az group delete --name "MyDnsResourceGroup"
 ```
+
+## More tutorials
+
+A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE 
+
+![image](https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png)

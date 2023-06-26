@@ -15,10 +15,11 @@ Here is typical example of [CRD API type](https://github.com/kubernetes-sigs/ext
 type TTL int64
 type Targets []string
 type ProviderSpecificProperty struct {
-	Name  string
-	Value string
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 type ProviderSpecific []ProviderSpecificProperty
+type Labels map[string]string
 
 type Endpoint struct {
 	// The hostname of the DNS record
