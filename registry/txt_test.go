@@ -219,7 +219,7 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
-	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "", []string{}, false, nil)
+	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
@@ -875,6 +875,12 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
+			},
 		},
 		{
 			DNSName:    "oldformat2.test-zone.example.org",
@@ -882,6 +888,12 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
 			},
 		},
 		{
@@ -931,32 +943,10 @@ func testTXTRegistryMissingRecordsNoPrefix(t *testing.T) {
 		},
 	}
 
-	expectedMissingRecords := []*endpoint.Endpoint{
-		{
-			DNSName: "cname-oldformat.test-zone.example.org",
-			// owner is taken from the source record (A, CNAME, etc.)
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: endpoint.Labels{
-				endpoint.OwnedRecordLabelKey: "oldformat.test-zone.example.org",
-			},
-		},
-		{
-			DNSName:    "a-oldformat2.test-zone.example.org",
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: endpoint.Labels{
-				endpoint.OwnedRecordLabelKey: "oldformat2.test-zone.example.org",
-			},
-		},
-	}
-
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, false, nil)
 	records, _ := r.Records(ctx)
-	missingRecords := r.MissingRecords()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
-	assert.True(t, testutils.SameEndpoints(missingRecords, expectedMissingRecords))
 }
 
 func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
@@ -988,6 +978,12 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 				// owner was added from the TXT record's target
 				endpoint.OwnerLabelKey: "owner",
 			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
+			},
 		},
 		{
 			DNSName:    "oldformat2.test-zone.example.org",
@@ -995,6 +991,12 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
+			},
+			ProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "txt/force-update",
+					Value: "true",
+				},
 			},
 		},
 		{
@@ -1035,32 +1037,10 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 		},
 	}
 
-	expectedMissingRecords := []*endpoint.Endpoint{
-		{
-			DNSName: "txt.cname-oldformat.test-zone.example.org",
-			// owner is taken from the source record (A, CNAME, etc.)
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: endpoint.Labels{
-				endpoint.OwnedRecordLabelKey: "oldformat.test-zone.example.org",
-			},
-		},
-		{
-			DNSName:    "txt.a-oldformat2.test-zone.example.org",
-			Targets:    endpoint.Targets{"\"heritage=external-dns,external-dns/owner=owner\""},
-			RecordType: endpoint.RecordTypeTXT,
-			Labels: endpoint.Labels{
-				endpoint.OwnedRecordLabelKey: "oldformat2.test-zone.example.org",
-			},
-		},
-	}
-
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, false, nil)
 	records, _ := r.Records(ctx)
-	missingRecords := r.MissingRecords()
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
-	assert.True(t, testutils.SameEndpoints(missingRecords, expectedMissingRecords))
 }
 
 func TestCacheMethods(t *testing.T) {

@@ -211,6 +211,97 @@ var externalProxySource = metav1.PartialObjectMetadata{
 	},
 }
 
+// Proxy with metadata static test
+var proxyMetadataStatic = proxy{
+	TypeMeta: metav1.TypeMeta{
+		APIVersion: proxyGVR.GroupVersion().String(),
+		Kind:       "Proxy",
+	},
+	Metadata: metav1.ObjectMeta{
+		Name:      "internal-static",
+		Namespace: defaultGlooNamespace,
+	},
+	Spec: proxySpec{
+		Listeners: []proxySpecListener{
+			{
+				HTTPListener: proxySpecHTTPListener{
+					VirtualHosts: []proxyVirtualHost{
+						{
+							Domains: []string{"f.test", "g.test"},
+							MetadataStatic: proxyVirtualHostMetadataStatic{
+								Source: []proxyVirtualHostMetadataStaticSource{
+									{
+										ResourceKind: "*v1.Unknown",
+										ResourceRef: proxyVirtualHostMetadataSourceResourceRef{
+											Name:      "my-unknown-svc",
+											Namespace: "unknown",
+										},
+									},
+								},
+							},
+						},
+						{
+							Domains: []string{"h.test"},
+							MetadataStatic: proxyVirtualHostMetadataStatic{
+								Source: []proxyVirtualHostMetadataStaticSource{
+									{
+										ResourceKind: "*v1.VirtualService",
+										ResourceRef: proxyVirtualHostMetadataSourceResourceRef{
+											Name:      "my-internal-static-svc",
+											Namespace: "internal-static",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var proxyMetadataStaticSvc = corev1.Service{
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      proxyMetadataStatic.Metadata.Name,
+		Namespace: proxyMetadataStatic.Metadata.Namespace,
+	},
+	Spec: corev1.ServiceSpec{
+		Type: corev1.ServiceTypeLoadBalancer,
+	},
+	Status: corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					IP: "203.0.115.1",
+				},
+				{
+					IP: "203.0.115.2",
+				},
+				{
+					IP: "203.0.115.3",
+				},
+			},
+		},
+	},
+}
+
+var proxyMetadataStaticSource = metav1.PartialObjectMetadata{
+	TypeMeta: metav1.TypeMeta{
+		APIVersion: virtualServiceGVR.GroupVersion().String(),
+		Kind:       "VirtualService",
+	},
+	ObjectMeta: metav1.ObjectMeta{
+		Name:      proxyMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Name,
+		Namespace: proxyMetadataStatic.Spec.Listeners[0].HTTPListener.VirtualHosts[1].MetadataStatic.Source[0].ResourceRef.Namespace,
+		Annotations: map[string]string{
+			"external-dns.alpha.kubernetes.io/ttl":                          "420",
+			"external-dns.alpha.kubernetes.io/aws-geolocation-country-code": "ES",
+			"external-dns.alpha.kubernetes.io/set-identifier":               "identifier",
+		},
+	},
+}
+
 func TestGlooSource(t *testing.T) {
 	t.Parallel()
 
@@ -226,14 +317,19 @@ func TestGlooSource(t *testing.T) {
 
 	internalProxyUnstructured := unstructured.Unstructured{}
 	externalProxyUnstructured := unstructured.Unstructured{}
+	proxyMetadataStaticUnstructured := unstructured.Unstructured{}
 
 	internalProxySourceUnstructured := unstructured.Unstructured{}
 	externalProxySourceUnstructured := unstructured.Unstructured{}
+	proxyMetadataStaticSourceUnstructured := unstructured.Unstructured{}
 
 	internalProxyAsJSON, err := json.Marshal(internalProxy)
 	assert.NoError(t, err)
 
 	externalProxyAsJSON, err := json.Marshal(externalProxy)
+	assert.NoError(t, err)
+
+	proxyMetadataStaticAsJSON, err := json.Marshal(proxyMetadataStatic)
 	assert.NoError(t, err)
 
 	internalProxySvcAsJSON, err := json.Marshal(internalProxySource)
@@ -242,16 +338,23 @@ func TestGlooSource(t *testing.T) {
 	externalProxySvcAsJSON, err := json.Marshal(externalProxySource)
 	assert.NoError(t, err)
 
+	proxyMetadataStaticSvcAsJSON, err := json.Marshal(proxyMetadataStaticSource)
+	assert.NoError(t, err)
+
 	assert.NoError(t, internalProxyUnstructured.UnmarshalJSON(internalProxyAsJSON))
 	assert.NoError(t, externalProxyUnstructured.UnmarshalJSON(externalProxyAsJSON))
+	assert.NoError(t, proxyMetadataStaticUnstructured.UnmarshalJSON(proxyMetadataStaticAsJSON))
 
 	assert.NoError(t, internalProxySourceUnstructured.UnmarshalJSON(internalProxySvcAsJSON))
 	assert.NoError(t, externalProxySourceUnstructured.UnmarshalJSON(externalProxySvcAsJSON))
+	assert.NoError(t, proxyMetadataStaticSourceUnstructured.UnmarshalJSON(proxyMetadataStaticSvcAsJSON))
 
 	// Create proxy resources
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &internalProxyUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &externalProxyUnstructured, metav1.CreateOptions{})
+	assert.NoError(t, err)
+	_, err = fakeDynamicClient.Resource(proxyGVR).Namespace(defaultGlooNamespace).Create(context.Background(), &proxyMetadataStaticUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
 
 	// Create proxy source
@@ -259,16 +362,20 @@ func TestGlooSource(t *testing.T) {
 	assert.NoError(t, err)
 	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(externalProxySource.Namespace).Create(context.Background(), &externalProxySourceUnstructured, metav1.CreateOptions{})
 	assert.NoError(t, err)
+	_, err = fakeDynamicClient.Resource(virtualServiceGVR).Namespace(proxyMetadataStaticSource.Namespace).Create(context.Background(), &proxyMetadataStaticSourceUnstructured, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	// Create proxy service resources
 	_, err = fakeKubernetesClient.CoreV1().Services(internalProxySvc.GetNamespace()).Create(context.Background(), &internalProxySvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
 	_, err = fakeKubernetesClient.CoreV1().Services(externalProxySvc.GetNamespace()).Create(context.Background(), &externalProxySvc, metav1.CreateOptions{})
 	assert.NoError(t, err)
+	_, err = fakeKubernetesClient.CoreV1().Services(proxyMetadataStaticSvc.GetNamespace()).Create(context.Background(), &proxyMetadataStaticSvc, metav1.CreateOptions{})
+	assert.NoError(t, err)
 
 	endpoints, err := source.Endpoints(context.Background())
 	assert.NoError(t, err)
-	assert.Len(t, endpoints, 5)
+	assert.Len(t, endpoints, 8)
 	assert.ElementsMatch(t, endpoints, []*endpoint.Endpoint{
 		{
 			DNSName:          "a.test",
@@ -319,6 +426,36 @@ func TestGlooSource(t *testing.T) {
 				endpoint.ProviderSpecificProperty{
 					Name:  "aws/geolocation-country-code",
 					Value: "JP",
+				},
+			},
+		},
+		{
+			DNSName:          "f.test",
+			Targets:          []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			RecordType:       endpoint.RecordTypeA,
+			RecordTTL:        0,
+			Labels:           endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+		{
+			DNSName:          "g.test",
+			Targets:          []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			RecordType:       endpoint.RecordTypeA,
+			RecordTTL:        0,
+			Labels:           endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{},
+		},
+		{
+			DNSName:       "h.test",
+			Targets:       []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			RecordType:    endpoint.RecordTypeA,
+			SetIdentifier: "identifier",
+			RecordTTL:     420,
+			Labels:        endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "aws/geolocation-country-code",
+					Value: "ES",
 				},
 			},
 		},

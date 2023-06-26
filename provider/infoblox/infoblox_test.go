@@ -254,11 +254,8 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:txt":
 		var records []ibclient.RecordTXT
-		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: result[2],
-			},
-		)
+		obj := ibclient.NewEmptyRecordTXT()
+		obj.Name = result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
@@ -355,13 +352,11 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 		obj.Canonical = value
 		return obj
 	case endpoint.RecordTypeTXT:
-		return ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Ref:  ref,
-				Name: name,
-				Text: value,
-			},
-		)
+		obj := ibclient.NewEmptyRecordTXT()
+		obj.Name = name
+		obj.Ref = ref
+		obj.Text = value
+		return obj
 	case "HOST":
 		obj := ibclient.NewEmptyHostRecord()
 		obj.Name = name
@@ -737,7 +732,6 @@ func TestExtendedRequestNameRegExBuilder(t *testing.T) {
 
 	assert.True(t, req.URL.Query().Get("name~") == "")
 }
-
 
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	hostCfg := ibclient.HostConfig{

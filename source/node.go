@@ -88,7 +88,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		return nil, err
 	}
 
-	endpoints := map[endpointKey]*endpoint.Endpoint{}
+	endpoints := map[endpoint.EndpointKey]*endpoint.Endpoint{}
 
 	// create endpoints for all nodes
 	for _, node := range nodes {
@@ -136,13 +136,13 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 		ep.Labels = endpoint.NewLabels()
 		for _, addr := range addrs {
 			log.Debugf("adding endpoint %s target %s", ep, addr)
-			key := endpointKey{
-				dnsName:    ep.DNSName,
-				recordType: suitableType(addr),
+			key := endpoint.EndpointKey{
+				DNSName:    ep.DNSName,
+				RecordType: suitableType(addr),
 			}
 			if _, ok := endpoints[key]; !ok {
 				epCopy := *ep
-				epCopy.RecordType = key.recordType
+				epCopy.RecordType = key.RecordType
 				endpoints[key] = &epCopy
 			}
 			endpoints[key].Targets = append(endpoints[key].Targets, addr)

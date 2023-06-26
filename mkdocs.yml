@@ -15,6 +15,7 @@ nav:
   - Registries:
     - About: registry/registry.md
     - TXT: registry/txt.md
+    - DynamoDB: registry/dynamodb.md
   - Advanced Topics:
       - Initial Design: initial-design.md
       - TTL: ttl.md

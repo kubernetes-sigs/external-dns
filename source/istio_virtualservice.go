@@ -23,12 +23,12 @@ import (
 	"strings"
 	"text/template"
 
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
-
 	log "github.com/sirupsen/logrus"
+	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -203,7 +203,10 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 	}
 
 	gateway, err := sc.istioClient.NetworkingV1alpha3().Gateways(namespace).Get(ctx, name, metav1.GetOptions{})
-	if err != nil {
+	if errors.IsNotFound(err) {
+		log.Warnf("VirtualService (%s/%s) references non-existent gateway: %s ", virtualService.Namespace, virtualService.Name, gatewayStr)
+		return nil, nil
+	} else if err != nil {
 		log.Errorf("Failed retrieving gateway %s referenced by VirtualService %s/%s: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
 		return nil, err
 	}
@@ -211,7 +214,6 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
 		return nil, nil
 	}
-
 	return gateway, nil
 }
 

@@ -25,6 +25,11 @@ import (
 	"syscall"
 	"time"
 
+	awsSDK "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/route53"
+	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -180,6 +185,20 @@ func main() {
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	var awsSession *session.Session
+	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
+		awsSession, err = aws.NewSession(
+			aws.AWSSessionConfig{
+				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+				APIRetries:           cfg.AWSAPIRetries,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
@@ -207,13 +226,11 @@ func main() {
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				AssumeRole:           cfg.AWSAssumeRole,
-				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
 			},
+			route53.New(awsSession),
 		)
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
@@ -221,7 +238,7 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.AWSAssumeRoleExternalID, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID)
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
@@ -380,6 +397,12 @@ func main() {
 
 	var r registry.Registry
 	switch cfg.Registry {
+	case "dynamodb":
+		config := awsSDK.NewConfig()
+		if cfg.AWSDynamoDBRegion != "" {
+			config = config.WithRegion(cfg.AWSDynamoDBRegion)
+		}
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession, config), cfg.AWSDynamoDBTable, cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":

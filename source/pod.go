@@ -82,7 +82,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 		return nil, err
 	}
 
-	endpointMap := make(map[endpointKey][]string)
+	endpointMap := make(map[endpoint.EndpointKey][]string)
 	for _, pod := range pods {
 		if !pod.Spec.HostNetwork {
 			log.Debugf("skipping pod %s. hostNetwork=false", pod.Name)
@@ -135,15 +135,15 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 	endpoints := []*endpoint.Endpoint{}
 	for key, targets := range endpointMap {
-		endpoints = append(endpoints, endpoint.NewEndpoint(key.dnsName, key.recordType, targets...))
+		endpoints = append(endpoints, endpoint.NewEndpoint(key.DNSName, key.RecordType, targets...))
 	}
 	return endpoints, nil
 }
 
-func addToEndpointMap(endpointMap map[endpointKey][]string, domain string, recordType string, address string) {
-	key := endpointKey{
-		dnsName:    domain,
-		recordType: recordType,
+func addToEndpointMap(endpointMap map[endpoint.EndpointKey][]string, domain string, recordType string, address string) {
+	key := endpoint.EndpointKey{
+		DNSName:    domain,
+		RecordType: recordType,
 	}
 	if _, ok := endpointMap[key]; !ok {
 		endpointMap[key] = []string{}

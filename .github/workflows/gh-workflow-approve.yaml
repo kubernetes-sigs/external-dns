@@ -21,7 +21,7 @@ jobs:
         continue-on-error: true
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          debug: ${{ secrets.ACTIONS_RUNNER_DEBUG }}
+          debug: ${{ secrets.ACTIONS_RUNNER_DEBUG == 'true' }}
           script: |
             const result = await github.rest.actions.listWorkflowRunsForRepo({
               owner: context.repo.owner,

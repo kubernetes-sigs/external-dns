@@ -135,11 +135,12 @@ func (api *mockAPIService) DescribePrivateZoneRecordList(request *privatedns.Des
 
 func (api *mockAPIService) DescribeDomainList(request *dnspod.DescribeDomainListRequest) (response *dnspod.DescribeDomainListResponse, err error) {
 	response = dnspod.NewDescribeDomainListResponse()
-	response.Response = &struct {
-		DomainCountInfo *dnspod.DomainCountInfo  `json:"DomainCountInfo,omitempty" name:"DomainCountInfo"`
-		DomainList      []*dnspod.DomainListItem `json:"DomainList,omitempty" name:"DomainList"`
-		RequestId       *string                  `json:"RequestId,omitempty" name:"RequestId"`
-	}{}
+	response.Response = &dnspod.DescribeDomainListResponseParams{
+		DomainCountInfo: &dnspod.DomainCountInfo{
+			AllTotal: common.Uint64Ptr(uint64(len(api.dnspodDomains))),
+		},
+		DomainList: api.dnspodDomains,
+	}
 	response.Response.DomainList = api.dnspodDomains
 	response.Response.DomainCountInfo = &dnspod.DomainCountInfo{
 		AllTotal: common.Uint64Ptr(uint64(len(api.dnspodDomains))),
@@ -149,11 +150,7 @@ func (api *mockAPIService) DescribeDomainList(request *dnspod.DescribeDomainList
 
 func (api *mockAPIService) DescribeRecordList(request *dnspod.DescribeRecordListRequest) (response *dnspod.DescribeRecordListResponse, err error) {
 	response = dnspod.NewDescribeRecordListResponse()
-	response.Response = &struct {
-		RecordCountInfo *dnspod.RecordCountInfo  `json:"RecordCountInfo,omitempty" name:"RecordCountInfo"`
-		RecordList      []*dnspod.RecordListItem `json:"RecordList,omitempty" name:"RecordList"`
-		RequestId       *string                  `json:"RequestId,omitempty" name:"RequestId"`
-	}{}
+	response.Response = &dnspod.DescribeRecordListResponseParams{}
 	if _, exist := api.dnspodRecords[*request.Domain]; !exist {
 		response.Response.RecordList = make([]*dnspod.RecordListItem, 0)
 		response.Response.RecordCountInfo = &dnspod.RecordCountInfo{
