@@ -350,13 +350,17 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (string, string) {
 				return strings.TrimSuffix(name, iSuffix), t
 			}
 		}
+
+		// handle old TXT records
+		pr.prefix = pr.dropAffixTemplate(pr.prefix)
+		pr.suffix = pr.dropAffixTemplate(pr.suffix)
 	}
 
-	if strings.HasPrefix(name, pr.prefix) && pr.isPrefix() {
+	if pr.isPrefix() && strings.HasPrefix(name, pr.prefix) {
 		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, pr.prefix))
 	}
 
-	if strings.HasSuffix(name, pr.suffix) && pr.isSuffix() {
+	if pr.isSuffix() && strings.HasSuffix(name, pr.suffix) {
 		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, pr.suffix))
 	}
 

@@ -1112,24 +1112,39 @@ func TestCacheMethods(t *testing.T) {
 
 func TestDropPrefix(t *testing.T) {
 	mapper := newaffixNameMapper("foo-%{record_type}-", "", "")
-	cnameRecord := "foo-cname-test.example.com"
-	aRecord := "foo-a-test.example.com"
-	expectedCnameRecord := "test.example.com"
-	expectedARecord := "test.example.com"
-	actualCnameRecord, _ := mapper.dropAffixExtractType(cnameRecord)
-	actualARecord, _ := mapper.dropAffixExtractType(aRecord)
-	assert.Equal(t, expectedCnameRecord, actualCnameRecord)
-	assert.Equal(t, expectedARecord, actualARecord)
+	expectedOutput := "test.example.com"
+
+	tests := []string{
+		"foo-cname-test.example.com",
+		"foo-a-test.example.com",
+		"foo--test.example.com",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			actualOutput, _ := mapper.dropAffixExtractType(tc)
+			assert.Equal(t, expectedOutput, actualOutput)
+		})
+	}
 }
 
 func TestDropSuffix(t *testing.T) {
 	mapper := newaffixNameMapper("", "-%{record_type}-foo", "")
-	aRecord := "test-a-foo.example.com"
-	expectedARecord := "test.example.com"
-	r := strings.SplitN(aRecord, ".", 2)
-	rClean, _ := mapper.dropAffixExtractType(r[0])
-	actualARecord := rClean + "." + r[1]
-	assert.Equal(t, expectedARecord, actualARecord)
+	expectedOutput := "test.example.com"
+
+	tests := []string{
+		"test-a-foo.example.com",
+		"test--foo.example.com",
+	}
+
+	for _, tc := range tests {
+		t.Run(tc, func(t *testing.T) {
+			r := strings.SplitN(tc, ".", 2)
+			rClean, _ := mapper.dropAffixExtractType(r[0])
+			actualOutput := rClean + "." + r[1]
+			assert.Equal(t, expectedOutput, actualOutput)
+		})
+	}
 }
 
 func TestExtractRecordTypeDefaultPosition(t *testing.T) {
