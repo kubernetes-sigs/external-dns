@@ -13,7 +13,6 @@ spec:
   names:
     kind: DNSEndpoint
     listKind: DNSEndpointList
-    plural: dnsendpoints
     singular: dnsendpoint
   scope: Namespaced
   versions:
@@ -89,6 +88,5 @@ spec:
 status:
   acceptedNames:
     kind: ""
-    plural: ""
   conditions: []
   storedVersions: []
