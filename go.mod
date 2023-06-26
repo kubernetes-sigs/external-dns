@@ -17,6 +17,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.380
 	github.com/ans-group/sdk-go v1.16.5
+	github.com/antihax/optional v1.0.0
 	github.com/aws/aws-sdk-go v1.44.285
 	github.com/bodgit/tsig v1.2.2
 	github.com/civo/civogo v0.3.14
@@ -50,7 +51,7 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
 	github.com/sirupsen/logrus v1.9.3
-  github.com/stackitcloud/stackit-dns-api-client-go v0.0.0-20230228161103-9a465ba13cc1
+	github.com/stackitcloud/stackit-dns-api-client-go v0.0.0-20230228161103-9a465ba13cc1
 	github.com/stretchr/testify v1.8.4
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.684
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.684
