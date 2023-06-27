@@ -168,9 +168,9 @@ registry: txt
 # When using a registry other than "noop", specifies a name that
 # uniquely identifies this instance of external-dns.
 txtOwnerId: ""
-# Specifies a prefix for the domain names of TXT records created by the "txt" registry. Optional.
+# Specifies a prefix for the domain names of TXT records created by the "txt" registry. Optional. Mutually exclusive with `txtSuffix`.
 txtPrefix: ""
-# Specifies a suffix for the domain names of TXT records created by the "txt" registry. Optional.
+# Specifies a suffix for the domain names of TXT records created by the "txt" registry. Optional. Mutually exclusive with `txtPrefix`.
 txtSuffix: ""
 
 domainFilters: []
