@@ -685,8 +685,8 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoin
 
 		if alias {
 			if ep.RecordTTL.IsConfigured() {
-				log.Debugf("Modifying endpoint: %v, setting ttl=%v", ep, recordTTL)
-				ep.RecordTTL = recordTTL
+				log.Debugf("Modifying endpoint: %v, unsetting TTL", ep)
+				ep.RecordTTL = 0
 			}
 			if prop, ok := ep.GetProviderSpecificProperty(providerSpecificEvaluateTargetHealth); ok {
 				if prop != "true" && prop != "false" {
