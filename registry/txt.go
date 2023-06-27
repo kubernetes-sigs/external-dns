@@ -333,7 +333,7 @@ func extractRecordTypeDefaultPosition(name string) (baseName, recordType string)
 
 // dropAffixExtractType strips TXT record to find an endpoint name it manages
 // it also returns the record type
-func (pr affixNameMapper) dropAffixExtractType(name string) (string, string) {
+func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordType string) {
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
 			t = strings.ToLower(t)
