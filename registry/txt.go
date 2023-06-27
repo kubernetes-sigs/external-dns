@@ -156,7 +156,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		key := createKey(dnsName, ep.SetIdentifier)
 		keyType := createKey(key, ep.RecordType)
 		labels, labelsExist := labelMap[keyType]
-		if !labelsExist {
+		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
 			labels, labelsExist = labelMap[key]
 		}
 		if labelsExist {
