@@ -217,6 +217,11 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
 		endpoints = append(endpoints, txtNew)
+
+		// TODO: Make it less hacky
+		if im.txtEncryptEnabled {
+			r.Labels["txt-encryption-nonce"] = strings.Trim(txtNew.Targets[0], "\"")[:16]
+		}
 	}
 
 	return endpoints
