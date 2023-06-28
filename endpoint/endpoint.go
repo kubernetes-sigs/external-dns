@@ -281,6 +281,44 @@ func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
 }
 
+// EndpointFilterInterface matches endpoints
+type EndpointFilterInterface interface {
+	// Match returns true if the endpoint matches the filter, false otherwise
+	Match(ep *Endpoint) bool
+}
+
+// Apply filter to slice of endpoints and return new filtered slice that includes
+// only endpoints that match.
+func ApplyEndpointFilter(filter EndpointFilterInterface, eps []*Endpoint) []*Endpoint {
+	filtered := []*Endpoint{}
+	for _, ep := range eps {
+		if filter.Match(ep) {
+			filtered = append(filtered, ep)
+		}
+	}
+
+	return filtered
+}
+
+// NewOwnedRecordFilter returns endpoint filter that matches records with a owner
+// label that matches the given owner id.
+func NewOwnedRecordFilter(ownerID string) EndpointFilterInterface {
+	return ownedRecordFilter{ownerID: ownerID}
+}
+
+type ownedRecordFilter struct {
+	ownerID string
+}
+
+func (f ownedRecordFilter) Match(ep *Endpoint) bool {
+	if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != f.ownerID {
+		log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, f.ownerID)
+		return false
+	} else {
+		return true
+	}
+}
+
 // DNSEndpointSpec defines the desired state of DNSEndpoint
 type DNSEndpointSpec struct {
 	Endpoints []*Endpoint `json:"endpoints,omitempty"`

@@ -1440,6 +1440,68 @@ func TestFailGenerateTXT(t *testing.T) {
 	assert.Equal(t, expectedTXT, gotTXT)
 }
 
+// TestMultiClusterDifferentRecordTypeOwnership validates the registry handles environments where the same zone is managed by
+// external-dns in different clusters and the ingress record type is different. For example one uses A records and the other
+// uses CNAME. In this environment the first cluster that establishes the owner record should maintain ownership even
+// if the same ingress host is deployed to the other. With the introduction of Dual Record support each record type
+// was treated independently and would cause each cluster to fight over ownership. This tests ensure that the default
+// Dual Stack record support only treats AAAA records independently and while keeping A and CNAME record ownership intact.
+func TestMultiClusterDifferentRecordTypeOwnership(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			// records on cluster using A record for ingress address
+			newEndpointWithOwner("bar.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=cat,external-dns/resource=ingress/default/foo\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("bar.test-zone.example.org", "1.2.3.4", endpoint.RecordTypeA, ""),
+		},
+	})
+
+	r, _ := NewTXTRegistry(p, "_owner.", "", "bar", time.Hour, "", []string{}, false, nil)
+	records, _ := r.Records(ctx)
+
+	// new cluster has same ingress host as other cluster and uses CNAME ingress address
+	cname := &endpoint.Endpoint{
+		DNSName:    "bar.test-zone.example.org",
+		Targets:    endpoint.Targets{"cluster-b"},
+		RecordType: "CNAME",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-127",
+		},
+	}
+	desired := []*endpoint.Endpoint{cname}
+
+	pl := &plan.Plan{
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		Current:        records,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := pl.Calculate()
+	p.OnApplyChanges = func(ctx context.Context, changes *plan.Changes) {
+		got := map[string][]*endpoint.Endpoint{
+			"Create":    changes.Create,
+			"UpdateNew": changes.UpdateNew,
+			"UpdateOld": changes.UpdateOld,
+			"Delete":    changes.Delete,
+		}
+		expected := map[string][]*endpoint.Endpoint{
+			"Create":    {},
+			"UpdateNew": {},
+			"UpdateOld": {},
+			"Delete":    {},
+		}
+		testutils.SamePlanChanges(got, expected)
+	}
+
+	err := r.ApplyChanges(ctx, changes.Changes)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 /**
 
 helper methods

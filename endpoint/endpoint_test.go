@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -113,5 +114,130 @@ func TestIsLess(t *testing.T) {
 		if d.IsLess(testsB[i]) != expected[i] {
 			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
 		}
+	}
+}
+
+func TestOwnedRecordFilterMatch(t *testing.T) {
+	type fields struct {
+		ownerID string
+	}
+	type args struct {
+		ep *Endpoint
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "no labels",
+			fields: fields{ownerID: "foo"},
+			args: args{ep: &Endpoint{
+				DNSName:    "foo.com",
+				RecordType: RecordTypeA,
+			}},
+			want: false,
+		},
+		{
+			name:   "no owner label",
+			fields: fields{ownerID: "foo"},
+			args: args{ep: &Endpoint{
+				DNSName:    "foo.com",
+				RecordType: RecordTypeA,
+				Labels:     NewLabels(),
+			}},
+			want: false,
+		},
+		{
+			name:   "owner not matched",
+			fields: fields{ownerID: "foo"},
+			args: args{ep: &Endpoint{
+				DNSName:    "foo.com",
+				RecordType: RecordTypeA,
+				Labels: Labels{
+					OwnerLabelKey: "bar",
+				},
+			}},
+			want: false,
+		},
+		{
+			name:   "owner matched",
+			fields: fields{ownerID: "foo"},
+			args: args{ep: &Endpoint{
+				DNSName:    "foo.com",
+				RecordType: RecordTypeA,
+				Labels: Labels{
+					OwnerLabelKey: "foo",
+				},
+			}},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := ownedRecordFilter{
+				ownerID: tt.fields.ownerID,
+			}
+			if got := f.Match(tt.args.ep); got != tt.want {
+				t.Errorf("ownedRecordFilter.Match() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyEndpointFilter(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+	type args struct {
+		filter EndpointFilterInterface
+		eps    []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				filter: NewOwnedRecordFilter("foo"),
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					bar,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+				foo2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ApplyEndpointFilter(tt.args.filter, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ApplyEndpointFilter() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

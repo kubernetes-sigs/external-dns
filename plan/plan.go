@@ -46,6 +46,8 @@ type Plan struct {
 	DomainFilter endpoint.DomainFilterInterface
 	// DNS record types that will be considered for management
 	ManagedRecords []string
+	// Optional record filter that matches records owned by the registry
+	OwnedRecordFilter endpoint.EndpointFilterInterface
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -64,22 +66,26 @@ type Changes struct {
 type planKey struct {
 	dnsName       string
 	setIdentifier string
-	recordType    string
 }
 
 // planTable is a supplementary struct for Plan
-// each row correspond to a planKey -> (current record + all desired records)
-/*
-planTable: (-> = target)
---------------------------------------------------------
-DNSName | Current record | Desired Records             |
---------------------------------------------------------
-foo.com | -> 1.1.1.1     | [->1.1.1.1, ->elb.com]      |  = no action
---------------------------------------------------------
-bar.com |                | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com -> 190.1.1.1)
---------------------------------------------------------
-"=", i.e. result of calculation relies on supplied ConflictResolver
-*/
+// each row correspond to a planKey -> (current records + all desired records)
+//
+//	planTable (-> = target)
+//	--------------------------------------------------------------
+//	DNSName | Current record       | Desired Records             |
+//	--------------------------------------------------------------
+//	foo.com | [->1.1.1.1 ]         | [->1.1.1.1]                 |  = no action
+//	--------------------------------------------------------------
+//	bar.com |                      | [->191.1.1.1, ->190.1.1.1]  |  = create (bar.com [-> 190.1.1.1])
+//	--------------------------------------------------------------
+//	dog.com | [->1.1.1.2]          |                             |  = delete (dog.com [-> 1.1.1.2])
+//	--------------------------------------------------------------
+//	cat.com | [->::1, ->1.1.1.3]   | [->1.1.1.3]                 |  = update old (cat.com [-> ::1, -> 1.1.1.3]) new (cat.com [-> 1.1.1.3])
+//	--------------------------------------------------------------
+//	big.com | [->1.1.1.4]          | [->ing.elb.com]             |  = update old (big.com [-> 1.1.1.4]) new (big.com [-> ing.elb.com])
+//	--------------------------------------------------------------
+//	"=", i.e. result of calculation relies on supplied ConflictResolver
 type planTable struct {
 	rows     map[planKey]*planTableRow
 	resolver ConflictResolver
@@ -89,12 +95,54 @@ func newPlanTable() planTable { // TODO: make resolver configurable
 	return planTable{map[planKey]*planTableRow{}, PerResource{}}
 }
 
-// planTableRow
-// current corresponds to the record currently occupying dns name on the dns provider
-// candidates corresponds to the list of records which would like to have this dnsName
+// planTableRow represents a set of current and desired domain resource records.
 type planTableRow struct {
-	current    *endpoint.Endpoint
+	// current corresponds to the records currently occupying dns name on the dns provider. More than 1 record may
+	// be represented here, for example A and AAAA. If current domain record is CNAME, no other record types are allowed
+	// per [RFC 1034 3.6.2]
+	//
+	// [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
+	current []*endpoint.Endpoint
+	// candidates corresponds to the list of records which would like to have this dnsName.
 	candidates []*endpoint.Endpoint
+	// records is a grouping of current and candidates by record type, for example A, AAAA, CNAME.
+	records map[string]*domainEndpoints
+}
+
+// domainEndpoints is a grouping of current, which are existing records from the registry, and candidates,
+// which are desired records from the source. All records in this grouping have the same record type.
+type domainEndpoints struct {
+	// current corresponds to existing record from the registry. Maybe nil if no current record of the type exists.
+	current *endpoint.Endpoint
+	// candidates corresponds to the list of records which would like to have this dnsName.
+	candidates []*endpoint.Endpoint
+}
+
+// hasCandidateRecordTypeConflict returns true if the candidates set contains conflicting or invalid record types.
+// For eample if the there is more than 1 candidate and at lease one of them is a CNAME.
+// Per [RFC 1034 3.6.2] domains that contain a CNAME can not contain any other record types.
+//
+// [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
+func (t planTableRow) hasCandidateRecordTypeConflict() bool {
+	if len(t.candidates) <= 1 {
+		return false
+	}
+
+	cname := false
+	other := false
+	for _, c := range t.candidates {
+		if c.RecordType == endpoint.RecordTypeCNAME {
+			cname = true
+		} else {
+			other = true
+		}
+
+		if cname && other {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (t planTableRow) String() string {
@@ -103,23 +151,32 @@ func (t planTableRow) String() string {
 
 func (t planTable) addCurrent(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
-	t.rows[key].current = e
+	t.rows[key].current = append(t.rows[key].current, e)
+	t.rows[key].records[e.RecordType].current = e
 }
 
 func (t planTable) addCandidate(e *endpoint.Endpoint) {
 	key := t.newPlanKey(e)
 	t.rows[key].candidates = append(t.rows[key].candidates, e)
+	t.rows[key].records[e.RecordType].candidates = append(t.rows[key].records[e.RecordType].candidates, e)
 }
 
 func (t *planTable) newPlanKey(e *endpoint.Endpoint) planKey {
 	key := planKey{
 		dnsName:       normalizeDNSName(e.DNSName),
 		setIdentifier: e.SetIdentifier,
-		recordType:    e.RecordType,
 	}
+
 	if _, ok := t.rows[key]; !ok {
-		t.rows[key] = &planTableRow{}
+		t.rows[key] = &planTableRow{
+			records: make(map[string]*domainEndpoints),
+		}
 	}
+
+	if _, ok := t.rows[key].records[e.RecordType]; !ok {
+		t.rows[key].records[e.RecordType] = &domainEndpoints{}
+	}
+
 	return key
 }
 
@@ -149,28 +206,88 @@ func (p *Plan) Calculate() *Plan {
 
 	changes := &Changes{}
 
-	for _, row := range t.rows {
-		if row.current == nil { // dns name not taken
-			changes.Create = append(changes.Create, t.resolver.ResolveCreate(row.candidates))
-		}
-		if row.current != nil && len(row.candidates) == 0 {
-			changes.Delete = append(changes.Delete, row.current)
+	for key, row := range t.rows {
+		// dns name not taken
+		if len(row.current) == 0 {
+			// TODO how to resolve conflicting source candidate record types
+			if row.hasCandidateRecordTypeConflict() {
+				log.Warnf("Domain %s contains conflicting record type candidates, no updates planned", key.dnsName)
+				continue
+			}
+
+			for _, records := range row.records {
+				changes.Create = append(changes.Create, t.resolver.ResolveCreate(records.candidates))
+			}
 		}
 
-		// TODO: allows record type change, which might not be supported by all dns providers
-		if row.current != nil && len(row.candidates) > 0 { // dns name is taken
-			update := t.resolver.ResolveUpdate(row.current, row.candidates)
-			// compare "update" to "current" to figure out if actual update is required
-			if shouldUpdateTTL(update, row.current) || targetChanged(update, row.current) || p.shouldUpdateProviderSpecific(update, row.current) {
-				inheritOwner(row.current, update)
-				changes.UpdateNew = append(changes.UpdateNew, update)
-				changes.UpdateOld = append(changes.UpdateOld, row.current)
+		// dns name released or possibly owned by a different external dns
+		if len(row.current) > 0 && len(row.candidates) == 0 {
+			changes.Delete = append(changes.Delete, row.current...)
+		}
+
+		// dns name is taken
+		if len(row.current) > 0 && len(row.candidates) > 0 {
+			// TODO how to resolve conflicting source candidate record types
+			if row.hasCandidateRecordTypeConflict() {
+				log.Warnf("Domain %s contains conflicting record type candidates, no updates planned", key.dnsName)
+				continue
 			}
-			continue
+
+			creates := []*endpoint.Endpoint{}
+
+			// apply changes for each record type
+			for _, records := range row.records {
+				// record type not desired
+				if records.current != nil && len(records.candidates) == 0 {
+					changes.Delete = append(changes.Delete, records.current)
+				}
+
+				// new record type desired
+				if records.current == nil && len(records.candidates) > 0 {
+					update := t.resolver.ResolveCreate(records.candidates)
+					// creates are evaluated after all domain records have been processed to
+					// validate that this external dns has ownership claim on the domain before
+					// adding the records to planned changes.
+					creates = append(creates, update)
+				}
+
+				// update existing record
+				if records.current != nil && len(records.candidates) > 0 {
+					update := t.resolver.ResolveUpdate(records.current, records.candidates)
+
+					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
+						inheritOwner(records.current, update)
+						changes.UpdateNew = append(changes.UpdateNew, update)
+						changes.UpdateOld = append(changes.UpdateOld, records.current)
+					}
+				}
+			}
+
+			if len(creates) > 0 {
+				// only add creates if the external dns has ownership claim on the domain
+				ownersMatch := true
+				for _, current := range row.current {
+					if p.OwnedRecordFilter != nil && !p.OwnedRecordFilter.Match(current) {
+						ownersMatch = false
+					}
+				}
+
+				if ownersMatch {
+					changes.Create = append(changes.Create, creates...)
+				}
+			}
 		}
 	}
+
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
+	}
+
+	// filter out updates this external dns does not have ownership claim over
+	if p.OwnedRecordFilter != nil {
+		changes.Delete = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.Delete)
+		changes.UpdateOld = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.UpdateOld)
+		changes.UpdateNew = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.UpdateNew)
 	}
 
 	plan := &Plan{
