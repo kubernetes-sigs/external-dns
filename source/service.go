@@ -498,16 +498,15 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		switch svc.Spec.Type {
 		case v1.ServiceTypeLoadBalancer:
 			if useClusterIP {
-				targets = append(targets, extractServiceIps(svc)...)
+				targets = extractServiceIps(svc)
 			} else {
-				targets = append(targets, extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)...)
+				targets = extractLoadBalancerTargets(svc, sc.resolveLoadBalancerHostname)
 			}
 		case v1.ServiceTypeClusterIP:
-			if sc.publishInternal {
-				targets = append(targets, extractServiceIps(svc)...)
-			}
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
+			} else if sc.publishInternal {
+				targets = extractServiceIps(svc)
 			}
 		case v1.ServiceTypeNodePort:
 			// add the nodeTargets and extract an SRV endpoint
@@ -518,7 +517,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			}
 			endpoints = append(endpoints, sc.extractNodePortEndpoints(svc, hostname, ttl)...)
 		case v1.ServiceTypeExternalName:
-			targets = append(targets, extractServiceExternalName(svc)...)
+			targets = extractServiceExternalName(svc)
 		}
 	}
 
@@ -562,12 +561,12 @@ func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 }
 
 func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
-	var (
-		targets     endpoint.Targets
-		externalIPs endpoint.Targets
-	)
+	if len(svc.Spec.ExternalIPs) > 0 {
+		return svc.Spec.ExternalIPs
+	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
+	var targets endpoint.Targets
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
 			targets = append(targets, lb.IP)
@@ -586,16 +585,6 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 				targets = append(targets, lb.Hostname)
 			}
 		}
-	}
-
-	if svc.Spec.ExternalIPs != nil {
-		for _, ext := range svc.Spec.ExternalIPs {
-			externalIPs = append(externalIPs, ext)
-		}
-	}
-
-	if len(externalIPs) > 0 {
-		return externalIPs
 	}
 
 	return targets
