@@ -11,7 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### All Changes
 
-## [v1.12.2] - UNRELEASED
+- Disallowed privilege escalation in container security context and set the seccomp profile type to `RuntimeDefault`. ([#3689](https://github.com/kubernetes-sigs/external-dns/pull/3689)) [@nrvnrvn](https://github.com/nrvnrvn)
+- Added RBAC for Traefik to ClusterRole. ([#3325](https://github.com/kubernetes-sigs/external-dns/pull/3325)) [@ThomasK33](https://github.com/thomask33)
+
+## [v1.13.0] - 2023-03-30
+
+### All Changes
+
+- Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5). ([#3661](https://github.com/kubernetes-sigs/external-dns/pull/3661)) [@GMartinez-Sisti](https://github.com/GMartinez-Sisti)
+- Adding missing gateway-httproute cluster role permission. ([#3541](https://github.com/kubernetes-sigs/external-dns/pull/3541)) [@nicon89](https://github.com/nicon89)
+
+## [v1.12.2] - 2023-03-30
 
 ### All Changes
 

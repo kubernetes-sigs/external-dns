@@ -6,7 +6,18 @@ repo_url: https://github.com/kubernetes-sigs/external-dns/
 
 nav:
   - index.md
+  - About:
+      - FAQ: faq.md
+      - Out of Incubator: 20190708-external-dns-incubator.md
+      - Code of Conduct: code-of-conduct.md
+      - License: LICENSE.md
   - Tutorials: tutorials/
+  - Annotations:
+    - About: annotations/annotations.md
+  - Registries:
+    - About: registry/registry.md
+    - TXT: registry/txt.md
+    - DynamoDB: registry/dynamodb.md
   - Advanced Topics:
       - Initial Design: initial-design.md
       - TTL: ttl.md
@@ -14,11 +25,6 @@ nav:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: release.md
       - contributing/*
-  - About:
-      - FAQ: faq.md
-      - Out of Incubator: 20190708-external-dns-incubator.md
-      - Code of Conduct: code-of-conduct.md
-      - License: LICENSE.md
 
 theme:
   name: material

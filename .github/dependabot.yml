@@ -9,11 +9,26 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "github.com/openshift/api"
+      - dependency-name: "github.com/openshift/client-go"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*" 
   - package-ecosystem: "docker" # Keep Docker dependencies up to date
     directory: "/"
     schedule:
       interval: "daily"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"

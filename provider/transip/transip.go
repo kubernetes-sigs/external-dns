@@ -72,7 +72,7 @@ func NewTransIPProvider(accountName, privateKeyFile string, domainFilter endpoin
 		Mode:           apiMode,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("could not setup TransIP API client: %s", err.Error())
+		return nil, fmt.Errorf("could not setup TransIP API client: %w", err)
 	}
 
 	// return TransIPProvider struct

@@ -105,6 +105,11 @@ rules:
     resources: ["tcpingresses"]
     verbs: ["get","watch","list"]
 {{- end }}
+{{- if has "traefik-proxy" .Values.sources }}
+  - apiGroups: ["traefik.containo.us", "traefik.io"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
+    verbs: ["get","watch","list"]
+{{- end }}
 {{- if has "openshift-route" .Values.sources }}
   - apiGroups: ["route.openshift.io"]
     resources: ["routes"]

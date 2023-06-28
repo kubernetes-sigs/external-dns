@@ -18,6 +18,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
 	kubeinformers "k8s.io/client-go/informers"
 	netinformers "k8s.io/client-go/informers/networking/v1"
 	"k8s.io/client-go/kubernetes"
@@ -43,6 +45,8 @@ const (
 	// Possible values for the ingress-hostname-source annotation
 	IngressHostnameSourceAnnotationOnlyValue   = "annotation-only"
 	IngressHostnameSourceDefinedHostsOnlyValue = "defined-hosts-only"
+
+	IngressClassAnnotationKey = "kubernetes.io/ingress.class"
 )
 
 // ingressSource is an implementation of Source for Kubernetes ingress objects.
@@ -53,6 +57,7 @@ type ingressSource struct {
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
+	ingressClassNames        []string
 	fqdnTemplate             *template.Template
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
@@ -63,12 +68,27 @@ type ingressSource struct {
 }
 
 // NewIngressSource creates a new ingressSource with the given config.
-func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector) (Source, error) {
+func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, namespace, annotationFilter string, fqdnTemplate string, combineFqdnAnnotation bool, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, labelSelector labels.Selector, ingressClassNames []string) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
 	}
 
+	// ensure that ingress class is only set in either the ingressClassNames or
+	// annotationFilter but not both
+	if ingressClassNames != nil && annotationFilter != "" {
+		selector, err := getLabelSelector(annotationFilter)
+		if err != nil {
+			return nil, err
+		}
+
+		requirements, _ := selector.Requirements()
+		for _, requirement := range requirements {
+			if requirement.Key() == "kubernetes.io/ingress.class" {
+				return nil, errors.New("--ingress-class is mutually exclusive with the kubernetes.io/ingress.class annotation filter")
+			}
+		}
+	}
 	// Use shared informer to listen for add/update/delete of ingresses in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
@@ -93,6 +113,7 @@ func NewIngressSource(ctx context.Context, kubeClient kubernetes.Interface, name
 		client:                   kubeClient,
 		namespace:                namespace,
 		annotationFilter:         annotationFilter,
+		ingressClassNames:        ingressClassNames,
 		fqdnTemplate:             tmpl,
 		combineFQDNAnnotation:    combineFqdnAnnotation,
 		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
@@ -112,6 +133,11 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		return nil, err
 	}
 	ingresses, err = sc.filterByAnnotations(ingresses)
+	if err != nil {
+		return nil, err
+	}
+
+	ingresses, err = sc.filterByIngressClass(ingresses)
 	if err != nil {
 		return nil, err
 	}
@@ -204,6 +230,50 @@ func (sc *ingressSource) filterByAnnotations(ingresses []*networkv1.Ingress) ([]
 		// include ingress if its annotations match the selector
 		if matchLabelSelector(selector, ingress.Annotations) {
 			filteredList = append(filteredList, ingress)
+		}
+	}
+
+	return filteredList, nil
+}
+
+// filterByIngressClass filters a list of ingresses based on a required ingress
+// class
+func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([]*networkv1.Ingress, error) {
+	// if no class filter is specified then there's nothing to do
+	if len(sc.ingressClassNames) == 0 {
+		return ingresses, nil
+	}
+
+	classNameReq, err := labels.NewRequirement(IngressClassAnnotationKey, selection.In, sc.ingressClassNames)
+	if err != nil {
+		return nil, err
+	}
+
+	selector := labels.NewSelector()
+	selector = selector.Add(*classNameReq)
+
+	filteredList := []*networkv1.Ingress{}
+
+	for _, ingress := range ingresses {
+		var matched = false
+
+		for _, nameFilter := range sc.ingressClassNames {
+			if ingress.Spec.IngressClassName != nil && len(*ingress.Spec.IngressClassName) > 0 {
+				if nameFilter == *ingress.Spec.IngressClassName {
+					matched = true
+				}
+			} else if matchLabelSelector(selector, ingress.Annotations) {
+				matched = true
+			}
+
+			if matched {
+				filteredList = append(filteredList, ingress)
+				break
+			}
+		}
+
+		if !matched {
+			log.Debugf("Discarding ingress %s/%s because it does not match required ingress classes %v", ingress.Namespace, ingress.Name, sc.ingressClassNames)
 		}
 	}
 

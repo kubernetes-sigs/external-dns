@@ -19,12 +19,10 @@ In this example we will use `example.com` as an example.
 To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key).
 You can either use existing ones or you can create a new token, as explained in [How to generate an API token](https://www.scaleway.com/en/docs/generate-an-api-token/) or directly by going to the [credentials page](https://console.scaleway.com/account/organization/credentials).
 
-Note that you will also need to the Organization ID, which can be retrieve on the same page.
 
-Three environment variables are needed to run ExternalDNS with Scaleway DNS:
+Two environment variables are needed to run ExternalDNS with Scaleway DNS:
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
-- `SCW_DEFAULT_ORGANIZATION_ID` which is the Default Organization ID.
 
 ## Deploy ExternalDNS
 
@@ -53,7 +51,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -63,8 +61,6 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
-        - name: SCW_DEFAULT_ORGANIZATION_ID
-          value: "<your default organization ID>"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -121,7 +117,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -131,8 +127,6 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
-        - name: SCW_DEFAULT_ORGANIZATION_ID
-          value: "<your default organization ID>"
 ```
 
 

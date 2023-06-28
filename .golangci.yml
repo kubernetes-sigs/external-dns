@@ -19,7 +19,6 @@ linters:
   # inverted configuration with `enable-all` and `disable` is not scalable during updates of golangci-lint
   disable-all: true
   enable:
-    - depguard
     - dogsled
     - gofmt
     - goimports
@@ -61,6 +60,14 @@ issues:
         - unused
         - varcheck
         - whitespace
+    - path: source/ambassador_host.go
+      linters: [ typecheck ]
+    - path: source/contour_httpproxy.go
+      linters: [ typecheck ]
+    - path: source/f5_virtualserver.go
+      linters: [ typecheck ]
+    - path: source/kong_tcpingress.go
+      linters: [ typecheck ]
 
 run:
   skip-files:

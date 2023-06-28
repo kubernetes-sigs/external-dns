@@ -207,7 +207,7 @@ $ docker run \
   -e EXTERNAL_DNS_SOURCE=$'service\ningress' \
   -e EXTERNAL_DNS_PROVIDER=google \
   -e EXTERNAL_DNS_DOMAIN_FILTER=$'foo.com\nbar.com' \
-  registry.k8s.io/external-dns/external-dns:v0.13.4
+  registry.k8s.io/external-dns/external-dns:v0.13.5
 time="2017-08-08T14:10:26Z" level=info msg="config: &{APIServerURL: KubeConfig: Sources:[service ingress] Namespace: ...
 ```
 
@@ -257,24 +257,33 @@ spec:
 ### Running an internal and external dns service
 
 Sometimes you need to run an internal and an external dns service.
-The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external
-one to expose DNS to the internet.
+The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external one to expose DNS to the internet.
 
-To do this with ExternalDNS you can use the `--annotation-filter` to specifically tie an instance of ExternalDNS to
-an instance of an ingress controller. Let's assume you have two ingress controllers `nginx-internal` and `nginx-external`
-then you can start two ExternalDNS providers one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-internal)`
-and one with `--annotation-filter=kubernetes.io/ingress.class in (nginx-external)`.
+To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller. 
+Let's assume you have two ingress controllers, `internal` and `external`.
+You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
 
-If you need to search for multiple values of said annotation, you can provide a comma separated list, like so:
-`--annotation-filter=kubernetes.io/ingress.class in (nginx-internal, alb-ingress-internal)`.
+If you need to search for multiple ingress classes, you can specify the flag multiple times, like so:
+`--ingress-class=internal --ingress-class=external`.
 
-Beware when using multiple sources, e.g. `--source=service --source=ingress`, `--annotation-filter` will filter every given source objects.
-If you need to filter only one specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+The `--ingress-class` flag will check both the `spec.ingressClassName` field and the deprecated `kubernetes.io/ingress.class` annotation.
+The `spec.ingressClassName` tasks precedence over the annotation if both are supplied.
 
-**Note:** Filtering based on annotation means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
-In larger clusters with many resources which change frequently this can cause performance issues. If only some resources need to be managed by an instance
-of external-dns then label filtering can be used instead of annotation filtering. This means that only those resources which match the selector specified
-in `--label-filter` will be passed to the controller.
+**Backward compatibility**
+
+The previous `--annotation-filter` flag can still be used to restrict which objects ExternalDNS considers; for example, `--annotation-filter=kubernetes.io/ingress.class in (public,dmz)`.
+
+However, beware when using annotation filters with multiple sources, e.g. `--source=service --source=ingress`, since `--annotation-filter` will filter every given source object.
+If you need to use annotation filters against a specific source you have to run a separated external dns service containing only the wanted `--source`  and `--annotation-filter`.
+
+Note: the `--ingress-class` flag cannot be used at the same time as the `--annotation-filter=kubernetes.io/ingress.class in (...)` flag; if you do this an error will be raised.
+
+**Performance considerations**
+
+Filtering based on ingress class name or annotations means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
+In larger clusters with many resources which change frequently this can cause performance issues. 
+If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering). 
+This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
 
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
 

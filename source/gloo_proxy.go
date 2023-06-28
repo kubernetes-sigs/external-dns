@@ -64,16 +64,31 @@ type proxySpecHTTPListener struct {
 }
 
 type proxyVirtualHost struct {
-	Domains  []string                 `json:"domains,omitempty"`
-	Metadata proxyVirtualHostMetadata `json:"metadata,omitempty"`
+	Domains        []string                       `json:"domains,omitempty"`
+	Metadata       proxyVirtualHostMetadata       `json:"metadata,omitempty"`
+	MetadataStatic proxyVirtualHostMetadataStatic `json:"metadataStatic,omitempty"`
 }
 
 type proxyVirtualHostMetadata struct {
 	Source []proxyVirtualHostMetadataSource `json:"sources,omitempty"`
 }
 
+type proxyVirtualHostMetadataStatic struct {
+	Source []proxyVirtualHostMetadataStaticSource `json:"sources,omitempty"`
+}
+
 type proxyVirtualHostMetadataSource struct {
 	Kind      string `json:"kind,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Namespace string `json:"namespace,omitempty"`
+}
+
+type proxyVirtualHostMetadataStaticSource struct {
+	ResourceKind string                                    `json:"resourceKind,omitempty"`
+	ResourceRef  proxyVirtualHostMetadataSourceResourceRef `json:"resourceRef,omitempty"`
+}
+
+type proxyVirtualHostMetadataSourceResourceRef struct {
 	Name      string `json:"name,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 }
@@ -157,6 +172,18 @@ func (gs *glooSource) annotationsFromProxySource(ctx context.Context, virtualHos
 		kind := sourceKind(src.Kind)
 		if kind != nil {
 			source, err := gs.dynamicKubeClient.Resource(*kind).Namespace(src.Namespace).Get(ctx, src.Name, metav1.GetOptions{})
+			if err != nil {
+				return nil, err
+			}
+			for key, value := range source.GetAnnotations() {
+				annotations[key] = value
+			}
+		}
+	}
+	for _, src := range virtualHost.MetadataStatic.Source {
+		kind := sourceKind(src.ResourceKind)
+		if kind != nil {
+			source, err := gs.dynamicKubeClient.Resource(*kind).Namespace(src.ResourceRef.Namespace).Get(ctx, src.ResourceRef.Name, metav1.GetOptions{})
 			if err != nil {
 				return nil, err
 			}

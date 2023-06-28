@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/go-gandi/go-gandi/domain"
@@ -342,7 +341,7 @@ func TestGandiProvider_RecordsAppliesDomainFilter(t *testing.T) {
 	td.Cmp(t, expectedActions, mockedClient.Actions)
 }
 
-func TestGandiProvider_RecordsErrorOnMultipleValues(t *testing.T) {
+func TestGandiProvider_RecordsWithMultipleValues(t *testing.T) {
 	mockedClient := mockGandiClientNewWithRecords([]livedns.DomainRecord{
 		{
 			RrsetValues: []string{"foo", "bar"},
@@ -355,23 +354,11 @@ func TestGandiProvider_RecordsErrorOnMultipleValues(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	expectedActions := []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "GetDomainRecords",
-			FQDN: "example.com",
-		},
-	}
-
 	endpoints, err := mockedProvider.Records(context.Background())
-	if err == nil {
-		t.Errorf("expected to fail")
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
 	}
-	assert.Equal(t, 0, len(endpoints))
-	assert.True(t, strings.HasPrefix(err.Error(), "can't handle multiple values for rrset"))
-	td.Cmp(t, expectedActions, mockedClient.Actions)
+	assert.Equal(t, 2, len(endpoints))
 }
 
 func TestGandiProvider_ApplyChangesEmpty(t *testing.T) {

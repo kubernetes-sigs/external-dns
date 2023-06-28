@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --log-level=debug
         - --source=service
@@ -96,7 +96,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.4
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --log-level=debug
         - --source=service
@@ -114,7 +114,7 @@ spec:
 First lets deploy a Kafka Stateful set, a simple example(a lot of stuff is missing) with a headless service called `ksvc`
 
 ```yaml
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: kafka

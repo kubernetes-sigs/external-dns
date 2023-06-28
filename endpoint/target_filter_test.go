@@ -68,19 +68,6 @@ var targetFilterTests = []targetFilterTest{
 	},
 }
 
-func TestTargetFilterMatch(t *testing.T) {
-	for i, tt := range targetFilterTests {
-		if len(tt.exclusions) > 0 {
-			t.Logf("NewTargetFilter() doesn't support exclusions - skipping test %+v", tt)
-			continue
-		}
-		targetFilter := NewTargetNetFilter(tt.targetFilter)
-		for _, target := range tt.targets {
-			assert.Equal(t, tt.expected, targetFilter.Match(target), "should not fail: %v in test-case #%v", target, i)
-		}
-	}
-}
-
 func TestTargetFilterWithExclusions(t *testing.T) {
 	for i, tt := range targetFilterTests {
 		if len(tt.exclusions) == 0 {
@@ -106,48 +93,4 @@ func TestMatchTargetFilterReturnsProperEmptyVal(t *testing.T) {
 	emptyFilters := []string{}
 	assert.Equal(t, true, matchFilter(emptyFilters, "sometarget.com", true))
 	assert.Equal(t, false, matchFilter(emptyFilters, "sometarget.com", false))
-}
-
-func TestTargetFilterIsConfigured(t *testing.T) {
-	for _, tt := range []struct {
-		filters  []string
-		exclude  []string
-		expected bool
-	}{
-		{
-			[]string{""},
-			[]string{""},
-			false,
-		},
-		{
-			[]string{"    "},
-			[]string{"    "},
-			false,
-		},
-		{
-			[]string{"", ""},
-			[]string{""},
-			false,
-		},
-		{
-			[]string{"10/8"},
-			[]string{"  "},
-			false,
-		},
-		{
-			[]string{"10.0.0.0/8"},
-			[]string{"  "},
-			true,
-		},
-		{
-			[]string{" 10.0.0.0/8 "},
-			[]string{" ignored "},
-			true,
-		},
-	} {
-		t.Run("test IsConfigured", func(t *testing.T) {
-			tf := NewTargetNetFilterWithExclusions(tt.filters, tt.exclude)
-			assert.Equal(t, tt.expected, tf.IsConfigured())
-		})
-	}
 }

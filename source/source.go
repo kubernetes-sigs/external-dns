@@ -46,7 +46,7 @@ const (
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
-	// The annotation used for defining the desired ingress target
+	// The annotation used for defining the desired ingress/service target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
@@ -151,7 +151,7 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	if !exists {
 		return nil
 	}
-	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	return splitHostnameAnnotation(hostnameAnnotation)
 }
 
 func getAccessFromAnnotations(annotations map[string]string) string {
@@ -167,7 +167,11 @@ func getInternalHostnamesFromAnnotations(annotations map[string]string) []string
 	if !exists {
 		return nil
 	}
-	return strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
+	return splitHostnameAnnotation(internalHostnameAnnotation)
+}
+
+func splitHostnameAnnotation(annotation string) []string {
+	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {
@@ -328,9 +332,9 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 
 type eventHandlerFunc func()
 
-func (fn eventHandlerFunc) OnAdd(obj interface{})               { fn() }
-func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{}) { fn() }
-func (fn eventHandlerFunc) OnDelete(obj interface{})            { fn() }
+func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
+func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
+func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
 
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
