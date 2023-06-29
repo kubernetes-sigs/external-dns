@@ -181,8 +181,10 @@ type Controller struct {
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
 	nextRunAtMux sync.Mutex
-	// DNS record types that will be considered for management
+	// MangedRecordTypes are DNS record types that will be considered for management.
 	ManagedRecordTypes []string
+	// ExcludeRecordTypes are DNS record types that will be excluded from management.
+	ExcludeRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
 }
@@ -227,6 +229,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Desired:        endpoints,
 		DomainFilter:   endpoint.MatchAllDomainFilters{&c.DomainFilter, &registryFilter},
 		ManagedRecords: c.ManagedRecordTypes,
+		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
 	}
 

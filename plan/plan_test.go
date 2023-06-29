@@ -681,6 +681,29 @@ func (suite *PlanTestSuite) TestIgnoreTXT() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestExcludeTXT() {
+	current := []*endpoint.Endpoint{suite.fooV2TXT}
+	desired := []*endpoint.Endpoint{suite.fooV2Cname}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV2Cname}
+	expectedUpdateOld := []*endpoint.Endpoint{}
+	expectedUpdateNew := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeTXT},
+		ExcludeRecords: []string{endpoint.RecordTypeTXT},
+	}
+
+	changes := p.Calculate().Changes
+	validateEntries(suite.T(), changes.Create, expectedCreate)
+	validateEntries(suite.T(), changes.UpdateNew, expectedUpdateNew)
+	validateEntries(suite.T(), changes.UpdateOld, expectedUpdateOld)
+	validateEntries(suite.T(), changes.Delete, expectedDelete)
+}
+
 func (suite *PlanTestSuite) TestIgnoreTargetCase() {
 	current := []*endpoint.Endpoint{suite.fooV2Cname}
 	desired := []*endpoint.Endpoint{suite.fooV2CnameUppercase}

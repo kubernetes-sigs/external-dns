@@ -53,6 +53,7 @@ type DynamoDBRegistry struct {
 	mapper              nameMapper
 	wildcardReplacement string
 	managedRecordTypes  []string
+	excludeRecordTypes  []string
 	txtEncryptAESKey    []byte
 
 	// cache the dynamodb records owned by us.
@@ -68,7 +69,7 @@ type DynamoDBRegistry struct {
 const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
+func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -95,6 +96,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		mapper:              mapper,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
+		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		cacheInterval:       cacheInterval,
 	}, nil
@@ -194,7 +196,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	}
 
 	// Remove any unused TXT ownership records owned by us
-	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes) {
+	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes, im.excludeRecordTypes) {
 		log.Infof("Old TXT ownership records will not be deleted because \"TXT\" is not in the set of managed record types.")
 	}
 	for _, record := range txtRecordsMap {
