@@ -19,7 +19,6 @@ package source
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 
@@ -91,7 +90,7 @@ func TestTargetFilterSource(t *testing.T) {
 
 // TestTargetFilterSourceImplementsSource tests that targetFilterSource is a valid Source.
 func TestTargetFilterSourceImplementsSource(t *testing.T) {
-	assert.Implements(t, (*Source)(nil), new(targetFilterSource))
+	var _ Source = &targetFilterSource{}
 }
 
 func TestTargetFilterSourceEndpoints(t *testing.T) {
