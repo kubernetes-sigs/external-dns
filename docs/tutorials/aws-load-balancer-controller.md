@@ -103,9 +103,9 @@ traffic to the echoserver application.
 
 If the `source=ingress` argument is specified, then ExternalDNS will create DNS
 records based on the hosts specified in ingress objects. The above example would
-result in two alias records being created, `echoserver.mycluster.example.org` and
-`echoserver.example.org`, which both alias the ALB that is associated with the
-Ingress object.
+result in four alias records being created, an A and AAAA for each of `echoserver.mycluster.example.org` and
+`echoserver.example.org`, which all alias the ALB that is associated with the
+Ingress object. As the ALB is IPv4-only, the AAAA alias records have no effect.
 
 Note that the above example makes use of the YAML anchor feature to avoid having
 to repeat the http section for multiple hosts that use the exact same paths. If
