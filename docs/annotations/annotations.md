@@ -12,7 +12,7 @@ The following table documents which sources support which annotations:
 | CloudFoundry |            |          |                   |         |     |                     |
 | CRD          |            |          |                   |         |     |                     |
 | F5           |            |          |                   |         | Yes |                     |
-| Gateway      | Yes        | Yes[^1]  |                   |         | Yes | Yes                 |
+| Gateway      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
 | Gloo         |            |          |                   |         | Yes | Yes                 |
 | Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
 | Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
