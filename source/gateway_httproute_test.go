@@ -25,10 +25,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
-
-	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
