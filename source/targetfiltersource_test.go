@@ -42,10 +42,6 @@ func (m *mockTargetNetFilter) Match(target string) bool {
 	return m.targets[target]
 }
 
-func (m *mockTargetNetFilter) IsConfigured() bool {
-	return true
-}
-
 // echoSource is a Source that returns the endpoints passed in on creation.
 type echoSource struct {
 	endpoints []*endpoint.Endpoint
