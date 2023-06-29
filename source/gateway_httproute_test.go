@@ -25,9 +25,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubefake "k8s.io/client-go/kubernetes/fake"
-	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	gatewayfake "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned/fake"
+
+	"sigs.k8s.io/external-dns/endpoint"
 )
 
 func mustGetLabelSelector(s string) labels.Selector {
@@ -1032,6 +1033,34 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 				Status: httpRouteStatus(gatewayParentRef("default", "test")),
 			}},
 			endpoints: nil,
+		},
+		{
+			title:      "TargetAnnotations",
+			config:     Config{},
+			namespaces: namespaces("default"),
+			gateways: []*v1beta1.Gateway{{
+				ObjectMeta: objectMeta("default", "test"),
+				Spec: v1beta1.GatewaySpec{
+					Listeners: []v1beta1.Listener{{Protocol: v1beta1.HTTPProtocolType}},
+				},
+				Status: gatewayStatus("1.2.3.4"),
+			}},
+			routes: []*v1beta1.HTTPRoute{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "target-annotations",
+					Namespace: "default",
+					Annotations: map[string]string{
+						targetAnnotationKey: "target-annotations.internal",
+					},
+				},
+				Spec: v1beta1.HTTPRouteSpec{
+					Hostnames: hostnames("target-annotations.com"),
+				},
+				Status: httpRouteStatus(gatewayParentRef("default", "test")),
+			}},
+			endpoints: []*endpoint.Endpoint{
+				newTestEndpoint("target-annotations.com", "CNAME", "target-annotations.internal"),
+			},
 		},
 	}
 	for _, tt := range tests {

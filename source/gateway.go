@@ -357,10 +357,10 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				targets := getTargetsFromTargetAnnotation(annots)
 				if len(targets) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+						targets = append(targets, addr.Value)
 					}
 				}
-				hostTargets[host] = targets
+				hostTargets[host] = append(hostTargets[host], targets...)
 				match = true
 			}
 		}
