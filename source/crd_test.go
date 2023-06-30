@@ -393,7 +393,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
 				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/set-identifier": "ignore",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -422,8 +422,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/aws-weight": "50",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -452,8 +451,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/aws-weight": "50",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -482,8 +480,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/aws-weight": "50",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -512,8 +509,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/aws-weight": "50",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{
@@ -542,8 +538,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			namespace:            "foo",
 			registeredNamespace:  "foo",
 			annotations: map[string]string{
-				"external-dns.alpha.kubernetes.io/aws-weight":     "50",
-				"external-dns.alpha.kubernetes.io/set-identifier": "setID",
+				"external-dns.alpha.kubernetes.io/aws-weight": "50",
 			},
 			endpoints: []*endpoint.Endpoint{
 				{

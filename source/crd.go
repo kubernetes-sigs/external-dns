@@ -140,7 +140,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	for _, dnsEndpoint := range result.Items {
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(dnsEndpoint.Annotations)
+		providerSpecific, _ := getProviderSpecificAnnotations(dnsEndpoint.Annotations)
 
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
@@ -165,7 +165,6 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			}
 
 			ep.ProviderSpecific = providerSpecific
-			ep.SetIdentifier = setIdentifier
 
 			crdEndpoints = append(crdEndpoints, ep)
 		}

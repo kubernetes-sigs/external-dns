@@ -982,7 +982,6 @@ metadata:
   name: foo
   annotations:
     external-dns.alpha.kubernetes.io/aws-weight: "50"
-    external-dns.alpha.kubernetes.io/set-identifier: "foo"
 spec:
   endpoints:
     - dnsName: foo.example.com
