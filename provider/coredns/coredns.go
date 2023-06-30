@@ -37,10 +37,6 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
-
 const (
 	priority    = 10 // default priority when nothing is set
 	etcdTimeout = 5 * time.Second
@@ -112,7 +108,7 @@ func (c etcdClient) GetServices(prefix string) ([]*Service, error) {
 	for _, n := range r.Kvs {
 		svc := new(Service)
 		if err := json.Unmarshal(n.Value, svc); err != nil {
-			return nil, fmt.Errorf("%s: %s", n.Key, err.Error())
+			return nil, fmt.Errorf("%s: %w", n.Key, err)
 		}
 		b := Service{Host: svc.Host, Port: svc.Port, Priority: svc.Priority, Weight: svc.Weight, Text: svc.Text, Key: string(n.Key)}
 		if _, ok := bx[b]; ok {
@@ -166,7 +162,7 @@ func newTLSConfig(certPath, keyPath, caPath, serverName string, insecure bool) (
 	if certPath != "" {
 		cert, err := tls.LoadX509KeyPair(certPath, keyPath)
 		if err != nil {
-			return nil, fmt.Errorf("could not load TLS cert: %s", err)
+			return nil, fmt.Errorf("could not load TLS cert: %w", err)
 		}
 		certificates = append(certificates, cert)
 	}
@@ -192,11 +188,11 @@ func loadRoots(caPath string) (*x509.CertPool, error) {
 	roots := x509.NewCertPool()
 	pem, err := os.ReadFile(caPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading %s: %s", caPath, err)
+		return nil, fmt.Errorf("error reading %s: %w", caPath, err)
 	}
 	ok := roots.AppendCertsFromPEM(pem)
 	if !ok {
-		return nil, fmt.Errorf("could not read root certs: %s", err)
+		return nil, fmt.Errorf("could not read root certs: %w", err)
 	}
 	return roots, nil
 }

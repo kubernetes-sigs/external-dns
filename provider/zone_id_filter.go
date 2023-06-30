@@ -34,6 +34,9 @@ func (f ZoneIDFilter) Match(zoneID string) bool {
 	if len(f.ZoneIDs) == 0 {
 		return true
 	}
+	if len(f.ZoneIDs) == 1 && f.ZoneIDs[0] == "" {
+		return true
+	}
 
 	for _, id := range f.ZoneIDs {
 		if strings.HasSuffix(zoneID, id) {

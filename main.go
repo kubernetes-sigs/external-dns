@@ -18,12 +18,18 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	awsSDK "github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/route53"
+	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
@@ -113,6 +119,7 @@ func main() {
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
+		IngressClassNames:              cfg.IngressClassNames,
 		FQDNTemplate:                   cfg.FQDNTemplate,
 		CombineFQDNAndAnnotation:       cfg.CombineFQDNAndAnnotation,
 		IgnoreHostnameAnnotation:       cfg.IgnoreHostnameAnnotation,
@@ -139,6 +146,8 @@ func main() {
 		RequestTimeout:                 cfg.RequestTimeout,
 		DefaultTargets:                 cfg.DefaultTargets,
 		OCPRouterName:                  cfg.OCPRouterName,
+		UpdateEvents:                   cfg.UpdateEvents,
+		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -176,6 +185,20 @@ func main() {
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
+	var awsSession *session.Session
+	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
+		awsSession, err = aws.NewSession(
+			aws.AWSSessionConfig{
+				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+				APIRetries:           cfg.AWSAPIRetries,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	var p provider.Provider
 	switch cfg.Provider {
 	case "akamai":
@@ -203,13 +226,11 @@ func main() {
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				AssumeRole:           cfg.AWSAssumeRole,
-				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
 			},
+			route53.New(awsSession),
 		)
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
@@ -217,7 +238,7 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.AWSAssumeRole, cfg.AWSAssumeRoleExternalID, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID)
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
@@ -233,7 +254,7 @@ func main() {
 	case "civo":
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareZonesPerPage, cfg.CloudflareProxied, cfg.DryRun)
+		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
@@ -260,7 +281,8 @@ func main() {
 				View:          cfg.InfobloxView,
 				MaxResults:    cfg.InfobloxMaxResults,
 				DryRun:        cfg.DryRun,
-				FQDNRexEx:     cfg.InfobloxFQDNRegEx,
+				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
+				NameRegEx:     cfg.InfobloxNameRegEx,
 				CreatePTR:     cfg.InfobloxCreatePTR,
 				CacheDuration: cfg.InfobloxCacheDuration,
 			},
@@ -311,7 +333,19 @@ func main() {
 		)
 	case "oci":
 		var config *oci.OCIConfig
-		config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		// if the instance-principals flag was set, and a compartment OCID was provided, then ignore the
+		// OCI config file, and provide a config that uses instance principal authentication.
+		if cfg.OCIAuthInstancePrincipal {
+			if len(cfg.OCICompartmentOCID) == 0 {
+				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
+			} else {
+				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
+				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
+			}
+		} else {
+			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
+		}
+
 		if err == nil {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.DryRun)
 		}
@@ -363,10 +397,16 @@ func main() {
 
 	var r registry.Registry
 	switch cfg.Registry {
+	case "dynamodb":
+		config := awsSDK.NewConfig()
+		if cfg.AWSDynamoDBRegion != "" {
+			config = config.WithRegion(cfg.AWSDynamoDBRegion)
+		}
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession, config), cfg.AWSDynamoDBTable, cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
-		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes)
+		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
 	case "aws-sd":
 		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
 	default:

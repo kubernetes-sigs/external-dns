@@ -26,7 +26,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/StackExchange/dnscontrol/pkg/transform"
+	"github.com/StackExchange/dnscontrol/v3/pkg/transform"
 	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 	"github.com/sirupsen/logrus"
 
@@ -58,7 +58,8 @@ type StartupConfig struct {
 	DryRun        bool
 	View          string
 	MaxResults    int
-	FQDNRexEx     string
+	FQDNRegEx     string
+	NameRegEx     string
 	CreatePTR     bool
 	CacheDuration int
 }
@@ -85,15 +86,17 @@ type infobloxRecordSet struct {
 // additional query parameter on all get requests
 type ExtendedRequestBuilder struct {
 	fqdnRegEx  string
+	nameRegEx  string
 	maxResults int
 	ibclient.WapiRequestBuilder
 }
 
 // NewExtendedRequestBuilder returns a ExtendedRequestBuilder which adds
 // _max_results query parameter to all GET requests
-func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string) *ExtendedRequestBuilder {
+func NewExtendedRequestBuilder(maxResults int, fqdnRegEx string, nameRegEx string) *ExtendedRequestBuilder {
 	return &ExtendedRequestBuilder{
 		fqdnRegEx:  fqdnRegEx,
+		nameRegEx:  nameRegEx,
 		maxResults: maxResults,
 	}
 }
@@ -107,10 +110,16 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 		if mrb.maxResults > 0 {
 			query.Set("_max_results", strconv.Itoa(mrb.maxResults))
 		}
-		_, ok := obj.(*ibclient.ZoneAuth)
-		if ok && t == ibclient.GET && mrb.fqdnRegEx != "" {
+		_, zoneAuthQuery := obj.(*ibclient.ZoneAuth)
+		if zoneAuthQuery && t == ibclient.GET && mrb.fqdnRegEx != "" {
 			query.Set("fqdn~", mrb.fqdnRegEx)
 		}
+
+		// if we are not doing a ZoneAuth query, support the name filter
+		if !zoneAuthQuery && mrb.nameRegEx != "" {
+			query.Set("name~", mrb.nameRegEx)
+		}
+
 		req.URL.RawQuery = query.Encode()
 	}
 	return
@@ -142,9 +151,9 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		requestBuilder ibclient.HttpRequestBuilder
 		err            error
 	)
-	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRexEx != "" {
+	if ibStartupCfg.MaxResults != 0 || ibStartupCfg.FQDNRegEx != "" || ibStartupCfg.NameRegEx != "" {
 		// use our own HttpRequestBuilder which sets _max_results parameter on GET requests
-		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRexEx)
+		requestBuilder = NewExtendedRequestBuilder(ibStartupCfg.MaxResults, ibStartupCfg.FQDNRegEx, ibStartupCfg.NameRegEx)
 	} else {
 		// use the default HttpRequestBuilder of the infoblox client
 		requestBuilder, err = ibclient.NewWapiRequestBuilder(hostCfg, authCfg)
@@ -166,7 +175,7 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		zoneIDFilter:  ibStartupCfg.ZoneIDFilter,
 		dryRun:        ibStartupCfg.DryRun,
 		view:          ibStartupCfg.View,
-		fqdnRegEx:     ibStartupCfg.FQDNRexEx,
+		fqdnRegEx:     ibStartupCfg.FQDNRegEx,
 		createPTR:     ibStartupCfg.CreatePTR,
 		cacheDuration: ibStartupCfg.CacheDuration,
 	}
@@ -178,18 +187,31 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
 	if err != nil {
-		return nil, fmt.Errorf("could not fetch zones: %s", err)
+		return nil, fmt.Errorf("could not fetch zones: %w", err)
 	}
 
 	for _, zone := range zones {
 		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
+
+		view := p.view
+		if view == "" {
+			view = "default"
+		}
+		searchParams := ibclient.NewQueryParams(
+			false,
+			map[string]string{
+				"zone": zone.Fqdn,
+				"view": view,
+			},
+		)
+
 		var resA []ibclient.RecordA
 		objA := ibclient.NewEmptyRecordA()
 		objA.View = p.view
 		objA.Zone = zone.Fqdn
-		err = p.client.GetObject(objA, "", nil, &resA)
+		err = p.client.GetObject(objA, "", searchParams, &resA)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch A records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch A records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resA {
 			// Check if endpoint already exists and add to existing endpoint if it does
@@ -233,9 +255,9 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objH := ibclient.NewEmptyHostRecord()
 		objH.View = p.view
 		objH.Zone = zone.Fqdn
-		err = p.client.GetObject(objH, "", nil, &resH)
+		err = p.client.GetObject(objH, "", searchParams, &resH)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch host records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch host records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resH {
 			for _, ip := range res.Ipv4Addrs {
@@ -255,9 +277,9 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		objC := ibclient.NewEmptyRecordCNAME()
 		objC.View = p.view
 		objC.Zone = zone.Fqdn
-		err = p.client.GetObject(objC, "", nil, &resC)
+		err = p.client.GetObject(objC, "", searchParams, &resC)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resC {
 			logrus.Debugf("Record='%s' CNAME:'%s'", res.Name, res.Canonical)
@@ -274,9 +296,9 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 				objP := ibclient.NewEmptyRecordPTR()
 				objP.Zone = arpaZone
 				objP.View = p.view
-				err = p.client.GetObject(objP, "", nil, &resP)
+				err = p.client.GetObject(objP, "", searchParams, &resP)
 				if err != nil && !isNotFoundError(err) {
-					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %s", zone.Fqdn, err)
+					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %w", zone.Fqdn, err)
 				}
 				for _, res := range resP {
 					endpoints = append(endpoints, endpoint.NewEndpoint(res.PtrdName, endpoint.RecordTypePTR, res.Ipv4Addr))
@@ -285,15 +307,12 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		}
 
 		var resT []ibclient.RecordTXT
-		objT := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Zone: zone.Fqdn,
-				View: p.view,
-			},
-		)
-		err = p.client.GetObject(objT, "", nil, &resT)
+		objT := ibclient.NewEmptyRecordTXT()
+		objT.Zone = zone.Fqdn
+		objT.View = p.view
+		err = p.client.GetObject(objT, "", searchParams, &resT)
 		if err != nil && !isNotFoundError(err) {
-			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %s", zone.Fqdn, err)
+			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %w", zone.Fqdn, err)
 		}
 		for _, res := range resT {
 			// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
@@ -581,13 +600,10 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		if target, err2 := strconv.Unquote(ep.Targets[0]); err2 == nil && !strings.Contains(ep.Targets[0], " ") {
 			ep.Targets = endpoint.Targets{target}
 		}
-		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: ep.DNSName,
-				Text: ep.Targets[0],
-				View: p.view,
-			},
-		)
+		obj := ibclient.NewEmptyRecordTXT()
+		obj.Name = ep.DNSName
+		obj.Text = ep.Targets[0]
+		obj.View = p.view
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
 			err = p.client.GetObject(obj, "", queryParams, &res)

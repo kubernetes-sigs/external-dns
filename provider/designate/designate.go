@@ -322,13 +322,13 @@ func (p designateProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 				if recordSet.Type != endpoint.RecordTypeA && recordSet.Type != endpoint.RecordTypeTXT && recordSet.Type != endpoint.RecordTypeCNAME {
 					return nil
 				}
-				for _, record := range recordSet.Records {
-					ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, record)
-					ep.Labels[designateRecordSetID] = recordSet.ID
-					ep.Labels[designateZoneID] = recordSet.ZoneID
-					ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
-					result = append(result, ep)
-				}
+
+				ep := endpoint.NewEndpoint(recordSet.Name, recordSet.Type, recordSet.Records...)
+				ep.Labels[designateRecordSetID] = recordSet.ID
+				ep.Labels[designateZoneID] = recordSet.ZoneID
+				ep.Labels[designateOriginalRecords] = strings.Join(recordSet.Records, "\000")
+				result = append(result, ep)
+
 				return nil
 			},
 		)
@@ -358,7 +358,7 @@ type recordSet struct {
 }
 
 // adds endpoint into recordset aggregation, loading original values from endpoint labels first
-func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete bool) {
+func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, oldEndpoints []*endpoint.Endpoint, delete bool) {
 	key := fmt.Sprintf("%s/%s", ep.DNSName, ep.RecordType)
 	rs := recordSets[key]
 	if rs == nil {
@@ -368,6 +368,9 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 			names:      make(map[string]bool),
 		}
 	}
+
+	addDesignateIDLabelsFromExistingEndpoints(oldEndpoints, ep)
+
 	if rs.zoneID == "" {
 		rs.zoneID = ep.Labels[designateZoneID]
 	}
@@ -389,25 +392,55 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, delete
 	recordSets[key] = rs
 }
 
+// addDesignateIDLabelsFromExistingEndpoints adds the labels identified by the constants designateZoneID and designateRecordSetID
+// to an Endpoint. Therefore, it searches all given existing endpoints for an endpoint with the same record type and record
+// value. If the given Endpoint already has the labels set, they are left untouched. This fixes an issue with the
+// TXTRegistry which generates new TXT entries instead of updating the old ones.
+func addDesignateIDLabelsFromExistingEndpoints(existingEndpoints []*endpoint.Endpoint, ep *endpoint.Endpoint) {
+	_, hasZoneIDLabel := ep.Labels[designateZoneID]
+	_, hasRecordSetIDLabel := ep.Labels[designateRecordSetID]
+	if hasZoneIDLabel && hasRecordSetIDLabel {
+		return
+	}
+	for _, oep := range existingEndpoints {
+		if ep.RecordType == oep.RecordType && ep.DNSName == oep.DNSName {
+			if !hasZoneIDLabel {
+				ep.Labels[designateZoneID] = oep.Labels[designateZoneID]
+			}
+			if !hasRecordSetIDLabel {
+				ep.Labels[designateRecordSetID] = oep.Labels[designateRecordSetID]
+			}
+			return
+		}
+	}
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (p designateProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	managedZones, err := p.getZones()
 	if err != nil {
 		return err
 	}
+
+	endpoints, err := p.Records(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to fetch active records: %w", err)
+	}
+
 	recordSets := map[string]*recordSet{}
 	for _, ep := range changes.Create {
-		addEndpoint(ep, recordSets, false)
-	}
-	for _, ep := range changes.UpdateNew {
-		addEndpoint(ep, recordSets, false)
+		addEndpoint(ep, recordSets, endpoints, false)
 	}
 	for _, ep := range changes.UpdateOld {
-		addEndpoint(ep, recordSets, true)
+		addEndpoint(ep, recordSets, endpoints, true)
+	}
+	for _, ep := range changes.UpdateNew {
+		addEndpoint(ep, recordSets, endpoints, false)
 	}
 	for _, ep := range changes.Delete {
-		addEndpoint(ep, recordSets, true)
+		addEndpoint(ep, recordSets, endpoints, true)
 	}
+
 	for _, rs := range recordSets {
 		if err2 := p.upsertRecordSet(rs, managedZones); err == nil {
 			err = err2

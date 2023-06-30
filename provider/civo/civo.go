@@ -46,6 +46,11 @@ type CivoChanges struct {
 	Updates []*CivoChangeUpdate
 }
 
+// Empty returns true if there are no changes
+func (c *CivoChanges) Empty() bool {
+	return len(c.Creates) == 0 && len(c.Updates) == 0 && len(c.Deletes) == 0
+}
+
 // CivoChangeCreate Civo Domain Record Creates
 type CivoChangeCreate struct {
 	Domain  civogo.DNSDomain
@@ -169,6 +174,11 @@ func (p *CivoProvider) fetchZones(ctx context.Context) ([]civogo.DNSDomain, erro
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
 func (p *CivoProvider) submitChanges(ctx context.Context, changes CivoChanges) error {
+	if changes.Empty() {
+		log.Info("All records are already up to date")
+		return nil
+	}
+
 	for _, change := range changes.Creates {
 		logFields := log.Fields{
 			"Type":     change.Options.Type,

@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	cloudflare "github.com/cloudflare/cloudflare-go"
@@ -128,7 +130,7 @@ func getDNSRecordFromRecordParams(rp any) cloudflare.DNSRecord {
 	}
 }
 
-func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (*cloudflare.DNSRecordResponse, error) {
+func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.CreateDNSRecordParams) (cloudflare.DNSRecord, error) {
 	recordData := getDNSRecordFromRecordParams(rp)
 	m.Actions = append(m.Actions, MockAction{
 		Name:       "Create",
@@ -139,7 +141,7 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudfla
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		zone[rp.ID] = recordData
 	}
-	return nil, nil
+	return cloudflare.DNSRecord{}, nil
 }
 
 func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.ListDNSRecordsParams) ([]cloudflare.DNSRecord, *cloudflare.ResultInfo, error) {
@@ -151,9 +153,36 @@ func (m *mockCloudFlareClient) ListDNSRecords(ctx context.Context, rc *cloudflar
 		for _, record := range zone {
 			result = append(result, record)
 		}
-		return result, &cloudflare.ResultInfo{}, nil
 	}
-	return result, &cloudflare.ResultInfo{}, nil
+
+	if len(result) == 0 || rp.PerPage == 0 {
+		return result, &cloudflare.ResultInfo{Page: 1, TotalPages: 1, Count: 0, Total: 0}, nil
+	}
+
+	// if not pagination options were passed in, return the result as is
+	if rp.Page == 0 {
+		return result, &cloudflare.ResultInfo{Page: 1, TotalPages: 1, Count: len(result), Total: len(result)}, nil
+	}
+
+	// otherwise, split the result into chunks of size rp.PerPage to simulate the pagination from the API
+	chunks := [][]cloudflare.DNSRecord{}
+
+	// to ensure consistency in the multiple calls to this function, sort the result slice
+	sort.Slice(result, func(i, j int) bool { return strings.Compare(result[i].ID, result[j].ID) > 0 })
+	for rp.PerPage < len(result) {
+		result, chunks = result[rp.PerPage:], append(chunks, result[0:rp.PerPage])
+	}
+	chunks = append(chunks, result)
+
+	// return the requested page
+	partialResult := chunks[rp.Page-1]
+	return partialResult, &cloudflare.ResultInfo{
+		PerPage:    rp.PerPage,
+		Page:       rp.Page,
+		TotalPages: len(chunks),
+		Count:      len(partialResult),
+		Total:      len(result),
+	}, nil
 }
 
 func (m *mockCloudFlareClient) UpdateDNSRecord(ctx context.Context, rc *cloudflare.ResourceContainer, rp cloudflare.UpdateDNSRecordParams) error {
@@ -611,8 +640,10 @@ func TestCloudflareRecords(t *testing.T) {
 		"001": ExampleDomain,
 	})
 
+	// Set DNSRecordsPerPage to 1 test the pagination behaviour
 	provider := &CloudFlareProvider{
-		Client: client,
+		Client:            client,
+		DNSRecordsPerPage: 1,
 	}
 	ctx := context.Background()
 
@@ -640,32 +671,50 @@ func TestCloudflareProvider(t *testing.T) {
 	_, err := NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		25,
 		false,
-		true)
+		true,
+		5000)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
+	_ = os.Unsetenv("CF_API_TOKEN")
+	tokenFile := "/tmp/cf_api_token"
+	if err := os.WriteFile(tokenFile, []byte("abc123def"), 0o644); err != nil {
+		t.Errorf("failed to write token file, %s", err)
+	}
+	_ = os.Setenv("CF_API_TOKEN", tokenFile)
+	_, err = NewCloudFlareProvider(
+		endpoint.NewDomainFilter([]string{"bar.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		true,
+		5000)
+	if err != nil {
+		t.Errorf("should not fail, %s", err)
+	}
+
 	_ = os.Unsetenv("CF_API_TOKEN")
 	_ = os.Setenv("CF_API_KEY", "xxxxxxxxxxxxxxxxx")
 	_ = os.Setenv("CF_API_EMAIL", "test@test.com")
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		1,
 		false,
-		true)
+		true,
+		5000)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
+
 	_ = os.Unsetenv("CF_API_KEY")
 	_ = os.Unsetenv("CF_API_EMAIL")
 	_, err = NewCloudFlareProvider(
 		endpoint.NewDomainFilter([]string{"bar.com"}),
 		provider.NewZoneIDFilter([]string{""}),
-		50,
 		false,
-		true)
+		true,
+		5000)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}

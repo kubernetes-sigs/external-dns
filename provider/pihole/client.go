@@ -148,7 +148,7 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 	for _, rec := range data {
 		name := rec[0]
 		target := rec[1]
-		if p.cfg.DomainFilter.IsConfigured() && !p.cfg.DomainFilter.Match(name) {
+		if !p.cfg.DomainFilter.Match(name) {
 			log.Debugf("Skipping %s that does not match domain filter", name)
 			continue
 		}
@@ -195,7 +195,7 @@ type actionResponse struct {
 }
 
 func (p *piholeClient) apply(ctx context.Context, action string, ep *endpoint.Endpoint) error {
-	if p.cfg.DomainFilter.IsConfigured() && !p.cfg.DomainFilter.Match(ep.DNSName) {
+	if !p.cfg.DomainFilter.Match(ep.DNSName) {
 		log.Debugf("Skipping %s %s that does not match domain filter", action, ep.DNSName)
 		return nil
 	}

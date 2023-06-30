@@ -19,7 +19,7 @@
 cover:
 	go get github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
-	$(eval PKGS_DELIM := $(shell echo $(PKGS) | sed -e 's/ /,/g'))
+	$(eval PKGS_DELIM := $(shell echo $(PKGS) | tr / -'))
 	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
@@ -90,8 +90,11 @@ IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty)
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS         = amd64 arm64v8 arm32v7
-SHELL         = /bin/bash
+ARCHS          = amd64 arm64 arm/v7
+ARCH          ?= amd64
+DEFAULT_ARCH   = amd64
+SHELL          = /bin/bash
+OUTPUT_TYPE   ?= docker
 
 
 build: build/$(BINARY)
@@ -99,37 +102,65 @@ build: build/$(BINARY)
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.push/multiarch:
+build.push/multiarch: $(addprefix build.push-,$(ARCHS))
 	arch_specific_tags=()
 	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$${arch}" ;\
-		# pre-pull due to https://github.com/kubernetes-sigs/cluster-addons/pull/84/files ;\
-		docker pull $${arch}/alpine:3.17 ;\
-		docker pull golang:1.19 ;\
-		DOCKER_BUILDKIT=1 docker build --rm --tag $${image} --build-arg VERSION="$(VERSION)" --build-arg ARCH="$${arch}" . ;\
-		docker push $${image} ;\
-		arch_specific_tags+=( "--amend $${image}" ) ;\
+		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
+		arch_specific_tags+=( " $${image}" ) ;\
 	done ;\
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
-	for arch in $(ARCHS); do \
-		DOCKER_CLI_EXPERIMENTAL=enabled docker manifest annotate --arch $${arch} "$(IMAGE):$(VERSION)" "$(IMAGE):$(VERSION)-$${arch}" ;\
-	done;\
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push "$(IMAGE):$(VERSION)" \
+	echo $${arch_specific_tags[@]} ;\
+        DOCKER_CLI_EXPERIMENTAL=enabled docker buildx imagetools create --tag "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
 
-build.push: build.docker
-	docker push "$(IMAGE):$(VERSION)"
+build.image/multiarch: $(addprefix build.image-,$(ARCHS))
 
-build.arm64v8:
+build.image:
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=docker build.docker
+
+build.image-amd64:
+	$(MAKE) ARCH=amd64 build.image
+
+build.image-arm64:
+	$(MAKE) ARCH=arm64 build.image
+
+build.image-arm/v7:
+	$(MAKE) ARCH=arm/v7 build.image
+
+build.push:
+	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
+
+build.push-amd64:
+	$(MAKE) ARCH=amd64 build.push
+
+build.push-arm64:
+	$(MAKE) ARCH=arm64 build.push
+
+build.push-arm/v7:
+	$(MAKE) ARCH=arm/v7 build.push
+
+build.arm64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
 build.amd64:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.arm32v7:
+build.arm/v7:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.docker:
-	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="amd64" .
+build.setup:
+	docker buildx inspect img-builder > /dev/null || docker buildx create --name img-builder --use
+
+build.docker: build.setup build.$(ARCH)
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="$(ARCH)" .
+	image="$(IMAGE):$(VERSION)-$(subst /,-,$(ARCH))"; \
+	docker buildx build \
+		--pull \
+		--provenance=false \
+		--sbom=false \
+		--output=type=$(OUTPUT_TYPE) \
+		--platform linux/$(ARCH) \
+		--build-arg ARCH="$(ARCH)" \
+		--build-arg VERSION="$(VERSION)" \
+		--tag $${image} .
 
 build.mini:
 	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
@@ -140,8 +171,8 @@ clean:
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging
 
-release.staging:
+release.staging: test
 	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
-release.prod:
+release.prod: test
 	$(MAKE) build.push/multiarch
