@@ -129,13 +129,17 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 	// Create the expected default targets
 	defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
+	defaultTargetsAAAA := []string{"2001:db8::1"}
 	defaultTargetsCName := []string{"foo.example.org"}
 	defaultTargets := append(defaultTargetsA, defaultTargetsCName...)
+	defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
 
 	// Create the expected endpoints
 	expectedEndpoints := []*endpoint.Endpoint{
 		{DNSName: "foo", Targets: defaultTargetsA, RecordType: "A"},
 		{DNSName: "bar", Targets: defaultTargetsA, RecordType: "A"},
+		{DNSName: "foo", Targets: defaultTargetsAAAA, RecordType: "AAAA"},
+		{DNSName: "bar", Targets: defaultTargetsAAAA, RecordType: "AAAA"},
 		{DNSName: "foo", Targets: defaultTargetsCName, RecordType: "CNAME"},
 		{DNSName: "bar", Targets: defaultTargetsCName, RecordType: "CNAME"},
 	}
