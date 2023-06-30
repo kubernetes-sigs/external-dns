@@ -384,6 +384,28 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
+			title:                "valid CNAME crd gvk with ignored setID annotation",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/set-identifier": "ignored",
+			},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "abc.example.org",
+					Targets:    endpoint.Targets{"abc.other.org"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
+		{
 			title:                "valid CNAME crd gvk with weight annotation",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
