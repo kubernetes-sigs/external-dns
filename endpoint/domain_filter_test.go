@@ -411,7 +411,7 @@ func TestMatchFilterReturnsProperEmptyVal(t *testing.T) {
 }
 
 func TestDomainFilterIsConfigured(t *testing.T) {
-	for _, tt := range []struct {
+	for i, tt := range []struct {
 		filters  []string
 		exclude  []string
 		expected bool
@@ -452,8 +452,42 @@ func TestDomainFilterIsConfigured(t *testing.T) {
 			true,
 		},
 	} {
-		t.Run("test IsConfigured", func(t *testing.T) {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			df := NewDomainFilterWithExclusions(tt.filters, tt.exclude)
+			assert.Equal(t, tt.expected, df.IsConfigured())
+		})
+	}
+}
+
+func TestRegexDomainFilterIsConfigured(t *testing.T) {
+	for i, tt := range []struct {
+		regex        string
+		regexExclude string
+		expected     bool
+	}{
+		{
+			"",
+			"",
+			false,
+		},
+		{
+			"(?:foo|bar)\\.org$",
+			"",
+			true,
+		},
+		{
+			"",
+			"\\.org$",
+			true,
+		},
+		{
+			"(?:foo|bar)\\.org$",
+			"\\.org$",
+			true,
+		},
+	} {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			df := NewRegexDomainFilter(regexp.MustCompile(tt.regex), regexp.MustCompile(tt.regexExclude))
 			assert.Equal(t, tt.expected, df.IsConfigured())
 		})
 	}
