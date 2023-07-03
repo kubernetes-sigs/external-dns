@@ -128,20 +128,21 @@ func testCRDSourceImplementsSource(t *testing.T) {
 // testCRDSourceEndpoints tests various scenarios of using CRD source.
 func testCRDSourceEndpoints(t *testing.T) {
 	for _, ti := range []struct {
-		title                string
-		registeredNamespace  string
-		namespace            string
-		registeredAPIVersion string
-		apiVersion           string
-		registeredKind       string
-		kind                 string
-		endpoints            []*endpoint.Endpoint
-		expectEndpoints      bool
-		expectError          bool
-		annotationFilter     string
-		labelFilter          string
-		annotations          map[string]string
-		labels               map[string]string
+		title                  string
+		registeredNamespace    string
+		namespace              string
+		registeredAPIVersion   string
+		apiVersion             string
+		registeredKind         string
+		kind                   string
+		endpoints              []*endpoint.Endpoint
+		expectEndpoints        bool
+		expectError            bool
+		expectProviderSpecific endpoint.ProviderSpecific
+		annotationFilter       string
+		labelFilter            string
+		annotations            map[string]string
+		labels                 map[string]string
 	}{
 		{
 			title:                "invalid crd api version",
@@ -424,16 +425,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypeCNAME,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid SRV crd gvk with weight annotation",
@@ -453,16 +454,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypeSRV,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid PTR crd gvk with weight annotation",
@@ -482,16 +483,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypePTR,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid TXT crd gvk with weight annotation",
@@ -511,16 +512,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypeTXT,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid NS crd gvk with weight annotation",
@@ -540,16 +541,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypeNS,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid crd gvk with weight annotation",
@@ -569,16 +570,16 @@ func testCRDSourceEndpoints(t *testing.T) {
 					RecordType:    endpoint.RecordTypeA,
 					RecordTTL:     180,
 					SetIdentifier: "setID",
-					ProviderSpecific: []endpoint.ProviderSpecificProperty{
-						{
-							Name:  "aws/weight",
-							Value: "50",
-						},
-					},
 				},
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 	} {
 		ti := ti
@@ -618,6 +619,11 @@ func testCRDSourceEndpoints(t *testing.T) {
 				validateCRDResource(t, cs, ti.expectError)
 			}
 
+			for _, ep := range ti.endpoints {
+				// ProviderSpecific may be modified by the CRDSource, so we need to set it to the expected value.
+				// Set ProviderSpecific to nil to avoid comparing it.
+				ep.ProviderSpecific = ti.expectProviderSpecific
+			}
 			// Validate received endpoints against expected endpoints.
 			validateEndpoints(t, receivedEndpoints, ti.endpoints)
 		})
