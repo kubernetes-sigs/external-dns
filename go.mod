@@ -8,19 +8,19 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/Azure/go-autorest/autorest/adal v0.9.23
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.13.0
+	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.13.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.1.0
 	github.com/IBM/go-sdk-core/v5 v5.13.4
-	github.com/IBM/networking-go-sdk v0.42.0
+	github.com/IBM/networking-go-sdk v0.42.1
 	github.com/StackExchange/dnscontrol/v3 v3.31.6
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.380
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.406
 	github.com/ans-group/sdk-go v1.16.5
-	github.com/aws/aws-sdk-go v1.44.285
+	github.com/aws/aws-sdk-go v1.44.294
 	github.com/bodgit/tsig v1.2.2
-	github.com/civo/civogo v0.3.14
-	github.com/cloudflare/cloudflare-go v0.69.0
+	github.com/civo/civogo v0.3.37
+	github.com/cloudflare/cloudflare-go v0.70.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.6.0
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
@@ -30,11 +30,11 @@ require (
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
 	github.com/go-gandi/go-gandi v0.6.0
 	github.com/google/go-cmp v0.5.9
-	github.com/gophercloud/gophercloud v1.4.0
+	github.com/gophercloud/gophercloud v1.5.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client/v2 v2.3.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.17.0
+	github.com/linode/linodego v1.17.2
 	github.com/maxatome/go-testdeep v1.13.0
 	github.com/miekg/dns v1.1.55
 	github.com/nesv/go-dynect v0.6.0
@@ -42,18 +42,18 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.41.0
+	github.com/oracle/oci-go-sdk/v65 v65.42.0
 	github.com/ovh/go-ovh v1.4.1
 	github.com/pkg/errors v0.9.1
-	github.com/pluralsh/gqlclient v1.3.17
+	github.com/pluralsh/gqlclient v1.3.18
 	github.com/projectcontour/contour v1.25.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.684
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.684
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.684
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.692
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.692
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.692
 	github.com/transip/gotransip/v6 v6.20.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -65,10 +65,10 @@ require (
 	golang.org/x/oauth2 v0.9.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
-	google.golang.org/api v0.128.0
+	google.golang.org/api v0.129.0
 	gopkg.in/ns1/ns1-go.v2 v2.7.6
 	gopkg.in/yaml.v2 v2.4.0
-	istio.io/api v0.0.0-20230524015941-fa6c5f7916bf
+	istio.io/api v1.19.0-alpha.1
 	istio.io/client-go v1.18.0
 	k8s.io/api v0.27.3
 	k8s.io/apimachinery v0.27.3
@@ -122,13 +122,13 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.4 // indirect
-	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
+	github.com/googleapis/gax-go/v2 v2.11.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-retryablehttp v0.7.3 // indirect
+	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
@@ -194,8 +194,8 @@ require (
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/grpc v1.55.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/grpc v1.56.1 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
