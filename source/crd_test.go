@@ -385,7 +385,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectError:     false,
 		},
 		{
-			title:                "valid CNAME crd gvk with ignored setID annotation",
+			title:                "valid CNAME crd gvk with ignored setID annotation & valid weight annotation",
 			registeredAPIVersion: "test.k8s.io/v1alpha1",
 			apiVersion:           "test.k8s.io/v1alpha1",
 			registeredKind:       "DNSEndpoint",
@@ -405,6 +405,12 @@ func testCRDSourceEndpoints(t *testing.T) {
 			},
 			expectEndpoints: true,
 			expectError:     false,
+			expectProviderSpecific: []endpoint.ProviderSpecificProperty{
+				{
+					Name:  "aws/weight",
+					Value: "50",
+				},
+			},
 		},
 		{
 			title:                "valid CNAME crd gvk with weight annotation",
