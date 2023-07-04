@@ -167,6 +167,8 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	providerSpecific := endpoint.ProviderSpecific{}
 	setIdentifier := ""
 
+	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
+
 	annotations := host.Annotations
 	ttl, err := getTTLFromAnnotations(annotations)
 	if err != nil {
@@ -176,7 +178,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname
 		if hostname != "" {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, "")...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
