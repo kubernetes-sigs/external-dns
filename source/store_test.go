@@ -162,7 +162,7 @@ func (suite *ByNamesTestSuite) TestAllInitialized() {
 			}: "IngressRouteUDPList",
 		}), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, minimalConfig)
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"service", "ingress", "istio-gateway", "contour-httpproxy", "kong-tcpingress", "f5-virtualserver", "traefik-proxy", "fake"}, &Config{})
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 8, "should generate all eight sources")
 }
@@ -171,7 +171,7 @@ func (suite *ByNamesTestSuite) TestOnlyFake() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"fake"}, minimalConfig)
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"fake"}, &Config{})
 	suite.NoError(err, "should not generate errors")
 	suite.Len(sources, 1, "should generate fake source")
 	suite.Nil(mockClientGenerator.kubeClient, "client should not be created")
@@ -181,7 +181,7 @@ func (suite *ByNamesTestSuite) TestSourceNotFound() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(fakeKube.NewSimpleClientset(), nil)
 
-	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"foo"}, minimalConfig)
+	sources, err := ByNames(context.TODO(), mockClientGenerator, []string{"foo"}, &Config{})
 	suite.Equal(err, ErrSourceNotFound, "should return source not found")
 	suite.Len(sources, 0, "should not returns any source")
 }
@@ -190,16 +190,16 @@ func (suite *ByNamesTestSuite) TestKubeClientFails() {
 	mockClientGenerator := new(MockClientGenerator)
 	mockClientGenerator.On("KubeClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(context.TODO(), mockClientGenerator, []string{"service"}, minimalConfig)
+	_, err := ByNames(context.TODO(), mockClientGenerator, []string{"service"}, &Config{})
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"ingress"}, minimalConfig)
+	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"ingress"}, &Config{})
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
+	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"istio-gateway"}, &Config{})
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"kong-tcpingress"}, minimalConfig)
+	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"kong-tcpingress"}, &Config{})
 	suite.Error(err, "should return an error if kubernetes client cannot be created")
 }
 
@@ -209,17 +209,13 @@ func (suite *ByNamesTestSuite) TestIstioClientFails() {
 	mockClientGenerator.On("IstioClient").Return(nil, errors.New("foo"))
 	mockClientGenerator.On("DynamicKubernetesClient").Return(nil, errors.New("foo"))
 
-	_, err := ByNames(context.TODO(), mockClientGenerator, []string{"istio-gateway"}, minimalConfig)
+	_, err := ByNames(context.TODO(), mockClientGenerator, []string{"istio-gateway"}, &Config{})
 	suite.Error(err, "should return an error if istio client cannot be created")
 
-	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"contour-httpproxy"}, minimalConfig)
+	_, err = ByNames(context.TODO(), mockClientGenerator, []string{"contour-httpproxy"}, &Config{})
 	suite.Error(err, "should return an error if contour client cannot be created")
 }
 
 func TestByNames(t *testing.T) {
 	suite.Run(t, new(ByNamesTestSuite))
-}
-
-var minimalConfig = &Config{
-	ContourLoadBalancerService: "heptio-contour/contour",
 }
