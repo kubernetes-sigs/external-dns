@@ -279,7 +279,6 @@ func (sc *routeGroupSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", rg.Metadata.Namespace, rg.Metadata.Name, eps)
-		sc.setRouteGroupResourceLabel(rg, eps)
 		sc.setRouteGroupDualstackLabel(rg, eps)
 		endpoints = append(endpoints, eps...)
 	}
@@ -312,20 +311,16 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
 
+	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
+
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
 	hostnameList := strings.Split(strings.Replace(hostnames, " ", "", -1), ",")
 	for _, hostname := range hostnameList {
 		hostname = strings.TrimSuffix(hostname, ".")
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
-}
-
-func (sc *routeGroupSource) setRouteGroupResourceLabel(rg *routeGroup, eps []*endpoint.Endpoint) {
-	for _, ep := range eps {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
-	}
 }
 
 func (sc *routeGroupSource) setRouteGroupDualstackLabel(rg *routeGroup, eps []*endpoint.Endpoint) {
@@ -360,18 +355,20 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
 
+	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
+
 	for _, src := range rg.Spec.Hosts {
 		if src == "" {
 			continue
 		}
-		endpoints = append(endpoints, endpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(src, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(rg.Metadata.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 	return endpoints

@@ -252,7 +252,7 @@ func suitableType(target string) string {
 }
 
 // endpointsForHostname returns the endpoint objects for each host-target combination.
-func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string) []*endpoint.Endpoint {
+func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
@@ -286,6 +286,9 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			ProviderSpecific: providerSpecific,
 			SetIdentifier:    setIdentifier,
 		}
+		if resource != "" {
+			epA.Labels[endpoint.ResourceLabelKey] = resource
+		}
 		endpoints = append(endpoints, epA)
 	}
 
@@ -299,6 +302,9 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			ProviderSpecific: providerSpecific,
 			SetIdentifier:    setIdentifier,
 		}
+		if resource != "" {
+			epAAAA.Labels[endpoint.ResourceLabelKey] = resource
+		}
 		endpoints = append(endpoints, epAAAA)
 	}
 
@@ -311,6 +317,9 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 			Labels:           endpoint.NewLabels(),
 			ProviderSpecific: providerSpecific,
 			SetIdentifier:    setIdentifier,
+		}
+		if resource != "" {
+			epCNAME.Labels[endpoint.ResourceLabelKey] = resource
 		}
 		endpoints = append(endpoints, epCNAME)
 	}

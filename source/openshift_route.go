@@ -158,7 +158,6 @@ func (ors *ocpRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 		}
 
 		log.Debugf("Endpoints generated from OpenShift Route: %s/%s: %v", ocpRoute.Namespace, ocpRoute.Name, orEndpoints)
-		ors.setResourceLabel(ocpRoute, orEndpoints)
 		endpoints = append(endpoints, orEndpoints...)
 	}
 
@@ -188,9 +187,11 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
+	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
+
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -225,12 +226,6 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 	return filteredList, nil
 }
 
-func (ors *ocpRouteSource) setResourceLabel(ocpRoute *routev1.Route, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
-	}
-}
-
 // endpointsFromOcpRoute extracts the endpoints from a OpenShift Route object
 func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
@@ -249,15 +244,17 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
 
+	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
+
 	if host != "" {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
 	if !ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ocpRoute.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 	return endpoints

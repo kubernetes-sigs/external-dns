@@ -169,7 +169,6 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", virtualService.Namespace, virtualService.Name, gwEndpoints)
-		sc.setResourceLabel(virtualService, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
@@ -230,13 +229,15 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
 
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
+
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
 		targets, err := sc.targetsFromVirtualService(ctx, virtualService, hostname)
 		if err != nil {
 			return endpoints, err
 		}
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -270,12 +271,6 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkin
 	}
 
 	return filteredList, nil
-}
-
-func (sc *virtualServiceSource) setResourceLabel(virtualservice *networkingv1alpha3.VirtualService, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
-	}
 }
 
 // append a target to the list of targets unless it's already in the list
@@ -327,6 +322,8 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
 
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
+
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {
 			continue
@@ -348,7 +345,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 			}
 		}
 
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -362,7 +359,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 					return endpoints, err
 				}
 			}
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
