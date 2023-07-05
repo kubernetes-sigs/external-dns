@@ -162,11 +162,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 				return nil, err
 			}
 
-			if sc.combineFQDNAnnotation {
-				ingEndpoints = append(ingEndpoints, iEndpoints...)
-			} else {
-				ingEndpoints = iEndpoints
-			}
+			ingEndpoints = append(ingEndpoints, iEndpoints...)
 		}
 
 		if len(ingEndpoints) == 0 {
