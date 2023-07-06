@@ -376,14 +376,15 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	var results []alidns.Record
 	hostedZoneDomains, err := p.getDomainList()
 	if err != nil {
-		return results, fmt.Errorf("getDomainList: %w", err)
+		log.Errorf("getDomainList: %v", err)
+		return results, err
 	}
 	if !p.domainFilter.IsConfigured() {
 		for _, zoneDomain := range hostedZoneDomains {
 			domainRecords, err := p.getDomainRecords(zoneDomain)
 			if err != nil {
 				log.Errorf("AlibabaCloudProvider getDomainRecords %q error %v", zoneDomain, err)
-				continue
+				return nil, err
 			}
 			results = append(results, domainRecords...)
 		}
