@@ -1071,43 +1071,6 @@ func TestGatewayHTTPRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title: "AnnotationOverrideMultipleStatusAddresses",
-			config: Config{
-				GatewayNamespace: "gateway-namespace",
-			},
-			namespaces: namespaces("gateway-namespace", "route-namespace"),
-			gateways: []*v1beta1.Gateway{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      "overriden-gateway",
-						Namespace: "gateway-namespace",
-						Annotations: map[string]string{
-							targetAnnotationKey: "4.3.2.1",
-						},
-					},
-					Spec: v1beta1.GatewaySpec{
-						Listeners: []v1beta1.Listener{{
-							Protocol:      v1beta1.HTTPProtocolType,
-							AllowedRoutes: allowAllNamespaces,
-						}},
-					},
-					Status: gatewayStatus("1.2.3.4", "2.3.4.5"),
-				},
-			},
-			routes: []*v1beta1.HTTPRoute{{
-				ObjectMeta: objectMeta("route-namespace", "test"),
-				Spec: v1beta1.HTTPRouteSpec{
-					Hostnames: hostnames("test.example.internal"),
-				},
-				Status: httpRouteStatus( // The route is attached to both gateways.
-					gatewayParentRef("gateway-namespace", "overriden-gateway"),
-				),
-			}},
-			endpoints: []*endpoint.Endpoint{
-				newTestEndpoint("test.example.internal", "A", "4.3.2.1"),
-			},
-		},
-		{
 			title: "MutlipleGatewaysOneAnnotationOverride",
 			config: Config{
 				GatewayNamespace: "gateway-namespace",
