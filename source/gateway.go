@@ -354,7 +354,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				}
 				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
 				hostTargets[host] = append(hostTargets[host], override...)
-				if override == nil {
+				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
 						hostTargets[host] = append(hostTargets[host], addr.Value)
 					}
