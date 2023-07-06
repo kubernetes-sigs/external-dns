@@ -374,24 +374,22 @@ func (p *AlibabaCloudProvider) groupRecords(records []alidns.Record) (endpointMa
 func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	log.Infof("Retrieving Alibaba Cloud DNS Domain Records")
 	var results []alidns.Record
-	hostedZoneNames, err := p.getDomainList()
+	hostedZoneDomains, err := p.getDomainList()
 	if err != nil {
-		log.Errorf("AlibabaCloudProvider getDomainList error %v", err)
-		return results, err
+		return results, fmt.Errorf("getDomainList: %w", err)
 	}
-	if len(p.domainFilter.Filters) == 0 {
-		var tmpResults []alidns.Record
-		for _, zone := range hostedZoneNames {
-			tmpResults, err = p.getDomainRecords(zone)
+	if !p.domainFilter.IsConfigured() {
+		for _, zoneDomain := range hostedZoneDomains {
+			domainRecords, err := p.getDomainRecords(zoneDomain)
 			if err != nil {
-				log.Errorf("AlibabaCloudProvider getDomainRecords %q error %v", zone, err)
+				log.Errorf("AlibabaCloudProvider getDomainRecords %q error %v", zoneDomain, err)
 				continue
 			}
-			results = append(results, tmpResults...)
+			results = append(results, domainRecords...)
 		}
 	} else {
 		for _, domainName := range p.domainFilter.Filters {
-			_, domainName = p.splitDNSName(domainName, hostedZoneNames)
+			_, domainName = p.splitDNSName(domainName, hostedZoneDomains)
 			tmpResults, err := p.getDomainRecords(domainName)
 			if err != nil {
 				log.Errorf("getDomainRecords %s error %v", domainName, err)
@@ -495,8 +493,8 @@ func (p *AlibabaCloudProvider) unescapeTXTRecordValue(value string) string {
 	return value
 }
 
-func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target string, zones []string) error {
-	rr, domain := p.splitDNSName(endpoint.DNSName, zones)
+func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target string, hostedZoneDomains []string) error {
+	rr, domain := p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
 	request := alidns.CreateAddDomainRecordRequest()
 	request.DomainName = domain
 	request.Type = endpoint.RecordType
@@ -529,13 +527,13 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 }
 
 func (p *AlibabaCloudProvider) createRecords(endpoints []*endpoint.Endpoint) error {
-	zones, err := p.getDomainList()
+	hostedZoneDomains, err := p.getDomainList()
 	if err != nil {
 		return err
 	}
 	for _, endpoint := range endpoints {
 		for _, target := range endpoint.Targets {
-			p.createRecord(endpoint, target, zones)
+			p.createRecord(endpoint, target, hostedZoneDomains)
 		}
 	}
 	return nil
@@ -621,7 +619,7 @@ func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.E
 }
 
 func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Record, endpoints []*endpoint.Endpoint) error {
-	zones, err := p.getDomainList()
+	hostedZoneDomains, err := p.getDomainList()
 	if err != nil {
 		return err
 	}
@@ -661,24 +659,24 @@ func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Recor
 				}
 			}
 			if !found {
-				p.createRecord(endpoint, target, zones)
+				p.createRecord(endpoint, target, hostedZoneDomains)
 			}
 		}
 	}
 	return nil
 }
 
-func (p *AlibabaCloudProvider) splitDNSName(dnsName string, zones []string) (rr string, domain string) {
+func (p *AlibabaCloudProvider) splitDNSName(dnsName string, hostedZoneDomains []string) (rr string, domain string) {
 	name := strings.TrimSuffix(dnsName, ".")
 
-	// sort zones by dot, make sure subdomain at first
-	sort.Slice(zones, func(i, j int) bool {
-		return strings.Count(zones[i], ".") > strings.Count(zones[j], ".")
+	// sort zones by dot count; make sure subdomains sort earlier
+	sort.Slice(hostedZoneDomains, func(i, j int) bool {
+		return strings.Count(hostedZoneDomains[i], ".") > strings.Count(hostedZoneDomains[j], ".")
 	})
 
 	found := false
 
-	for _, filter := range zones {
+	for _, filter := range hostedZoneDomains {
 		if strings.HasSuffix(name, "."+filter) {
 			rr = name[0 : len(name)-len(filter)-1]
 			domain = filter
