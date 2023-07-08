@@ -213,7 +213,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	DefaultTargets:              []string{},
-	GlooNamespace:               []string{"gloo-system"},
+	GlooNamespaces:              []string{"gloo-system"},
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
