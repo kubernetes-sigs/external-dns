@@ -10,4 +10,4 @@ chmod +x trivy
 
 # run trivy
 cd - 
-/tmp/trivy image --exit-code 1 us.gcr.io/k8s-artifacts-prod/external-dns/external-dns:$(git describe --tags --always --dirty)
+/tmp/trivy image --exit-code 1 us.gcr.io/k8s-artifacts-prod/external-dns/external-dns:$(git describe --tags --always --dirty --match "v*")

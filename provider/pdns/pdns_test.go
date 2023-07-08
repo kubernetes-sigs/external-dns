@@ -82,9 +82,19 @@ var (
 		Type_: "CNAME",
 		Ttl:   300,
 		Records: []pgo.Record{
-			{Content: "example.by.any.other.name.com", Disabled: false, SetPtr: false},
+			{Content: "example.com.", Disabled: false, SetPtr: false},
 		},
 	}
+
+	RRSetALIASRecord = pgo.RrSet{
+		Name:  "alias.example.com.",
+		Type_: "ALIAS",
+		Ttl:   300,
+		Records: []pgo.Record{
+			{Content: "example.by.any.other.name.com.", Disabled: false, SetPtr: false},
+		},
+	}
+
 	RRSetTXTRecord = pgo.RrSet{
 		Name:  "example.com.",
 		Type_: "TXT",
@@ -129,9 +139,10 @@ var (
 	}
 
 	endpointsMixedRecords = []*endpoint.Endpoint{
-		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.com"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "'would smell as sweet'"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(300), "8.8.8.8", "8.8.4.4", "4.4.4.4"),
+		endpoint.NewEndpointWithTTL("alias.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
 	}
 
 	endpointsMultipleZones = []*endpoint.Endpoint{
@@ -215,7 +226,7 @@ var (
 		Type_:  "Zone",
 		Url:    "/api/v1/servers/localhost/zones/example.com.",
 		Kind:   "Native",
-		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords},
+		Rrsets: []pgo.RrSet{RRSetCNAMERecord, RRSetTXTRecord, RRSetMultipleRecords, RRSetALIASRecord},
 	}
 
 	ZoneEmptyToSimplePatch = pgo.Zone{
@@ -909,7 +920,7 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 
 	for _, z := range zlist {
 		for _, rs := range z.Rrsets {
-			if "CNAME" == rs.Type_ {
+			if rs.Type_ == "CNAME" {
 				for _, r := range rs.Records {
 					assert.Equal(suite.T(), uint8(0x2e), r.Content[len(r.Content)-1])
 				}

@@ -106,7 +106,6 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | `ingress`              | ✅         |                        |
 | `istio-gateway`        | ✅         |                        |
 | `istio-virtualservice` | ✅         |                        |
-| `contour-ingressroute` | ✅         |                        |
 | `crd`                  | ✅         |                        |
 | `kong-tcpingress`      | ✅         |                        |
 | `openshift-route`      | ✅         |                        |

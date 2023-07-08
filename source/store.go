@@ -67,7 +67,6 @@ type Config struct {
 	CFAPIEndpoint                  string
 	CFUsername                     string
 	CFPassword                     string
-	ContourLoadBalancerService     string
 	GlooNamespaces                 []string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration

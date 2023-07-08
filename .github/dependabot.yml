@@ -13,6 +13,9 @@ updates:
       dev-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "github.com/openshift/api"
+      - dependency-name: "github.com/openshift/client-go"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

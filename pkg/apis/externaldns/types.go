@@ -47,7 +47,6 @@ type Config struct {
 	KubeConfig                         string
 	RequestTimeout                     time.Duration
 	DefaultTargets                     []string
-	ContourLoadBalancerService         string
 	GlooNamespaces                     []string
 	SkipperRouteGroupVersion           string
 	Sources                            []string
@@ -214,8 +213,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	DefaultTargets:              []string{},
-	ContourLoadBalancerService:  "heptio-contour/contour",
-	GlooNamespaces:              []string{"gloo-system"},
+	GlooNamespace:               []string{"gloo-system"},
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
@@ -408,9 +406,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("cf-username", "The username to log into the cloud foundry API").Default(defaultConfig.CFUsername).StringVar(&cfg.CFUsername)
 	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
 
-	// Flags related to Contour
-	app.Flag("contour-load-balancer", "The fully-qualified name of the Contour load balancer service. (default: heptio-contour/contour)").Default("heptio-contour/contour").StringVar(&cfg.ContourLoadBalancerService)
-
 	// Flags related to Gloo
 	app.Flag("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)").Default("gloo-system").StringsVar(&cfg.GlooNamespaces)
 
@@ -418,7 +413,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
 
 	// Flags related to processing source
-	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-ingressroute, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-ingressroute", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "traefik-proxy")
+	app.Flag("source", "The resource types that are queried for endpoints; specify multiple times for multiple sources (required, options: service, ingress, node, fake, connector, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, istio-gateway, istio-virtualservice, cloudfoundry, contour-httpproxy, gloo-proxy, crd, empty, skipper-routegroup, openshift-route, ambassador-host, kong-tcpingress, f5-virtualserver, traefik-proxy)").Required().PlaceHolder("source").EnumsVar(&cfg.Sources, "service", "ingress", "node", "pod", "gateway-httproute", "gateway-grpcroute", "gateway-tlsroute", "gateway-tcproute", "gateway-udproute", "istio-gateway", "istio-virtualservice", "cloudfoundry", "contour-httpproxy", "gloo-proxy", "fake", "connector", "crd", "empty", "skipper-routegroup", "openshift-route", "ambassador-host", "kong-tcpingress", "f5-virtualserver", "traefik-proxy")
 	app.Flag("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.").StringVar(&cfg.OCPRouterName)
 	app.Flag("namespace", "Limit sources of endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter sources managed by external-dns via annotation using label selector semantics (default: all sources)").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
@@ -440,7 +435,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
 	app.Flag("managed-record-types", "Record types to manage; specify multiple times to include many; (default: A, AAAA, CNAME) (supported records: CNAME, A, AAAA, NS").Default("A", "AAAA", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
-	app.Flag("default-targets", "Set globally default IP address that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
+	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 

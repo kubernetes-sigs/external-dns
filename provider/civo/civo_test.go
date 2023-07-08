@@ -809,6 +809,154 @@ func TestCivo_submitChangesDelete(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestCivoChangesEmpty(t *testing.T) {
+	// Test empty CivoChanges
+	c := &CivoChanges{}
+	assert.True(t, c.Empty())
+
+	// Test CivoChanges with Creates
+	c = &CivoChanges{
+		Creates: []*CivoChangeCreate{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				Options: &civogo.DNSRecordConfig{
+					Type:     civogo.DNSRecordTypeA,
+					Name:     "www",
+					Value:    "192.1.1.1",
+					Priority: 0,
+					TTL:      600,
+				},
+			},
+		},
+	}
+	assert.False(t, c.Empty())
+
+	// Test CivoChanges with Updates
+	c = &CivoChanges{
+		Updates: []*CivoChangeUpdate{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "192.168.1.2",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+				Options: civogo.DNSRecordConfig{
+					Type:     "MX",
+					Name:     "mail",
+					Value:    "192.168.1.3",
+					Priority: 10,
+					TTL:      600,
+				},
+			},
+		},
+	}
+	assert.False(t, c.Empty())
+
+	// Test CivoChanges with Deletes
+	c = &CivoChanges{
+		Deletes: []*CivoChangeDelete{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "192.168.1.3",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+			},
+		},
+	}
+	assert.False(t, c.Empty())
+
+	// Test CivoChanges with Creates, Updates, and Deletes
+	c = &CivoChanges{
+		Creates: []*CivoChangeCreate{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				Options: &civogo.DNSRecordConfig{
+					Type:     civogo.DNSRecordTypeA,
+					Name:     "www",
+					Value:    "192.1.1.1",
+					Priority: 0,
+					TTL:      600,
+				},
+			},
+		},
+		Updates: []*CivoChangeUpdate{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "192.168.1.2",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+				Options: civogo.DNSRecordConfig{
+					Type:     "MX",
+					Name:     "mail",
+					Value:    "192.168.1.3",
+					Priority: 10,
+					TTL:      600,
+				},
+			},
+		},
+		Deletes: []*CivoChangeDelete{
+			{
+				Domain: civogo.DNSDomain{
+					ID:        "12345",
+					AccountID: "1",
+					Name:      "example.com",
+				},
+				DomainRecord: civogo.DNSRecord{
+					ID:          "76cc107f-fbef-4e2b-b97f-f5d34f4075d3",
+					AccountID:   "1",
+					DNSDomainID: "12345",
+					Name:        "mail",
+					Value:       "192.168.1.3",
+					Type:        "MX",
+					Priority:    10,
+					TTL:         600,
+				},
+			},
+		},
+	}
+	assert.False(t, c.Empty())
+}
+
 // This function is an adapted copy of the testify package's ElementsMatch function with the
 // call to ObjectsAreEqual replaced with cmp.Equal which better handles struct's with pointers to
 // other structs. It also ignores ordering when comparing unlike cmp.Equal.

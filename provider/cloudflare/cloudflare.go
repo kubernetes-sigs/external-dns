@@ -309,6 +309,7 @@ func (p *CloudFlareProvider) PropertyValuesEqual(name string, previous string, c
 func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloudFlareChange) error {
 	// return early if there is nothing to change
 	if len(changes) == 0 {
+		log.Info("All records are already up to date")
 		return nil
 	}
 
