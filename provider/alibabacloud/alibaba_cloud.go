@@ -376,8 +376,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 	var results []alidns.Record
 	hostedZoneDomains, err := p.getDomainList()
 	if err != nil {
-		log.Errorf("getDomainList: %v", err)
-		return results, err
+		return results, fmt.Errorf("getting domain list: %w", err)
 	}
 	if !p.domainFilter.IsConfigured() {
 		for _, zoneDomain := range hostedZoneDomains {
@@ -476,9 +475,15 @@ func (p *AlibabaCloudProvider) applyChangesForDNS(changes *plan.Changes) error {
 
 	recordMap := p.groupRecords(records)
 
-	p.createRecords(changes.Create)
+	hostedZoneDomains, err := p.getDomainList()
+
+	if err != nil {
+		return fmt.Errorf("getting domain list: %w", err)
+	}
+
+	p.createRecords(changes.Create, hostedZoneDomains)
 	p.deleteRecords(recordMap, changes.Delete)
-	p.updateRecords(recordMap, changes.UpdateNew)
+	p.updateRecords(recordMap, changes.UpdateNew, hostedZoneDomains)
 	return nil
 }
 
@@ -527,11 +532,7 @@ func (p *AlibabaCloudProvider) createRecord(endpoint *endpoint.Endpoint, target 
 	return err
 }
 
-func (p *AlibabaCloudProvider) createRecords(endpoints []*endpoint.Endpoint) error {
-	hostedZoneDomains, err := p.getDomainList()
-	if err != nil {
-		return err
-	}
+func (p *AlibabaCloudProvider) createRecords(endpoints []*endpoint.Endpoint, hostedZoneDomains []string) error {
 	for _, endpoint := range endpoints {
 		for _, target := range endpoint.Targets {
 			p.createRecord(endpoint, target, hostedZoneDomains)
@@ -619,11 +620,7 @@ func (p *AlibabaCloudProvider) equals(record alidns.Record, endpoint *endpoint.E
 	return ttl1 == ttl2
 }
 
-func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Record, endpoints []*endpoint.Endpoint) error {
-	hostedZoneDomains, err := p.getDomainList()
-	if err != nil {
-		return err
-	}
+func (p *AlibabaCloudProvider) updateRecords(recordMap map[string][]alidns.Record, endpoints []*endpoint.Endpoint, hostedZoneDomains []string) error {
 	for _, endpoint := range endpoints {
 		key := p.getRecordKeyByEndpoint(endpoint)
 		records := recordMap[key]
