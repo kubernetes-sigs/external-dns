@@ -19,6 +19,7 @@ package registry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -228,6 +229,13 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		endpoints = append(endpoints, txtNew)
 	}
 
+	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	if txtMetadata != nil {
+		txtMetadata.WithSetIdentifier(r.SetIdentifier)
+		txtMetadata.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+		txtMetadata.ProviderSpecific = r.ProviderSpecific
+		endpoints = append(endpoints, txtMetadata)
+	}
 	return endpoints
 }
 
@@ -306,6 +314,7 @@ type nameMapper interface {
 	toTXTName(string) string
 	toNewTXTName(string, string) string
 	recordTypeInAffix() bool
+	toMetadataTXTName(string, string) string
 }
 
 type affixNameMapper struct {
@@ -456,6 +465,17 @@ func (pr affixNameMapper) toNewTXTName(endpointDNSName, recordType string) strin
 	}
 
 	return prefix + DNSName[0] + suffix + "." + DNSName[1]
+}
+
+func (pr affixNameMapper) toMetadataTXTName(endpointDNSName, recordType string) string {
+	DNSName := strings.SplitN(endpointDNSName, ".", 2)
+	recordType = strings.ToLower(recordType)
+
+	if DNSName[0] == "*" {
+		return fmt.Sprintf("%s.%s._metadata.%s", DNSName[0], recordType, DNSName[1])
+	}
+	return fmt.Sprintf("%s._metadata.%s", recordType, endpointDNSName)
+
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
