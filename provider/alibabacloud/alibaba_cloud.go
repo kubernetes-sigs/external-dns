@@ -382,8 +382,7 @@ func (p *AlibabaCloudProvider) records() ([]alidns.Record, error) {
 		for _, zoneDomain := range hostedZoneDomains {
 			domainRecords, err := p.getDomainRecords(zoneDomain)
 			if err != nil {
-				log.Errorf("AlibabaCloudProvider getDomainRecords %q error %v", zoneDomain, err)
-				return nil, err
+				return nil, fmt.Errorf("getDomainRecords %q: %w", zoneDomain, err)
 			}
 			results = append(results, domainRecords...)
 		}
@@ -672,35 +671,17 @@ func (p *AlibabaCloudProvider) splitDNSName(dnsName string, hostedZoneDomains []
 		return strings.Count(hostedZoneDomains[i], ".") > strings.Count(hostedZoneDomains[j], ".")
 	})
 
-	found := false
-
 	for _, filter := range hostedZoneDomains {
 		if strings.HasSuffix(name, "."+filter) {
 			rr = name[0 : len(name)-len(filter)-1]
 			domain = filter
-			found = true
 			break
 		} else if name == filter {
 			domain = filter
 			rr = ""
-			found = true
 		}
 	}
 
-	if !found {
-		parts := strings.Split(name, ".")
-		if len(parts) < 2 {
-			rr = name
-			domain = ""
-		} else {
-			domain = parts[len(parts)-2] + "." + parts[len(parts)-1]
-			rrIndex := strings.Index(name, domain)
-			if rrIndex < 1 {
-				rrIndex = 1
-			}
-			rr = name[0 : rrIndex-1]
-		}
-	}
 	if rr == "" {
 		rr = nullHostAlibabaCloud
 	}

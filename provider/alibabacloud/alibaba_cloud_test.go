@@ -98,6 +98,9 @@ func (m *MockAlibabaCloudDNSAPI) DescribeDomains(request *alidns.DescribeDomains
 	for _, record := range m.records {
 		domain := alidns.Domain{}
 		domain.DomainName = record.DomainName
+		result.Domain = append(result.Domain, alidns.DomainInDescribeDomains{
+			DomainName: domain.DomainName,
+		})
 	}
 	response = alidns.CreateDescribeDomainsResponse()
 	response.Domains = result
@@ -406,7 +409,7 @@ func TestAlibabaCloudProvider_splitDNSName(t *testing.T) {
 	}
 	endpoint.DNSName = "www"
 	rr, domain = p.splitDNSName(endpoint.DNSName, hostedZoneDomains)
-	if rr != "www" || domain != "" {
+	if rr != "@" || domain != "" {
 		t.Errorf("Failed to splitDNSName for %s: rr=%s, domain=%s", endpoint.DNSName, rr, domain)
 	}
 	endpoint.DNSName = ""
