@@ -24,6 +24,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -56,10 +57,12 @@ type TXTRegistry struct {
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
+
+	txtFormats []string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormats []string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -87,6 +90,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		managedRecordTypes:  managedRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
+		txtFormats:          txtFormats,
 	}, nil
 }
 
@@ -210,7 +214,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.mapper.recordTypeInAffix() && slices.Contains(im.txtFormats, "old") && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -221,20 +225,24 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtNew != nil {
-		txtNew.WithSetIdentifier(r.SetIdentifier)
-		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
+	if slices.Contains(im.txtFormats, "new") {
+		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+		if txtNew != nil {
+			txtNew.WithSetIdentifier(r.SetIdentifier)
+			txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+			txtNew.ProviderSpecific = r.ProviderSpecific
+			endpoints = append(endpoints, txtNew)
+		}
 	}
 
-	txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
-	if txtMetadata != nil {
-		txtMetadata.WithSetIdentifier(r.SetIdentifier)
-		txtMetadata.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
-		txtMetadata.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtMetadata)
+	if slices.Contains(im.txtFormats, "metadata") {
+		txtMetadata := endpoint.NewEndpoint(im.mapper.toMetadataTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+		if txtMetadata != nil {
+			txtMetadata.WithSetIdentifier(r.SetIdentifier)
+			txtMetadata.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
+			txtMetadata.ProviderSpecific = r.ProviderSpecific
+			endpoints = append(endpoints, txtMetadata)
+		}
 	}
 	return endpoints
 }
@@ -475,7 +483,6 @@ func (pr affixNameMapper) toMetadataTXTName(endpointDNSName, recordType string) 
 		return fmt.Sprintf("%s.%s._metadata.%s", DNSName[0], recordType, DNSName[1])
 	}
 	return fmt.Sprintf("%s._metadata.%s", recordType, endpointDNSName)
-
 }
 
 func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {

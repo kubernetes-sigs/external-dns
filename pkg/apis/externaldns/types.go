@@ -151,6 +151,7 @@ type Config struct {
 	TXTSuffix                          string
 	TXTEncryptEnabled                  bool
 	TXTEncryptAESKey                   string `secure:"yes"`
+	TXTFormats                         []string
 	Interval                           time.Duration
 	MinEventSyncInterval               time.Duration
 	Once                               bool
@@ -305,6 +306,7 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:        5 * time.Second,
 	TXTEncryptEnabled:           false,
 	TXTEncryptAESKey:            "",
+	TXTFormats:                  []string{"old", "new", "metadata"},
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
@@ -583,6 +585,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("txt-wildcard-replacement", "When using the TXT registry, a custom string that's used instead of an asterisk for TXT records corresponding to wildcard DNS records (optional)").Default(defaultConfig.TXTWildcardReplacement).StringVar(&cfg.TXTWildcardReplacement)
 	app.Flag("txt-encrypt-enabled", "When using the TXT registry, set if TXT records should be encrypted before stored (default: disabled)").BoolVar(&cfg.TXTEncryptEnabled)
 	app.Flag("txt-encrypt-aes-key", "When using the TXT registry, set TXT record decryption and encryption 32 byte aes key (required when --txt-encrypt=true)").Default(defaultConfig.TXTEncryptAESKey).StringVar(&cfg.TXTEncryptAESKey)
+	app.Flag("txt-formats", "When using the TXT registry, specify the TXT formats to use, supported formats are old,new and metadata (default: old, new, metadata) (supported records: old, new, metadata)").Default(defaultConfig.TXTFormats...).EnumsVar(&cfg.TXTFormats, "old", "new", "metadata")
 	app.Flag("dynamodb-region", "When using the DynamoDB registry, the AWS region of the DynamoDB table (optional)").Default(cfg.AWSDynamoDBRegion).StringVar(&cfg.AWSDynamoDBRegion)
 	app.Flag("dynamodb-table", "When using the DynamoDB registry, the name of the DynamoDB table (default: \"external-dns\")").Default(defaultConfig.AWSDynamoDBTable).StringVar(&cfg.AWSDynamoDBTable)
 
