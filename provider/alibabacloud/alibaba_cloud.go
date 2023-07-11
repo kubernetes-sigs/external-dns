@@ -475,7 +475,6 @@ func (p *AlibabaCloudProvider) applyChangesForDNS(changes *plan.Changes) error {
 	recordMap := p.groupRecords(records)
 
 	hostedZoneDomains, err := p.getDomainList()
-
 	if err != nil {
 		return fmt.Errorf("getting domain list: %w", err)
 	}
