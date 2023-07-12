@@ -45,7 +45,7 @@ require (
 	github.com/oracle/oci-go-sdk/v65 v65.41.0
 	github.com/ovh/go-ovh v1.4.1
 	github.com/pkg/errors v0.9.1
-	github.com/pluralsh/gqlclient v1.3.17
+	github.com/pluralsh/gqlclient v1.5.1
 	github.com/projectcontour/contour v1.25.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.17
@@ -84,7 +84,7 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
-	github.com/Yamashou/gqlgenc v0.11.0 // indirect
+	github.com/Yamashou/gqlgenc v0.14.0 // indirect
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
