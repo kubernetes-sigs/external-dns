@@ -1227,6 +1227,18 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 			recordType: "CNAME",
 		},
 		{
+			name:       "prefix with multiple dots",
+			mapper:     newaffixNameMapper("foo.bar.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "suffix with multiple dots",
+			mapper:     newaffixNameMapper("", ".foo.bar.test", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
 			name:       "templated prefix",
 			mapper:     newaffixNameMapper("%{record_type}-foo", "", ""),
 			domain:     "example.com",
@@ -1247,6 +1259,18 @@ func TestToEndpointNameNewTXT(t *testing.T) {
 		{
 			name:       "templated suffix with dot",
 			mapper:     newaffixNameMapper("", ".foo%{record_type}", ""),
+			domain:     "example.com",
+			recordType: "A",
+		},
+		{
+			name:       "templated prefix with multiple dots",
+			mapper:     newaffixNameMapper("bar.%{record_type}.foo.", "", ""),
+			domain:     "example.com",
+			recordType: "CNAME",
+		},
+		{
+			name:       "templated suffix with multiple dots",
+			mapper:     newaffixNameMapper("", ".foo%{record_type}.bar", ""),
 			domain:     "example.com",
 			recordType: "A",
 		},
