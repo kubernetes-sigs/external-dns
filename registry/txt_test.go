@@ -216,13 +216,13 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "wc", []string{}, false, nil)
 	records, _ := r.Records(ctx)
 
-	assert.ElementsMatch(t, expectedRecords, records)
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 
 	// Ensure prefix is case-insensitive
 	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "", []string{}, false, nil)
 	records, _ = r.Records(ctx)
 
-	assert.ElementsMatch(t, expectedRecords, records)
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsSuffixed(t *testing.T) {
