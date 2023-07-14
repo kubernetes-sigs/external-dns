@@ -200,7 +200,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -305,6 +305,7 @@ type nameMapper interface {
 	toEndpointName(string) (endpointName string, recordType string)
 	toTXTName(string) string
 	toNewTXTName(string, string) string
+	recordTypeInAffix() bool
 }
 
 type affixNameMapper struct {
