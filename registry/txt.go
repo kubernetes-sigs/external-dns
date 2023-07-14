@@ -34,6 +34,12 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
+type endpointKey struct {
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
+}
+
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -115,7 +121,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := []*endpoint.Endpoint{}
 
-	labelMap := map[string]endpoint.Labels{}
+	labelMap := map[endpointKey]endpoint.Labels{}
 	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
@@ -135,8 +141,13 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
+
 		endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
-		key := createKey(endpointName, record.SetIdentifier, recordType)
+		key := endpointKey{
+			DNSName:       endpointName,
+			RecordType:    recordType,
+			SetIdentifier: record.SetIdentifier,
+		}
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
 	}
@@ -151,12 +162,16 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			dnsNameSplit[0] = im.wildcardReplacement
 		}
 		dnsName := strings.Join(dnsNameSplit, ".")
+		key := endpointKey{
+			DNSName:       dnsName,
+			RecordType:    ep.RecordType,
+			SetIdentifier: ep.SetIdentifier,
+		}
 
 		// Handle both new and old registry format with the preference for the new one
-		key := createKey(dnsName, ep.SetIdentifier)
-		keyType := createKey(key, ep.RecordType)
-		labels, labelsExist := labelMap[keyType]
+		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
+			key.RecordType = ""
 			labels, labelsExist = labelMap[key]
 		}
 		if labelsExist {
@@ -477,20 +492,4 @@ func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
 			return
 		}
 	}
-}
-
-func createKey(elem ...string) string {
-	var sb strings.Builder
-
-	for _, e := range elem {
-		if e == "" {
-			continue
-		}
-		if sb.Len() != 0 {
-			sb.WriteString("::")
-		}
-		sb.WriteString(strings.ToLower(e))
-	}
-
-	return sb.String()
 }
