@@ -334,11 +334,14 @@ func extractRecordTypeDefaultPosition(name string) (baseName, recordType string)
 // dropAffixExtractType strips TXT record to find an endpoint name it manages
 // it also returns the record type
 func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordType string) {
+	prefix := pr.prefix
+	suffix := pr.suffix
+
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
 			t = strings.ToLower(t)
-			iPrefix := strings.ReplaceAll(pr.prefix, recordTemplate, t)
-			iSuffix := strings.ReplaceAll(pr.suffix, recordTemplate, t)
+			iPrefix := strings.ReplaceAll(prefix, recordTemplate, t)
+			iSuffix := strings.ReplaceAll(suffix, recordTemplate, t)
 
 			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
 				return strings.TrimPrefix(name, iPrefix), t
@@ -350,16 +353,16 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordTyp
 		}
 
 		// handle old TXT records
-		pr.prefix = pr.dropAffixTemplate(pr.prefix)
-		pr.suffix = pr.dropAffixTemplate(pr.suffix)
+		prefix = pr.dropAffixTemplate(prefix)
+		suffix = pr.dropAffixTemplate(suffix)
 	}
 
-	if pr.isPrefix() && strings.HasPrefix(name, pr.prefix) {
-		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, pr.prefix))
+	if pr.isPrefix() && strings.HasPrefix(name, prefix) {
+		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, prefix))
 	}
 
-	if pr.isSuffix() && strings.HasSuffix(name, pr.suffix) {
-		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, pr.suffix))
+	if pr.isSuffix() && strings.HasSuffix(name, suffix) {
+		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, suffix))
 	}
 
 	return "", ""
