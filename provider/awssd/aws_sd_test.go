@@ -62,7 +62,7 @@ func (s *AWSSDClientStub) CreateService(input *sd.CreateServiceInput) (*sd.Creat
 
 	nsServices, ok := s.services[*input.NamespaceId]
 	if !ok {
-		nsServices = make(map[string]*sd.Service, 1)
+		nsServices = make(map[string]*sd.Service)
 		s.services[*input.NamespaceId] = nsServices
 	}
 	nsServices[*srv.Id] = srv
@@ -105,10 +105,6 @@ func (s *AWSSDClientStub) DiscoverInstancesWithContext(ctx context.Context, inpu
 				}
 			}
 		}
-	}
-
-	if len(instances) == 0 {
-		return nil, errors.New("instances not found")
 	}
 
 	return &sd.DiscoverInstancesOutput{
@@ -162,7 +158,7 @@ func (s *AWSSDClientStub) ListServicesPages(input *sd.ListServicesInput, fn func
 func (s *AWSSDClientStub) RegisterInstance(input *sd.RegisterInstanceInput) (*sd.RegisterInstanceOutput, error) {
 	srvInstances, ok := s.instances[*input.ServiceId]
 	if !ok {
-		srvInstances = make(map[string]*sd.Instance, 1)
+		srvInstances = make(map[string]*sd.Instance)
 		s.instances[*input.ServiceId] = srvInstances
 	}
 
