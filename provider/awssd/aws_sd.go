@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	log "github.com/sirupsen/logrus"
 
