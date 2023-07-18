@@ -174,7 +174,7 @@ func (p *AWSSDProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 
 			if len(resp.Instances) == 0 {
 				if err := p.DeleteService(srv); err != nil {
-					log.Warnf("Failed to delete service %q, error: %s", aws.StringValue(srv.Name), err)
+					log.Errorf("Failed to delete service %q, error: %s", aws.StringValue(srv.Name), err)
 				}
 				continue
 			}
