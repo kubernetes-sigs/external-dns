@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
@@ -32,120 +31,11 @@ import (
 var _ provider.Provider = &InMemoryProvider{}
 
 func TestInMemoryProvider(t *testing.T) {
-	t.Run("findByType", testInMemoryFindByType)
 	t.Run("Records", testInMemoryRecords)
 	t.Run("validateChangeBatch", testInMemoryValidateChangeBatch)
 	t.Run("ApplyChanges", testInMemoryApplyChanges)
 	t.Run("NewInMemoryProvider", testNewInMemoryProvider)
 	t.Run("CreateZone", testInMemoryCreateZone)
-}
-
-func testInMemoryFindByType(t *testing.T) {
-	for _, ti := range []struct {
-		title             string
-		findType          string
-		findSetIdentifier string
-		records           []*inMemoryRecord
-		expected          *inMemoryRecord
-		expectedEmpty     bool
-	}{
-		{
-			title:         "no records, empty type",
-			findType:      "",
-			records:       nil,
-			expected:      nil,
-			expectedEmpty: true,
-		},
-		{
-			title:         "no records, non-empty type",
-			findType:      endpoint.RecordTypeA,
-			records:       nil,
-			expected:      nil,
-			expectedEmpty: true,
-		},
-		{
-			title:    "one record, empty type",
-			findType: "",
-			records: []*inMemoryRecord{
-				{
-					Type: endpoint.RecordTypeA,
-				},
-			},
-			expected:      nil,
-			expectedEmpty: true,
-		},
-		{
-			title:    "one record, wrong type",
-			findType: endpoint.RecordTypeCNAME,
-			records: []*inMemoryRecord{
-				{
-					Type: endpoint.RecordTypeA,
-				},
-			},
-			expected:      nil,
-			expectedEmpty: true,
-		},
-		{
-			title:    "one record, right type",
-			findType: endpoint.RecordTypeA,
-			records: []*inMemoryRecord{
-				{
-					Type: endpoint.RecordTypeA,
-				},
-			},
-			expected: &inMemoryRecord{
-				Type: endpoint.RecordTypeA,
-			},
-		},
-		{
-			title:    "multiple records, right type",
-			findType: endpoint.RecordTypeA,
-			records: []*inMemoryRecord{
-				{
-					Type: endpoint.RecordTypeA,
-				},
-				{
-					Type: endpoint.RecordTypeTXT,
-				},
-			},
-			expected: &inMemoryRecord{
-				Type: endpoint.RecordTypeA,
-			},
-		},
-		{
-			title:             "multiple records, right type and set identifier",
-			findType:          endpoint.RecordTypeA,
-			findSetIdentifier: "test-set-1",
-			records: []*inMemoryRecord{
-				{
-					Type:          endpoint.RecordTypeA,
-					SetIdentifier: "test-set-1",
-				},
-				{
-					Type:          endpoint.RecordTypeA,
-					SetIdentifier: "test-set-2",
-				},
-				{
-					Type: endpoint.RecordTypeTXT,
-				},
-			},
-			expected: &inMemoryRecord{
-				Type:          endpoint.RecordTypeA,
-				SetIdentifier: "test-set-1",
-			},
-		},
-	} {
-		t.Run(ti.title, func(t *testing.T) {
-			c := newInMemoryClient()
-			record := c.findByTypeAndSetIdentifier(ti.findType, ti.findSetIdentifier, ti.records)
-			if ti.expectedEmpty {
-				assert.Nil(t, record)
-			} else {
-				require.NotNil(t, record)
-				assert.Equal(t, *ti.expected, *record)
-			}
-		})
-	}
 }
 
 func testInMemoryRecords(t *testing.T) {
@@ -175,35 +65,12 @@ func testInMemoryRecords(t *testing.T) {
 			title: "records, zone with records",
 			zone:  "org",
 			init: map[string]zone{
-				"org": {
-					"example.org": []*inMemoryRecord{
-						{
-							Name:   "example.org",
-							Target: "8.8.8.8",
-							Type:   endpoint.RecordTypeA,
-						},
-						{
-							Name: "example.org",
-							Type: endpoint.RecordTypeTXT,
-						},
-					},
-					"foo.org": []*inMemoryRecord{
-						{
-							Name:   "foo.org",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
-				"com": {
-					"example.com": []*inMemoryRecord{
-						{
-							Name:   "example.com",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
+				"org": makeZone(
+					"example.org", "8.8.8.8", endpoint.RecordTypeA,
+					"example.org", "", endpoint.RecordTypeTXT,
+					"foo.org", "4.4.4.4", endpoint.RecordTypeCNAME,
+				),
+				"com": makeZone("example.com", "4.4.4.4", endpoint.RecordTypeCNAME),
 			},
 			expectError: false,
 			expected: []*endpoint.Endpoint{
@@ -246,41 +113,13 @@ func testInMemoryRecords(t *testing.T) {
 
 func testInMemoryValidateChangeBatch(t *testing.T) {
 	init := map[string]zone{
-		"org": {
-			"example.org": []*inMemoryRecord{
-				{
-					Name:   "example.org",
-					Target: "8.8.8.8",
-					Type:   endpoint.RecordTypeA,
-				},
-				{
-					Name: "example.org",
-				},
-			},
-			"foo.org": []*inMemoryRecord{
-				{
-					Name:   "foo.org",
-					Target: "bar.org",
-					Type:   endpoint.RecordTypeCNAME,
-				},
-			},
-			"foo.bar.org": []*inMemoryRecord{
-				{
-					Name:   "foo.bar.org",
-					Target: "5.5.5.5",
-					Type:   endpoint.RecordTypeA,
-				},
-			},
-		},
-		"com": {
-			"example.com": []*inMemoryRecord{
-				{
-					Name:   "example.com",
-					Target: "another-example.com",
-					Type:   endpoint.RecordTypeCNAME,
-				},
-			},
-		},
+		"org": makeZone(
+			"example.org", "8.8.8.8", endpoint.RecordTypeA,
+			"example.org", "", endpoint.RecordTypeTXT,
+			"foo.org", "bar.org", endpoint.RecordTypeCNAME,
+			"foo.bar.org", "5.5.5.5", endpoint.RecordTypeA,
+		),
+		"com": makeZone("example.com", "another-example.com", endpoint.RecordTypeCNAME),
 	}
 	for _, ti := range []struct {
 		title       string
@@ -561,11 +400,11 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 		t.Run(ti.title, func(t *testing.T) {
 			c := &inMemoryClient{}
 			c.zones = ti.init
-			ichanges := &inMemoryChange{
-				Create:    convertToInMemoryRecord(ti.changes.Create),
-				UpdateNew: convertToInMemoryRecord(ti.changes.UpdateNew),
-				UpdateOld: convertToInMemoryRecord(ti.changes.UpdateOld),
-				Delete:    convertToInMemoryRecord(ti.changes.Delete),
+			ichanges := &plan.Changes{
+				Create:    ti.changes.Create,
+				UpdateNew: ti.changes.UpdateNew,
+				UpdateOld: ti.changes.UpdateOld,
+				Delete:    ti.changes.Delete,
 			}
 			err := c.validateChangeBatch(ti.zone, ichanges)
 			if ti.expectError {
@@ -579,42 +418,12 @@ func testInMemoryValidateChangeBatch(t *testing.T) {
 
 func getInitData() map[string]zone {
 	return map[string]zone{
-		"org": {
-			"example.org": []*inMemoryRecord{
-				{
-					Name:   "example.org",
-					Target: "8.8.8.8",
-					Type:   endpoint.RecordTypeA,
-				},
-				{
-					Name: "example.org",
-					Type: endpoint.RecordTypeTXT,
-				},
-			},
-			"foo.org": []*inMemoryRecord{
-				{
-					Name:   "foo.org",
-					Target: "4.4.4.4",
-					Type:   endpoint.RecordTypeCNAME,
-				},
-			},
-			"foo.bar.org": []*inMemoryRecord{
-				{
-					Name:   "foo.bar.org",
-					Target: "5.5.5.5",
-					Type:   endpoint.RecordTypeA,
-				},
-			},
-		},
-		"com": {
-			"example.com": []*inMemoryRecord{
-				{
-					Name:   "example.com",
-					Target: "4.4.4.4",
-					Type:   endpoint.RecordTypeCNAME,
-				},
-			},
-		},
+		"org": makeZone("example.org", "8.8.8.8", endpoint.RecordTypeA,
+			"example.org", "", endpoint.RecordTypeTXT,
+			"foo.org", "4.4.4.4", endpoint.RecordTypeCNAME,
+			"foo.bar.org", "5.5.5.5", endpoint.RecordTypeA,
+		),
+		"com": makeZone("example.com", "4.4.4.4", endpoint.RecordTypeCNAME),
 	}
 }
 
@@ -679,36 +488,11 @@ func testInMemoryApplyChanges(t *testing.T) {
 				},
 			},
 			expectedZonesState: map[string]zone{
-				"org": {
-					"example.org": []*inMemoryRecord{
-						{
-							Name:   "example.org",
-							Target: "8.8.8.8",
-							Type:   endpoint.RecordTypeA,
-						},
-						{
-							Name: "example.org",
-							Type: endpoint.RecordTypeTXT,
-						},
-					},
-					"foo.org": []*inMemoryRecord{
-						{
-							Name:   "foo.org",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-					"foo.bar.org": []*inMemoryRecord{},
-				},
-				"com": {
-					"example.com": []*inMemoryRecord{
-						{
-							Name:   "example.com",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
+				"org": makeZone("example.org", "8.8.8.8", endpoint.RecordTypeA,
+					"example.org", "", endpoint.RecordTypeTXT,
+					"foo.org", "4.4.4.4", endpoint.RecordTypeCNAME,
+				),
+				"com": makeZone("example.com", "4.4.4.4", endpoint.RecordTypeCNAME),
 			},
 		},
 		{
@@ -720,6 +504,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						DNSName:    "foo.bar.new.org",
 						Targets:    endpoint.Targets{"4.8.8.9"},
 						RecordType: endpoint.RecordTypeA,
+						Labels:     endpoint.NewLabels(),
 					},
 				},
 				UpdateNew: []*endpoint.Endpoint{
@@ -727,6 +512,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						DNSName:    "foo.bar.org",
 						Targets:    endpoint.Targets{"4.8.8.4"},
 						RecordType: endpoint.RecordTypeA,
+						Labels:     endpoint.NewLabels(),
 					},
 				},
 				UpdateOld: []*endpoint.Endpoint{
@@ -734,6 +520,7 @@ func testInMemoryApplyChanges(t *testing.T) {
 						DNSName:    "foo.bar.org",
 						Targets:    endpoint.Targets{"5.5.5.5"},
 						RecordType: endpoint.RecordTypeA,
+						Labels:     endpoint.NewLabels(),
 					},
 				},
 				Delete: []*endpoint.Endpoint{
@@ -741,48 +528,18 @@ func testInMemoryApplyChanges(t *testing.T) {
 						DNSName:    "example.org",
 						Targets:    endpoint.Targets{"8.8.8.8"},
 						RecordType: endpoint.RecordTypeA,
+						Labels:     endpoint.NewLabels(),
 					},
 				},
 			},
 			expectedZonesState: map[string]zone{
-				"org": {
-					"example.org": []*inMemoryRecord{
-						{
-							Name: "example.org",
-							Type: endpoint.RecordTypeTXT,
-						},
-					},
-					"foo.org": []*inMemoryRecord{
-						{
-							Name:   "foo.org",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-					"foo.bar.org": []*inMemoryRecord{
-						{
-							Name:   "foo.bar.org",
-							Target: "4.8.8.4",
-							Type:   endpoint.RecordTypeA,
-						},
-					},
-					"foo.bar.new.org": []*inMemoryRecord{
-						{
-							Name:   "foo.bar.new.org",
-							Target: "4.8.8.9",
-							Type:   endpoint.RecordTypeA,
-						},
-					},
-				},
-				"com": {
-					"example.com": []*inMemoryRecord{
-						{
-							Name:   "example.com",
-							Target: "4.4.4.4",
-							Type:   endpoint.RecordTypeCNAME,
-						},
-					},
-				},
+				"org": makeZone(
+					"example.org", "", endpoint.RecordTypeTXT,
+					"foo.org", "4.4.4.4", endpoint.RecordTypeCNAME,
+					"foo.bar.org", "4.8.8.4", endpoint.RecordTypeA,
+					"foo.bar.new.org", "4.8.8.9", endpoint.RecordTypeA,
+				),
+				"com": makeZone("example.com", "4.4.4.4", endpoint.RecordTypeCNAME),
 			},
 		},
 	} {
@@ -814,4 +571,18 @@ func testInMemoryCreateZone(t *testing.T) {
 	assert.NoError(t, err)
 	err = im.CreateZone("zone")
 	assert.EqualError(t, err, ErrZoneAlreadyExists.Error())
+}
+
+func makeZone(s ...string) map[endpoint.EndpointKey]*endpoint.Endpoint {
+	if len(s)%3 != 0 {
+		panic("makeZone arguments must be multiple of 3")
+	}
+
+	output := map[endpoint.EndpointKey]*endpoint.Endpoint{}
+	for i := 0; i < len(s); i += 3 {
+		ep := endpoint.NewEndpoint(s[i], s[i+2], s[i+1])
+		output[ep.Key()] = ep
+	}
+
+	return output
 }

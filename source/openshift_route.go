@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sort"
 	"text/template"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	versioned "github.com/openshift/client-go/route/clientset/versioned"
@@ -71,7 +72,7 @@ func NewOcpRouteSource(
 
 	// Use a shared informer to listen for add/update/delete of Routes in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
-	informerFactory := extInformers.NewSharedInformerFactoryWithOptions(ocpClient, 0, extInformers.WithNamespace(namespace))
+	informerFactory := extInformers.NewFilteredSharedInformerFactory(ocpClient, 0*time.Second, namespace, nil)
 	informer := informerFactory.Route().V1().Routes()
 
 	// Add default resource event handlers to properly initialize informer.

@@ -149,7 +149,7 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		// apply template if host is missing on gateway
 		if (sc.combineFQDNAnnotation || len(gwHostnames) == 0) && sc.fqdnTemplate != nil {
-			iHostnames, err := execTemplate(sc.fqdnTemplate, &gateway)
+			iHostnames, err := execTemplate(sc.fqdnTemplate, gateway)
 			if err != nil {
 				return nil, err
 			}
@@ -196,7 +196,7 @@ func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(gateways []networkingv1alpha3.Gateway) ([]networkingv1alpha3.Gateway, error) {
+func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []networkingv1alpha3.Gatew
 		return gateways, nil
 	}
 
-	var filteredList []networkingv1alpha3.Gateway
+	var filteredList []*networkingv1alpha3.Gateway
 
 	for _, gw := range gateways {
 		// convert the annotations to an equivalent label selector
@@ -226,13 +226,13 @@ func (sc *gatewaySource) filterByAnnotations(gateways []networkingv1alpha3.Gatew
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) setResourceLabel(gateway networkingv1alpha3.Gateway, endpoints []*endpoint.Endpoint) {
+func (sc *gatewaySource) setResourceLabel(gateway *networkingv1alpha3.Gateway, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 	}
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
 	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return
@@ -262,7 +262,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway networkingv1alpha3.Gateway) 
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	annotations := gateway.Annotations
@@ -289,7 +289,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway networ
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway networkingv1alpha3.Gateway) ([]string, error) {
+func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1alpha3.Gateway) ([]string, error) {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {

@@ -11,6 +11,7 @@ The registry implementation is specified using the `--registry` flag.
 
 ## Supported registries
 
-* [txt](txt.md) (default) - Stores in TXT records in the same provider
+* [txt](txt.md) (default) - Stores metadata in TXT records in the same provider.
+* [dynamodb](dynamodb.md) - Stores metadata in an AWS DynamoDB table.
 * noop - Passes metadata directly to the provider. For most providers, this means the metadata is not persisted.
 * aws-sd - Stores metadata in AWS Service Discovery. Only usable with the `aws-sd` provider.

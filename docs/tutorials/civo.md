@@ -2,7 +2,7 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using Civo DNS Manager.
 
-Make sure to use **>0.12.2** version of ExternalDNS for this tutorial.
+Make sure to use **>0.13.5** version of ExternalDNS for this tutorial.
 
 ## Managing DNS with Civo
 
@@ -12,8 +12,7 @@ If you want to learn about how to use Civo DNS Manager read the following tutori
 
 ## Get Civo Token
 
-Copy the token in the settings fo your account
-
+Copy the token in the settings for your account
 The environment variable `CIVO_TOKEN` will be needed to run ExternalDNS with Civo.
 
 ## Deploy ExternalDNS

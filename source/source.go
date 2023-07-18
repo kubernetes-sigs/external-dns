@@ -86,12 +86,6 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-// endpointKey is the type of a map key for separating endpoints or targets.
-type endpointKey struct {
-	dnsName    string
-	recordType string
-}
-
 func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
 	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
@@ -338,9 +332,9 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 
 type eventHandlerFunc func()
 
-func (fn eventHandlerFunc) OnAdd(obj interface{})               { fn() }
-func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{}) { fn() }
-func (fn eventHandlerFunc) OnDelete(obj interface{})            { fn() }
+func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
+func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
+func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
 
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool

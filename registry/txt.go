@@ -295,10 +295,6 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoi
 }
 
 /**
-  TXT registry specific private methods
-*/
-
-/**
   nameMapper is the interface for mapping between the endpoint for the source
   and the endpoint for the TXT record.
 */
@@ -452,7 +448,6 @@ func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
 
 func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	if im.recordsCache == nil || ep == nil {
-		// return early.
 		return
 	}
 

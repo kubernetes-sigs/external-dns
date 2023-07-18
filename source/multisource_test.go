@@ -128,18 +128,27 @@ func testMultiSourceEndpointsWithError(t *testing.T) {
 
 func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 	// Create the expected default targets
-	defaultTargets := []string{"127.0.0.1", "127.0.0.2"}
+	defaultTargetsA := []string{"127.0.0.1", "127.0.0.2"}
+	defaultTargetsAAAA := []string{"2001:db8::1"}
+	defaultTargetsCName := []string{"foo.example.org"}
+	defaultTargets := append(defaultTargetsA, defaultTargetsCName...)
+	defaultTargets = append(defaultTargets, defaultTargetsAAAA...)
+	labels := endpoint.Labels{"foo": "bar"}
 
 	// Create the expected endpoints
 	expectedEndpoints := []*endpoint.Endpoint{
-		{DNSName: "foo", Targets: defaultTargets},
-		{DNSName: "bar", Targets: defaultTargets},
+		{DNSName: "foo", Targets: defaultTargetsA, RecordType: "A", Labels: labels},
+		{DNSName: "bar", Targets: defaultTargetsA, RecordType: "A", Labels: labels},
+		{DNSName: "foo", Targets: defaultTargetsAAAA, RecordType: "AAAA", Labels: labels},
+		{DNSName: "bar", Targets: defaultTargetsAAAA, RecordType: "AAAA", Labels: labels},
+		{DNSName: "foo", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
+		{DNSName: "bar", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
 	}
 
 	// Create the source endpoints with different targets
 	sourceEndpoints := []*endpoint.Endpoint{
-		{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}},
-		{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}},
+		{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}, Labels: labels},
+		{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
 	}
 
 	// Create a mocked source returning source targets
