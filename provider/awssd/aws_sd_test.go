@@ -39,6 +39,10 @@ import (
 // Compile time check for interface conformance
 var _ AWSSDClient = &AWSSDClientStub{}
 
+var (
+	errNamespaceNotFound = errors.New("Namespace not found")
+)
+
 type AWSSDClientStub struct {
 	// map[namespace_id]namespace
 	namespaces map[string]*sd.Namespace
@@ -95,8 +99,11 @@ func (s *AWSSDClientStub) GetService(input *sd.GetServiceInput) (*sd.GetServiceO
 func (s *AWSSDClientStub) DiscoverInstancesWithContext(ctx context.Context, input *sd.DiscoverInstancesInput, opts ...request.Option) (*sd.DiscoverInstancesOutput, error) {
 	instances := make([]*sd.HttpInstanceSummary, 0)
 
+	var foundNs bool
 	for _, ns := range s.namespaces {
 		if aws.StringValue(ns.Name) == aws.StringValue(input.NamespaceName) {
+			foundNs = true
+
 			for _, srv := range s.services[*ns.Id] {
 				if aws.StringValue(srv.Name) == aws.StringValue(input.ServiceName) {
 					for _, inst := range s.instances[*srv.Id] {
@@ -105,6 +112,10 @@ func (s *AWSSDClientStub) DiscoverInstancesWithContext(ctx context.Context, inpu
 				}
 			}
 		}
+	}
+
+	if !foundNs {
+		return nil, errNamespaceNotFound
 	}
 
 	return &sd.DiscoverInstancesOutput{
