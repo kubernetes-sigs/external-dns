@@ -213,7 +213,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.mapper.recordTypeInAffix() && im.txtFormats == "transition" && r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.mapper.recordTypeInAffix() && im.txtFormats == "transition" && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -224,7 +224,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	if im.txtFormats == "transition" && r.RecordType == endpoint.RecordTypeAAAA {
+	if im.txtFormats == "transition" && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
 			txtNew.WithSetIdentifier(r.SetIdentifier)
