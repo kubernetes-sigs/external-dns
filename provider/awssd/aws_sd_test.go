@@ -115,7 +115,7 @@ func (s *AWSSDClientStub) DiscoverInstancesWithContext(ctx context.Context, inpu
 	}
 
 	if !foundNs {
-		return nil, errNamespaceNotFound
+		return nil, ErrNamespaceNotFound
 	}
 
 	return &sd.DiscoverInstancesOutput{
