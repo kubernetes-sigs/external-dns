@@ -338,7 +338,16 @@ func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMap
 // extractRecordTypeDefaultPosition extracts record type from the default position
 // when not using '%{record_type}' in the prefix/suffix
 func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
-	nameS := strings.Split(name, "-")
+	nameS := strings.Split(name, "._metadata.")
+	for _, t := range getSupportedTypes() {
+		if strings.HasPrefix(nameS[0], "*.") && strings.TrimPrefix(nameS[0], "*.") == strings.ToLower(t) {
+			return "*." + strings.TrimPrefix(name, nameS[0]+"._metadata."), t
+		}
+		if nameS[0] == strings.ToLower(t) {
+			return strings.TrimPrefix(name, nameS[0]+"._metadata."), t
+		}
+	}
+	nameS = strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
 		if nameS[0] == strings.ToLower(t) {
 			return strings.TrimPrefix(name, nameS[0]+"-"), t

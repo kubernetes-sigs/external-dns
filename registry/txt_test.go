@@ -369,6 +369,10 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			newEndpointWithOwner("dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 			newEndpointWithOwner("dualstack.test-zone.example.org", "2001:DB8::1", endpoint.RecordTypeAAAA, ""),
 			newEndpointWithOwner("aaaa-dualstack.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner-2\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("metadata-only.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("cname._metadata.metadata-only.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("*.metadata-only-wildcard.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("*.cname._metadata.metadata-only-wildcard.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
 		},
 	})
 	expectedRecords := []*endpoint.Endpoint{
@@ -435,6 +439,22 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 			RecordType: endpoint.RecordTypeAAAA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner-2",
+			},
+		},
+		{
+			DNSName:    "metadata-only.test-zone.example.org",
+			Targets:    endpoint.Targets{"foobar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+		{
+			DNSName:    "*.metadata-only-wildcard.test-zone.example.org",
+			Targets:    endpoint.Targets{"foobar.loadbalancer.com"},
+			RecordType: endpoint.RecordTypeCNAME,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
 			},
 		},
 	}
@@ -1203,6 +1223,16 @@ func TestExtractRecordTypeDefaultPosition(t *testing.T) {
 			input:        "zone.example.com",
 			expectedName: "zone.example.com",
 			expectedType: "",
+		},
+		{
+			input:        "cname._metadata.foo.test-zone.example.org",
+			expectedName: "foo.test-zone.example.org",
+			expectedType: "CNAME",
+		},
+		{
+			input:        "*.cname._metadata.foo.test-zone.example.org",
+			expectedName: "*.foo.test-zone.example.org",
+			expectedType: "CNAME",
 		},
 	}
 
