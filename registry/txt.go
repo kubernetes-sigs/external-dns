@@ -57,11 +57,11 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
-	txtFormats string
+	txtFormat string
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormats string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat string) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -89,7 +89,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		managedRecordTypes:  managedRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
-		txtFormats:          txtFormats,
+		txtFormat:           txtFormat,
 	}, nil
 }
 
@@ -213,7 +213,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.mapper.recordTypeInAffix() && im.txtFormats == "transition" && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
+	if !im.mapper.recordTypeInAffix() && im.txtFormat == "transition" && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -224,7 +224,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	if im.txtFormats == "transition" && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
+	if im.txtFormat == "transition" && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
 			txtNew.WithSetIdentifier(r.SetIdentifier)
