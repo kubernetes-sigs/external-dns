@@ -40,7 +40,7 @@ import (
 var _ AWSSDClient = &AWSSDClientStub{}
 
 var (
-	errNamespaceNotFound = errors.New("Namespace not found")
+	ErrNamespaceNotFound = errors.New("Namespace not found")
 )
 
 type AWSSDClientStub struct {
