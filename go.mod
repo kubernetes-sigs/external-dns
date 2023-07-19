@@ -64,7 +64,6 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.9
 	go.etcd.io/etcd/client/v3 v3.5.9
 	go.uber.org/ratelimit v0.3.0
-	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 	golang.org/x/net v0.12.0
 	golang.org/x/oauth2 v0.10.0
 	golang.org/x/sync v0.3.0
