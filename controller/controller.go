@@ -175,7 +175,7 @@ type Controller struct {
 	// The interval between individual synchronizations
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
-	DomainFilter endpoint.DomainFilterInterface
+	DomainFilter endpoint.DomainFilter
 	// The nextRunAt used for throttling and batching reconciliation
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt

@@ -47,7 +47,7 @@ type mockProvider struct {
 
 type filteredMockProvider struct {
 	provider.BaseProvider
-	domainFilter      endpoint.DomainFilterInterface
+	domainFilter      endpoint.DomainFilter
 	RecordsStore      []*endpoint.Endpoint
 	RecordsCallCount  int
 	ApplyChangesCalls []*plan.Changes
@@ -57,7 +57,7 @@ type errorMockProvider struct {
 	mockProvider
 }
 
-func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilter {
 	return p.domainFilter
 }
 
@@ -279,7 +279,7 @@ func TestShouldRunOnce(t *testing.T) {
 	assert.True(t, ctrl.ShouldRunOnce(now))
 }
 
-func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
+func testControllerFiltersDomains(t *testing.T, configuredEndpoints []*endpoint.Endpoint, domainFilter endpoint.DomainFilter, providerEndpoints []*endpoint.Endpoint, expectedChanges []*plan.Changes) {
 	t.Helper()
 	cfg := externaldns.NewConfig()
 	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
@@ -353,7 +353,7 @@ func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
 				Targets:    endpoint.Targets{"8.8.8.8"},
 			},
 		},
-		nil,
+		endpoint.DomainFilter{},
 		[]*endpoint.Endpoint{
 			{
 				DNSName:    "some-record.used.tld",
