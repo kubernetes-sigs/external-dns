@@ -110,6 +110,8 @@ serviceMonitor:
 
 env: []
 
+envFrom: []
+
 livenessProbe:
   httpGet:
     path: /healthz
