@@ -21,12 +21,10 @@ import (
 	"compress/gzip"
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"io"
-
 	log "github.com/sirupsen/logrus"
+	"strings"
 )
 
 // EncryptText gzip input data and encrypts it using the supplied AES key
@@ -43,9 +41,10 @@ func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error
 
 	nonce := make([]byte, gcm.NonceSize())
 	if nonceEncoded == nil {
-		if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-			return "", err
-		}
+		// this reduces cryptographic strength, but in a given location with this type of data, this should not be fatal
+		// it's need for be able to generate same encryption string, for same labels, for more details see issue:
+		// https://github.com/kubernetes-sigs/external-dns/issues/3668
+		nonce = []byte(strings.Repeat("0", gcm.NonceSize()))
 	} else {
 		if _, err = base64.StdEncoding.Decode(nonce, nonceEncoded); err != nil {
 			return "", err
