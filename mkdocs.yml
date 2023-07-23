@@ -17,6 +17,7 @@ nav:
   - Sources:
     - About: sources/sources.md
     - Ingress: sources/ingress.md
+    - Service: sources/service.md
   - Registries:
     - About: registry/registry.md
     - TXT: registry/txt.md

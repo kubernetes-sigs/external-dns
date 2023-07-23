@@ -33,7 +33,7 @@ or the Ingress had an
 or the Ingress had an
 `external-dns.alpha.kubernetes.io/ingress-hostname-source: defined-hosts-only` annotation.
 
-* If no endpoints were produced for an Ingress by the previous steps
+* If no DNS entries were produced for an Ingress by the previous steps
 or the `--combine-fqdn-annotation` flag was specified, then adds hostnames
 generated from any`--fqdn-template` flag.
 

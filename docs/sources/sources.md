@@ -21,6 +21,6 @@
 | node                  | Node                                                                          | Yes               |              |
 | openshift-route       | Route.route.openshift.io                                                      | Yes               | Yes          |
 | pod                   | Pod                                                                           |                   |              |
-| service               | Service                                                                       | Yes               | Yes          |
+| [service](service.md) | Service                                                                       | Yes               | Yes          |
 | skipper-routegroup    | RouteGroup.zalando.org                                                        | Yes               |              |
 | traefik-proxy         | IngressRoute.traefik.io IngressRouteTCP.traefik.io IngressRouteUDP.traefik.io | Yes               |              |
