@@ -928,14 +928,6 @@ func validateEntries(t *testing.T, entries, expected []*endpoint.Endpoint) {
 	}
 }
 
-func validateOwner(t *testing.T, entries []*endpoint.Endpoint, owner string) {
-	for _, entry := range entries {
-		if entry.Labels[endpoint.OwnerLabelKey] != owner {
-			t.Fatalf("expected owner label %q to match %q", entry.Labels[endpoint.OwnerLabelKey], owner)
-		}
-	}
-}
-
 func TestNormalizeDNSName(t *testing.T) {
 	records := []struct {
 		dnsName string
