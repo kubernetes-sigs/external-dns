@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -39,10 +38,6 @@ type fakeSource struct {
 const (
 	defaultFQDNTemplate = "example.com"
 )
-
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
 
 // NewFakeSource creates a new fakeSource with the given config.
 func NewFakeSource(fqdnTemplate string) (Source, error) {

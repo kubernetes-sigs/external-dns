@@ -42,7 +42,7 @@ func NewAWSSDRegistry(provider provider.Provider, ownerID string) (*AWSSDRegistr
 	}, nil
 }
 
-func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return sdr.provider.GetDomainFilter()
 }
 
@@ -55,7 +55,7 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	}
 
 	for _, record := range records {
-		labels, err := endpoint.NewLabelsFromString(record.Labels[endpoint.AWSSDDescriptionLabel])
+		labels, err := endpoint.NewLabelsFromStringPlain(record.Labels[endpoint.AWSSDDescriptionLabel])
 		if err != nil {
 			// if we fail to parse the output then simply assume the endpoint is not managed by any instance of External DNS
 			record.Labels = endpoint.NewLabels()
@@ -65,11 +65,6 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 	}
 
 	return records, nil
-}
-
-// MissingRecords returns nil because there is no missing records for AWSSD registry
-func (sdr *AWSSDRegistry) MissingRecords() []*endpoint.Endpoint {
-	return nil
 }
 
 // ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
@@ -96,7 +91,7 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 			ep.Labels = make(map[string]string)
 		}
 		ep.Labels[endpoint.OwnerLabelKey] = sdr.ownerID
-		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.Serialize(false)
+		ep.Labels[endpoint.AWSSDDescriptionLabel] = ep.Labels.SerializePlain(false)
 	}
 }
 

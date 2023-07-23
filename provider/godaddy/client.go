@@ -23,8 +23,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
+
+	"golang.org/x/time/rate"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 )
@@ -71,6 +75,9 @@ type Client struct {
 	// Client is the underlying HTTP client used to run the requests. It may be overloaded but a default one is instanciated in ``NewClient`` by default.
 	Client *http.Client
 
+	// GoDaddy limits to 60 requests per minute
+	Ratelimiter *rate.Limiter
+
 	// Logger is used to log HTTP requests and responses.
 	Logger Logger
 
@@ -115,6 +122,7 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 		APISecret:   apiSecret,
 		APIEndPoint: endpoint,
 		Client:      &http.Client{},
+		Ratelimiter: rate.NewLimiter(rate.Every(60*time.Second), 60),
 		Timeout:     DefaultTimeout,
 	}
 
@@ -216,7 +224,22 @@ func (c *Client) Do(req *http.Request) (*http.Response, error) {
 	if c.Logger != nil {
 		c.Logger.LogRequest(req)
 	}
+
+	c.Ratelimiter.Wait(req.Context())
 	resp, err := c.Client.Do(req)
+	// In case of several clients behind NAT we still can hit rate limit
+	for i := 1; i < 3 && err == nil && resp.StatusCode == 429; i++ {
+		retryAfter, _ := strconv.ParseInt(resp.Header.Get("Retry-After"), 10, 0)
+
+		jitter := rand.Int63n(retryAfter)
+		retryAfterSec := retryAfter + jitter/2
+
+		sleepTime := time.Duration(retryAfterSec) * time.Second
+		time.Sleep(sleepTime)
+
+		c.Ratelimiter.Wait(req.Context())
+		resp, err = c.Client.Do(req)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -254,11 +254,8 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 		}
 	case "record:txt":
 		var records []ibclient.RecordTXT
-		obj := ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Name: result[2],
-			},
-		)
+		obj := ibclient.NewEmptyRecordTXT()
+		obj.Name = result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
@@ -355,13 +352,11 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 		obj.Canonical = value
 		return obj
 	case endpoint.RecordTypeTXT:
-		return ibclient.NewRecordTXT(
-			ibclient.RecordTXT{
-				Ref:  ref,
-				Name: name,
-				Text: value,
-			},
-		)
+		obj := ibclient.NewEmptyRecordTXT()
+		obj.Name = name
+		obj.Ref = ref
+		obj.Text = value
+		return obj
 	case "HOST":
 		obj := ibclient.NewEmptyHostRecord()
 		obj.Name = name
@@ -698,7 +693,7 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$")
+	requestBuilder := NewExtendedRequestBuilder(0, "^staging.*test.com$", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
@@ -710,6 +705,32 @@ func TestExtendedRequestFDQDRegExBuilder(t *testing.T) {
 	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("fqdn~") == "")
+}
+
+func TestExtendedRequestNameRegExBuilder(t *testing.T) {
+	hostCfg := ibclient.HostConfig{
+		Host:    "localhost",
+		Port:    "8080",
+		Version: "2.3.1",
+	}
+
+	authCfg := ibclient.AuthConfig{
+		Username: "user",
+		Password: "abcd",
+	}
+
+	requestBuilder := NewExtendedRequestBuilder(0, "", "^staging.*test.com$")
+	requestBuilder.Init(hostCfg, authCfg)
+
+	obj := ibclient.NewEmptyRecordCNAME()
+
+	req, _ := requestBuilder.BuildRequest(ibclient.GET, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "^staging.*test.com$")
+
+	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
+
+	assert.True(t, req.URL.Query().Get("name~") == "")
 }
 
 func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
@@ -724,7 +745,7 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 		Password: "abcd",
 	}
 
-	requestBuilder := NewExtendedRequestBuilder(54321, "")
+	requestBuilder := NewExtendedRequestBuilder(54321, "", "")
 	requestBuilder.Init(hostCfg, authCfg)
 
 	obj := ibclient.NewEmptyRecordCNAME()
@@ -743,7 +764,7 @@ func TestGetObject(t *testing.T) {
 	hostCfg := ibclient.HostConfig{}
 	authCfg := ibclient.AuthConfig{}
 	transportConfig := ibclient.TransportConfig{}
-	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com")
+	requestBuilder := NewExtendedRequestBuilder(1000, "mysite.com", "")
 	requestor := mockRequestor{}
 	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
 

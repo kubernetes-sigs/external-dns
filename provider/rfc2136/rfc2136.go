@@ -389,7 +389,6 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	log.Debugf("SendMessage")
 
 	c := new(dns.Client)
-	c.SingleInflight = true
 
 	if !r.insecure {
 		if r.gssTsig {

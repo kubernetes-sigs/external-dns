@@ -27,7 +27,7 @@ jobs:
           rm -f ./ah ./ah_linux_amd64.tar.gz
 
       - name: Set-up Helm
-        uses: azure/setup-helm@f382f75448129b3be48f8121b9857be18d815a82
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
@@ -38,21 +38,21 @@ jobs:
           python-version: "3.x"
 
       - name: Set-up chart-testing
-        uses: helm/chart-testing-action@afea100a513515fbd68b0e72a7bb0ae34cb62aec
+        uses: helm/chart-testing-action@e8788873172cb653a90ca2e819d79d65a66d4e76
 
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
           changed=$(ct list-changed)
           if [[ -n "$changed" ]]; then
-            echo "::set-output name=changed::true"
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Run chart-testing (lint)
         run: ct lint --check-version-increment=false
 
       - name: Set-up Kind cluster
-        uses: helm/kind-action@9e8295d178de23cbfbd8fa16cf844eec1d773a07
+        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140
         with:
           wait: 120s
         if: steps.list-changed.outputs.changed == 'true'

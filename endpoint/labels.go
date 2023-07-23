@@ -17,6 +17,8 @@ limitations under the License.
 package endpoint
 
 import (
+	log "github.com/sirupsen/logrus"
+
 	"errors"
 	"fmt"
 	"sort"
@@ -32,6 +34,8 @@ const (
 	OwnerLabelKey = "owner"
 	// ResourceLabelKey is the name of the label that identifies k8s resource which wants to acquire the DNS name
 	ResourceLabelKey = "resource"
+	// OwnedRecordLabelKey is the name of the label that identifies the record that is owned by the labeled TXT registry record
+	OwnedRecordLabelKey = "ownedRecord"
 
 	// AWSSDDescriptionLabel label responsible for storing raw owner/resource combination information in the Labels
 	// supposed to be inserted by AWS SD Provider, and parsed into OwnerLabelKey and ResourceLabelKey key by AWS SD Registry
@@ -39,6 +43,9 @@ const (
 
 	// DualstackLabelKey is the name of the label that identifies dualstack endpoints
 	DualstackLabelKey = "dualstack"
+
+	// txtEncryptionNonce label for keep same nonce for same txt records, for prevent different result of encryption for same txt record, it can cause issues for some providers
+	txtEncryptionNonce = "txt-encryption-nonce"
 )
 
 // Labels store metadata related to the endpoint
@@ -53,7 +60,7 @@ func NewLabels() Labels {
 // NewLabelsFromString constructs endpoints labels from a provided format string
 // if heritage set to another value is found then error is returned
 // no heritage automatically assumes is not owned by external-dns and returns invalidHeritage error
-func NewLabelsFromString(labelText string) (Labels, error) {
+func NewLabelsFromStringPlain(labelText string) (Labels, error) {
 	endpointLabels := map[string]string{}
 	labelText = strings.Trim(labelText, "\"") // drop quotes
 	tokens := strings.Split(labelText, ",")
@@ -83,9 +90,26 @@ func NewLabelsFromString(labelText string) (Labels, error) {
 	return endpointLabels, nil
 }
 
-// Serialize transforms endpoints labels into a external-dns recognizable format string
+func NewLabelsFromString(labelText string, aesKey []byte) (Labels, error) {
+	if len(aesKey) != 0 {
+		decryptedText, encryptionNonce, err := DecryptText(strings.Trim(labelText, "\""), aesKey)
+		//in case if we have decryption error, just try process original text
+		//decryption errors should be ignored here, because we can already have plain-text labels in registry
+		if err == nil {
+			labels, err := NewLabelsFromStringPlain(decryptedText)
+			if err == nil {
+				labels[txtEncryptionNonce] = encryptionNonce
+			}
+
+			return labels, err
+		}
+	}
+	return NewLabelsFromStringPlain(labelText)
+}
+
+// SerializePlain transforms endpoints labels into a external-dns recognizable format string
 // withQuotes adds additional quotes
-func (l Labels) Serialize(withQuotes bool) string {
+func (l Labels) SerializePlain(withQuotes bool) string {
 	var tokens []string
 	tokens = append(tokens, fmt.Sprintf("heritage=%s", heritage))
 	var keys []string
@@ -101,4 +125,32 @@ func (l Labels) Serialize(withQuotes bool) string {
 		return fmt.Sprintf("\"%s\"", strings.Join(tokens, ","))
 	}
 	return strings.Join(tokens, ",")
+}
+
+// Serialize same to SerializePlain, but encrypt data, if encryption enabled
+func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte) string {
+	if !txtEncryptEnabled {
+		return l.SerializePlain(withQuotes)
+	}
+
+	var encryptionNonce []byte = nil
+	if extractedNonce, nonceExists := l[txtEncryptionNonce]; nonceExists {
+		encryptionNonce = []byte(extractedNonce)
+		delete(l, txtEncryptionNonce)
+	}
+
+	text := l.SerializePlain(false)
+	log.Debugf("Encrypt the serialized text %#v before returning it.", text)
+	var err error
+	text, err = EncryptText(text, aesKey, encryptionNonce)
+
+	if err != nil {
+		log.Fatalf("Failed to encrypt the text %#v using the encryption key %#v. Got error %#v.", text, aesKey, err)
+	}
+
+	if withQuotes {
+		text = fmt.Sprintf("\"%s\"", text)
+	}
+	log.Debugf("Serialized text after encryption is %#v.", text)
+	return text
 }

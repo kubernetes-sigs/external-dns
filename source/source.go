@@ -46,7 +46,7 @@ const (
 	accessAnnotationKey = "external-dns.alpha.kubernetes.io/access"
 	// The annotation used for specifying the type of endpoints to use for headless services
 	endpointsTypeAnnotationKey = "external-dns.alpha.kubernetes.io/endpoints-type"
-	// The annotation used for defining the desired ingress target
+	// The annotation used for defining the desired ingress/service target
 	targetAnnotationKey = "external-dns.alpha.kubernetes.io/target"
 	// The annotation used for defining the desired DNS record TTL
 	ttlAnnotationKey = "external-dns.alpha.kubernetes.io/ttl"
@@ -151,7 +151,7 @@ func getHostnamesFromAnnotations(annotations map[string]string) []string {
 	if !exists {
 		return nil
 	}
-	return strings.Split(strings.Replace(hostnameAnnotation, " ", "", -1), ",")
+	return splitHostnameAnnotation(hostnameAnnotation)
 }
 
 func getAccessFromAnnotations(annotations map[string]string) string {
@@ -167,7 +167,11 @@ func getInternalHostnamesFromAnnotations(annotations map[string]string) []string
 	if !exists {
 		return nil
 	}
-	return strings.Split(strings.Replace(internalHostnameAnnotation, " ", "", -1), ",")
+	return splitHostnameAnnotation(internalHostnameAnnotation)
+}
+
+func splitHostnameAnnotation(annotation string) []string {
+	return strings.Split(strings.Replace(annotation, " ", "", -1), ",")
 }
 
 func getAliasFromAnnotations(annotations map[string]string) bool {
@@ -239,8 +243,10 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 // suitableType returns the DNS resource record type suitable for the target.
 // In this case type A for IPs and type CNAME for everything else.
 func suitableType(target string) string {
-	if net.ParseIP(target) != nil {
+	if net.ParseIP(target) != nil && net.ParseIP(target).To4() != nil {
 		return endpoint.RecordTypeA
+	} else if net.ParseIP(target) != nil && net.ParseIP(target).To16() != nil {
+		return endpoint.RecordTypeAAAA
 	}
 	return endpoint.RecordTypeCNAME
 }
@@ -250,12 +256,21 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var endpoints []*endpoint.Endpoint
 
 	var aTargets endpoint.Targets
+	var aaaaTargets endpoint.Targets
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
 		switch suitableType(t) {
 		case endpoint.RecordTypeA:
+			if isIPv6String(t) {
+				continue
+			}
 			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			if !isIPv6String(t) {
+				continue
+			}
+			aaaaTargets = append(aaaaTargets, t)
 		default:
 			cnameTargets = append(cnameTargets, t)
 		}
@@ -274,6 +289,19 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		endpoints = append(endpoints, epA)
 	}
 
+	if len(aaaaTargets) > 0 {
+		epAAAA := &endpoint.Endpoint{
+			DNSName:          strings.TrimSuffix(hostname, "."),
+			Targets:          aaaaTargets,
+			RecordTTL:        ttl,
+			RecordType:       endpoint.RecordTypeAAAA,
+			Labels:           endpoint.NewLabels(),
+			ProviderSpecific: providerSpecific,
+			SetIdentifier:    setIdentifier,
+		}
+		endpoints = append(endpoints, epAAAA)
+	}
+
 	if len(cnameTargets) > 0 {
 		epCNAME := &endpoint.Endpoint{
 			DNSName:          strings.TrimSuffix(hostname, "."),
@@ -286,7 +314,6 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 		}
 		endpoints = append(endpoints, epCNAME)
 	}
-
 	return endpoints
 }
 
@@ -305,9 +332,9 @@ func matchLabelSelector(selector labels.Selector, srcAnnotations map[string]stri
 
 type eventHandlerFunc func()
 
-func (fn eventHandlerFunc) OnAdd(obj interface{})               { fn() }
-func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{}) { fn() }
-func (fn eventHandlerFunc) OnDelete(obj interface{})            { fn() }
+func (fn eventHandlerFunc) OnAdd(obj interface{}, isInInitialList bool) { fn() }
+func (fn eventHandlerFunc) OnUpdate(oldObj, newObj interface{})         { fn() }
+func (fn eventHandlerFunc) OnDelete(obj interface{})                    { fn() }
 
 type informerFactory interface {
 	WaitForCacheSync(stopCh <-chan struct{}) map[reflect.Type]bool
@@ -347,4 +374,10 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 		}
 	}
 	return nil
+}
+
+// isIPv6String returns if ip is IPv6.
+func isIPv6String(ip string) bool {
+	netIP := net.ParseIP(ip)
+	return netIP != nil && netIP.To4() == nil
 }

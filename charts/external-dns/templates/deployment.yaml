@@ -78,7 +78,6 @@ spec:
             {{- end }}
             - --policy={{ .Values.policy }}
             - --registry={{ .Values.registry }}
-            {{- if eq .Values.registry "txt" }}
             {{- if .Values.txtOwnerId }}
             - --txt-owner-id={{ .Values.txtOwnerId }}
             {{- end }}
@@ -88,6 +87,8 @@ spec:
             {{- if and (eq .Values.txtPrefix "") (ne .Values.txtSuffix "") }}
             - --txt-suffix={{ .Values.txtSuffix }}
             {{- end }}
+            {{- if .Values.namespaced }}
+            - --namespace={{ .Release.Namespace }}
             {{- end }}
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}

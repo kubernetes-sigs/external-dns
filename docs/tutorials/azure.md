@@ -50,7 +50,7 @@ The following fields are used:
 * `tenantId` (**required**) - run `az account show --query "tenantId"` or by selecting Azure Active Directory in the Azure Portal and checking the _Directory ID_ under Properties.
 * `subscriptionId` (**required**) - run `az account show --query "id"` or by selecting Subscriptions in the Azure Portal.
 * `resourceGroup` (**required**) is the Resource Group created in a previous step that contains the Azure DNS Zone.
-* `aadClientID` and `aaClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
+* `aadClientID` and `aadClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
 
@@ -356,7 +356,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.1
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service
         - --source=ingress
@@ -424,7 +424,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.1
+          image: registry.k8s.io/external-dns/external-dns:v0.13.5
           args:
             - --source=service
             - --source=ingress
@@ -495,7 +495,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.1
+          image: registry.k8s.io/external-dns/external-dns:v0.13.5
           args:
             - --source=service
             - --source=ingress
@@ -518,7 +518,7 @@ Create the deployment for ExternalDNS:
 $ kubectl create --namespace "default" --filename externaldns.yaml
 ```
 
-## Deploying an Nginx Service
+## Ingress Option: Expose an nginx service with an ingress
 
 Create a file called `nginx.yaml` with the following contents:
 
@@ -560,9 +560,8 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: nginx
-  annotations:
-    kubernetes.io/ingress.class: nginx
 spec:
+  ingressClassName: nginx
   rules:
     - host: server.example.com
       http:
@@ -586,6 +585,49 @@ $ kubectl create --namespace "default" --filename nginx.yaml
 
 Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.
 
+## Azure Load Balancer option: Expose an nginx service with a load balancer
+
+Create a file called `nginx.yaml` with the following contents:
+
+```yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - image: nginx
+          name: nginx
+          ports:
+          - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+annotations:
+  external-dns.alpha.kubernetes.io/hostname: server.example.com
+metadata:
+  name: nginx-svc
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: nginx
+  type: LoadBalancer
+```
+
+The annotation `external-dns.alpha.kubernetes.io/hostname` is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.
+
 ## Verifying Azure DNS records
 
 Run the following command to view the A records for your Azure DNS zone:
@@ -606,3 +648,9 @@ resource group:
 ```bash
 $ az group delete --name "MyDnsResourceGroup"
 ```
+
+## More tutorials
+
+A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE 
+
+![image](https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png)

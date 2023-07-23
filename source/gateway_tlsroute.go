@@ -32,17 +32,13 @@ func NewGatewayTLSRouteSource(clients ClientGenerator, config *Config) (Source, 
 	})
 }
 
-type gatewayTLSRoute struct{ route *v1alpha2.TLSRoute }
+type gatewayTLSRoute struct{ route v1alpha2.TLSRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayTLSRoute) Object() kubeObject           { return rt.route }
-func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
-func (rt *gatewayTLSRoute) Hostnames() []v1beta1.Hostname {
-	return v1b1Hostnames(rt.route.Spec.Hostnames)
-}
-func (rt *gatewayTLSRoute) Protocol() v1beta1.ProtocolType { return v1beta1.TLSProtocolType }
-func (rt *gatewayTLSRoute) RouteStatus() v1beta1.RouteStatus {
-	return v1b1RouteStatus(rt.route.Status.RouteStatus)
-}
+func (rt *gatewayTLSRoute) Object() kubeObject               { return &rt.route }
+func (rt *gatewayTLSRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
+func (rt *gatewayTLSRoute) Hostnames() []v1beta1.Hostname    { return rt.route.Spec.Hostnames }
+func (rt *gatewayTLSRoute) Protocol() v1beta1.ProtocolType   { return v1beta1.TLSProtocolType }
+func (rt *gatewayTLSRoute) RouteStatus() v1beta1.RouteStatus { return rt.route.Status.RouteStatus }
 
 type gatewayTLSRouteInformer struct {
 	informers_v1a2.TLSRouteInformer
@@ -55,7 +51,14 @@ func (inf gatewayTLSRouteInformer) List(namespace string, selector labels.Select
 	}
 	routes := make([]gatewayRoute, len(list))
 	for i, rt := range list {
-		routes[i] = &gatewayTLSRoute{rt}
+		// List results are supposed to be treated as read-only.
+		// We make a shallow copy since we're only interested in setting the TypeMeta.
+		clone := *rt
+		clone.TypeMeta = metav1.TypeMeta{
+			APIVersion: v1alpha2.GroupVersion.String(),
+			Kind:       "TLSRoute",
+		}
+		routes[i] = &gatewayTLSRoute{clone}
 	}
 	return routes, nil
 }

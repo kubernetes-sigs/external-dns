@@ -17,46 +17,31 @@ limitations under the License.
 package endpoint
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 )
 
 // DomainFilterInterface defines the interface to select matching domains for a specific provider or runtime
 type DomainFilterInterface interface {
 	Match(domain string) bool
-	IsConfigured() bool
 }
 
 type MatchAllDomainFilters []DomainFilterInterface
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
-	if !f.IsConfigured() {
-		return true
-	}
 	for _, filter := range f {
 		if filter == nil {
 			continue
 		}
-		if filter.IsConfigured() && !filter.Match(domain) {
+		if !filter.Match(domain) {
 			return false
 		}
 	}
 	return true
-}
-
-func (f MatchAllDomainFilters) IsConfigured() bool {
-	if f == nil {
-		return false
-	}
-	for _, filter := range f {
-		if filter == nil {
-			continue
-		}
-		if filter.IsConfigured() {
-			return true
-		}
-	}
-	return len(f) > 0
 }
 
 // DomainFilter holds a lists of valid domain names
@@ -69,6 +54,14 @@ type DomainFilter struct {
 	regex *regexp.Regexp
 	// regexExclusion defines a regular expression to exclude the domains matched
 	regexExclusion *regexp.Regexp
+}
+
+// domainFilterSerde is a helper type for serializing and deserializing DomainFilter.
+type domainFilterSerde struct {
+	Include      []string `json:"include,omitempty"`
+	Exclude      []string `json:"exclude,omitempty"`
+	RegexInclude string   `json:"regexInclude,omitempty"`
+	RegexExclude string   `json:"regexExclude,omitempty"`
 }
 
 // prepareFilters provides consistent trimming for filters/exclude params
@@ -177,4 +170,59 @@ func (df DomainFilter) IsConfigured() bool {
 		return true
 	}
 	return len(df.Filters) > 0 || len(df.exclude) > 0
+}
+
+func (df DomainFilter) MarshalJSON() ([]byte, error) {
+	if df.regex != nil || df.regexExclusion != nil {
+		var include, exclude string
+		if df.regex != nil {
+			include = df.regex.String()
+		}
+		if df.regexExclusion != nil {
+			exclude = df.regexExclusion.String()
+		}
+		return json.Marshal(domainFilterSerde{
+			RegexInclude: include,
+			RegexExclude: exclude,
+		})
+	}
+	sort.Strings(df.Filters)
+	sort.Strings(df.exclude)
+	return json.Marshal(domainFilterSerde{
+		Include: df.Filters,
+		Exclude: df.exclude,
+	})
+}
+
+func (df *DomainFilter) UnmarshalJSON(b []byte) error {
+	var deserialized domainFilterSerde
+	err := json.Unmarshal(b, &deserialized)
+	if err != nil {
+		return err
+	}
+
+	if deserialized.RegexInclude == "" && deserialized.RegexExclude == "" {
+		*df = NewDomainFilterWithExclusions(deserialized.Include, deserialized.Exclude)
+		return nil
+	}
+
+	if len(deserialized.Include) > 0 || len(deserialized.Exclude) > 0 {
+		return errors.New("cannot have both domain list and regex")
+	}
+
+	var include, exclude *regexp.Regexp
+	if deserialized.RegexInclude != "" {
+		include, err = regexp.Compile(deserialized.RegexInclude)
+		if err != nil {
+			return fmt.Errorf("invalid regexInclude: %w", err)
+		}
+	}
+	if deserialized.RegexExclude != "" {
+		exclude, err = regexp.Compile(deserialized.RegexExclude)
+		if err != nil {
+			return fmt.Errorf("invalid regexExclude: %w", err)
+		}
+	}
+	*df = NewRegexDomainFilter(include, exclude)
+	return nil
 }

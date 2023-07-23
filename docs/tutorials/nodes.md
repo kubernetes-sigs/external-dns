@@ -3,8 +3,9 @@
 This tutorial describes how to configure ExternalDNS to use the cluster nodes as source.
 Using nodes (`--source=node`) as source is possible to synchronize a DNS zone with the nodes of a cluster.
 
-The node source adds an `A` record per each node `externalIP` (if not found, node's `internalIP` is used).
-The TTL record can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
+The node source adds an `A` record per each node `externalIP` (if not found, any IPv4 `internalIP` is used instead).
+It also adds an `AAAA` record per each node IPv6 `internalIP`.
+The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
 
 ## Manifest (for cluster without RBAC enabled)
 
@@ -28,7 +29,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.1
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -99,7 +100,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.1
+        image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=node # will use nodes as source
         - --provider=aws

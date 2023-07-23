@@ -319,7 +319,7 @@ spec:
       serviceAccountName: external-dns
       containers:
         - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.13.1
+          image: registry.k8s.io/external-dns/external-dns:v0.13.5
           args:
             - --source=service
             - --source=ingress
@@ -447,7 +447,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: nginx-svc
+                name: nginx
                 port:
                   number: 80
 ```
