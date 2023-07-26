@@ -73,6 +73,9 @@ spec:
             {{- if .Values.triggerLoopOnEvent }}
             - --events
             {{- end }}
+            {{- if .Values.awsPreferCname }}
+            - --aws-prefer-cname
+            {{- end }}            
             {{- if .Values.watchNamespaces }}
             - --namespace={{ .Values.watchNamespaces | join "," }}
             {{- end }}
