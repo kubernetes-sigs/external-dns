@@ -86,8 +86,8 @@ test:
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
-IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
-VERSION       ?= $(shell git describe --tags --always --dirty)
+IMAGE         ?= 165463520094.dkr.ecr.ap-northeast-1.amazonaws.com/ops-spaas/external-dns
+VERSION       ?= v0.13.5-patch01
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 ARCHS          = amd64 arm64 arm/v7
@@ -163,7 +163,7 @@ build.docker: build.setup build.$(ARCH)
 		--tag $${image} .
 
 build.mini:
-	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
+	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
 
 clean:
 	@rm -rf build

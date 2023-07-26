@@ -201,6 +201,7 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 
 		log.Debugf("Endpoints generated from service: %s/%s: %v", svc.Namespace, svc.Name, svcEndpoints)
 		sc.setResourceLabel(svc, svcEndpoints)
+		sc.setDualstackLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
 
@@ -455,6 +456,16 @@ func (sc *serviceSource) filterByServiceType(services []*v1.Service) []*v1.Servi
 func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("service/%s/%s", service.Namespace, service.Name)
+	}
+}
+
+func (sc *serviceSource) setDualstackLabel(service *v1.Service, endpoints []*endpoint.Endpoint) {
+	val, ok := service.Annotations[ALBDualstackAnnotationKey]
+	if ok && val == ALBDualstackAnnotationValue {
+		log.Debugf("Adding dualstack label to service %s/%s.", service.Namespace, service.Name)
+		for _, ep := range endpoints {
+			ep.Labels[endpoint.DualstackLabelKey] = "true"
+		}
 	}
 }
 
