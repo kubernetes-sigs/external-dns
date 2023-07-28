@@ -75,7 +75,7 @@ func (n NS1DomainService) UpdateRecord(r *dns.Record) (*http.Response, error) {
 
 // GetZone wraps the Get method of the API's Zones service
 func (n NS1DomainService) GetZone(zone string) (*dns.Zone, *http.Response, error) {
-	return n.service.Zones.Get(zone)
+	return n.service.Zones.Get(zone, true)
 }
 
 // ListZones wraps the List method of the API's Zones service
