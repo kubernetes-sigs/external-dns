@@ -90,10 +90,15 @@ func NewRegexDomainFilter(regexDomainFilter *regexp.Regexp, regexDomainExclusion
 	return DomainFilter{regex: regexDomainFilter, regexExclusion: regexDomainExclusion}
 }
 
+// IsRegexFilterConfigured checks if regex filter is set
+func (df *DomainFilter) IsRegexFilterConfigured() bool {
+	return df.regex != nil && df.regex.String() != ""
+}
+
 // Match checks whether a domain can be found in the DomainFilter.
 // RegexFilter takes precedence over Filters
 func (df DomainFilter) Match(domain string) bool {
-	if df.regex != nil && df.regex.String() != "" || df.regexExclusion != nil && df.regexExclusion.String() != "" {
+	if df.IsRegexFilterConfigured() || df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return matchRegex(df.regex, df.regexExclusion, domain)
 	}
 
@@ -164,7 +169,7 @@ func (df DomainFilter) MatchParent(domain string) bool {
 
 // IsConfigured returns true if any inclusion or exclusion rules have been specified.
 func (df DomainFilter) IsConfigured() bool {
-	if df.regex != nil && df.regex.String() != "" {
+	if df.IsRegexFilterConfigured() {
 		return true
 	} else if df.regexExclusion != nil && df.regexExclusion.String() != "" {
 		return true
