@@ -4,7 +4,7 @@
 - [Go 1.20+](https://golang.org/dl/)
 - [Go modules](https://github.com/golang/go/wiki/Modules)
 - [golangci-lint](https://github.com/golangci/golangci-lint)
-- [Docker](https://docs.docker.com/install/)
+- [ko](https://ko.build/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl)
 
 Compile and run locally against a remote k8s cluster.
@@ -24,7 +24,7 @@ make cover-html
 
 Build container image.
 ```shell
-make build.docker
+make build.push IMAGE=your-registry/external-dns
 ```
 
 # Design

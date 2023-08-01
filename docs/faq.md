@@ -317,7 +317,7 @@ registry.k8s.io/external-dns/external-dns
 
 As tags, you use the external-dns release of choice(i.e. `v0.7.6`). A `latest` tag is not provided in the container registry.
 
-If you wish to build your own image, you can use the provided [Dockerfile](../Dockerfile) as a starting point.
+If you wish to build your own image, you can use the provided [.ko.yaml](../.ko.yaml) as a starting point.
 
 ### Which architectures are supported?
 

@@ -33,14 +33,5 @@ jobs:
       run: |
         go get -v -t -d ./...
 
-    - name: Test build on amd64
-      run: make build.image-amd64
-
-    - name: Clean
-      run: make clean
-
-    - name: Test build on arm64
-      run: make build.image-arm64
-
-    - name: Clean
-      run: make clean
+    - name: Test
+      run: make build.image/multiarch
