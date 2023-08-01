@@ -166,7 +166,8 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 func (c *PDNSAPIClient) PartitionZones(zones []pgo.Zone) (filteredZones []pgo.Zone, residualZones []pgo.Zone) {
 	if c.domainFilter.IsConfigured() {
 		for _, zone := range zones {
-			if c.domainFilter.Match(zone.Name) || c.domainFilter.MatchParent(zone.Name) {
+			isMatch := c.domainFilter.Match(zone.Name)
+			if isMatch || (!c.domainFilter.IsRegexFilterConfigured() && c.domainFilter.MatchParent(zone.Name)) {
 				filteredZones = append(filteredZones, zone)
 			} else {
 				residualZones = append(residualZones, zone)
