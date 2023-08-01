@@ -167,6 +167,7 @@ build.mini:
 
 clean:
 	@rm -rf build
+	@go clean -cache
 
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging
