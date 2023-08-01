@@ -47,7 +47,7 @@ endif
 .PHONY: go-lint
 
 golangci-lint:
-	@test -s $(go env GOPATH)/bin/golangci-lint || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
 
 # Run the golangci-lint tool
 go-lint: golangci-lint
