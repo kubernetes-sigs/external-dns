@@ -711,6 +711,13 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreate() {
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
+	newProvider := func(TLSConfig TLSConfig) error {
+		_, err := NewPDNSProvider(
+			context.Background(),
+			PDNSConfig{APIKey: "foo", TLSConfig: TLSConfig})
+		return err
+	}
+
 	_, err := NewPDNSProvider(
 		context.Background(),
 		PDNSConfig{
@@ -720,100 +727,40 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		})
 	assert.Nil(suite.T(), err, "Omitted TLS Config case should raise no error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled: false,
-			},
-		})
-	assert.Nil(suite.T(), err, "Disabled TLS Config should raise no error")
+	assert.Nil(suite.T(), newProvider(TLSConfig{}), "Disabled TLS Config should raise no error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled:            false,
-				CAFilePath:            "/path/to/ca.crt",
-				ClientCertFilePath:    "/path/to/cert.pem",
-				ClientCertKeyFilePath: "/path/to/cert-key.pem",
-			},
-		})
-	assert.Nil(suite.T(), err, "Disabled TLS Config with additional flags should raise no error")
+	assert.Nil(suite.T(), newProvider(TLSConfig{
+		TLSEnabled:            false,
+		CAFilePath:            "/path/to/ca.crt",
+		ClientCertFilePath:    "/path/to/cert.pem",
+		ClientCertKeyFilePath: "/path/to/cert-key.pem",
+	}), "Disabled TLS Config with additional flags should raise no error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled: true,
-			},
-		})
-	assert.Error(suite.T(), err, "Enabled TLS Config without --tls-ca should raise an error")
+	assert.Error(suite.T(), newProvider(TLSConfig{TLSEnabled: true}), "Enabled TLS Config without --tls-ca should raise an error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled: true,
-				CAFilePath: "../../internal/testresources/ca.pem",
-			},
-		})
-	assert.Nil(suite.T(), err, "Enabled TLS Config with --tls-ca should raise no error")
+	assert.Nil(suite.T(), newProvider(TLSConfig{
+		TLSEnabled: true,
+		CAFilePath: "../../internal/testresources/ca.pem",
+	}), "Enabled TLS Config with --tls-ca should raise no error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled:         true,
-				CAFilePath:         "../../internal/testresources/ca.pem",
-				ClientCertFilePath: "../../internal/testresources/client-cert.pem",
-			},
-		})
-	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert only should raise an error")
+	assert.Error(suite.T(), newProvider(TLSConfig{
+		TLSEnabled:         true,
+		CAFilePath:         "../../internal/testresources/ca.pem",
+		ClientCertFilePath: "../../internal/testresources/client-cert.pem",
+	}), "Enabled TLS Config with --tls-client-cert only should raise an error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled:            true,
-				CAFilePath:            "../../internal/testresources/ca.pem",
-				ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
-			},
-		})
-	assert.Error(suite.T(), err, "Enabled TLS Config with --tls-client-cert-key only should raise an error")
+	assert.Error(suite.T(), newProvider(TLSConfig{
+		TLSEnabled:            true,
+		CAFilePath:            "../../internal/testresources/ca.pem",
+		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
+	}), "Enabled TLS Config with --tls-client-cert-key only should raise an error")
 
-	_, err = NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-			TLSConfig: TLSConfig{
-				TLSEnabled:            true,
-				CAFilePath:            "../../internal/testresources/ca.pem",
-				ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
-				ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
-			},
-		})
-	assert.Nil(suite.T(), err, "Enabled TLS Config with all flags should raise no error")
+	assert.Nil(suite.T(), newProvider(TLSConfig{
+		TLSEnabled:            true,
+		CAFilePath:            "../../internal/testresources/ca.pem",
+		ClientCertFilePath:    "../../internal/testresources/client-cert.pem",
+		ClientCertKeyFilePath: "../../internal/testresources/client-cert-key.pem",
+	}), "Enabled TLS Config with all flags should raise no error")
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSRRSetToEndpoints() {
