@@ -718,15 +718,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSProviderCreateTLS() {
 		return err
 	}
 
-	_, err := NewPDNSProvider(
-		context.Background(),
-		PDNSConfig{
-			Server:       "http://localhost:8081",
-			APIKey:       "foo",
-			DomainFilter: endpoint.NewDomainFilter([]string{""}),
-		})
-	assert.Nil(suite.T(), err, "Omitted TLS Config case should raise no error")
-
 	assert.Nil(suite.T(), newProvider(TLSConfig{}), "Disabled TLS Config should raise no error")
 
 	assert.Nil(suite.T(), newProvider(TLSConfig{
