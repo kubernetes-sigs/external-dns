@@ -46,8 +46,11 @@ endif
 
 .PHONY: go-lint
 
+golangci-lint:
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
+
 # Run the golangci-lint tool
-go-lint:
+go-lint: golangci-lint
 	golangci-lint run --timeout=15m ./...
 
 .PHONY: licensecheck
@@ -167,6 +170,7 @@ build.mini:
 
 clean:
 	@rm -rf build
+	@go clean -cache
 
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging
