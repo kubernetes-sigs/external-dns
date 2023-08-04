@@ -44,9 +44,3 @@ jobs:
 
     - name: Clean
       run: make clean
-
-    - name: Test build on armv7
-      run: make build.image-arm/v7
-
-    - name: Clean
-      run: make clean
