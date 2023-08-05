@@ -441,7 +441,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// Create
 	for _, change := range changes.Create {
-		log.Debugf("CREATE: %+v", change)
+		log.Infof("CREATE: %+v", change)
 	}
 	// We only attempt to mutate records if there are any to mutate.  A
 	// call to mutate records with an empty list of endpoints is still a
@@ -465,7 +465,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, change := range changes.UpdateNew {
-		log.Debugf("UPDATE-NEW: %+v", change)
+		log.Infof("UPDATE-NEW: %+v", change)
 	}
 	if len(changes.UpdateNew) > 0 {
 		err := p.mutateRecords(changes.UpdateNew, PdnsReplace)
@@ -476,7 +476,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// Delete
 	for _, change := range changes.Delete {
-		log.Debugf("DELETE: %+v", change)
+		log.Infof("DELETE: %+v", change)
 	}
 	if len(changes.Delete) > 0 {
 		err := p.mutateRecords(changes.Delete, PdnsDelete)
@@ -484,6 +484,6 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			return err
 		}
 	}
-	log.Debugf("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }
