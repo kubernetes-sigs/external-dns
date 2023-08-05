@@ -108,6 +108,9 @@ type Config struct {
 	BluecatSkipTLSVerify               bool
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
+	ConfigMapNamespace                 string
+	ConfigMapName                      string
+	ConfigMapKey                       string
 	CoreDNSPrefix                      string
 	RcodezeroTXTEncrypt                bool
 	AkamaiServiceConsumerDomain        string
@@ -264,6 +267,9 @@ var defaultConfig = &Config{
 	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
+	ConfigMapNamespace:          "",
+	ConfigMapName:               "",
+	ConfigMapKey:                "",
 	CoreDNSPrefix:               "/skydns/",
 	RcodezeroTXTEncrypt:         false,
 	AkamaiServiceConsumerDomain: "",
@@ -484,6 +490,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	app.Flag("cloudflare-proxied", "When using the Cloudflare provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.CloudflareProxied)
 	app.Flag("cloudflare-dns-records-per-page", "When using the Cloudflare provider, specify how many DNS records listed per page, max possible 5,000 (default: 100)").Default(strconv.Itoa(defaultConfig.CloudflareDNSRecordsPerPage)).IntVar(&cfg.CloudflareDNSRecordsPerPage)
+	app.Flag("configmap-namespace", "When using the ConfigMap provider, specify the ConfigMap namespace (required when --provider=configmap)").Default(defaultConfig.ConfigMapNamespace).StringVar(&cfg.ConfigMapNamespace)
+	app.Flag("configmap-name", "When using the ConfigMap provider, specify the ConfigMap name (required when --provider=configmap)").Default(defaultConfig.ConfigMapName).StringVar(&cfg.ConfigMapName)
+	app.Flag("configmap-key", "When using the ConfigMap provider, specify the ConfigMap key (required when --provider=configmap)").Default(defaultConfig.ConfigMapKey).StringVar(&cfg.ConfigMapKey)
 	app.Flag("coredns-prefix", "When using the CoreDNS provider, specify the prefix name").Default(defaultConfig.CoreDNSPrefix).StringVar(&cfg.CoreDNSPrefix)
 	app.Flag("akamai-serviceconsumerdomain", "When using the Akamai provider, specify the base URL (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiServiceConsumerDomain).StringVar(&cfg.AkamaiServiceConsumerDomain)
 	app.Flag("akamai-client-token", "When using the Akamai provider, specify the client token (required when --provider=akamai and edgerc-path not specified)").Default(defaultConfig.AkamaiClientToken).StringVar(&cfg.AkamaiClientToken)

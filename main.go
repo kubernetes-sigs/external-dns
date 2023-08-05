@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/bluecat"
 	"sigs.k8s.io/external-dns/provider/civo"
 	"sigs.k8s.io/external-dns/provider/cloudflare"
+	"sigs.k8s.io/external-dns/provider/configmap"
 	"sigs.k8s.io/external-dns/provider/coredns"
 	"sigs.k8s.io/external-dns/provider/designate"
 	"sigs.k8s.io/external-dns/provider/digitalocean"
@@ -150,7 +151,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+	sourceGenerator := &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -160,7 +161,8 @@ func main() {
 			}
 			return cfg.RequestTimeout
 		}(),
-	}, cfg.Sources, sourceCfg)
+	}
+	sources, err := source.ByNames(ctx, sourceGenerator, cfg.Sources, sourceCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -254,6 +256,8 @@ func main() {
 		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
 	case "cloudflare":
 		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
+	case "configmap":
+		p, err = configmap.NewConfigMapProvider(sourceGenerator, domainFilter, cfg.ConfigMapNamespace, cfg.ConfigMapName, cfg.ConfigMapKey, cfg.DryRun)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
