@@ -77,7 +77,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 	}, nil
 }
 
-func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
