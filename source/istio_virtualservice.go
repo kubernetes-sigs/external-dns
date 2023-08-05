@@ -42,6 +42,10 @@ import (
 // IstioMeshGateway is the built in gateway for all sidecars
 const IstioMeshGateway = "mesh"
 
+// IstioIngressBackedGateway is used to determine if the gateway is implemented by an Ingress object
+// instead of a standard LoadBalancer service type
+const IstioIngressBackedGateway = "external-dns.alpha.kubernetes.io/istio-ingress-backed-gateway"
+
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
@@ -302,7 +306,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(virtualService, gateway, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gateway)
+		tgs, err := sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
 			return targets, err
 		}
@@ -431,9 +435,53 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 	return
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func parseIngress(ingress string) (namespace, name string, err error) {
+	parts := strings.Split(ingress, "/")
+	if len(parts) == 2 {
+		namespace, name = parts[0], parts[1]
+	} else if len(parts) == 1 {
+		name = parts[0]
+	} else {
+		err = fmt.Errorf("invalid ingress name (name or namespace/name) found '%v'", ingress)
+	}
+
+	return
+}
+
+func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+	namespace, name, err := parseIngress(ingressStr)
+	if err != nil {
+		log.Debugf("Failed parsing ingressStr %s of Gateway %s/%s", ingressStr, gateway.Namespace, gateway.Name)
+		return nil, err
+	}
+	if namespace == "" {
+		namespace = gateway.Namespace
+	}
+
+	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	for _, lb := range ingress.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			targets = append(targets, lb.IP)
+		} else if lb.Hostname != "" {
+			targets = append(targets, lb.Hostname)
+		}
+	}
+	return
+}
+
+func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
 	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
+		return
+	}
+
+	ingressStr, found := gateway.Annotations[IstioIngressBackedGateway]
+	if found && ingressStr != "" {
+		targets, err = sc.targetsFromIngress(ctx, ingressStr, gateway)
 		return
 	}
 
