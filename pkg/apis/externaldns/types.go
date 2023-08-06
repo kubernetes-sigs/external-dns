@@ -150,7 +150,7 @@ type Config struct {
 	TXTPrefix                          string
 	TXTSuffix                          string
 	TXTEncryptEnabled                  bool
-	TXTEncryptAESKey                   string
+	TXTEncryptAESKey                   string `secure:"yes"`
 	Interval                           time.Duration
 	MinEventSyncInterval               time.Duration
 	Once                               bool
