@@ -284,7 +284,7 @@ metadata:
   name: httpbin-gateway
   namespace: istio-system
   annotations:
-    "external-dns.alpha.kubernetes.io/istio-ingress-backed-gateway": "$ingressNamespace/$ingressName"
+    "external-dns.alpha.kubernetes.io/ingress": "$ingressNamespace/$ingressName"
 spec:
   selector:
     istio: ingressgateway # use Istio default gateway implementation
