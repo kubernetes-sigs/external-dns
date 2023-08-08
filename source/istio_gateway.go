@@ -38,6 +38,10 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
+// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
+// instead of a standard LoadBalancer service type
+const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
+
 // gatewaySource is an implementation of Source for Istio Gateway objects.
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
@@ -230,6 +234,19 @@ func (sc *gatewaySource) setResourceLabel(gateway *networkingv1alpha3.Gateway, e
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 	}
+}
+
+func parseIngress(ingress string) (namespace, name string, err error) {
+	parts := strings.Split(ingress, "/")
+	if len(parts) == 2 {
+		namespace, name = parts[0], parts[1]
+	} else if len(parts) == 1 {
+		name = parts[0]
+	} else {
+		err = fmt.Errorf("invalid ingress name (name or namespace/name) found '%v'", ingress)
+	}
+
+	return
 }
 
 func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {

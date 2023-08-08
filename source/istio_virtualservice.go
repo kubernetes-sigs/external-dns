@@ -42,10 +42,6 @@ import (
 // IstioMeshGateway is the built in gateway for all sidecars
 const IstioMeshGateway = "mesh"
 
-// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
-// instead of a standard LoadBalancer service type
-const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
-
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
@@ -430,19 +426,6 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 		name = parts[0]
 	} else {
 		err = fmt.Errorf("invalid gateway name (name or namespace/name) found '%v'", gateway)
-	}
-
-	return
-}
-
-func parseIngress(ingress string) (namespace, name string, err error) {
-	parts := strings.Split(ingress, "/")
-	if len(parts) == 2 {
-		namespace, name = parts[0], parts[1]
-	} else if len(parts) == 1 {
-		name = parts[0]
-	} else {
-		err = fmt.Errorf("invalid ingress name (name or namespace/name) found '%v'", ingress)
 	}
 
 	return
