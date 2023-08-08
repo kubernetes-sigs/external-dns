@@ -42,9 +42,9 @@ import (
 // IstioMeshGateway is the built in gateway for all sidecars
 const IstioMeshGateway = "mesh"
 
-// IstioIngressBackedGateway is used to determine if the gateway is implemented by an Ingress object
+// IstioGatewayIngressSource is the annotation used to determine if the gateway is implemented by an Ingress object
 // instead of a standard LoadBalancer service type
-const IstioIngressBackedGateway = "external-dns.alpha.kubernetes.io/ingress"
+const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
 
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
 // The implementation uses the spec.hosts values for the hostnames.
@@ -479,7 +479,7 @@ func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway 
 		return
 	}
 
-	ingressStr, found := gateway.Annotations[IstioIngressBackedGateway]
+	ingressStr, found := gateway.Annotations[IstioGatewayIngressSource]
 	if found && ingressStr != "" {
 		targets, err = sc.targetsFromIngress(ctx, ingressStr, gateway)
 		return

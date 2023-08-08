@@ -263,7 +263,7 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 		return
 	}
 
-	ingressStr, found := gateway.Annotations[IstioIngressBackedGateway]
+	ingressStr, found := gateway.Annotations[IstioGatewayIngressSource]
 	if found && ingressStr != "" {
 		targets, err = sc.targetsFromIngress(ctx, ingressStr, gateway)
 		return
