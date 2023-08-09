@@ -243,7 +243,7 @@ func parseIngress(ingress string) (namespace, name string, err error) {
 	} else if len(parts) == 1 {
 		name = parts[0]
 	} else {
-		err = fmt.Errorf("invalid ingress name (name or namespace/name) found '%v'", ingress)
+		err = fmt.Errorf("invalid ingress name (name or namespace/name) found %q", ingress)
 	}
 
 	return
@@ -252,8 +252,7 @@ func parseIngress(ingress string) (namespace, name string, err error) {
 func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
 	namespace, name, err := parseIngress(ingressStr)
 	if err != nil {
-		log.Debugf("Failed parsing ingressStr %s of Gateway %s/%s", ingressStr, gateway.Namespace, gateway.Name)
-		return nil, err
+		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
 	}
 	if namespace == "" {
 		namespace = gateway.Namespace
@@ -280,8 +279,8 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 		return
 	}
 
-	ingressStr, found := gateway.Annotations[IstioGatewayIngressSource]
-	if found && ingressStr != "" {
+	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	if ok && ingressStr != "" {
 		targets, err = sc.targetsFromIngress(ctx, ingressStr, gateway)
 		return
 	}
