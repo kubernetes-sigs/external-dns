@@ -180,15 +180,15 @@ $ kubectl create -f nginx.yaml
 Depending where you run your service it can take a little while for your cloud provider to create an external IP for the service.
 
 Once the service has an external IP assigned, ExternalDNS will notice the new service IP address and synchronize
-the BizflyCloud DNS records.
+the Bizfly Cloud DNS records.
 
-## Verifying BizflyCloud DNS records
+## Verifying Bizfly Cloud DNS records
 
-Select your zone at [BizflyCloud dashboard](https://beta.manage.bizflycloud.vn/dns/) to view the records for your BizflyCloud DNS zone.
+Select your zone at [BizflyC loud dashboard](https://beta.manage.bizflycloud.vn/dns) to view the records for your Bizfly Cloud DNS zone.
 
 ## Cleanup
 
-Now that we have verified that ExternalDNS will automatically manage BizflyCloud DNS records, we can delete the tutorial's example:
+Now that we have verified that ExternalDNS will automatically manage Bizfly Cloud DNS records, we can delete the tutorial's example:
 
 ```
 $ kubectl delete -f nginx.yaml
