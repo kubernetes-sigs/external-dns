@@ -62,6 +62,8 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 * [Plural](https://www.plural.sh/)
 * [Pi-hole](https://pi-hole.net/)
+* [Bizfly Cloud](https://beta.manage.bizflycloud.vn/dns)
+
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones. We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -123,6 +125,7 @@ The following table clarifies the current status of the providers according to t
 | TencentCloud | Alpha | @Hyzhou |
 | Plural | Alpha | @michaeljguarino |
 | Pi-hole | Alpha | @tinyzimmer |
+| Bizfly Cloud | Alpha | @huyduong2792 |
 
 ## Kubernetes version compatibility
 
@@ -196,6 +199,7 @@ The following tutorials are provided:
 * [TencentCloud](docs/tutorials/tencentcloud.md)
 * [Plural](docs/tutorials/plural.md)
 * [Pi-hole](docs/tutorials/pihole.md)
+* [Bizfly Cloud](docs/tutorials/bizflycloud.md)
 
 ### Running Locally
 
