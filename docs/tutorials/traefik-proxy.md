@@ -108,6 +108,7 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`application.example.com`)
       kind: Rule
