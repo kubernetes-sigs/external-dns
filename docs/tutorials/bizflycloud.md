@@ -8,9 +8,9 @@ Make sure to use **>0.13.5** version of ExternalDNS for this tutorial.
 
 >BizflyCloud's API exposes the entire Bizfly Cloud infrastructure via a standardized programmatic interface. Using BizflyCloud's API, you can do just about anything you can do on bizflycloud.com via the customer dashboard.
 
->The BizflyCloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with BizflyCloud, you can create your credentials from, found here: [Go to My account](https://beta.manage.bizflycloud.vn/account/configuration/credential).
+>The BizflyCloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with BizflyCloud, you can create your credentials from [here](https://beta.manage.bizflycloud.vn/account/configuration/credential).
 
-API Token will be preferred for authentication if `BFC_APP_CREDENTIAL_ID` and `BFC_APP_CREDENTIAL_SECRET` environment variable is set.
+API Token will authentication if `BFC_APP_CREDENTIAL_ID` and `BFC_APP_CREDENTIAL_SECRET` environment variable is set.
 
 If you would like to further restrict the API permissions to a specific zone (or zones), you also need to use the `--zone-id-filter` so that the underlying API requests only access the zones that you explicitly specify, as opposed to accessing all zones.
 
@@ -42,8 +42,8 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service # ingress is also possible
-        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --zone-id-filter=1ef149d0-cefa-4477-9161-0e1dff34dc10 # (optional) limit to a specific zone.
+        - --domain-filter=example.com # (optional) limit to only example.com domains
+        - --zone-id-filter=1ef149d0-cefa-4477-9161-0e1dff34dc10 # (optional) limit to a specific zone
         - --provider=bizflycloud
         - --bizflycloud-api-page-size=1000 # (optional) configure how many DNS records to fetch per request
         env:
@@ -110,8 +110,8 @@ spec:
         image: registry.k8s.io/external-dns/external-dns:v0.13.5
         args:
         - --source=service # ingress is also possible
-        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --zone-id-filter=1ef149d0-cefa-4477-9161-0e1dff34dc10 # (optional) limit to a specific zone.
+        - --domain-filter=example.com # (optional) limit to only example.com domains
+        - --zone-id-filter=1ef149d0-cefa-4477-9161-0e1dff34dc10 # (optional) limit to a specific zone
         - --provider=bizflycloud
         - --bizflycloud-api-page-size=1000 # (optional) configure how many DNS records to fetch per request
         env:
