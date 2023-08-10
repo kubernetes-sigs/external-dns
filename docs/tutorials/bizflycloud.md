@@ -6,9 +6,7 @@ Make sure to use **>0.13.5** version of ExternalDNS for this tutorial.
 
 ## Creating Bizfly Cloud Credentials
 
->BizflyCloud's API exposes the entire Bizfly Cloud infrastructure via a standardized programmatic interface. Using BizflyCloud's API, you can do just about anything you can do on bizflycloud.com via the customer dashboard.
-
->The BizflyCloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with BizflyCloud, you can create your credentials from [here](https://beta.manage.bizflycloud.vn/account/configuration/credential).
+>The Bizfly Cloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Bizfly Cloud, you can create your credentials from [here](https://beta.manage.bizflycloud.vn/account/configuration/credential).
 
 API Token will authentication if `BFC_APP_CREDENTIAL_ID` and `BFC_APP_CREDENTIAL_SECRET` environment variable is set.
 
@@ -162,7 +160,7 @@ spec:
       targetPort: 80
 ```
 
-Note the annotation on the service; use the same hostname as the BizflyCloud DNS zone created above. The annotation may also be a subdomain
+Note the annotation on the service; use the same hostname as the Bizfly Cloud DNS zone created above. The annotation may also be a subdomain
 of the DNS zone (e.g. 'www.example.com').
 
 By setting the TTL annotation on the service, you have to pass a valid TTL, which must be 5 or above.
