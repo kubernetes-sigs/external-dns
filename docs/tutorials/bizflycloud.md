@@ -6,7 +6,7 @@ Make sure to use **>0.13.5** version of ExternalDNS for this tutorial.
 
 ## Creating Bizfly Cloud Credentials
 
->The Bizfly Cloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Bizfly Cloud, you can create your credentials from [here](https://beta.manage.bizflycloud.vn/account/configuration/credential).
+>The Bizfly Cloud API is a RESTful API based on HTTPS requests and JSON responses. If you are registered with Bizfly Cloud, you can create your credentials from [here](https://manage.bizflycloud.vn/account/configuration/credential).
 
 API Token will authentication if `BFC_APP_CREDENTIAL_ID` and `BFC_APP_CREDENTIAL_SECRET` environment variable is set.
 
@@ -182,7 +182,7 @@ the Bizfly Cloud DNS records.
 
 ## Verifying Bizfly Cloud DNS records
 
-Select your zone at [BizflyC loud dashboard](https://beta.manage.bizflycloud.vn/dns) to view the records for your Bizfly Cloud DNS zone.
+Select your zone at [Bizfly Cloud dashboard](https://manage.bizflycloud.vn/dns) to view the records for your Bizfly Cloud DNS zone.
 
 ## Cleanup
 
