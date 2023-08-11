@@ -248,11 +248,6 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	})
 }
 
-// PropertyValuesEqual compares two attribute values for equality.
-func (im *DynamoDBRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return im.provider.PropertyValuesEqual(name, previous, current)
-}
-
 // AdjustEndpoints modifies the endpoints as needed by the specific provider.
 func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.provider.AdjustEndpoints(endpoints)

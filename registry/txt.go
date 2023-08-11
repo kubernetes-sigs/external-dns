@@ -297,11 +297,6 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	return im.provider.ApplyChanges(ctx, filteredChanges)
 }
 
-// PropertyValuesEqual compares two attribute values for equality
-func (im *TXTRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return im.provider.PropertyValuesEqual(name, previous, current)
-}
-
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return im.provider.AdjustEndpoints(endpoints)

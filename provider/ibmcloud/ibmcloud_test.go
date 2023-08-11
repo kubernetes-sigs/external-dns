@@ -277,7 +277,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 	p := newTestIBMCloudProvider(true)
 
 	changes := plan.Changes{
-		Create: []*endpoint.Endpoint{
+		Create: p.AdjustEndpoints([]*endpoint.Endpoint{
 			{
 				DNSName:    "newA.example.com",
 				RecordType: "A",
@@ -302,7 +302,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 				RecordTTL:  240,
 				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 			},
-		},
+		}),
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName:    "test.example.com",
@@ -311,14 +311,14 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 		},
-		UpdateNew: []*endpoint.Endpoint{
+		UpdateNew: p.AdjustEndpoints([]*endpoint.Endpoint{
 			{
 				DNSName:    "test.example.com",
 				RecordType: "A",
 				RecordTTL:  180,
 				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 			},
-		},
+		}),
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "test.example.com",
@@ -347,7 +347,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  "ibmcloud-proxied",
-					Value: "true",
+					Value: "1",
 				},
 			},
 		},
@@ -357,6 +357,8 @@ func TestAdjustEndpoints(t *testing.T) {
 
 	assert.Equal(t, endpoint.TTL(0), ep[0].RecordTTL)
 	assert.Equal(t, "test.example.com", ep[0].DNSName)
+	proxied, _ := ep[0].GetProviderSpecificProperty("ibmcloud-proxied")
+	assert.Equal(t, "true", proxied)
 }
 
 func TestPrivateZone_withFilterID(t *testing.T) {
