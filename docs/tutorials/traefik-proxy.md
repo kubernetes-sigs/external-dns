@@ -94,3 +94,47 @@ spec:
         - --registry=txt
         - --txt-owner-id=my-identifier
 ```
+
+## Deploying a Traefik IngressRoute
+Create a IngressRoute file called 'traefik-ingress.yaml' with the following contents:
+```yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingress
+  annotations:
+    external-dns.alpha.kubernetes.io/target: traefik.example.com
+    kubernetes.io/ingress.class: traefik
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`application.example.com`)
+      kind: Rule
+      services:
+        - name: service
+          namespace: namespace
+          port: port
+```
+
+Note the annotation on the IngressRoute (`external-dns.alpha.kubernetes.io/target`); use the same hostname as the traefik DNS.
+
+ExternalDNS uses this annotation to determine what services should be registered with DNS.
+
+Create the IngressRoute:
+
+```
+$ kubectl create -f traefik-ingress.yaml
+```
+
+Depending where you run your IngressRoute it can take a little while for ExternalDNS synchronize the DNS record.
+
+## Cleanup
+
+Now that we have verified that ExternalDNS will automatically manage Traefik DNS records, we can delete the tutorial's example:
+
+```
+$ kubectl delete -f traefik-ingress.yaml
+$ kubectl delete -f externaldns.yaml
+```

@@ -5,7 +5,7 @@ hide:
 ---
 
 <p align="center">
-	<img src="img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
+	<img src="docs/img/external-dns.png" width="40%" align="center" alt="ExternalDNS">
 </p>
 
 # ExternalDNS

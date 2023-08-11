@@ -37,9 +37,6 @@ import (
 )
 
 const (
-	// maximum size of a UDP transport message in DNS protocol
-	udpMaxMsgSize = 512
-
 	// maximum time DNS client can be off from server for an update to succeed
 	clockSkew = 300
 )
@@ -389,7 +386,6 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	log.Debugf("SendMessage")
 
 	c := new(dns.Client)
-	c.SingleInflight = true
 
 	if !r.insecure {
 		if r.gssTsig {
@@ -409,9 +405,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 		}
 	}
 
-	if msg.Len() > udpMaxMsgSize {
-		c.Net = "tcp"
-	}
+	c.Net = "tcp"
 
 	resp, _, err := c.Exchange(msg, r.nameserver)
 	if err != nil {

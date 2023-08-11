@@ -13,6 +13,12 @@ updates:
       dev-dependencies:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "github.com/openshift/api"
+      - dependency-name: "github.com/openshift/client-go"
+      # miss tag on v1.19.0 in 2019
+      # See https://pkg.go.dev/github.com/exoscale/egoscale?tab=versions
+      - dependency-name: "github.com/exoscale/egoscale"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -20,7 +26,7 @@ updates:
     groups:
       dev-dependencies:
         patterns:
-          - "*" 
+          - "*"
   - package-ecosystem: "docker" # Keep Docker dependencies up to date
     directory: "/"
     schedule:

@@ -27,7 +27,7 @@ COPY . .
 
 FROM alpine:3.18
 
-RUN apk update && apk add "libcrypto3>=3.0.8-r4" "libssl3>=3.0.8-r4" && rm -rf /var/cache/apt/*
+RUN apk update && apk add "libcrypto3>=3.1.1-r0" "libssl3>=3.1.1-r0" && rm -rf /var/cache/apk/*
 
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /sigs.k8s.io/external-dns/build/external-dns /bin/external-dns

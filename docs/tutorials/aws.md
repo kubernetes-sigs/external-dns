@@ -29,7 +29,8 @@ Hosted Zone IDs.
       "Effect": "Allow",
       "Action": [
         "route53:ListHostedZones",
-        "route53:ListResourceRecordSets"
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
       ],
       "Resource": [
         "*"

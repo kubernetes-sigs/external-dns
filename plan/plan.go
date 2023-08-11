@@ -37,8 +37,6 @@ type Plan struct {
 	Current []*endpoint.Endpoint
 	// List of desired records
 	Desired []*endpoint.Endpoint
-	// List of missing records to be created, use for the migrations (e.g. old-new TXT format)
-	Missing []*endpoint.Endpoint
 	// Policies under which the desired changes are calculated
 	Policies []Policy
 	// List of changes necessary to move towards desired state
@@ -175,11 +173,6 @@ func (p *Plan) Calculate() *Plan {
 	}
 	for _, pol := range p.Policies {
 		changes = pol.Apply(changes)
-	}
-
-	// Handle the migration of the TXT records created before the new format (introduced in v0.12.0)
-	if len(p.Missing) > 0 {
-		changes.Create = append(changes.Create, filterRecordsForPlan(p.Missing, p.DomainFilter, append(p.ManagedRecords, endpoint.RecordTypeTXT))...)
 	}
 
 	plan := &Plan{

@@ -47,11 +47,6 @@ rules:
     resources: ["httpproxies"]
     verbs: ["get","watch","list"]
 {{- end }}
-{{- if has "contour-ingressroute" .Values.sources }}
-  - apiGroups: ["contour.heptio.com"]
-    resources: ["ingressroutes"]
-    verbs: ["get","watch","list"]
-{{- end }}
 {{- if has "crd" .Values.sources }}
   - apiGroups: ["externaldns.k8s.io"]
     resources: ["dnsendpoints"]
@@ -103,6 +98,11 @@ rules:
 {{- if has "kong-tcpingress" .Values.sources }}
   - apiGroups: ["configuration.konghq.com"]
     resources: ["tcpingresses"]
+    verbs: ["get","watch","list"]
+{{- end }}
+{{- if has "traefik-proxy" .Values.sources }}
+  - apiGroups: ["traefik.containo.us", "traefik.io"]
+    resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "openshift-route" .Values.sources }}

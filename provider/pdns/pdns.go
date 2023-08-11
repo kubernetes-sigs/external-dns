@@ -258,6 +258,7 @@ func NewPDNSProvider(ctx context.Context, config PDNSConfig) (*PDNSProvider, err
 func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpoint.Endpoint, _ error) {
 	endpoints = []*endpoint.Endpoint{}
 	targets := []string{}
+	rrType_ := rr.Type_
 
 	for _, record := range rr.Records {
 		// If a record is "Disabled", it's not supposed to be "visible"
@@ -265,8 +266,10 @@ func (p *PDNSProvider) convertRRSetToEndpoints(rr pgo.RrSet) (endpoints []*endpo
 			targets = append(targets, record.Content)
 		}
 	}
-
-	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rr.Type_, endpoint.TTL(rr.Ttl), targets...))
+	if rr.Type_ == "ALIAS" {
+		rrType_ = "CNAME"
+	}
+	endpoints = append(endpoints, endpoint.NewEndpointWithTTL(rr.Name, rrType_, endpoint.TTL(rr.Ttl), targets...))
 	return endpoints, nil
 }
 
@@ -311,15 +314,19 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// per (ep.DNSName, ep.RecordType) tuple, which holds true for
 				// external-dns v5.0.0-alpha onwards
 				records := []pgo.Record{}
+				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
-					if ep.RecordType == "CNAME" {
+					if ep.RecordType == "CNAME" || ep.RecordType == "ALIAS" {
 						t = provider.EnsureTrailingDot(t)
+						if t != zone.Name && !strings.HasSuffix(t, "."+zone.Name) {
+							RecordType_ = "ALIAS"
+						}
 					}
 					records = append(records, pgo.Record{Content: t})
 				}
 				rrset := pgo.RrSet{
 					Name:       dnsname,
-					Type_:      ep.RecordType,
+					Type_:      RecordType_,
 					Records:    records,
 					Changetype: string(changetype),
 				}
@@ -434,7 +441,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// Create
 	for _, change := range changes.Create {
-		log.Debugf("CREATE: %+v", change)
+		log.Infof("CREATE: %+v", change)
 	}
 	// We only attempt to mutate records if there are any to mutate.  A
 	// call to mutate records with an empty list of endpoints is still a
@@ -458,7 +465,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	}
 
 	for _, change := range changes.UpdateNew {
-		log.Debugf("UPDATE-NEW: %+v", change)
+		log.Infof("UPDATE-NEW: %+v", change)
 	}
 	if len(changes.UpdateNew) > 0 {
 		err := p.mutateRecords(changes.UpdateNew, PdnsReplace)
@@ -469,7 +476,7 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// Delete
 	for _, change := range changes.Delete {
-		log.Debugf("DELETE: %+v", change)
+		log.Infof("DELETE: %+v", change)
 	}
 	if len(changes.Delete) > 0 {
 		err := p.mutateRecords(changes.Delete, PdnsDelete)
@@ -477,6 +484,6 @@ func (p *PDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			return err
 		}
 	}
-	log.Debugf("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
+	log.Infof("Changes pushed out to PowerDNS in %s\n", time.Since(startTime))
 	return nil
 }

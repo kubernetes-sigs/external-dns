@@ -31,6 +31,8 @@ rbac:
   create: true
   additionalPermissions: []
 
+initContainers: []
+
 # Annotations to add to the Deployment
 deploymentAnnotations: {}
 
@@ -162,9 +164,15 @@ sources:
 
 policy: upsert-only
 
+# Specifies the registry for storing ownership and labels.
+# Valid values are "aws-sd", "noop", "dynamodb", and "txt".
 registry: txt
+# When using a registry other than "noop", specifies a name that
+# uniquely identifies this instance of external-dns.
 txtOwnerId: ""
+# Specifies a prefix for the domain names of TXT records created by the "txt" registry. Optional. Mutually exclusive with `txtSuffix`.
 txtPrefix: ""
+# Specifies a suffix for the domain names of TXT records created by the "txt" registry. Optional. Mutually exclusive with `txtPrefix`.
 txtSuffix: ""
 
 domainFilters: []

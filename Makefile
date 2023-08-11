@@ -46,8 +46,11 @@ endif
 
 .PHONY: go-lint
 
+golangci-lint:
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
+
 # Run the golangci-lint tool
-go-lint:
+go-lint: golangci-lint
 	golangci-lint run --timeout=15m ./...
 
 .PHONY: licensecheck
@@ -87,7 +90,7 @@ BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
-VERSION       ?= $(shell git describe --tags --always --dirty)
+VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
 ARCHS          = amd64 arm64 arm/v7
@@ -167,6 +170,7 @@ build.mini:
 
 clean:
 	@rm -rf build
+	@go clean -cache
 
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging

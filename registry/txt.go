@@ -19,7 +19,6 @@ package registry
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -30,7 +29,16 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-const recordTemplate = "%{record_type}"
+const (
+	recordTemplate              = "%{record_type}"
+	providerSpecificForceUpdate = "txt/force-update"
+)
+
+type endpointKey struct {
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
+}
 
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
@@ -50,15 +58,10 @@ type TXTRegistry struct {
 
 	managedRecordTypes []string
 
-	// missingTXTRecords stores TXT records which are missing after the migration to the new format
-	missingTXTRecords []*endpoint.Endpoint
-
 	// encrypt text records
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 }
-
-const keySuffixAAAA = ":AAAA"
 
 // NewTXTRegistry returns new TXTRegistry object
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
@@ -96,7 +99,7 @@ func getSupportedTypes() []string {
 	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}
 }
 
-func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
@@ -117,9 +120,8 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 	}
 
 	endpoints := []*endpoint.Endpoint{}
-	missingEndpoints := []*endpoint.Endpoint{}
 
-	labelMap := map[string]endpoint.Labels{}
+	labelMap := map[endpointKey]endpoint.Labels{}
 	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
@@ -139,10 +141,12 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		if err != nil {
 			return nil, err
 		}
-		endpointName, isAAAA := im.mapper.toEndpointName(record.DNSName)
-		key := fmt.Sprintf("%s::%s", endpointName, record.SetIdentifier)
-		if isAAAA {
-			key += keySuffixAAAA
+
+		endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
+		key := endpointKey{
+			DNSName:       endpointName,
+			RecordType:    recordType,
+			SetIdentifier: record.SetIdentifier,
 		}
 		labelMap[key] = labels
 		txtRecordsMap[record.DNSName] = struct{}{}
@@ -158,11 +162,19 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			dnsNameSplit[0] = im.wildcardReplacement
 		}
 		dnsName := strings.Join(dnsNameSplit, ".")
-		key := fmt.Sprintf("%s::%s", dnsName, ep.SetIdentifier)
-		if ep.RecordType == endpoint.RecordTypeAAAA {
-			key += keySuffixAAAA
+		key := endpointKey{
+			DNSName:       dnsName,
+			RecordType:    ep.RecordType,
+			SetIdentifier: ep.SetIdentifier,
 		}
-		if labels, ok := labelMap[key]; ok {
+
+		// Handle both new and old registry format with the preference for the new one
+		labels, labelsExist := labelMap[key]
+		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
+			key.RecordType = ""
+			labels, labelsExist = labelMap[key]
+		}
+		if labelsExist {
 			for k, v := range labels {
 				ep.Labels[k] = v
 			}
@@ -174,16 +186,10 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
-				missingDesiredTXTs := []*endpoint.Endpoint{}
 				for _, desiredTXT := range desiredTXTs {
 					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
-						missingDesiredTXTs = append(missingDesiredTXTs, desiredTXT)
+						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
-				}
-				if len(desiredTXTs) > len(missingDesiredTXTs) {
-					// Add missing TXT records only if those are managed (by externaldns) ones.
-					// The unmanaged record has both of the desired TXT records missing.
-					missingEndpoints = append(missingEndpoints, missingDesiredTXTs...)
 				}
 			}
 		}
@@ -195,15 +201,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		im.recordsCacheRefreshTime = time.Now()
 	}
 
-	im.missingTXTRecords = missingEndpoints
-
 	return endpoints, nil
-}
-
-// MissingRecords returns the TXT record to be created.
-// The missing records are collected during the run of Records method.
-func (im *TXTRegistry) MissingRecords() []*endpoint.Endpoint {
-	return im.missingTXTRecords
 }
 
 // generateTXTRecord generates both "old" and "new" TXT records.
@@ -217,7 +215,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -310,18 +308,15 @@ func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoi
 }
 
 /**
-  TXT registry specific private methods
-*/
-
-/**
   nameMapper is the interface for mapping between the endpoint for the source
   and the endpoint for the TXT record.
 */
 
 type nameMapper interface {
-	toEndpointName(string) (endpointName string, isAAAA bool)
+	toEndpointName(string) (endpointName string, recordType string)
 	toTXTName(string) string
 	toNewTXTName(string, string) string
+	recordTypeInAffix() bool
 }
 
 type affixNameMapper struct {
@@ -336,7 +331,9 @@ func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMap
 	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
 }
 
-func extractRecordType(name string) (baseName, recordType string) {
+// extractRecordTypeDefaultPosition extracts record type from the default position
+// when not using '%{record_type}' in the prefix/suffix
+func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
 	nameS := strings.Split(name, "-")
 	for _, t := range getSupportedTypes() {
 		if nameS[0] == strings.ToLower(t) {
@@ -346,32 +343,41 @@ func extractRecordType(name string) (baseName, recordType string) {
 	return name, ""
 }
 
-// dropAffix strips TXT record to find an endpoint name it manages
-// It takes into consideration a fact that it could contain record type
-// So it gets stripped first
-func (pr affixNameMapper) dropAffix(name string) string {
+// dropAffixExtractType strips TXT record to find an endpoint name it manages
+// it also returns the record type
+func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordType string) {
+	prefix := pr.prefix
+	suffix := pr.suffix
+
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
 			t = strings.ToLower(t)
-			iPrefix := strings.ReplaceAll(pr.prefix, recordTemplate, t)
-			iSuffix := strings.ReplaceAll(pr.suffix, recordTemplate, t)
+			iPrefix := strings.ReplaceAll(prefix, recordTemplate, t)
+			iSuffix := strings.ReplaceAll(suffix, recordTemplate, t)
+
 			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
-				return strings.TrimPrefix(name, iPrefix)
+				return strings.TrimPrefix(name, iPrefix), t
 			}
 
 			if pr.isSuffix() && strings.HasSuffix(name, iSuffix) {
-				return strings.TrimSuffix(name, iSuffix)
+				return strings.TrimSuffix(name, iSuffix), t
 			}
 		}
-	}
-	if strings.HasPrefix(name, pr.prefix) && pr.isPrefix() {
-		return strings.TrimPrefix(name, pr.prefix)
+
+		// handle old TXT records
+		prefix = pr.dropAffixTemplate(prefix)
+		suffix = pr.dropAffixTemplate(suffix)
 	}
 
-	if strings.HasSuffix(name, pr.suffix) && pr.isSuffix() {
-		return strings.TrimSuffix(name, pr.suffix)
+	if pr.isPrefix() && strings.HasPrefix(name, prefix) {
+		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, prefix))
 	}
-	return ""
+
+	if pr.isSuffix() && strings.HasSuffix(name, suffix) {
+		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, suffix))
+	}
+
+	return "", ""
 }
 
 func (pr affixNameMapper) dropAffixTemplate(name string) string {
@@ -386,20 +392,24 @@ func (pr affixNameMapper) isSuffix() bool {
 	return len(pr.prefix) == 0 && len(pr.suffix) > 0
 }
 
-func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string, isAAAA bool) {
-	lowerDNSName, recordType := extractRecordType(strings.ToLower(txtDNSName))
+func (pr affixNameMapper) toEndpointName(txtDNSName string) (endpointName string, recordType string) {
+	lowerDNSName := strings.ToLower(txtDNSName)
 
 	// drop prefix
-	if strings.HasPrefix(lowerDNSName, pr.prefix) && pr.isPrefix() {
-		return pr.dropAffix(lowerDNSName), recordType == endpoint.RecordTypeAAAA
+	if pr.isPrefix() {
+		return pr.dropAffixExtractType(lowerDNSName)
 	}
 
 	// drop suffix
 	if pr.isSuffix() {
-		DNSName := strings.SplitN(lowerDNSName, ".", 2)
-		return pr.dropAffix(DNSName[0]) + "." + DNSName[1], recordType == endpoint.RecordTypeAAAA
+		dc := strings.Count(pr.suffix, ".")
+		DNSName := strings.SplitN(lowerDNSName, ".", 2+dc)
+		domainWithSuffix := strings.Join(DNSName[:1+dc], ".")
+
+		r, rType := pr.dropAffixExtractType(domainWithSuffix)
+		return r + "." + DNSName[1+dc], rType
 	}
-	return "", false
+	return "", ""
 }
 
 func (pr affixNameMapper) toTXTName(endpointDNSName string) string {
@@ -467,7 +477,6 @@ func (im *TXTRegistry) addToCache(ep *endpoint.Endpoint) {
 
 func (im *TXTRegistry) removeFromCache(ep *endpoint.Endpoint) {
 	if im.recordsCache == nil || ep == nil {
-		// return early.
 		return
 	}
 

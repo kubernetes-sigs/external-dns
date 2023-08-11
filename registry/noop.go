@@ -36,18 +36,13 @@ func NewNoopRegistry(provider provider.Provider) (*NoopRegistry, error) {
 	}, nil
 }
 
-func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
+func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
 // Records returns the current records from the dns provider
 func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return im.provider.Records(ctx)
-}
-
-// MissingRecords returns nil because there is no missing records for Noop registry
-func (im *NoopRegistry) MissingRecords() []*endpoint.Endpoint {
-	return nil
 }
 
 // ApplyChanges propagates changes to the dns provider

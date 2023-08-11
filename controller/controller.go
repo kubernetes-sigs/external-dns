@@ -175,7 +175,7 @@ type Controller struct {
 	// The interval between individual synchronizations
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
-	DomainFilter endpoint.DomainFilterInterface
+	DomainFilter endpoint.DomainFilter
 	// The nextRunAt used for throttling and batching reconciliation
 	nextRunAt time.Time
 	// The nextRunAtMux is for atomic updating of nextRunAt
@@ -194,8 +194,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		deprecatedRegistryErrors.Inc()
 		return err
 	}
-
-	missingRecords := c.Registry.MissingRecords()
 
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords, regAAAARecords := countAddressRecords(records)
@@ -217,29 +215,6 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	verifiedARecords.Set(float64(vARecords))
 	verifiedAAAARecords.Set(float64(vAAAARecords))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
-
-	if len(missingRecords) > 0 {
-		// Add missing records before the actual plan is applied.
-		// This prevents the problems when the missing TXT record needs to be
-		// created and deleted/upserted in the same batch.
-		missingRecordsPlan := &plan.Plan{
-			Policies:           []plan.Policy{c.Policy},
-			Missing:            missingRecords,
-			DomainFilter:       endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
-			PropertyComparator: c.Registry.PropertyValuesEqual,
-			ManagedRecords:     c.ManagedRecordTypes,
-		}
-		missingRecordsPlan = missingRecordsPlan.Calculate()
-		if missingRecordsPlan.Changes.HasChanges() {
-			err = c.Registry.ApplyChanges(ctx, missingRecordsPlan.Changes)
-			if err != nil {
-				registryErrorsTotal.Inc()
-				deprecatedRegistryErrors.Inc()
-				return err
-			}
-			log.Info("All missing records are created")
-		}
-	}
 
 	plan := &plan.Plan{
 		Policies:           []plan.Policy{c.Policy},
