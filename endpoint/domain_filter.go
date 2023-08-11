@@ -25,12 +25,7 @@ import (
 	"strings"
 )
 
-// DomainFilterInterface defines the interface to select matching domains for a specific provider or runtime
-type DomainFilterInterface interface {
-	Match(domain string) bool
-}
-
-type MatchAllDomainFilters []DomainFilterInterface
+type MatchAllDomainFilters []*DomainFilter
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
 	for _, filter := range f {

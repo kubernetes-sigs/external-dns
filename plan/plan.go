@@ -43,7 +43,7 @@ type Plan struct {
 	// Populated after calling Calculate()
 	Changes *Changes
 	// DomainFilter matches DNS names
-	DomainFilter endpoint.DomainFilterInterface
+	DomainFilter endpoint.MatchAllDomainFilters
 	// DNS record types that will be considered for management
 	ManagedRecords []string
 }
@@ -232,7 +232,7 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 // Per RFC 1034, CNAME records conflict with all other records - it is the
 // only record with this property. The behavior of the planner may need to be
 // made more sophisticated to codify this.
-func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, managedRecords []string) []*endpoint.Endpoint {
+func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.MatchAllDomainFilters, managedRecords []string) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
 
 	for _, record := range records {
