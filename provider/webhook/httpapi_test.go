@@ -48,7 +48,7 @@ func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 	return endpoints
 }
 
-func (p FakeWebhookProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p FakeWebhookProvider) GetDomainFilter() endpoint.DomainFilter {
 	return endpoint.DomainFilter{}
 }
 

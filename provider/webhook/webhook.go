@@ -284,6 +284,6 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.End
 }
 
 // GetDomainFilter is the default implementation of GetDomainFilter.
-func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilterInterface {
+func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilter {
 	return endpoint.DomainFilter{}
 }

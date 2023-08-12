@@ -399,13 +399,10 @@ func main() {
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				AssumeRole:           cfg.AWSAssumeRole,
-				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-				APIRetries:           cfg.AWSAPIRetries,
 				PreferCNAME:          cfg.AWSPreferCNAME,
 				DryRun:               cfg.DryRun,
 				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
-			})
+			}, route53.New(awsSession))
 			if awsErr != nil {
 				log.Fatal(awsErr)
 			}
