@@ -17,10 +17,12 @@ limitations under the License.
 package infoblox
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"testing"
@@ -41,6 +43,68 @@ type mockIBConnector struct {
 	createdEndpoints    []*endpoint.Endpoint
 	deletedEndpoints    []*endpoint.Endpoint
 	updatedEndpoints    []*endpoint.Endpoint
+	getObjectRequests   []*getObjectRequest
+	requestBuilder      ExtendedRequestBuilder
+}
+
+type getObjectRequest struct {
+	obj         string
+	ref         string
+	queryParams string
+	url         url.URL
+	verified    bool
+}
+
+func (req *getObjectRequest) ExpectRequestURLQueryParam(t *testing.T, name string, value string) *getObjectRequest {
+	if req.url.Query().Get(name) != value {
+		t.Errorf("Expected GetObject Request URL to contain query parameter %s=%s, Got: %v", name, value, req.url.Query())
+	}
+
+	return req
+}
+
+func (req *getObjectRequest) ExpectNotRequestURLQueryParam(t *testing.T, name string) *getObjectRequest {
+	if req.url.Query().Has(name) {
+		t.Errorf("Expected GetObject Request URL not to contain query parameter %s, Got: %v", name, req.url.Query())
+	}
+
+	return req
+}
+
+func (client *mockIBConnector) verifyGetObjectRequest(t *testing.T, obj string, ref string, query *map[string]string) *getObjectRequest {
+	qp := ""
+	if query != nil {
+		qp = fmt.Sprint(ibclient.NewQueryParams(false, *query))
+	}
+
+	for _, req := range client.getObjectRequests {
+		if !req.verified && req.obj == obj && req.ref == ref && req.queryParams == qp {
+			req.verified = true
+			return req
+		}
+	}
+
+	t.Errorf("Expected GetObject obj=%s, query=%s, ref=%s", obj, qp, ref)
+	return &getObjectRequest{}
+}
+
+// verifyNoMoreGetObjectRequests will assert that all "GetObject" calls have been verified.
+func (client *mockIBConnector) verifyNoMoreGetObjectRequests(t *testing.T) {
+	unverified := []getObjectRequest{}
+	for _, req := range client.getObjectRequests {
+		if !req.verified {
+			unverified = append(unverified, *req)
+		}
+	}
+
+	if len(unverified) > 0 {
+		b := new(bytes.Buffer)
+		for _, req := range unverified {
+			fmt.Fprintf(b, "obj=%s, ref=%s, params=%s (url=%s)\n", req.obj, req.ref, req.queryParams, req.url.String())
+		}
+
+		t.Errorf("Unverified GetObject Requests: %v", unverified)
+	}
 }
 
 func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, err error) {
@@ -115,6 +179,18 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 }
 
 func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, queryParams *ibclient.QueryParams, res interface{}) (err error) {
+	req := getObjectRequest{
+		obj: obj.ObjectType(),
+		ref: ref,
+	}
+	if queryParams != nil {
+		req.queryParams = fmt.Sprint(queryParams)
+	}
+	r, _ := client.requestBuilder.BuildRequest(ibclient.GET, obj, ref, queryParams)
+	if r != nil {
+		req.url = *r.URL
+	}
+	client.getObjectRequests = append(client.getObjectRequests, &req)
 	switch obj.ObjectType() {
 	case "record:a":
 		var result []ibclient.RecordA
@@ -378,13 +454,14 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	return nil
 }
 
-func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
+func newInfobloxProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, view string, dryRun bool, createPTR bool, client ibclient.IBConnector) *ProviderConfig {
 	return &ProviderConfig{
 		client:       client,
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
 		dryRun:       dryRun,
 		createPTR:    createPTR,
+		view:         view,
 	}
 }
 
@@ -412,7 +489,7 @@ func TestInfobloxRecords(t *testing.T) {
 		},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), "", true, false, &client)
 	actual, err := providerCfg.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -432,6 +509,70 @@ func TestInfobloxRecords(t *testing.T) {
 		endpoint.NewEndpoint("host.example.com", endpoint.RecordTypeA, "125.1.1.1"),
 	}
 	validateEndpoints(t, actual, expected)
+	client.verifyGetObjectRequest(t, "zone_auth", "", &map[string]string{}).
+		ExpectNotRequestURLQueryParam(t, "view").
+		ExpectNotRequestURLQueryParam(t, "zone")
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "example.com"}).
+		ExpectRequestURLQueryParam(t, "zone", "example.com")
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "example.com"}).
+		ExpectRequestURLQueryParam(t, "zone", "example.com")
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "example.com"}).
+		ExpectRequestURLQueryParam(t, "zone", "example.com")
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "example.com"}).
+		ExpectRequestURLQueryParam(t, "zone", "example.com")
+	client.verifyNoMoreGetObjectRequests(t)
+}
+
+func TestInfobloxRecordsWithView(t *testing.T) {
+	client := mockIBConnector{
+		mockInfobloxZones: &[]ibclient.ZoneAuth{
+			createMockInfobloxZone("foo.example.com"),
+			createMockInfobloxZone("bar.example.com"),
+		},
+		mockInfobloxObjects: &[]ibclient.IBObject{
+			createMockInfobloxObject("cat.foo.example.com", endpoint.RecordTypeA, "123.123.123.122"),
+			createMockInfobloxObject("dog.bar.example.com", endpoint.RecordTypeA, "123.123.123.123"),
+		},
+	}
+
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"foo.example.com", "bar.example.com"}), provider.NewZoneIDFilter([]string{""}), "Inside", true, false, &client)
+	actual, err := providerCfg.Records(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("cat.foo.example.com", endpoint.RecordTypeA, "123.123.123.122"),
+		endpoint.NewEndpoint("dog.bar.example.com", endpoint.RecordTypeA, "123.123.123.123"),
+	}
+	validateEndpoints(t, actual, expected)
+	client.verifyGetObjectRequest(t, "zone_auth", "", &map[string]string{"view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "view", "Inside").
+		ExpectNotRequestURLQueryParam(t, "zone")
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
+		ExpectRequestURLQueryParam(t, "view", "Inside")
+	client.verifyNoMoreGetObjectRequests(t)
 }
 
 func TestInfobloxAdjustEndpoints(t *testing.T) {
@@ -448,7 +589,7 @@ func TestInfobloxAdjustEndpoints(t *testing.T) {
 		},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), "", true, true, &client)
 	actual, err := providerCfg.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -476,7 +617,7 @@ func TestInfobloxRecordsReverse(t *testing.T) {
 		},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), true, true, &client)
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"10.0.0.0/24"}), provider.NewZoneIDFilter([]string{""}), "", true, true, &client)
 	actual, err := providerCfg.Records(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -583,6 +724,7 @@ func testInfobloxApplyChangesInternal(t *testing.T, dryRun, createPTR bool, clie
 	providerCfg := newInfobloxProvider(
 		endpoint.NewDomainFilter([]string{""}),
 		provider.NewZoneIDFilter([]string{""}),
+		"",
 		dryRun,
 		createPTR,
 		client,
@@ -648,7 +790,7 @@ func TestInfobloxZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24"}), provider.NewZoneIDFilter([]string{""}), "", true, false, &client)
 	zones, _ := providerCfg.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
 	assert.Equal(t, providerCfg.findZone(zones, "example.com").Fqdn, "example.com")
@@ -672,7 +814,7 @@ func TestInfobloxReverseZones(t *testing.T) {
 		mockInfobloxObjects: &[]ibclient.IBObject{},
 	}
 
-	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24", "10.0.0.0/8"}), provider.NewZoneIDFilter([]string{""}), true, false, &client)
+	providerCfg := newInfobloxProvider(endpoint.NewDomainFilter([]string{"example.com", "1.2.3.0/24", "10.0.0.0/8"}), provider.NewZoneIDFilter([]string{""}), "", true, false, &client)
 	zones, _ := providerCfg.zones()
 	var emptyZoneAuth *ibclient.ZoneAuth
 	assert.Equal(t, providerCfg.findReverseZone(zones, "nomatch-example.com"), emptyZoneAuth)
@@ -768,7 +910,7 @@ func TestGetObject(t *testing.T) {
 	requestor := mockRequestor{}
 	client, _ := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, &requestor)
 
-	providerConfig := newInfobloxProvider(endpoint.NewDomainFilter([]string{"mysite.com"}), provider.NewZoneIDFilter([]string{""}), true, true, client)
+	providerConfig := newInfobloxProvider(endpoint.NewDomainFilter([]string{"mysite.com"}), provider.NewZoneIDFilter([]string{""}), "", true, true, client)
 
 	providerConfig.deleteRecords(infobloxChangeMap{
 		"myzone.com": []*endpoint.Endpoint{
