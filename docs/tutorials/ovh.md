@@ -18,7 +18,7 @@ instructions for creating a zone.
 
 You first need to create an OVH application.
 
-Using the [OVH documentation](https://docs.ovh.com/gb/en/customer/first-steps-with-ovh-api/#creation-of-your-application-keys) you will have your `Application key` and `Application secret`
+Using the [OVH documentation](https://docs.ovh.com/gb/en/api/first-steps-with-ovh-api/#advanced-usage-pair-ovhcloud-apis-with-an-application_2) you will have your `Application key` and `Application secret`
 
 And you will need to generate your consumer key, here the permissions needed :
 - GET on `/domain/zone`
@@ -26,6 +26,7 @@ And you will need to generate your consumer key, here the permissions needed :
 - GET on `/domain/zone/*/record/*`
 - POST on `/domain/zone/*/record`
 - DELETE on `/domain/zone/*/record/*`
+- GET on `/domain/zone/*/soa`
 - POST on `/domain/zone/*/refresh`
 
 You can use the following `curl` request to generate & validated your `Consumer key`
@@ -36,6 +37,10 @@ curl -XPOST -H "X-Ovh-Application: <ApplicationKey>" -H "Content-type: applicati
     {
       "method": "GET",
       "path": "/domain/zone"
+    },
+    {
+      "method": "GET",
+      "path": "/domain/zone/*/soa"
     },
     {
       "method": "GET",

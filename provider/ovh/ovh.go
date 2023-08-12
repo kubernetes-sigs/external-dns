@@ -21,12 +21,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/miekg/dns"
 	"github.com/ovh/go-ovh/ovh"
+	"github.com/patrickmn/go-cache"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 
@@ -56,12 +60,27 @@ type OVHProvider struct {
 
 	domainFilter endpoint.DomainFilter
 	DryRun       bool
+
+	// UseCache controls if the OVHProvider will cache records in memory, and serve them
+	// without recontacting the OVHcloud API if the SOA of the domain zone hasn't changed.
+	// Note that, when disabling cache, OVHcloud API has rate-limiting that will hit if
+	// your refresh rate/number of records is too big, which might cause issue with the
+	// provider.
+	// Default value: true
+	UseCache bool
+
+	cacheInstance *cache.Cache
+	dnsClient     dnsClient
 }
 
 type ovhClient interface {
 	Post(string, interface{}, interface{}) error
 	Get(string, interface{}) error
 	Delete(string, interface{}) error
+}
+
+type dnsClient interface {
+	ExchangeContext(ctx context.Context, m *dns.Msg, a string) (*dns.Msg, time.Duration, error)
 }
 
 type ovhRecordFields struct {
@@ -88,6 +107,9 @@ func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, end
 	if err != nil {
 		return nil, err
 	}
+
+	client.UserAgent = externaldns.Version
+
 	// TODO: Add Dry Run support
 	if dryRun {
 		return nil, ErrNoDryRun
@@ -97,6 +119,9 @@ func NewOVHProvider(ctx context.Context, domainFilter endpoint.DomainFilter, end
 		domainFilter:   domainFilter,
 		apiRateLimiter: ratelimit.New(apiRateLimit),
 		DryRun:         dryRun,
+		cacheInstance:  cache.New(cache.NoExpiration, cache.NoExpiration),
+		dnsClient:      new(dns.Client),
+		UseCache:       true,
 	}, nil
 }
 
@@ -217,14 +242,48 @@ func (p *OVHProvider) zones() ([]string, error) {
 	return filteredZones, nil
 }
 
+type ovhSoa struct {
+	Server  string `json:"server"`
+	Serial  uint32 `json:"serial"`
+	records []ovhRecord
+}
+
 func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<- []ovhRecord) error {
 	var recordsIds []uint64
 	ovhRecords := make([]ovhRecord, len(recordsIds))
 	eg, _ := errgroup.WithContext(*ctx)
 
+	if p.UseCache {
+		if cachedSoaItf, ok := p.cacheInstance.Get(*zone + "#soa"); ok {
+			cachedSoa := cachedSoaItf.(ovhSoa)
+
+			m := new(dns.Msg)
+			m.SetQuestion(dns.Fqdn(*zone), dns.TypeSOA)
+			in, _, err := p.dnsClient.ExchangeContext(*ctx, m, strings.TrimSuffix(cachedSoa.Server, ".")+":53")
+			if err == nil {
+				if s, ok := in.Answer[0].(*dns.SOA); ok {
+					// do something with t.Txt
+					if s.Serial == cachedSoa.Serial {
+						records <- cachedSoa.records
+						return nil
+					}
+				}
+			}
+
+			p.cacheInstance.Delete(*zone + "#soa")
+		}
+	}
+
 	log.Debugf("OVH: Getting records for %s", *zone)
 
 	p.apiRateLimiter.Take()
+	var soa ovhSoa
+	if p.UseCache {
+		if err := p.client.Get("/domain/zone/"+*zone+"/soa", &soa); err != nil {
+			return err
+		}
+	}
+
 	if err := p.client.Get(fmt.Sprintf("/domain/zone/%s/record", *zone), &recordsIds); err != nil {
 		return err
 	}
@@ -240,6 +299,12 @@ func (p *OVHProvider) records(ctx *context.Context, zone *string, records chan<-
 	for record := range chRecords {
 		ovhRecords = append(ovhRecords, record)
 	}
+
+	if p.UseCache {
+		soa.records = ovhRecords
+		_ = p.cacheInstance.Add(*zone+"#soa", soa, time.Hour)
+	}
+
 	records <- ovhRecords
 	return nil
 }
