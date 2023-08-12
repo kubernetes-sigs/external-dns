@@ -34,8 +34,7 @@ type Endpoint struct {
 	// +optional
 	Labels Labels `json:"labels,omitempty"`
 	// ProviderSpecific stores provider specific config
-	// +optional
-	ProviderSpecific ProviderSpecific `json:"providerSpecific,omitempty"`
+	ProviderSpecific ProviderSpecific `json:"-"`
 }
 
 type DNSEndpointSpec struct {
