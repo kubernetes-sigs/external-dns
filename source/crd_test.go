@@ -383,6 +383,32 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "crd with provider-specific annotation",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			annotations:          map[string]string{"external-dns.alpha.kubernetes.io/alias": "true"},
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "abc.example.org",
+					Targets:    endpoint.Targets{"1.2.3.4"},
+					RecordType: endpoint.RecordTypeA,
+					RecordTTL:  180,
+					ProviderSpecific: endpoint.ProviderSpecific{
+						{
+							Name:  "alias",
+							Value: "true",
+						},
+					},
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {

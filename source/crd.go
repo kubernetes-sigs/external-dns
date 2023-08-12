@@ -182,6 +182,9 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 	for _, dnsEndpoint := range result.Items {
 		// Make sure that all endpoints have targets for A or CNAME type
 		crdEndpoints := []*endpoint.Endpoint{}
+
+		providerSpecific, _ := getProviderSpecificAnnotations(dnsEndpoint.Annotations)
+
 		for _, ep := range dnsEndpoint.Spec.Endpoints {
 			if (ep.RecordType == "CNAME" || ep.RecordType == "A" || ep.RecordType == "AAAA") && len(ep.Targets) < 1 {
 				log.Warnf("Endpoint %s with DNSName %s has an empty list of targets", dnsEndpoint.ObjectMeta.Name, ep.DNSName)
@@ -203,6 +206,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			if ep.Labels == nil {
 				ep.Labels = endpoint.NewLabels()
 			}
+
+			ep.ProviderSpecific = providerSpecific
 
 			crdEndpoints = append(crdEndpoints, ep)
 		}
