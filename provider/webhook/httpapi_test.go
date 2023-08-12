@@ -102,47 +102,6 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, res.StatusCode)
 }
 
-func TestPropertyValuesEqualHandlerWithInvalidRequests(t *testing.T) {
-	req := httptest.NewRequest(http.MethodPost, "/propertyvaluesequals", nil)
-	w := httptest.NewRecorder()
-
-	providerAPIServer := &ProviderAPIServer{
-		provider: &FakeWebhookProvider{},
-	}
-	providerAPIServer.propertyValuesEqualHandler(w, req)
-	res := w.Result()
-	require.Equal(t, http.StatusBadRequest, res.StatusCode)
-
-	req = httptest.NewRequest(http.MethodGet, "/propertyvaluesequals", nil)
-
-	providerAPIServer.propertyValuesEqualHandler(w, req)
-	res = w.Result()
-	require.Equal(t, http.StatusBadRequest, res.StatusCode)
-}
-
-func TestPropertyValuesEqualWithValidRequest(t *testing.T) {
-	pve := &PropertyValuesEqualsRequest{
-		Name:     "foo",
-		Previous: "bar",
-		Current:  "baz",
-	}
-
-	j, err := json.Marshal(pve)
-	require.Nil(t, err)
-
-	reader := bytes.NewReader(j)
-	req := httptest.NewRequest(http.MethodPost, "/propertyvaluesequals", reader)
-	w := httptest.NewRecorder()
-
-	providerAPIServer := &ProviderAPIServer{
-		provider: &FakeWebhookProvider{},
-	}
-	providerAPIServer.propertyValuesEqualHandler(w, req)
-	res := w.Result()
-	require.Equal(t, http.StatusOK, res.StatusCode)
-	require.NotNil(t, res.Body)
-}
-
 func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", nil)
 	w := httptest.NewRecorder()

@@ -20,7 +20,6 @@ The following table represents the methods to implement mapped to their HTTP met
 | --- | --- | --- |
 | Records | GET | /records |
 | ApplyChanges | POST | /records |
-| PropertyValuesEqual | POST | /propertyvaluesequal |
 | AdjustEndpoints | POST | /adjustendpoints |
 
 The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.

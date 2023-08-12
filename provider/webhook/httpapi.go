@@ -77,30 +77,6 @@ func (p *ProviderAPIServer) recordsHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
-func (p *ProviderAPIServer) propertyValuesEqualHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		log.Errorf("Unsupported method %s", req.Method)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	pve := PropertyValuesEqualsRequest{}
-	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	b := p.provider.PropertyValuesEqual(pve.Name, pve.Previous, pve.Current)
-	r := PropertyValuesEqualsResponse{
-		Equals: b,
-	}
-	if err := json.NewEncoder(w).Encode(&r); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-}
-
 func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		log.Errorf("Unsupported method %s", req.Method)
@@ -136,7 +112,6 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 
 	m := http.NewServeMux()
 	m.HandleFunc("/records", p.recordsHandler)
-	m.HandleFunc("/propertyvaluesequal", p.propertyValuesEqualHandler)
 	m.HandleFunc("/adjustendpoints", p.adjustEndpointsHandler)
 
 	s := &http.Server{
