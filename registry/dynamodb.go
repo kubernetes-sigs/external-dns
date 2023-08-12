@@ -49,6 +49,12 @@ type DynamoDBRegistry struct {
 	dynamodbAPI DynamoDBAPI
 	table       string
 
+	// For migration from TXT registry
+	mapper              nameMapper
+	wildcardReplacement string
+	managedRecordTypes  []string
+	txtEncryptAESKey    []byte
+
 	// cache the dynamodb records owned by us.
 	labels         map[endpoint.EndpointKey]endpoint.Labels
 	orphanedLabels sets.Set[endpoint.EndpointKey]
@@ -59,8 +65,10 @@ type DynamoDBRegistry struct {
 	cacheInterval           time.Duration
 }
 
+const dynamodbAttributeMigrate = "dynamodb/needs-migration"
+
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
+func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -68,12 +76,27 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		return nil, errors.New("table cannot be empty")
 	}
 
+	if len(txtEncryptAESKey) == 0 {
+		txtEncryptAESKey = nil
+	} else if len(txtEncryptAESKey) != 32 {
+		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+	}
+	if len(txtPrefix) > 0 && len(txtSuffix) > 0 {
+		return nil, errors.New("txt-prefix and txt-suffix are mutually exclusive")
+	}
+
+	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+
 	return &DynamoDBRegistry{
-		provider:      provider,
-		ownerID:       ownerID,
-		dynamodbAPI:   dynamodbAPI,
-		table:         table,
-		cacheInterval: cacheInterval,
+		provider:            provider,
+		ownerID:             ownerID,
+		dynamodbAPI:         dynamodbAPI,
+		table:               table,
+		mapper:              mapper,
+		wildcardReplacement: txtWildcardReplacement,
+		managedRecordTypes:  managedRecordTypes,
+		txtEncryptAESKey:    txtEncryptAESKey,
+		cacheInterval:       cacheInterval,
 	}, nil
 }
 
@@ -103,6 +126,8 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 	orphanedLabels := sets.KeySet(im.labels)
 	endpoints := make([]*endpoint.Endpoint, 0, len(records))
+	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
+	txtRecordsMap := map[endpoint.EndpointKey]*endpoint.Endpoint{}
 	for _, record := range records {
 		key := record.Key()
 		if labels := im.labels[key]; labels != nil {
@@ -110,12 +135,68 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 			orphanedLabels.Delete(key)
 		} else {
 			record.Labels = endpoint.NewLabels()
+
+			if record.RecordType == endpoint.RecordTypeTXT {
+				// We simply assume that TXT records for the TXT registry will always have only one target.
+				if labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey); err == nil {
+					endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
+					key := endpoint.EndpointKey{
+						DNSName:       endpointName,
+						SetIdentifier: record.SetIdentifier,
+					}
+					if recordType == endpoint.RecordTypeAAAA {
+						key.RecordType = recordType
+					}
+					labelMap[key] = labels
+					txtRecordsMap[key] = record
+					continue
+				}
+			}
 		}
 
 		endpoints = append(endpoints, record)
 	}
 
 	im.orphanedLabels = orphanedLabels
+
+	// Migrate label data from TXT registry.
+	if len(labelMap) > 0 {
+		for _, ep := range endpoints {
+			if _, ok := im.labels[ep.Key()]; ok {
+				continue
+			}
+
+			dnsNameSplit := strings.Split(ep.DNSName, ".")
+			// If specified, replace a leading asterisk in the generated txt record name with some other string
+			if im.wildcardReplacement != "" && dnsNameSplit[0] == "*" {
+				dnsNameSplit[0] = im.wildcardReplacement
+			}
+			dnsName := strings.Join(dnsNameSplit, ".")
+			key := endpoint.EndpointKey{
+				DNSName:       dnsName,
+				SetIdentifier: ep.SetIdentifier,
+			}
+			if ep.RecordType == endpoint.RecordTypeAAAA {
+				key.RecordType = ep.RecordType
+			}
+			if labels, ok := labelMap[key]; ok {
+				for k, v := range labels {
+					ep.Labels[k] = v
+				}
+				ep.SetProviderSpecificProperty(dynamodbAttributeMigrate, "true")
+				delete(txtRecordsMap, key)
+			}
+		}
+	}
+
+	// Remove any unused TXT ownership records owned by us
+	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes) {
+		log.Infof("Old TXT ownership records will not be deleted because \"TXT\" is not in the set of managed record types.")
+	}
+	for _, record := range txtRecordsMap {
+		record.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		endpoints = append(endpoints, record)
+	}
 
 	// Update the cache.
 	if im.cacheInterval > 0 {
@@ -145,15 +226,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		key := r.Key()
 		oldLabels := im.labels[key]
 		if oldLabels == nil {
-			statements = append(statements, &dynamodb.BatchStatementRequest{
-				Statement: aws.String(fmt.Sprintf("INSERT INTO %q VALUE {'k':?, 'o':?, 'l':?}", im.table)),
-				Parameters: []*dynamodb.AttributeValue{
-					toDynamoKey(key),
-					{S: aws.String(im.ownerID)},
-					toDynamoLabels(r.Labels),
-				},
-				ConsistentRead: aws.Bool(true),
-			})
+			statements = im.appendInsert(statements, key, r.Labels)
 		} else {
 			im.orphanedLabels.Delete(key)
 			statements = im.appendUpdate(statements, key, oldLabels, r.Labels)
@@ -173,8 +246,13 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 	}
 
 	oldLabels := make(map[endpoint.EndpointKey]endpoint.Labels, len(filteredChanges.UpdateOld))
+	needMigration := map[endpoint.EndpointKey]bool{}
 	for _, r := range filteredChanges.UpdateOld {
 		oldLabels[r.Key()] = r.Labels
+
+		if _, ok := r.GetProviderSpecificProperty(dynamodbAttributeMigrate); ok {
+			needMigration[r.Key()] = true
+		}
 
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
@@ -184,7 +262,13 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 
 	for _, r := range filteredChanges.UpdateNew {
 		key := r.Key()
-		statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
+		if needMigration[key] {
+			statements = im.appendInsert(statements, key, r.Labels)
+			// Invalidate the records cache so the next sync deletes the TXT ownership record
+			im.recordsCache = nil
+		} else {
+			statements = im.appendUpdate(statements, key, oldLabels[key], r.Labels)
+		}
 
 		// add new version of record to caches
 		im.labels[key] = r.Labels
@@ -246,11 +330,6 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 		im.labels = nil
 		return fmt.Errorf("deleting dynamodb record %q: %s: %s", aws.StringValue(request.Parameters[0].S), aws.StringValue(response.Error.Code), aws.StringValue(response.Error.Message))
 	})
-}
-
-// PropertyValuesEqual compares two attribute values for equality.
-func (im *DynamoDBRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return im.provider.PropertyValuesEqual(name, previous, current)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider.
@@ -342,6 +421,18 @@ func toDynamoLabels(labels endpoint.Labels) *dynamodb.AttributeValue {
 		labelMap[k] = &dynamodb.AttributeValue{S: aws.String(v)}
 	}
 	return &dynamodb.AttributeValue{M: labelMap}
+}
+
+func (im *DynamoDBRegistry) appendInsert(statements []*dynamodb.BatchStatementRequest, key endpoint.EndpointKey, new endpoint.Labels) []*dynamodb.BatchStatementRequest {
+	return append(statements, &dynamodb.BatchStatementRequest{
+		Statement: aws.String(fmt.Sprintf("INSERT INTO %q VALUE {'k':?, 'o':?, 'l':?}", im.table)),
+		Parameters: []*dynamodb.AttributeValue{
+			toDynamoKey(key),
+			{S: aws.String(im.ownerID)},
+			toDynamoLabels(new),
+		},
+		ConsistentRead: aws.Bool(true),
+	})
 }
 
 func (im *DynamoDBRegistry) appendUpdate(statements []*dynamodb.BatchStatementRequest, key endpoint.EndpointKey, old endpoint.Labels, new endpoint.Labels) []*dynamodb.BatchStatementRequest {

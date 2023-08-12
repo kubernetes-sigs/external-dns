@@ -39,3 +39,13 @@ The DynamoDB registry can optionally cache DNS records read from the provider. T
 rate limits imposed by the provider.
 
 Caching is enabled by specifying a cache duration with the `--txt-cache-interval` flag.
+
+## Migration from TXT registry
+
+If any ownership TXT records exist for the configured owner, the DynamoDB registry will migrate
+the metadata therein to the DynamoDB table. If any such TXT records exist, any previous values for
+`--txt-prefix`, `--txt-suffix`, `--txt-wildcard-replacement`, and `--txt-encrypt-aes-key`
+must be supplied.
+
+If TXT records are in the set of managed record types specified by `--managed-record-types`,
+it will then delete the ownership TXT records on a subsequent reconciliation. 

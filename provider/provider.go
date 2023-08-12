@@ -29,7 +29,6 @@ import (
 type Provider interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
-	PropertyValuesEqual(name string, previous string, current string) bool
 	// AdjustEndpoints canonicalizes a set of candidate endpoints.
 	// It is called with a set of candidate endpoints obtained from the various sources.
 	// It returns a set modified as required by the provider. The provider is responsible for
@@ -45,10 +44,6 @@ type BaseProvider struct{}
 
 func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return endpoints
-}
-
-func (b BaseProvider) PropertyValuesEqual(name, previous, current string) bool {
-	return previous == current
 }
 
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilter {

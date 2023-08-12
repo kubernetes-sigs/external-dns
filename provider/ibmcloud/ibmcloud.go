@@ -385,22 +385,16 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	return p.submitChanges(ctx, ibmcloudChanges)
 }
 
-func (p *IBMCloudProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	if name == proxyFilter {
-		return plan.CompareBoolean(p.proxiedByDefault, name, previous, current)
-	}
-
-	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
-}
-
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
 		log.Debugf("adjusting endpont: %v", *e)
-		if shouldBeProxied(e, p.proxiedByDefault) {
+		proxied := shouldBeProxied(e, p.proxiedByDefault)
+		if proxied {
 			e.RecordTTL = 0
 		}
+		e.SetProviderSpecificProperty(proxyFilter, strconv.FormatBool(proxied))
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}

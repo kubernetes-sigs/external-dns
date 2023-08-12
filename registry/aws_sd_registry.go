@@ -95,10 +95,6 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 	}
 }
 
-func (sdr *AWSSDRegistry) PropertyValuesEqual(name string, previous string, current string) bool {
-	return sdr.provider.PropertyValuesEqual(name, previous, current)
-}
-
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
 func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return sdr.provider.AdjustEndpoints(endpoints)

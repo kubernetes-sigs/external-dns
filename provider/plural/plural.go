@@ -83,10 +83,6 @@ func (p *PluralProvider) Records(_ context.Context) (endpoints []*endpoint.Endpo
 	return
 }
 
-func (p *PluralProvider) PropertyValuesEqual(name, previous, current string) bool {
-	return p.BaseProvider.PropertyValuesEqual(name, previous, current)
-}
-
 func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return endpoints
 }
