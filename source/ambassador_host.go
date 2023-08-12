@@ -184,11 +184,6 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 }
 
 func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
-	var (
-		targets     endpoint.Targets
-		externalIPs endpoint.Targets
-	)
-
 	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
 	if err != nil {
 		return nil, err
@@ -199,24 +194,7 @@ func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Co
 		return nil, err
 	}
 
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			targets = append(targets, lb.IP)
-		}
-		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
-		}
-	}
-
-	if svc.Spec.ExternalIPs != nil {
-		for _, ext := range svc.Spec.ExternalIPs {
-			externalIPs = append(externalIPs, ext)
-		}
-	}
-
-	if len(externalIPs) > 0 {
-		return externalIPs, nil
-	}
+	var targets = extractLoadBalancerTargets(svc, true)
 
 	return targets, nil
 }
