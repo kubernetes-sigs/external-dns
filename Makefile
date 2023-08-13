@@ -51,7 +51,7 @@ golangci-lint:
 
 # Run the golangci-lint tool
 go-lint: golangci-lint
-	golangci-lint run --timeout=15m ./...
+	golangci-lint run --timeout=30m ./...
 
 .PHONY: licensecheck
 
