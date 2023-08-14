@@ -38,6 +38,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
+* [Domeneshop](https://domainname.shop/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
 * [OpenStack Designate](https://docs.openstack.org/designate/latest/)
@@ -99,6 +100,7 @@ The following table clarifies the current status of the providers according to t
 | RcodeZero | Alpha | |
 | DigitalOcean | Alpha | |
 | DNSimple | Alpha | |
+| Domeneshop | Alpha | |
 | Infoblox | Alpha | @saileshgiri |
 | Dyn | Alpha | |
 | OpenStack Designate | Alpha | |
@@ -161,6 +163,7 @@ The following tutorials are provided:
 * [CoreDNS](docs/tutorials/coredns.md)
 * [DigitalOcean](docs/tutorials/digitalocean.md)
 * [DNSimple](docs/tutorials/dnsimple.md)
+* [Domeneshop](docs/tutorials/domeneshop.md)
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
