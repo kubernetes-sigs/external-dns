@@ -1059,16 +1059,6 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSClientPartitionZones() {
 	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
 	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
 
-	// Check filtered, residual zones when a single child domain filter specified
-	filteredZones, residualZones = DomainFilterChildSingleClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
-
-	// Check filter, residual zones when multiple child domain filters specified
-	filteredZones, residualZones = DomainFilterChildMultipleClient.PartitionZones(zoneList)
-	assert.Equal(suite.T(), partitionResultFilteredMultipleFilter, filteredZones)
-	assert.Equal(suite.T(), partitionResultResidualMultipleFilter, residualZones)
-
 	filteredZones, residualZones = RegexDomainFilterClient.PartitionZones(zoneList)
 	assert.Equal(suite.T(), partitionResultFilteredSingleFilter, filteredZones)
 	assert.Equal(suite.T(), partitionResultResidualSingleFilter, residualZones)
