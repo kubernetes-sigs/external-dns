@@ -18,29 +18,31 @@ package exoscale
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"testing"
 
-	"github.com/exoscale/egoscale"
+	egoscale "github.com/exoscale/egoscale/v2"
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+
+	"github.com/google/uuid"
 )
 
 type createRecordExoscale struct {
-	name string
-	rec  egoscale.DNSRecord
+	domainID string
+	record   *egoscale.DNSDomainRecord
 }
 
 type deleteRecordExoscale struct {
-	name     string
-	recordID int64
+	domainID string
+	recordID string
 }
 
 type updateRecordExoscale struct {
-	name            string
-	updateDNSRecord egoscale.UpdateDNSRecord
+	domainID string
+	record   *egoscale.DNSDomainRecord
 }
 
 var (
@@ -49,6 +51,29 @@ var (
 	updateExoscale []updateRecordExoscale
 )
 
+var defaultTTL int64 = 3600
+var domainIDs = []string{uuid.New().String(), uuid.New().String(), uuid.New().String(), uuid.New().String()}
+var groups = map[string][]egoscale.DNSDomainRecord{
+	domainIDs[0]: {
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("CNAME"), Content: strPtr("test"), TTL: &defaultTTL},
+	},
+	domainIDs[1]: {
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v2"), Type: strPtr("A"), Content: strPtr("test"), TTL: &defaultTTL},
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v3"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+	},
+	domainIDs[2]: {
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v1"), Type: strPtr("TXT"), Content: strPtr("test"), TTL: &defaultTTL},
+	},
+	domainIDs[3]: {
+		{ID: strPtr(uuid.New().String()), Name: strPtr("v4"), Type: strPtr("ALIAS"), Content: strPtr("test"), TTL: &defaultTTL},
+	},
+}
+
+func strPtr(s string) *string {
+	return &s
+}
+
 type ExoscaleClientStub struct{}
 
 func NewExoscaleClientStub() EgoscaleClientI {
@@ -56,48 +81,42 @@ func NewExoscaleClientStub() EgoscaleClientI {
 	return ep
 }
 
-func (ep *ExoscaleClientStub) DeleteRecord(ctx context.Context, name string, recordID int64) error {
-	deleteExoscale = append(deleteExoscale, deleteRecordExoscale{name: name, recordID: recordID})
-	return nil
+func (ep *ExoscaleClientStub) ListDNSDomains(ctx context.Context, _ string) ([]egoscale.DNSDomain, error) {
+	domains := []egoscale.DNSDomain{
+		{ID: &domainIDs[0], UnicodeName: strPtr("foo.com")},
+		{ID: &domainIDs[1], UnicodeName: strPtr("bar.com")},
+	}
+	return domains, nil
 }
 
-func (ep *ExoscaleClientStub) GetRecords(ctx context.Context, name string) ([]egoscale.DNSRecord, error) {
-	init := []egoscale.DNSRecord{
-		{ID: 0, Name: "v4.barfoo.com", RecordType: "ALIAS"},
-		{ID: 1, Name: "v1.foo.com", RecordType: "TXT"},
-		{ID: 2, Name: "v2.bar.com", RecordType: "A"},
-		{ID: 3, Name: "v3.bar.com", RecordType: "ALIAS"},
-		{ID: 4, Name: "v2.foo.com", RecordType: "CNAME"},
-		{ID: 5, Name: "v1.foobar.com", RecordType: "TXT"},
-	}
+func (ep *ExoscaleClientStub) ListDNSDomainRecords(ctx context.Context, _, domainID string) ([]egoscale.DNSDomainRecord, error) {
+	return groups[domainID], nil
+}
 
-	rec := make([]egoscale.DNSRecord, 0)
-	for _, r := range init {
-		if strings.HasSuffix(r.Name, "."+name) {
-			r.Name = strings.TrimSuffix(r.Name, "."+name)
-			rec = append(rec, r)
+func (ep *ExoscaleClientStub) GetDNSDomainRecord(ctx context.Context, _, domainID, recordID string) (*egoscale.DNSDomainRecord, error) {
+	group := groups[domainID]
+	for _, record := range group {
+		if *record.ID == recordID {
+			return &record, nil
 		}
 	}
 
-	return rec, nil
+	return nil, errors.New("not found")
 }
 
-func (ep *ExoscaleClientStub) UpdateRecord(ctx context.Context, name string, rec egoscale.UpdateDNSRecord) (*egoscale.DNSRecord, error) {
-	updateExoscale = append(updateExoscale, updateRecordExoscale{name: name, updateDNSRecord: rec})
-	return nil, nil
+func (ep *ExoscaleClientStub) CreateDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) (*egoscale.DNSDomainRecord, error) {
+	createExoscale = append(createExoscale, createRecordExoscale{domainID: domainID, record: record})
+	return record, nil
 }
 
-func (ep *ExoscaleClientStub) CreateRecord(ctx context.Context, name string, rec egoscale.DNSRecord) (*egoscale.DNSRecord, error) {
-	createExoscale = append(createExoscale, createRecordExoscale{name: name, rec: rec})
-	return nil, nil
+func (ep *ExoscaleClientStub) DeleteDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
+	deleteExoscale = append(deleteExoscale, deleteRecordExoscale{domainID: domainID, recordID: *record.ID})
+	return nil
 }
 
-func (ep *ExoscaleClientStub) GetDomains(ctx context.Context) ([]egoscale.DNSDomain, error) {
-	dom := []egoscale.DNSDomain{
-		{ID: 1, Name: "foo.com"},
-		{ID: 2, Name: "bar.com"},
-	}
-	return dom, nil
+func (ep *ExoscaleClientStub) UpdateDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) error {
+	updateExoscale = append(updateExoscale, updateRecordExoscale{domainID: domainID, record: record})
+	return nil
 }
 
 func contains(arr []*endpoint.Endpoint, name string) bool {
@@ -110,9 +129,10 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 }
 
 func TestExoscaleGetRecords(t *testing.T) {
-	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
+	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", "", false)
 
-	if recs, err := provider.Records(context.Background()); err == nil {
+	recs, err := provider.Records(context.Background())
+	if err == nil {
 		assert.Equal(t, 3, len(recs))
 		assert.True(t, contains(recs, "v1.foo.com"))
 		assert.True(t, contains(recs, "v2.bar.com"))
@@ -125,7 +145,7 @@ func TestExoscaleGetRecords(t *testing.T) {
 }
 
 func TestExoscaleApplyChanges(t *testing.T) {
-	provider := NewExoscaleProviderWithClient("", "", "", NewExoscaleClientStub(), false)
+	provider := NewExoscaleProviderWithClient(NewExoscaleClientStub(), "", "", false)
 
 	plan := &plan.Changes{
 		Create: []*endpoint.Endpoint{
@@ -183,16 +203,16 @@ func TestExoscaleApplyChanges(t *testing.T) {
 	provider.ApplyChanges(context.Background(), plan)
 
 	assert.Equal(t, 1, len(createExoscale))
-	assert.Equal(t, "foo.com", createExoscale[0].name)
-	assert.Equal(t, "v1", createExoscale[0].rec.Name)
+	assert.Equal(t, domainIDs[0], createExoscale[0].domainID)
+	assert.Equal(t, "v1", *createExoscale[0].record.Name)
 
 	assert.Equal(t, 1, len(deleteExoscale))
-	assert.Equal(t, "foo.com", deleteExoscale[0].name)
-	assert.Equal(t, int64(1), deleteExoscale[0].recordID)
+	assert.Equal(t, domainIDs[0], deleteExoscale[0].domainID)
+	assert.Equal(t, *groups[domainIDs[0]][0].ID, deleteExoscale[0].recordID)
 
 	assert.Equal(t, 1, len(updateExoscale))
-	assert.Equal(t, "foo.com", updateExoscale[0].name)
-	assert.Equal(t, int64(1), updateExoscale[0].updateDNSRecord.ID)
+	assert.Equal(t, domainIDs[0], updateExoscale[0].domainID)
+	assert.Equal(t, *groups[domainIDs[0]][0].ID, *updateExoscale[0].record.ID)
 }
 
 func TestExoscaleMerge_NoUpdateOnTTL0Changes(t *testing.T) {

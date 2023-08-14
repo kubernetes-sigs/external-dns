@@ -164,6 +164,8 @@ type Config struct {
 	ExoscaleEndpoint                   string
 	ExoscaleAPIKey                     string `secure:"yes"`
 	ExoscaleAPISecret                  string `secure:"yes"`
+	ExoscaleAPIEnvironment             string
+	ExoscaleAPIZone                    string
 	CRDSourceAPIVersion                string
 	CRDSourceKind                      string
 	ServiceTypeFilter                  []string
@@ -310,7 +312,8 @@ var defaultConfig = &Config{
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
 	LogLevel:                    logrus.InfoLevel.String(),
-	ExoscaleEndpoint:            "https://api.exoscale.ch/dns",
+	ExoscaleAPIEnvironment:      "api",
+	ExoscaleAPIZone:             "ch-gva-2",
 	ExoscaleAPIKey:              "",
 	ExoscaleAPISecret:           "",
 	CRDSourceAPIVersion:         "externaldns.k8s.io/v1alpha1",
@@ -534,7 +537,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
 	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
 
-	app.Flag("exoscale-endpoint", "Provide the endpoint for the Exoscale provider").Default(defaultConfig.ExoscaleEndpoint).StringVar(&cfg.ExoscaleEndpoint)
+	// Flags related to Exoscale provider
+	app.Flag("exoscale-apienv", "When using Exoscale provider, specify the API environment (optional)").Default(defaultConfig.ExoscaleAPIEnvironment).StringVar(&cfg.ExoscaleAPIEnvironment)
+	app.Flag("exoscale-apizone", "When using Exoscale provider, specify the API Zone (optional)").Default(defaultConfig.ExoscaleAPIZone).StringVar(&cfg.ExoscaleAPIZone)
 	app.Flag("exoscale-apikey", "Provide your API Key for the Exoscale provider").Default(defaultConfig.ExoscaleAPIKey).StringVar(&cfg.ExoscaleAPIKey)
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
