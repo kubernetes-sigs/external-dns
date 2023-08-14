@@ -90,7 +90,7 @@ func (p *DomeneshopProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 
 	log.WithFields(log.Fields{
 		"endpoint_count": len(endpoints),
-	}).Info("Found endpoints.")
+	}).Info("Got endpoints")
 
 	return mergeEndpointsByNameType(endpoints), nil
 }
@@ -128,7 +128,7 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 							if httpErr.Response.StatusCode == 409 && httpErr.ErrorBody.Code == "record:collision" {
 								// collision is ok, usually because a record exists without a corresponding registry entry
 								log.WithFields(log.Fields{
-									"endpoint": change,
+									"record": record,
 								}).Info("Ignoring collision when trying to create record, will be handled in a later update.")
 							} else {
 								return err
