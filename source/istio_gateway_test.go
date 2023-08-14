@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
-	networkingv1alpha3api "istio.io/api/networking/v1alpha3"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1beta1api "istio.io/api/networking/v1beta1"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istiofake "istio.io/client-go/pkg/clientset/versioned/fake"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1192,7 +1192,7 @@ func testGatewayEndpoints(t *testing.T) {
 			fakeIstioClient := istiofake.NewSimpleClientset()
 			for _, config := range ti.configItems {
 				gatewayCfg := config.Config()
-				_, err := fakeIstioClient.NetworkingV1alpha3().Gateways(ti.targetNamespace).Create(context.Background(), gatewayCfg, metav1.CreateOptions{})
+				_, err := fakeIstioClient.NetworkingV1beta1().Gateways(ti.targetNamespace).Create(context.Background(), gatewayCfg, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
 
@@ -1301,22 +1301,22 @@ type fakeGatewayConfig struct {
 	selector    map[string]string
 }
 
-func (c fakeGatewayConfig) Config() *networkingv1alpha3.Gateway {
-	gw := &networkingv1alpha3.Gateway{
+func (c fakeGatewayConfig) Config() *networkingv1beta1.Gateway {
+	gw := &networkingv1beta1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        c.name,
 			Namespace:   c.namespace,
 			Annotations: c.annotations,
 		},
-		Spec: networkingv1alpha3api.Gateway{
+		Spec: networkingv1beta1api.Gateway{
 			Servers:  nil,
 			Selector: c.selector,
 		},
 	}
 
-	var servers []*networkingv1alpha3api.Server
+	var servers []*networkingv1beta1api.Server
 	for _, dnsnames := range c.dnsnames {
-		servers = append(servers, &networkingv1alpha3api.Server{
+		servers = append(servers, &networkingv1beta1api.Server{
 			Hosts: dnsnames,
 		})
 	}

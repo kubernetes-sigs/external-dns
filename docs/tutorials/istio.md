@@ -153,7 +153,7 @@ $ kubectl apply -f <(istioctl kube-inject -f https://raw.githubusercontent.com/i
 ##### Create an Istio Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -174,7 +174,7 @@ EOF
 ##### Configure routes for traffic entering via the Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: httpbin
@@ -202,7 +202,7 @@ EOF
 ##### Create an Istio Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
   name: httpbin-gateway
@@ -223,7 +223,7 @@ EOF
 ##### Configure routes for traffic entering via the Gateway:
 ```bash
 $ cat <<EOF | kubectl apply -f -
-apiVersion: networking.istio.io/v1alpha3
+apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: httpbin

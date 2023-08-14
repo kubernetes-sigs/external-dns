@@ -24,10 +24,10 @@ import (
 	"text/template"
 
 	log "github.com/sirupsen/logrus"
-	networkingv1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
+	networkingv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
-	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
+	networkingv1beta1informer "istio.io/client-go/pkg/informers/externalversions/networking/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -50,7 +50,7 @@ type gatewaySource struct {
 	combineFQDNAnnotation    bool
 	ignoreHostnameAnnotation bool
 	serviceInformer          coreinformers.ServiceInformer
-	gatewayInformer          networkingv1alpha3informer.GatewayInformer
+	gatewayInformer          networkingv1beta1informer.GatewayInformer
 }
 
 // NewIstioGatewaySource creates a new gatewaySource with the given config.
@@ -74,7 +74,7 @@ func NewIstioGatewaySource(
 	informerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClient, 0, kubeinformers.WithNamespace(namespace))
 	serviceInformer := informerFactory.Core().V1().Services()
 	istioInformerFactory := istioinformers.NewSharedInformerFactory(istioClient, 0)
-	gatewayInformer := istioInformerFactory.Networking().V1alpha3().Gateways()
+	gatewayInformer := istioInformerFactory.Networking().V1beta1().Gateways()
 
 	// Add default resource event handlers to properly initialize informer.
 	serviceInformer.Informer().AddEventHandler(
@@ -120,7 +120,7 @@ func NewIstioGatewaySource(
 // Endpoints returns endpoint objects for each host-target combination that should be processed.
 // Retrieves all gateway resources in the source's namespace(s).
 func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	gwList, err := sc.istioClient.NetworkingV1alpha3().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
+	gwList, err := sc.istioClient.NetworkingV1beta1().Gateways(sc.namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (sc *gatewaySource) AddEventHandler(ctx context.Context, handler func()) {
 }
 
 // filterByAnnotations filters a list of configs by a given annotation selector.
-func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gateway) ([]*networkingv1alpha3.Gateway, error) {
+func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1beta1.Gateway) ([]*networkingv1beta1.Gateway, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(sc.annotationFilter)
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 		return gateways, nil
 	}
 
-	var filteredList []*networkingv1alpha3.Gateway
+	var filteredList []*networkingv1beta1.Gateway
 
 	for _, gw := range gateways {
 		// convert the annotations to an equivalent label selector
@@ -226,13 +226,13 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	return filteredList, nil
 }
 
-func (sc *gatewaySource) setResourceLabel(gateway *networkingv1alpha3.Gateway, endpoints []*endpoint.Endpoint) {
+func (sc *gatewaySource) setResourceLabel(gateway *networkingv1beta1.Gateway, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 	}
 }
 
-func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1beta1.Gateway) (targets endpoint.Targets, err error) {
 	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
 		return
@@ -262,7 +262,7 @@ func (sc *gatewaySource) targetsFromGateway(gateway *networkingv1alpha3.Gateway)
 }
 
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
-func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
+func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *networkingv1beta1.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
 	annotations := gateway.Annotations
@@ -289,7 +289,7 @@ func (sc *gatewaySource) endpointsFromGateway(hostnames []string, gateway *netwo
 	return endpoints, nil
 }
 
-func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1alpha3.Gateway) ([]string, error) {
+func (sc *gatewaySource) hostNamesFromGateway(gateway *networkingv1beta1.Gateway) ([]string, error) {
 	var hostnames []string
 	for _, server := range gateway.Spec.Servers {
 		for _, host := range server.Hosts {
