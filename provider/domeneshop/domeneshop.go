@@ -150,7 +150,7 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 				adjustedName := strings.TrimSuffix(change.DNSName, "."+domain.Name)
 
 				// Record at the root should be defined as @ instead of the full domain name.
-				if adjustedName == domain.Name {
+				if change.DNSName == domain.Name {
 					adjustedName = "@"
 				}
 
@@ -168,8 +168,9 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 			TARGET:
 				for _, target := range change.Targets {
 					for _, record := range records {
-						// first, find a record with the same target
-						if record.Data == target {
+						comparableTarget := buildComparableTargetForRecord(target, record)
+
+						if record.Data == comparableTarget {
 							record.Host = adjustedName
 							record.Data = target
 							record.TTL = getTTLFromEndpoint(change)
@@ -233,20 +234,21 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 				adjustedName := strings.TrimSuffix(change.DNSName, "."+domain.Name)
 
 				// Record at the root should be defined as @ instead of the full domain name.
-				if adjustedName == domain.Name {
+				if change.DNSName == domain.Name {
 					adjustedName = "@"
 				}
 
-				// find record to delete by lookup?
 				records, err := p.Client.ListDNSRecords(ctx, domain, adjustedName, change.RecordType)
 				if err != nil {
 					return err
 				}
 
 				for _, record := range records {
-					if len(change.Targets) > 0 {
+					if change.Targets.Len() > 0 {
 						for _, target := range change.Targets {
-							if record.Data == target {
+							comparableTarget := buildComparableTargetForRecord(target, record)
+
+							if record.Data == comparableTarget {
 								log.WithFields(log.Fields{
 									"record": record,
 								}).Info("Deleting record")
@@ -280,6 +282,17 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	}
 
 	return nil
+}
+
+func buildComparableTargetForRecord(target string, record *DNSRecord) string {
+	// The Domeneshop API returns CNAME records with a trailing dot, so compare with one
+	// even if the change targets do not end with one
+
+	comparableTarget := target
+	if record.Type == "CNAME" && strings.HasSuffix(record.Data, ".") {
+		comparableTarget = strings.TrimSuffix(target, ".") + "."
+	}
+	return comparableTarget
 }
 
 func filterDomains(domains []*Domain, domainFilter endpoint.DomainFilter) []*Domain {
