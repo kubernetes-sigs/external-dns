@@ -58,13 +58,14 @@ func NewDomeneshopProvider(ctx context.Context, domainFilter endpoint.DomainFilt
 	return provider, nil
 }
 
-// Records returns the list of records in a given zone.
+// Records returns the list of records from the domains.
 func (p *DomeneshopProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	domains, err := p.Client.ListDomains(ctx)
 	if err != nil {
 		return nil, err
 	}
+	domains = filterDomains(domains, p.domainFilter)
 
 	for _, domain := range domains {
 		records, err := p.Client.ListDNSRecords(ctx, domain, "", "")
@@ -94,27 +95,13 @@ func (p *DomeneshopProvider) Records(ctx context.Context) ([]*endpoint.Endpoint,
 	return mergeEndpointsByNameType(endpoints), nil
 }
 
-func recordFromEndpointTarget(domain *Domain, e *endpoint.Endpoint, target string) *DNSRecord {
-	record := &DNSRecord{
-		Type: e.RecordType,
-		Host: strings.TrimSuffix(e.DNSName, "."+domain.Name),
-		Data: target,
-		TTL:  getTTLFromEndpoint(e),
-	}
-
-	if record.Host == domain.Name {
-		record.Host = "@"
-	}
-
-	return record
-}
-
-// ApplyChanges applies a given set of changes in a given zone.
+// ApplyChanges applies a given set of changes to the domains.
 func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	domains, err := p.Client.ListDomains(ctx)
 	if err != nil {
 		return err
 	}
+	domains = filterDomains(domains, p.domainFilter)
 
 	for _, domain := range domains {
 		for _, change := range changes.Create {
@@ -129,6 +116,10 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 					log.WithFields(log.Fields{
 						"record": record,
 					}).Info("Creating record")
+
+					if p.DryRun {
+						continue
+					}
 
 					err := p.Client.AddDNSRecord(ctx, domain, record)
 					if err != nil {
@@ -187,11 +178,15 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 								"record": record,
 							}).Info("Updating record")
 
+							delete(unmatchedRecords, record.ID)
+
+							if p.DryRun {
+								continue
+							}
+
 							if err := p.Client.UpdateDNSRecord(ctx, domain, record); err != nil {
 								return err
 							}
-
-							delete(unmatchedRecords, record.ID)
 							continue TARGET
 						}
 					}
@@ -201,6 +196,10 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 					log.WithFields(log.Fields{
 						"record": record,
 					}).Info("Creating record")
+
+					if p.DryRun {
+						continue
+					}
 
 					if err := p.Client.AddDNSRecord(ctx, domain, record); err != nil {
 						return err
@@ -212,6 +211,10 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 					log.WithFields(log.Fields{
 						"record": record,
 					}).Info("Deleting record")
+
+					if p.DryRun {
+						continue
+					}
 
 					if err := p.Client.DeleteDNSRecord(ctx, domain, record); err != nil {
 						return err
@@ -248,6 +251,10 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 									"record": record,
 								}).Info("Deleting record")
 
+								if p.DryRun {
+									continue
+								}
+
 								if err := p.Client.DeleteDNSRecord(ctx, domain, record); err != nil {
 									return err
 								}
@@ -260,6 +267,10 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 						"record": record,
 					}).Info("Deleting record")
 
+					if p.DryRun {
+						continue
+					}
+
 					if err := p.Client.DeleteDNSRecord(ctx, domain, record); err != nil {
 						return err
 					}
@@ -269,6 +280,36 @@ func (p *DomeneshopProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	}
 
 	return nil
+}
+
+func filterDomains(domains []*Domain, domainFilter endpoint.DomainFilter) []*Domain {
+	if !domainFilter.IsConfigured() {
+		return domains
+	}
+	var result []*Domain
+
+	for _, domain := range domains {
+		if domainFilter.Match(domain.Name) {
+			result = append(result, domain)
+		}
+	}
+
+	return result
+}
+
+func recordFromEndpointTarget(domain *Domain, e *endpoint.Endpoint, target string) *DNSRecord {
+	record := &DNSRecord{
+		Type: e.RecordType,
+		Host: strings.TrimSuffix(e.DNSName, "."+domain.Name),
+		Data: target,
+		TTL:  getTTLFromEndpoint(e),
+	}
+
+	if record.Host == domain.Name {
+		record.Host = "@"
+	}
+
+	return record
 }
 
 func getTTLFromEndpoint(ep *endpoint.Endpoint) int {
