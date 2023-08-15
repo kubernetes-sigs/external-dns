@@ -67,7 +67,7 @@ func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (
 func getCredentials(cfg config) (azcore.TokenCredential, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get cloud configuration: %w", err)
 	}
 
 	// Try to retrieve token with service principal credentials.
