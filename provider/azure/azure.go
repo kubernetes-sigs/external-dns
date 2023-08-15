@@ -72,7 +72,7 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 	}
 	cred, err := getCredentials(*cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get credentials: %v", err)
+		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
 	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, nil)
 	if err != nil {
