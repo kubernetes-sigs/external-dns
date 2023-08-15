@@ -66,7 +66,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	}
 	cred, err := getCredentials(*cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get credentials: %v", err)
+		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
 	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, nil)
 	if err != nil {
