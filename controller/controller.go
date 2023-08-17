@@ -222,6 +222,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Desired:        endpoints,
 		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
 		ManagedRecords: c.ManagedRecordTypes,
+		OwnerID:        c.Registry.OwnerID(),
 	}
 
 	plan = plan.Calculate()

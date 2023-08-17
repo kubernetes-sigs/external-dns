@@ -461,11 +461,11 @@ func (suite *PlanTestSuite) TestRecordTypeChange() {
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -484,11 +484,11 @@ func (suite *PlanTestSuite) TestExistingCNameWithDualStackDesired() {
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -509,11 +509,11 @@ func (suite *PlanTestSuite) TestExistingDualStackWithCNameDesired() {
 	expectedDelete := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooA5.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -537,11 +537,11 @@ func (suite *PlanTestSuite) TestExistingOwnerNotMatchingDualStackDesired() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter("pwner"),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        "pwner",
 	}
 
 	changes := p.Calculate().Changes
@@ -565,11 +565,11 @@ func (suite *PlanTestSuite) TestConflictingCurrentNonConflictingDesired() {
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -593,11 +593,11 @@ func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooV1Cname.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -621,11 +621,11 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 	expectedDelete := []*endpoint.Endpoint{}
 
 	p := &Plan{
-		Policies:          []Policy{&SyncPolicy{}},
-		Current:           current,
-		Desired:           desired,
-		ManagedRecords:    []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnedRecordFilter: endpoint.NewOwnedRecordFilter(suite.fooA5.Labels[endpoint.OwnerLabelKey]),
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes

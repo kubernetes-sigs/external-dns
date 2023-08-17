@@ -46,8 +46,8 @@ type Plan struct {
 	DomainFilter endpoint.DomainFilterInterface
 	// DNS record types that will be considered for management
 	ManagedRecords []string
-	// Optional record filter that matches records owned by the registry
-	OwnedRecordFilter endpoint.EndpointFilterInterface
+	// OwnerID of records to manage
+	OwnerID string
 }
 
 // Changes holds lists of actions to be executed by dns providers
@@ -267,7 +267,7 @@ func (p *Plan) Calculate() *Plan {
 				// only add creates if the external dns has ownership claim on the domain
 				ownersMatch := true
 				for _, current := range row.current {
-					if p.OwnedRecordFilter != nil && !p.OwnedRecordFilter.Match(current) {
+					if p.OwnerID != "" && !current.IsOwnedBy(p.OwnerID) {
 						ownersMatch = false
 					}
 				}
@@ -284,10 +284,10 @@ func (p *Plan) Calculate() *Plan {
 	}
 
 	// filter out updates this external dns does not have ownership claim over
-	if p.OwnedRecordFilter != nil {
-		changes.Delete = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.Delete)
-		changes.UpdateOld = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.UpdateOld)
-		changes.UpdateNew = endpoint.ApplyEndpointFilter(p.OwnedRecordFilter, changes.UpdateNew)
+	if p.OwnerID != "" {
+		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
+		changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
+		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
 
 	plan := &Plan{

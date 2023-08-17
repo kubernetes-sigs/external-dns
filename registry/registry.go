@@ -32,6 +32,5 @@ type Registry interface {
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
 	GetDomainFilter() endpoint.DomainFilter
-	// Evaluate if endpoint id owned by the registry and return true.
-	GetOwnedRecordFilter() endpoint.EndpointFilterInterface
+	OwnerID() string
 }

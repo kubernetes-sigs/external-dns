@@ -46,8 +46,8 @@ func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return sdr.provider.GetDomainFilter()
 }
 
-func (im *AWSSDRegistry) GetOwnedRecordFilter() endpoint.EndpointFilterInterface {
-	return endpoint.NewOwnedRecordFilter(im.ownerID)
+func (im *AWSSDRegistry) OwnerID() string {
+	return im.ownerID
 }
 
 // Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized
@@ -74,12 +74,11 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 // ApplyChanges filters out records not owned the External-DNS, additionally it adds the required label
 // inserted in the AWS SD instance as a CreateID field
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	ownedRecordFilter := sdr.GetOwnedRecordFilter()
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.UpdateNew),
-		UpdateOld: endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.UpdateOld),
-		Delete:    endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.Delete),
 	}
 
 	sdr.updateLabels(filteredChanges.Create)

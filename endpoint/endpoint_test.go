@@ -117,76 +117,7 @@ func TestIsLess(t *testing.T) {
 	}
 }
 
-func TestOwnedRecordFilterMatch(t *testing.T) {
-	type fields struct {
-		ownerID string
-	}
-	type args struct {
-		ep *Endpoint
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		args   args
-		want   bool
-	}{
-		{
-			name:   "no labels",
-			fields: fields{ownerID: "foo"},
-			args: args{ep: &Endpoint{
-				DNSName:    "foo.com",
-				RecordType: RecordTypeA,
-			}},
-			want: false,
-		},
-		{
-			name:   "no owner label",
-			fields: fields{ownerID: "foo"},
-			args: args{ep: &Endpoint{
-				DNSName:    "foo.com",
-				RecordType: RecordTypeA,
-				Labels:     NewLabels(),
-			}},
-			want: false,
-		},
-		{
-			name:   "owner not matched",
-			fields: fields{ownerID: "foo"},
-			args: args{ep: &Endpoint{
-				DNSName:    "foo.com",
-				RecordType: RecordTypeA,
-				Labels: Labels{
-					OwnerLabelKey: "bar",
-				},
-			}},
-			want: false,
-		},
-		{
-			name:   "owner matched",
-			fields: fields{ownerID: "foo"},
-			args: args{ep: &Endpoint{
-				DNSName:    "foo.com",
-				RecordType: RecordTypeA,
-				Labels: Labels{
-					OwnerLabelKey: "foo",
-				},
-			}},
-			want: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			f := ownedRecordFilter{
-				ownerID: tt.fields.ownerID,
-			}
-			if got := f.Match(tt.args.ep); got != tt.want {
-				t.Errorf("ownedRecordFilter.Match() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestApplyEndpointFilter(t *testing.T) {
+func TestFilterEndpointsByOwnerID(t *testing.T) {
 	foo1 := &Endpoint{
 		DNSName:    "foo.com",
 		RecordType: RecordTypeA,
@@ -209,8 +140,8 @@ func TestApplyEndpointFilter(t *testing.T) {
 		},
 	}
 	type args struct {
-		filter EndpointFilterInterface
-		eps    []*Endpoint
+		ownerID string
+		eps     []*Endpoint
 	}
 	tests := []struct {
 		name string
@@ -220,7 +151,7 @@ func TestApplyEndpointFilter(t *testing.T) {
 		{
 			name: "filter values",
 			args: args{
-				filter: NewOwnedRecordFilter("foo"),
+				ownerID: "foo",
 				eps: []*Endpoint{
 					foo1,
 					foo2,
@@ -235,8 +166,52 @@ func TestApplyEndpointFilter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ApplyEndpointFilter(tt.args.filter, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ApplyEndpointFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsOwnedBy(t *testing.T) {
+	type fields struct {
+		Labels Labels
+	}
+	type args struct {
+		ownerID string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "empty labels",
+			fields: fields{Labels: Labels{}},
+			args:   args{ownerID: "foo"},
+			want:   false,
+		},
+		{
+			name:   "owner label not match",
+			fields: fields{Labels: Labels{OwnerLabelKey: "bar"}},
+			args:   args{ownerID: "foo"},
+			want:   false,
+		},
+		{
+			name:   "owner label match",
+			fields: fields{Labels: Labels{OwnerLabelKey: "foo"}},
+			args:   args{ownerID: "foo"},
+			want:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Endpoint{
+				Labels: tt.fields.Labels,
+			}
+			if got := e.IsOwnedBy(tt.args.ownerID); got != tt.want {
+				t.Errorf("Endpoint.IsOwnedBy() = %v, want %v", got, tt.want)
 			}
 		})
 	}

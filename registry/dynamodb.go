@@ -104,8 +104,8 @@ func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
-func (im *DynamoDBRegistry) GetOwnedRecordFilter() endpoint.EndpointFilterInterface {
-	return endpoint.NewOwnedRecordFilter(im.ownerID)
+func (im *DynamoDBRegistry) OwnerID() string {
+	return im.ownerID
 }
 
 // Records returns the current records from the registry.
@@ -213,12 +213,11 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 // ApplyChanges updates the DNS provider and DynamoDB table with the changes.
 func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	ownedRecordFilter := im.GetOwnedRecordFilter()
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.UpdateNew),
-		UpdateOld: endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.UpdateOld),
-		Delete:    endpoint.ApplyEndpointFilter(ownedRecordFilter, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
 	statements := make([]*dynamodb.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
