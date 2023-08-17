@@ -398,12 +398,48 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 
 		hostnameList = getHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range hostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, false)...)
+			hostnameProviderSpecific := endpoint.ProviderSpecific{}
+			for _, p := range providerSpecific {
+				specificValue, match := hostnameSpecificAnnotationValue(hostname, p.Value)
+				if !match {
+					continue
+				}
+
+				if specificValue == p.Value {
+					hostnameProviderSpecific = append(hostnameProviderSpecific, p)
+				} else {
+					hostnameProviderSpecific = append(hostnameProviderSpecific, endpoint.ProviderSpecificProperty{
+						Name:  p.Name,
+						Value: strings.TrimSpace(strings.TrimSuffix(specificValue, fmt.Sprintf("[%s]", hostname))),
+					})
+				}
+			}
+
+			specificSetIdentifier, _ := hostnameSpecificAnnotationValue(hostname, setIdentifier)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, hostnameProviderSpecific, specificSetIdentifier, false)...)
 		}
 
 		internalHostnameList = getInternalHostnamesFromAnnotations(svc.Annotations)
 		for _, hostname := range internalHostnameList {
-			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, providerSpecific, setIdentifier, true)...)
+			hostnameProviderSpecific := endpoint.ProviderSpecific{}
+			for _, p := range providerSpecific {
+				specificValue, match := hostnameSpecificAnnotationValue(hostname, p.Value)
+				if !match {
+					continue
+				}
+
+				if specificValue == p.Value {
+					hostnameProviderSpecific = append(hostnameProviderSpecific, p)
+				} else {
+					hostnameProviderSpecific = append(hostnameProviderSpecific, endpoint.ProviderSpecificProperty{
+						Name:  p.Name,
+						Value: strings.TrimSpace(strings.TrimSuffix(specificValue, fmt.Sprintf("[%s]", hostname))),
+					})
+				}
+			}
+
+			specificSetIdentifier, _ := hostnameSpecificAnnotationValue(hostname, setIdentifier)
+			endpoints = append(endpoints, sc.generateEndpoints(svc, hostname, hostnameProviderSpecific, specificSetIdentifier, true)...)
 		}
 	}
 	return endpoints
@@ -464,7 +500,16 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 
 	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
 
-	ttl := getTTLFromAnnotations(svc.Annotations, resource)
+	annotations := make(map[string]string)
+	for k, v := range svc.Annotations {
+		specificValue, match := hostnameSpecificAnnotationValue(hostname, v)
+		if !match {
+			continue
+		}
+
+		annotations[k] = specificValue
+	}
+	ttl := getTTLFromAnnotations(annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(svc.Annotations)
 
@@ -717,4 +762,33 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+}
+
+// hostnameSpecificAnnotationValue extracts scoped annotation value of the form "somevalue [<hostname>]" for a given hostname.
+// returns "", false in case the annotation is scoped, but not to the given hostname
+func hostnameSpecificAnnotationValue(hostname, annotation string) (string, bool) {
+	annotation = strings.TrimSpace(annotation)
+
+	for _, part := range strings.Split(annotation, ";") {
+		v := strings.TrimSpace(part)
+
+		if strings.Contains(v, "=") {
+			kv := strings.SplitN(v, "=", 2)
+
+			if len(kv) < 2 || strings.TrimSpace(kv[1]) == "" {
+				return "", false
+			}
+
+			kv[0] = strings.TrimSpace(kv[0])
+
+			if kv[0] == hostname {
+				return strings.TrimSpace(kv[1]), true
+			}
+		} else {
+			// non-scoped annotation. Apply to endpoint
+			return v, true
+		}
+	}
+
+	return "", false
 }
