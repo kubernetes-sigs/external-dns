@@ -1107,6 +1107,46 @@ func testTXTRegistryMissingRecordsWithPrefix(t *testing.T) {
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
+func TestTXTMigration(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("oldformat.test-zone.example.org", "foo.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("oldformat.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+			newEndpointWithOwner("oldformat2.test-zone.example.org", "bar.loadbalancer.com", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("oldformat2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+	})
+	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "wc", []string{endpoint.RecordTypeCNAME, endpoint.RecordTypeA, endpoint.RecordTypeNS}, false, nil)
+	records, err := r.Records(ctx)
+	assert.NoError(t, err)
+
+	testPlan := plan.Plan{
+		Current: records,
+		Desired: []*endpoint.Endpoint{
+			{
+				DNSName:    "oldformat.test-zone.example.org",
+				Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+				RecordType: endpoint.RecordTypeCNAME,
+			},
+			{
+				DNSName:    "oldformat2.test-zone.example.org",
+				Targets:    endpoint.Targets{"bar.loadbalancer.com"},
+				RecordType: endpoint.RecordTypeA,
+			},
+		},
+		Policies:       []plan.Policy{&plan.SyncPolicy{}},
+		ManagedRecords: []string{"A", "AAAA", "CNAME"},
+	}
+
+	txtMigrationChanges := testPlan.Calculate()
+
+	err = r.ApplyChanges(ctx, txtMigrationChanges.Changes)
+	assert.NoError(t, err)
+}
+
 func TestCacheMethods(t *testing.T) {
 	cache := []*endpoint.Endpoint{
 		newEndpointWithOwner("thing.com", "1.2.3.4", "A", "owner"),
