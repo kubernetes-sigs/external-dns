@@ -19,6 +19,7 @@ package plan
 import (
 	"sort"
 
+	log "github.com/sirupsen/logrus"
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -27,6 +28,7 @@ import (
 type ConflictResolver interface {
 	ResolveCreate(candidates []*endpoint.Endpoint) *endpoint.Endpoint
 	ResolveUpdate(current *endpoint.Endpoint, candidates []*endpoint.Endpoint) *endpoint.Endpoint
+	ResolveRecordTypes(key planKey, row *planTableRow) map[string]*domainEndpoints
 }
 
 // PerResource allows only one resource to own a given dns name
@@ -60,6 +62,57 @@ func (s PerResource) ResolveUpdate(current *endpoint.Endpoint, candidates []*end
 		}
 	}
 	return s.ResolveCreate(candidates)
+}
+
+// ResolveRecordTypes attempts to detect and resolve record type conflicts in desired
+// endpoints for a domain. For eample if the there is more than 1 candidate and at lease one
+// of them is a CNAME. Per [RFC 1034 3.6.2] domains that contain a CNAME can not contain any
+// other record types. The default policy will prefer CNAME record types when a conflict is
+// detected.
+//
+// [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
+func (s PerResource) ResolveRecordTypes(key planKey, row *planTableRow) map[string]*domainEndpoints {
+	if len(row.candidates) <= 1 {
+		return row.records
+	}
+
+	cname := false
+	other := false
+	for _, c := range row.candidates {
+		if c.RecordType == endpoint.RecordTypeCNAME {
+			cname = true
+		} else {
+			other = true
+		}
+
+		if cname && other {
+			break
+		}
+	}
+
+	// conflict was found, remove candiates of non-preferred record types
+	if cname && other {
+		log.Warnf("Domain %s contains conflicting record type candidates, keeping CNAME record", key.dnsName)
+		records := map[string]*domainEndpoints{}
+		for recordType, recs := range row.records {
+			if recordType == endpoint.RecordTypeCNAME {
+				// policy is to prefer the CNAME record type when a conflic is found
+				records[recordType] = recs
+			} else {
+				// discard candidates of conflicting records
+				// keep currect so they can be deleted
+				records[recordType] = &domainEndpoints{
+					current:    recs.current,
+					candidates: []*endpoint.Endpoint{},
+				}
+			}
+		}
+
+		return records
+	}
+
+	// no conflict, return all records types
+	return row.records
 }
 
 // less returns true if endpoint x is less than y

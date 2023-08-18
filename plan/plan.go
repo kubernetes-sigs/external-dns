@@ -118,33 +118,6 @@ type domainEndpoints struct {
 	candidates []*endpoint.Endpoint
 }
 
-// hasCandidateRecordTypeConflict returns true if the candidates set contains conflicting or invalid record types.
-// For eample if the there is more than 1 candidate and at lease one of them is a CNAME.
-// Per [RFC 1034 3.6.2] domains that contain a CNAME can not contain any other record types.
-//
-// [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
-func (t planTableRow) hasCandidateRecordTypeConflict() bool {
-	if len(t.candidates) <= 1 {
-		return false
-	}
-
-	cname := false
-	other := false
-	for _, c := range t.candidates {
-		if c.RecordType == endpoint.RecordTypeCNAME {
-			cname = true
-		} else {
-			other = true
-		}
-
-		if cname && other {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (t planTableRow) String() string {
 	return fmt.Sprintf("planTableRow{current=%v, candidates=%v}", t.current, t.candidates)
 }
@@ -209,14 +182,11 @@ func (p *Plan) Calculate() *Plan {
 	for key, row := range t.rows {
 		// dns name not taken
 		if len(row.current) == 0 {
-			// TODO how to resolve conflicting source candidate record types
-			if row.hasCandidateRecordTypeConflict() {
-				log.Warnf("Domain %s contains conflicting record type candidates, no updates planned", key.dnsName)
-				continue
-			}
-
-			for _, records := range row.records {
-				changes.Create = append(changes.Create, t.resolver.ResolveCreate(records.candidates))
+			recordsByType := t.resolver.ResolveRecordTypes(key, row)
+			for _, records := range recordsByType {
+				if len(records.candidates) > 0 {
+					changes.Create = append(changes.Create, t.resolver.ResolveCreate(records.candidates))
+				}
 			}
 		}
 
@@ -227,16 +197,11 @@ func (p *Plan) Calculate() *Plan {
 
 		// dns name is taken
 		if len(row.current) > 0 && len(row.candidates) > 0 {
-			// TODO how to resolve conflicting source candidate record types
-			if row.hasCandidateRecordTypeConflict() {
-				log.Warnf("Domain %s contains conflicting record type candidates, no updates planned", key.dnsName)
-				continue
-			}
-
 			creates := []*endpoint.Endpoint{}
 
 			// apply changes for each record type
-			for _, records := range row.records {
+			recordsByType := t.resolver.ResolveRecordTypes(key, row)
+			for _, records := range recordsByType {
 				// record type not desired
 				if records.current != nil && len(records.candidates) == 0 {
 					changes.Delete = append(changes.Delete, records.current)

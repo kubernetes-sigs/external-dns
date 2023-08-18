@@ -608,17 +608,17 @@ func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 }
 
 // TestCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
-// This could be the result of multiple sources generating conflicting records types. In this case there are
-// no changes planned since there is no conflict resolver for this situation.
+// This could be the result of multiple sources generating conflicting records types. In this case the conflict
+// resolver should prefer the CNAME record candidate and delete the other records.
 func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "nerf"
 	suite.fooAAAA.Labels[endpoint.OwnerLabelKey] = "nerf"
 	current := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA}
-	expectedCreate := []*endpoint.Endpoint{}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{}
+	expectedDelete := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
 
 	p := &Plan{
 		Policies:       []Policy{&SyncPolicy{}},
@@ -636,12 +636,12 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 }
 
 // TestNoCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
-// This could be the result of multiple sources generating conflicting records types. In this case there are
-// no changes planned since there is no conflict resolver for this situation.
+// This could be the result of multiple sources generating conflicting records types. In this case there the
+// conflict resolver should prefer the CNAME record and drop the other candidate record types.
 func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA}
-	expectedCreate := []*endpoint.Endpoint{}
+	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}
