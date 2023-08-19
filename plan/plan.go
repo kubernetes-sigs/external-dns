@@ -220,8 +220,14 @@ func (p *Plan) Calculate() *Plan {
 				if records.current != nil && len(records.candidates) > 0 {
 					update := t.resolver.ResolveUpdate(records.current, records.candidates)
 
-					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) || p.shouldUpdateProviderSpecific(update, records.current) {
+					if shouldUpdateTTL(update, records.current) || targetChanged(update, records.current) {
 						inheritOwner(records.current, update)
+						changes.UpdateNew = append(changes.UpdateNew, update)
+						changes.UpdateOld = append(changes.UpdateOld, records.current)
+					} else if p.shouldUpdateProviderSpecific(update, records.current) {
+						inheritOwner(records.current, update)
+						// Need to copy the ProviderSpecific field into the update to be used by txt registry for migrations
+						records.current.ProviderSpecific.DeepCopyInto(&update.ProviderSpecific)
 						changes.UpdateNew = append(changes.UpdateNew, update)
 						changes.UpdateOld = append(changes.UpdateOld, records.current)
 					}

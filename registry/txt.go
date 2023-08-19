@@ -212,16 +212,50 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 	}
 
 	endpoints := make([]*endpoint.Endpoint, 0)
+	txtOld := im.generateOldTXTRecord(r)
+	if txtOld != nil {
+		endpoints = append(endpoints, txtOld)
+	}
+	// new TXT record format (containing record type)
+	txtNew := im.generateNewTXTRecord(r)
+	if txtNew != nil {
+		endpoints = append(endpoints, txtNew)
+	}
+
+	return endpoints
+}
+
+// generateOldTXTRecord generates the "old" TXT record.
+// This is to aid in the txt migration to only delete these old txt records on force updates
+func (im *TXTRegistry) generateOldTXTRecord(r *endpoint.Endpoint) *endpoint.Endpoint {
+	// Missing TXT records are added to the set of changes.
+	// Obviously, we don't need any other TXT record for them.
+	if r.RecordType == endpoint.RecordTypeTXT {
+		return nil
+	}
+
+	var txt *endpoint.Endpoint
 
 	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
 		// old TXT record format
-		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+		txt = endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
 			txt.WithSetIdentifier(r.SetIdentifier)
 			txt.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 			txt.ProviderSpecific = r.ProviderSpecific
-			endpoints = append(endpoints, txt)
 		}
+	}
+
+	return txt
+}
+
+// generateNewTXTRecord generates the "new" TXT records.
+// This is to aid in the txt migration to only create these new txt records
+func (im *TXTRegistry) generateNewTXTRecord(r *endpoint.Endpoint) *endpoint.Endpoint {
+	// Missing TXT records are added to the set of changes.
+	// Obviously, we don't need any other TXT record for them.
+	if r.RecordType == endpoint.RecordTypeTXT {
+		return nil
 	}
 	// new TXT record format (containing record type)
 	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
@@ -229,10 +263,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
 		txtNew.ProviderSpecific = r.ProviderSpecific
-		endpoints = append(endpoints, txtNew)
 	}
 
-	return endpoints
+	return txtNew
 }
 
 // ApplyChanges updates dns provider with the changes
@@ -272,7 +305,11 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 	for _, r := range filteredChanges.UpdateOld {
 		// when we updateOld TXT records for which value has changed (due to new label) this would still work because
 		// !!! TXT record value is uniquely generated from the Labels of the endpoint. Hence old TXT record can be uniquely reconstructed
-		filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		if value, ok := r.GetProviderSpecificProperty(providerSpecificForceUpdate); ok && value == "true" {
+			filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateOldTXTRecord(r))
+		} else {
+			filteredChanges.UpdateOld = append(filteredChanges.UpdateOld, im.generateTXTRecord(r)...)
+		}
 		// remove old version of record from cache
 		if im.cacheInterval > 0 {
 			im.removeFromCache(r)
@@ -281,7 +318,12 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
-		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		if value, ok := r.GetProviderSpecificProperty(providerSpecificForceUpdate); ok && value == "true" {
+			filteredChanges.Create = append(filteredChanges.Create, im.generateNewTXTRecord(r))
+			filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateOldTXTRecord(r))
+		} else {
+			filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
+		}
 		// add new version of record to cache
 		if im.cacheInterval > 0 {
 			im.addToCache(r)
