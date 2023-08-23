@@ -63,6 +63,9 @@ eg. ```--domain-filter=.example.org``` will allow *only* zones that end in `.exa
 
 The filter can also match parent zones. For example `--domain-filter=a.example.com` will allow for zone `example.com`. If you want to match parent zones, you cannot pre-pend your filter with a ".", eg. `--domain-filter=.example.com` will not attempt to match parent zones.
 
+### Regex Domain Filter (`--regex-domain-filter`)
+`--regex-domain-filter` limits possible domains and target zone with a regex. It overrides domain filters and can be specified only once.
+
 ## RBAC
 
 If your cluster is RBAC enabled, you also need to setup the following, before you can run external-dns:
@@ -169,4 +172,3 @@ Once the API shows the record correctly, you can double check your record using:
 ```bash
 $ dig @${PDNS_FQDN} echo.example.com.
 ```
-
