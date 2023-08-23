@@ -302,7 +302,7 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		if !virtualServiceBindsToGateway(virtualService, gateway, vsHost) {
 			continue
 		}
-		tgs, err := sc.targetsFromGateway(gateway)
+		tgs, err := sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
 			return targets, err
 		}
@@ -431,9 +431,39 @@ func parseGateway(gateway string) (namespace, name string, err error) {
 	return
 }
 
-func (sc *virtualServiceSource) targetsFromGateway(gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressStr string, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
+	namespace, name, err := parseIngress(ingressStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Ingress annotation on Gateway (%s/%s): %w", gateway.Namespace, gateway.Name, err)
+	}
+	if namespace == "" {
+		namespace = gateway.Namespace
+	}
+
+	ingress, err := sc.kubeClient.NetworkingV1().Ingresses(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	for _, lb := range ingress.Status.LoadBalancer.Ingress {
+		if lb.IP != "" {
+			targets = append(targets, lb.IP)
+		} else if lb.Hostname != "" {
+			targets = append(targets, lb.Hostname)
+		}
+	}
+	return
+}
+
+func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway *networkingv1alpha3.Gateway) (targets endpoint.Targets, err error) {
 	targets = getTargetsFromTargetAnnotation(gateway.Annotations)
 	if len(targets) > 0 {
+		return
+	}
+
+	ingressStr, ok := gateway.Annotations[IstioGatewayIngressSource]
+	if ok && ingressStr != "" {
+		targets, err = sc.targetsFromIngress(ctx, ingressStr, gateway)
 		return
 	}
 
