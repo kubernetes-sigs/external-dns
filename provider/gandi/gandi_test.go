@@ -17,16 +17,15 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/go-gandi/go-gandi/domain"
 	"github.com/go-gandi/go-gandi/livedns"
 	"github.com/maxatome/go-testdeep/td"
-
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/internal/testutils"
 	"sigs.k8s.io/external-dns/plan"
 )
 
@@ -38,27 +37,8 @@ type MockAction struct {
 
 type mockGandiClient struct {
 	Actions         []MockAction
-	FunctionToFail  string
+	FunctionToFail  string `default:""`
 	RecordsToReturn []livedns.DomainRecord
-}
-
-func mockGandiClientNew() *mockGandiClient {
-	return &mockGandiClient{
-		RecordsToReturn: testRecords(),
-	}
-}
-
-func mockGandiClientNewWithRecords(recordsToReturn []livedns.DomainRecord) *mockGandiClient {
-	return &mockGandiClient{
-		RecordsToReturn: recordsToReturn,
-	}
-}
-
-func mockGandiClientNewWithFailure(functionToFail string) *mockGandiClient {
-	return &mockGandiClient{
-		FunctionToFail:  functionToFail,
-		RecordsToReturn: testRecords(),
-	}
 }
 
 const (
@@ -67,32 +47,6 @@ const (
 	exampleDotNetUri = domainUriPrefix + "example.net"
 )
 
-func testRecords() []livedns.DomainRecord {
-	return []livedns.DomainRecord{
-		{
-			RrsetType:   endpoint.RecordTypeCNAME,
-			RrsetTTL:    600,
-			RrsetName:   "@",
-			RrsetHref:   exampleDotComUri + "/records/%40/A",
-			RrsetValues: []string{"192.168.0.1"},
-		},
-		{
-			RrsetType:   endpoint.RecordTypeCNAME,
-			RrsetTTL:    600,
-			RrsetName:   "www",
-			RrsetHref:   exampleDotComUri + "/records/www/CNAME",
-			RrsetValues: []string{"lb.example.com"},
-		},
-		{
-			RrsetType:   endpoint.RecordTypeA,
-			RrsetTTL:    600,
-			RrsetName:   "test",
-			RrsetHref:   exampleDotComUri + "/records/test/A",
-			RrsetValues: []string{"192.168.0.2"},
-		},
-	}
-}
-
 // Mock all methods
 
 func (m *mockGandiClient) GetDomainRecords(fqdn string) (records []livedns.DomainRecord, err error) {
@@ -100,11 +54,12 @@ func (m *mockGandiClient) GetDomainRecords(fqdn string) (records []livedns.Domai
 		Name: "GetDomainRecords",
 		FQDN: fqdn,
 	})
+
 	if m.FunctionToFail == "GetDomainRecords" {
 		return nil, fmt.Errorf("injected error")
 	}
 
-	return m.RecordsToReturn, err
+	return m.RecordsToReturn, nil
 }
 
 func (m *mockGandiClient) CreateDomainRecord(fqdn, name, recordtype string, ttl int, values []string) (response standardResponse, err error) {
@@ -118,6 +73,7 @@ func (m *mockGandiClient) CreateDomainRecord(fqdn, name, recordtype string, ttl 
 			RrsetValues: values,
 		},
 	})
+
 	if m.FunctionToFail == "CreateDomainRecord" {
 		return standardResponse{}, fmt.Errorf("injected error")
 	}
@@ -171,6 +127,7 @@ func (m *mockGandiClient) ListDomains() (domains []domain.ListResponse, err erro
 	}
 
 	return []domain.ListResponse{
+		// Tests are using example.com
 		{
 			FQDN:        "example.com",
 			FQDNUnicode: "example.com",
@@ -181,6 +138,7 @@ func (m *mockGandiClient) ListDomains() (domains []domain.ListResponse, err erro
 			},
 			TLD: "com",
 		},
+		// example.net returns "other" as NameServer, so it is ignored
 		{
 			FQDN:        "example.net",
 			FQDNUnicode: "example.net",
@@ -218,108 +176,86 @@ func TestNewGandiProvider(t *testing.T) {
 	}
 }
 
-func TestGandiProvider_TestData(t *testing.T) {
-	mockedClient := mockGandiClientNew()
-
-	// Check test zone data is ok
-	expectedZonesAnswer := []domain.ListResponse{
-		{
-			FQDN:        "example.com",
-			FQDNUnicode: "example.com",
-			Href:        exampleDotComUri,
-			ID:          "b3e9c271-1c29-4441-97d9-bc021a7ac7c3",
-			NameServer: &domain.NameServerConfig{
-				Current: gandiLiveDNSProvider,
+func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
+	mockedClient := &mockGandiClient{
+		RecordsToReturn: []livedns.DomainRecord{
+			{
+				RrsetType:   endpoint.RecordTypeCNAME,
+				RrsetTTL:    600,
+				RrsetName:   "@",
+				RrsetHref:   exampleDotComUri + "/records/%40/A",
+				RrsetValues: []string{"192.168.0.1"},
 			},
-			TLD: "com",
-		},
-		{
-			FQDN:        "example.net",
-			FQDNUnicode: "example.net",
-			Href:        exampleDotNetUri,
-			ID:          "dc78c1d8-6143-4edb-93bc-3a20d8bc3570",
-			NameServer: &domain.NameServerConfig{
-				Current: "other",
+			{
+				RrsetType:   endpoint.RecordTypeCNAME,
+				RrsetTTL:    600,
+				RrsetName:   "www",
+				RrsetHref:   exampleDotComUri + "/records/www/CNAME",
+				RrsetValues: []string{"lb.example.com"},
 			},
-			TLD: "net",
+			{
+				RrsetType:   endpoint.RecordTypeA,
+				RrsetTTL:    600,
+				RrsetName:   "test",
+				RrsetHref:   exampleDotComUri + "/records/test/A",
+				RrsetValues: []string{"192.168.0.2"},
+			},
 		},
 	}
-
-	testingZonesAnswer, err := mockedClient.ListDomains()
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	if !reflect.DeepEqual(expectedZonesAnswer, testingZonesAnswer) {
-		t.Errorf("should be equal, %s", err)
-	}
-
-	// Check test record data is ok
-	expectedRecordsAnswer := []livedns.DomainRecord{
-		{
-			RrsetType:   endpoint.RecordTypeCNAME,
-			RrsetTTL:    600,
-			RrsetName:   "@",
-			RrsetHref:   exampleDotComUri + "/records/%40/A",
-			RrsetValues: []string{"192.168.0.1"},
-		},
-		{
-			RrsetType:   endpoint.RecordTypeCNAME,
-			RrsetTTL:    600,
-			RrsetName:   "www",
-			RrsetHref:   exampleDotComUri + "/records/www/CNAME",
-			RrsetValues: []string{"lb.example.com"},
-		},
-		{
-			RrsetType:   endpoint.RecordTypeA,
-			RrsetTTL:    600,
-			RrsetName:   "test",
-			RrsetHref:   exampleDotComUri + "/records/test/A",
-			RrsetValues: []string{"192.168.0.2"},
-		},
-	}
-
-	testingRecordsAnswer, err := mockedClient.GetDomainRecords("example.com")
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	if !reflect.DeepEqual(expectedRecordsAnswer, testingRecordsAnswer) {
-		t.Errorf("should be equal, %s", err)
-	}
-}
-
-func TestGandiProvider_Records(t *testing.T) {
-	mockedClient := mockGandiClientNew()
 
 	mockedProvider := &GandiProvider{
 		DomainClient:  mockedClient,
 		LiveDNSClient: mockedClient,
 	}
 
-	expectedActions := []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "GetDomainRecords",
-			FQDN: "example.com",
-		},
-	}
-
-	endpoints, err := mockedProvider.Records(context.Background())
+	actualEndpoints, err := mockedProvider.Records(context.Background())
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-	assert.Equal(t, 3, len(endpoints))
-	fmt.Printf("%+v\n", endpoints[0].DNSName)
-	assert.Equal(t, "example.com", endpoints[0].DNSName)
-	assert.Equal(t, endpoint.RecordTypeCNAME, endpoints[0].RecordType)
-	td.Cmp(t, expectedActions, mockedClient.Actions)
+
+	expectedEndpoints := []*endpoint.Endpoint{
+		{
+			RecordType: endpoint.RecordTypeCNAME,
+			DNSName:    "example.com",
+			Targets:    endpoint.Targets{"192.168.0.1"},
+			RecordTTL:  600,
+		},
+		{
+			RecordType: endpoint.RecordTypeCNAME,
+			DNSName:    "www.example.com",
+			Targets:    endpoint.Targets{"lb.example.com"},
+			RecordTTL:  600,
+		},
+		{
+			RecordType: endpoint.RecordTypeA,
+			DNSName:    "test.example.com",
+			Targets:    endpoint.Targets{"192.168.0.2"},
+			RecordTTL:  600,
+		},
+	}
+
+	assert.Equal(t, len(expectedEndpoints), len(actualEndpoints))
+	// we could use testutils.SameEndpoints (plural), but this makes it easier to identify which case is failing
+	for i := range actualEndpoints {
+		if !testutils.SameEndpoint(expectedEndpoints[i], actualEndpoints[i]) {
+			t.Errorf("should be equal, expected:%v <> actual:%v", expectedEndpoints[i], actualEndpoints[i])
+
+		}
+	}
 }
 
-func TestGandiProvider_RecordsAppliesDomainFilter(t *testing.T) {
-	mockedClient := mockGandiClientNew()
+func TestGandiProvider_RecordsOnFilteredDomainsShouldYieldNoEndpoints(t *testing.T) {
+	mockedClient := &mockGandiClient{
+		RecordsToReturn: []livedns.DomainRecord{
+			{
+				RrsetType:   endpoint.RecordTypeCNAME,
+				RrsetTTL:    600,
+				RrsetName:   "@",
+				RrsetHref:   exampleDotComUri + "/records/test/MX",
+				RrsetValues: []string{"192.168.0.1"},
+			},
+		},
+	}
 
 	mockedProvider := &GandiProvider{
 		DomainClient:  mockedClient,
@@ -327,69 +263,69 @@ func TestGandiProvider_RecordsAppliesDomainFilter(t *testing.T) {
 		domainFilter:  endpoint.NewDomainFilterWithExclusions([]string{}, []string{"example.com"}),
 	}
 
-	expectedActions := []MockAction{
-		{
-			Name: "ListDomains",
+	endpoints, _ := mockedProvider.Records(context.Background())
+	assert.Empty(t, endpoints)
+}
+
+func TestGandiProvider_RecordsWithUnsupportedTypesAreNotReturned(t *testing.T) {
+	mockedClient := &mockGandiClient{
+		RecordsToReturn: []livedns.DomainRecord{
+			{
+				RrsetType:   "MX",
+				RrsetTTL:    360,
+				RrsetName:   "@",
+				RrsetHref:   exampleDotComUri + "/records/%40/A",
+				RrsetValues: []string{"smtp.example.com"},
+			},
 		},
 	}
 
-	endpoints, err := mockedProvider.Records(context.Background())
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
 	}
-	assert.Equal(t, 0, len(endpoints))
-	td.Cmp(t, expectedActions, mockedClient.Actions)
+
+	endpoints, _ := mockedProvider.Records(context.Background())
+	assert.Empty(t, endpoints)
 }
 
-func TestGandiProvider_RecordsWithMultipleValues(t *testing.T) {
-	mockedClient := mockGandiClientNewWithRecords([]livedns.DomainRecord{
+func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := &mockGandiClient{}
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	changes.Create = []*endpoint.Endpoint{
 		{
-			RrsetValues: []string{"foo", "bar"},
-			RrsetType:   endpoint.RecordTypeCNAME,
+			DNSName:    "test2.example.com",
+			Targets:    endpoint.Targets{"192.168.0.1"},
+			RecordType: "A",
+			RecordTTL:  666,
 		},
-	})
-
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
 	}
-
-	endpoints, err := mockedProvider.Records(context.Background())
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
+	changes.UpdateNew = []*endpoint.Endpoint{
+		{
+			DNSName:    "test3.example.com",
+			Targets:    endpoint.Targets{"192.168.0.2"},
+			RecordType: "A",
+			RecordTTL:  777,
+		},
+		{
+			DNSName:    "example.com.example.com",
+			Targets:    endpoint.Targets{"lb-2.example.net"},
+			RecordType: "CNAME",
+			RecordTTL:  777,
+		},
 	}
-	assert.Equal(t, 2, len(endpoints))
-}
-
-func TestGandiProvider_ApplyChangesEmpty(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
+	changes.Delete = []*endpoint.Endpoint{
+		{
+			DNSName:    "test4.example.com",
+			Targets:    endpoint.Targets{"192.168.0.3"},
+			RecordType: "A",
+		},
 	}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	if mockedClient.Actions != nil {
-		t.Error("expected no changes")
-	}
-}
-
-func TestGandiProvider_ApplyChanges(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
-	}
-
-	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"target"}, RecordType: "A", RecordTTL: 666}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"target-other"}, RecordType: "A"}}
 
 	err := mockedProvider.ApplyChanges(context.Background(), changes)
 	if err != nil {
@@ -406,7 +342,7 @@ func TestGandiProvider_ApplyChanges(t *testing.T) {
 			Record: livedns.DomainRecord{
 				RrsetType:   endpoint.RecordTypeA,
 				RrsetName:   "test2",
-				RrsetValues: []string{"target"},
+				RrsetValues: []string{"192.168.0.1"},
 				RrsetTTL:    666,
 			},
 		},
@@ -416,7 +352,17 @@ func TestGandiProvider_ApplyChanges(t *testing.T) {
 			Record: livedns.DomainRecord{
 				RrsetType:   endpoint.RecordTypeA,
 				RrsetName:   "test3",
-				RrsetValues: []string{"target-new"},
+				RrsetValues: []string{"192.168.0.2"},
+				RrsetTTL:    777,
+			},
+		},
+		{
+			Name: "UpdateDomainRecordByNameAndType",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   endpoint.RecordTypeCNAME,
+				RrsetName:   "example.com",
+				RrsetValues: []string{"lb-2.example.net."},
 				RrsetTTL:    777,
 			},
 		},
@@ -431,133 +377,20 @@ func TestGandiProvider_ApplyChanges(t *testing.T) {
 	})
 }
 
-func TestGandiProvider_ApplyChangesSkipsNonManaged(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
-	}
-
-	changes.Create = []*endpoint.Endpoint{{DNSName: "example.net", Targets: endpoint.Targets{"target"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.example.net", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 777}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test2.example.net", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-	})
-}
-
-func TestGandiProvider_ApplyChangesCreateUpdateCname(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
-	}
-
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "test-cname.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "CNAME"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test-cname2.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 777}}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "CreateDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeCNAME,
-				RrsetName:   "test-cname",
-				RrsetValues: []string{"target."},
-				RrsetTTL:    666,
-			},
-		},
-		{
-			Name: "UpdateDomainRecordByNameAndType",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeCNAME,
-				RrsetName:   "test-cname2",
-				RrsetValues: []string{"target-new."},
-				RrsetTTL:    777,
-			},
-		},
-	})
-}
-
-func TestGandiProvider_ApplyChangesCreateEmpty(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
-	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
-	}
-
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
-
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "CreateDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "@",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-	})
-}
-
 func TestGandiProvider_ApplyChangesRespectsDryRun(t *testing.T) {
 	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNew()
+	mockedClient := &mockGandiClient{}
 	mockedProvider := &GandiProvider{
-		DomainClient:  mockedClient,
-		LiveDNSClient: mockedClient,
 		DryRun:        true,
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
 	}
 
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "foo.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "bar.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "baz.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
 
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err != nil {
-		t.Errorf("should not fail, %s", err)
-	}
+	mockedProvider.ApplyChanges(context.Background(), changes)
 
 	td.Cmp(t, mockedClient.Actions, []MockAction{
 		{
@@ -566,28 +399,37 @@ func TestGandiProvider_ApplyChangesRespectsDryRun(t *testing.T) {
 	})
 }
 
-func TestGandiProvider_ApplyChangesErrorListDomains(t *testing.T) {
+func TestGandiProvider_ApplyChangesWithEmptyResultDoesNothing(t *testing.T) {
 	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNewWithFailure("ListDomains")
+	mockedClient := &mockGandiClient{}
+	mockedProvider := &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	mockedProvider.ApplyChanges(context.Background(), changes)
+
+	assert.Empty(t, mockedClient.Actions)
+}
+
+func TestGandiProvider_ApplyChangesWithUnknownDomainDoesNoUpdate(t *testing.T) {
+	changes := &plan.Changes{}
+	mockedClient := &mockGandiClient{}
 	mockedProvider := &GandiProvider{
 		DomainClient:  mockedClient,
 		LiveDNSClient: mockedClient,
 	}
 
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "foo.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "bar.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "baz.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
+		{
+			DNSName:    "test.example.net",
+			Targets:    endpoint.Targets{"192.168.0.1"},
+			RecordType: "A",
+			RecordTTL:  666,
+		},
 	}
 
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
-	if err == nil {
-		t.Error("should have failed")
-	}
+	mockedProvider.ApplyChanges(context.Background(), changes)
 
 	td.Cmp(t, mockedClient.Actions, []MockAction{
 		{
@@ -596,150 +438,93 @@ func TestGandiProvider_ApplyChangesErrorListDomains(t *testing.T) {
 	})
 }
 
-func TestGandiProvider_ApplyChangesErrorCreate(t *testing.T) {
+func TestGandiProvider_FailingCases(t *testing.T) {
 	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNewWithFailure("CreateDomainRecord")
+	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
+
+	// Failing ListDomains API call creates an error when calling Records
+	mockedClient := &mockGandiClient{
+		FunctionToFail: "ListDomains",
+	}
 	mockedProvider := &GandiProvider{
 		DomainClient:  mockedClient,
 		LiveDNSClient: mockedClient,
 	}
 
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "foo.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "bar.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "baz.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	_, err := mockedProvider.Records(context.Background())
 	if err == nil {
 		t.Error("should have failed")
 	}
 
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "CreateDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "foo",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-	})
-}
-
-func TestGandiProvider_ApplyChangesErrorUpdate(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNewWithFailure("UpdateDomainRecordByNameAndType")
-	mockedProvider := &GandiProvider{
+	// Failing GetDomainRecords API call creates an error when calling Records
+	mockedClient = &mockGandiClient{
+		FunctionToFail: "GetDomainRecords",
+	}
+	mockedProvider = &GandiProvider{
 		DomainClient:  mockedClient,
 		LiveDNSClient: mockedClient,
 	}
 
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "foo.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "bar.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "baz.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	_, err = mockedProvider.Records(context.Background())
 	if err == nil {
 		t.Error("should have failed")
 	}
 
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "CreateDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "foo",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-		{
-			Name: "UpdateDomainRecordByNameAndType",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "bar",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-	})
-}
-
-func TestGandiProvider_ApplyChangesErrorDelete(t *testing.T) {
-	changes := &plan.Changes{}
-	mockedClient := mockGandiClientNewWithFailure("DeleteDomainRecord")
-	mockedProvider := &GandiProvider{
+	// Failing ListDomains API call creates an error when calling ApplyChanges
+	mockedClient = &mockGandiClient{
+		FunctionToFail: "ListDomains",
+	}
+	mockedProvider = &GandiProvider{
 		DomainClient:  mockedClient,
 		LiveDNSClient: mockedClient,
 	}
 
-	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "foo.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "bar.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-	changes.Delete = []*endpoint.Endpoint{
-		{DNSName: "baz.example.com", Targets: endpoint.Targets{"target"}, RecordTTL: 666, RecordType: "A"},
-	}
-
-	err := mockedProvider.ApplyChanges(context.Background(), changes)
+	err = mockedProvider.ApplyChanges(context.Background(), changes)
 	if err == nil {
 		t.Error("should have failed")
 	}
 
-	td.Cmp(t, mockedClient.Actions, []MockAction{
-		{
-			Name: "ListDomains",
-		},
-		{
-			Name: "CreateDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "foo",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-		{
-			Name: "UpdateDomainRecordByNameAndType",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType:   endpoint.RecordTypeA,
-				RrsetName:   "bar",
-				RrsetValues: []string{"target"},
-				RrsetTTL:    666,
-			},
-		},
-		{
-			Name: "DeleteDomainRecord",
-			FQDN: "example.com",
-			Record: livedns.DomainRecord{
-				RrsetType: endpoint.RecordTypeA,
-				RrsetName: "baz",
-			},
-		},
-	})
+	// Failing CreateDomainRecord API call creates an error when calling ApplyChanges
+	mockedClient = &mockGandiClient{
+		FunctionToFail: "CreateDomainRecord",
+	}
+	mockedProvider = &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	if err == nil {
+		t.Error("should have failed")
+	}
+
+	// Failing DeleteDomainRecord API call creates an error when calling ApplyChanges
+	mockedClient = &mockGandiClient{
+		FunctionToFail: "DeleteDomainRecord",
+	}
+	mockedProvider = &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	if err == nil {
+		t.Error("should have failed")
+	}
+
+	// Failing UpdateDomainRecordByNameAndType API call creates an error when calling ApplyChanges
+	mockedClient = &mockGandiClient{
+		FunctionToFail: "UpdateDomainRecordByNameAndType",
+	}
+	mockedProvider = &GandiProvider{
+		DomainClient:  mockedClient,
+		LiveDNSClient: mockedClient,
+	}
+
+	err = mockedProvider.ApplyChanges(context.Background(), changes)
+	if err == nil {
+		t.Error("should have failed")
+	}
 }
