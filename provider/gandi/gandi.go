@@ -129,7 +129,10 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 						"zone":   zone,
 					}).Debug("Returning endpoint record")
 
-					endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, v))
+					endpoints = append(
+						endpoints,
+						endpoint.NewEndpointWithTTL(name, r.RrsetType, endpoint.TTL(r.RrsetTTL), v),
+					)
 				}
 			}
 		}
