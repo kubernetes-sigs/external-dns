@@ -40,10 +40,6 @@ func (p FakeWebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	return nil
 }
 
-func (p FakeWebhookProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	return false
-}
-
 func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	return endpoints
 }
@@ -56,7 +52,7 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/records", nil)
 	w := httptest.NewRecorder()
 
-	providerAPIServer := &ProviderAPIServer{
+	providerAPIServer := &WebhookServer{
 		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
@@ -68,7 +64,7 @@ func TestRecordsHandlerApplyChangesWithBadRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/applychanges", nil)
 	w := httptest.NewRecorder()
 
-	providerAPIServer := &ProviderAPIServer{
+	providerAPIServer := &WebhookServer{
 		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
@@ -94,7 +90,7 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/applychanges", reader)
 	w := httptest.NewRecorder()
 
-	providerAPIServer := &ProviderAPIServer{
+	providerAPIServer := &WebhookServer{
 		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.recordsHandler(w, req)
@@ -106,7 +102,7 @@ func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", nil)
 	w := httptest.NewRecorder()
 
-	providerAPIServer := &ProviderAPIServer{
+	providerAPIServer := &WebhookServer{
 		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.adjustEndpointsHandler(w, req)
@@ -137,7 +133,7 @@ func TestAdjustEndpointsWithValidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", reader)
 	w := httptest.NewRecorder()
 
-	providerAPIServer := &ProviderAPIServer{
+	providerAPIServer := &WebhookServer{
 		provider: &FakeWebhookProvider{},
 	}
 	providerAPIServer.adjustEndpointsHandler(w, req)

@@ -30,21 +30,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type ProviderAPIServer struct {
+type WebhookServer struct {
 	provider provider.Provider
 }
 
-type PropertyValuesEqualsRequest struct {
-	Name     string `json:"name"`
-	Previous string `json:"previous"`
-	Current  string `json:"current"`
-}
-
-type PropertyValuesEqualsResponse struct {
-	Equals bool `json:"equals"`
-}
-
-func (p *ProviderAPIServer) recordsHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
 		records, err := p.provider.Records(context.Background())
@@ -55,11 +45,14 @@ func (p *ProviderAPIServer) recordsHandler(w http.ResponseWriter, req *http.Requ
 		}
 		w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(records)
+		if err := json.NewEncoder(w).Encode(records); err != nil {
+			log.Errorf("Failed to encode records: %v", err)
+		}
 		return
 	case http.MethodPost:
 		var changes plan.Changes
 		if err := json.NewDecoder(req.Body).Decode(&changes); err != nil {
+			log.Errorf("Failed to decode changes: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -77,7 +70,7 @@ func (p *ProviderAPIServer) recordsHandler(w http.ResponseWriter, req *http.Requ
 	}
 }
 
-func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		log.Errorf("Unsupported method %s", req.Method)
 		w.WriteHeader(http.StatusBadRequest)
@@ -86,12 +79,14 @@ func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *h
 
 	pve := []*endpoint.Endpoint{}
 	if err := json.NewDecoder(req.Body).Decode(&pve); err != nil {
+		log.Errorf("Failed to decode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 	pve = p.provider.AdjustEndpoints(pve)
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
+		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -99,14 +94,13 @@ func (p *ProviderAPIServer) adjustEndpointsHandler(w http.ResponseWriter, req *h
 
 // StartHTTPApi starts a HTTP server given any provider.
 // the function takes an optional channel as input which is used to signal that the server has started.
-// The server will listen on port 8888.
+// The server will listen on port `providerPort`.
 // The server will respond to the following endpoints:
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
-// - /propertyvaluesequal (POST): executes the PropertyValuesEqual method
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
 func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, providerPort string) {
-	p := ProviderAPIServer{
+	p := WebhookServer{
 		provider: provider,
 	}
 

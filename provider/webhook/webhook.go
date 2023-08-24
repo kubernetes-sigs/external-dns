@@ -56,14 +56,6 @@ var (
 			Help:      "Errors with ApplyChanges method",
 		},
 	)
-	propertyValuesEqualErrorsGauge = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace: "external_dns",
-			Subsystem: "webhook_provider",
-			Name:      "propertyvaluesequal_errors",
-			Help:      "Errors with PropertyValuesEqual method",
-		},
-	)
 	adjustEndpointsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
@@ -79,20 +71,9 @@ type WebhookProvider struct {
 	remoteServerURL *url.URL
 }
 
-type PropertyValuesEqualRequest struct {
-	Name     string `json:"name"`
-	Previous string `json:"previous"`
-	Current  string `json:"current"`
-}
-
-type PropertyValuesEqualResponse struct {
-	Equals bool `json:"equals"`
-}
-
 func init() {
 	prometheus.MustRegister(recordsErrorsGauge)
 	prometheus.MustRegister(applyChangesErrorsGauge)
-	prometheus.MustRegister(propertyValuesEqualErrorsGauge)
 	prometheus.MustRegister(adjustEndpointsErrorsGauge)
 }
 
@@ -177,58 +158,6 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return fmt.Errorf("failed to apply changes with code %d", resp.StatusCode)
 	}
 	return nil
-}
-
-// PropertyValuesEqual will call the provider doing a POST on `/propertyvaluesequal` which will return a boolean in the format
-// `{propertyvaluesequal: true}`
-// Errors in anything technically happening from the provider will return true so that no update is performed.
-// Errors will also be logged and exposed as metrics so that it is possible to alert on them if needed.
-func (p WebhookProvider) PropertyValuesEqual(name string, previous string, current string) bool {
-	u := p.remoteServerURL.JoinPath("records").String()
-
-	b := new(bytes.Buffer)
-	if err := json.NewEncoder(b).Encode(&PropertyValuesEqualRequest{
-		Name:     name,
-		Previous: previous,
-		Current:  current,
-	}); err != nil {
-		adjustEndpointsErrorsGauge.Inc()
-		log.Debugf("Failed to encode, %s", err)
-		return true
-	}
-
-	req, err := http.NewRequest("POST", u, b)
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Debugf("Failed to create request: %s", err)
-		return true
-	}
-
-	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
-
-	resp, err := p.client.Do(req)
-	if err != nil {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Debugf("Failed to perform request: %s", err)
-		return true
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		propertyValuesEqualErrorsGauge.Inc()
-		log.Debugf("Failed to run PropertyValuesEqual with code %d", resp.StatusCode)
-		return true
-	}
-
-	r := PropertyValuesEqualResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
-		recordsErrorsGauge.Inc()
-		log.Debugf("Failed to decode response body: %s", err.Error())
-		return true
-	}
-
-	return r.Equals
 }
 
 // AdjustEndpoints will call the provider doing a POST on `/adjustendpoints` which will return a list of modified endpoints

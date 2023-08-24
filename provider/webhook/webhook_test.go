@@ -80,27 +80,6 @@ func TestApplyChanges(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestPropertyValuesEqual(t *testing.T) {
-	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-			w.WriteHeader(200)
-			return
-		}
-		j, _ := json.Marshal(&PropertyValuesEqualResponse{
-			Equals: false,
-		})
-		w.Write(j)
-	}))
-	defer svr.Close()
-
-	provider, err := NewWebhookProvider(svr.URL)
-	require.Nil(t, err)
-	b := provider.PropertyValuesEqual("name", "previous", "current")
-	require.Equal(t, false, b)
-}
-
 func TestAdjustEndpoints(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {

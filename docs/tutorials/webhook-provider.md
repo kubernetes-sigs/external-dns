@@ -19,12 +19,12 @@ The following table represents the methods to implement mapped to their HTTP met
 | Provider method | HTTP Method | Route |
 | --- | --- | --- |
 | Records | GET | /records |
-| ApplyChanges | POST | /records |
 | AdjustEndpoints | POST | /adjustendpoints |
+| ApplyChanges | POST | /records |
 
 The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.
 
-**NOTE**: only `5xx` responses will be retried and only `200` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS' side.
+**NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
 
 ## Provider registry
 
@@ -40,4 +40,4 @@ To test the Webhook provider and provide a reference implementation, we added th
 - --run-aws-provider-as-webhook
 ```
 
-What will happen behind the scenes is that the AWS provider will be be started as an HTTP server exposed only on localhost and the webhook provider will be configured to talk to it. This is the same setup that we recommend for other providers and a good way to test the Webhook provider other than to serve as a reference implementation.
+What will happen behind the scenes is that the AWS provider will be be started as an HTTP server exposed only on localhost and the webhook provider will be configured to talk to it. This is the same setup that we recommend for other providers and a good way to test the Webhook provider.
