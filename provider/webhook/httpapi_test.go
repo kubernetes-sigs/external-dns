@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -146,6 +147,13 @@ func TestStartHTTPApi(t *testing.T) {
 	startedChan := make(chan struct{})
 	go StartHTTPApi(FakeWebhookProvider{}, startedChan, 5*time.Second, 10*time.Second, "127.0.0.1:8887")
 	<-startedChan
-	_, err := http.Get("http://127.0.0.1:8887")
+	resp, err := http.Get("http://127.0.0.1:8887")
 	require.NoError(t, err)
+	// check that resp has a valid domain filter
+	defer resp.Body.Close()
+
+	df := endpoint.DomainFilter{}
+	b, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	require.NoError(t, df.UnmarshalJSON(b))
 }

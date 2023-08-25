@@ -28,12 +28,45 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-func TestRecords(t *testing.T) {
+func TestInvalidDomainFilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.WriteHeader(200)
+			return
+		}
+		w.Write([]byte(`[{
+			"dnsName" : "test.example.com"
+		}]`))
+	}))
+	defer svr.Close()
+
+	_, err := NewWebhookProvider(svr.URL)
+	require.Error(t, err)
+}
+
+func TestValidDomainfilter(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(varyHeader, contentTypeHeader)
+			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+	}))
+	defer svr.Close()
+
+	_, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
+}
+
+func TestRecords(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(varyHeader, contentTypeHeader)
+			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
 			return
 		}
 		w.Write([]byte(`[{
@@ -58,7 +91,7 @@ func TestApplyChanges(t *testing.T) {
 		if r.URL.Path == "/" {
 			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-			w.WriteHeader(200)
+			w.Write([]byte(`{}`))
 			return
 		}
 		if successfulApplyChanges {
@@ -85,7 +118,7 @@ func TestAdjustEndpoints(t *testing.T) {
 		if r.URL.Path == "/" {
 			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-			w.WriteHeader(200)
+			w.Write([]byte(`{}`))
 			return
 		}
 		var endpoints []*endpoint.Endpoint

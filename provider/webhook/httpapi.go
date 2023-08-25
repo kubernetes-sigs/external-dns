@@ -31,7 +31,8 @@ import (
 )
 
 type WebhookServer struct {
-	provider provider.Provider
+	provider     provider.Provider
+	domainFilter endpoint.DomainFilter
 }
 
 func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request) {
@@ -92,6 +93,17 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 }
 
+func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Request) {
+	b, err := p.domainFilter.MarshalJSON()
+	if err != nil {
+		log.Errorf("Failed to marshal domain filter: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+	w.Write(b)
+}
+
 // StartHTTPApi starts a HTTP server given any provider.
 // the function takes an optional channel as input which is used to signal that the server has started.
 // The server will listen on port `providerPort`.
@@ -105,6 +117,7 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 	}
 
 	m := http.NewServeMux()
+	m.HandleFunc("/", p.negotiateHandler)
 	m.HandleFunc("/records", p.recordsHandler)
 	m.HandleFunc("/adjustendpoints", p.adjustEndpointsHandler)
 
