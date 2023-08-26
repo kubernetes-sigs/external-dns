@@ -31,8 +31,7 @@ import (
 )
 
 type WebhookServer struct {
-	provider     provider.Provider
-	domainFilter endpoint.DomainFilter
+	provider provider.Provider
 }
 
 func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request) {
@@ -94,7 +93,7 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 }
 
 func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Request) {
-	b, err := p.domainFilter.MarshalJSON()
+	b, err := p.provider.GetDomainFilter().MarshalJSON()
 	if err != nil {
 		log.Errorf("Failed to marshal domain filter: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
