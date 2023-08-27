@@ -37,7 +37,6 @@ const (
 	mediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
 	contentTypeHeader         = "Content-Type"
 	acceptHeader              = "Accept"
-	varyHeader                = "Vary"
 	maxRetries                = 5
 )
 
@@ -112,7 +111,6 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("failed to connect to plugin api: %v", err)
 	}
 
-	vary := resp.Header.Get(varyHeader)
 	contentType := resp.Header.Get(contentTypeHeader)
 
 	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
@@ -125,10 +123,6 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	}
 	if err := df.UnmarshalJSON(b); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
-	}
-
-	if vary != contentTypeHeader {
-		return nil, fmt.Errorf("wrong vary value returned from server: %s", vary)
 	}
 
 	if contentType != mediaTypeFormatAndVersion {

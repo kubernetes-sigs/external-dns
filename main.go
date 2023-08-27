@@ -186,7 +186,7 @@ func main() {
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var awsSession *session.Session
-	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
+	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" || cfg.RunAWSProviderAsWebhook {
 		awsSession, err = aws.NewSession(
 			aws.AWSSessionConfig{
 				AssumeRole:           cfg.AWSAssumeRole,

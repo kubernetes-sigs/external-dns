@@ -107,6 +107,7 @@ func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Reques
 // the function takes an optional channel as input which is used to signal that the server has started.
 // The server will listen on port `providerPort`.
 // The server will respond to the following endpoints:
+// - / (GET): initialization, negotiates headers and returns the domain filter
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
