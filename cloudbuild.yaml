@@ -9,7 +9,6 @@ steps:
     env:
       - VERSION=$_GIT_TAG
       - PULL_BASE_REF=$_PULL_BASE_REF
-      - REGISTRY=$_DOCKER_REGISTRY
     args:
       - release.staging
 substitutions:
