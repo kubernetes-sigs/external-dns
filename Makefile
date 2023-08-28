@@ -83,6 +83,7 @@ test:
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
+IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
@@ -148,7 +149,6 @@ clean:
 .PHONY: release.staging
 
 release.staging: test
-	@echo "Perhaps use ${IMAGE} instead of ${IMAGE_STAGING} ?"
 	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
 
 release.prod: test
