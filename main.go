@@ -30,12 +30,11 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/route53"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"github.com/go-logr/logr"
 	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/external-dns/controller"
