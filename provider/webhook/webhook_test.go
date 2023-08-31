@@ -31,7 +31,6 @@ import (
 func TestInvalidDomainFilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.WriteHeader(200)
 			return
@@ -49,7 +48,6 @@ func TestInvalidDomainFilter(t *testing.T) {
 func TestValidDomainfilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
@@ -64,7 +62,6 @@ func TestValidDomainfilter(t *testing.T) {
 func TestRecords(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
@@ -89,7 +86,6 @@ func TestApplyChanges(t *testing.T) {
 	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
@@ -116,7 +112,6 @@ func TestApplyChanges(t *testing.T) {
 func TestAdjustEndpoints(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(varyHeader, contentTypeHeader)
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
