@@ -225,14 +225,15 @@ func (p *Plan) shouldUpdateProviderSpecific(desired, current *endpoint.Endpoint)
 }
 
 // filterRecordsForPlan removes records that are not relevant to the planner.
-// Currently this just removes TXT records to prevent them from being
+// Currently this removes TXT records to prevent them from being
 // deleted erroneously by the planner (only the TXT registry should do this.)
+// It also will remove CNAMEs that conflict with other record types.
 //
 // Per RFC 1034, CNAME records conflict with all other records - it is the
-// only record with this property. The behavior of the planner may need to be
-// made more sophisticated to codify this.
+// only record with this property.
 func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.DomainFilterInterface, managedRecords []string) []*endpoint.Endpoint {
 	filtered := []*endpoint.Endpoint{}
+	cnames := []*endpoint.Endpoint{}
 
 	for _, record := range records {
 		// Ignore records that do not match the domain filter provided
@@ -242,6 +243,40 @@ func filterRecordsForPlan(records []*endpoint.Endpoint, domainFilter endpoint.Do
 		}
 		if IsManagedRecord(record.RecordType, managedRecords) {
 			filtered = append(filtered, record)
+			if record.RecordType == "CNAME" {
+				cnames = append(cnames, record)
+			}
+		}
+	}
+
+	// Filter for conflicting CNAMEs after populating the initial filtered list
+	// so that we can check for conflicts against a complete dataset.
+	if len(cnames) > 0 {
+		for _, cname := range cnames {
+			keepCNAME := true
+			// Try to find another record that the CNAME conflicts with
+			for _, record := range filtered {
+				if record.RecordType == "CNAME" {
+					continue
+				}
+				if record.DNSName == cname.DNSName {
+					keepCNAME = false
+					log.Debugf("CNAME record for %s (%s) conflicts with an %s record of the same name -- skipping it", cname.DNSName, cname.String(), record.RecordType)
+					break
+				}
+			}
+			if !keepCNAME {
+				// Search and destroy the CNAME from the filtered list
+				for i, record := range filtered {
+					if record == cname {
+						// Remove the CNAME by replacing its index's value with the value at the end of the slice
+						// and then truncating the filtered slice by 1.
+						filtered[i] = filtered[len(filtered)-1]
+						filtered = filtered[:len(filtered)-1]
+						break
+					}
+				}
+			}
 		}
 	}
 
