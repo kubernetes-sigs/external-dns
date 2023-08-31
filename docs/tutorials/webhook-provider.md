@@ -22,6 +22,8 @@ The following table represents the methods to implement mapped to their HTTP met
 | AdjustEndpoints | POST | /adjustendpoints |
 | ApplyChanges | POST | /records |
 
+ExternalDNS will also make requests to the `/` endpoint for negotatiation and for deseliarization of the `DomainFilter`.
+
 The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.
 
 **NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
@@ -29,7 +31,6 @@ The server needs to respond to those requests by reading the `Accept` header and
 ## Provider registry
 
 To simplify the discovery of providers, we will accept pull requests that will add links to providers in the [README](../../README.md) file. This list will serve the only purpose of simplifying finding providers and will not constitute an official endorsment of any of the externally implemented providers unless otherwise specified.
-
 
 ## Run the AWS provider with the webhook provider.
 
