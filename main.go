@@ -30,10 +30,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/route53"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/klog/v2"
 
 	"sigs.k8s.io/external-dns/controller"
 	"sigs.k8s.io/external-dns/endpoint"
@@ -105,6 +107,11 @@ func main() {
 		log.Fatalf("failed to parse log level: %v", err)
 	}
 	log.SetLevel(ll)
+
+	// Klog V2 is used by k8s.io/apimachinery/pkg/labels and can throw (a lot) of irrelevant logs
+	// See https://github.com/kubernetes-sigs/external-dns/issues/2348
+	defer klog.ClearLogger()
+	klog.SetLogger(logr.Discard())
 
 	ctx, cancel := context.WithCancel(context.Background())
 
