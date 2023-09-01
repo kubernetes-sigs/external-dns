@@ -44,7 +44,7 @@ var actionNames = []string{
 	"delete",
 }
 
-var domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
+const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
 
 // ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
 var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
