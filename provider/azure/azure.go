@@ -353,7 +353,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		}
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
-				TTL:      to.Ptr(ttl),
+				TTL:         to.Ptr(ttl),
 				AaaaRecords: aaaaRecords,
 			},
 		}, nil
