@@ -609,23 +609,22 @@ func (suite *PlanTestSuite) TestConflictingCurrentNoDesired() {
 
 // TestCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
 // This could be the result of multiple sources generating conflicting records types. In this case the conflict
-// resolver should prefer the CNAME record candidate and delete the other records.
+// resolver should prefer the A and AAAA record candidate and delete the other records.
 func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
-	suite.fooA5.Labels[endpoint.OwnerLabelKey] = "nerf"
-	suite.fooAAAA.Labels[endpoint.OwnerLabelKey] = "nerf"
-	current := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
+	suite.fooV1Cname.Labels[endpoint.OwnerLabelKey] = "nerf"
+	current := []*endpoint.Endpoint{suite.fooV1Cname}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedCreate := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
-	expectedDelete := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
+	expectedDelete := []*endpoint.Endpoint{suite.fooV1Cname}
 
 	p := &Plan{
 		Policies:       []Policy{&SyncPolicy{}},
 		Current:        current,
 		Desired:        desired,
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
-		OwnerID:        suite.fooA5.Labels[endpoint.OwnerLabelKey],
+		OwnerID:        suite.fooV1Cname.Labels[endpoint.OwnerLabelKey],
 	}
 
 	changes := p.Calculate().Changes
@@ -637,11 +636,11 @@ func (suite *PlanTestSuite) TestCurrentWithConflictingDesired() {
 
 // TestNoCurrentWithConflictingDesired simulates where the desired records result in conflicting records types.
 // This could be the result of multiple sources generating conflicting records types. In this case there the
-// conflict resolver should prefer the CNAME record and drop the other candidate record types.
+// conflict resolver should prefer the A and AAAA record and drop the other candidate record types.
 func (suite *PlanTestSuite) TestNoCurrentWithConflictingDesired() {
 	current := []*endpoint.Endpoint{}
 	desired := []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA}
-	expectedCreate := []*endpoint.Endpoint{suite.fooV1Cname}
+	expectedCreate := []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA}
 	expectedUpdateOld := []*endpoint.Endpoint{}
 	expectedUpdateNew := []*endpoint.Endpoint{}
 	expectedDelete := []*endpoint.Endpoint{}

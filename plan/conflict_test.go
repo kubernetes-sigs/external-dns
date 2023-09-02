@@ -34,7 +34,7 @@ type ResolverSuite struct {
 	fooV2Cname          *endpoint.Endpoint
 	fooV2CnameDuplicate *endpoint.Endpoint
 	fooA5               *endpoint.Endpoint
-	fooAAA5             *endpoint.Endpoint
+	fooAAAA5            *endpoint.Endpoint
 	bar127A             *endpoint.Endpoint
 	bar192A             *endpoint.Endpoint
 	bar127AAnother      *endpoint.Endpoint
@@ -77,7 +77,7 @@ func (suite *ResolverSuite) SetupTest() {
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
 		},
 	}
-	suite.fooAAA5 = &endpoint.Endpoint{
+	suite.fooAAAA5 = &endpoint.Endpoint{
 		DNSName:    "foo",
 		Targets:    endpoint.Targets{"2001:DB8::1"},
 		RecordType: "AAAA",
@@ -194,17 +194,17 @@ func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
 			},
 		},
 		{
-			name: "no conflict: a and aaa records",
+			name: "no conflict: a and aaaa records",
 			args: args{
 				key: planKey{dnsName: "foo"},
 				row: &planTableRow{
-					candidates: []*endpoint.Endpoint{suite.fooA5, suite.fooAAA5},
+					candidates: []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA5},
 					records: map[string]*domainEndpoints{
 						endpoint.RecordTypeA: {
 							candidates: []*endpoint.Endpoint{suite.fooA5},
 						},
 						endpoint.RecordTypeAAAA: {
-							candidates: []*endpoint.Endpoint{suite.fooAAA5},
+							candidates: []*endpoint.Endpoint{suite.fooAAAA5},
 						},
 					},
 				},
@@ -214,7 +214,7 @@ func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
 					candidates: []*endpoint.Endpoint{suite.fooA5},
 				},
 				endpoint.RecordTypeAAAA: {
-					candidates: []*endpoint.Endpoint{suite.fooAAA5},
+					candidates: []*endpoint.Endpoint{suite.fooAAAA5},
 				},
 			},
 		},
@@ -223,8 +223,36 @@ func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
 			args: args{
 				key: planKey{dnsName: "foo"},
 				row: &planTableRow{
-					current:    []*endpoint.Endpoint{suite.fooA5},
+					current:    []*endpoint.Endpoint{suite.fooV1Cname},
 					candidates: []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeCNAME: {
+							current:    suite.fooV1Cname,
+							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+						},
+						endpoint.RecordTypeA: {
+							candidates: []*endpoint.Endpoint{suite.fooA5},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeCNAME: {
+					current:    suite.fooV1Cname,
+					candidates: []*endpoint.Endpoint{},
+				},
+				endpoint.RecordTypeA: {
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+				},
+			},
+		},
+		{
+			name: "conflict: cname, a, and aaaa records",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					current:    []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA5},
+					candidates: []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA5},
 					records: map[string]*domainEndpoints{
 						endpoint.RecordTypeCNAME: {
 							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
@@ -233,52 +261,24 @@ func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
 							current:    suite.fooA5,
 							candidates: []*endpoint.Endpoint{suite.fooA5},
 						},
-					},
-				},
-			},
-			want: map[string]*domainEndpoints{
-				endpoint.RecordTypeCNAME: {
-					candidates: []*endpoint.Endpoint{suite.fooV1Cname},
-				},
-				endpoint.RecordTypeA: {
-					current:    suite.fooA5,
-					candidates: []*endpoint.Endpoint{},
-				},
-			},
-		},
-		{
-			name: "conflict: cname, a, and aaa records",
-			args: args{
-				key: planKey{dnsName: "foo"},
-				row: &planTableRow{
-					current:    []*endpoint.Endpoint{suite.fooA5, suite.fooAAA5},
-					candidates: []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAA5},
-					records: map[string]*domainEndpoints{
-						endpoint.RecordTypeCNAME: {
-							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
-						},
-						endpoint.RecordTypeA: {
-							current:    suite.fooA5,
-							candidates: []*endpoint.Endpoint{},
-						},
 						endpoint.RecordTypeAAAA: {
-							current:    suite.fooAAA5,
-							candidates: []*endpoint.Endpoint{},
+							current:    suite.fooAAAA5,
+							candidates: []*endpoint.Endpoint{suite.fooAAAA5},
 						},
 					},
 				},
 			},
 			want: map[string]*domainEndpoints{
 				endpoint.RecordTypeCNAME: {
-					candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+					candidates: []*endpoint.Endpoint{},
 				},
 				endpoint.RecordTypeA: {
 					current:    suite.fooA5,
-					candidates: []*endpoint.Endpoint{},
+					candidates: []*endpoint.Endpoint{suite.fooA5},
 				},
 				endpoint.RecordTypeAAAA: {
-					current:    suite.fooAAA5,
-					candidates: []*endpoint.Endpoint{},
+					current:    suite.fooAAAA5,
+					candidates: []*endpoint.Endpoint{suite.fooAAAA5},
 				},
 			},
 		},

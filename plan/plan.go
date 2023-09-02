@@ -97,9 +97,9 @@ func newPlanTable() planTable { // TODO: make resolver configurable
 
 // planTableRow represents a set of current and desired domain resource records.
 type planTableRow struct {
-	// current corresponds to the records currently occupying dns name on the dns provider. More than 1 record may
-	// be represented here, for example A and AAAA. If current domain record is CNAME, no other record types are allowed
-	// per [RFC 1034 3.6.2]
+	// current corresponds to the records currently occupying dns name on the dns provider. More than one record may
+	// be represented here: for example A and AAAA. If the current domain record is a CNAME, no other record types
+	// are allowed per [RFC 1034 3.6.2]
 	//
 	// [RFC 1034 3.6.2]: https://datatracker.ietf.org/doc/html/rfc1034#autoid-15
 	current []*endpoint.Endpoint
