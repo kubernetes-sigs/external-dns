@@ -376,14 +376,14 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 	return endpoints, nil
 }
 
-func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	// Update user specified TTL (0 == disabled)
 	for i := range endpoints {
 		endpoints[i].RecordTTL = endpoint.TTL(p.cacheDuration)
 	}
 
 	if !p.createPTR {
-		return endpoints
+		return endpoints, nil
 	}
 
 	// for all A records, we want to create PTR records
@@ -403,7 +403,7 @@ func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endp
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // ApplyChanges applies the given changes.

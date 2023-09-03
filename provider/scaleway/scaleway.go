@@ -92,7 +92,7 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 }
 
 // AdjustEndpoints is used to normalize the endoints
-func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	eps := make([]*endpoint.Endpoint, len(endpoints))
 	for i := range endpoints {
 		eps[i] = endpoints[i]
@@ -103,7 +103,7 @@ func (p *ScalewayProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*en
 			eps[i] = eps[i].WithProviderSpecific(scalewayPriorityKey, fmt.Sprintf("%d", scalewayDefaultPriority))
 		}
 	}
-	return eps
+	return eps, nil
 }
 
 // Zones returns the list of hosted zones.

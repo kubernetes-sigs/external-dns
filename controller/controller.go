@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -214,7 +215,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	vARecords, vAAAARecords := countMatchingAddressRecords(endpoints, records)
 	verifiedARecords.Set(float64(vARecords))
 	verifiedAAAARecords.Set(float64(vAAAARecords))
-	endpoints = c.Registry.AdjustEndpoints(endpoints)
+	endpoints, err = c.Registry.AdjustEndpoints(endpoints)
+	if err != nil {
+		return fmt.Errorf("adjusting endpoints: %w", err)
+	}
 	registryFilter := c.Registry.GetDomainFilter()
 
 	plan := &plan.Plan{

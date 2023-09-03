@@ -386,7 +386,7 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
 		log.Debugf("adjusting endpont: %v", *e)
@@ -398,7 +398,7 @@ func (p *IBMCloudProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*en
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
-	return adjustedEndpoints
+	return adjustedEndpoints, nil
 }
 
 // submitChanges takes a zone and a collection of Changes and sends them as a single transaction.
