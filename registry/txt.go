@@ -346,9 +346,9 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordTyp
 
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
-			t = strings.ToLower(t)
-			iPrefix := strings.ReplaceAll(prefix, recordTemplate, t)
-			iSuffix := strings.ReplaceAll(suffix, recordTemplate, t)
+			tLower := strings.ToLower(t)
+			iPrefix := strings.ReplaceAll(prefix, recordTemplate, tLower)
+			iSuffix := strings.ReplaceAll(suffix, recordTemplate, tLower)
 
 			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
 				return strings.TrimPrefix(name, iPrefix), t

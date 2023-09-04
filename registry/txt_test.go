@@ -88,6 +88,7 @@ func testTXTRegistryRecords(t *testing.T) {
 	t.Run("With prefix", testTXTRegistryRecordsPrefixed)
 	t.Run("With suffix", testTXTRegistryRecordsSuffixed)
 	t.Run("No prefix", testTXTRegistryRecordsNoPrefix)
+	t.Run("With templated prefix", testTXTRegistryRecordsPrefixedTemplated)
 }
 
 func testTXTRegistryRecordsPrefixed(t *testing.T) {
@@ -441,6 +442,38 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, false, nil)
 	records, _ := r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+}
+
+func testTXTRegistryRecordsPrefixedTemplated(t *testing.T) {
+	ctx := context.Background()
+	p := inmemory.NewInMemoryProvider()
+	p.CreateZone(testZone)
+	p.ApplyChanges(ctx, &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			newEndpointWithOwner("foo.test-zone.example.org", "1.1.1.1", endpoint.RecordTypeA, ""),
+			newEndpointWithOwner("txt-a.foo.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, ""),
+		},
+	})
+	expectedRecords := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.test-zone.example.org",
+			Targets:    endpoint.Targets{"1.1.1.1"},
+			RecordType: endpoint.RecordTypeA,
+			Labels: map[string]string{
+				endpoint.OwnerLabelKey: "owner",
+			},
+		},
+	}
+
+	r, _ := NewTXTRegistry(p, "txt-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, false, nil)
+	records, _ := r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "TxT-%{record_type}.", "", "owner", time.Hour, "wc", []string{}, false, nil)
+	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
