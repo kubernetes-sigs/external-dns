@@ -30,15 +30,16 @@ import (
 
 // config represents common config items for Azure DNS and Azure Private DNS
 type config struct {
-	Cloud                       string `json:"cloud" yaml:"cloud"`
-	TenantID                    string `json:"tenantId" yaml:"tenantId"`
-	SubscriptionID              string `json:"subscriptionId" yaml:"subscriptionId"`
-	ResourceGroup               string `json:"resourceGroup" yaml:"resourceGroup"`
-	Location                    string `json:"location" yaml:"location"`
-	ClientID                    string `json:"aadClientId" yaml:"aadClientId"`
-	ClientSecret                string `json:"aadClientSecret" yaml:"aadClientSecret"`
-	UseManagedIdentityExtension bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
-	UserAssignedIdentityID      string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
+	Cloud                        string `json:"cloud" yaml:"cloud"`
+	TenantID                     string `json:"tenantId" yaml:"tenantId"`
+	SubscriptionID               string `json:"subscriptionId" yaml:"subscriptionId"`
+	ResourceGroup                string `json:"resourceGroup" yaml:"resourceGroup"`
+	Location                     string `json:"location" yaml:"location"`
+	ClientID                     string `json:"aadClientId" yaml:"aadClientId"`
+	ClientSecret                 string `json:"aadClientSecret" yaml:"aadClientSecret"`
+	UseManagedIdentityExtension  bool   `json:"useManagedIdentityExtension" yaml:"useManagedIdentityExtension"`
+	UseWorkloadIdentityExtension bool   `json:"useWorkloadIdentityExtension" yaml:"useWorkloadIdentityExtension"`
+	UserAssignedIdentityID       string `json:"userAssignedIdentityID" yaml:"userAssignedIdentityID"`
 }
 
 func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (*config, error) {
@@ -90,6 +91,30 @@ func getCredentials(cfg config) (azcore.TokenCredential, error) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create service principal token: %w", err)
 		}
+		return cred, nil
+	}
+
+	// Try to retrieve token with Workload Identity.
+	if cfg.UseWorkloadIdentityExtension {
+		log.Info("Using workload identity extension to retrieve access token for Azure API.")
+
+		wiOpt := azidentity.WorkloadIdentityCredentialOptions{
+			ClientOptions: azcore.ClientOptions{
+				Cloud: cloudCfg,
+			},
+			// In a standard scenario, Client ID and Tenant ID are expected to be read from environment variables.
+			// Though, in certain cases, it might be important to have an option to override those (e.g. when AZURE_TENANT_ID is not set
+			// through a webhook or azure.workload.identity/client-id service account annotation is absent). When any of those values are
+			// empty in our config, they will automatically be read from environment variables by azidentity
+			TenantID: cfg.TenantID,
+			ClientID: cfg.ClientID,
+		}
+
+		cred, err := azidentity.NewWorkloadIdentityCredential(&wiOpt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create a workload identity token: %w", err)
+		}
+
 		return cred, nil
 	}
 
