@@ -471,7 +471,7 @@ func testTXTRegistryApplyChanges(t *testing.T) {
 	t.Run("With Templated Suffix", testTXTRegistryApplyChangesWithTemplatedSuffix)
 	t.Run("With Suffix", testTXTRegistryApplyChangesWithSuffix)
 	t.Run("No prefix", testTXTRegistryApplyChangesNoPrefix)
-	t.Run("No prefix Metadata Only", testTXTRegistryApplyChangesNoPrefixMetadataOnly)
+	t.Run("Metadata Only", testTXTRegistryApplyChangesNoPrefixMetadataOnly)
 }
 
 func testTXTRegistryApplyChangesWithPrefix(t *testing.T) {

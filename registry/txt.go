@@ -249,7 +249,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 			endpoints = append(endpoints, txt)
 		}
 	}
-	// new TXT record format (containing record type)
+	// "new" (version 2) TXT record format (containing record type)
 	if im.txtFormat == TXTFormatTransition && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
