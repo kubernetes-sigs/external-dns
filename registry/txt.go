@@ -35,12 +35,6 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
-type endpointKey struct {
-	DNSName       string
-	RecordType    string
-	SetIdentifier string
-}
-
 type TXTFormat string
 
 const (
