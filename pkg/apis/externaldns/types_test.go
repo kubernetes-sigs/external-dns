@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/registry"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -104,7 +105,7 @@ var (
 		TXTOwnerID:                  "default",
 		TXTPrefix:                   "",
 		TXTCacheInterval:            0,
-		TXTFormat:                   "transition",
+		TXTFormat:                   registry.TXTFormatTransition.String(),
 		Interval:                    time.Minute,
 		MinEventSyncInterval:        5 * time.Second,
 		Once:                        false,
@@ -215,7 +216,7 @@ var (
 		TXTOwnerID:                  "owner-1",
 		TXTPrefix:                   "associated-txt-record",
 		TXTCacheInterval:            12 * time.Hour,
-		TXTFormat:                   "only-metadata",
+		TXTFormat:                   registry.TXTFormatOnlyMetadata.String(),
 		Interval:                    10 * time.Minute,
 		MinEventSyncInterval:        50 * time.Second,
 		Once:                        true,

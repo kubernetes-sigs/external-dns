@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/registry"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/sirupsen/logrus"
@@ -306,7 +307,7 @@ var defaultConfig = &Config{
 	MinEventSyncInterval:        5 * time.Second,
 	TXTEncryptEnabled:           false,
 	TXTEncryptAESKey:            "",
-	TXTFormat:                   "transition",
+	TXTFormat:                   registry.TXTFormatTransition.String(),
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,

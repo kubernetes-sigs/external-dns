@@ -35,6 +35,32 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
+type endpointKey struct {
+	DNSName       string
+	RecordType    string
+	SetIdentifier string
+}
+
+type TXTFormat string
+
+const (
+	TXTFormatTransition   TXTFormat = "transition"
+	TXTFormatOnlyMetadata TXTFormat = "only-metadata"
+)
+
+func ParseTXTFormat(name string) TXTFormat {
+	switch name {
+	case TXTFormatTransition.String():
+		return TXTFormatTransition
+	default:
+		return TXTFormatOnlyMetadata
+	}
+}
+
+func (t TXTFormat) String() string {
+	return string(t)
+}
+
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -57,11 +83,11 @@ type TXTRegistry struct {
 	txtEncryptEnabled bool
 	txtEncryptAESKey  []byte
 
-	txtFormat string
+	txtFormat TXTFormat
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat string) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte, txtFormat TXTFormat) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -213,7 +239,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.mapper.recordTypeInAffix() && im.txtFormat == "transition" && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
+	if !im.mapper.recordTypeInAffix() && im.txtFormat == TXTFormatTransition && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeCNAME {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
@@ -224,7 +250,7 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	if im.txtFormat == "transition" && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
+	if im.txtFormat == TXTFormatTransition && (r.RecordType == endpoint.RecordTypeAAAA || r.RecordType == endpoint.RecordTypeCNAME) {
 		txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txtNew != nil {
 			txtNew.WithSetIdentifier(r.SetIdentifier)
