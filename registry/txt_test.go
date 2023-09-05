@@ -59,6 +59,9 @@ func testTXTRegistryNew(t *testing.T) {
 	r, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, false, nil, TXTFormatTransition)
 	require.NoError(t, err)
 
+	_, err = NewTXTRegistry(p, "", "txt", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	require.NoError(t, err)
+
 	_, err = NewTXTRegistry(p, "txt", "txt", "owner", time.Hour, "", []string{}, false, nil, TXTFormatTransition)
 	require.Error(t, err)
 
@@ -223,6 +226,11 @@ func testTXTRegistryRecordsPrefixed(t *testing.T) {
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "TxT.", "", "owner", time.Hour, "wc", []string{}, false, nil, TXTFormatOnlyMetadata)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsSuffixed(t *testing.T) {
@@ -348,6 +356,11 @@ func testTXTRegistryRecordsSuffixed(t *testing.T) {
 	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "", "-TxT", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	records, _ = r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpointLabels(records, expectedRecords))
 }
 
 func testTXTRegistryRecordsNoPrefix(t *testing.T) {
@@ -461,6 +474,11 @@ func testTXTRegistryRecordsNoPrefix(t *testing.T) {
 
 	r, _ := NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, false, nil, TXTFormatTransition)
 	records, _ := r.Records(ctx)
+
+	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
+
+	r, _ = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, false, nil, TXTFormatOnlyMetadata)
+	records, _ = r.Records(ctx)
 
 	assert.True(t, testutils.SameEndpoints(records, expectedRecords))
 }
