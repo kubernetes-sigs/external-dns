@@ -575,6 +575,7 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 	changes := &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "", "ingress/default/my-ingress"),
+			newEndpointWithOwner("new-record-2.test-zone.example.org", "\"exampleText\"", endpoint.RecordTypeTXT, ""),
 		},
 		Delete:    []*endpoint.Endpoint{},
 		UpdateOld: []*endpoint.Endpoint{},
@@ -584,6 +585,8 @@ func testTXTRegistryApplyChangesWithTemplatedPrefix(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwnerResource("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner", "ingress/default/my-ingress"),
 			newEndpointWithOwnerAndOwnedRecord("prefixcname.new-record-1.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner,external-dns/resource=ingress/default/my-ingress\"", endpoint.RecordTypeTXT, "", "new-record-1.test-zone.example.org"),
+			newEndpointWithOwner("new-record-2.test-zone.example.org", "\"exampleText\"", endpoint.RecordTypeTXT, "owner"),
+			newEndpointWithOwnerAndOwnedRecord("prefixtxt.new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-2.test-zone.example.org"),
 		},
 	}
 	p.OnApplyChanges = func(ctx context.Context, got *plan.Changes) {
@@ -1329,6 +1332,7 @@ func TestNewTXTScheme(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("new-record-1.test-zone.example.org", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, ""),
+			newEndpointWithOwner("new-record-2.test-zone.example.org", "\"exampleText\"", endpoint.RecordTypeTXT, ""),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
@@ -1348,6 +1352,8 @@ func TestNewTXTScheme(t *testing.T) {
 			newEndpointWithOwner("example", "new-loadbalancer-1.lb.com", endpoint.RecordTypeCNAME, "owner"),
 			newEndpointWithOwnerAndOwnedRecord("example", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
 			newEndpointWithOwnerAndOwnedRecord("cname-example", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "example"),
+			newEndpointWithOwner("new-record-2.test-zone.example.org", "\"exampleText\"", endpoint.RecordTypeTXT, "owner"),
+			newEndpointWithOwnerAndOwnedRecord("txt-new-record-2.test-zone.example.org", "\"heritage=external-dns,external-dns/owner=owner\"", endpoint.RecordTypeTXT, "", "new-record-2.test-zone.example.org"),
 		},
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),

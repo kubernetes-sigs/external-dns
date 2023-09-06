@@ -96,7 +96,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 }
 
 func getSupportedTypes() []string {
-	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}
+	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS, endpoint.RecordTypeTXT}
 }
 
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilter {
@@ -207,15 +207,9 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // generateTXTRecord generates both "old" and "new" TXT records.
 // Once we decide to drop old format we need to drop toTXTName() and rename toNewTXTName
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	// Missing TXT records are added to the set of changes.
-	// Obviously, we don't need any other TXT record for them.
-	if r.RecordType == endpoint.RecordTypeTXT {
-		return nil
-	}
-
 	endpoints := make([]*endpoint.Endpoint, 0)
 
-	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
+	if !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA && r.RecordType != endpoint.RecordTypeTXT {
 		// old TXT record format
 		txt := endpoint.NewEndpoint(im.mapper.toTXTName(r.DNSName), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 		if txt != nil {
