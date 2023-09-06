@@ -1,0 +1,3183 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="external-dns maintainers">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.2.8">
+    
+    
+      
+        <title>Setting up ExternalDNS for Services on Azure - external-dns</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.644de097.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
+        
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#setting-up-externaldns-for-services-on-azure" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="external-dns" class="md-header__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            external-dns
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Setting up ExternalDNS for Services on Azure
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../.." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        About
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../ANS_Group_SafeDNS/" class="md-tabs__link md-tabs__link--active">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../annotations/annotations/" class="md-tabs__link">
+        Annotations
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../sources/sources/" class="md-tabs__link">
+        Sources
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../registry/registry/" class="md-tabs__link">
+        Registries
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../initial-design/" class="md-tabs__link">
+        Advanced Topics
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../CONTRIBUTING/" class="md-tabs__link">
+        Contributing
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="external-dns" class="md-nav__button md-logo" aria-label="external-dns" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54z"/></svg>
+
+    </a>
+    external-dns
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/kubernetes-sigs/external-dns/" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    kubernetes-sigs/external-dns
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2">
+          About
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="About" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          About
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        FAQ
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../20190708-external-dns-incubator/" class="md-nav__link">
+        Out of Incubator
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../code-of-conduct/" class="md-nav__link">
+        Code of Conduct
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../LICENSE/" class="md-nav__link">
+        License
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ANS_Group_SafeDNS/" class="md-nav__link">
+        Setting up ExternalDNS for Services on ANS Group's SafeDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../akamai-edgedns/" class="md-nav__link">
+        Setting up External-DNS for Services on Akamai Edge DNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../alibabacloud/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Alibaba Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-load-balancer-controller/" class="md-nav__link">
+        Using ExternalDNS with aws-load-balancer-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws-sd/" class="md-nav__link">
+        Setting up ExternalDNS using AWS Cloud Map API
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../aws/" class="md-nav__link">
+        Setting up ExternalDNS for Services on AWS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../azure-private-dns/" class="md-nav__link">
+        Set up ExternalDNS for Azure Private DNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Setting up ExternalDNS for Services on Azure
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Setting up ExternalDNS for Services on Azure
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-an-azure-dns-zone" class="md-nav__link">
+    Creating an Azure DNS zone
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-file" class="md-nav__link">
+    Configuration file
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permissions-to-modify-dns-zone" class="md-nav__link">
+    Permissions to modify DNS zone
+  </a>
+  
+    <nav class="md-nav" aria-label="Permissions to modify DNS zone">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#service-principal" class="md-nav__link">
+    Service Principal
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Principal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-service-principal" class="md-nav__link">
+    Creating a service principal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-the-rights-for-the-service-principal" class="md-nav__link">
+    Assign the rights for the service principal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-service-principal" class="md-nav__link">
+    Creating a configuration file for the service principal
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-aks-kubelet-identity" class="md-nav__link">
+    Managed identity using AKS Kubelet identity
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using AKS Kubelet identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fetching-the-kubelet-identity" class="md-nav__link">
+    Fetching the Kubelet identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-rights-for-the-kubelet-identity" class="md-nav__link">
+    Assign rights for the Kubelet identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-kubelet-identity" class="md-nav__link">
+    Creating a configuration file for the kubelet identity
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-aad-pod-identities" class="md-nav__link">
+    Managed identity using AAD Pod Identities
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using AAD Pod Identities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-the-aad-pod-identities-feature" class="md-nav__link">
+    Enable the AAD Pod Identities feature
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-the-aad-pod-identities-service" class="md-nav__link">
+    Deploy the AAD Pod Identities service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-the-managed-identity" class="md-nav__link">
+    Creating the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-rights-for-the-managed-identity" class="md-nav__link">
+    Assign rights for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-managed-identity" class="md-nav__link">
+    Creating a configuration file for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-an-azure-identity-binding" class="md-nav__link">
+    Creating an Azure identity binding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-externaldns-labels" class="md-nav__link">
+    Update ExternalDNS labels
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-workload-identity" class="md-nav__link">
+    Managed identity using Workload Identity
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using Workload Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-oidc-issuer-and-workload-identity-services" class="md-nav__link">
+    Deploy OIDC issuer and Workload Identity services
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-managed-identity" class="md-nav__link">
+    Create a managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-a-role-to-the-managed-identity" class="md-nav__link">
+    Assign a role to the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-federated-identity-credential" class="md-nav__link">
+    Create a federated identity credential
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm" class="md-nav__link">
+    helm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubectl-alternative" class="md-nav__link">
+    kubectl (alternative)
+  </a>
+  
+    <nav class="md-nav" aria-label="kubectl (alternative)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-a-configuration-file-for-the-managed-identity" class="md-nav__link">
+    Create a configuration file for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-labels-and-annotations-on-externaldns-service-account" class="md-nav__link">
+    Update labels and annotations on ExternalDNS service account
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingress-used-with-externaldns" class="md-nav__link">
+    Ingress used with ExternalDNS
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-externaldns" class="md-nav__link">
+    Deploy ExternalDNS
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy ExternalDNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-without-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters without RBAC enabled)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled-cluster-access" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled, cluster access)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled-namespace-access" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled, namespace access)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingress-option-expose-an-nginx-service-with-an-ingress" class="md-nav__link">
+    Ingress Option: Expose an nginx service with an ingress
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#azure-load-balancer-option-expose-an-nginx-service-with-a-load-balancer" class="md-nav__link">
+    Azure Load Balancer option: Expose an nginx service with a load balancer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-azure-dns-records" class="md-nav__link">
+    Verifying Azure DNS records
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delete-azure-resource-group" class="md-nav__link">
+    Delete Azure Resource Group
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-tutorials" class="md-nav__link">
+    More tutorials
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bluecat/" class="md-nav__link">
+        Setting up external-dns for BlueCat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../civo/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Civo
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloudflare/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Cloudflare
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contour/" class="md-nav__link">
+        Setting up External DNS with Contour
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../coredns/" class="md-nav__link">
+        Setting up ExternalDNS for CoreDNS with minikube
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../designate/" class="md-nav__link">
+        Setting up ExternalDNS for Services on OpenStack Designate
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../digitalocean/" class="md-nav__link">
+        Setting up ExternalDNS for Services on DigitalOcean
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dnsimple/" class="md-nav__link">
+        Setting up ExternalDNS for Services on DNSimple
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dyn/" class="md-nav__link">
+        Setting up ExternalDNS for Dyn
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exoscale/" class="md-nav__link">
+        Setting up ExternalDNS for Exoscale
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../externalname/" class="md-nav__link">
+        Setting up ExternalDNS for ExternalName Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../f5-virtualserver/" class="md-nav__link">
+        Configuring ExternalDNS to use the F5 Networks VirtualServer Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gandi/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Gandi
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gateway-api/" class="md-nav__link">
+        Configuring ExternalDNS to use Gateway API Route Sources
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gke/" class="md-nav__link">
+        Setting up ExternalDNS on Google Kubernetes Engine
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gloo-proxy/" class="md-nav__link">
+        Configuring ExternalDNS to use the Gloo Proxy Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../godaddy/" class="md-nav__link">
+        Setting up ExternalDNS for Services on GoDaddy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hostport/" class="md-nav__link">
+        Setting up ExternalDNS for Headless Services
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ibmcloud/" class="md-nav__link">
+        Setting up ExternalDNS for Services on IBMCloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../infoblox/" class="md-nav__link">
+        Setting up ExternalDNS for Infoblox
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../istio/" class="md-nav__link">
+        Configuring ExternalDNS to use the Istio Gateway and/or Istio Virtual Service Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kong/" class="md-nav__link">
+        Configuring ExternalDNS to use the Kong TCPIngress Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kops-dns-controller/" class="md-nav__link">
+        kOps dns-controller compatibility mode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kube-ingress-aws/" class="md-nav__link">
+        Using ExternalDNS with kube-ingress-aws-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../linode/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Linode
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mx-record/" class="md-nav__link">
+        Creating MX record with CRD source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nginx-ingress/" class="md-nav__link">
+        Setting up ExternalDNS on GKE with nginx-ingress-controller
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../nodes/" class="md-nav__link">
+        Configuring ExternalDNS to use Cluster Nodes as Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ns-record/" class="md-nav__link">
+        Creating NS record with CRD source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ns1/" class="md-nav__link">
+        Setting up ExternalDNS for Services on NS1
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openshift/" class="md-nav__link">
+        Configuring ExternalDNS to use the OpenShift Route Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../oracle/" class="md-nav__link">
+        Setting up ExternalDNS for Oracle Cloud Infrastructure (OCI)
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ovh/" class="md-nav__link">
+        Setting up ExternalDNS for Services on OVH
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pdns/" class="md-nav__link">
+        Setting up ExternalDNS for PowerDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pihole/" class="md-nav__link">
+        Setting up ExternalDNS for Pi-hole
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plural/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Plural
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../public-private-route53/" class="md-nav__link">
+        Setting up ExternalDNS using the same domain for public and private Route53 zones
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rcodezero/" class="md-nav__link">
+        Setting up ExternalDNS for Services on RcodeZero
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rdns/" class="md-nav__link">
+        Setting up ExternalDNS for RancherDNS(RDNS) with kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rfc2136/" class="md-nav__link">
+        Configuring RFC2136 provider
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../scaleway/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Scaleway
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security-context/" class="md-nav__link">
+        Running ExternalDNS with limited privileges
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tencentcloud/" class="md-nav__link">
+        Setting up ExternalDNS for Tencent Cloud
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../traefik-proxy/" class="md-nav__link">
+        Configuring ExternalDNS to use the Traefik Proxy Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../transip/" class="md-nav__link">
+        Setting up ExternalDNS for Services on TransIP
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ultradns/" class="md-nav__link">
+        Setting up ExternalDNS for Services on UltraDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vinyldns/" class="md-nav__link">
+        Setting up ExternalDNS for VinylDNS
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vultr/" class="md-nav__link">
+        Setting up ExternalDNS for Services on Vultr
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4">
+          Annotations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Annotations" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Annotations
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../annotations/annotations/" class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_5">
+          Sources
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Sources" data-md-level="1">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Sources
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/sources/" class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../sources/ingress/" class="md-nav__link">
+        Ingress
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_6">
+          Registries
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Registries" data-md-level="1">
+        <label class="md-nav__title" for="__nav_6">
+          <span class="md-nav__icon md-icon"></span>
+          Registries
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/registry/" class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/txt/" class="md-nav__link">
+        TXT
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../registry/dynamodb/" class="md-nav__link">
+        DynamoDB
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
+      
+      
+      
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Advanced Topics
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Advanced Topics" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Advanced Topics
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../initial-design/" class="md-nav__link">
+        Initial Design
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ttl/" class="md-nav__link">
+        TTL
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+      
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_8">
+          Contributing
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Contributing" data-md-level="1">
+        <label class="md-nav__title" for="__nav_8">
+          <span class="md-nav__icon md-icon"></span>
+          Contributing
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        Kubernetes Contributions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release/" class="md-nav__link">
+        Release
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/chart/" class="md-nav__link">
+        Helm Chart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/crd-source/" class="md-nav__link">
+        CRD Source
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/getting-started/" class="md-nav__link">
+        Quick Start
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/sources-and-providers/" class="md-nav__link">
+        Sources and Providers
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-an-azure-dns-zone" class="md-nav__link">
+    Creating an Azure DNS zone
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-file" class="md-nav__link">
+    Configuration file
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#permissions-to-modify-dns-zone" class="md-nav__link">
+    Permissions to modify DNS zone
+  </a>
+  
+    <nav class="md-nav" aria-label="Permissions to modify DNS zone">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#service-principal" class="md-nav__link">
+    Service Principal
+  </a>
+  
+    <nav class="md-nav" aria-label="Service Principal">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-service-principal" class="md-nav__link">
+    Creating a service principal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-the-rights-for-the-service-principal" class="md-nav__link">
+    Assign the rights for the service principal
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-service-principal" class="md-nav__link">
+    Creating a configuration file for the service principal
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-aks-kubelet-identity" class="md-nav__link">
+    Managed identity using AKS Kubelet identity
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using AKS Kubelet identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fetching-the-kubelet-identity" class="md-nav__link">
+    Fetching the Kubelet identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-rights-for-the-kubelet-identity" class="md-nav__link">
+    Assign rights for the Kubelet identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-kubelet-identity" class="md-nav__link">
+    Creating a configuration file for the kubelet identity
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-aad-pod-identities" class="md-nav__link">
+    Managed identity using AAD Pod Identities
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using AAD Pod Identities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#enable-the-aad-pod-identities-feature" class="md-nav__link">
+    Enable the AAD Pod Identities feature
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deploy-the-aad-pod-identities-service" class="md-nav__link">
+    Deploy the AAD Pod Identities service
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-the-managed-identity" class="md-nav__link">
+    Creating the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-rights-for-the-managed-identity" class="md-nav__link">
+    Assign rights for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-configuration-file-for-the-managed-identity" class="md-nav__link">
+    Creating a configuration file for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-an-azure-identity-binding" class="md-nav__link">
+    Creating an Azure identity binding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-externaldns-labels" class="md-nav__link">
+    Update ExternalDNS labels
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#managed-identity-using-workload-identity" class="md-nav__link">
+    Managed identity using Workload Identity
+  </a>
+  
+    <nav class="md-nav" aria-label="Managed identity using Workload Identity">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-oidc-issuer-and-workload-identity-services" class="md-nav__link">
+    Deploy OIDC issuer and Workload Identity services
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-managed-identity" class="md-nav__link">
+    Create a managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#assign-a-role-to-the-managed-identity" class="md-nav__link">
+    Assign a role to the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#create-a-federated-identity-credential" class="md-nav__link">
+    Create a federated identity credential
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helm" class="md-nav__link">
+    helm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kubectl-alternative" class="md-nav__link">
+    kubectl (alternative)
+  </a>
+  
+    <nav class="md-nav" aria-label="kubectl (alternative)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-a-configuration-file-for-the-managed-identity" class="md-nav__link">
+    Create a configuration file for the managed identity
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#update-labels-and-annotations-on-externaldns-service-account" class="md-nav__link">
+    Update labels and annotations on ExternalDNS service account
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingress-used-with-externaldns" class="md-nav__link">
+    Ingress used with ExternalDNS
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-externaldns" class="md-nav__link">
+    Deploy ExternalDNS
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy ExternalDNS">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-without-rbac-enabled" class="md-nav__link">
+    Manifest (for clusters without RBAC enabled)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled-cluster-access" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled, cluster access)
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manifest-for-clusters-with-rbac-enabled-namespace-access" class="md-nav__link">
+    Manifest (for clusters with RBAC enabled, namespace access)
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ingress-option-expose-an-nginx-service-with-an-ingress" class="md-nav__link">
+    Ingress Option: Expose an nginx service with an ingress
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#azure-load-balancer-option-expose-an-nginx-service-with-a-load-balancer" class="md-nav__link">
+    Azure Load Balancer option: Expose an nginx service with a load balancer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-azure-dns-records" class="md-nav__link">
+    Verifying Azure DNS records
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#delete-azure-resource-group" class="md-nav__link">
+    Delete Azure Resource Group
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-tutorials" class="md-nav__link">
+    More tutorials
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+<a href="https://github.com/kubernetes-sigs/external-dns/edit/master/docs/tutorials/azure.md" title="Edit this page" class="md-content__button md-icon">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+</a>
+
+
+
+<h1 id="setting-up-externaldns-for-services-on-azure">Setting up ExternalDNS for Services on Azure<a class="headerlink" href="#setting-up-externaldns-for-services-on-azure" title="Permanent link">&para;</a></h1>
+<p>This tutorial describes how to setup ExternalDNS for <a href="https://azure.microsoft.com/services/dns/">Azure DNS</a> with <a href="https://docs.microsoft.com/azure/aks/">Azure Kubernetes Service</a>.</p>
+<p>Make sure to use <strong>&gt;=0.11.0</strong> version of ExternalDNS for this tutorial.</p>
+<p>This tutorial uses <a href="https://docs.microsoft.com/en-us/cli/azure/install-azure-cli">Azure CLI 2.0</a> for all<br />
+Azure commands and assumes that the Kubernetes cluster was created via Azure Container Services and <code>kubectl</code> commands<br />
+are being run on an orchestration node.</p>
+<h2 id="creating-an-azure-dns-zone">Creating an Azure DNS zone<a class="headerlink" href="#creating-an-azure-dns-zone" title="Permanent link">&para;</a></h2>
+<p>The Azure provider for ExternalDNS will find suitable zones for domains it manages; it will not automatically create zones.</p>
+<p>For this tutorial, we will create a Azure resource group named <code>MyDnsResourceGroup</code> that can easily be deleted later:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>az<span class="w"> </span>group<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span>--location<span class="w"> </span><span class="s2">&quot;eastus&quot;</span>
+</code></pre></div>
+<p>Substitute a more suitable location for the resource group if desired.</p>
+<p>Next, create a Azure DNS zone for <code>example.com</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>zone<span class="w"> </span>create<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;example.com&quot;</span>
+</code></pre></div>
+<p>Substitute a domain you own for <code>example.com</code> if desired.</p>
+<p>If using your own domain that was registered with a third-party domain registrar, you should point your domain&rsquo;s name servers to the values in the <code>nameServers</code> field from the JSON data returned by the <code>az network dns zone create</code> command. Please consult your registrar&rsquo;s documentation on how to do that.</p>
+<h2 id="configuration-file">Configuration file<a class="headerlink" href="#configuration-file" title="Permanent link">&para;</a></h2>
+<p>The azure provider will reference a configuration file called <code>azure.json</code>.  The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named <code>azure.json</code> with content similar to this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;tenantId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01234abc-de56-ff78-abc1-234567890def&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;subscriptionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01234abc-de56-ff78-abc1-234567890def&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">  </span><span class="nt">&quot;resourceGroup&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">&quot;aadClientId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01234abc-de56-ff78-abc1-234567890def&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="nt">&quot;aadClientSecret&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uKiuXeiwui4jo9quae9o&quot;</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
+</code></pre></div>
+<p>The following fields are used:</p>
+<ul>
+<li><code>tenantId</code> (<strong>required</strong>) - run <code>az account show --query "tenantId"</code> or by selecting Azure Active Directory in the Azure Portal and checking the <em>Directory ID</em> under Properties.</li>
+<li><code>subscriptionId</code> (<strong>required</strong>) - run <code>az account show --query "id"</code> or by selecting Subscriptions in the Azure Portal.</li>
+<li><code>resourceGroup</code> (<strong>required</strong>) is the Resource Group created in a previous step that contains the Azure DNS Zone.</li>
+<li><code>aadClientID</code> and <code>aadClientSecret</code> are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.</li>
+<li><code>useManagedIdentityExtension</code> - this is set to <code>true</code> if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.</li>
+<li><code>userAssignedIdentityID</code> - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.</li>
+<li><code>useWorkloadIdentityExtension</code> - this is set to <code>true</code> if you use Workload Identity method documented in the next section.</li>
+</ul>
+<p>The Azure DNS provider expects, by default, that the configuration file is at <code>/etc/kubernetes/azure.json</code>.  This can be overridden with the <code>--azure-config-file</code> option when starting ExternalDNS.</p>
+<h2 id="permissions-to-modify-dns-zone">Permissions to modify DNS zone<a class="headerlink" href="#permissions-to-modify-dns-zone" title="Permanent link">&para;</a></h2>
+<p>ExternalDNS needs permissions to make changes to the Azure DNS zone. There are three ways configure the access needed:</p>
+<ul>
+<li><a href="#service-principal">Service Principal</a></li>
+<li><a href="#managed-identity-using-aks-kubelet-identity">Managed Identity Using AKS Kubelet Identity</a></li>
+<li><a href="#managed-identity-using-aad-pod-identities">Managed Identity Using AAD Pod Identities</a></li>
+<li><a href="#managed-identity-using-workload-identity">Managed Identity Using Workload Identity</a></li>
+</ul>
+<h3 id="service-principal">Service Principal<a class="headerlink" href="#service-principal" title="Permanent link">&para;</a></h3>
+<p>These permissions are defined in a Service Principal that should be made available to ExternalDNS as a configuration file <code>azure.json</code>.</p>
+<h4 id="creating-a-service-principal">Creating a service principal<a class="headerlink" href="#creating-a-service-principal" title="Permanent link">&para;</a></h4>
+<p>A Service Principal with a minimum access level of <code>DNS Zone Contributor</code> or <code>Contributor</code> to the DNS zone(s) and <code>Reader</code> to the resource group containing the Azure DNS zone(s) is necessary for ExternalDNS to be able to edit DNS records. However, other more permissive access levels will work too (e.g. <code>Contributor</code> to the resource group or the whole subscription).</p>
+<p>This is an Azure CLI example on how to query the Azure API for the information required for the Resource Group and DNS zone you would have already created in previous steps (requires <code>azure-cli</code> and <code>jq</code>)</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span><span class="nv">EXTERNALDNS_NEW_SP_NAME</span><span class="o">=</span><span class="s2">&quot;ExternalDnsServicePrincipal&quot;</span><span class="w"> </span><span class="c1"># name of the service principal</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span><span class="c1"># name of resource group where dns zone is hosted</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE</span><span class="o">=</span><span class="s2">&quot;example.com&quot;</span><span class="w"> </span><span class="c1"># DNS zone name like example.com or sub.example.com</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Create the service principal</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>$<span class="w"> </span><span class="nv">DNS_SP</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>ad<span class="w"> </span>sp<span class="w"> </span>create-for-rbac<span class="w"> </span>--name<span class="w"> </span><span class="nv">$EXTERNALDNS_NEW_SP_NAME</span><span class="k">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>$<span class="w"> </span><span class="nv">EXTERNALDNS_SP_APP_ID</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="nv">$DNS_SP</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.appId&#39;</span><span class="k">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>$<span class="w"> </span><span class="nv">EXTERNALDNS_SP_PASSWORD</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span><span class="w"> </span><span class="nv">$DNS_SP</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.password&#39;</span><span class="k">)</span>
+</code></pre></div>
+<h4 id="assign-the-rights-for-the-service-principal">Assign the rights for the service principal<a class="headerlink" href="#assign-the-rights-for-the-service-principal" title="Permanent link">&para;</a></h4>
+<p>Grant access to Azure DNS zone for the service principal.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># fetch DNS id used to grant access to the service principal</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">DNS_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>zone<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span><span class="nv">$AZURE_DNS_ZONE</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w"> </span>--resource-group<span class="w"> </span><span class="nv">$AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># 1. as a reader to the resource group</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Reader&quot;</span><span class="w"> </span>--assignee<span class="w"> </span><span class="nv">$EXTERNALDNS_SP_APP_ID</span><span class="w"> </span>--scope<span class="w"> </span><span class="nv">$DNS_ID</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="c1"># 2. as a contributor to DNS Zone itself</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Contributor&quot;</span><span class="w"> </span>--assignee<span class="w"> </span><span class="nv">$EXTERNALDNS_SP_APP_ID</span><span class="w"> </span>--scope<span class="w"> </span><span class="nv">$DNS_ID</span>
+</code></pre></div>
+<h4 id="creating-a-configuration-file-for-the-service-principal">Creating a configuration file for the service principal<a class="headerlink" href="#creating-a-configuration-file-for-the-service-principal" title="Permanent link">&para;</a></h4>
+<p>Create the file <code>azure.json</code> with values gather from previous steps.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; /local/path/to/azure.json</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="s">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="s">  &quot;tenantId&quot;: &quot;$(az account show --query tenantId -o tsv)&quot;,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="s">  &quot;subscriptionId&quot;: &quot;$(az account show --query id -o tsv)&quot;,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="s">  &quot;resourceGroup&quot;: &quot;$AZURE_DNS_ZONE_RESOURCE_GROUP&quot;,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="s">  &quot;aadClientId&quot;: &quot;$EXTERNALDNS_SP_APP_ID&quot;,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="s">  &quot;aadClientSecret&quot;: &quot;$EXTERNALDNS_SP_PASSWORD&quot;</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="s">}</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="s">EOF</span>
+</code></pre></div>
+<p>Use this file to create a Kubernetes secret:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-config-file<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--from-file<span class="w"> </span>/local/path/to/azure.json
+</code></pre></div>
+<h3 id="managed-identity-using-aks-kubelet-identity">Managed identity using AKS Kubelet identity<a class="headerlink" href="#managed-identity-using-aks-kubelet-identity" title="Permanent link">&para;</a></h3>
+<p>The <a href="https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview">managed identity</a> that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.  The managed identity assigned Kuberetes node pool, or specifically the <a href="https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview">VMSS</a>, is called the Kubelet identity.</p>
+<p>The managed identites were previously called MSI (Managed Service Identity) and are enabled by default when creating an AKS cluster.</p>
+<p>Note that permissions granted to this identity will be accessible to all containers running inside the Kubernetes cluster, not just the ExternalDNS container(s).</p>
+<p>For the managed identity, the contents of <code>azure.json</code> should be similar to this:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="p">{</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">&quot;tenantId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01234abc-de56-ff78-abc1-234567890def&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">&quot;subscriptionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;01234abc-de56-ff78-abc1-234567890def&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span><span class="nt">&quot;resourceGroup&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span><span class="nt">&quot;useManagedIdentityExtension&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="fetching-the-kubelet-identity">Fetching the Kubelet identity<a class="headerlink" href="#fetching-the-kubelet-identity" title="Permanent link">&para;</a></h4>
+<p>For this process, you will need to get the kublet identity:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>$<span class="w"> </span><span class="nv">PRINCIPAL_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>aks<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="nv">$CLUSTER_GROUP</span><span class="w"> </span>--name<span class="w"> </span><span class="nv">$CLUSTERNAME</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;identityProfile.kubeletidentity.objectId&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+</code></pre></div>
+<h4 id="assign-rights-for-the-kubelet-identity">Assign rights for the Kubelet identity<a class="headerlink" href="#assign-rights-for-the-kubelet-identity" title="Permanent link">&para;</a></h4>
+<p>Grant access to Azure DNS zone for the kublet identity.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE</span><span class="o">=</span><span class="s2">&quot;example.com&quot;</span><span class="w"> </span><span class="c1"># DNS zone name like example.com or sub.example.com</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span><span class="c1"># resource group where DNS zone is hosted</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># fetch DNS id used to grant access to the kublet identity</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>$<span class="w"> </span><span class="nv">DNS_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>zone<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span><span class="nv">$AZURE_DNS_ZONE</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span>--resource-group<span class="w"> </span><span class="nv">$AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;DNS Zone Contributor&quot;</span><span class="w"> </span>--assignee<span class="w"> </span><span class="nv">$PRINCIPAL_ID</span><span class="w"> </span>--scope<span class="w"> </span><span class="nv">$DNS_ID</span>
+</code></pre></div>
+<h4 id="creating-a-configuration-file-for-the-kubelet-identity">Creating a configuration file for the kubelet identity<a class="headerlink" href="#creating-a-configuration-file-for-the-kubelet-identity" title="Permanent link">&para;</a></h4>
+<p>Create the file <code>azure.json</code> with values gather from previous steps.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; /local/path/to/azure.json</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="s">{</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="s">  &quot;tenantId&quot;: &quot;$(az account show --query tenantId -o tsv)&quot;,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="s">  &quot;subscriptionId&quot;: &quot;$(az account show --query id -o tsv)&quot;,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="s">  &quot;resourceGroup&quot;: &quot;$AZURE_DNS_ZONE_RESOURCE_GROUP&quot;,</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="s">  &quot;useManagedIdentityExtension&quot;: true</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="s">}</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="s">EOF</span>
+</code></pre></div>
+<p>Use the <code>azure.json</code> file to create a Kubernetes secret:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-config-file<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--from-file<span class="w"> </span>/local/path/to/azure.json
+</code></pre></div>
+<h3 id="managed-identity-using-aad-pod-identities">Managed identity using AAD Pod Identities<a class="headerlink" href="#managed-identity-using-aad-pod-identities" title="Permanent link">&para;</a></h3>
+<p>For this process, we will create a <a href="https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview">managed identity</a> that will be explicitly used by the ExternalDNS container.  This process is similar to Kubelet identity except that this managed identity is not associated with the Kubernetes node pool, but rather associated with explicit ExternalDNS containers.</p>
+<h4 id="enable-the-aad-pod-identities-feature">Enable the AAD Pod Identities feature<a class="headerlink" href="#enable-the-aad-pod-identities-feature" title="Permanent link">&para;</a></h4>
+<p>For this solution, <a href="https://docs.microsoft.com/azure/aks/use-azure-ad-pod-identity">AAD Pod Identities</a> preview feature can be enabled.  The commands below should do the trick to enable this feature:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span>az<span class="w"> </span>feature<span class="w"> </span>register<span class="w"> </span>--name<span class="w"> </span>EnablePodIdentityPreview<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.ContainerService
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>$<span class="w"> </span>az<span class="w"> </span>feature<span class="w"> </span>register<span class="w"> </span>--name<span class="w"> </span>AutoUpgradePreview<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.ContainerService
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>$<span class="w"> </span>az<span class="w"> </span>extension<span class="w"> </span>add<span class="w"> </span>--name<span class="w"> </span>aks-preview
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>$<span class="w"> </span>az<span class="w"> </span>extension<span class="w"> </span>update<span class="w"> </span>--name<span class="w"> </span>aks-preview
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>$<span class="w"> </span>az<span class="w"> </span>provider<span class="w"> </span>register<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.ContainerService
+</code></pre></div>
+<h4 id="deploy-the-aad-pod-identities-service">Deploy the AAD Pod Identities service<a class="headerlink" href="#deploy-the-aad-pod-identities-service" title="Permanent link">&para;</a></h4>
+<p>Once enabled, you can update your cluster and install needed services for the <a href="https://docs.microsoft.com/azure/aks/use-azure-ad-pod-identity">AAD Pod Identities</a> feature.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>$<span class="w"> </span><span class="nv">AZURE_AKS_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;my-aks-cluster-group&quot;</span><span class="w"> </span><span class="c1"># name of resource group where aks cluster was created</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>$<span class="w"> </span><span class="nv">AZURE_AKS_CLUSTER_NAME</span><span class="o">=</span><span class="s2">&quot;my-aks-cluster&quot;</span><span class="w"> </span><span class="c1"># name of aks cluster previously created</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>$<span class="w"> </span>az<span class="w"> </span>aks<span class="w"> </span>update<span class="w"> </span>--resource-group<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_RESOURCE_GROUP</span><span class="si">}</span><span class="w"> </span>--name<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_CLUSTER_NAME</span><span class="si">}</span><span class="w"> </span>--enable-pod-identity
+</code></pre></div>
+<p>Note that, if you use the default network plugin <code>kubenet</code>, then you need to add the command line option <code>--enable-pod-identity-with-kubenet</code> to the above command.</p>
+<h4 id="creating-the-managed-identity">Creating the managed identity<a class="headerlink" href="#creating-the-managed-identity" title="Permanent link">&para;</a></h4>
+<p>After this process is finished, create a managed identity.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>$<span class="w"> </span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="o">=</span><span class="nv">$AZURE_AKS_RESOURCE_GROUP</span><span class="w"> </span><span class="c1"># custom group or reuse AKS group</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>$<span class="w"> </span><span class="nv">IDENTITY_NAME</span><span class="o">=</span><span class="s2">&quot;example-com-identity&quot;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># create a managed identity</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>$<span class="w"> </span>az<span class="w"> </span>identity<span class="w"> </span>create<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h4 id="assign-rights-for-the-managed-identity">Assign rights for the managed identity<a class="headerlink" href="#assign-rights-for-the-managed-identity" title="Permanent link">&para;</a></h4>
+<p>Grant access to Azure DNS zone for the managed identity.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span><span class="c1"># name of resource group where dns zone is hosted</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE</span><span class="o">=</span><span class="s2">&quot;example.com&quot;</span><span class="w"> </span><span class="c1"># DNS zone name like example.com or sub.example.com</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># fetch identity client id from managed identity created earlier</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>$<span class="w"> </span><span class="nv">IDENTITY_CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>identity<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;clientId&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># fetch DNS id used to grant access to the managed identity</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a>$<span class="w"> </span><span class="nv">DNS_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>zone<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AZURE_DNS_ZONE</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">  </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;DNS Zone Contributor&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">  </span>--assignee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_CLIENT_ID</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--scope<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">DNS_ID</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h4 id="creating-a-configuration-file-for-the-managed-identity">Creating a configuration file for the managed identity<a class="headerlink" href="#creating-a-configuration-file-for-the-managed-identity" title="Permanent link">&para;</a></h4>
+<p>Create the file <code>azure.json</code> with the values from previous steps:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; /local/path/to/azure.json</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="s">{</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="s">  &quot;tenantId&quot;: &quot;$(az account show --query tenantId -o tsv)&quot;,</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="s">  &quot;subscriptionId&quot;: &quot;$(az account show --query id -o tsv)&quot;,</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="s">  &quot;resourceGroup&quot;: &quot;$AZURE_DNS_ZONE_RESOURCE_GROUP&quot;,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="s">  &quot;useManagedIdentityExtension&quot;: true,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="s">  &quot;userAssignedIdentityID&quot;: &quot;$IDENTITY_CLIENT_ID&quot;</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="s">}</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="s">EOF</span>
+</code></pre></div>
+<p>Use the <code>azure.json</code> file to create a Kubernetes secret:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-config-file<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--from-file<span class="w"> </span>/local/path/to/azure.json
+</code></pre></div>
+<h4 id="creating-an-azure-identity-binding">Creating an Azure identity binding<a class="headerlink" href="#creating-an-azure-identity-binding" title="Permanent link">&para;</a></h4>
+<p>A binding between the managed identity and the ExternalDNS pods needs to be setup by creating <code>AzureIdentity</code> and <code>AzureIdentityBinding</code> resources.  This will allow appropriately labeled ExternalDNS pods to authenticate using the managed identity.  When AAD Pod Identity feature is enabled from previous steps above, the <code>az aks pod-identity add</code> can be used to create these resources:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>$<span class="w"> </span><span class="nv">IDENTITY_RESOURCE_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>identity<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span>--name<span class="w"> </span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="w"> </span>--query<span class="w"> </span>id<span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>$<span class="w"> </span>az<span class="w"> </span>aks<span class="w"> </span>pod-identity<span class="w"> </span>add<span class="w"> </span>--resource-group<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_RESOURCE_GROUP</span><span class="si">}</span><span class="w">  </span><span class="se">\</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">  </span>--cluster-name<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_CLUSTER_NAME</span><span class="si">}</span><span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">  </span>--name<span class="w"> </span><span class="s2">&quot;external-dns&quot;</span><span class="w"> </span>--identity-resource-id<span class="w"> </span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_ID</span><span class="si">}</span>
+</code></pre></div>
+<p>This will add something similar to the following resouces:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aadpodidentity.k8s.io/v1</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AzureIdentity</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">    </span><span class="nt">addonmanager.kubernetes.io/mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reconcile</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="nt">kubernetes.azure.com/managedby</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aks</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">  </span><span class="nt">clientID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$IDENTITY_CLIENT_ID</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">  </span><span class="nt">resourceID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">$IDENTITY_RESOURCE_ID</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="nn">---</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aadpodidentity.k8s.io/v1</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AzureIdentityBinding</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a><span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a><span class="w">    </span><span class="nt">addonmanager.kubernetes.io/mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Reconcile</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a><span class="w">    </span><span class="nt">kubernetes.azure.com/managedby</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aks</span>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns-binding</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a><span class="w">  </span><span class="nt">azureIdentity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+</code></pre></div>
+<h4 id="update-externaldns-labels">Update ExternalDNS labels<a class="headerlink" href="#update-externaldns-labels" title="Permanent link">&para;</a></h4>
+<p>When deploying ExternalDNS, you want to make sure that deployed pod(s) will have the label <code>aadpodidbinding: external-dns</code> to enable AAD Pod Identities. You can patch an existing deployment of ExternalDNS with this command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span>external-dns<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--patch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;: {&quot;template&quot;: {&quot;metadata&quot;: {&quot;labels&quot;: {&quot;aadpodidbinding&quot;: &quot;external-dns&quot;}}}}}&#39;</span>
+</code></pre></div>
+<h3 id="managed-identity-using-workload-identity">Managed identity using Workload Identity<a class="headerlink" href="#managed-identity-using-workload-identity" title="Permanent link">&para;</a></h3>
+<p>For this process, we will create a <a href="https://docs.microsoft.com//azure/active-directory/managed-identities-azure-resources/overview">managed identity</a> that will be explicitly used by the ExternalDNS container. This process is somewhat similar to Pod Identity except that this managed identity is associated with a kubernetes service account.</p>
+<h4 id="deploy-oidc-issuer-and-workload-identity-services">Deploy OIDC issuer and Workload Identity services<a class="headerlink" href="#deploy-oidc-issuer-and-workload-identity-services" title="Permanent link">&para;</a></h4>
+<p>Update your cluster to install <a href="https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer">OIDC Issuer</a> and <a href="https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster">Workload Identity</a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>$<span class="w"> </span><span class="nv">AZURE_AKS_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;my-aks-cluster-group&quot;</span><span class="w"> </span><span class="c1"># name of resource group where aks cluster was created</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>$<span class="w"> </span><span class="nv">AZURE_AKS_CLUSTER_NAME</span><span class="o">=</span><span class="s2">&quot;my-aks-cluster&quot;</span><span class="w"> </span><span class="c1"># name of aks cluster previously created</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>$<span class="w"> </span>az<span class="w"> </span>aks<span class="w"> </span>update<span class="w"> </span>--resource-group<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_RESOURCE_GROUP</span><span class="si">}</span><span class="w"> </span>--name<span class="w"> </span><span class="si">${</span><span class="nv">AZURE_AKS_CLUSTER_NAME</span><span class="si">}</span><span class="w"> </span>--enable-oidc-issuer<span class="w"> </span>--enable-workload-identity
+</code></pre></div>
+<h4 id="create-a-managed-identity">Create a managed identity<a class="headerlink" href="#create-a-managed-identity" title="Permanent link">&para;</a></h4>
+<p>Create a managed identity:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>$<span class="w"> </span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="o">=</span><span class="nv">$AZURE_AKS_RESOURCE_GROUP</span><span class="w"> </span><span class="c1"># custom group or reuse AKS group</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>$<span class="w"> </span><span class="nv">IDENTITY_NAME</span><span class="o">=</span><span class="s2">&quot;example-com-identity&quot;</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># create a managed identity</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>$<span class="w"> </span>az<span class="w"> </span>identity<span class="w"> </span>create<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h4 id="assign-a-role-to-the-managed-identity">Assign a role to the managed identity<a class="headerlink" href="#assign-a-role-to-the-managed-identity" title="Permanent link">&para;</a></h4>
+<p>Grant access to Azure DNS zone for the managed identity:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="o">=</span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span><span class="c1"># name of resource group where dns zone is hosted</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>$<span class="w"> </span><span class="nv">AZURE_DNS_ZONE</span><span class="o">=</span><span class="s2">&quot;example.com&quot;</span><span class="w"> </span><span class="c1"># DNS zone name like example.com or sub.example.com</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="c1"># fetch identity client id from managed identity created earlier</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>$<span class="w"> </span><span class="nv">IDENTITY_CLIENT_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>identity<span class="w"> </span>show<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">  </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;clientId&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="c1"># fetch DNS id used to grant access to the managed identity</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>$<span class="w"> </span><span class="nv">DNS_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>zone<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AZURE_DNS_ZONE</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">  </span>--resource-group<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>$<span class="w"> </span><span class="nv">RESOURCE_GROUP_ID</span><span class="o">=</span><span class="k">$(</span>az<span class="w"> </span>group<span class="w"> </span>show<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">AZURE_DNS_ZONE_RESOURCE_GROUP</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="w"> </span>--output<span class="w"> </span>tsv<span class="k">)</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>
+<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;DNS Zone Contributor&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">  </span>--assignee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_CLIENT_ID</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--scope<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">DNS_ID</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>$<span class="w"> </span>az<span class="w"> </span>role<span class="w"> </span>assignment<span class="w"> </span>create<span class="w"> </span>--role<span class="w"> </span><span class="s2">&quot;Reader&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="w">  </span>--assignee<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">IDENTITY_CLIENT_ID</span><span class="si">}</span><span class="s2">&quot;</span><span class="w"> </span>--scope<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">RESOURCE_GROUP_ID</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h4 id="create-a-federated-identity-credential">Create a federated identity credential<a class="headerlink" href="#create-a-federated-identity-credential" title="Permanent link">&para;</a></h4>
+<p>A binding between the managed identity and the ExternalDNS service account needs to be setup by creating a federated identity resource:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>$<span class="w"> </span><span class="nv">OIDC_ISSUER_URL</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span>az<span class="w"> </span>aks<span class="w"> </span>show<span class="w"> </span>-n<span class="w"> </span>myAKSCluster<span class="w"> </span>-g<span class="w"> </span>myResourceGroup<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;oidcIssuerProfile.issuerUrl&quot;</span><span class="w"> </span>-otsv<span class="k">)</span><span class="s2">&quot;</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>$<span class="w"> </span>az<span class="w"> </span>identity<span class="w"> </span>federated-credential<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="w"> </span>--identity-name<span class="w"> </span><span class="si">${</span><span class="nv">IDENTITY_NAME</span><span class="si">}</span><span class="w"> </span>--resource-group<span class="w"> </span><span class="nv">$AZURE_AKS_RESOURCE_GROUP</span><span class="o">}</span><span class="w"> </span>--issuer<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$OIDC_ISSUER_URL</span><span class="s2">&quot;</span><span class="w"> </span>--subject<span class="w"> </span><span class="s2">&quot;system:serviceaccount:default:external-dns&quot;</span>
+</code></pre></div>
+<p>NOTE: make sure federated credential refers to correct namespace and service account (<code>system:serviceaccount:&lt;NAMESPACE&gt;:&lt;SERVICE_ACCOUNT&gt;</code>)</p>
+<h4 id="helm">helm<a class="headerlink" href="#helm" title="Permanent link">&para;</a></h4>
+<p>When deploying external-dns with helm, here are the parameters you need to pass:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="nt">fullnameOverride</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="nt">serviceAccount</span><span class="p">:</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="w">    </span><span class="nt">azure.workload.identity/client-id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;IDENTITY_CLIENT_ID&gt;</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="nt">podLabels</span><span class="p">:</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="w">  </span><span class="nt">azure.workload.identity/use</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure</span>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a><span class="nt">secretConfiguration</span><span class="p">:</span>
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a><span class="w">  </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/etc/kubernetes/&quot;</span>
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a><span class="w">  </span><span class="nt">data</span><span class="p">:</span>
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="w">    </span><span class="nt">azure.json</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="w">      </span><span class="no">{</span>
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a><span class="w">        </span><span class="no">&quot;subscriptionId&quot;: &quot;&lt;SUBSCRIPTION_ID&gt;&quot;,</span>
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a><span class="w">        </span><span class="no">&quot;resourceGroup&quot;: &quot;&lt;AZURE_DNS_ZONE_RESOURCE_GROUP&gt;&quot;,</span>
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a><span class="w">        </span><span class="no">&quot;useWorkloadIdentityExtension&quot;: true</span>
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a><span class="w">      </span><span class="no">}</span>
+</code></pre></div>
+<p>NOTE: make sure the pod is restarted whenever you make a configuration change.</p>
+<h4 id="kubectl-alternative">kubectl (alternative)<a class="headerlink" href="#kubectl-alternative" title="Permanent link">&para;</a></h4>
+<h5 id="create-a-configuration-file-for-the-managed-identity">Create a configuration file for the managed identity<a class="headerlink" href="#create-a-configuration-file-for-the-managed-identity" title="Permanent link">&para;</a></h5>
+<p>Create the file <code>azure.json</code> with the values from previous steps:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>cat<span class="w"> </span><span class="s">&lt;&lt;-EOF &gt; /local/path/to/azure.json</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="s">{</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="s">  &quot;subscriptionId&quot;: &quot;$(az account show --query id -o tsv)&quot;,</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="s">  &quot;resourceGroup&quot;: &quot;$AZURE_DNS_ZONE_RESOURCE_GROUP&quot;,</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="s">  &quot;useWorkloadIdentityExtension&quot;: true</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="s">}</span>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="s">EOF</span>
+</code></pre></div>
+<p>Use the <code>azure.json</code> file to create a Kubernetes secret:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>generic<span class="w"> </span>azure-config-file<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--from-file<span class="w"> </span>/local/path/to/azure.json
+</code></pre></div>
+<h5 id="update-labels-and-annotations-on-externaldns-service-account">Update labels and annotations on ExternalDNS service account<a class="headerlink" href="#update-labels-and-annotations-on-externaldns-service-account" title="Permanent link">&para;</a></h5>
+<p>To instruct Workload Identity webhook to inject a projected token into the ExternalDNS pod, the pod needs to have a label <code>azure.workload.identity/use: "true"</code> (before Workload Identity 1.0.0, this label was supposed to be set on the service account instead). Also, the service account needs to have an annotation <code>azure.workload.identity/client-id: &lt;IDENTITY_CLIENT_ID&gt;</code>:</p>
+<p>To patch the existing serviceaccount and deployment, use the following command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>serviceaccount<span class="w"> </span>external-dns<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--patch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a><span class="w"> </span><span class="s2">&quot;{\&quot;metadata\&quot;: {\&quot;annotations\&quot;: {\&quot;azure.workload.identity/client-id\&quot;: \&quot;</span><span class="si">${</span><span class="nv">IDENTITY_CLIENT_ID</span><span class="si">}</span><span class="s2">\&quot;}}}&quot;</span>
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>$<span class="w"> </span>kubectl<span class="w"> </span>patch<span class="w"> </span>deployment<span class="w"> </span>external-dns<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--patch<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;: {&quot;template&quot;: {&quot;metadata&quot;: {&quot;labels&quot;: {\&quot;azure.workload.identity/use\&quot;: \&quot;true\&quot;}}}}}&#39;</span>
+</code></pre></div>
+<p>NOTE: it&rsquo;s also possible to specify (or override) ClientID through <code>UserAssignedIdentityID</code> field in <code>azure.json</code>.</p>
+<p>NOTE: make sure the pod is restarted whenever you make a configuration change.</p>
+<h2 id="ingress-used-with-externaldns">Ingress used with ExternalDNS<a class="headerlink" href="#ingress-used-with-externaldns" title="Permanent link">&para;</a></h2>
+<p>This deployment assumes that you will be using nginx-ingress. When using nginx-ingress do not deploy it as a Daemon Set. This causes nginx-ingress to write the Cluster IP of the backend pods in the ingress status.loadbalancer.ip property which then has external-dns write the Cluster IP(s) in DNS vs. the nginx-ingress service external IP.</p>
+<p>Ensure that your nginx-ingress deployment has the following arg: added to it:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>- --publish-service=namespace/nginx-ingress-controller-svcname
+</code></pre></div>
+<p>For more details see here: <a href="https://github.com/kubernetes-sigs/external-dns/blob/HEAD/docs/faq.md#why-is-externaldns-only-adding-a-single-ip-address-in-route-53-on-aws-when-using-the-nginx-ingress-controller-how-do-i-get-it-to-use-the-fqdn-of-the-elb-assigned-to-my-nginx-ingress-controller-service-instead">nginx-ingress external-dns</a></p>
+<h2 id="deploy-externaldns">Deploy ExternalDNS<a class="headerlink" href="#deploy-externaldns" title="Permanent link">&para;</a></h2>
+<p>Connect your <code>kubectl</code> client to the cluster you want to test ExternalDNS with. Then apply one of the following manifests file to deploy ExternalDNS.</p>
+<p>The deployment assumes that ExternalDNS will be installed into the <code>default</code> namespace.  If this namespace is different, the <code>ClusterRoleBinding</code> will need to be updated to reflect the desired alternative namespace, such as <code>external-dns</code>, <code>kube-addons</code>, etc.</p>
+<h3 id="manifest-for-clusters-without-rbac-enabled">Manifest (for clusters without RBAC enabled)<a class="headerlink" href="#manifest-for-clusters-without-rbac-enabled" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-30-17" name="__codelineno-30-17" href="#__codelineno-30-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-30-18" name="__codelineno-30-18" href="#__codelineno-30-18"></a><span class="w">        </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.13.5</span>
+<a id="__codelineno-30-19" name="__codelineno-30-19" href="#__codelineno-30-19"></a><span class="w">        </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-30-20" name="__codelineno-30-20" href="#__codelineno-30-20"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
+<a id="__codelineno-30-21" name="__codelineno-30-21" href="#__codelineno-30-21"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
+<a id="__codelineno-30-22" name="__codelineno-30-22" href="#__codelineno-30-22"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># (optional) limit to only example.com domains; change to match the zone created above.</span>
+<a id="__codelineno-30-23" name="__codelineno-30-23" href="#__codelineno-30-23"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--provider=azure</span>
+<a id="__codelineno-30-24" name="__codelineno-30-24" href="#__codelineno-30-24"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--azure-resource-group=MyDnsResourceGroup</span><span class="w"> </span><span class="c1"># (optional) use the DNS zones from the tutorial&#39;s resource group</span>
+<a id="__codelineno-30-25" name="__codelineno-30-25" href="#__codelineno-30-25"></a><span class="w">        </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-30-26" name="__codelineno-30-26" href="#__codelineno-30-26"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-30-27" name="__codelineno-30-27" href="#__codelineno-30-27"></a><span class="w">          </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/kubernetes</span>
+<a id="__codelineno-30-28" name="__codelineno-30-28" href="#__codelineno-30-28"></a><span class="w">          </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-30-29" name="__codelineno-30-29" href="#__codelineno-30-29"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-30-30" name="__codelineno-30-30" href="#__codelineno-30-30"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-30-31" name="__codelineno-30-31" href="#__codelineno-30-31"></a><span class="w">        </span><span class="nt">secret</span><span class="p">:</span>
+<a id="__codelineno-30-32" name="__codelineno-30-32" href="#__codelineno-30-32"></a><span class="w">          </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+</code></pre></div>
+<h3 id="manifest-for-clusters-with-rbac-enabled-cluster-access">Manifest (for clusters with RBAC enabled, cluster access)<a class="headerlink" href="#manifest-for-clusters-with-rbac-enabled-cluster-access" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="nn">---</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRole</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-12" name="__codelineno-31-12" href="#__codelineno-31-12"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;services&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;endpoints&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;pods&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;nodes&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-13" name="__codelineno-31-13" href="#__codelineno-31-13"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-14" name="__codelineno-31-14" href="#__codelineno-31-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;extensions&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;networking.k8s.io&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-15" name="__codelineno-31-15" href="#__codelineno-31-15"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;ingresses&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-16" name="__codelineno-31-16" href="#__codelineno-31-16"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-31-17" name="__codelineno-31-17" href="#__codelineno-31-17"></a><span class="nn">---</span>
+<a id="__codelineno-31-18" name="__codelineno-31-18" href="#__codelineno-31-18"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-31-19" name="__codelineno-31-19" href="#__codelineno-31-19"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRoleBinding</span>
+<a id="__codelineno-31-20" name="__codelineno-31-20" href="#__codelineno-31-20"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-31-21" name="__codelineno-31-21" href="#__codelineno-31-21"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns-viewer</span>
+<a id="__codelineno-31-22" name="__codelineno-31-22" href="#__codelineno-31-22"></a><span class="nt">roleRef</span><span class="p">:</span>
+<a id="__codelineno-31-23" name="__codelineno-31-23" href="#__codelineno-31-23"></a><span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
+<a id="__codelineno-31-24" name="__codelineno-31-24" href="#__codelineno-31-24"></a><span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterRole</span>
+<a id="__codelineno-31-25" name="__codelineno-31-25" href="#__codelineno-31-25"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-26" name="__codelineno-31-26" href="#__codelineno-31-26"></a><span class="nt">subjects</span><span class="p">:</span>
+<a id="__codelineno-31-27" name="__codelineno-31-27" href="#__codelineno-31-27"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-31-28" name="__codelineno-31-28" href="#__codelineno-31-28"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-29" name="__codelineno-31-29" href="#__codelineno-31-29"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<a id="__codelineno-31-30" name="__codelineno-31-30" href="#__codelineno-31-30"></a><span class="nn">---</span>
+<a id="__codelineno-31-31" name="__codelineno-31-31" href="#__codelineno-31-31"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-31-32" name="__codelineno-31-32" href="#__codelineno-31-32"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-31-33" name="__codelineno-31-33" href="#__codelineno-31-33"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-31-34" name="__codelineno-31-34" href="#__codelineno-31-34"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-35" name="__codelineno-31-35" href="#__codelineno-31-35"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-31-36" name="__codelineno-31-36" href="#__codelineno-31-36"></a><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<a id="__codelineno-31-37" name="__codelineno-31-37" href="#__codelineno-31-37"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<a id="__codelineno-31-38" name="__codelineno-31-38" href="#__codelineno-31-38"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-31-39" name="__codelineno-31-39" href="#__codelineno-31-39"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-31-40" name="__codelineno-31-40" href="#__codelineno-31-40"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-41" name="__codelineno-31-41" href="#__codelineno-31-41"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-31-42" name="__codelineno-31-42" href="#__codelineno-31-42"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-31-43" name="__codelineno-31-43" href="#__codelineno-31-43"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-31-44" name="__codelineno-31-44" href="#__codelineno-31-44"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-45" name="__codelineno-31-45" href="#__codelineno-31-45"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-31-46" name="__codelineno-31-46" href="#__codelineno-31-46"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-47" name="__codelineno-31-47" href="#__codelineno-31-47"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-31-48" name="__codelineno-31-48" href="#__codelineno-31-48"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-31-49" name="__codelineno-31-49" href="#__codelineno-31-49"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.13.5</span>
+<a id="__codelineno-31-50" name="__codelineno-31-50" href="#__codelineno-31-50"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-31-51" name="__codelineno-31-51" href="#__codelineno-31-51"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
+<a id="__codelineno-31-52" name="__codelineno-31-52" href="#__codelineno-31-52"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
+<a id="__codelineno-31-53" name="__codelineno-31-53" href="#__codelineno-31-53"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># (optional) limit to only example.com domains; change to match the zone created above.</span>
+<a id="__codelineno-31-54" name="__codelineno-31-54" href="#__codelineno-31-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--provider=azure</span>
+<a id="__codelineno-31-55" name="__codelineno-31-55" href="#__codelineno-31-55"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--azure-resource-group=MyDnsResourceGroup</span><span class="w"> </span><span class="c1"># (optional) use the DNS zones from the tutorial&#39;s resource group</span>
+<a id="__codelineno-31-56" name="__codelineno-31-56" href="#__codelineno-31-56"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--txt-prefix=externaldns-</span>
+<a id="__codelineno-31-57" name="__codelineno-31-57" href="#__codelineno-31-57"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-31-58" name="__codelineno-31-58" href="#__codelineno-31-58"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-31-59" name="__codelineno-31-59" href="#__codelineno-31-59"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/kubernetes</span>
+<a id="__codelineno-31-60" name="__codelineno-31-60" href="#__codelineno-31-60"></a><span class="w">              </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-31-61" name="__codelineno-31-61" href="#__codelineno-31-61"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-31-62" name="__codelineno-31-62" href="#__codelineno-31-62"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-31-63" name="__codelineno-31-63" href="#__codelineno-31-63"></a><span class="w">          </span><span class="nt">secret</span><span class="p">:</span>
+<a id="__codelineno-31-64" name="__codelineno-31-64" href="#__codelineno-31-64"></a><span class="w">            </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+</code></pre></div>
+<h3 id="manifest-for-clusters-with-rbac-enabled-namespace-access">Manifest (for clusters with RBAC enabled, namespace access)<a class="headerlink" href="#manifest-for-clusters-with-rbac-enabled-namespace-access" title="Permanent link">&para;</a></h3>
+<p>This configuration is the same as above, except it only requires privileges for the current namespace, not for the whole cluster.<br />
+However, access to <a href="https://kubernetes.io/docs/concepts/architecture/nodes/">nodes</a> requires cluster access, so when using this manifest,<br />
+services with type <code>NodePort</code> will be skipped!</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="nn">---</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;services&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;endpoints&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;pods&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-13" name="__codelineno-32-13" href="#__codelineno-32-13"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-14" name="__codelineno-32-14" href="#__codelineno-32-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">apiGroups</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;extensions&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;networking.k8s.io&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-15" name="__codelineno-32-15" href="#__codelineno-32-15"></a><span class="w">    </span><span class="nt">resources</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;ingresses&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-16" name="__codelineno-32-16" href="#__codelineno-32-16"></a><span class="w">    </span><span class="nt">verbs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;get&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;watch&quot;</span><span class="p p-Indicator">,</span><span class="s">&quot;list&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-32-17" name="__codelineno-32-17" href="#__codelineno-32-17"></a><span class="nn">---</span>
+<a id="__codelineno-32-18" name="__codelineno-32-18" href="#__codelineno-32-18"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io/v1</span>
+<a id="__codelineno-32-19" name="__codelineno-32-19" href="#__codelineno-32-19"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RoleBinding</span>
+<a id="__codelineno-32-20" name="__codelineno-32-20" href="#__codelineno-32-20"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-32-21" name="__codelineno-32-21" href="#__codelineno-32-21"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-22" name="__codelineno-32-22" href="#__codelineno-32-22"></a><span class="nt">roleRef</span><span class="p">:</span>
+<a id="__codelineno-32-23" name="__codelineno-32-23" href="#__codelineno-32-23"></a><span class="w">  </span><span class="nt">apiGroup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rbac.authorization.k8s.io</span>
+<a id="__codelineno-32-24" name="__codelineno-32-24" href="#__codelineno-32-24"></a><span class="w">  </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Role</span>
+<a id="__codelineno-32-25" name="__codelineno-32-25" href="#__codelineno-32-25"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-26" name="__codelineno-32-26" href="#__codelineno-32-26"></a><span class="nt">subjects</span><span class="p">:</span>
+<a id="__codelineno-32-27" name="__codelineno-32-27" href="#__codelineno-32-27"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ServiceAccount</span>
+<a id="__codelineno-32-28" name="__codelineno-32-28" href="#__codelineno-32-28"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-29" name="__codelineno-32-29" href="#__codelineno-32-29"></a><span class="nn">---</span>
+<a id="__codelineno-32-30" name="__codelineno-32-30" href="#__codelineno-32-30"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-32-31" name="__codelineno-32-31" href="#__codelineno-32-31"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-32-32" name="__codelineno-32-32" href="#__codelineno-32-32"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-32-33" name="__codelineno-32-33" href="#__codelineno-32-33"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-34" name="__codelineno-32-34" href="#__codelineno-32-34"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-32-35" name="__codelineno-32-35" href="#__codelineno-32-35"></a><span class="w">  </span><span class="nt">strategy</span><span class="p">:</span>
+<a id="__codelineno-32-36" name="__codelineno-32-36" href="#__codelineno-32-36"></a><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Recreate</span>
+<a id="__codelineno-32-37" name="__codelineno-32-37" href="#__codelineno-32-37"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-32-38" name="__codelineno-32-38" href="#__codelineno-32-38"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-32-39" name="__codelineno-32-39" href="#__codelineno-32-39"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-40" name="__codelineno-32-40" href="#__codelineno-32-40"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-32-41" name="__codelineno-32-41" href="#__codelineno-32-41"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-32-42" name="__codelineno-32-42" href="#__codelineno-32-42"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-32-43" name="__codelineno-32-43" href="#__codelineno-32-43"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-44" name="__codelineno-32-44" href="#__codelineno-32-44"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-32-45" name="__codelineno-32-45" href="#__codelineno-32-45"></a><span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-46" name="__codelineno-32-46" href="#__codelineno-32-46"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-32-47" name="__codelineno-32-47" href="#__codelineno-32-47"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">external-dns</span>
+<a id="__codelineno-32-48" name="__codelineno-32-48" href="#__codelineno-32-48"></a><span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.k8s.io/external-dns/external-dns:v0.13.5</span>
+<a id="__codelineno-32-49" name="__codelineno-32-49" href="#__codelineno-32-49"></a><span class="w">          </span><span class="nt">args</span><span class="p">:</span>
+<a id="__codelineno-32-50" name="__codelineno-32-50" href="#__codelineno-32-50"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=service</span>
+<a id="__codelineno-32-51" name="__codelineno-32-51" href="#__codelineno-32-51"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--source=ingress</span>
+<a id="__codelineno-32-52" name="__codelineno-32-52" href="#__codelineno-32-52"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--domain-filter=example.com</span><span class="w"> </span><span class="c1"># (optional) limit to only example.com domains; change to match the zone created above.</span>
+<a id="__codelineno-32-53" name="__codelineno-32-53" href="#__codelineno-32-53"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--provider=azure</span>
+<a id="__codelineno-32-54" name="__codelineno-32-54" href="#__codelineno-32-54"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--azure-resource-group=MyDnsResourceGroup</span><span class="w"> </span><span class="c1"># (optional) use the DNS zones from the tutorial&#39;s resource group</span>
+<a id="__codelineno-32-55" name="__codelineno-32-55" href="#__codelineno-32-55"></a><span class="w">          </span><span class="nt">volumeMounts</span><span class="p">:</span>
+<a id="__codelineno-32-56" name="__codelineno-32-56" href="#__codelineno-32-56"></a><span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-32-57" name="__codelineno-32-57" href="#__codelineno-32-57"></a><span class="w">              </span><span class="nt">mountPath</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/kubernetes</span>
+<a id="__codelineno-32-58" name="__codelineno-32-58" href="#__codelineno-32-58"></a><span class="w">              </span><span class="nt">readOnly</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-32-59" name="__codelineno-32-59" href="#__codelineno-32-59"></a><span class="w">      </span><span class="nt">volumes</span><span class="p">:</span>
+<a id="__codelineno-32-60" name="__codelineno-32-60" href="#__codelineno-32-60"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+<a id="__codelineno-32-61" name="__codelineno-32-61" href="#__codelineno-32-61"></a><span class="w">          </span><span class="nt">secret</span><span class="p">:</span>
+<a id="__codelineno-32-62" name="__codelineno-32-62" href="#__codelineno-32-62"></a><span class="w">            </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">azure-config-file</span>
+</code></pre></div>
+<p>Create the deployment for ExternalDNS:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--filename<span class="w"> </span>externaldns.yaml
+</code></pre></div>
+<h2 id="ingress-option-expose-an-nginx-service-with-an-ingress">Ingress Option: Expose an nginx service with an ingress<a class="headerlink" href="#ingress-option-expose-an-nginx-service-with-an-ingress" title="Permanent link">&para;</a></h2>
+<p>Create a file called <code>nginx.yaml</code> with the following contents:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a><span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-34-19" name="__codelineno-34-19" href="#__codelineno-34-19"></a><span class="nn">---</span>
+<a id="__codelineno-34-20" name="__codelineno-34-20" href="#__codelineno-34-20"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-34-21" name="__codelineno-34-21" href="#__codelineno-34-21"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<a id="__codelineno-34-22" name="__codelineno-34-22" href="#__codelineno-34-22"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-34-23" name="__codelineno-34-23" href="#__codelineno-34-23"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx-svc</span>
+<a id="__codelineno-34-24" name="__codelineno-34-24" href="#__codelineno-34-24"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-34-25" name="__codelineno-34-25" href="#__codelineno-34-25"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-34-26" name="__codelineno-34-26" href="#__codelineno-34-26"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-34-27" name="__codelineno-34-27" href="#__codelineno-34-27"></a><span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<a id="__codelineno-34-28" name="__codelineno-34-28" href="#__codelineno-34-28"></a><span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-34-29" name="__codelineno-34-29" href="#__codelineno-34-29"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-34-30" name="__codelineno-34-30" href="#__codelineno-34-30"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-31" name="__codelineno-34-31" href="#__codelineno-34-31"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClusterIP</span>
+<a id="__codelineno-34-32" name="__codelineno-34-32" href="#__codelineno-34-32"></a>
+<a id="__codelineno-34-33" name="__codelineno-34-33" href="#__codelineno-34-33"></a><span class="nn">---</span>
+<a id="__codelineno-34-34" name="__codelineno-34-34" href="#__codelineno-34-34"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">networking.k8s.io/v1</span>
+<a id="__codelineno-34-35" name="__codelineno-34-35" href="#__codelineno-34-35"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ingress</span>
+<a id="__codelineno-34-36" name="__codelineno-34-36" href="#__codelineno-34-36"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-34-37" name="__codelineno-34-37" href="#__codelineno-34-37"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-38" name="__codelineno-34-38" href="#__codelineno-34-38"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-34-39" name="__codelineno-34-39" href="#__codelineno-34-39"></a><span class="w">  </span><span class="nt">ingressClassName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-34-40" name="__codelineno-34-40" href="#__codelineno-34-40"></a><span class="w">  </span><span class="nt">rules</span><span class="p">:</span>
+<a id="__codelineno-34-41" name="__codelineno-34-41" href="#__codelineno-34-41"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.example.com</span>
+<a id="__codelineno-34-42" name="__codelineno-34-42" href="#__codelineno-34-42"></a><span class="w">      </span><span class="nt">http</span><span class="p">:</span>
+<a id="__codelineno-34-43" name="__codelineno-34-43" href="#__codelineno-34-43"></a><span class="w">        </span><span class="nt">paths</span><span class="p">:</span>
+<a id="__codelineno-34-44" name="__codelineno-34-44" href="#__codelineno-34-44"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/</span>
+<a id="__codelineno-34-45" name="__codelineno-34-45" href="#__codelineno-34-45"></a><span class="w">            </span><span class="nt">pathType</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Prefix</span>
+<a id="__codelineno-34-46" name="__codelineno-34-46" href="#__codelineno-34-46"></a><span class="w">            </span><span class="nt">backend</span><span class="p">:</span>
+<a id="__codelineno-34-47" name="__codelineno-34-47" href="#__codelineno-34-47"></a><span class="w">              </span><span class="nt">service</span><span class="p">:</span>
+<a id="__codelineno-34-48" name="__codelineno-34-48" href="#__codelineno-34-48"></a><span class="w">                </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx-svc</span>
+<a id="__codelineno-34-49" name="__codelineno-34-49" href="#__codelineno-34-49"></a><span class="w">                </span><span class="nt">port</span><span class="p">:</span>
+<a id="__codelineno-34-50" name="__codelineno-34-50" href="#__codelineno-34-50"></a><span class="w">                  </span><span class="nt">number</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+</code></pre></div>
+<p>When using ExternalDNS with <code>ingress</code> objects it will automatically create DNS records based on host names specified in ingress objects that match the domain-filter argument in the external-dns deployment manifest. When those host names are removed or renamed the corresponding DNS records are also altered.</p>
+<p>Create the deployment, service and ingress object:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>$<span class="w"> </span>kubectl<span class="w"> </span>create<span class="w"> </span>--namespace<span class="w"> </span><span class="s2">&quot;default&quot;</span><span class="w"> </span>--filename<span class="w"> </span>nginx.yaml
+</code></pre></div>
+<p>Since your external IP would have already been assigned to the nginx-ingress service, the DNS records pointing to the IP of the nginx-ingress service should be created within a minute.</p>
+<h2 id="azure-load-balancer-option-expose-an-nginx-service-with-a-load-balancer">Azure Load Balancer option: Expose an nginx service with a load balancer<a class="headerlink" href="#azure-load-balancer-option-expose-an-nginx-service-with-a-load-balancer" title="Permanent link">&para;</a></h2>
+<p>Create a file called <code>nginx.yaml</code> with the following contents:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="nn">---</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">apps/v1</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Deployment</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a><span class="w">    </span><span class="nt">matchLabels</span><span class="p">:</span>
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a><span class="w">  </span><span class="nt">template</span><span class="p">:</span>
+<a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a><span class="w">    </span><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a><span class="w">      </span><span class="nt">labels</span><span class="p">:</span>
+<a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a><span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-14" name="__codelineno-36-14" href="#__codelineno-36-14"></a><span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-36-15" name="__codelineno-36-15" href="#__codelineno-36-15"></a><span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
+<a id="__codelineno-36-16" name="__codelineno-36-16" href="#__codelineno-36-16"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-17" name="__codelineno-36-17" href="#__codelineno-36-17"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-18" name="__codelineno-36-18" href="#__codelineno-36-18"></a><span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-36-19" name="__codelineno-36-19" href="#__codelineno-36-19"></a><span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-36-20" name="__codelineno-36-20" href="#__codelineno-36-20"></a><span class="nn">---</span>
+<a id="__codelineno-36-21" name="__codelineno-36-21" href="#__codelineno-36-21"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
+<a id="__codelineno-36-22" name="__codelineno-36-22" href="#__codelineno-36-22"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
+<a id="__codelineno-36-23" name="__codelineno-36-23" href="#__codelineno-36-23"></a><span class="nt">annotations</span><span class="p">:</span>
+<a id="__codelineno-36-24" name="__codelineno-36-24" href="#__codelineno-36-24"></a><span class="w">  </span><span class="nt">external-dns.alpha.kubernetes.io/hostname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">server.example.com</span>
+<a id="__codelineno-36-25" name="__codelineno-36-25" href="#__codelineno-36-25"></a><span class="nt">metadata</span><span class="p">:</span>
+<a id="__codelineno-36-26" name="__codelineno-36-26" href="#__codelineno-36-26"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx-svc</span>
+<a id="__codelineno-36-27" name="__codelineno-36-27" href="#__codelineno-36-27"></a><span class="nt">spec</span><span class="p">:</span>
+<a id="__codelineno-36-28" name="__codelineno-36-28" href="#__codelineno-36-28"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
+<a id="__codelineno-36-29" name="__codelineno-36-29" href="#__codelineno-36-29"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-36-30" name="__codelineno-36-30" href="#__codelineno-36-30"></a><span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TCP</span>
+<a id="__codelineno-36-31" name="__codelineno-36-31" href="#__codelineno-36-31"></a><span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<a id="__codelineno-36-32" name="__codelineno-36-32" href="#__codelineno-36-32"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
+<a id="__codelineno-36-33" name="__codelineno-36-33" href="#__codelineno-36-33"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx</span>
+<a id="__codelineno-36-34" name="__codelineno-36-34" href="#__codelineno-36-34"></a><span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LoadBalancer</span>
+</code></pre></div>
+<p>The annotation <code>external-dns.alpha.kubernetes.io/hostname</code> is used to specify the DNS name that should be created for the service. The annotation value is a comma separated list of host names.</p>
+<h2 id="verifying-azure-dns-records">Verifying Azure DNS records<a class="headerlink" href="#verifying-azure-dns-records" title="Permanent link">&para;</a></h2>
+<p>Run the following command to view the A records for your Azure DNS zone:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>$<span class="w"> </span>az<span class="w"> </span>network<span class="w"> </span>dns<span class="w"> </span>record-set<span class="w"> </span>a<span class="w"> </span>list<span class="w"> </span>--resource-group<span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span><span class="w"> </span>--zone-name<span class="w"> </span>example.com
+</code></pre></div>
+<p>Substitute the zone for the one created above if a different domain was used.</p>
+<p>This should show the external IP address of the service as the A record for your domain (&lsquo;@&rsquo; indicates the record is for the zone itself).</p>
+<h2 id="delete-azure-resource-group">Delete Azure Resource Group<a class="headerlink" href="#delete-azure-resource-group" title="Permanent link">&para;</a></h2>
+<p>Now that we have verified that ExternalDNS will automatically manage Azure DNS records, we can delete the tutorial&rsquo;s<br />
+resource group:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>$<span class="w"> </span>az<span class="w"> </span>group<span class="w"> </span>delete<span class="w"> </span>--name<span class="w"> </span><span class="s2">&quot;MyDnsResourceGroup&quot;</span>
+</code></pre></div>
+<h2 id="more-tutorials">More tutorials<a class="headerlink" href="#more-tutorials" title="Permanent link">&para;</a></h2>
+<p>A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&amp;list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE</p>
+<p><img alt="image" src="https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png" /></p>
+
+  <hr>
+<div class="md-source-file">
+  <small>
+    
+      Last update:
+      <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date">September 1, 2023</span>
+      
+    
+  </small>
+</div>
+
+              
+            </article>
+          </div>
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" data-md-state="hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../azure-private-dns/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Set up ExternalDNS for Azure Private DNS" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Set up ExternalDNS for Azure Private DNS
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../bluecat/" class="md-footer__link md-footer__link--next" aria-label="Next: Setting up external-dns for BlueCat" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Setting up external-dns for BlueCat
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "navigation.top", "navigation.tracking", "navigation.indexes", "navigation.instant", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.5e67fbfe.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c44cc438.min.js"></script>
+      
+    
+  </body>
+</html>
