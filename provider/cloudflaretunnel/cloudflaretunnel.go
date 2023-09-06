@@ -69,7 +69,7 @@ func NewCloudFlareTunnelProvider(domainFilter endpoint.DomainFilter, dryRun bool
 func (p *CloudFlareTunnelProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	configResult, err := p.Client.GetTunnelConfiguration(ctx, cloudflare.AccountIdentifier(p.accountId), p.tunnelId)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get tunnel configs: %v", err)
 	}
 
 	endpoints := []*endpoint.Endpoint{}
