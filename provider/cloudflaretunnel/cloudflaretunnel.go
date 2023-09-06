@@ -36,6 +36,7 @@ func NewCloudFlareTunnelProvider(domainFilter endpoint.DomainFilter, dryRun bool
 			}
 			token = string(tokenBytes)
 		}
+		fmt.Printf(token)
 		client, err = cloudflare.NewWithAPIToken(token)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
