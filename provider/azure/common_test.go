@@ -20,9 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
-	"github.com/Azure/azure-sdk-for-go/services/privatedns/mgmt/2018-09-01/privatedns"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
+	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -42,8 +42,8 @@ func Test_parseMxTarget(t *testing.T) {
 			name: "valid mx target",
 			args: "10 example.com",
 			want: dns.MxRecord{
-				Preference: to.Int32Ptr(int32(10)),
-				Exchange:   to.StringPtr("example.com"),
+				Preference: to.Ptr(int32(10)),
+				Exchange:   to.Ptr("example.com"),
 			},
 			wantErr: assert.NoError,
 		},
@@ -51,8 +51,8 @@ func Test_parseMxTarget(t *testing.T) {
 			name: "valid mx target with a subdomain",
 			args: "99 foo-bar.example.com",
 			want: dns.MxRecord{
-				Preference: to.Int32Ptr(int32(99)),
-				Exchange:   to.StringPtr("foo-bar.example.com"),
+				Preference: to.Ptr(int32(99)),
+				Exchange:   to.Ptr("foo-bar.example.com"),
 			},
 			wantErr: assert.NoError,
 		},

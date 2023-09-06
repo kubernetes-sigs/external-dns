@@ -338,7 +338,7 @@ func main() {
 				Server:       cfg.PDNSServer,
 				APIKey:       cfg.PDNSAPIKey,
 				TLSConfig: pdns.TLSConfig{
-					TLSEnabled:            cfg.PDNSTLSEnabled,
+					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
 					CAFilePath:            cfg.TLSCA,
 					ClientCertFilePath:    cfg.TLSClientCert,
 					ClientCertKeyFilePath: cfg.TLSClientCertKey,

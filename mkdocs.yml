@@ -14,6 +14,9 @@ nav:
   - Tutorials: tutorials/
   - Annotations:
     - About: annotations/annotations.md
+  - Sources:
+    - About: sources/sources.md
+    - Ingress: sources/ingress.md
   - Registries:
     - About: registry/registry.md
     - TXT: registry/txt.md

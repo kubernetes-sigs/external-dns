@@ -34,12 +34,6 @@ const (
 	providerSpecificForceUpdate = "txt/force-update"
 )
 
-type endpointKey struct {
-	DNSName       string
-	RecordType    string
-	SetIdentifier string
-}
-
 // TXTRegistry implements registry interface with ownership implemented via associated TXT records
 type TXTRegistry struct {
 	provider provider.Provider
@@ -121,7 +115,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 
 	endpoints := []*endpoint.Endpoint{}
 
-	labelMap := map[endpointKey]endpoint.Labels{}
+	labelMap := map[endpoint.EndpointKey]endpoint.Labels{}
 	txtRecordsMap := map[string]struct{}{}
 
 	for _, record := range records {
@@ -143,7 +137,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		}
 
 		endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
-		key := endpointKey{
+		key := endpoint.EndpointKey{
 			DNSName:       endpointName,
 			RecordType:    recordType,
 			SetIdentifier: record.SetIdentifier,
@@ -162,7 +156,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			dnsNameSplit[0] = im.wildcardReplacement
 		}
 		dnsName := strings.Join(dnsNameSplit, ".")
-		key := endpointKey{
+		key := endpoint.EndpointKey{
 			DNSName:       dnsName,
 			RecordType:    ep.RecordType,
 			SetIdentifier: ep.SetIdentifier,

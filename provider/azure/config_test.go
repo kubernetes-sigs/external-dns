@@ -17,50 +17,29 @@ limitations under the License.
 package azure
 
 import (
-	"fmt"
-	"os"
-	"reflect"
 	"testing"
 
-	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 )
 
-func TestGetAzureEnvironmentConfig(t *testing.T) {
-	tmp, err := os.CreateTemp("", "azureconf")
-	if err != nil {
-		t.Errorf("couldn't write temp file %v", err)
-	}
-	defer os.Remove(tmp.Name())
-
+func TestGetCloudConfiguration(t *testing.T) {
 	tests := map[string]struct {
-		cloud string
-		err   error
+		cloudName string
+		expected  cloud.Configuration
 	}{
-		"AzureChinaCloud":   {"AzureChinaCloud", nil},
-		"AzureGermanCloud":  {"AzureGermanCloud", nil},
-		"AzurePublicCloud":  {"", nil},
-		"AzureUSGovernment": {"AzureUSGovernmentCloud", nil},
+		"AzureChinaCloud":   {"AzureChinaCloud", cloud.AzureChina},
+		"AzurePublicCloud":  {"", cloud.AzurePublic},
+		"AzureUSGovernment": {"AzureUSGovernmentCloud", cloud.AzureGovernment},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, _ = tmp.Seek(0, 0)
-			_, _ = tmp.Write([]byte(fmt.Sprintf(`{"cloud": "%s"}`, test.cloud)))
-			got, err := getConfig(tmp.Name(), "", "")
+			cloudCfg, err := getCloudConfiguration(test.cloudName)
 			if err != nil {
 				t.Errorf("got unexpected err %v", err)
 			}
-
-			if test.cloud == "" {
-				test.cloud = "AzurePublicCloud"
-			}
-			want, err := azure.EnvironmentFromName(test.cloud)
-			if err != nil {
-				t.Errorf("couldn't get azure environment from provided name %v", err)
-			}
-
-			if !reflect.DeepEqual(want, got.Environment) {
-				t.Errorf("got %v, want %v", got.Environment, want)
+			if cloudCfg.ActiveDirectoryAuthorityHost != test.expected.ActiveDirectoryAuthorityHost {
+				t.Errorf("got %v, want %v", cloudCfg, test.expected)
 			}
 		})
 	}

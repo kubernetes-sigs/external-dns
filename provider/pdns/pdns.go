@@ -72,24 +72,22 @@ type PDNSConfig struct {
 
 // TLSConfig is comprised of the TLS-related fields necessary to create a new PDNSProvider
 type TLSConfig struct {
-	TLSEnabled            bool
+	SkipTLSVerify         bool
 	CAFilePath            string
 	ClientCertFilePath    string
 	ClientCertKeyFilePath string
 }
 
 func (tlsConfig *TLSConfig) setHTTPClient(pdnsClientConfig *pgo.Configuration) error {
-	if !tlsConfig.TLSEnabled {
-		log.Debug("Skipping TLS for PDNS Provider.")
-		return nil
-	}
-
 	log.Debug("Configuring TLS for PDNS Provider.")
-	if tlsConfig.CAFilePath == "" {
-		return errors.New("certificate authority file path must be specified if TLS is enabled")
-	}
-
-	tlsClientConfig, err := tlsutils.NewTLSConfig(tlsConfig.ClientCertFilePath, tlsConfig.ClientCertKeyFilePath, tlsConfig.CAFilePath, "", false, tls.VersionTLS12)
+	tlsClientConfig, err := tlsutils.NewTLSConfig(
+		tlsConfig.ClientCertFilePath,
+		tlsConfig.ClientCertKeyFilePath,
+		tlsConfig.CAFilePath,
+		"",
+		tlsConfig.SkipTLSVerify,
+		tls.VersionTLS12,
+	)
 	if err != nil {
 		return err
 	}

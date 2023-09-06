@@ -303,11 +303,11 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 	}
 
 	endpoints = provider.AdjustEndpoints(endpoints)
-
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
 		ManagedRecords: managedRecords,
 	}
 
@@ -1189,6 +1189,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 		t.Errorf("should not fail, %s", err)
 	}
 
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
 		Current: records,
 		Desired: provider.AdjustEndpoints([]*endpoint.Endpoint{
@@ -1206,7 +1207,7 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 				},
 			},
 		}),
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
@@ -1292,10 +1293,11 @@ func TestCustomTTLWithEnabledProxyNotChanged(t *testing.T) {
 
 	provider.AdjustEndpoints(endpoints)
 
+	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.NewDomainFilter([]string{"bar.com"}),
+		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}
 
