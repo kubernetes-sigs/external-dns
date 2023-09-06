@@ -36,7 +36,6 @@ func NewCloudFlareTunnelProvider(domainFilter endpoint.DomainFilter, dryRun bool
 			}
 			token = string(tokenBytes)
 		}
-		fmt.Printf(token)
 		client, err = cloudflare.NewWithAPIToken(token)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialize cloudflare provider: %v", err)
@@ -84,20 +83,28 @@ func (p *CloudFlareTunnelProvider) Records(ctx context.Context) ([]*endpoint.End
 func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	oldConfigResult, err := p.Client.GetTunnelConfiguration(ctx, cloudflare.AccountIdentifier(p.accountId), p.tunnelId)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get tunnel configs: %v", err)
 	}
+	catchAll := oldConfigResult.Config.Ingress[len(oldConfigResult.Config.Ingress)-1]
+	oldConfigResult.Config.Ingress = oldConfigResult.Config.Ingress[:len(oldConfigResult.Config.Ingress)-1]
 
 	param := cloudflare.TunnelConfigurationParams{TunnelID: p.tunnelId, Config: oldConfigResult.Config}
 	for _, endpoint := range changes.Create {
+		if endpoint.RecordType == "TXT" {
+			continue
+		}
 		for _, target := range endpoint.Targets {
 			param.Config.Ingress = append(param.Config.Ingress, cloudflare.UnvalidatedIngressRule{
 				Hostname: endpoint.DNSName,
-				Service:  target,
+				Service:  convertHttps(target),
 			})
 		}
 	}
 
 	for i, desired := range changes.UpdateNew {
+		if desired.RecordType == "TXT" {
+			continue
+		}
 		current := changes.UpdateOld[i]
 		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
 
@@ -113,7 +120,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 		for _, a := range add {
 			param.Config.Ingress = append(param.Config.Ingress, cloudflare.UnvalidatedIngressRule{
 				Hostname: desired.DNSName,
-				Service:  a,
+				Service:  convertHttps(a),
 			})
 		}
 
@@ -122,7 +129,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 				if v.Service == a {
 					param.Config.Ingress[i] = cloudflare.UnvalidatedIngressRule{
 						Hostname: desired.DNSName,
-						Service:  a,
+						Service:  convertHttps(a),
 					}
 					break
 				}
@@ -131,6 +138,9 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 	}
 
 	for _, endpoint := range changes.Delete {
+		if endpoint.RecordType == "TXT" {
+			continue
+		}
 		for _, target := range endpoint.Targets {
 			for i, v := range param.Config.Ingress {
 				if v.Service == target {
@@ -141,13 +151,19 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 		}
 	}
 
+	param.Config.Ingress = append(param.Config.Ingress, catchAll)
+
 	if p.DryRun {
 		return nil
 	}
 
 	_, err = p.Client.UpdateTunnelConfiguration(ctx, cloudflare.AccountIdentifier(p.accountId), param)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to update tunnel configs: %v", err)
 	}
 	return nil
+}
+
+func convertHttps(target string) string {
+	return fmt.Sprintf("https://%v:443", target)
 }
