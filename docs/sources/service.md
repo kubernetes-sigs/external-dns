@@ -1,4 +1,4 @@
-# Ingress source
+# Service source
 
 The service source creates DNS entries based on `Service` resources.
 
@@ -28,7 +28,7 @@ generated from any`--fqdn-template` flag.
 
 ### Domain names for headless service pods
 
-If a headless service (without an `external-dns.alpha.kubernetes.io/target` annotation) creates DNS entries with targets from
+If a headless Service (without an `external-dns.alpha.kubernetes.io/target` annotation) creates DNS entries with targets from
 a Pod that has a non-empty `spec.hostname` field, additional DNS entries are created for that Pod, containing the targets from that Pod.
 For each domain name created for the Service, the additional DNS entry for the Pod has that domain name prefixed with
 the value of the Pod's `spec.hostname` field and a `.`.
@@ -48,8 +48,9 @@ any targets for the hostname.
 * Otherwise, if the Service has one or more `spec.externalIPs`, uses the values in that field.
 
 * Otherwise, iterates over each `status.loadBalancer.ingress`, adding any non-empty `ip` and/or `hostname`.
+
 If the `--resolve-service-load-balancer-hostname` flag was specified, any non-empty `hostname`
-is instead queried through DNS and any resulting IP addresses are added instead.
+is queried through DNS and any resulting IP addresses are added instead.
 A DNS query failure results in zero targets being added for that load balancer's ingress hostname.
 
 ### ClusterIP (headless)
