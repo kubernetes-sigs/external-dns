@@ -88,6 +88,7 @@ func (p *CloudFlareTunnelProvider) Records(ctx context.Context) ([]*endpoint.End
 	for _, config := range configResult.Config.Ingress {
 		endpoint := endpoint.NewEndpoint(config.Hostname, "A", config.Service)
 		endpoints = append(endpoints, endpoint)
+		log.Info(fmt.Sprintf("current endpoint: %v", endpoint))
 	}
 	return endpoints, nil
 }
@@ -144,6 +145,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 			fmt.Printf("failed to create dns record: %v\n", err)
 			continue
 		}
+		log.Info("successfully create record: ", endpoint.DNSName)
 	}
 
 	for i, desired := range changes.UpdateNew {
@@ -187,6 +189,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 			fmt.Printf("failed to update dns record: %v\n", err)
 			continue
 		}
+		log.Info("successfully update record: ", desired.DNSName)
 	}
 
 	for _, endpoint := range changes.Delete {
@@ -215,6 +218,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 			fmt.Printf("failed to delete dns record: %v\n", err)
 			continue
 		}
+		log.Info("successfully delete record: ", endpoint.DNSName)
 	}
 
 	for _, v := range ingresses {
@@ -231,7 +235,7 @@ func (p *CloudFlareTunnelProvider) ApplyChanges(ctx context.Context, changes *pl
 	if err != nil {
 		return fmt.Errorf("failed to update tunnel configs: %v", err)
 	}
-	fmt.Println("successfully update tunnel config")
+	log.Info("successfully update tunnel config")
 	return nil
 }
 
