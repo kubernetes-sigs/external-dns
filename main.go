@@ -263,7 +263,7 @@ func main() {
 	case "cloudflare":
 		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
 	case "cloudflare-tunnel":
-		p, err = cloudflaretunnel.NewCloudFlareTunnelProvider(domainFilter, cfg.DryRun)
+		p, err = cloudflaretunnel.NewCloudFlareTunnelProvider(domainFilter, zoneIDFilter, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
 	case "rcodezero":
 		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
 	case "google":
