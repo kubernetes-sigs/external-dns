@@ -14,15 +14,15 @@ by a set of labels.
 
 The domain names of the DNS entries created from a Service are sourced from the following places:
 
-* Adds the domain names from any `external-dns.alpha.kubernetes.io/hostname` and/or
+1. Adds the domain names from any `external-dns.alpha.kubernetes.io/hostname` and/or
 `external-dns.alpha.kubernetes.io/internal-hostname` annotation.
 This behavior is suppressed if the `--ignore-hostname-annotation` flag was specified.
 
-* If no DNS entries were produced for a Service by the previous steps
+2. If no DNS entries were produced for a Service by the previous steps
 and the `--compatibility` flag was specified, then adds DNS entries per the
 selected compatibility mode.
 
-* If no DNS entries were produced for a Service by the previous steps
+3. If no DNS entries were produced for a Service by the previous steps
 or the `--combine-fqdn-annotation` flag was specified, then adds domain names
 generated from any`--fqdn-template` flag.
 
@@ -41,13 +41,13 @@ on the Service's `spec.type`:
 
 ### LoadBalancer
 
-* If the hostname came from an `external-dns.alpha.kubernetes.io/internal-hostname` annotation, uses
+1. If the hostname came from an `external-dns.alpha.kubernetes.io/internal-hostname` annotation, uses
 the Service's `spec.clusterIP` field. If that field has the value `None`, does not generate
 any targets for the hostname.
 
-* Otherwise, if the Service has one or more `spec.externalIPs`, uses the values in that field.
+2. Otherwise, if the Service has one or more `spec.externalIPs`, uses the values in that field.
 
-* Otherwise, iterates over each `status.loadBalancer.ingress`, adding any non-empty `ip` and/or `hostname`.
+3. Otherwise, iterates over each `status.loadBalancer.ingress`, adding any non-empty `ip` and/or `hostname`.
 
 If the `--resolve-service-load-balancer-hostname` flag was specified, any non-empty `hostname`
 is queried through DNS and any resulting IP addresses are added instead.
@@ -59,25 +59,25 @@ Iterates over all of the Service's Endpoints's `subsets.addresses`.
 If the Service's `spec.publishNotReadyAddresses` is `true` or the `--always-publish-not-ready-addresses` flag is specified,
 also iterates over the Endpoints's `subsets.notReadyAddresses`.
 
-* If an address does not target a `Pod` that matches the Service's `spec.selector`, it is ignored.
+1. If an address does not target a `Pod` that matches the Service's `spec.selector`, it is ignored.
 
-* If the target pod has an `external-dns.alpha.kubernetes.io/target` annotation, uses 
+2. If the target pod has an `external-dns.alpha.kubernetes.io/target` annotation, uses 
 the values from that.
 
-* Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP`
+3. Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: NodeExternalIP`
 annotation, uses the addresses from the Pod's Node's `status.addresses` that are either of type
 `ExternalIP` or IPv6 addresses of type `InternalIP`.
 
-* Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: HostIP` annotation
+4. Otherwise, if the Service has an `external-dns.alpha.kubernetes.io/endpoints-type: HostIP` annotation
 or the `--publish-host-ip` flag was specified, uses the Pod's `status.hostIP` field.
 
-* Otherwise uses the `ip` field of the address from the Endpoints.
+5. Otherwise uses the `ip` field of the address from the Endpoints.
 
 ### ClusterIP (not headless)
 
-* If the `--publish-internal-services` flag is specified, uses the `spec.ServiceIP`.
+1. If the `--publish-internal-services` flag is specified, uses the `spec.ServiceIP`.
 
-* Otherwise, does not create any targets.
+2. Otherwise, does not create any targets.
 
 ### NodePort
 
@@ -86,16 +86,16 @@ and has a `status.phase` of `Running`. Otherwise iterates over all Nodes, of any
 
 Iterates over each relevant Node's `status.addresses`:
 
-* If there is an `external-dns.alpha.kubernetes.io/access: public` annotation on the Service, uses both addresses with 
+1. If there is an `external-dns.alpha.kubernetes.io/access: public` annotation on the Service, uses both addresses with 
 a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 
-* Otherwise, if there is an `external-dns.alpha.kubernetes.io/access: private` annotation on the Service, uses addresses with  
+2. Otherwise, if there is an `external-dns.alpha.kubernetes.io/access: private` annotation on the Service, uses addresses with  
 a `type` of `InternalIP`.
 
-* Otherwise, if there is at least one address with a `type` of `ExternalIP`, uses both addresses with 
+3. Otherwise, if there is at least one address with a `type` of `ExternalIP`, uses both addresses with 
 a `type` of `ExternalIP` and IPv6 addresses with a `type` of `InternalIP`.
 
-* Otherwise, uses addresses with a `type` of `InternalIP`.
+4. Otherwise, uses addresses with a `type` of `InternalIP`.
 
 Also iterates over the Service's `spec.ports`, creating a SRV record for each port which has a `nodePort`.
 The SRV record has a service of the Service's `name`, a protocol taken from the port's `protocol` field,
@@ -105,5 +105,5 @@ as one of the values.
 
 ### ExternalName
 
-* Creates a target with the value of the Service's `externalName` field.
+Creates a target with the value of the Service's `externalName` field.
 
