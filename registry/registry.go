@@ -33,7 +33,7 @@ type Registry interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
-	GetDomainFilter() endpoint.DomainFilter
+	GetDomainFilter() endpoint.DomainFilterInterface
 }
 
 // TODO(ideahitme): consider moving this to Plan

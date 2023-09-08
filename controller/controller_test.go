@@ -57,7 +57,7 @@ type errorMockProvider struct {
 	mockProvider
 }
 
-func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilter {
+func (p *filteredMockProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return p.domainFilter
 }
 

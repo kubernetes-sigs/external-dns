@@ -37,7 +37,7 @@ type Provider interface {
 	// unnecessary (potentially failing) changes. It may also modify other fields, add, or remove
 	// Endpoints. It is permitted to modify the supplied endpoints.
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
-	GetDomainFilter() endpoint.DomainFilter
+	GetDomainFilter() endpoint.DomainFilterInterface
 }
 
 type BaseProvider struct{}
@@ -46,7 +46,7 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoin
 	return endpoints
 }
 
-func (b BaseProvider) GetDomainFilter() endpoint.DomainFilter {
+func (b BaseProvider) GetDomainFilter() endpoint.DomainFilterInterface {
 	return endpoint.DomainFilter{}
 }
 
