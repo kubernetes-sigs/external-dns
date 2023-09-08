@@ -186,7 +186,7 @@ type Controller struct {
 	// The interval between individual synchronizations
 	Interval time.Duration
 	// The DomainFilter defines which DNS records to keep or exclude
-	DomainFilter endpoint.DomainFilter
+	DomainFilter endpoint.DomainFilterInterface
 	// The nextRunAt used for throttling and batching reconciliation
 	nextRunAt time.Time
 	// The runAtMutex is for atomic updating of nextRunAt and lastRunAt
@@ -245,7 +245,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		Policies:       []plan.Policy{c.Policy},
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{&c.DomainFilter, &registryFilter},
+		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, registryFilter},
 		ManagedRecords: c.ManagedRecordTypes,
 		ExcludeRecords: c.ExcludeRecordTypes,
 		OwnerID:        c.Registry.OwnerID(),
