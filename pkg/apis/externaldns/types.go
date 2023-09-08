@@ -67,7 +67,7 @@ type Config struct {
 	AlwaysPublishNotReadyAddresses     bool
 	ConnectorSourceServer              string
 	Provider                           string
-	ProviderCacheTime                  int
+	ProviderCacheTime                  time.Duration
 	GoogleProject                      string
 	GoogleBatchChangeSize              int
 	GoogleBatchChangeInterval          time.Duration

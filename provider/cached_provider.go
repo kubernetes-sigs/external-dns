@@ -50,7 +50,6 @@ var (
 type CachedProvider struct {
 	Provider
 	RefreshDelay time.Duration
-	err          error
 	lastRead     time.Time
 	cache        []*endpoint.Endpoint
 }
@@ -58,17 +57,19 @@ type CachedProvider struct {
 func (c *CachedProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	if c.needRefresh() {
 		log.Info("Records cache provider: refreshing records list cache")
-		c.cache, c.err = c.Provider.Records(ctx)
-		if c.err != nil {
-			log.Errorf("Records cache provider: list records failed: %v", c.err)
+		records, err := c.Provider.Records(ctx)
+		if err != nil {
+			c.cache = nil
+			return nil, err
 		}
+		c.cache = records
 		c.lastRead = time.Now()
 		cachedRecordsCallsTotal.WithLabelValues("false").Inc()
 	} else {
-		log.Info("Records cache provider: using records list from cache")
+		log.Debug("Records cache provider: using records list from cache")
 		cachedRecordsCallsTotal.WithLabelValues("true").Inc()
 	}
-	return c.cache, c.err
+	return c.cache, nil
 }
 func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	if !changes.HasChanges() {
@@ -81,13 +82,12 @@ func (c *CachedProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 }
 
 func (c *CachedProvider) Reset() {
-	c.err = nil
 	c.cache = nil
 	c.lastRead = time.Time{}
 }
 
 func (c *CachedProvider) needRefresh() bool {
-	if c.cache == nil || c.err != nil {
+	if c.cache == nil {
 		log.Debug("Records cache provider is not initialized")
 		return true
 	}
