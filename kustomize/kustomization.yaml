@@ -3,7 +3,7 @@ kind: Kustomization
 
 images:
   - name: registry.k8s.io/external-dns/external-dns
-    newTag: v0.13.5
+    newTag: v0.13.6
 
 resources:
   - ./external-dns-deployment.yaml
