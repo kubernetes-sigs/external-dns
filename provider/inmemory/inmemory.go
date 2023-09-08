@@ -46,7 +46,7 @@ var (
 // initialized as dns provider with no records
 type InMemoryProvider struct {
 	provider.BaseProvider
-	domain         endpoint.DomainFilter
+	domain         endpoint.DomainFilterInterface
 	client         *inMemoryClient
 	filter         *filter
 	OnApplyChanges func(ctx context.Context, changes *plan.Changes)
