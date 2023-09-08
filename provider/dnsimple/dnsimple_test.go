@@ -105,10 +105,10 @@ func TestDnsimpleServices(t *testing.T) {
 	// Setup mock services
 	// Note: AnythingOfType doesn't work with interfaces https://github.com/stretchr/testify/issues/519
 	mockDNS := &mockDnsimpleZoneServiceInterface{}
-	mockDNS.On("ListZones", mock.AnythingOfType("*context.emptyCtx"), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListZonesResponse, nil)
-	mockDNS.On("ListZones", mock.AnythingOfType("*context.emptyCtx"), "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
-	mockDNS.On("ListRecords", mock.AnythingOfType("*context.emptyCtx"), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListRecordsResponse, nil)
-	mockDNS.On("ListRecords", mock.AnythingOfType("*context.emptyCtx"), "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
+	mockDNS.On("ListZones", context.Background(), "1", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListZonesResponse, nil)
+	mockDNS.On("ListZones", context.Background(), "2", &dnsimple.ZoneListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(nil, fmt.Errorf("Account ID not found"))
+	mockDNS.On("ListRecords", context.Background(), "1", "example.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleListRecordsResponse, nil)
+	mockDNS.On("ListRecords", context.Background(), "1", "example-beta.com", &dnsimple.ZoneRecordListOptions{ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimple.ZoneRecordsResponse{Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}}}, nil)
 
 	for _, record := range records {
 		recordName := record.Name
@@ -124,10 +124,10 @@ func TestDnsimpleServices(t *testing.T) {
 			Data:     []dnsimple.ZoneRecord{record},
 		}
 
-		mockDNS.On("ListRecords", mock.AnythingOfType("*context.emptyCtx"), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleRecordResponse, nil)
-		mockDNS.On("CreateRecord", mock.AnythingOfType("*context.emptyCtx"), "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("DeleteRecord", mock.AnythingOfType("*context.emptyCtx"), "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
-		mockDNS.On("UpdateRecord", mock.AnythingOfType("*context.emptyCtx"), "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("ListRecords", context.Background(), "1", record.ZoneID, &dnsimple.ZoneRecordListOptions{Name: &recordName, ListOptions: dnsimple.ListOptions{Page: dnsimple.Int(1)}}).Return(&dnsimpleRecordResponse, nil)
+		mockDNS.On("CreateRecord", context.Background(), "1", record.ZoneID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("DeleteRecord", context.Background(), "1", record.ZoneID, record.ID).Return(&dnsimple.ZoneRecordResponse{}, nil)
+		mockDNS.On("UpdateRecord", context.Background(), "1", record.ZoneID, record.ID, simpleRecord).Return(&dnsimple.ZoneRecordResponse{}, nil)
 	}
 
 	mockProvider = dnsimpleProvider{client: mockDNS}
