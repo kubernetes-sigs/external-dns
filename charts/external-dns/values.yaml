@@ -110,6 +110,11 @@ serviceMonitor:
 
   targetLabels: []
 
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  maxUnavailable:
+
 env: []
 
 livenessProbe:
