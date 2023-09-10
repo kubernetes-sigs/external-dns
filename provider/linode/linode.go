@@ -315,7 +315,8 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					"zoneName":   zone.Domain,
 					"dnsName":    ep.DNSName,
 					"recordType": ep.RecordType,
-				}).Warn("Records found which should not exist")
+				}).Warn("Records found which should not exist. Not touching it.")
+				continue
 			}
 
 			recordType, err := convertRecordType(ep.RecordType)
