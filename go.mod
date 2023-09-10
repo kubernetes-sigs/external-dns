@@ -22,7 +22,7 @@ require (
 	github.com/civo/civogo v0.3.42
 	github.com/cloudflare/cloudflare-go v0.73.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
-	github.com/datawire/ambassador v1.12.4
+	github.com/datawire/ambassador v1.14.4
 	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
 	github.com/digitalocean/godo v1.100.0
 	github.com/dnsimple/dnsimple-go v1.2.0
@@ -209,4 +209,10 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
+)
+
+// We need to inherit this from helm.sh/helm/v3 from github.com/datawire/ambassador
+replace (
+	github.com/docker/distribution => github.com/docker/distribution v0.0.0-20191216044856-a8371794149d
+	github.com/docker/docker => github.com/moby/moby v17.12.0-ce-rc1.0.20200618181300-9dc6525e6118+incompatible
 )
