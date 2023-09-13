@@ -2,6 +2,7 @@
 #  https://github.com/kubernetes/community/blob/HEAD/contributors/guide/owners.md
 
 approvers:
+  - johngmyers
   - raffo
   - njuettner
   - seanmalloy
