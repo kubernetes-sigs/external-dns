@@ -366,6 +366,11 @@ func TestLinodeApplyChanges(t *testing.T) {
 			DNSName:    "bar.io",
 			RecordType: "A",
 			Targets:    []string{"targetBar"},
+		}, {
+			// This record should be skipped as it already exists
+			DNSName:    "foo.com",
+			RecordType: "TXT",
+			Targets:    []string{"txt"},
 		}},
 		Delete: []*endpoint.Endpoint{{
 			DNSName:    "api.baz.com",

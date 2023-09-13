@@ -2,8 +2,8 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.13.0
-appVersion: 0.13.5
+version: 1.13.1
+appVersion: 0.13.6
 keywords:
   - kubernetes
   - externaldns
@@ -20,7 +20,13 @@ maintainers:
     email: steve.hipwell@gmail.com
 annotations:
   artifacthub.io/changes: |
+    - kind: added
+      description: "Added RBAC for Traefik to ClusterRole. ([#3325](https://github.com/kubernetes-sigs/external-dns/pull/3325)) [@ThomasK33](https://github.com/thomask33)"
+    - kind: added
+      description: "Added support for init containers. ([#3325](https://github.com/kubernetes-sigs/external-dns/pull/3838)) [@calvinbui](https://github.com/calvinbui)"
     - kind: changed
-      description: "Updated _ExternalDNS_ version to [v0.13.5](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.5)."
+      description: "Disallowed privilege escalation in container security context and set the seccomp profile type to `RuntimeDefault`. ([#3689](https://github.com/kubernetes-sigs/external-dns/pull/3689)) [@nrvnrvn](https://github.com/nrvnrvn)"
     - kind: changed
-      description: "Adding missing gateway-httproute cluster role permission."
+      description: "Updated _ExternalDNS_ OCI image version to [v0.13.6](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.13.6). ([#3917](https://github.com/kubernetes-sigs/external-dns/pull/3917)) [@stevehipwell](https://github.com/stevehipwell)"
+    - kind: removed
+      description: "Removed RBAC rule for already removed `contour-ingressroute` source. ([#3764](https://github.com/kubernetes-sigs/external-dns/pull/3764)) [@johngmyers](https://github.com/johngmyers)"

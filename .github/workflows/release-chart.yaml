@@ -20,7 +20,7 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+        uses: actions/checkout@v4 # v4.0.0
         with:
           fetch-depth: 0
 
@@ -33,7 +33,7 @@ jobs:
 
       - name: Get changelog entry
         id: changelog_reader
-        uses: mindsers/changelog-reader-action@b97ce03a10d9bdbb07beb491c76a5a01d78cd3ef
+        uses: mindsers/changelog-reader-action@b97ce03a10d9bdbb07beb491c76a5a01d78cd3ef # v2.2.2
         with:
           path: charts/external-dns/CHANGELOG.md
           version: "v${{ steps.chart_version.outputs.version }}"
@@ -51,13 +51,13 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Set-up Helm
-        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3.5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           version: latest
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@be16258da8010256c6e82849661221415f031968
+        uses: helm/chart-releaser-action@be16258da8010256c6e82849661221415f031968 # v1.5.0
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "external-dns-helm-chart-{{ .Version }}"
