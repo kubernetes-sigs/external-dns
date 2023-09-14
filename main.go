@@ -409,6 +409,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if cfg.ProviderCacheTime > 0 {
+		p = &provider.CachedProvider{
+			Provider:     p,
+			RefreshDelay: cfg.ProviderCacheTime,
+		}
+	}
+
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
@@ -422,7 +429,7 @@ func main() {
 	case "txt":
 		r, err = registry.NewTXTRegistry(p, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTOwnerID, cfg.TXTCacheInterval, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.TXTEncryptEnabled, []byte(cfg.TXTEncryptAESKey))
 	case "aws-sd":
-		r, err = registry.NewAWSSDRegistry(p.(*awssd.AWSSDProvider), cfg.TXTOwnerID)
+		r, err = registry.NewAWSSDRegistry(p, cfg.TXTOwnerID)
 	default:
 		log.Fatalf("unknown registry: %s", cfg.Registry)
 	}

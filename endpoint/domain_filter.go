@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-type MatchAllDomainFilters []*DomainFilter
+type MatchAllDomainFilters []DomainFilterInterface
 
 func (f MatchAllDomainFilters) Match(domain string) bool {
 	for _, filter := range f {
@@ -39,6 +39,10 @@ func (f MatchAllDomainFilters) Match(domain string) bool {
 	return true
 }
 
+type DomainFilterInterface interface {
+	Match(domain string) bool
+}
+
 // DomainFilter holds a lists of valid domain names
 type DomainFilter struct {
 	// Filters define what domains to match
@@ -50,6 +54,8 @@ type DomainFilter struct {
 	// regexExclusion defines a regular expression to exclude the domains matched
 	regexExclusion *regexp.Regexp
 }
+
+var _ DomainFilterInterface = &DomainFilter{}
 
 // domainFilterSerde is a helper type for serializing and deserializing DomainFilter.
 type domainFilterSerde struct {
