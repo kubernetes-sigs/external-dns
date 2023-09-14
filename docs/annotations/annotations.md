@@ -10,7 +10,7 @@ The following table documents which sources support which annotations:
 | Connector    |            |          |                   |         |     |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
 | CloudFoundry |            |          |                   |         |     |                     |
-| CRD          |            |          |                   |         |     |                     |
+| CRD          |            |          |                   |         |     | Yes[^4]             |
 | F5           |            |          |                   |         | Yes |                     |
 | Gateway      | Yes        | Yes[^1]  |                   |         | Yes | Yes                 |
 | Gloo         |            |          |                   |         | Yes | Yes                 |
@@ -27,6 +27,7 @@ The following table documents which sources support which annotations:
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
+[^4]: The set identifier comes from `setIdentifier` field of the spec, not the annotation.
 
 ## external-dns.alpha.kubernetes.io/access
 
