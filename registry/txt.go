@@ -245,6 +245,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 			r.Labels = make(map[string]string)
 		}
 		r.Labels[endpoint.OwnerLabelKey] = im.ownerID
+		// The nonce should be the same for both ownership records, hence generating it in advance.
+		r.Labels.AddNonce(im.txtEncryptEnabled, im.txtEncryptAESKey)
 
 		filteredChanges.Create = append(filteredChanges.Create, im.generateTXTRecord(r)...)
 
@@ -277,6 +279,8 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 
 	// make sure TXT records are consistently updated as well
 	for _, r := range filteredChanges.UpdateNew {
+		// The nonce should be the same for both ownership records, hence generating it in advance.
+		r.Labels.AddNonce(im.txtEncryptEnabled, im.txtEncryptAESKey)
 		filteredChanges.UpdateNew = append(filteredChanges.UpdateNew, im.generateTXTRecord(r)...)
 		// add new version of record to cache
 		if im.cacheInterval > 0 {

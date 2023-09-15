@@ -94,6 +94,25 @@ func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce
 	return string(plaindata), base64.StdEncoding.EncodeToString(nonce), nil
 }
 
+// GenerateNonce generates and returns a nonce
+func GenerateNonce(aesKey []byte) (string, error) {
+	block, err := aes.NewCipher(aesKey)
+	if err != nil {
+		return "", err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return "", err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(nonce), nil
+}
+
 // decompressData gzip compressed data
 func decompressData(data []byte) (resData []byte, err error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))

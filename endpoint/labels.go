@@ -151,6 +151,22 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 	if withQuotes {
 		text = fmt.Sprintf("\"%s\"", text)
 	}
+
+	// Adding back the nonce to labelMap as UPDATE of ownership records require it.
+	l[txtEncryptionNonce] = string(encryptionNonce)
+
 	log.Debugf("Serialized text after encryption is %#v.", text)
 	return text
+}
+
+// AddNonce generates and adds a nonce to the label map.
+func (l Labels) AddNonce(encryptionEnabled bool, aesKey []byte) {
+	if encryptionEnabled && len(aesKey) != 0 {
+		nonce, err := GenerateNonce(aesKey)
+		if err != nil {
+			log.Fatalf("Failed to generate nonce using the encryption key %#v. Got error %#v.", aesKey, err)
+			return
+		}
+		l[txtEncryptionNonce] = nonce
+	}
 }
