@@ -44,6 +44,8 @@ var actionNames = []string{
 	"delete",
 }
 
+const domainsURI = "/v1/domains?statuses=ACTIVE,PENDING_DNS_ACTIVE"
+
 // ErrRecordToMutateNotFound when ApplyChange has to update/delete and didn't found the record in the existing zone (Change with no record ID)
 var ErrRecordToMutateNotFound = errors.New("record to mutate not found in current zone")
 
@@ -154,7 +156,7 @@ func (p *GDProvider) zones() ([]string, error) {
 	zones := []gdZone{}
 	filteredZones := []string{}
 
-	if err := p.client.Get("/v1/domains?statuses=ACTIVE", &zones); err != nil {
+	if err := p.client.Get(domainsURI, &zones); err != nil {
 		return nil, err
 	}
 
