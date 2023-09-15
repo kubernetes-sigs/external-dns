@@ -276,33 +276,46 @@ func TestPublic_ApplyChanges(t *testing.T) {
 func TestPrivate_ApplyChanges(t *testing.T) {
 	p := newTestIBMCloudProvider(true)
 
-	changes := plan.Changes{
-		Create: p.AdjustEndpoints([]*endpoint.Endpoint{
-			{
-				DNSName:    "newA.example.com",
-				RecordType: "A",
-				RecordTTL:  120,
-				Targets:    endpoint.NewTargets("4.3.2.1"),
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  "ibmcloud-vpc",
-						Value: "crn:v1:staging:public:is:us-south:a/0821fa9f9ebcc7b7c9a0d6e9bf9442a4::vpc:be33cdad-9a03-4bfa-82ca-eadb9f1de688",
-					},
+	endpointsCreate, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		{
+			DNSName:    "newA.example.com",
+			RecordType: "A",
+			RecordTTL:  120,
+			Targets:    endpoint.NewTargets("4.3.2.1"),
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "ibmcloud-vpc",
+					Value: "crn:v1:staging:public:is:us-south:a/0821fa9f9ebcc7b7c9a0d6e9bf9442a4::vpc:be33cdad-9a03-4bfa-82ca-eadb9f1de688",
 				},
 			},
-			{
-				DNSName:    "newCNAME.example.com",
-				RecordType: "CNAME",
-				RecordTTL:  180,
-				Targets:    endpoint.NewTargets("newA.example.com"),
-			},
-			{
-				DNSName:    "newTXT.example.com",
-				RecordType: "TXT",
-				RecordTTL:  240,
-				Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=tower-pdns\""),
-			},
-		}),
+		},
+		{
+			DNSName:    "newCNAME.example.com",
+			RecordType: "CNAME",
+			RecordTTL:  180,
+			Targets:    endpoint.NewTargets("newA.example.com"),
+		},
+		{
+			DNSName:    "newTXT.example.com",
+			RecordType: "TXT",
+			RecordTTL:  240,
+			Targets:    endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		},
+	})
+	assert.NoError(t, err)
+
+	endpointsUpdate, err := p.AdjustEndpoints([]*endpoint.Endpoint{
+		{
+			DNSName:    "test.example.com",
+			RecordType: "A",
+			RecordTTL:  180,
+			Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
+		},
+	})
+	assert.NoError(t, err)
+
+	changes := plan.Changes{
+		Create: endpointsCreate,
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName:    "test.example.com",
@@ -311,14 +324,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 		},
-		UpdateNew: p.AdjustEndpoints([]*endpoint.Endpoint{
-			{
-				DNSName:    "test.example.com",
-				RecordType: "A",
-				RecordTTL:  180,
-				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
-			},
-		}),
+		UpdateNew: endpointsUpdate,
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "test.example.com",
@@ -329,7 +335,7 @@ func TestPrivate_ApplyChanges(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	err := p.ApplyChanges(ctx, &changes)
+	err = p.ApplyChanges(ctx, &changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
@@ -353,7 +359,8 @@ func TestAdjustEndpoints(t *testing.T) {
 		},
 	}
 
-	ep := p.AdjustEndpoints(endpoints)
+	ep, err := p.AdjustEndpoints(endpoints)
+	assert.NoError(t, err)
 
 	assert.Equal(t, endpoint.TTL(0), ep[0].RecordTTL)
 	assert.Equal(t, "test.example.com", ep[0].DNSName)

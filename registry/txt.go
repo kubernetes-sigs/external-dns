@@ -296,7 +296,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
