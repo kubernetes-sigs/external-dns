@@ -148,7 +148,8 @@ func TestAdjustEndpoints(t *testing.T) {
 			},
 		},
 	}
-	adjustedEndpoints := provider.AdjustEndpoints(endpoints)
+	adjustedEndpoints, err := provider.AdjustEndpoints(endpoints)
+	require.NoError(t, err)
 	require.Equal(t, []*endpoint.Endpoint{{
 		DNSName:    "test.example.com",
 		RecordTTL:  0,

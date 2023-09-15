@@ -84,7 +84,11 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 		return
 	}
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	pve = p.provider.AdjustEndpoints(pve)
+	pve, err := p.provider.AdjustEndpoints(pve)
+	if err != nil {
+		log.Errorf("Failed to call adjust endpoints: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 	if err := json.NewEncoder(w).Encode(&pve); err != nil {
 		log.Errorf("Failed to encode in adjustEndpointsHandler: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

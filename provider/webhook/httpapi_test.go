@@ -41,8 +41,8 @@ func (p FakeWebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 	return nil
 }
 
-func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	return endpoints
+func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return endpoints, nil
 }
 
 func (p FakeWebhookProvider) GetDomainFilter() endpoint.DomainFilter {

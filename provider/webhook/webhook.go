@@ -203,27 +203,27 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // AdjustEndpoints will call the provider doing a POST on `/adjustendpoints` which will return a list of modified endpoints
 // based on a provider specific requirement.
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
-func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
 	u, err := url.JoinPath(p.remoteServerURL.String(), "adjustendpoints")
 	if err != nil {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to join path, %s", err)
-		return endpoints
+		return nil, err
 	}
 
 	b := new(bytes.Buffer)
 	if err := json.NewEncoder(b).Encode(e); err != nil {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to encode endpoints, %s", err)
-		return endpoints
+		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", u, b)
 	if err != nil {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to create new HTTP request, %s", err)
-		return endpoints
+		return nil, err
 	}
 
 	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
@@ -233,23 +233,23 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) []*endpoint.End
 	if err != nil {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed executing http request, %s", err)
-		return endpoints
+		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to AdjustEndpoints with code %d", resp.StatusCode)
-		return endpoints
+		return nil, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
 		recordsErrorsGauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
-		return endpoints
+		return nil, err
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // GetDomainFilter make calls to get the serialized version of the domain filter
