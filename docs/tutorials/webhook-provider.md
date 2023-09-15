@@ -1,8 +1,8 @@
 # Webhook provider
 
-The "Webhook" provider allows to integrate ExternalDNS with DNS providers via an HTTP interface.
-The Webhook provider implements the Provider interface. Instead of implementing code specific to a provider, it implements an HTTP client that sends request to an HTTP API.
-The idea behind it is that providers can be implemented in a separate program: these programs expose an HTTP API that the Webhook provider can interact with. The ideal setup for providers is to run as sidecars in the same pod of the ExternalDNS container and listen on localhost only. This is not strictly a requirement, but we would not recommend other setups.
+The "Webhook" provider allows integrating ExternalDNS with DNS providers through an HTTP interface.
+The Webhook provider implements the `Provider` interface. Instead of implementing code specific to a provider, it implements an HTTP client that sends requests to an HTTP API.
+The idea behind it is that providers can be implemented in separate programs: these programs expose an HTTP API that the Webhook provider interacts with. The ideal setup for providers is to run as a sidecar in the same pod of the ExternalDNS container, listening only on localhost. This is not strictly a requirement, but we do not recommend other setups.
 
 ## Architectural diagram
 
@@ -10,7 +10,7 @@ The idea behind it is that providers can be implemented in a separate program: t
 
 ## API guarantees
 
-Providers implementing the HTTP API have to keep in sync with changes to the Go types `plan.Changes` and `endpoint.Endpoint`. We do not expect to make significant changes to those types given the maturity of the project, but we can't exclude that changes will need to happen. We commit to publishing changes to those in the release notes, to ensure that providers implementing the API can keep providers up to date quickly.
+Providers implementing the HTTP API have to keep in sync with changes to the JSON serialization of Go types `plan.Changes`, `endpoint.Endpoint`, and `endpoint.DomainFilter`. Given the maturity of the project, we do not expect to make significant changes to those types, but can't exclude the possibility that changes will need to happen. We commit to publishing changes to those in the release notes, to ensure that providers implementing the API can keep providers up to date quickly.
 
 ## Implementation requirements
 
@@ -30,7 +30,7 @@ The server needs to respond to those requests by reading the `Accept` header and
 
 ## Provider registry
 
-To simplify the discovery of providers, we will accept pull requests that will add links to providers in the [README](../../README.md) file. This list will serve the only purpose of simplifying finding providers and will not constitute an official endorsment of any of the externally implemented providers unless otherwise specified.
+To simplify the discovery of providers, we will accept pull requests that will add links to providers in the [README](../../README.md) file. This list will only serve the purpose of simplifying finding providers and will not constitute an official endorsement of any of the externally implemented providers unless otherwise stated.
 
 ## Run the AWS provider with the webhook provider.
 
