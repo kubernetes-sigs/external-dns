@@ -40,6 +40,10 @@ func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
+func (im *NoopRegistry) OwnerID() string {
+	return ""
+}
+
 // Records returns the current records from the dns provider
 func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return im.provider.Records(ctx)
@@ -51,6 +55,6 @@ func (im *NoopRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes)
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (im *NoopRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
 }

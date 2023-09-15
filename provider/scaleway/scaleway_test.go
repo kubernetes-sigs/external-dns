@@ -220,7 +220,8 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 		},
 	}
 
-	after := provider.AdjustEndpoints(before)
+	after, err := provider.AdjustEndpoints(before)
+	assert.NoError(t, err)
 	for i := range after {
 		if !checkRecordEquality(after[i], expected[i]) {
 			t.Errorf("got record %s instead of %s", after[i], expected[i])
