@@ -590,6 +590,30 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 	return targets
 }
 
+func isPodStatusReady(status v1.PodStatus) bool {
+	_, condition := getPodCondition(&status, v1.PodReady)
+	return condition != nil && condition.Status == v1.ConditionTrue
+}
+
+func getPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
+	if status == nil {
+		return -1, nil
+	}
+	return getPodConditionFromList(status.Conditions, conditionType)
+}
+
+func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
+	if conditions == nil {
+		return -1, nil
+	}
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return i, &conditions[i]
+		}
+	}
+	return -1, nil
+}
+
 func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targets, error) {
 	var (
 		internalIPs endpoint.Targets
@@ -615,6 +639,8 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			return nil, err
 		}
 
+		var nodesReady []*v1.Node
+		var nodesRunning []*v1.Node
 		for _, v := range pods {
 			if v.Status.Phase == v1.PodRunning {
 				node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
@@ -622,11 +648,32 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
+
 				if _, ok := nodesMap[node]; !ok {
 					nodesMap[node] = *new(struct{})
-					nodes = append(nodes, node)
+					nodesRunning = append(nodesRunning, node)
+
+					if isPodStatusReady(v.Status) {
+						nodesReady = append(nodesReady, node)
+						// Check pod not terminating
+						if v.GetDeletionTimestamp() == nil {
+							nodes = append(nodes, node)
+						}
+					}
 				}
 			}
+		}
+
+		if len(nodes) > 0 {
+			// Works same as service endpoints
+		} else if len(nodesReady) > 0 {
+			// 2 level of panic modes as safe guard, because old wrong behavior can be used by someone
+			// Publish all endpoints not always a bad thing
+			log.Debugf("All pods in terminating state, use ready")
+			nodes = nodesReady
+		} else {
+			log.Debugf("All pods not ready, use all running")
+			nodes = nodesRunning
 		}
 	default:
 		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
