@@ -93,14 +93,8 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 }
 
 func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Request) {
-	b, err := p.provider.GetDomainFilter().MarshalJSON()
-	if err != nil {
-		log.Errorf("Failed to marshal domain filter: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
 	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	w.Write(b)
+	json.NewEncoder(w).Encode(p.provider.GetDomainFilter())
 }
 
 // StartHTTPApi starts a HTTP server given any provider.

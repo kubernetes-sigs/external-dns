@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -117,11 +116,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	defer resp.Body.Close()
 
 	df := endpoint.DomainFilter{}
-	b, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %v", err)
-	}
-	if err := df.UnmarshalJSON(b); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&df); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
 	}
 
