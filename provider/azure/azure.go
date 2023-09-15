@@ -24,9 +24,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/to"
+	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -39,14 +39,14 @@ const (
 
 // ZonesClient is an interface of dns.ZoneClient that can be stubbed for testing.
 type ZonesClient interface {
-	ListByResourceGroupComplete(ctx context.Context, resourceGroupName string, top *int32) (result dns.ZoneListResultIterator, err error)
+	NewListByResourceGroupPager(resourceGroupName string, options *dns.ZonesClientListByResourceGroupOptions) *azcoreruntime.Pager[dns.ZonesClientListByResourceGroupResponse]
 }
 
 // RecordSetsClient is an interface of dns.RecordSetsClient that can be stubbed for testing.
 type RecordSetsClient interface {
-	ListAllByDNSZoneComplete(ctx context.Context, resourceGroupName string, zoneName string, top *int32, recordSetNameSuffix string) (result dns.RecordSetListResultIterator, err error)
-	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, ifMatch string) (result autorest.Response, err error)
-	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, ifMatch string, ifNoneMatch string) (result dns.RecordSet, err error)
+	NewListAllByDNSZonePager(resourceGroupName string, zoneName string, options *dns.RecordSetsClientListAllByDNSZoneOptions) *azcoreruntime.Pager[dns.RecordSetsClientListAllByDNSZoneResponse]
+	Delete(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, options *dns.RecordSetsClientDeleteOptions) (dns.RecordSetsClientDeleteResponse, error)
+	CreateOrUpdate(ctx context.Context, resourceGroupName string, zoneName string, relativeRecordSetName string, recordType dns.RecordType, parameters dns.RecordSet, options *dns.RecordSetsClientCreateOrUpdateOptions) (dns.RecordSetsClientCreateOrUpdateResponse, error)
 }
 
 // AzureProvider implements the DNS provider for Microsoft's Azure cloud platform.
@@ -70,17 +70,18 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-
-	token, err := getAccessToken(*cfg, cfg.Environment)
+	cred, err := getCredentials(*cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get token: %v", err)
+		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-
-	zonesClient := dns.NewZonesClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
-	zonesClient.Authorizer = autorest.NewBearerAuthorizer(token)
-	recordSetsClient := dns.NewRecordSetsClientWithBaseURI(cfg.Environment.ResourceManagerEndpoint, cfg.SubscriptionID)
-	recordSetsClient.Authorizer = autorest.NewBearerAuthorizer(token)
-
+	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
+	recordSetsClient, err := dns.NewRecordSetsClient(cfg.SubscriptionID, cred, nil)
+	if err != nil {
+		return nil, err
+	}
 	return &AzureProvider{
 		domainFilter:                 domainFilter,
 		zoneNameFilter:               zoneNameFilter,
@@ -103,43 +104,44 @@ func (p *AzureProvider) Records(ctx context.Context) (endpoints []*endpoint.Endp
 	}
 
 	for _, zone := range zones {
-		err := p.iterateRecords(ctx, *zone.Name, func(recordSet dns.RecordSet) bool {
-			if recordSet.Name == nil || recordSet.Type == nil {
-				log.Error("Skipping invalid record set with nil name or type.")
-				return true
+		pager := p.recordSetsClient.NewListAllByDNSZonePager(p.resourceGroup, *zone.Name, &dns.RecordSetsClientListAllByDNSZoneOptions{Top: nil})
+		for pager.More() {
+			nextResult, err := pager.NextPage(ctx)
+			if err != nil {
+				return nil, err
 			}
-			recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
-			if !p.SupportedRecordType(recordType) {
-				return true
+			for _, recordSet := range nextResult.Value {
+				if recordSet.Name == nil || recordSet.Type == nil {
+					log.Error("Skipping invalid record set with nil name or type.")
+					continue
+				}
+				recordType := strings.TrimPrefix(*recordSet.Type, "Microsoft.Network/dnszones/")
+				if !p.SupportedRecordType(recordType) {
+					continue
+				}
+				name := formatAzureDNSName(*recordSet.Name, *zone.Name)
+				if len(p.zoneNameFilter.Filters) > 0 && !p.domainFilter.Match(name) {
+					log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", name)
+					continue
+				}
+				targets := extractAzureTargets(recordSet)
+				if len(targets) == 0 {
+					log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
+					continue
+				}
+				var ttl endpoint.TTL
+				if recordSet.Properties.TTL != nil {
+					ttl = endpoint.TTL(*recordSet.Properties.TTL)
+				}
+				ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
+				log.Debugf(
+					"Found %s record for '%s' with target '%s'.",
+					ep.RecordType,
+					ep.DNSName,
+					ep.Targets,
+				)
+				endpoints = append(endpoints, ep)
 			}
-			name := formatAzureDNSName(*recordSet.Name, *zone.Name)
-
-			if len(p.zoneNameFilter.Filters) > 0 && !p.domainFilter.Match(name) {
-				log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", name)
-				return true
-			}
-			targets := extractAzureTargets(&recordSet)
-			if len(targets) == 0 {
-				log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
-				return true
-			}
-			var ttl endpoint.TTL
-			if recordSet.TTL != nil {
-				ttl = endpoint.TTL(*recordSet.TTL)
-			}
-
-			ep := endpoint.NewEndpointWithTTL(name, recordType, ttl, targets...)
-			log.Debugf(
-				"Found %s record for '%s' with target '%s'.",
-				ep.RecordType,
-				ep.DNSName,
-				ep.Targets,
-			)
-			endpoints = append(endpoints, ep)
-			return true
-		})
-		if err != nil {
-			return nil, err
 		}
 	}
 	return endpoints, nil
@@ -162,30 +164,22 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
 	log.Debugf("Retrieving Azure DNS zones for resource group: %s.", p.resourceGroup)
-
 	var zones []dns.Zone
-
-	zonesIterator, err := p.zonesClient.ListByResourceGroupComplete(ctx, p.resourceGroup, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for zonesIterator.NotDone() {
-		zone := zonesIterator.Value()
-
-		if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
-			zones = append(zones, zone)
-		} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
-			// Handle zoneNameFilter
-			zones = append(zones, zone)
-		}
-
-		err := zonesIterator.NextWithContext(ctx)
+	pager := p.zonesClient.NewListByResourceGroupPager(p.resourceGroup, &dns.ZonesClientListByResourceGroupOptions{Top: nil})
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
 			return nil, err
 		}
+		for _, zone := range nextResult.Value {
+			if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
+				zones = append(zones, *zone)
+			} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
+				// Handle zoneNameFilter
+				zones = append(zones, *zone)
+			}
+		}
 	}
-
 	log.Debugf("Found %d Azure DNS zone(s).", len(zones))
 	return zones, nil
 }
@@ -197,28 +191,6 @@ func (p *AzureProvider) SupportedRecordType(recordType string) bool {
 	default:
 		return provider.SupportedRecordType(recordType)
 	}
-}
-
-func (p *AzureProvider) iterateRecords(ctx context.Context, zoneName string, callback func(dns.RecordSet) bool) error {
-	log.Debugf("Retrieving Azure DNS records for zone '%s'.", zoneName)
-
-	recordSetsIterator, err := p.recordSetsClient.ListAllByDNSZoneComplete(ctx, p.resourceGroup, zoneName, nil, "")
-	if err != nil {
-		return err
-	}
-
-	for recordSetsIterator.NotDone() {
-		if !callback(recordSetsIterator.Value()) {
-			return nil
-		}
-
-		err := recordSetsIterator.NextWithContext(ctx)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 type azureChangeMap map[string][]*endpoint.Endpoint
@@ -273,7 +245,7 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 				log.Infof("Would delete %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
-				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), ""); err != nil {
+				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), nil); err != nil {
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
 						ep.RecordType,
@@ -323,8 +295,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 					name,
 					dns.RecordType(ep.RecordType),
 					recordSet,
-					"",
-					"",
+					nil,
 				)
 			}
 			if err != nil {
@@ -360,51 +331,51 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		ttl = int64(endpoint.RecordTTL)
 	}
 	switch dns.RecordType(endpoint.RecordType) {
-	case dns.A:
-		aRecords := make([]dns.ARecord, len(endpoint.Targets))
+	case dns.RecordTypeA:
+		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
-			aRecords[i] = dns.ARecord{
-				Ipv4Address: to.StringPtr(target),
+			aRecords[i] = &dns.ARecord{
+				IPv4Address: to.Ptr(target),
 			}
 		}
 		return dns.RecordSet{
-			RecordSetProperties: &dns.RecordSetProperties{
-				TTL:      to.Int64Ptr(ttl),
-				ARecords: &aRecords,
+			Properties: &dns.RecordSetProperties{
+				TTL:      to.Ptr(ttl),
+				ARecords: aRecords,
 			},
 		}, nil
-	case dns.CNAME:
+	case dns.RecordTypeCNAME:
 		return dns.RecordSet{
-			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(ttl),
+			Properties: &dns.RecordSetProperties{
+				TTL: to.Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.StringPtr(endpoint.Targets[0]),
+					Cname: to.Ptr(endpoint.Targets[0]),
 				},
 			},
 		}, nil
-	case dns.MX:
-		mxRecords := make([]dns.MxRecord, len(endpoint.Targets))
+	case dns.RecordTypeMX:
+		mxRecords := make([]*dns.MxRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			mxRecord, err := parseMxTarget[dns.MxRecord](target)
 			if err != nil {
 				return dns.RecordSet{}, err
 			}
-			mxRecords[i] = mxRecord
+			mxRecords[i] = &mxRecord
 		}
 		return dns.RecordSet{
-			RecordSetProperties: &dns.RecordSetProperties{
-				TTL:       to.Int64Ptr(ttl),
-				MxRecords: &mxRecords,
+			Properties: &dns.RecordSetProperties{
+				TTL:       to.Ptr(ttl),
+				MxRecords: mxRecords,
 			},
 		}, nil
-	case dns.TXT:
+	case dns.RecordTypeTXT:
 		return dns.RecordSet{
-			RecordSetProperties: &dns.RecordSetProperties{
-				TTL: to.Int64Ptr(ttl),
-				TxtRecords: &[]dns.TxtRecord{
+			Properties: &dns.RecordSetProperties{
+				TTL: to.Ptr(ttl),
+				TxtRecords: []*dns.TxtRecord{
 					{
-						Value: &[]string{
-							endpoint.Targets[0],
+						Value: []*string{
+							&endpoint.Targets[0],
 						},
 					},
 				},
@@ -424,17 +395,17 @@ func formatAzureDNSName(recordName, zoneName string) string {
 
 // Helper function (shared with text code)
 func extractAzureTargets(recordSet *dns.RecordSet) []string {
-	properties := recordSet.RecordSetProperties
+	properties := recordSet.Properties
 	if properties == nil {
 		return []string{}
 	}
 
 	// Check for A records
 	aRecords := properties.ARecords
-	if aRecords != nil && len(*aRecords) > 0 && (*aRecords)[0].Ipv4Address != nil {
-		targets := make([]string, len(*aRecords))
-		for i, aRecord := range *aRecords {
-			targets[i] = *aRecord.Ipv4Address
+	if len(aRecords) > 0 && (aRecords)[0].IPv4Address != nil {
+		targets := make([]string, len(aRecords))
+		for i, aRecord := range aRecords {
+			targets[i] = *aRecord.IPv4Address
 		}
 		return targets
 	}
@@ -447,9 +418,9 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 
 	// Check for MX records
 	mxRecords := properties.MxRecords
-	if mxRecords != nil && len(*mxRecords) > 0 && (*mxRecords)[0].Exchange != nil {
-		targets := make([]string, len(*mxRecords))
-		for i, mxRecord := range *mxRecords {
+	if len(mxRecords) > 0 && (mxRecords)[0].Exchange != nil {
+		targets := make([]string, len(mxRecords))
+		for i, mxRecord := range mxRecords {
 			targets[i] = fmt.Sprintf("%d %s", *mxRecord.Preference, *mxRecord.Exchange)
 		}
 		return targets
@@ -457,10 +428,10 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 
 	// Check for TXT records
 	txtRecords := properties.TxtRecords
-	if txtRecords != nil && len(*txtRecords) > 0 && (*txtRecords)[0].Value != nil {
-		values := (*txtRecords)[0].Value
-		if values != nil && len(*values) > 0 {
-			return []string{(*values)[0]}
+	if len(txtRecords) > 0 && (txtRecords)[0].Value != nil {
+		values := (txtRecords)[0].Value
+		if len(values) > 0 {
+			return []string{*(values)[0]}
 		}
 	}
 	return []string{}

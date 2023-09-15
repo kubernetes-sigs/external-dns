@@ -44,18 +44,16 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-.PHONY: go-lint
-
 golangci-lint:
 	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
 
 # Run the golangci-lint tool
+.PHONY: go-lint
 go-lint: golangci-lint
-	golangci-lint run --timeout=15m ./...
-
-.PHONY: licensecheck
+	golangci-lint run --timeout=30m ./...
 
 # Run the licensecheck script to check for license headers
+.PHONY: licensecheck
 licensecheck:
 	@echo ">> checking license header"
 	@licRes=$$(for file in $$(find . -type f -iname '*.go' ! -path './vendor/*') ; do \
@@ -66,58 +64,52 @@ licensecheck:
                exit 1; \
        fi
 
-.PHONY: lint
-
 # Run all the linters
+.PHONY: lint
 lint: licensecheck go-lint
 
-.PHONY: crd
-
 # generates CRD using controller-gen
+.PHONY: crd
 crd: controller-gen
 	${CONTROLLER_GEN} crd:crdVersions=v1 paths="./endpoint/..." output:crd:stdout > docs/contributing/crd-source/crd-manifest.yaml
 
 # The verify target runs tasks similar to the CI tasks, but without code coverage
-.PHONY: verify test
-
+.PHONY: test
 test:
 	go test -race -coverprofile=profile.cov ./...
 
-# The build targets allow to build the binary and docker image
-.PHONY: build build.docker build.mini
+# The build targets allow to build the binary and container image
+.PHONY: build
 
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
-IMAGE         ?= us.gcr.io/k8s-artifacts-prod/external-dns/$(BINARY)
+REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
+IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
 BUILD_FLAGS   ?= -v
 LDFLAGS       ?= -X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s
-ARCHS          = amd64 arm64 arm/v7
 ARCH          ?= amd64
-DEFAULT_ARCH   = amd64
 SHELL          = /bin/bash
-OUTPUT_TYPE   ?= docker
-
+IMG_PLATFORM  ?= linux/amd64,linux/arm64,linux/arm/v7
+IMG_PUSH      ?= true
+IMG_SBOM      ?= none
 
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.push/multiarch: $(addprefix build.push-,$(ARCHS))
-	arch_specific_tags=()
-	for arch in $(ARCHS); do \
-		image="$(IMAGE):$(VERSION)-$$(echo $$arch | tr / -)" ;\
-		arch_specific_tags+=( " $${image}" ) ;\
-	done ;\
-	echo $${arch_specific_tags[@]} ;\
-        DOCKER_CLI_EXPERIMENTAL=enabled docker buildx imagetools create --tag "$(IMAGE):$(VERSION)" $${arch_specific_tags[@]} ;\
+build.push/multiarch: ko
+	KO_DOCKER_REPO=${IMAGE} \
+    VERSION=${VERSION} \
+    ko build --tags ${VERSION} --platform=${IMG_PLATFORM} --bare --sbom ${IMG_SBOM} --push=${IMG_PUSH} .
 
-build.image/multiarch: $(addprefix build.image-,$(ARCHS))
+build.image/multiarch:
+	$(MAKE) IMG_PUSH=false build.push/multiarch
 
 build.image:
-	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=docker build.docker
+	$(MAKE) IMG_PLATFORM=linux/$(ARCH) build.image/multiarch
 
 build.image-amd64:
 	$(MAKE) ARCH=amd64 build.image
@@ -129,7 +121,7 @@ build.image-arm/v7:
 	$(MAKE) ARCH=arm/v7 build.image
 
 build.push:
-	$(MAKE) ARCH=$(ARCH) OUTPUT_TYPE=registry build.docker
+	$(MAKE) IMG_PLATFORM=linux/$(ARCH) build.push/multiarch
 
 build.push-amd64:
 	$(MAKE) ARCH=amd64 build.push
@@ -149,25 +141,6 @@ build.amd64:
 build.arm/v7:
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
 
-build.setup:
-	docker buildx inspect img-builder > /dev/null || docker buildx create --name img-builder --use
-
-build.docker: build.setup build.$(ARCH)
-	docker build --rm --tag "$(IMAGE):$(VERSION)" --build-arg VERSION="$(VERSION)" --build-arg ARCH="$(ARCH)" .
-	image="$(IMAGE):$(VERSION)-$(subst /,-,$(ARCH))"; \
-	docker buildx build \
-		--pull \
-		--provenance=false \
-		--sbom=false \
-		--output=type=$(OUTPUT_TYPE) \
-		--platform linux/$(ARCH) \
-		--build-arg ARCH="$(ARCH)" \
-		--build-arg VERSION="$(VERSION)" \
-		--tag $${image} .
-
-build.mini:
-	docker build --rm --tag "$(IMAGE):$(VERSION)-mini" --build-arg VERSION="$(VERSION)" -f Dockerfile.mini .
-
 clean:
 	@rm -rf build
 	@go clean -cache
@@ -180,3 +153,7 @@ release.staging: test
 
 release.prod: test
 	$(MAKE) build.push/multiarch
+
+.PHONY: ko
+ko:
+	scripts/install-ko.sh

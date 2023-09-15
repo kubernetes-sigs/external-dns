@@ -27,20 +27,11 @@ jobs:
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Install CI
       run: |
         go get -v -t -d ./...
 
-    - name: Test build on amd64
-      run: make build.image-amd64
-
-    - name: Clean
-      run: make clean
-
-    - name: Test build on arm64
-      run: make build.image-arm64
-
-    - name: Clean
-      run: make clean
+    - name: Test
+      run: make build.image/multiarch

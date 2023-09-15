@@ -13,7 +13,6 @@ Additionally you will have to provide the Exoscale...:
 
 * API Key
 * API Secret
-* API Endpoint
 * Elastic IP address, to access the workers
 
 ## Deployment
@@ -48,10 +47,14 @@ spec:
         - --domain-filter={{ my-domain }}
         - --policy=sync # if you want DNS entries to get deleted as well
         - --txt-owner-id={{ owner-id-for-this-external-dns }}
-        - --exoscale-endpoint={{ endpoint }} # usually https://api.exoscale.ch/dns
         - --exoscale-apikey={{ api-key}}
         - --exoscale-apisecret={{ api-secret }}
+        # - --exoscale-apizone={{ api-zone }}
+        # - --exoscale-apienv={{ api-env }}
 ```
+
+Optional arguments `--exoscale-apizone` and `--exoscale-apienv` define [Exoscale API Zone](https://community.exoscale.com/documentation/platform/exoscale-datacenter-zones/)
+(default `ch-gva-2`) and Exoscale API environment (default `api`, can be used to target non-production API server) respectively.
 
 ## RBAC
 
@@ -121,6 +124,7 @@ spec:
             name: "nginx"
             port:
               number: 80
+        path: /
         pathType: Prefix
 
 ---

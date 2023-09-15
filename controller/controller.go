@@ -215,12 +215,13 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	verifiedARecords.Set(float64(vARecords))
 	verifiedAAAARecords.Set(float64(vAAAARecords))
 	endpoints = c.Registry.AdjustEndpoints(endpoints)
+	registryFilter := c.Registry.GetDomainFilter()
 
 	plan := &plan.Plan{
 		Policies:       []plan.Policy{c.Policy},
 		Current:        records,
 		Desired:        endpoints,
-		DomainFilter:   endpoint.MatchAllDomainFilters{c.DomainFilter, c.Registry.GetDomainFilter()},
+		DomainFilter:   endpoint.MatchAllDomainFilters{&c.DomainFilter, &registryFilter},
 		ManagedRecords: c.ManagedRecordTypes,
 	}
 

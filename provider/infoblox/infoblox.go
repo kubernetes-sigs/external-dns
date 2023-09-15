@@ -183,6 +183,18 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 	return providerCfg, nil
 }
 
+func recordQueryParams(zone string, view string) *ibclient.QueryParams {
+	searchFields := map[string]string{}
+	if zone != "" {
+		searchFields["zone"] = zone
+	}
+
+	if view != "" {
+		searchFields["view"] = view
+	}
+	return ibclient.NewQueryParams(false, searchFields)
+}
+
 // Records gets the current records.
 func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, err error) {
 	zones, err := p.zones()
@@ -192,23 +204,9 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, zone := range zones {
 		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
-
-		view := p.view
-		if view == "" {
-			view = "default"
-		}
-		searchParams := ibclient.NewQueryParams(
-			false,
-			map[string]string{
-				"zone": zone.Fqdn,
-				"view": view,
-			},
-		)
-
+		searchParams := recordQueryParams(zone.Fqdn, p.view)
 		var resA []ibclient.RecordA
 		objA := ibclient.NewEmptyRecordA()
-		objA.View = p.view
-		objA.Zone = zone.Fqdn
 		err = p.client.GetObject(objA, "", searchParams, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %w", zone.Fqdn, err)
@@ -253,8 +251,6 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		// Include Host records since they should be treated synonymously with A records
 		var resH []ibclient.HostRecord
 		objH := ibclient.NewEmptyHostRecord()
-		objH.View = p.view
-		objH.Zone = zone.Fqdn
 		err = p.client.GetObject(objH, "", searchParams, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %w", zone.Fqdn, err)
@@ -275,8 +271,6 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resC []ibclient.RecordCNAME
 		objC := ibclient.NewEmptyRecordCNAME()
-		objC.View = p.view
-		objC.Zone = zone.Fqdn
 		err = p.client.GetObject(objC, "", searchParams, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %w", zone.Fqdn, err)
@@ -294,9 +288,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 			if err == nil {
 				var resP []ibclient.RecordPTR
 				objP := ibclient.NewEmptyRecordPTR()
-				objP.Zone = arpaZone
-				objP.View = p.view
-				err = p.client.GetObject(objP, "", searchParams, &resP)
+				err = p.client.GetObject(objP, "", recordQueryParams(arpaZone, p.view), &resP)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %w", zone.Fqdn, err)
 				}
@@ -308,8 +300,6 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resT []ibclient.RecordTXT
 		objT := ibclient.NewEmptyRecordTXT()
-		objT.Zone = zone.Fqdn
-		objT.View = p.view
 		err = p.client.GetObject(objT, "", searchParams, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %w", zone.Fqdn, err)
@@ -431,12 +421,9 @@ func (p *ProviderConfig) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 func (p *ProviderConfig) zones() ([]ibclient.ZoneAuth, error) {
 	var res, result []ibclient.ZoneAuth
-	obj := ibclient.NewZoneAuth(
-		ibclient.ZoneAuth{
-			View: p.view,
-		},
-	)
-	err := p.client.GetObject(obj, "", nil, &res)
+	obj := ibclient.NewZoneAuth(ibclient.ZoneAuth{})
+	queryParams := recordQueryParams("", p.view)
+	err := p.client.GetObject(obj, "", queryParams, &res)
 	if err != nil && !isNotFoundError(err) {
 		return nil, err
 	}

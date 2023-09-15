@@ -270,6 +270,34 @@ transfer-encoding: chunked
 
 **Note:** The `-H` flag in the original Istio tutorial is no longer necessary in the `curl` commands.
 
+### Optional Gateway Annotation
+
+To support setups where an Ingress resource is used provision an external LB you can add the following annotation to your Gateway
+
+**Note:** The Ingress namespace can be omitted if its in the same namespace as the gateway
+
+```bash
+$ cat <<EOF | kubectl apply -f -
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: httpbin-gateway
+  namespace: istio-system
+  annotations:
+    "external-dns.alpha.kubernetes.io/ingress": "$ingressNamespace/$ingressName"
+spec:
+  selector:
+    istio: ingressgateway # use Istio default gateway implementation
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+EOF
+```
+
 ### Debug ExternalDNS
 
 * Look for the deployment pod to see the status
