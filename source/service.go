@@ -718,7 +718,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// _service._proto.name. TTL class SRV priority weight port
 			// see https://en.wikipedia.org/wiki/SRV_record
 
-			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
+			// build a target with a priority of 0, weight of 50, and pointing the given port on the given host
 			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
 
 			// take the service name from the K8s Service object
