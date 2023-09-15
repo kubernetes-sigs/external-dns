@@ -17,6 +17,7 @@ limitations under the License.
 package endpoint
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -113,5 +114,105 @@ func TestIsLess(t *testing.T) {
 		if d.IsLess(testsB[i]) != expected[i] {
 			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
 		}
+	}
+}
+
+func TestFilterEndpointsByOwnerID(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+	type args struct {
+		ownerID string
+		eps     []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				ownerID: "foo",
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					bar,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+				foo2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ApplyEndpointFilter() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestIsOwnedBy(t *testing.T) {
+	type fields struct {
+		Labels Labels
+	}
+	type args struct {
+		ownerID string
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   bool
+	}{
+		{
+			name:   "empty labels",
+			fields: fields{Labels: Labels{}},
+			args:   args{ownerID: "foo"},
+			want:   false,
+		},
+		{
+			name:   "owner label not match",
+			fields: fields{Labels: Labels{OwnerLabelKey: "bar"}},
+			args:   args{ownerID: "foo"},
+			want:   false,
+		},
+		{
+			name:   "owner label match",
+			fields: fields{Labels: Labels{OwnerLabelKey: "foo"}},
+			args:   args{ownerID: "foo"},
+			want:   true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := &Endpoint{
+				Labels: tt.fields.Labels,
+			}
+			if got := e.IsOwnedBy(tt.args.ownerID); got != tt.want {
+				t.Errorf("Endpoint.IsOwnedBy() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

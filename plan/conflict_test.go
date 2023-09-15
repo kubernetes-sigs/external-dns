@@ -17,10 +17,10 @@ limitations under the License.
 package plan
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
-
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
@@ -34,6 +34,7 @@ type ResolverSuite struct {
 	fooV2Cname          *endpoint.Endpoint
 	fooV2CnameDuplicate *endpoint.Endpoint
 	fooA5               *endpoint.Endpoint
+	fooAAAA5            *endpoint.Endpoint
 	bar127A             *endpoint.Endpoint
 	bar192A             *endpoint.Endpoint
 	bar127AAnother      *endpoint.Endpoint
@@ -72,6 +73,14 @@ func (suite *ResolverSuite) SetupTest() {
 		DNSName:    "foo",
 		Targets:    endpoint.Targets{"5.5.5.5"},
 		RecordType: "A",
+		Labels: map[string]string{
+			endpoint.ResourceLabelKey: "ingress/default/foo-5",
+		},
+	}
+	suite.fooAAAA5 = &endpoint.Endpoint{
+		DNSName:    "foo",
+		Targets:    endpoint.Targets{"2001:DB8::1"},
+		RecordType: "AAAA",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
 		},
@@ -131,6 +140,156 @@ func (suite *ResolverSuite) TestStrictResolver() {
 	// legacy record's resource value will not match any candidates resource label
 	// therefore pick minimum again
 	suite.Equal(suite.bar127A, suite.perResource.ResolveUpdate(suite.legacyBar192A, []*endpoint.Endpoint{suite.bar127A, suite.bar192A}), " legacy record's resource value will not match, should pick minimum")
+}
+
+func (suite *ResolverSuite) TestPerResource_ResolveRecordTypes() {
+	type args struct {
+		key planKey
+		row *planTableRow
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string]*domainEndpoints
+	}{
+		{
+			name: "no conflict: cname record",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeCNAME: {
+							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeCNAME: {
+					candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+				},
+			},
+		},
+		{
+			name: "no conflict: a record",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					current:    []*endpoint.Endpoint{suite.fooA5},
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeA: {
+							current:    suite.fooA5,
+							candidates: []*endpoint.Endpoint{suite.fooA5},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeA: {
+					current:    suite.fooA5,
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+				},
+			},
+		},
+		{
+			name: "no conflict: a and aaaa records",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					candidates: []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA5},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeA: {
+							candidates: []*endpoint.Endpoint{suite.fooA5},
+						},
+						endpoint.RecordTypeAAAA: {
+							candidates: []*endpoint.Endpoint{suite.fooAAAA5},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeA: {
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+				},
+				endpoint.RecordTypeAAAA: {
+					candidates: []*endpoint.Endpoint{suite.fooAAAA5},
+				},
+			},
+		},
+		{
+			name: "conflict: cname and a records",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					current:    []*endpoint.Endpoint{suite.fooV1Cname},
+					candidates: []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeCNAME: {
+							current:    suite.fooV1Cname,
+							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+						},
+						endpoint.RecordTypeA: {
+							candidates: []*endpoint.Endpoint{suite.fooA5},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeCNAME: {
+					current:    suite.fooV1Cname,
+					candidates: []*endpoint.Endpoint{},
+				},
+				endpoint.RecordTypeA: {
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+				},
+			},
+		},
+		{
+			name: "conflict: cname, a, and aaaa records",
+			args: args{
+				key: planKey{dnsName: "foo"},
+				row: &planTableRow{
+					current:    []*endpoint.Endpoint{suite.fooA5, suite.fooAAAA5},
+					candidates: []*endpoint.Endpoint{suite.fooV1Cname, suite.fooA5, suite.fooAAAA5},
+					records: map[string]*domainEndpoints{
+						endpoint.RecordTypeCNAME: {
+							candidates: []*endpoint.Endpoint{suite.fooV1Cname},
+						},
+						endpoint.RecordTypeA: {
+							current:    suite.fooA5,
+							candidates: []*endpoint.Endpoint{suite.fooA5},
+						},
+						endpoint.RecordTypeAAAA: {
+							current:    suite.fooAAAA5,
+							candidates: []*endpoint.Endpoint{suite.fooAAAA5},
+						},
+					},
+				},
+			},
+			want: map[string]*domainEndpoints{
+				endpoint.RecordTypeCNAME: {
+					candidates: []*endpoint.Endpoint{},
+				},
+				endpoint.RecordTypeA: {
+					current:    suite.fooA5,
+					candidates: []*endpoint.Endpoint{suite.fooA5},
+				},
+				endpoint.RecordTypeAAAA: {
+					current:    suite.fooAAAA5,
+					candidates: []*endpoint.Endpoint{suite.fooAAAA5},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		suite.Run(tt.name, func() {
+			if got := suite.perResource.ResolveRecordTypes(tt.args.key, tt.args.row); !reflect.DeepEqual(got, tt.want) {
+				suite.T().Errorf("PerResource.ResolveRecordTypes() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestConflictResolver(t *testing.T) {

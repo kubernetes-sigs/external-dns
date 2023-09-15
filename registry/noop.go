@@ -40,6 +40,10 @@ func (im *NoopRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
+func (im *NoopRegistry) OwnerID() string {
+	return ""
+}
+
 // Records returns the current records from the dns provider
 func (im *NoopRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	return im.provider.Records(ctx)

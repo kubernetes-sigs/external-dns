@@ -97,6 +97,10 @@ func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
 }
 
+func (im *TXTRegistry) OwnerID() string {
+	return im.ownerID
+}
+
 // Records returns the current records from the registry excluding TXT Records
 // If TXT records was created previously to indicate ownership its corresponding value
 // will be added to the endpoints Labels map
@@ -236,9 +240,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
