@@ -251,7 +251,6 @@ func (ts *traefikSource) ingressRouteEndpoints() ([]*endpoint.Endpoint, error) {
 
 		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRoute(ingressRoute, ingressEndpoints)
-		ts.setDualstackLabelIngressRoute(ingressRoute, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -305,7 +304,6 @@ func (ts *traefikSource) ingressRouteTCPEndpoints() ([]*endpoint.Endpoint, error
 
 		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -359,7 +357,6 @@ func (ts *traefikSource) ingressRouteUDPEndpoints() ([]*endpoint.Endpoint, error
 
 		log.Debugf("Endpoints generated from IngressRouteUDP: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -413,7 +410,6 @@ func (ts *traefikSource) oldIngressRouteEndpoints() ([]*endpoint.Endpoint, error
 
 		log.Debugf("Endpoints generated from IngressRoute: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRoute(ingressRoute, ingressEndpoints)
-		ts.setDualstackLabelIngressRoute(ingressRoute, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -467,7 +463,6 @@ func (ts *traefikSource) oldIngressRouteTCPEndpoints() ([]*endpoint.Endpoint, er
 
 		log.Debugf("Endpoints generated from IngressRouteTCP: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteTCP(ingressRouteTCP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -521,7 +516,6 @@ func (ts *traefikSource) oldIngressRouteUDPEndpoints() ([]*endpoint.Endpoint, er
 
 		log.Debugf("Endpoints generated from IngressRouteUDP: %s: %v", fullname, ingressEndpoints)
 		ts.setResourceLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
-		ts.setDualstackLabelIngressRouteUDP(ingressRouteUDP, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
 
@@ -634,34 +628,6 @@ func (ts *traefikSource) setResourceLabelIngressRouteTCP(ingressroute *IngressRo
 func (ts *traefikSource) setResourceLabelIngressRouteUDP(ingressroute *IngressRouteUDP, endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
 		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingressrouteudp/%s/%s", ingressroute.Namespace, ingressroute.Name)
-	}
-}
-
-func (ts *traefikSource) setDualstackLabelIngressRoute(ingressRoute *IngressRoute, endpoints []*endpoint.Endpoint) {
-	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to IngressRoute %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
-}
-func (ts *traefikSource) setDualstackLabelIngressRouteTCP(ingressRoute *IngressRouteTCP, endpoints []*endpoint.Endpoint) {
-	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to IngressRouteTCP %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
-	}
-}
-func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *IngressRouteUDP, endpoints []*endpoint.Endpoint) {
-	val, ok := ingressRoute.Annotations[ALBDualstackAnnotationKey]
-	if ok && val == ALBDualstackAnnotationValue {
-		log.Debugf("Adding dualstack label to IngressRouteUDP %s/%s.", ingressRoute.Namespace, ingressRoute.Name)
-		for _, ep := range endpoints {
-			ep.Labels[endpoint.DualstackLabelKey] = "true"
-		}
 	}
 }
 
