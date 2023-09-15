@@ -140,6 +140,19 @@ func privateARecordSetPropertiesGetter(values []string, ttl int64) *privatedns.R
 	}
 }
 
+func privateAAAARecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
+	aaaaRecords := make([]*privatedns.AaaaRecord, len(values))
+	for i, value := range values {
+		aaaaRecords[i] = &privatedns.AaaaRecord{
+			IPv6Address: to.Ptr(value),
+		}
+	}
+	return &privatedns.RecordSetProperties{
+		TTL:         to.Ptr(ttl),
+		AaaaRecords: aaaaRecords,
+	}
+}
+
 func privateCNameRecordSetPropertiesGetter(values []string, ttl int64) *privatedns.RecordSetProperties {
 	return &privatedns.RecordSetProperties{
 		TTL: to.Ptr(ttl),
@@ -192,6 +205,8 @@ func createPrivateMockRecordSetMultiWithTTL(name, recordType string, ttl int64, 
 	switch recordType {
 	case endpoint.RecordTypeA:
 		getterFunc = privateARecordSetPropertiesGetter
+	case endpoint.RecordTypeAAAA:
+		getterFunc = privateAAAARecordSetPropertiesGetter
 	case endpoint.RecordTypeCNAME:
 		getterFunc = privateCNameRecordSetPropertiesGetter
 	case endpoint.RecordTypeMX:
@@ -235,8 +250,10 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
 			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeAAAA, "2001::123:123:123:123", 3600),
 			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createPrivateMockRecordSetWithTTL("mail", endpoint.RecordTypeMX, "10 example.com", 4000),
@@ -251,8 +268,10 @@ func TestAzurePrivateDNSRecord(t *testing.T) {
 	}
 	expected := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com"),
@@ -270,8 +289,10 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
 			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
 			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
 			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+			createPrivateMockRecordSetMultiWithTTL("nginx", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
 			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
 			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
 			createPrivateMockRecordSetMultiWithTTL("mail", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
@@ -286,8 +307,10 @@ func TestAzurePrivateDNSMultiRecord(t *testing.T) {
 	}
 	expected := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "123.123.123.122", "234.234.234.233"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::123:123:123:122", "2001::234:234:234:233"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123", "234.234.234.234"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeAAAA, 3600, "2001::123:123:123:123", "2001::234:234:234:234"),
 		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
 		endpoint.NewEndpointWithTTL("hack.example.com", endpoint.RecordTypeCNAME, 10, "hack.azurewebsites.net"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, 4000, "10 example.com", "20 backup.example.com"),
@@ -303,19 +326,24 @@ func TestAzurePrivateDNSApplyChanges(t *testing.T) {
 
 	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, ""),
+		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, ""),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, ""),
 	})
 
 	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4"),
 		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
+		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
 		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(recordTTL), "other.com"),
 		endpoint.NewEndpointWithTTL("bar.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "5.6.7.8"),
+		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::5:6:7:8"),
 		endpoint.NewEndpointWithTTL("other.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
 		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
 		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
@@ -351,14 +379,18 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 
 	createRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
 		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
+		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
 		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.NewEndpoint("other.com", endpoint.RecordTypeAAAA, "2001::5:6:7:8"),
 		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
+		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeAAAA, "2001::4:4:4:4"),
 		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeMX, "10 other.com"),
 		endpoint.NewEndpoint("mail.example.com", endpoint.RecordTypeTXT, "tag"),
@@ -372,15 +404,19 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 	}
 	updatedRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.NewEndpointWithTTL("new.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
 		endpoint.NewEndpointWithTTL("newcname.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
 		endpoint.NewEndpoint("new.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.NewEndpoint("new.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 		endpoint.NewEndpointWithTTL("newmail.example.com", endpoint.RecordTypeMX, 7200, "40 bar.other.com"),
 	}
 
 	deleteRecords := []*endpoint.Endpoint{
 		endpoint.NewEndpoint("deleted.example.com", endpoint.RecordTypeA, "111.222.111.222"),
+		endpoint.NewEndpoint("deletedaaaa.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
 		endpoint.NewEndpoint("deletedcname.example.com", endpoint.RecordTypeCNAME, "other.com"),
 		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.NewEndpoint("deleted.nope.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
 	}
 
 	changes := &plan.Changes{

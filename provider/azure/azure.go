@@ -344,6 +344,19 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				ARecords: aRecords,
 			},
 		}, nil
+	case dns.RecordTypeAAAA:
+		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aaaaRecords[i] = &dns.AaaaRecord{
+				IPv6Address: to.Ptr(target),
+			}
+		}
+		return dns.RecordSet{
+			Properties: &dns.RecordSetProperties{
+				TTL:         to.Ptr(ttl),
+				AaaaRecords: aaaaRecords,
+			},
+		}, nil
 	case dns.RecordTypeCNAME:
 		return dns.RecordSet{
 			Properties: &dns.RecordSetProperties{
@@ -406,6 +419,16 @@ func extractAzureTargets(recordSet *dns.RecordSet) []string {
 		targets := make([]string, len(aRecords))
 		for i, aRecord := range aRecords {
 			targets[i] = *aRecord.IPv4Address
+		}
+		return targets
+	}
+
+	// Check for AAAA records
+	aaaaRecords := properties.AaaaRecords
+	if len(aaaaRecords) > 0 && (aaaaRecords)[0].IPv6Address != nil {
+		targets := make([]string, len(aaaaRecords))
+		for i, aaaaRecord := range aaaaRecords {
+			targets[i] = *aaaaRecord.IPv6Address
 		}
 		return targets
 	}

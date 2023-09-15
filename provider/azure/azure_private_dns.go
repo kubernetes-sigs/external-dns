@@ -335,6 +335,19 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 				ARecords: aRecords,
 			},
 		}, nil
+	case privatedns.RecordTypeAAAA:
+		aaaaRecords := make([]*privatedns.AaaaRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aaaaRecords[i] = &privatedns.AaaaRecord{
+				IPv6Address: to.Ptr(target),
+			}
+		}
+		return privatedns.RecordSet{
+			Properties: &privatedns.RecordSetProperties{
+				TTL:         to.Ptr(ttl),
+				AaaaRecords: aaaaRecords,
+			},
+		}, nil
 	case privatedns.RecordTypeCNAME:
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
@@ -389,6 +402,16 @@ func extractAzurePrivateDNSTargets(recordSet *privatedns.RecordSet) []string {
 		targets := make([]string, len(aRecords))
 		for i, aRecord := range aRecords {
 			targets[i] = *aRecord.IPv4Address
+		}
+		return targets
+	}
+
+	// Check for AAAA records
+	aaaaRecords := properties.AaaaRecords
+	if len(aaaaRecords) > 0 && (aaaaRecords)[0].IPv6Address != nil {
+		targets := make([]string, len(aaaaRecords))
+		for i, aaaaRecord := range aaaaRecords {
+			targets[i] = *aaaaRecord.IPv6Address
 		}
 		return targets
 	}
