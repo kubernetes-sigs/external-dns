@@ -240,7 +240,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	if resp.StatusCode != http.StatusOK {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to AdjustEndpoints with code %d", resp.StatusCode)
-		return nil, err
+		return nil, fmt.Errorf("failed to AdjustEndpoints with code %d", resp.StatusCode)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {

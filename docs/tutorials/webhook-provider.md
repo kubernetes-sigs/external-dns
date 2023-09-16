@@ -22,7 +22,7 @@ The following table represents the methods to implement mapped to their HTTP met
 | AdjustEndpoints | POST | /adjustendpoints |
 | ApplyChanges | POST | /records |
 
-ExternalDNS will also make requests to the `/` endpoint for negotatiation and for deseliarization of the `DomainFilter`.
+ExternalDNS will also make requests to the `/` endpoint for negotiation and for deserialization of the `DomainFilter`.
 
 The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.
 

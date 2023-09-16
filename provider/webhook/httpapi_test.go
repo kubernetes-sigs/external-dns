@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -31,22 +32,48 @@ import (
 	"sigs.k8s.io/external-dns/plan"
 )
 
-type FakeWebhookProvider struct{}
+var records []*endpoint.Endpoint
+
+type FakeWebhookProvider struct {
+	err          error
+	domainFilter endpoint.DomainFilter
+}
 
 func (p FakeWebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	return []*endpoint.Endpoint{}, nil
+	if p.err != nil {
+		return nil, p.err
+	}
+	return records, nil
 }
 
 func (p FakeWebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	if p.err != nil {
+		return p.err
+	}
+	records = append(records, changes.Create...)
 	return nil
 }
 
 func (p FakeWebhookProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	// for simplicity, we do not adjust endpoints in this test
+	if p.err != nil {
+		return nil, p.err
+	}
 	return endpoints, nil
 }
 
 func (p FakeWebhookProvider) GetDomainFilter() endpoint.DomainFilter {
-	return endpoint.DomainFilter{}
+	return p.domainFilter
+}
+
+func TestMain(m *testing.M) {
+	records = []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.bar.com",
+			RecordType: "A",
+		},
+	}
+	m.Run()
 }
 
 func TestRecordsHandlerRecords(t *testing.T) {
@@ -54,11 +81,35 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		provider: &FakeWebhookProvider{
+			domainFilter: endpoint.NewDomainFilter([]string{"foo.bar.com"}),
+		},
 	}
 	providerAPIServer.recordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusOK, res.StatusCode)
+	// require that the res has the same endpoints as the records slice
+	defer res.Body.Close()
+	require.NotNil(t, res.Body)
+	endpoints := []*endpoint.Endpoint{}
+	if err := json.NewDecoder(res.Body).Decode(&endpoints); err != nil {
+		t.Errorf("Failed to decode response body: %s", err.Error())
+	}
+	require.Equal(t, records, endpoints)
+}
+
+func TestRecordsHandlerRecordsWithErrors(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/records", nil)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		provider: &FakeWebhookProvider{
+			err: fmt.Errorf("error"),
+		},
+	}
+	providerAPIServer.recordsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }
 
 func TestRecordsHandlerApplyChangesWithBadRequest(t *testing.T) {
@@ -99,6 +150,46 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	require.Equal(t, http.StatusNoContent, res.StatusCode)
 }
 
+func TestRecordsHandlerApplyChangesWithErrors(t *testing.T) {
+	changes := &plan.Changes{
+		Create: []*endpoint.Endpoint{
+			{
+				DNSName:    "foo.bar.com",
+				RecordType: "A",
+				Targets:    endpoint.Targets{},
+			},
+		},
+	}
+	j, err := json.Marshal(changes)
+	require.NoError(t, err)
+
+	reader := bytes.NewReader(j)
+
+	req := httptest.NewRequest(http.MethodPost, "/applychanges", reader)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		provider: &FakeWebhookProvider{
+			err: fmt.Errorf("error"),
+		},
+	}
+	providerAPIServer.recordsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
+}
+
+func TestRecordsHandlerWithWrongHTTPMethod(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPut, "/records", nil)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		provider: &FakeWebhookProvider{},
+	}
+	providerAPIServer.recordsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusBadRequest, res.StatusCode)
+}
+
 func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", nil)
 	w := httptest.NewRecorder()
@@ -117,7 +208,7 @@ func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
 
-func TestAdjustEndpointsWithValidRequest(t *testing.T) {
+func TestAdjustEndpointsHandlerWithValidRequest(t *testing.T) {
 	pve := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.bar.com",
@@ -140,6 +231,34 @@ func TestAdjustEndpointsWithValidRequest(t *testing.T) {
 	providerAPIServer.adjustEndpointsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusOK, res.StatusCode)
+	require.NotNil(t, res.Body)
+}
+
+func TestAdjustEndpointsHandlerWithError(t *testing.T) {
+	pve := []*endpoint.Endpoint{
+		{
+			DNSName:    "foo.bar.com",
+			RecordType: "A",
+			Targets:    endpoint.Targets{},
+			RecordTTL:  0,
+		},
+	}
+
+	j, err := json.Marshal(pve)
+	require.NoError(t, err)
+
+	reader := bytes.NewReader(j)
+	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", reader)
+	w := httptest.NewRecorder()
+
+	providerAPIServer := &WebhookServer{
+		provider: &FakeWebhookProvider{
+			err: fmt.Errorf("error"),
+		},
+	}
+	providerAPIServer.adjustEndpointsHandler(w, req)
+	res := w.Result()
+	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
 	require.NotNil(t, res.Body)
 }
 

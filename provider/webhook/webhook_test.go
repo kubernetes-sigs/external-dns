@@ -46,17 +46,20 @@ func TestInvalidDomainFilter(t *testing.T) {
 }
 
 func TestValidDomainfilter(t *testing.T) {
+	// initialize domanin filter
+	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
 			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-			w.Write([]byte(`{}`))
+			json.NewEncoder(w).Encode(domainFilter)
 			return
 		}
 	}))
 	defer svr.Close()
 
-	_, err := NewWebhookProvider(svr.URL)
+	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
+	require.Equal(t, p.GetDomainFilter(), endpoint.NewDomainFilter([]string{"example.com"}))
 }
 
 func TestRecords(t *testing.T) {
@@ -66,6 +69,7 @@ func TestRecords(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
+		require.Equal(t, "/records", r.URL.Path)
 		w.Write([]byte(`[{
 			"dnsName" : "test.example.com"
 		}]`))
@@ -82,6 +86,24 @@ func TestRecords(t *testing.T) {
 	}}, endpoints)
 }
 
+func TestRecordsWithErrors(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+		require.Equal(t, "/records", r.URL.Path)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer svr.Close()
+
+	provider, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
+	_, err = provider.Records(context.Background())
+	require.NotNil(t, err)
+}
+
 func TestApplyChanges(t *testing.T) {
 	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -90,6 +112,7 @@ func TestApplyChanges(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
+		require.Equal(t, "/records", r.URL.Path)
 		if successfulApplyChanges {
 			w.WriteHeader(http.StatusNoContent)
 		} else {
@@ -116,6 +139,8 @@ func TestAdjustEndpoints(t *testing.T) {
 			w.Write([]byte(`{}`))
 			return
 		}
+		require.Equal(t, "/adjustendpoints", r.URL.Path)
+
 		var endpoints []*endpoint.Endpoint
 		defer r.Body.Close()
 		b, err := io.ReadAll(r.Body)
@@ -158,5 +183,32 @@ func TestAdjustEndpoints(t *testing.T) {
 			"",
 		},
 	}}, adjustedEndpoints)
+}
 
+func TestAdjustendpointsWithError(t *testing.T) {
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Write([]byte(`{}`))
+			return
+		}
+		require.Equal(t, "/adjustendpoints", r.URL.Path)
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer svr.Close()
+
+	provider, err := NewWebhookProvider(svr.URL)
+	require.NoError(t, err)
+	endpoints := []*endpoint.Endpoint{
+		{
+			DNSName:    "test.example.com",
+			RecordTTL:  10,
+			RecordType: "A",
+			Targets: endpoint.Targets{
+				"",
+			},
+		},
+	}
+	_, err = provider.AdjustEndpoints(endpoints)
+	require.Error(t, err)
 }
