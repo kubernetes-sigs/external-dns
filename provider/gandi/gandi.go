@@ -129,7 +129,10 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 						"zone":   zone,
 					}).Debug("Returning endpoint record")
 
-					endpoints = append(endpoints, endpoint.NewEndpoint(name, r.RrsetType, v))
+					endpoints = append(
+						endpoints,
+						endpoint.NewEndpointWithTTL(name, r.RrsetType, endpoint.TTL(r.RrsetTTL), v),
+					)
 				}
 			}
 		}
@@ -163,15 +166,28 @@ func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChang
 
 	for _, changes := range zoneChanges {
 		for _, change := range changes {
-			// Prepare record name
-			recordName := strings.TrimSuffix(change.Record.RrsetName, "."+change.ZoneName)
-			if recordName == change.ZoneName {
-				recordName = "@"
-			}
 			if change.Record.RrsetType == endpoint.RecordTypeCNAME && !strings.HasSuffix(change.Record.RrsetValues[0], ".") {
 				change.Record.RrsetValues[0] += "."
 			}
-			change.Record.RrsetName = recordName
+
+			// Prepare record name
+			if change.Record.RrsetName == change.ZoneName {
+				log.WithFields(log.Fields{
+					"record": change.Record.RrsetName,
+					"type":   change.Record.RrsetType,
+					"value":  change.Record.RrsetValues[0],
+					"ttl":    change.Record.RrsetTTL,
+					"action": change.Action,
+					"zone":   change.ZoneName,
+				}).Debugf("Converting record name: %s to apex domain (@)", change.Record.RrsetName)
+
+				change.Record.RrsetName = "@"
+			} else {
+				change.Record.RrsetName = strings.TrimSuffix(
+					change.Record.RrsetName,
+					"."+change.ZoneName,
+				)
+			}
 
 			log.WithFields(log.Fields{
 				"record": change.Record.RrsetName,
