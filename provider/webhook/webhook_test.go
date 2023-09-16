@@ -73,9 +73,9 @@ func TestRecords(t *testing.T) {
 	defer svr.Close()
 
 	provider, err := NewWebhookProvider(svr.URL)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	endpoints, err := provider.Records(context.TODO())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, endpoints)
 	require.Equal(t, []*endpoint.Endpoint{{
 		DNSName: "test.example.com",
@@ -99,9 +99,9 @@ func TestApplyChanges(t *testing.T) {
 	defer svr.Close()
 
 	provider, err := NewWebhookProvider(svr.URL)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	err = provider.ApplyChanges(context.TODO(), nil)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	successfulApplyChanges = false
 
@@ -137,7 +137,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	defer svr.Close()
 
 	provider, err := NewWebhookProvider(svr.URL)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName:    "test.example.com",

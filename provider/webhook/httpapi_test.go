@@ -84,7 +84,7 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 		},
 	}
 	j, err := json.Marshal(changes)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	reader := bytes.NewReader(j)
 
@@ -128,7 +128,7 @@ func TestAdjustEndpointsWithValidRequest(t *testing.T) {
 	}
 
 	j, err := json.Marshal(pve)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	reader := bytes.NewReader(j)
 	req := httptest.NewRequest(http.MethodPost, "/adjustendpoints", reader)
