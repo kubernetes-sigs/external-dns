@@ -5,16 +5,15 @@ approvers:
   - johngmyers
   - raffo
   - njuettner
-  - seanmalloy
   - szuecs
 
 reviewers:
   - johngmyers
   - njuettner
   - raffo
-  - seanmalloy
   - szuecs
 
 emeritus_approvers:
   - hjacobs
   - linki
+  - seanmalloy
