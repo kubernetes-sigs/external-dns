@@ -67,7 +67,7 @@ type Config struct {
 	CFAPIEndpoint                  string
 	CFUsername                     string
 	CFPassword                     string
-	GlooNamespace                  string
+	GlooNamespaces                 []string
 	SkipperRouteGroupVersion       string
 	RequestTimeout                 time.Duration
 	DefaultTargets                 []string
@@ -290,7 +290,7 @@ func BuildWithConfig(ctx context.Context, source string, p ClientGenerator, cfg 
 		if err != nil {
 			return nil, err
 		}
-		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespace)
+		return NewGlooSource(dynamicClient, kubernetesClient, cfg.GlooNamespaces)
 	case "traefik-proxy":
 		kubernetesClient, err := p.KubeClient()
 		if err != nil {

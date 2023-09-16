@@ -47,7 +47,7 @@ type Config struct {
 	KubeConfig                         string
 	RequestTimeout                     time.Duration
 	DefaultTargets                     []string
-	GlooNamespace                      string
+	GlooNamespaces                     []string
 	SkipperRouteGroupVersion           string
 	Sources                            []string
 	Namespace                          string
@@ -215,7 +215,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	DefaultTargets:              []string{},
-	GlooNamespace:               "gloo-system",
+	GlooNamespaces:              []string{"gloo-system"},
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
@@ -410,7 +410,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
 
 	// Flags related to Gloo
-	app.Flag("gloo-namespace", "Gloo namespace. (default: gloo-system)").Default("gloo-system").StringVar(&cfg.GlooNamespace)
+	app.Flag("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)").Default("gloo-system").StringsVar(&cfg.GlooNamespaces)
 
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
