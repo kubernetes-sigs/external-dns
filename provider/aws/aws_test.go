@@ -1776,7 +1776,7 @@ func TestAWSisAWSAlias(t *testing.T) {
 		alias      bool
 		hz         string
 	}{
-		{"foo.example.org", endpoint.RecordTypeA, false, ""},                                 // normal CNAME
+		{"foo.example.org", endpoint.RecordTypeA, false, ""},                                 // normal A record
 		{"bar.eu-central-1.elb.amazonaws.com", endpoint.RecordTypeA, true, "Z215JYRZR1TBD5"}, // pointing to ELB DNS name
 		{"foobar.example.org", endpoint.RecordTypeA, true, "Z1234567890ABC"},                 // HZID retrieved by Route53
 		{"baz.example.org", endpoint.RecordTypeA, true, sameZoneAlias},                       // record to be created
