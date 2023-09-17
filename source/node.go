@@ -38,10 +38,11 @@ type nodeSource struct {
 	annotationFilter string
 	fqdnTemplate     *template.Template
 	nodeInformer     coreinformers.NodeInformer
+	labelSelector    labels.Selector
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -73,12 +74,13 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 		annotationFilter: annotationFilter,
 		fqdnTemplate:     tmpl,
 		nodeInformer:     nodeInformer,
+		labelSelector:    labelSelector,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
+	nodes, err := ns.nodeInformer.Lister().List(ns.labelSelector)
 	if err != nil {
 		return nil, err
 	}
