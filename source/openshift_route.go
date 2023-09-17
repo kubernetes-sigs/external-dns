@@ -174,10 +174,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(ocpRoute.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
@@ -230,10 +227,7 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(ocpRoute.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(ocpRoute.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	targetsFromRoute, host := ors.getTargetsFromRouteStatus(ocpRoute.Status)

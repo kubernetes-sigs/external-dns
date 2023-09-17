@@ -301,7 +301,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	hostnames := buf.String()
 
 	// error handled in endpointsFromRouteGroup(), otherwise duplicate log
-	ttl, _ := getTTLFromAnnotations(rg.Metadata.Annotations)
+	ttl := getTTLFromAnnotations(rg.Metadata.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
 
@@ -336,10 +336,7 @@ func (sc *routeGroupSource) setRouteGroupDualstackLabel(rg *routeGroup, eps []*e
 // annotation logic ported from source/ingress.go without Spec.TLS part, because it'S not supported in RouteGroup
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
-	ttl, err := getTTLFromAnnotations(rg.Metadata.Annotations)
-	if err != nil {
-		log.Warnf("Failed to get TTL from annotation: %v", err)
-	}
+	ttl := getTTLFromAnnotations(rg.Metadata.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
 	if len(targets) == 0 {

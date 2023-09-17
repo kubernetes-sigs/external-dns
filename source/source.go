@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode"
 
+	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,20 +87,22 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-func getTTLFromAnnotations(annotations map[string]string) (endpoint.TTL, error) {
+func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
-		return ttlNotConfigured, nil
+		return ttlNotConfigured
 	}
 	ttlValue, err := parseTTL(ttlAnnotation)
 	if err != nil {
-		return ttlNotConfigured, fmt.Errorf("\"%v\" is not a valid TTL value", ttlAnnotation)
+		log.Warnf("\"%v\" is not a valid TTL value", ttlAnnotation)
+		return ttlNotConfigured
 	}
 	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
-		return ttlNotConfigured, fmt.Errorf("TTL value must be between [%d, %d]", ttlMinimum, ttlMaximum)
+		log.Warnf("TTL value %q must be between [%d, %d]", ttlValue, ttlMinimum, ttlMaximum)
+		return ttlNotConfigured
 	}
-	return endpoint.TTL(ttlValue), nil
+	return endpoint.TTL(ttlValue)
 }
 
 // parseTTL parses TTL from string, returning duration in seconds.

@@ -304,15 +304,12 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 // endpointsFromGatewayConfig extracts the endpoints from an Istio Gateway Config object
 func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []string, gateway *networkingv1alpha3.Gateway) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
+	var err error
 
 	annotations := gateway.Annotations
-	ttl, err := getTTLFromAnnotations(annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(annotations)
 
 	targets := getTargetsFromTargetAnnotation(annotations)
-
 	if len(targets) == 0 {
 		targets, err = sc.targetsFromGateway(ctx, gateway)
 		if err != nil {

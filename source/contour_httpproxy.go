@@ -186,10 +186,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(httpProxy.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
 	if len(targets) == 0 {
@@ -252,10 +249,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		return nil, nil
 	}
 
-	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(httpProxy.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
 

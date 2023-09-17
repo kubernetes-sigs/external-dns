@@ -161,10 +161,7 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 			if err != nil {
 				return nil, err
 			}
-			ttl, err := getTTLFromAnnotations(annotations)
-			if err != nil {
-				return nil, err
-			}
+			ttl := getTTLFromAnnotations(annotations)
 			providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 			for _, domain := range virtualHost.Domains {
 				endpoints = append(endpoints, endpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)

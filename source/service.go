@@ -460,10 +460,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
-	ttl, err := getTTLFromAnnotations(svc.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(svc.Annotations)
 
 	epA := &endpoint.Endpoint{
 		RecordTTL:  ttl,
@@ -510,6 +507,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 			}
 		case v1.ServiceTypeNodePort:
 			// add the nodeTargets and extract an SRV endpoint
+			var err error
 			targets, err = sc.extractNodePortTargets(svc)
 			if err != nil {
 				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)

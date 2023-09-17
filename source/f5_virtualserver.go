@@ -147,10 +147,7 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		ttl, err := getTTLFromAnnotations(virtualServer.Annotations)
-		if err != nil {
-			return nil, err
-		}
+		ttl := getTTLFromAnnotations(virtualServer.Annotations)
 
 		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {

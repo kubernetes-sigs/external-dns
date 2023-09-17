@@ -647,10 +647,7 @@ func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *IngressR
 func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(ingressRoute.Annotations)
-	if err != nil {
-		return nil, err
-	}
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
@@ -684,10 +681,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(ingressRoute.Annotations)
-	if err != nil {
-		return nil, err
-	}
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
@@ -722,10 +716,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl, err := getTTLFromAnnotations(ingressRoute.Annotations)
-	if err != nil {
-		return nil, err
-	}
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 

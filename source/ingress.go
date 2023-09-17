@@ -188,10 +188,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(ing.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(ing.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
@@ -289,10 +286,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
-	ttl, err := getTTLFromAnnotations(ing.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(ing.Annotations)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 

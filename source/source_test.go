@@ -82,9 +82,8 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 		},
 	} {
 		t.Run(tc.title, func(t *testing.T) {
-			ttl, err := getTTLFromAnnotations(tc.annotations)
+			ttl := getTTLFromAnnotations(tc.annotations)
 			assert.Equal(t, tc.expectedTTL, ttl)
-			assert.Equal(t, tc.expectedErr, err)
 		})
 	}
 }

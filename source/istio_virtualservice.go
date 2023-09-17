@@ -222,10 +222,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(virtualService.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(virtualService.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
 
@@ -312,11 +309,9 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
 func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
+	var err error
 
-	ttl, err := getTTLFromAnnotations(virtualservice.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(virtualservice.Annotations)
 
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
