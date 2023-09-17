@@ -105,8 +105,6 @@ github.com/PuerkitoBio/urlesc v0.0.0-20170810143723-de5bf2ad4578/go.mod h1:uGdko
 github.com/Shopify/logrus-bugsnag v0.0.0-20171204204709-577dee27f20d/go.mod h1:HI8ITrYtUY+O+ZhtlqUnD8+KwNPOyugEhfP9fdUIaEQ=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
-github.com/StackExchange/dnscontrol/v3 v3.31.6 h1:QIfe5mN+PveeW0DeE+M7wvWkYpeTtT3IKJdnUb94qps=
-github.com/StackExchange/dnscontrol/v3 v3.31.6/go.mod h1:ySJb55bSINayq5h9sK/BePPp52yLAXXCisd0DTs9Ies=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/Yamashou/gqlgenc v0.14.0 h1:KVzUuVQKfl4Phm5Cw4yeFThDAxZoIBR9XLoK/4O1O6U=
 github.com/Yamashou/gqlgenc v0.14.0/go.mod h1:+z+FRCtGrNmgTxweAUiCodOmQJLTCNtnRNAqhewf1Q8=
