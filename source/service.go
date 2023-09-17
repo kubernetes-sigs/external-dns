@@ -505,7 +505,7 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		case v1.ServiceTypeClusterIP:
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-			} else if sc.publishInternal {
+			} else if useClusterIP || sc.publishInternal {
 				targets = extractServiceIps(svc)
 			}
 		case v1.ServiceTypeNodePort:

@@ -25,7 +25,7 @@ The following table documents which sources support which annotations:
 | Traefik      |            | Yes      |                   | Yes     | Yes | Yes                 |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
-[^2]: Only behaves differently than `hostname` for `Service`s of type `LoadBalancer`.
+[^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
 [^4]: The annotation should be on the `Gateway`
 
