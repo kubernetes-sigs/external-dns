@@ -1,3 +1,19 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package rfc2317
 
 import (
@@ -13,11 +29,16 @@ import (
 // Given "10.20.30.0/25" returns "0/25.30.20.10.in-addr.arpa" (RFC2317)
 func CidrToInAddr(cidr string) (string, error) {
 
-	// If cidr is an IP address, turn it into a CIDR by adding /32 or /128
+	// If the user sent an IP instead of a CIDR (i.e. no "/"), turn it
+	// into a CIDR by adding /32 or /128 as appropriate.
 	ip := net.ParseIP(cidr)
 	if ip != nil {
 		if ip.To4() != nil {
-			cidr = cidr + "/32"
+			cidr = ip.String() + "/32"
+			// Older code used `cidr + "/32"` but that didn't work with
+			// "IPv4 mapped IPv6 address". This is an extra conversion but
+			// it is sure to work for all IPv4 addresses no matter how they
+			// are expressed.
 		} else {
 			cidr = cidr + "/128"
 		}
