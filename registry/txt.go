@@ -166,6 +166,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
+		// AWS Alias records have "new" format encoded as type "cname"
+		if isAlias, found := ep.GetProviderSpecificProperty("alias"); found && isAlias == "true" && ep.RecordType == endpoint.RecordTypeA {
+			key.RecordType = endpoint.RecordTypeCNAME
+		}
+
 		// Handle both new and old registry format with the preference for the new one
 		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
@@ -224,7 +229,12 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	recordType := r.RecordType
+	// AWS Alias records are encoded as type "cname"
+	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
+		recordType = endpoint.RecordTypeCNAME
+	}
+	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
