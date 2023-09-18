@@ -28,7 +28,6 @@ import (
 // Given "10.20.30.0/24" returns "30.20.10.in-addr.arpa"
 // Given "10.20.30.0/25" returns "0/25.30.20.10.in-addr.arpa" (RFC2317)
 func CidrToInAddr(cidr string) (string, error) {
-
 	// If the user sent an IP instead of a CIDR (i.e. no "/"), turn it
 	// into a CIDR by adding /32 or /128 as appropriate.
 	ip := net.ParseIP(cidr)
@@ -36,9 +35,9 @@ func CidrToInAddr(cidr string) (string, error) {
 		if ip.To4() != nil {
 			cidr = ip.String() + "/32"
 			// Older code used `cidr + "/32"` but that didn't work with
-			// "IPv4 mapped IPv6 address". This is an extra conversion but
-			// it is sure to work for all IPv4 addresses no matter how they
-			// are expressed.
+			// "IPv4 mapped IPv6 address". ip.String() returns the IPv4
+			// address for all IPv4 addresses no matter how they are
+			// expressed internally.
 		} else {
 			cidr = cidr + "/128"
 		}
