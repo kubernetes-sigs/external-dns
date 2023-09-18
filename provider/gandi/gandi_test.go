@@ -200,6 +200,13 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 				RrsetHref:   exampleDotComUri + "/records/test/A",
 				RrsetValues: []string{"192.168.0.2"},
 			},
+			{
+				RrsetType:   RecordTypeALIAS,
+				RrsetTTL:    600,
+				RrsetName:   "@",
+				RrsetHref:   exampleDotComUri + "/records/test/ALIAS",
+				RrsetValues: []string{"lb-2.example.com"},
+			},
 		},
 	}
 
@@ -230,6 +237,12 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 			RecordType: endpoint.RecordTypeA,
 			DNSName:    "test.example.com",
 			Targets:    endpoint.Targets{"192.168.0.2"},
+			RecordTTL:  600,
+		},
+		{
+			RecordType: endpoint.RecordTypeCNAME,
+			DNSName:    "example.com",
+			Targets:    endpoint.Targets{"lb-2.example.com"},
 			RecordTTL:  600,
 		},
 	}
@@ -304,6 +317,12 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 			RecordType: "A",
 			RecordTTL:  666,
 		},
+		{
+			DNSName:    "example.com",
+			Targets:    endpoint.Targets{"lb.example.net"},
+			RecordType: "CNAME",
+			RecordTTL:  666,
+		},
 	}
 	changes.UpdateNew = []*endpoint.Endpoint{
 		{
@@ -343,6 +362,16 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 				RrsetType:   endpoint.RecordTypeA,
 				RrsetName:   "test2",
 				RrsetValues: []string{"192.168.0.1"},
+				RrsetTTL:    666,
+			},
+		},
+		{
+			Name: "CreateDomainRecord",
+			FQDN: "example.com",
+			Record: livedns.DomainRecord{
+				RrsetType:   RecordTypeALIAS,
+				RrsetName:   "@",
+				RrsetValues: []string{"lb.example.net."},
 				RrsetTTL:    666,
 			},
 		},
