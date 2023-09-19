@@ -317,6 +317,78 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
+			"create records based on pod's target annotation",
+			"",
+			"",
+			[]*endpoint.Endpoint{
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+			},
+			false,
+			[]*corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node1",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node2",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeExternalIP, Address: "54.10.11.2"},
+							{Type: corev1.NodeInternalIP, Address: "10.0.1.2"},
+						},
+					},
+				},
+			},
+			[]*corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod1",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+							targetAnnotationKey:           "208.1.2.1",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node1",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod2",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+							targetAnnotationKey:           "208.1.2.2",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.2",
+					},
+				},
+			},
+		},
+		{
 			"create multiple records",
 			"",
 			"",

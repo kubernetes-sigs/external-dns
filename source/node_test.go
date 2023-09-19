@@ -206,6 +206,17 @@ func testNodeSourceEndpoints(t *testing.T) {
 			expectError:   true,
 		},
 		{
+			title:         "node with target annotation",
+			nodeName:      "node1.example.org",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
+			},
+		},
+		{
 			title:         "annotated node without annotation filter returns endpoint",
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},

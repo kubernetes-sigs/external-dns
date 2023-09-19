@@ -132,11 +132,16 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 				return nil, err
 			}
 			log.Debugf("Gloo: Find %s proxy", proxy.Metadata.Name)
-			proxyTargets, err := gs.proxyTargets(ctx, proxy.Metadata.Name, ns)
-			if err != nil {
-				return nil, err
+
+			proxyTargets := getTargetsFromTargetAnnotation(proxy.Metadata.Annotations)
+			if len(proxyTargets) == 0 {
+				proxyTargets, err = gs.proxyTargets(ctx, proxy.Metadata.Name, ns)
+				if err != nil {
+					return nil, err
+				}
 			}
 			log.Debugf("Gloo[%s]: Find %d target(s) (%+v)", proxy.Metadata.Name, len(proxyTargets), proxyTargets)
+
 			proxyEndpoints, err := gs.generateEndpointsFromProxy(ctx, &proxy, proxyTargets)
 			if err != nil {
 				return nil, err

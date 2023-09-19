@@ -133,10 +133,13 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets, err := sc.targetsFromAmbassadorLoadBalancer(ctx, service)
-		if err != nil {
-			log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
-			continue
+		targets := getTargetsFromTargetAnnotation(host.Annotations)
+		if len(targets) == 0 {
+			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
+			if err != nil {
+				log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
+				continue
+			}
 		}
 
 		hostEndpoints, err := sc.endpointsFromHost(ctx, host, targets)
