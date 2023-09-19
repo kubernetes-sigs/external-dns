@@ -117,8 +117,7 @@ func TestCidrToInAddr(t *testing.T) {
 				if err == nil {
 					// ...but we didn't get one.
 					t.Errorf("Expected ERROR('%s') but got result '%s'", tst.errmsg, d)
-				}
-				if err.Error() != tst.errmsg {
+				} if err.Error() != tst.errmsg {
 					// ...but not the right error.
 					t.Errorf("Expected ERROR('%s') but got ERROR('%s')", tst.errmsg, err)
 				}
