@@ -181,7 +181,6 @@ func (sc *gatewaySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		}
 
 		log.Debugf("Endpoints generated from gateway: %s/%s: %v", gateway.Namespace, gateway.Name, gwEndpoints)
-		sc.setResourceLabel(gateway, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
@@ -228,12 +227,6 @@ func (sc *gatewaySource) filterByAnnotations(gateways []*networkingv1alpha3.Gate
 	}
 
 	return filteredList, nil
-}
-
-func (sc *gatewaySource) setResourceLabel(gateway *networkingv1alpha3.Gateway, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
-	}
 }
 
 func parseIngress(ingress string) (namespace, name string, err error) {
@@ -329,8 +322,10 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 
+	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
+
 	for _, host := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	return endpoints, nil
