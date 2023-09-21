@@ -143,7 +143,7 @@ func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, 
 	return hostnames, nil
 }
 
-func parseTemplate(fqdnTemplate string, ) (tmpl *template.Template, err error) {
+func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	if fqdnTemplate == "" {
 		return nil, nil
 	}
