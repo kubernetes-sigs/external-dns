@@ -143,12 +143,15 @@ func execTemplate(tmpl *template.Template, obj kubeObject) (hostnames []string, 
 	return hostnames, nil
 }
 
-func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
+func parseTemplate(fqdnTemplate string, ) (tmpl *template.Template, err error) {
 	if fqdnTemplate == "" {
 		return nil, nil
 	}
 	funcs := template.FuncMap{
 		"trimPrefix": strings.TrimPrefix,
+		"replaceAll": strings.ReplaceAll,
+		"isIPv6":     isIPv6String,
+		"isIPv4":     isIPv4String,
 	}
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
@@ -392,4 +395,9 @@ func waitForDynamicCacheSync(ctx context.Context, factory dynamicInformerFactory
 func isIPv6String(ip string) bool {
 	netIP := net.ParseIP(ip)
 	return netIP != nil && netIP.To4() == nil
+}
+
+func isIPv4String(input string) bool {
+	netIP := net.ParseIP(input)
+	return netIP != nil && netIP.To4() != nil
 }
