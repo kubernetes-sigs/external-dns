@@ -62,6 +62,11 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 			fqdnTemplate: "{{.Name}}-{{.Namespace}}.ext-dns.test.com",
 		},
 		{
+			title:        "complex template",
+			expectError:  false,
+			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{replaceAll .Address \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
+		},
+		{
 			title:            "non-empty annotation filter label",
 			expectError:      false,
 			annotationFilter: "kubernetes.io/ingress.class=nginx",
