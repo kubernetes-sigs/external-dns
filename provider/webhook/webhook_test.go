@@ -46,7 +46,7 @@ func TestInvalidDomainFilter(t *testing.T) {
 }
 
 func TestValidDomainfilter(t *testing.T) {
-	// initialize domanin filter
+	// initialize domain filter
 	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
