@@ -130,6 +130,9 @@ var (
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
 		TencentCloudZoneType:        "",
+		WebhookProviderURL:          "http://localhost:8888",
+		WebhookProviderReadTimeout:  5 * time.Second,
+		WebhookProviderWriteTimeout: 10 * time.Second,
 	}
 
 	overriddenConfig = &Config{
@@ -241,6 +244,9 @@ var (
 		IBMCloudConfigFile:          "ibmcloud.json",
 		TencentCloudConfigFile:      "tencent-cloud.json",
 		TencentCloudZoneType:        "private",
+		WebhookProviderURL:          "http://localhost:8888",
+		WebhookProviderReadTimeout:  5 * time.Second,
+		WebhookProviderWriteTimeout: 10 * time.Second,
 	}
 )
 

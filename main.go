@@ -80,6 +80,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/ultradns"
 	"sigs.k8s.io/external-dns/provider/vinyldns"
 	"sigs.k8s.io/external-dns/provider/vultr"
+	"sigs.k8s.io/external-dns/provider/webhook"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -192,7 +193,7 @@ func main() {
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
 	var awsSession *session.Session
-	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
+	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" || cfg.RunAWSProviderAsWebhook {
 		awsSession, err = aws.NewSession(
 			aws.AWSSessionConfig{
 				AssumeRole:           cfg.AWSAssumeRole,
@@ -402,6 +403,28 @@ func main() {
 		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
 	case "tencentcloud":
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
+	case "webhook":
+		startedChan := make(chan struct{})
+		if cfg.RunAWSProviderAsWebhook {
+			awsProvider, awsErr := aws.NewAWSProvider(aws.AWSConfig{
+				DomainFilter:         domainFilter,
+				ZoneIDFilter:         zoneIDFilter,
+				ZoneTypeFilter:       zoneTypeFilter,
+				ZoneTagFilter:        zoneTagFilter,
+				BatchChangeSize:      cfg.AWSBatchChangeSize,
+				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
+				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
+				PreferCNAME:          cfg.AWSPreferCNAME,
+				DryRun:               cfg.DryRun,
+				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
+			}, route53.New(awsSession))
+			if awsErr != nil {
+				log.Fatal(awsErr)
+			}
+			go webhook.StartHTTPApi(awsProvider, startedChan, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+			<-startedChan
+		}
+		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
