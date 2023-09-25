@@ -3527,6 +3527,7 @@ func TestExternalServices(t *testing.T) {
 		labels                   map[string]string
 		annotations              map[string]string
 		externalName             string
+		externalIPs              []string
 		expected                 []*endpoint.Endpoint
 		expectError              bool
 	}{
@@ -3544,6 +3545,7 @@ func TestExternalServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			"111.111.111.111",
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"111.111.111.111"}, RecordType: endpoint.RecordTypeA},
 			},
@@ -3563,6 +3565,7 @@ func TestExternalServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			"2001:db8::111",
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"2001:db8::111"}, RecordType: endpoint.RecordTypeAAAA},
 			},
@@ -3582,8 +3585,29 @@ func TestExternalServices(t *testing.T) {
 				hostnameAnnotationKey: "service.example.org",
 			},
 			"remote.example.com",
+			[]string{},
 			[]*endpoint.Endpoint{
 				{DNSName: "service.example.org", Targets: endpoint.Targets{"remote.example.com"}, RecordType: endpoint.RecordTypeCNAME},
+			},
+			false,
+		},
+		{
+			"annotated ExternalName service with externalIPs returns a single endpoint with multiple targets",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"service.example.org",
+			[]string{"10.2.3.4", "11.2.3.4"},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4", "11.2.3.4"}},
 			},
 			false,
 		},
@@ -3599,6 +3623,7 @@ func TestExternalServices(t *testing.T) {
 				Spec: v1.ServiceSpec{
 					Type:         tc.svcType,
 					ExternalName: tc.externalName,
+					ExternalIPs:  tc.externalIPs,
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Namespace:   tc.svcNamespace,
