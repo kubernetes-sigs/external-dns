@@ -432,6 +432,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if cfg.WebhookServer {
+		webhook.StartHTTPApi(p, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		os.Exit(0)
+	}
+
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":

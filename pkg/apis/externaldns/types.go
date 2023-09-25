@@ -213,6 +213,7 @@ type Config struct {
 	RunAWSProviderAsWebhook            bool
 	WebhookProviderReadTimeout         time.Duration
 	WebhookProviderWriteTimeout        time.Duration
+	WebhookServer                      bool
 }
 
 var defaultConfig = &Config{
@@ -364,6 +365,7 @@ var defaultConfig = &Config{
 	WebhookProviderURL:          "http://localhost:8888",
 	WebhookProviderReadTimeout:  5 * time.Second,
 	WebhookProviderWriteTimeout: 10 * time.Second,
+	WebhookServer:               false,
 }
 
 // NewConfig returns new Config object
@@ -614,6 +616,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("run-aws-provider-as-webhook", "[EXPERIMENTAL] When enabled, the AWS provider will be run as a webhook (default: false). To be used together with 'webhook' as provider.").BoolVar(&cfg.RunAWSProviderAsWebhook)
 	app.Flag("webhook-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
 	app.Flag("webhook-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
+
+	app.Flag("webhook-server", "[EXPERIMENTAL] When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
 
 	_, err := app.Parse(args)
 	if err != nil {
