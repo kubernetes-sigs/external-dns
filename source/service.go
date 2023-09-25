@@ -557,6 +557,9 @@ func extractServiceIps(svc *v1.Service) endpoint.Targets {
 }
 
 func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
+	if len(svc.Spec.ExternalIPs) > 0 {
+		return svc.Spec.ExternalIPs
+	}
 	return endpoint.Targets{svc.Spec.ExternalName}
 }
 
