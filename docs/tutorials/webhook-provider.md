@@ -32,7 +32,7 @@ The server needs to respond to those requests by reading the `Accept` header and
 
 To simplify the discovery of providers, we will accept pull requests that will add links to providers in the [README](../../README.md) file. This list will only serve the purpose of simplifying finding providers and will not constitute an official endorsement of any of the externally implemented providers unless otherwise stated.
 
-## Run the AWS provider with the webhook provider.
+## Run an ExternalDNS in-tree provider as a webhook.
 
 To test the Webhook provider and provide a reference implementation, we added the functionality to run ExternalDNS as a webhook. To run the AWS provider as a webhook, you need the following flags:
 
