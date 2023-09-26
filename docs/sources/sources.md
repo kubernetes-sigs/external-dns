@@ -18,7 +18,7 @@
 | istio-gateway                   | Gateway.networking.istio.io                                                   | Yes               |              |
 | istio-virtualservice            | VirtualService.networking.istio.io                                            | Yes               |              |
 | kong-tcpingress                 | TCPIngress.configuration.konghq.com                                           | Yes               |              |
-| node                            | Node                                                                          | Yes               |              |
+| node                            | Node                                                                          | Yes               | Yes          |
 | openshift-route                 | Route.route.openshift.io                                                      | Yes               | Yes          |
 | pod                             | Pod                                                                           |                   |              |
 | [service](service.md)           | Service                                                                       | Yes               | Yes          |
