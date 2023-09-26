@@ -910,7 +910,25 @@ func testServiceSourceEndpoints(t *testing.T) {
 			expected:           []*endpoint.Endpoint{},
 		},
 		{
-			title:        "internal-host annotated services return an endpoint with Cluster IP",
+			title:        "internal-host annotated and host annotated clusterip services return an endpoint with Cluster IP",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey:         "foo.example.org.",
+				internalHostnameAnnotationKey: "foo.internal.example.org.",
+			},
+			clusterIP:          "1.1.1.1",
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.internal.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+		},
+		{
+			title:        "internal-host annotated loadbalancer services return an endpoint with Cluster IP",
 			svcNamespace: "testing",
 			svcName:      "foo",
 			svcType:      v1.ServiceTypeLoadBalancer,
@@ -927,7 +945,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:        "internal-host annotated and host annotated services return an endpoint with Cluster IP and an endpoint with lb IP",
+			title:        "internal-host annotated and host annotated loadbalancer services return an endpoint with Cluster IP and an endpoint with lb IP",
 			svcNamespace: "testing",
 			svcName:      "foo",
 			svcType:      v1.ServiceTypeLoadBalancer,
@@ -1816,10 +1834,10 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}},
-			podNames:  []string{"pod-0"},
-			nodeIndex: []int{1},
-			phases:    []v1.PodPhase{v1.PodRunning},
-			conditions: []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+			podNames:          []string{"pod-0"},
+			nodeIndex:         []int{1},
+			phases:            []v1.PodPhase{v1.PodRunning},
+			conditions:        []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
 			deletionTimestamp: []*metav1.Time{{}},
 		},
 		{
@@ -1867,7 +1885,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{Type: v1.PodReady, Status: v1.ConditionFalse},
 				{Type: v1.PodReady, Status: v1.ConditionFalse},
 			},
-			deletionTimestamp: []*metav1.Time{{},{}},
+			deletionTimestamp: []*metav1.Time{{}, {}},
 		},
 		{
 			title:            "annotated NodePort services with ExternalTrafficPolicy=Local return pods in Ready & Running state",
@@ -1911,7 +1929,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 				{Type: v1.PodReady, Status: v1.ConditionTrue},
 				{Type: v1.PodReady, Status: v1.ConditionFalse},
 			},
-			deletionTimestamp: []*metav1.Time{{},{}},
+			deletionTimestamp: []*metav1.Time{{}, {}},
 		},
 		{
 			title:            "annotated NodePort services with ExternalTrafficPolicy=Local return pods in Ready & Running state & not in Terminating",
@@ -2254,14 +2272,14 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 						NodeName:   tc.nodes[tc.nodeIndex[i]].Name,
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   tc.svcNamespace,
-						Name:        podname,
-						Labels:      tc.labels,
-						Annotations: tc.annotations,
+						Namespace:         tc.svcNamespace,
+						Name:              podname,
+						Labels:            tc.labels,
+						Annotations:       tc.annotations,
 						DeletionTimestamp: tc.deletionTimestamp[i],
 					},
 					Status: v1.PodStatus{
-						Phase: tc.phases[i],
+						Phase:      tc.phases[i],
 						Conditions: []v1.PodCondition{tc.conditions[i]},
 					},
 				}

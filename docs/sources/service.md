@@ -75,7 +75,8 @@ or the `--publish-host-ip` flag was specified, uses the Pod's `status.hostIP` fi
 
 ### ClusterIP (not headless)
 
-1. If the `--publish-internal-services` flag is specified, uses the `spec.ServiceIP`.
+1. If the hostname came from an `external-dns.alpha.kubernetes.io/internal-hostname` annotation
+or the `--publish-internal-services` flag was specified, uses the `spec.ServiceIP`.
 
 2. Otherwise, does not create any targets.
 
