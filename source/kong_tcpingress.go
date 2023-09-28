@@ -124,13 +124,15 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		var targets endpoint.Targets
-		for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		if len(targets) == 0 {
+			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
+				if lb.IP != "" {
+					targets = append(targets, lb.IP)
+				}
+				if lb.Hostname != "" {
+					targets = append(targets, lb.Hostname)
+				}
 			}
 		}
 

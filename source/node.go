@@ -130,9 +130,12 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs, err := ns.nodeAddresses(node)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+		addrs := getTargetsFromTargetAnnotation(node.Annotations)
+		if len(addrs) == 0 {
+			addrs, err = ns.nodeAddresses(node)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+			}
 		}
 
 		ep.Labels = endpoint.NewLabels()
