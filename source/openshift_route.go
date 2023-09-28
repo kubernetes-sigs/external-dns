@@ -174,7 +174,9 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 		return nil, err
 	}
 
-	ttl := getTTLFromAnnotations(ocpRoute.Annotations)
+	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
+
+	ttl := getTTLFromAnnotations(ocpRoute.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	if len(targets) == 0 {
@@ -183,8 +185,6 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
-
-	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -227,7 +227,9 @@ func (ors *ocpRouteSource) filterByAnnotations(ocpRoutes []*routev1.Route) ([]*r
 func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignoreHostnameAnnotation bool) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(ocpRoute.Annotations)
+	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
+
+	ttl := getTTLFromAnnotations(ocpRoute.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ocpRoute.Annotations)
 	targetsFromRoute, host := ors.getTargetsFromRouteStatus(ocpRoute.Status)
@@ -237,8 +239,6 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
-
-	resource := fmt.Sprintf("route/%s/%s", ocpRoute.Namespace, ocpRoute.Name)
 
 	if host != "" {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)

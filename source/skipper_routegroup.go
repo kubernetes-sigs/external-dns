@@ -300,8 +300,10 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 
 	hostnames := buf.String()
 
+	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
+
 	// error handled in endpointsFromRouteGroup(), otherwise duplicate log
-	ttl := getTTLFromAnnotations(rg.Metadata.Annotations)
+	ttl := getTTLFromAnnotations(rg.Metadata.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
 
@@ -310,8 +312,6 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
-
-	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -336,7 +336,10 @@ func (sc *routeGroupSource) setRouteGroupDualstackLabel(rg *routeGroup, eps []*e
 // annotation logic ported from source/ingress.go without Spec.TLS part, because it'S not supported in RouteGroup
 func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.Endpoint {
 	endpoints := []*endpoint.Endpoint{}
-	ttl := getTTLFromAnnotations(rg.Metadata.Annotations)
+
+	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
+
+	ttl := getTTLFromAnnotations(rg.Metadata.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(rg.Metadata.Annotations)
 	if len(targets) == 0 {
@@ -351,8 +354,6 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
-
-	resource := fmt.Sprintf("routegroup/%s/%s", rg.Metadata.Namespace, rg.Metadata.Name)
 
 	for _, src := range rg.Spec.Hosts {
 		if src == "" {

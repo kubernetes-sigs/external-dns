@@ -306,8 +306,10 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 	var endpoints []*endpoint.Endpoint
 	var err error
 
+	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
+
 	annotations := gateway.Annotations
-	ttl := getTTLFromAnnotations(annotations)
+	ttl := getTTLFromAnnotations(annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(annotations)
 	if len(targets) == 0 {
@@ -318,8 +320,6 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
-
-	resource := fmt.Sprintf("gateway/%s/%s", gateway.Namespace, gateway.Name)
 
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)

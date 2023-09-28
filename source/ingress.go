@@ -188,7 +188,9 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		return nil, err
 	}
 
-	ttl := getTTLFromAnnotations(ing.Annotations)
+	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
+
+	ttl := getTTLFromAnnotations(ing.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
@@ -196,8 +198,6 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
-
-	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -286,7 +286,9 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
-	ttl := getTTLFromAnnotations(ing.Annotations)
+	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
+
+	ttl := getTTLFromAnnotations(ing.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
@@ -295,8 +297,6 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
-
-	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	// Gather endpoints defined on hosts sections of the ingress
 	var definedHostsEndpoints []*endpoint.Endpoint

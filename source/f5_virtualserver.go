@@ -147,7 +147,9 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		ttl := getTTLFromAnnotations(virtualServer.Annotations)
+		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
+
+		ttl := getTTLFromAnnotations(virtualServer.Annotations, resource)
 
 		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
@@ -157,7 +159,6 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 			targets = append(targets, virtualServer.Status.VSAddress)
 		}
 
-		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 

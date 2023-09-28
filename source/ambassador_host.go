@@ -173,7 +173,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
 
 	annotations := host.Annotations
-	ttl := getTTLFromAnnotations(annotations)
+	ttl := getTTLFromAnnotations(annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname

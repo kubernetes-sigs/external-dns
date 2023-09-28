@@ -647,11 +647,11 @@ func (ts *traefikSource) setDualstackLabelIngressRouteUDP(ingressRoute *IngressR
 func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
+	resource := fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
+
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
-
-	resource := fmt.Sprintf("ingressroute/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
 	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
 	for _, hostname := range hostnameList {
@@ -681,11 +681,11 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRouteTCP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
+	resource := fmt.Sprintf("ingressroutetcp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
+
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
-
-	resource := fmt.Sprintf("ingressroutetcp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
 	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
 	for _, hostname := range hostnameList {
@@ -716,11 +716,11 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRouteUDP, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(ingressRoute.Annotations)
+	resource := fmt.Sprintf("ingressrouteudp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
+
+	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
-
-	resource := fmt.Sprintf("ingressrouteudp/%s/%s", ingressRoute.Namespace, ingressRoute.Name)
 
 	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
 	for _, hostname := range hostnameList {

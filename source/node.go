@@ -104,7 +104,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
-		ttl := getTTLFromAnnotations(node.Annotations)
+		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{

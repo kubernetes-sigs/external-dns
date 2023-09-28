@@ -222,11 +222,11 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		return nil, err
 	}
 
-	ttl := getTTLFromAnnotations(virtualService.Annotations)
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
+
+	ttl := getTTLFromAnnotations(virtualService.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
-
-	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -311,13 +311,13 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 	var endpoints []*endpoint.Endpoint
 	var err error
 
-	ttl := getTTLFromAnnotations(virtualservice.Annotations)
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
+
+	ttl := getTTLFromAnnotations(virtualservice.Annotations, resource)
 
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
-
-	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
 
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {

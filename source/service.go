@@ -460,7 +460,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
-	ttl := getTTLFromAnnotations(svc.Annotations)
+	ttl := getTTLFromAnnotations(svc.Annotations, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 
 	epA := &endpoint.Endpoint{
 		RecordTTL:  ttl,

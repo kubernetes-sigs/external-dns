@@ -204,11 +204,11 @@ func (sc *kongTCPIngressSource) setDualstackLabel(tcpIngress *TCPIngress, endpoi
 func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ttl := getTTLFromAnnotations(tcpIngress.Annotations)
+	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
+
+	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
-
-	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
 	hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
 	for _, hostname := range hostnameList {

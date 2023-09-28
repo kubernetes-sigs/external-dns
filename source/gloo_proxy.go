@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -155,13 +156,16 @@ func (gs *glooSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *proxy, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	endpoints := []*endpoint.Endpoint{}
+
+	resource := fmt.Sprintf("proxy/%s/%s", proxy.Metadata.Namespace, proxy.Metadata.Name)
+
 	for _, listener := range proxy.Spec.Listeners {
 		for _, virtualHost := range listener.HTTPListener.VirtualHosts {
 			annotations, err := gs.annotationsFromProxySource(ctx, virtualHost)
 			if err != nil {
 				return nil, err
 			}
-			ttl := getTTLFromAnnotations(annotations)
+			ttl := getTTLFromAnnotations(annotations, resource)
 			providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
 			for _, domain := range virtualHost.Domains {
 				endpoints = append(endpoints, endpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)

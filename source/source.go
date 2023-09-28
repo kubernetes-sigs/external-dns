@@ -87,7 +87,7 @@ type Source interface {
 	AddEventHandler(context.Context, func())
 }
 
-func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
+func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
 	ttlNotConfigured := endpoint.TTL(0)
 	ttlAnnotation, exists := annotations[ttlAnnotationKey]
 	if !exists {
@@ -95,7 +95,7 @@ func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
 	}
 	ttlValue, err := parseTTL(ttlAnnotation)
 	if err != nil {
-		log.Warnf("\"%v\" is not a valid TTL value", ttlAnnotation)
+		log.Warnf("%s: \"%v\" is not a valid TTL value: %v", resource, ttlAnnotation, err)
 		return ttlNotConfigured
 	}
 	if ttlValue < ttlMinimum || ttlValue > ttlMaximum {
@@ -112,9 +112,13 @@ func getTTLFromAnnotations(annotations map[string]string) endpoint.TTL {
 // Note: for durations like "1.5s" the fraction is omitted (resulting in 1 second
 // for the example).
 func parseTTL(s string) (ttlSeconds int64, err error) {
-	ttlDuration, err := time.ParseDuration(s)
-	if err != nil {
-		return strconv.ParseInt(s, 10, 64)
+	ttlDuration, errDuration := time.ParseDuration(s)
+	if errDuration != nil {
+		ttlInt, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return 0, errDuration
+		}
+		return ttlInt, nil
 	}
 
 	return int64(ttlDuration.Seconds()), nil
