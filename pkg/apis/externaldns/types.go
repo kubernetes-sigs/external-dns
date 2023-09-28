@@ -210,7 +210,6 @@ type Config struct {
 	PluralCluster                      string
 	PluralProvider                     string
 	WebhookProviderURL                 string
-	RunAWSProviderAsWebhook            bool
 	WebhookProviderReadTimeout         time.Duration
 	WebhookProviderWriteTimeout        time.Duration
 	WebhookServer                      bool
@@ -613,7 +612,6 @@ func (cfg *Config) ParseFlags(args []string) error {
 
 	// Webhook provider
 	app.Flag("webhook-provider-url", "[EXPERIMENTAL] The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)").Default(defaultConfig.WebhookProviderURL).StringVar(&cfg.WebhookProviderURL)
-	app.Flag("run-aws-provider-as-webhook", "[EXPERIMENTAL] When enabled, the AWS provider will be run as a webhook (default: false). To be used together with 'webhook' as provider.").BoolVar(&cfg.RunAWSProviderAsWebhook)
 	app.Flag("webhook-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
 	app.Flag("webhook-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
 
