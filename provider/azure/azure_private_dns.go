@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	privatedns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns"
@@ -66,24 +64,16 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cred, err := getCredentials(*cfg)
+	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cloud configuration: %w", err)
-	}
-	opts := &arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Cloud: cloudCfg,
-		},
-	}
-	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, opts)
+
+	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, opts)
+	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}

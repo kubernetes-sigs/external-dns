@@ -24,8 +24,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	dns "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns"
@@ -72,24 +70,16 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cred, err := getCredentials(*cfg)
+	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get cloud configuration: %w", err)
-	}
-	opts := &arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Cloud: cloudCfg,
-		},
-	}
-	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, opts)
+
+	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	recordSetsClient, err := dns.NewRecordSetsClient(cfg.SubscriptionID, cred, opts)
+	recordSetsClient, err := dns.NewRecordSetsClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
