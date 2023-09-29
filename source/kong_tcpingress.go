@@ -47,16 +47,17 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
 type kongTCPIngressSource struct {
-	annotationFilter       string
-	dynamicKubeClient      dynamic.Interface
-	kongTCPIngressInformer informers.GenericInformer
-	kubeClient             kubernetes.Interface
-	namespace              string
-	unstructuredConverter  *unstructuredConverter
+	annotationFilter         string
+	ignoreHostnameAnnotation bool
+	dynamicKubeClient        dynamic.Interface
+	kongTCPIngressInformer   informers.GenericInformer
+	kubeClient               kubernetes.Interface
+	namespace                string
+	unstructuredConverter    *unstructuredConverter
 }
 
 // NewKongTCPIngressSource creates a new kongTCPIngressSource with the given config.
-func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string) (Source, error) {
+func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
 	var err error
 
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
@@ -85,12 +86,13 @@ func NewKongTCPIngressSource(ctx context.Context, dynamicKubeClient dynamic.Inte
 	}
 
 	return &kongTCPIngressSource{
-		annotationFilter:       annotationFilter,
-		dynamicKubeClient:      dynamicKubeClient,
-		kongTCPIngressInformer: kongTCPIngressInformer,
-		kubeClient:             kubeClient,
-		namespace:              namespace,
-		unstructuredConverter:  uc,
+		annotationFilter:         annotationFilter,
+		ignoreHostnameAnnotation: ignoreHostnameAnnotation,
+		dynamicKubeClient:        dynamicKubeClient,
+		kongTCPIngressInformer:   kongTCPIngressInformer,
+		kubeClient:               kubeClient,
+		namespace:                namespace,
+		unstructuredConverter:    uc,
 	}, nil
 }
 
@@ -210,9 +212,11 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
 
-	hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	if !sc.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
 	}
 
 	if tcpIngress.Spec.Rules != nil {

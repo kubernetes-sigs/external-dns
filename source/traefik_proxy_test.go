@@ -39,9 +39,10 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title        string
-		ingressRoute IngressRoute
-		expected     []*endpoint.Endpoint
+		title                    string
+		ingressRoute             IngressRoute
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRoute with hostname annotation",
@@ -226,6 +227,54 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 					},
 					ProviderSpecific: endpoint.ProviderSpecific{},
 				},
+				{
+					DNSName:    "g.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:    "h.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
+			title: "IngressRoute ignoring annotation",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressrouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-multi-host-annotations-match",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+				Spec: traefikIngressRouteSpec{
+					Routes: []traefikRoute{
+						{
+							Match: "Host(`g.example.com`, `h.example.com`)",
+						},
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "g.example.com",
 					Targets:    []string{"target.domain.tld"},
@@ -299,7 +348,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -311,7 +360,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
@@ -320,9 +369,10 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title           string
-		ingressRouteTCP IngressRouteTCP
-		expected        []*endpoint.Endpoint
+		title                    string
+		ingressRouteTCP          IngressRouteTCP
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRouteTCP with hostname annotation",
@@ -494,6 +544,54 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "IngressRouteTCP ignoring annotation",
+			ingressRouteTCP: IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressrouteTCPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroutetcp-multi-host-annotations-match",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+				Spec: traefikIngressRouteTCPSpec{
+					Routes: []traefikRouteTCP{
+						{
+							Match: "HostSNI(`g.example.com`, `h.example.com`)",
+						},
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "g.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroutetcp/traefik/ingressroutetcp-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:    "h.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroutetcp/traefik/ingressroutetcp-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
 			title: "IngressRouteTCP omit wildcard host sni",
 			ingressRouteTCP: IngressRouteTCP{
 				TypeMeta: metav1.TypeMeta{
@@ -544,7 +642,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -556,7 +654,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
@@ -565,9 +663,10 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title           string
-		ingressRouteUDP IngressRouteUDP
-		expected        []*endpoint.Endpoint
+		title                    string
+		ingressRouteUDP          IngressRouteUDP
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRouteTCP with hostname annotation",
@@ -639,6 +738,26 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "IngressRouteTCP ignoring hostname annotation",
+			ingressRouteUDP: IngressRouteUDP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: ingressrouteUDPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteUDP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressrouteudp-annotation",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected:                 nil,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -665,7 +784,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -677,7 +796,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
@@ -686,9 +805,10 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title        string
-		ingressRoute IngressRoute
-		expected     []*endpoint.Endpoint
+		title                    string
+		ingressRoute             IngressRoute
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRoute with hostname annotation",
@@ -896,6 +1016,54 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "IngressRoute ignoring annotation",
+			ingressRoute: IngressRoute{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: oldIngressrouteGVR.GroupVersion().String(),
+					Kind:       "IngressRoute",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroute-multi-host-annotations-match",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+				Spec: traefikIngressRouteSpec{
+					Routes: []traefikRoute{
+						{
+							Match: "Host(`g.example.com`, `h.example.com`)",
+						},
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "g.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:    "h.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroute/traefik/ingressroute-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
 			title: "IngressRoute omit wildcard",
 			ingressRoute: IngressRoute{
 				TypeMeta: metav1.TypeMeta{
@@ -946,7 +1114,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -958,7 +1126,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
@@ -967,9 +1135,10 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title           string
-		ingressRouteTCP IngressRouteTCP
-		expected        []*endpoint.Endpoint
+		title                    string
+		ingressRouteTCP          IngressRouteTCP
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRouteTCP with hostname annotation",
@@ -1141,6 +1310,54 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "IngressRouteTCP ignoring annotation",
+			ingressRouteTCP: IngressRouteTCP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: oldIngressrouteTCPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteTCP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressroutetcp-multi-host-annotations-match",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "f.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+				Spec: traefikIngressRouteTCPSpec{
+					Routes: []traefikRouteTCP{
+						{
+							Match: "HostSNI(`g.example.com`, `h.example.com`)",
+						},
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "g.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroutetcp/traefik/ingressroutetcp-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+				{
+					DNSName:    "h.example.com",
+					Targets:    []string{"target.domain.tld"},
+					RecordType: endpoint.RecordTypeCNAME,
+					RecordTTL:  0,
+					Labels: endpoint.Labels{
+						"resource": "ingressroutetcp/traefik/ingressroutetcp-multi-host-annotations-match",
+					},
+					ProviderSpecific: endpoint.ProviderSpecific{},
+				},
+			},
+		},
+		{
 			title: "IngressRouteTCP omit wildcard host sni",
 			ingressRouteTCP: IngressRouteTCP{
 				TypeMeta: metav1.TypeMeta{
@@ -1191,7 +1408,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -1203,7 +1420,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
@@ -1212,9 +1429,10 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 	t.Parallel()
 
 	for _, ti := range []struct {
-		title           string
-		ingressRouteUDP IngressRouteUDP
-		expected        []*endpoint.Endpoint
+		title                    string
+		ingressRouteUDP          IngressRouteUDP
+		ignoreHostnameAnnotation bool
+		expected                 []*endpoint.Endpoint
 	}{
 		{
 			title: "IngressRouteTCP with hostname annotation",
@@ -1286,6 +1504,26 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 				},
 			},
 		},
+		{
+			title: "IngressRouteTCP ignoring hostname annotation",
+			ingressRouteUDP: IngressRouteUDP{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: oldIngressrouteUDPGVR.GroupVersion().String(),
+					Kind:       "IngressRouteUDP",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ingressrouteudp-annotation",
+					Namespace: defaultTraefikNamespace,
+					Annotations: map[string]string{
+						"external-dns.alpha.kubernetes.io/hostname": "a.example.com",
+						"external-dns.alpha.kubernetes.io/target":   "target.domain.tld",
+						"kubernetes.io/ingress.class":               "traefik",
+					},
+				},
+			},
+			ignoreHostnameAnnotation: true,
+			expected:                 nil,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -1312,7 +1550,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik")
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -1324,7 +1562,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			endpoints, err := source.Endpoints(context.Background())
 			assert.NoError(t, err)
 			assert.Len(t, endpoints, len(ti.expected))
-			assert.Equal(t, endpoints, ti.expected)
+			assert.Equal(t, ti.expected, endpoints)
 		})
 	}
 }
