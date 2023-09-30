@@ -70,3 +70,17 @@ The image to use
 {{- define "external-dns.image" -}}
 {{- printf "%s:%s" .Values.image.repository (default (printf "v%s" .Chart.AppVersion) .Values.image.tag) }}
 {{- end }}
+
+{{/*
+Keep backward compatibility on provider
+*/}}
+{{- define "external-dns.providername" -}}
+{{- if eq (typeOf .Values.provider) "string" }}
+{{- .Values.provider }}
+{{- if contains "/" .Values.provider }}
+{{- fail "A provider image must be specified as provider.name" }}
+{{- end }}
+{{- else }}
+{{- .Values.provider.name }}
+{{- end }}
+{{- end }}

@@ -1,3 +1,4 @@
+{{- $providername := include "external-dns.providername" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -103,7 +104,11 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
-            - --provider={{ tpl .Values.provider $ }}
+            {{- if contains "/" $providername }}
+            - --provider=webhook
+            {{- else }}
+            - --provider={{ tpl $providername $ }}
+            {{- end }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
@@ -115,9 +120,9 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
+          {{- if or .Values.secretConfiguration.mountPath .Values.extraVolumeMounts }}
           volumeMounts:
-            {{- if .Values.secretConfiguration.enabled }}
+            {{- if .Values.secretConfiguration.mountPath }}
             - name: secrets
               mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
             {{- with .Values.secretConfiguration.subPath }}
@@ -132,9 +137,51 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
+        {{- if contains "/" $providername }}
+        - name: provider
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          image: {{ tpl $providername $ }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.provider.env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          args:
+          {{- range .Values.provider.args }}
+            - {{ tpl . $ }}
+          {{- end }}
+          ports:
+            - name: provider-metrics
+              protocol: TCP
+              containerPort: 8080
+          livenessProbe:
+            {{- toYaml .Values.provider.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.provider.readinessProbe | nindent 12 }}
+          {{- if or .Values.provider.secretConfiguration.mountPath .Values.provider.extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.provider.secretConfiguration.mountPath }}
+            - name: secrets
+              mountPath: {{ tpl .Values.provider.secretConfiguration.mountPath $ }}
+            {{- with .Values.provider.secretConfiguration.subPath }}
+              subPath: {{ tpl . $ }}
+            {{- end }}
+            {{- end }}
+            {{- with .Values.provider.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.provider.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+      {{- if or .Values.secretConfiguration.mountPath (and (contains "/" $providername) .Values.provider.secretConfiguration.mountPath) .Values.extraVolumes }}
       volumes:
-        {{- if .Values.secretConfiguration.enabled }}
+        {{- if or .Values.secretConfiguration.mountPath (and (contains "/" $providername) .Values.provider.secretConfiguration.mountPath) }}
         - name: secrets
           secret:
             secretName: {{ include "external-dns.fullname" . }}

@@ -180,7 +180,43 @@ txtSuffix: ""
 
 domainFilters: []
 
-provider: aws
+provider:
+  # The name of the DNS provider. This can be either a built-in provider or a provider image to run as a sidecar container.
+  name: "aws"
+  # Arguments to pass to the provider container (these can be templated).
+  args: []
+  # [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the provider container; this supports the full [EnvVar](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#envvar-v1-core) API including secrets and configmaps.
+  env: []
+  # Additional volume mounts for the provider container; this supports the full [VolumeMount](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#volumemount-v1-core) API.
+  extraVolumeMounts: []
+  # [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) for the provider container; this supports the full [Probe](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#probe-v1-core) API.
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: provider-metrics
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 2
+    successThreshold: 1
+  # [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) for the webhook container; this supports the full [Probe](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#probe-v1-core) API.
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: provider-metrics
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+  # Resource requests and limits for the provider container; this supports the full [ResourceRequirements](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#resourcerequirements-v1-core) API.
+  resources: {}
+
+  secretConfiguration:
+    # Mount path of secret configuration secret in the provider container (this can be templated).
+    mountPath: ""
+    # Sub-path of secret configuration secret in the provider container (this can be templated).
+    subPath: ""
 
 extraArgs: []
 
