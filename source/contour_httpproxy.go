@@ -186,10 +186,9 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
+
+	ttl := getTTLFromAnnotations(httpProxy.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
 	if len(targets) == 0 {
@@ -204,8 +203,6 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
-
-	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -252,10 +249,9 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		return nil, nil
 	}
 
-	ttl, err := getTTLFromAnnotations(httpProxy.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
+
+	ttl := getTTLFromAnnotations(httpProxy.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(httpProxy.Annotations)
 
@@ -271,8 +267,6 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 	}
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
-
-	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	var endpoints []*endpoint.Endpoint
 

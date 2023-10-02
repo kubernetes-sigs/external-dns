@@ -222,14 +222,11 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(virtualService.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
+
+	ttl := getTTLFromAnnotations(virtualService.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
-
-	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -312,17 +309,15 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
 func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
+	var err error
 
-	ttl, err := getTTLFromAnnotations(virtualservice.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
+
+	ttl := getTTLFromAnnotations(virtualservice.Annotations, resource)
 
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
-
-	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
 
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {

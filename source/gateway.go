@@ -230,10 +230,7 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		// Create endpoints from hostnames and targets.
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl, err := getTTLFromAnnotations(annots)
-		if err != nil {
-			log.Warn(err)
-		}
+		ttl := getTTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
 			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
