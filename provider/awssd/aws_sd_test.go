@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/request"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,6 +38,10 @@ import (
 
 // Compile time check for interface conformance
 var _ AWSSDClient = &AWSSDClientStub{}
+
+var (
+	ErrNamespaceNotFound = errors.New("Namespace not found")
+)
 
 type AWSSDClientStub struct {
 	// map[namespace_id]namespace
@@ -91,18 +96,31 @@ func (s *AWSSDClientStub) GetService(input *sd.GetServiceInput) (*sd.GetServiceO
 	return nil, errors.New("service not found")
 }
 
-func (s *AWSSDClientStub) ListInstancesPages(input *sd.ListInstancesInput, fn func(*sd.ListInstancesOutput, bool) bool) error {
-	instances := make([]*sd.InstanceSummary, 0)
+func (s *AWSSDClientStub) DiscoverInstancesWithContext(ctx context.Context, input *sd.DiscoverInstancesInput, opts ...request.Option) (*sd.DiscoverInstancesOutput, error) {
+	instances := make([]*sd.HttpInstanceSummary, 0)
 
-	for _, inst := range s.instances[*input.ServiceId] {
-		instances = append(instances, instanceToInstanceSummary(inst))
+	var foundNs bool
+	for _, ns := range s.namespaces {
+		if aws.StringValue(ns.Name) == aws.StringValue(input.NamespaceName) {
+			foundNs = true
+
+			for _, srv := range s.services[*ns.Id] {
+				if aws.StringValue(srv.Name) == aws.StringValue(input.ServiceName) {
+					for _, inst := range s.instances[*srv.Id] {
+						instances = append(instances, instanceToHTTPInstanceSummary(inst))
+					}
+				}
+			}
+		}
 	}
 
-	fn(&sd.ListInstancesOutput{
-		Instances: instances,
-	}, true)
+	if !foundNs {
+		return nil, ErrNamespaceNotFound
+	}
 
-	return nil
+	return &sd.DiscoverInstancesOutput{
+		Instances: instances,
+	}, nil
 }
 
 func (s *AWSSDClientStub) ListNamespacesPages(input *sd.ListNamespacesInput, fn func(*sd.ListNamespacesOutput, bool) bool) error {
@@ -200,6 +218,19 @@ func newTestAWSSDProvider(api AWSSDClient, domainFilter endpoint.DomainFilter, n
 		namespaceTypeFilter: newSdNamespaceFilter(namespaceTypeFilter),
 		cleanEmptyService:   true,
 		ownerID:             ownerID,
+	}
+}
+
+// nolint: deadcode
+// used for unit test
+func instanceToHTTPInstanceSummary(instance *sd.Instance) *sd.HttpInstanceSummary {
+	if instance == nil {
+		return nil
+	}
+
+	return &sd.HttpInstanceSummary{
+		InstanceId: instance.Id,
+		Attributes: instance.Attributes,
 	}
 }
 
@@ -460,72 +491,6 @@ func TestAWSSDProvider_ListServicesByNamespace(t *testing.T) {
 		result, err := provider.ListServicesByNamespaceID(namespaces["private"].Id)
 		require.NoError(t, err)
 		assert.Equal(t, tc.expectedServices, result)
-	}
-}
-
-func TestAWSSDProvider_ListInstancesByService(t *testing.T) {
-	namespaces := map[string]*sd.Namespace{
-		"private": {
-			Id:   aws.String("private"),
-			Name: aws.String("private.com"),
-			Type: aws.String(sd.NamespaceTypeDnsPrivate),
-		},
-	}
-
-	services := map[string]map[string]*sd.Service{
-		"private": {
-			"srv1": {
-				Id:   aws.String("srv1"),
-				Name: aws.String("service1"),
-			},
-			"srv2": {
-				Id:   aws.String("srv2"),
-				Name: aws.String("service2"),
-			},
-		},
-	}
-
-	instances := map[string]map[string]*sd.Instance{
-		"srv1": {
-			"inst1": {
-				Id: aws.String("inst1"),
-				Attributes: map[string]*string{
-					sdInstanceAttrIPV4: aws.String("1.2.3.4"),
-				},
-			},
-			"inst2": {
-				Id: aws.String("inst2"),
-				Attributes: map[string]*string{
-					sdInstanceAttrIPV4: aws.String("1.2.3.5"),
-				},
-			},
-		},
-	}
-
-	api := &AWSSDClientStub{
-		namespaces: namespaces,
-		services:   services,
-		instances:  instances,
-	}
-
-	provider := newTestAWSSDProvider(api, endpoint.NewDomainFilter([]string{}), "", "")
-
-	result, err := provider.ListInstancesByServiceID(services["private"]["srv1"].Id)
-	require.NoError(t, err)
-
-	expectedInstances := []*sd.InstanceSummary{instanceToInstanceSummary(instances["srv1"]["inst1"]), instanceToInstanceSummary(instances["srv1"]["inst2"])}
-
-	expectedMap := make(map[string]*sd.InstanceSummary)
-	resultMap := make(map[string]*sd.InstanceSummary)
-	for _, inst := range expectedInstances {
-		expectedMap[*inst.Id] = inst
-	}
-	for _, inst := range result {
-		resultMap[*inst.Id] = inst
-	}
-
-	if !reflect.DeepEqual(resultMap, expectedMap) {
-		t.Errorf("AWSSDProvider.ListInstancesByServiceID() error = %v, wantErr %v", result, expectedInstances)
 	}
 }
 
