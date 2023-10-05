@@ -383,7 +383,6 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		if tagErr != nil {
 			return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
 		}
-
 	}
 
 	for _, zone := range zones {
