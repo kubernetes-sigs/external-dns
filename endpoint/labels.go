@@ -119,6 +119,9 @@ func (l Labels) SerializePlain(withQuotes bool) string {
 	sort.Strings(keys) // sort for consistency
 
 	for _, key := range keys {
+		if key == txtEncryptionNonce {
+			continue
+		}
 		tokens = append(tokens, fmt.Sprintf("%s/%s=%s", heritage, key, l[key]))
 	}
 	if withQuotes {
@@ -133,10 +136,16 @@ func (l Labels) Serialize(withQuotes bool, txtEncryptEnabled bool, aesKey []byte
 		return l.SerializePlain(withQuotes)
 	}
 
-	var encryptionNonce []byte = nil
+	var encryptionNonce []byte
 	if extractedNonce, nonceExists := l[txtEncryptionNonce]; nonceExists {
 		encryptionNonce = []byte(extractedNonce)
-		delete(l, txtEncryptionNonce)
+	} else {
+		var err error
+		encryptionNonce, err = GenerateNonce()
+		if err != nil {
+			log.Fatalf("Failed to generate cryptographic nonce %#v.", err)
+		}
+		l[txtEncryptionNonce] = string(encryptionNonce)
 	}
 
 	text := l.SerializePlain(false)
