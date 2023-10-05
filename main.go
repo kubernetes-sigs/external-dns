@@ -195,9 +195,39 @@ func main() {
 	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
-	var awsSession *session.Session
+	awsSessions := make(map[string]*session.Session, len(cfg.AWSProfiles))
+	var awsDefaultSession *session.Session
 	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
-		awsSession, err = aws.NewSession(
+		if len(cfg.AWSProfiles) == 0 || (len(cfg.AWSProfiles) == 1 && cfg.AWSProfiles[0] == "") {
+			session, err := aws.NewSession(
+				aws.AWSSessionConfig{
+					AssumeRole:           cfg.AWSAssumeRole,
+					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+					APIRetries:           cfg.AWSAPIRetries,
+				},
+			)
+			if err != nil {
+				log.Fatal(err)
+			}
+			awsSessions[aws.DefaultAWSProfile] = session
+		} else {
+			for _, profile := range cfg.AWSProfiles {
+				session, err := aws.NewSession(
+					aws.AWSSessionConfig{
+						AssumeRole:           cfg.AWSAssumeRole,
+						AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+						APIRetries:           cfg.AWSAPIRetries,
+						Profile:              profile,
+					},
+				)
+				if err != nil {
+					log.Fatal(err)
+				}
+				awsSessions[profile] = session
+			}
+		}
+
+		awsDefaultSession, err = aws.NewSession(
 			aws.AWSSessionConfig{
 				AssumeRole:           cfg.AWSAssumeRole,
 				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
@@ -227,6 +257,11 @@ func main() {
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
+		clients := make(map[string]aws.Route53API, len(awsSessions))
+		for profile, session := range awsSessions {
+			clients[profile] = route53.New(session)
+		}
+
 		p, err = aws.NewAWSProvider(
 			aws.AWSConfig{
 				DomainFilter:          domainFilter,
@@ -243,7 +278,7 @@ func main() {
 				DryRun:                cfg.DryRun,
 				ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
 			},
-			route53.New(awsSession),
+			clients,
 		)
 	case "aws-sd":
 		// Check that only compatible Registry is used with AWS-SD
@@ -251,7 +286,7 @@ func main() {
 			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
 			cfg.Registry = "aws-sd"
 		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
+		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsDefaultSession))
 	case "azure-dns", "azure":
 		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureSubscriptionID, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
 	case "azure-private-dns":
@@ -438,7 +473,7 @@ func main() {
 		if cfg.AWSDynamoDBRegion != "" {
 			config = config.WithRegion(cfg.AWSDynamoDBRegion)
 		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsSession, config), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(awsDefaultSession, config), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":

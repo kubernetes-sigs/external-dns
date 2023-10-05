@@ -35,6 +35,7 @@ type AWSSessionConfig struct {
 	AssumeRole           string
 	AssumeRoleExternalID string
 	APIRetries           int
+	Profile              string
 }
 
 func NewSession(awsConfig AWSSessionConfig) (*session.Session, error) {
@@ -52,6 +53,7 @@ func NewSession(awsConfig AWSSessionConfig) (*session.Session, error) {
 	session, err := session.NewSessionWithOptions(session.Options{
 		Config:            *config,
 		SharedConfigState: session.SharedConfigEnable,
+		Profile:           awsConfig.Profile,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("instantiating AWS session: %w", err)

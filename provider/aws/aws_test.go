@@ -750,14 +750,14 @@ func TestAWSApplyChanges(t *testing.T) {
 		ctx := tt.setup(provider)
 
 		provider.zonesCache = &zonesListCache{duration: 0 * time.Minute}
-		counter := NewRoute53APICounter(provider.client)
-		provider.client = counter
+		counter := NewRoute53APICounter(provider.clients[DefaultAWSProfile])
+		provider.clients[DefaultAWSProfile] = counter
 		require.NoError(t, provider.ApplyChanges(ctx, changes))
 
 		assert.Equal(t, 1, counter.calls["ListHostedZonesPages"], tt.name)
 		assert.Equal(t, tt.listRRSets, counter.calls["ListResourceRecordSetsPages"], tt.name)
 
-		validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		validateRecords(t, listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
 			{
 				Name:            aws.String("create-test.zone-1.ext-dns-test-2.teapot.zalan.do."),
 				Type:            aws.String(route53.RRTypeA),
@@ -854,7 +854,7 @@ func TestAWSApplyChanges(t *testing.T) {
 				ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("10 mailhost1.foo.elb.amazonaws.com")}},
 			},
 		})
-		validateRecords(t, listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
+		validateRecords(t, listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do."), []*route53.ResourceRecordSet{
 			{
 				Name:            aws.String("create-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
 				Type:            aws.String(route53.RRTypeA),
@@ -1023,8 +1023,8 @@ func TestAWSApplyChangesDryRun(t *testing.T) {
 
 	validateRecords(t,
 		append(
-			listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
-			listAWSRecords(t, provider.client, "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")...),
+			listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do."),
+			listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-2.ext-dns-test-2.teapot.zalan.do.")...),
 		originalRecords)
 }
 
@@ -1064,23 +1064,35 @@ func TestAWSChangesByZones(t *testing.T) {
 		},
 	}
 
-	zones := map[string]*route53.HostedZone{
-		"foo-example-org": {
-			Id:   aws.String("foo-example-org"),
-			Name: aws.String("foo.example.org."),
+	zones := map[string]*profiledZone{
+		"foo-example-org": &profiledZone{
+			profile: DefaultAWSProfile,
+			zone: &route53.HostedZone{
+				Id:   aws.String("foo-example-org"),
+				Name: aws.String("foo.example.org."),
+			},
 		},
-		"bar-example-org": {
-			Id:   aws.String("bar-example-org"),
-			Name: aws.String("bar.example.org."),
+		"bar-example-org": &profiledZone{
+			profile: DefaultAWSProfile,
+			zone: &route53.HostedZone{
+				Id:   aws.String("bar-example-org"),
+				Name: aws.String("bar.example.org."),
+			},
 		},
-		"bar-example-org-private": {
-			Id:     aws.String("bar-example-org-private"),
-			Name:   aws.String("bar.example.org."),
-			Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)},
+		"bar-example-org-private": &profiledZone{
+			profile: DefaultAWSProfile,
+			zone: &route53.HostedZone{
+				Id:     aws.String("bar-example-org-private"),
+				Name:   aws.String("bar.example.org."),
+				Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)},
+			},
 		},
-		"baz-example-org": {
-			Id:   aws.String("baz-example-org"),
-			Name: aws.String("baz.example.org."),
+		"baz-example-org": &profiledZone{
+			profile: DefaultAWSProfile,
+			zone: &route53.HostedZone{
+				Id:   aws.String("baz-example-org"),
+				Name: aws.String("baz.example.org."),
+			},
 		},
 	}
 
@@ -1161,7 +1173,7 @@ func TestAWSsubmitChanges(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	zones, _ := provider.Zones(ctx)
+	zones, _ := provider.zones(ctx)
 	records, _ := provider.Records(ctx)
 	cs := make(Route53Changes, 0, len(endpoints))
 	cs = append(cs, provider.newChanges(route53.ChangeActionCreate, endpoints)...)
@@ -1179,7 +1191,7 @@ func TestAWSsubmitChangesError(t *testing.T) {
 	clientStub.MockMethod("ChangeResourceRecordSets", mock.Anything).Return(nil, fmt.Errorf("Mock route53 failure"))
 
 	ctx := context.Background()
-	zones, err := provider.Zones(ctx)
+	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
 	ep := endpoint.NewEndpointWithTTL("fail.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
@@ -1192,7 +1204,7 @@ func TestAWSsubmitChangesRetryOnError(t *testing.T) {
 	provider, clientStub := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
 
 	ctx := context.Background()
-	zones, err := provider.Zones(ctx)
+	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 
 	ep1 := endpoint.NewEndpointWithTTL("success.zone-1.ext-dns-test-2.teapot.zalan.do", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.0.0.1")
@@ -1636,7 +1648,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 		Create: adjusted,
 	}))
 
-	recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+	recordSets := listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 	validateRecords(t, recordSets, []*route53.ResourceRecordSet{
 		{
@@ -1700,7 +1712,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 			Create: adjusted,
 		}))
 
-		recordSets := listAWSRecords(t, provider.client, "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
+		recordSets := listAWSRecords(t, provider.clients[DefaultAWSProfile], "/hostedzone/zone-1.ext-dns-test-2.teapot.zalan.do.")
 
 		validateRecords(t, recordSets, []*route53.ResourceRecordSet{
 			{
@@ -1789,40 +1801,40 @@ func TestAWSCanonicalHostedZone(t *testing.T) {
 }
 
 func TestAWSSuitableZones(t *testing.T) {
-	zones := map[string]*route53.HostedZone{
+	zones := map[string]*profiledZone{
 		// Public domain
-		"example-org": {Id: aws.String("example-org"), Name: aws.String("example.org.")},
+		"example-org": {profile: DefaultAWSProfile, zone: &route53.HostedZone{Id: aws.String("example-org"), Name: aws.String("example.org.")}},
 		// Public subdomain
-		"bar-example-org": {Id: aws.String("bar-example-org"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)}},
+		"bar-example-org": {profile: DefaultAWSProfile, zone: &route53.HostedZone{Id: aws.String("bar-example-org"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)}}},
 		// Public subdomain
-		"longfoo-bar-example-org": {Id: aws.String("longfoo-bar-example-org"), Name: aws.String("longfoo.bar.example.org.")},
+		"longfoo-bar-example-org": {profile: DefaultAWSProfile, zone: &route53.HostedZone{Id: aws.String("longfoo-bar-example-org"), Name: aws.String("longfoo.bar.example.org.")}},
 		// Private domain
-		"example-org-private": {Id: aws.String("example-org-private"), Name: aws.String("example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}},
+		"example-org-private": {profile: DefaultAWSProfile, zone: &route53.HostedZone{Id: aws.String("example-org-private"), Name: aws.String("example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}}},
 		// Private subdomain
-		"bar-example-org-private": {Id: aws.String("bar-example-org-private"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}},
+		"bar-example-org-private": {profile: DefaultAWSProfile, zone: &route53.HostedZone{Id: aws.String("bar-example-org-private"), Name: aws.String("bar.example.org."), Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)}}},
 	}
 
 	for _, tc := range []struct {
 		hostname string
-		expected []*route53.HostedZone
+		expected []*profiledZone
 	}{
 		// bar.example.org is NOT suitable
-		{"foobar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
+		{"foobar.example.org.", []*profiledZone{zones["example-org-private"], zones["example-org"]}},
 
 		// all matching private zones are suitable
 		// https://github.com/kubernetes-sigs/external-dns/pull/356
-		{"bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
+		{"bar.example.org.", []*profiledZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
 
-		{"foo.bar.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
-		{"foo.example.org.", []*route53.HostedZone{zones["example-org-private"], zones["example-org"]}},
+		{"foo.bar.example.org.", []*profiledZone{zones["example-org-private"], zones["bar-example-org-private"], zones["bar-example-org"]}},
+		{"foo.example.org.", []*profiledZone{zones["example-org-private"], zones["example-org"]}},
 		{"foo.kubernetes.io.", nil},
 	} {
 		suitableZones := suitableZones(tc.hostname, zones)
 		sort.Slice(suitableZones, func(i, j int) bool {
-			return *suitableZones[i].Id < *suitableZones[j].Id
+			return *suitableZones[i].zone.Id < *suitableZones[j].zone.Id
 		})
 		sort.Slice(tc.expected, func(i, j int) bool {
-			return *tc.expected[i].Id < *tc.expected[j].Id
+			return *tc.expected[i].zone.Id < *tc.expected[j].zone.Id
 		})
 		assert.Equal(t, tc.expected, suitableZones)
 	}
@@ -1835,7 +1847,7 @@ func createAWSZone(t *testing.T, provider *AWSProvider, zone *route53.HostedZone
 		HostedZoneConfig: zone.Config,
 	}
 
-	if _, err := provider.client.CreateHostedZoneWithContext(context.Background(), params); err != nil {
+	if _, err := provider.clients[DefaultAWSProfile].CreateHostedZoneWithContext(context.Background(), params); err != nil {
 		require.EqualError(t, err, route53.ErrCodeHostedZoneAlreadyExists)
 	}
 }
@@ -1863,7 +1875,7 @@ func setAWSRecords(t *testing.T, provider *AWSProvider, records []*route53.Resou
 		})
 	}
 
-	zones, err := provider.Zones(ctx)
+	zones, err := provider.zones(ctx)
 	require.NoError(t, err)
 	err = provider.submitChanges(ctx, changes, zones)
 	require.NoError(t, err)
@@ -1893,7 +1905,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
-		client:                client,
+		clients:                map[string]Route53API{DefaultAWSProfile: client},
 		batchChangeSize:       defaultBatchChangeSize,
 		batchChangeSizeBytes:  defaultBatchChangeSizeBytes,
 		batchChangeSizeValues: defaultBatchChangeSizeValues,
@@ -1933,7 +1945,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 		Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(false)},
 	})
 
-	setupZoneTags(provider.client.(*Route53APIStub))
+	setupZoneTags(provider.clients[DefaultAWSProfile].(*Route53APIStub))
 
 	setAWSRecords(t, provider, records)
 
