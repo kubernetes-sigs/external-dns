@@ -461,12 +461,14 @@ func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
 	})
 
 	if r.zoneName == "." && len(r.zoneNames) > 0 {
-		log.Warnf("There is no zone set, try to find zone for %s", ep.DNSName)
+		log.Debugf("There is no zone set, try to find zone for %s", ep.DNSName)
 		for _, zone := range r.zoneNames {
 			if strings.HasSuffix(ep.DNSName, zone) {
-				log.Warnf("Found avialable zone for %s: %s", ep.DNSName, zone)
+				log.Debugf("Found avialable zone for %s: %s", ep.DNSName, zone)
 				r.krb5Realm = dns.Fqdn(zone)
 				m.SetUpdate(dns.Fqdn(zone))
+
+				return
 			}
 		}
 	}
