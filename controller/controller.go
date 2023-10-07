@@ -73,6 +73,14 @@ var (
 			Help:      "Timestamp of last successful sync with the DNS provider",
 		},
 	)
+	lastReconcileTimestamp = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "controller",
+			Name:      "last_reconcile_timestamp_seconds",
+			Help:      "Timestamp of last attempted sync with the DNS provider",
+		},
+	)
 	controllerNoChangesTotal = prometheus.NewCounter(
 		prometheus.CounterOpts{
 			Namespace: "external_dns",
@@ -151,6 +159,7 @@ func init() {
 	prometheus.MustRegister(sourceEndpointsTotal)
 	prometheus.MustRegister(registryEndpointsTotal)
 	prometheus.MustRegister(lastSyncTimestamp)
+	prometheus.MustRegister(lastReconcileTimestamp)
 	prometheus.MustRegister(deprecatedRegistryErrors)
 	prometheus.MustRegister(deprecatedSourceErrors)
 	prometheus.MustRegister(controllerNoChangesTotal)
@@ -191,6 +200,8 @@ type Controller struct {
 
 // RunOnce runs a single iteration of a reconciliation loop.
 func (c *Controller) RunOnce(ctx context.Context) error {
+	lastReconcileTimestamp.SetToCurrentTime()
+
 	records, err := c.Registry.Records(ctx)
 	if err != nil {
 		registryErrorsTotal.Inc()
@@ -248,6 +259,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	}
 
 	lastSyncTimestamp.SetToCurrentTime()
+
 	return nil
 }
 
