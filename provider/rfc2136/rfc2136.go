@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -46,6 +47,7 @@ type rfc2136Provider struct {
 	provider.BaseProvider
 	nameserver      string
 	zoneName        string
+	zoneNames       []string
 	tsigKeyName     string
 	tsigSecret      string
 	tsigSecretAlg   string
@@ -81,7 +83,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneName string, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -94,6 +96,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 	r := &rfc2136Provider{
 		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
 		zoneName:        dns.Fqdn(zoneName),
+		zoneNames:       zoneNames,
 		insecure:        insecure,
 		gssTsig:         gssTsig,
 		krb5Username:    krb5Username,
@@ -256,6 +259,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
+			findMsgZone(ep, m, &r)
+
 			r.AddRecord(m, ep)
 		}
 
@@ -282,6 +287,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
+			findMsgZone(ep, m, &r)
+
 			r.UpdateRecord(m, changes.UpdateOld[i], ep)
 		}
 
@@ -307,6 +314,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
+
+			findMsgZone(ep, m, &r)
 
 			r.RemoveRecord(m, ep)
 		}
@@ -438,4 +447,21 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	}
 
 	return chunks
+}
+
+func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
+	sort.Slice(r.zoneNames, func(i, j int) bool {
+		return len(strings.Split(r.zoneNames[i], ".")) > len(strings.Split(r.zoneNames[j], "."))
+	})
+
+	if r.zoneName == "." && len(r.zoneNames) > 0 {
+		log.Warnf("There is no zone set, try to find zone for %s", ep.DNSName)
+		for _, zone := range r.zoneNames {
+			if strings.HasSuffix(ep.DNSName, zone) {
+				log.Warnf("Found avialable zone for %s: %s", ep.DNSName, zone)
+				r.krb5Realm = dns.Fqdn(zone)
+				m.SetUpdate(dns.Fqdn(zone))
+			}
+		}
+	}
 }

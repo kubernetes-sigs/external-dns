@@ -176,6 +176,7 @@ type Config struct {
 	RFC2136Host                        string
 	RFC2136Port                        int
 	RFC2136Zone                        string
+	RFC2136Zones                       []string
 	RFC2136Insecure                    bool
 	RFC2136GSSTSIG                     bool
 	RFC2136KerberosRealm               string
@@ -331,6 +332,7 @@ var defaultConfig = &Config{
 	RFC2136Host:                 "",
 	RFC2136Port:                 0,
 	RFC2136Zone:                 "",
+	RFC2136Zones:                []string{},
 	RFC2136Insecure:             false,
 	RFC2136GSSTSIG:              false,
 	RFC2136KerberosRealm:        "",
@@ -559,6 +561,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server").Default(defaultConfig.RFC2136Host).StringVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify the zone entry of the DNS server to use").Default(defaultConfig.RFC2136Zone).StringVar(&cfg.RFC2136Zone)
+	app.Flag("rfc2136-zones", "When using the RFC2136 provider, specify multiply zones (optional)").StringsVar(&cfg.RFC2136Zones)
 	app.Flag("rfc2136-insecure", "When using the RFC2136 provider, specify whether to attach TSIG or not (default: false, requires --rfc2136-tsig-keyname and rfc2136-tsig-secret)").Default(strconv.FormatBool(defaultConfig.RFC2136Insecure)).BoolVar(&cfg.RFC2136Insecure)
 	app.Flag("rfc2136-tsig-keyname", "When using the RFC2136 provider, specify the TSIG key to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGKeyName).StringVar(&cfg.RFC2136TSIGKeyName)
 	app.Flag("rfc2136-tsig-secret", "When using the RFC2136 provider, specify the TSIG (base64) value to attached to DNS messages (required when --rfc2136-insecure=false)").Default(defaultConfig.RFC2136TSIGSecret).StringVar(&cfg.RFC2136TSIGSecret)
