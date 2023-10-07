@@ -212,30 +212,36 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 		return make([]dns.RR, 0), nil
 	}
 
-	log.Debugf("Fetching records for '%s'", r.zoneName)
-
-	m := new(dns.Msg)
-	m.SetAxfr(r.zoneName)
-	if !r.insecure && !r.gssTsig {
-		m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-	}
-
-	env, err := r.actions.IncomeTransfer(m, r.nameserver)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch records via AXFR: %v", err)
+	if len(r.zoneNames) == 0 {
+		r.zoneNames = append(r.zoneNames, r.zoneName)
 	}
 
 	records := make([]dns.RR, 0)
-	for e := range env {
-		if e.Error != nil {
-			if e.Error == dns.ErrSoa {
-				log.Error("AXFR error: unexpected response received from the server")
-			} else {
-				log.Errorf("AXFR error: %v", e.Error)
-			}
-			continue
+	for _, zone := range r.zoneNames {
+		log.Debugf("Fetching records for '%s'", zone)
+
+		m := new(dns.Msg)
+		m.SetAxfr(dns.Fqdn(zone))
+		if !r.insecure && !r.gssTsig {
+			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
-		records = append(records, e.RR...)
+
+		env, err := r.actions.IncomeTransfer(m, r.nameserver)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch records via AXFR: %v", err)
+		}
+
+		for e := range env {
+			if e.Error != nil {
+				if e.Error == dns.ErrSoa {
+					log.Error("AXFR error: unexpected response received from the server")
+				} else {
+					log.Errorf("AXFR error: %v", e.Error)
+				}
+				continue
+			}
+			records = append(records, e.RR...)
+		}
 	}
 
 	return records, nil
