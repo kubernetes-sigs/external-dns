@@ -64,15 +64,16 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cred, err := getCredentials(*cfg)
+	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, nil)
+
+	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, nil)
+	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}

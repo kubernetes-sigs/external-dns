@@ -70,15 +70,16 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cred, err := getCredentials(*cfg)
+	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, nil)
+
+	zonesClient, err := dns.NewZonesClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	recordSetsClient, err := dns.NewRecordSetsClient(cfg.SubscriptionID, cred, nil)
+	recordSetsClient, err := dns.NewRecordSetsClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
