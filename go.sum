@@ -336,8 +336,6 @@ github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2H
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gin-contrib/sse v0.1.0/go.mod h1:RHrZQHXnP2xjPF+u1gW/2HnVO7nvIa9PG3Gm+fLHvGI=
 github.com/gin-gonic/gin v1.7.4/go.mod h1:jD2toBW3GZUr5UMcdrwQA10I7RuaFOl/SGeDjXkfUtY=
-github.com/glesys/glesys-go v2.3.1+incompatible h1:XO9gvnSpenSvHpsus6Z8zos/PhjUJJfIFVjg+CiqeLI=
-github.com/glesys/glesys-go v2.3.1+incompatible/go.mod h1:czDLXY2GbJoBzDMCHUjG8asBTv+ZGgdpauncJFqh3C4=
 github.com/glesys/glesys-go/v7 v7.1.0 h1:45knogJV5o5ZzNy8h+CN8lYKL0IsCDhC50SvKf1i+gc=
 github.com/glesys/glesys-go/v7 v7.1.0/go.mod h1:hgM3bP8ufUADFBNy4Gmk+iQ/QMMHV1Oqx3xKquA5D3g=
 github.com/globalsign/mgo v0.0.0-20180905125535-1ca0a4f7cbcb/go.mod h1:xkRDCp4j0OGD1HRkm4kmhM+pmpv3AKq5SU7GMg4oO/Q=
