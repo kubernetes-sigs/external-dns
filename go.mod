@@ -28,6 +28,7 @@ require (
 	github.com/dnsimple/dnsimple-go v1.2.0
 	github.com/exoscale/egoscale v0.100.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
+	github.com/glesys/glesys-go/v7 v7.1.0
 	github.com/go-gandi/go-gandi v0.6.0
 	github.com/go-logr/logr v1.2.4
 	github.com/google/go-cmp v0.5.9
