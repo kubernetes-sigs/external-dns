@@ -120,7 +120,6 @@ func processDeleteActions(
 		for _, endpoint := range endpoints {
 
 			matchingRecords := getMatchingDomainRecords(records, domain, endpoint)
-
 			for _, record := range matchingRecords {
 				changes.Deletes = append(changes.Deletes, &record)
 			}
@@ -218,7 +217,6 @@ func processUpdateActions(
 					"recordType": ep.RecordType,
 					"target":     target,
 				}).Warn("Deleting target")
-				log.Infof(domain)
 				record.DomainName = domain
 				changes.Deletes = append(changes.Deletes, &record)
 			}
@@ -306,6 +304,7 @@ func getMatchingDomainRecords(records []glesys.DNSDomainRecord, domain string, e
 	var result []glesys.DNSDomainRecord
 	for _, r := range records {
 		if r.Host == name && r.Type == ep.RecordType {
+			r.Data = strings.TrimSuffix(r.Data, ".")
 			result = append(result, r)
 		}
 	}

@@ -118,7 +118,7 @@ func TestUpdateRecord(t *testing.T) {
 				RecordID:   3,
 				Host:       "@",
 				Type:       endpoint.RecordTypeCNAME,
-				Data:       "foo.example.com.",
+				Data:       "foo.example.com",
 				TTL:        glesysRecordTTL,
 			},
 		},
@@ -159,11 +159,11 @@ func TestUpdateRecord(t *testing.T) {
 
 	expectedDeletes := []*glesys.DNSDomainRecord{
 		{
-			RecordID:   2,
+			RecordID:   1,
 			DomainName: "example.com",
 			Host:       "foo",
 			Type:       endpoint.RecordTypeA,
-			Data:       "5.6.7.8",
+			Data:       "1.2.3.4",
 			TTL:        glesysRecordTTL,
 		},
 		{
@@ -179,7 +179,7 @@ func TestUpdateRecord(t *testing.T) {
 			DomainName: "example.com",
 			Host:       "@",
 			Type:       endpoint.RecordTypeCNAME,
-			Data:       "foo.example.com.",
+			Data:       "foo.example.com",
 			TTL:        glesysRecordTTL,
 		},
 	}
@@ -218,7 +218,7 @@ func TestGlesysProcessDeleteActions(t *testing.T) {
 				RecordID:   3,
 				Host:       "@",
 				Type:       endpoint.RecordTypeCNAME,
-				Data:       "foo.example.com.",
+				Data:       "foo.example.com",
 				TTL:        glesysRecordTTL,
 			},
 		},
@@ -239,7 +239,25 @@ func TestGlesysProcessDeleteActions(t *testing.T) {
 	assert.Equal(t, 0, len(changes.Updates))
 	assert.Equal(t, 2, len(changes.Deletes))
 
-	expectedDeletes := []int{1, 2, 3}
+	expectedDeletes := []*glesys.DNSDomainRecord{
+
+		{
+			RecordID:   2,
+			DomainName: "example.com",
+			Host:       "foo",
+			Type:       endpoint.RecordTypeA,
+			Data:       "5.6.7.8",
+			TTL:        glesysRecordTTL,
+		},
+		{
+			RecordID:   3,
+			DomainName: "example.com",
+			Host:       "@",
+			Type:       endpoint.RecordTypeCNAME,
+			Data:       "foo.example.com",
+			TTL:        glesysRecordTTL,
+		},
+	}
 
 	if !elementsMatch(t, expectedDeletes, changes.Deletes) {
 		assert.Failf(t, "diff: %s", cmp.Diff(expectedDeletes, changes.Deletes))
