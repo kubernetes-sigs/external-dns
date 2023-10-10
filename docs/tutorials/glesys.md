@@ -10,7 +10,7 @@ Make sure to use **?????** version of ExternalDNS for this tutorial.
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
-### Manifest (for clusters without RBAC enabled)
+### Manifest
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -166,12 +166,3 @@ Check your [GleSYS Cloud UI](https://cloud.glesys.com/) to view the records for 
 Click on the zone for the one created above if a different domain was used.
 
 This should show the external IP address of the service as the A record for your domain.
-
-## Cleanup
-
-Now that we have verified that ExternalDNS will automatically manage GleSYS DNS records, we can delete the tutorial's example:
-
-```
-$ kubectl delete service -f nginx.yaml
-$ kubectl delete service -f externaldns.yaml
-```
