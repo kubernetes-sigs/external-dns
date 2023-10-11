@@ -43,6 +43,7 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
+	"sigs.k8s.io/external-dns/provider/adguard"
 	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
@@ -405,6 +406,12 @@ func main() {
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	case "webhook":
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
+	case "adguard":
+		p, err = adguard.NewProvider(adguard.Config{
+			Username: cfg.AdguardHomeUser,
+			Password: cfg.AdguardHomePassword,
+			Server:   cfg.AdguardHomeServer,
+		})
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
