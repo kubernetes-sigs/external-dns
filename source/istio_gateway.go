@@ -46,6 +46,7 @@ const IstioGatewayIngressSource = "external-dns.alpha.kubernetes.io/ingress"
 // The gateway implementation uses the spec.servers.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type gatewaySource struct {
+	BaseSource
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
 	namespace                string
@@ -324,7 +325,7 @@ func (sc *gatewaySource) endpointsFromGateway(ctx context.Context, hostnames []s
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(annotations)
 
 	for _, host := range hostnames {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)

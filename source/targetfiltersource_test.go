@@ -43,6 +43,7 @@ func (m *mockTargetNetFilter) Match(target string) bool {
 
 // echoSource is a Source that returns the endpoints passed in on creation.
 type echoSource struct {
+	BaseSource
 	endpoints []*endpoint.Endpoint
 }
 

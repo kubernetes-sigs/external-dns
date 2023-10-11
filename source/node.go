@@ -34,6 +34,7 @@ import (
 )
 
 type nodeSource struct {
+	BaseSource
 	client           kubernetes.Interface
 	annotationFilter string
 	fqdnTemplate     *template.Template

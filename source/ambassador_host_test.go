@@ -18,6 +18,7 @@ package source
 
 import (
 	"fmt"
+	"sigs.k8s.io/external-dns/pkg/apis"
 	"testing"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
@@ -234,8 +235,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation:    hostAnnotation,
-						CloudflareProxiedKey: "true",
+						ambHostAnnotation: hostAnnotation,
+						"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -313,6 +314,9 @@ func TestAmbassadorHostSource(t *testing.T) {
 			assert.NoError(t, err)
 
 			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace)
+			source.SetProviderSpecificConfig(apis.ProviderSpecificConfig{Translation: map[string]string{
+				"external-dns.alpha.kubernetes.io/cloudflare-proxied": "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+			}})
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 

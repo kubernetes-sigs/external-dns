@@ -431,6 +431,12 @@ func main() {
 		os.Exit(0)
 	}
 
+	ps, err := p.GetProviderSpecific(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	endpointsSource.SetProviderSpecificConfig(ps)
+
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":

@@ -81,6 +81,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 }
 
 type gatewayRouteSource struct {
+	BaseSource
 	gwNamespace string
 	gwLabels    labels.Selector
 	gwInformer  informers_v1.GatewayInformer
@@ -230,7 +231,7 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 
 		// Create endpoints from hostnames and targets.
 		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
+		providerSpecific, setIdentifier := src.GetProviderSpecificAnnotations(annots)
 		ttl := getTTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
 			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)

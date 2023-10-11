@@ -32,6 +32,7 @@ import (
 // fakeSource is an implementation of Source that provides dummy endpoints for
 // testing/dry-running of dns providers without needing an attached Kubernetes cluster.
 type fakeSource struct {
+	BaseSource
 	dnsName string
 }
 

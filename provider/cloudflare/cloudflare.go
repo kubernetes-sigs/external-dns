@@ -24,13 +24,14 @@ import (
 	"strconv"
 	"strings"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	cloudflare "github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/source"
 )
 
 const (
@@ -42,6 +43,8 @@ const (
 	cloudFlareUpdate = "UPDATE"
 	// defaultCloudFlareRecordTTL 1 = automatic
 	defaultCloudFlareRecordTTL = 1
+	// The annotation used for determining if traffic will go through Cloudflare
+	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
 )
 
 // We have to use pointers to bools now, as the upstream cloudflare-go library requires them
@@ -162,7 +165,7 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 }
 
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int) (provider.Provider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -194,6 +197,14 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		DNSRecordsPerPage: dnsRecordsPerPage,
 	}
 	return provider, nil
+}
+
+func (p *CloudFlareProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	return apis.ProviderSpecificConfig{
+		Translation: map[string]string{
+			CloudflareProxiedKey: CloudflareProxiedKey,
+		},
+	}, nil
 }
 
 // Zones returns the list of hosted zones.
@@ -398,7 +409,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 		if proxied {
 			e.RecordTTL = 0
 		}
-		e.SetProviderSpecificProperty(source.CloudflareProxiedKey, strconv.FormatBool(proxied))
+		e.SetProviderSpecificProperty(CloudflareProxiedKey, strconv.FormatBool(proxied))
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
@@ -487,10 +498,10 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 	proxied := proxiedByDefault
 
 	for _, v := range endpoint.ProviderSpecific {
-		if v.Name == source.CloudflareProxiedKey {
+		if v.Name == CloudflareProxiedKey {
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
-				log.Errorf("Failed to parse annotation [%s]: %v", source.CloudflareProxiedKey, err)
+				log.Errorf("Failed to parse annotation [%s]: %v", CloudflareProxiedKey, err)
 			} else {
 				proxied = b
 			}
@@ -535,7 +546,7 @@ func groupByNameAndType(records []cloudflare.DNSRecord) []*endpoint.Endpoint {
 				records[0].Type,
 				endpoint.TTL(records[0].TTL),
 				targets...).
-				WithProviderSpecific(source.CloudflareProxiedKey, strconv.FormatBool(*records[0].Proxied)),
+				WithProviderSpecific(CloudflareProxiedKey, strconv.FormatBool(*records[0].Proxied)),
 		)
 	}
 

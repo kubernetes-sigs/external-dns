@@ -34,6 +34,7 @@ const (
 // connectorSource is an implementation of Source that provides endpoints by connecting
 // to a remote tcp server. The encoding/decoding is done using encoder/gob package.
 type connectorSource struct {
+	BaseSource
 	remoteServer string
 }
 

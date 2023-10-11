@@ -42,6 +42,7 @@ import (
 // crdSource is an implementation of Source that provides endpoints by listing
 // specified CRD and fetching Endpoints embedded in Spec.
 type crdSource struct {
+	BaseSource
 	crdClient        rest.Interface
 	namespace        string
 	crdResource      string

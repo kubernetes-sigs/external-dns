@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"testing"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/stretchr/testify/assert"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -75,6 +77,88 @@ func TestGetTTLFromAnnotations(t *testing.T) {
 		t.Run(tc.title, func(t *testing.T) {
 			ttl := getTTLFromAnnotations(tc.annotations, "resource/test")
 			assert.Equal(t, tc.expectedTTL, ttl)
+		})
+	}
+}
+
+func TestProviderSpecificAnnotations(t *testing.T) {
+	for _, tc := range []struct {
+		title                  string
+		annotations            map[string]string
+		providerSpecificConfig apis.ProviderSpecificConfig
+		expectedPS             endpoint.ProviderSpecific
+	}{
+		{
+			title:       "PS annotations are not present",
+			annotations: map[string]string{"foo": "bar"},
+			expectedPS:  endpoint.ProviderSpecific{},
+		},
+		{
+			title:       "Cloudflare annotation is present",
+			annotations: map[string]string{"external-dns.alpha.kubernetes.io/cloudflare-proxied": "true"},
+			providerSpecificConfig: apis.ProviderSpecificConfig{
+				Translation: map[string]string{
+					"external-dns.alpha.kubernetes.io/cloudflare-proxied": "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+				},
+			},
+			expectedPS: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "true",
+				},
+			},
+		},
+		{
+			title:       "AWS annotation is present",
+			annotations: map[string]string{"external-dns.alpha.kubernetes.io/aws-weight": "10"},
+			providerSpecificConfig: apis.ProviderSpecificConfig{
+				PrefixTranslation: map[string]string{
+					"external-dns.alpha.kubernetes.io/aws-": "aws/",
+				},
+			},
+			expectedPS: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "aws/weight",
+					Value: "10",
+				},
+			},
+		},
+		{
+			title:       "AWS annotation is present with generic",
+			annotations: map[string]string{"aws.provider.external-dns.alpha.kubernetes.io/weight": "10"},
+			providerSpecificConfig: apis.ProviderSpecificConfig{
+				PrefixTranslation: map[string]string{
+					"aws.provider.external-dns.alpha.kubernetes.io/": "aws/",
+				},
+			},
+			expectedPS: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "aws/weight",
+					Value: "10",
+				},
+			},
+		},
+		{
+			title:       "Generic annotation is present",
+			annotations: map[string]string{"generic.provider.external-dns.alpha.kubernetes.io/weight": "10"},
+			providerSpecificConfig: apis.ProviderSpecificConfig{
+				PrefixTranslation: map[string]string{
+					"generic.provider.external-dns.alpha.kubernetes.io/": "generic/",
+				},
+			},
+			expectedPS: endpoint.ProviderSpecific{
+				endpoint.ProviderSpecificProperty{
+					Name:  "generic/weight",
+					Value: "10",
+				},
+			},
+		},
+	} {
+		t.Run(tc.title, func(t *testing.T) {
+			source := BaseSource{}
+			source.ProviderSpecificConfig = tc.providerSpecificConfig
+			providerSpecificAnnotations, _ := source.GetProviderSpecificAnnotations(tc.annotations)
+			assert.Equal(t, tc.expectedPS, providerSpecificAnnotations)
 		})
 	}
 }

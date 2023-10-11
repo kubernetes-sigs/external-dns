@@ -25,6 +25,7 @@ import (
 	"net/url"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
@@ -88,6 +89,14 @@ var (
 			Help:      "Requests with AdjustEndpoints method",
 		},
 	)
+	providerSpecificErrorsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "provider_speific_errors",
+			Help:      "Errors with GetProviderSpecific method",
+		},
+	)
 )
 
 type WebhookProvider struct {
@@ -103,9 +112,10 @@ func init() {
 	prometheus.MustRegister(applyChangesRequestsGauge)
 	prometheus.MustRegister(adjustEndpointsErrorsGauge)
 	prometheus.MustRegister(adjustEndpointsRequestsGauge)
+	prometheus.MustRegister(providerSpecificErrorsGauge)
 }
 
-func NewWebhookProvider(u string) (*WebhookProvider, error) {
+func NewWebhookProvider(u string) (provider.Provider, error) {
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return nil, err
@@ -292,6 +302,43 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
+	return endpoints, nil
+}
+
+func (p WebhookProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	u := p.remoteServerURL.JoinPath("provider-specific").String()
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		providerSpecificErrorsGauge.Inc()
+		log.Debugf("Failed to create request: %s", err.Error())
+		return apis.ProviderSpecificConfig{}, err
+	}
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
+	resp, err := p.client.Do(req)
+	if err != nil {
+		providerSpecificErrorsGauge.Inc()
+		log.Debugf("Failed to perform request: %s", err.Error())
+		return apis.ProviderSpecificConfig{}, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		providerSpecificErrorsGauge.Inc()
+		log.Debugf("Failed to get provider-specific with code %d", resp.StatusCode)
+		return apis.ProviderSpecificConfig{}, nil
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		providerSpecificErrorsGauge.Inc()
+		log.Debugf("Failed to get provider-specific with code %d", resp.StatusCode)
+		return apis.ProviderSpecificConfig{}, fmt.Errorf("failed to get records with code %d", resp.StatusCode)
+	}
+
+	endpoints := apis.ProviderSpecificConfig{}
+	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
+		providerSpecificErrorsGauge.Inc()
+		log.Debugf("Failed to decode response body: %s", err.Error())
+		return apis.ProviderSpecificConfig{}, err
+	}
 	return endpoints, nil
 }
 

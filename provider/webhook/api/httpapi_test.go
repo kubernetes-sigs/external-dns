@@ -27,6 +27,8 @@ import (
 	"testing"
 	"time"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
@@ -37,6 +39,11 @@ var records []*endpoint.Endpoint
 type FakeWebhookProvider struct {
 	err          error
 	domainFilter endpoint.DomainFilter
+}
+
+func (p FakeWebhookProvider) GetProviderSpecific(ctx context.Context) (apis.ProviderSpecificConfig, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (p FakeWebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {

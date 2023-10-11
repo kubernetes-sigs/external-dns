@@ -95,6 +95,7 @@ type proxyVirtualHostMetadataSourceResourceRef struct {
 }
 
 type glooSource struct {
+	BaseSource
 	dynamicKubeClient dynamic.Interface
 	kubeClient        kubernetes.Interface
 	glooNamespaces    []string
@@ -104,9 +105,9 @@ type glooSource struct {
 func NewGlooSource(dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface,
 	glooNamespaces []string) (Source, error) {
 	return &glooSource{
-		dynamicKubeClient,
-		kubeClient,
-		glooNamespaces,
+		dynamicKubeClient: dynamicKubeClient,
+		kubeClient:        kubeClient,
+		glooNamespaces:    glooNamespaces,
 	}, nil
 }
 
@@ -166,7 +167,7 @@ func (gs *glooSource) generateEndpointsFromProxy(ctx context.Context, proxy *pro
 				return nil, err
 			}
 			ttl := getTTLFromAnnotations(annotations, resource)
-			providerSpecific, setIdentifier := getProviderSpecificAnnotations(annotations)
+			providerSpecific, setIdentifier := gs.GetProviderSpecificAnnotations(annotations)
 			for _, domain := range virtualHost.Domains {
 				endpoints = append(endpoints, endpointsForHostname(strings.TrimSuffix(domain, "."), targets, ttl, providerSpecific, setIdentifier, "")...)
 			}

@@ -26,6 +26,7 @@ import (
 
 // dedupSource is a Source that removes duplicate endpoints from its wrapped source.
 type dedupSource struct {
+	BaseSource
 	source Source
 }
 

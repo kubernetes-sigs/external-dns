@@ -74,6 +74,24 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
+func (p *WebhookServer) ProvideSpecificHandler(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		log.Errorf("Unsupported method %s", req.Method)
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	records, err := p.Provider.GetProviderSpecific(context.Background())
+	if err != nil {
+		log.Errorf("Failed to get Provide-Specific: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(records); err != nil {
+		log.Errorf("Failed to encode records: %v", err)
+	}
+}
 
 func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
@@ -114,6 +132,7 @@ func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, req *http.Reques
 // - /records (GET): returns the current records
 // - /records (POST): applies the changes
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
+// - /provider-specific (GET): init provider specific stuff
 func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, providerPort string) {
 	p := WebhookServer{
 		Provider: provider,
@@ -123,6 +142,7 @@ func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTim
 	m.HandleFunc("/", p.NegotiateHandler)
 	m.HandleFunc("/records", p.RecordsHandler)
 	m.HandleFunc("/adjustendpoints", p.AdjustEndpointsHandler)
+	m.HandleFunc("/provider-specific", p.ProvideSpecificHandler)
 
 	s := &http.Server{
 		Addr:         providerPort,

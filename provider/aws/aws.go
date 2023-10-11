@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/route53"
@@ -291,6 +293,14 @@ func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error
 	}
 
 	return provider, nil
+}
+
+func (p *AWSProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	return apis.ProviderSpecificConfig{
+		PrefixTranslation: map[string]string{
+			"external-dns.alpha.kubernetes.io/aws-": "aws/",
+		},
+	}, nil
 }
 
 // Zones returns the list of hosted zones.

@@ -42,6 +42,7 @@ import (
 // matched services' entrypoints it will return a corresponding
 // Endpoint object.
 type serviceSource struct {
+	BaseSource
 	client           kubernetes.Interface
 	namespace        string
 	annotationFilter string
@@ -377,7 +378,7 @@ func (sc *serviceSource) endpointsFromTemplate(svc *v1.Service) ([]*endpoint.End
 		return nil, err
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(svc.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -392,7 +393,7 @@ func (sc *serviceSource) endpoints(svc *v1.Service) []*endpoint.Endpoint {
 	var endpoints []*endpoint.Endpoint
 	// Skip endpoints if we do not want entries from annotations
 	if !sc.ignoreHostnameAnnotation {
-		providerSpecific, setIdentifier := getProviderSpecificAnnotations(svc.Annotations)
+		providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(svc.Annotations)
 		var hostnameList []string
 		var internalHostnameList []string
 

@@ -21,6 +21,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -402,6 +404,9 @@ func TestGlooSource(t *testing.T) {
 		})
 
 	source, err := NewGlooSource(fakeDynamicClient, fakeKubernetesClient, []string{defaultGlooNamespace})
+	source.SetProviderSpecificConfig(apis.ProviderSpecificConfig{PrefixTranslation: map[string]string{
+		"external-dns.alpha.kubernetes.io/aws-": "aws/",
+	}})
 	assert.NoError(t, err)
 	assert.NotNil(t, source)
 

@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/apis"
 )
 
 // multiSource is a Source that merges the endpoints of its nested Sources.
@@ -51,6 +52,16 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 	}
 
 	return result, nil
+}
+
+func (ms *multiSource) SetProviderSpecificConfig(cfg apis.ProviderSpecificConfig) {
+	for i := range ms.children {
+		ms.children[i].SetProviderSpecificConfig(cfg)
+	}
+}
+
+func (ms *multiSource) GetProviderSpecificAnnotations(_ map[string]string) (endpoint.ProviderSpecific, string) {
+	return nil, ""
 }
 
 func (ms *multiSource) AddEventHandler(ctx context.Context, handler func()) {

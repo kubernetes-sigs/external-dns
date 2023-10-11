@@ -23,6 +23,8 @@ import (
 	"strconv"
 	"strings"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	domain "github.com/scaleway/scaleway-sdk-go/api/domain/v2beta1"
 	"github.com/scaleway/scaleway-sdk-go/scw"
 	log "github.com/sirupsen/logrus"
@@ -101,6 +103,14 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 		domainAPI:    domainAPI,
 		dryRun:       dryRun,
 		domainFilter: domainFilter,
+	}, nil
+}
+
+func (p *ScalewayProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	return apis.ProviderSpecificConfig{
+		PrefixTranslation: map[string]string{
+			"external-dns.alpha.kubernetes.io/scw-": "scw/",
+		},
 	}, nil
 }
 
