@@ -37,7 +37,7 @@ type glesysChanges struct {
 }
 
 const (
-	// digitalOceanRecordTTL is the default TTL value
+	// glesysRecordTTL is the default TTL value
 	glesysRecordTTL = 3600
 )
 
@@ -59,7 +59,7 @@ func NewGlesysProvider(ctx context.Context, dryRun bool) (*GlesysProvider, error
 
 	apikey, ok := os.LookupEnv("GLESYS_ACCESS_KEY")
 	if !ok {
-		return nil, fmt.Errorf("GLESYS_APIKEY not found")
+		return nil, fmt.Errorf("GLESYS_ACCESS_KEY not found")
 	}
 
 	var client = *glesys.NewClient(project, apikey, "ExternalDNS/"+externaldns.Version)
