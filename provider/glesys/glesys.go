@@ -127,6 +127,16 @@ func makeAddRecordParams(domain string, host string, target string, recordType s
 	}
 }
 
+func doesRecordExistInList(records []*glesys.DNSDomainRecord, record glesys.DNSDomainRecord) bool {
+
+	for _, r := range records {
+		if r.RecordID == record.RecordID {
+			return true
+		}
+	}
+	return false
+}
+
 func processDeleteActions(
 	recordsByDomain map[string][]glesys.DNSDomainRecord,
 	deletesByDomain map[string][]*endpoint.Endpoint,
@@ -137,6 +147,10 @@ func processDeleteActions(
 
 			matchingRecords := getMatchingDomainRecords(records, domain, endpoint)
 			for _, record := range matchingRecords {
+				//Skip if the record already exists in delete tasks
+				if doesRecordExistInList(changes.Deletes, record) {
+					continue
+				}
 				changes.Deletes = append(changes.Deletes, &record)
 			}
 		}
@@ -233,8 +247,15 @@ func processUpdateActions(
 					"recordType": ep.RecordType,
 					"target":     target,
 				}).Warn("Deleting target")
-				record.DomainName = domain
-				changes.Deletes = append(changes.Deletes, &record)
+				record.Data = target
+				changes.Deletes = append(changes.Deletes, &glesys.DNSDomainRecord{
+					DomainName: record.DomainName,
+					Data:       record.Data,
+					Host:       record.Host,
+					RecordID:   record.RecordID,
+					TTL:        record.TTL,
+					Type:       record.Type,
+				})
 			}
 		}
 	}
