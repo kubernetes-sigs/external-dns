@@ -46,6 +46,7 @@ const IstioMeshGateway = "mesh"
 // The implementation uses the spec.hosts values for the hostnames.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type virtualServiceSource struct {
+	BaseSource
 	kubeClient               kubernetes.Interface
 	istioClient              istioclient.Interface
 	namespace                string
@@ -226,7 +227,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 
 	ttl := getTTLFromAnnotations(virtualService.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(virtualService.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -317,7 +318,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualservice.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(virtualservice.Annotations)
 
 	for _, host := range virtualservice.Spec.Hosts {
 		if host == "" || host == "*" {

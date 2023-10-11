@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/stretchr/testify/mock"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -57,4 +59,11 @@ func (m *MockSource) AddEventHandler(ctx context.Context, handler func()) {
 			}
 		}
 	}()
+}
+
+func (b *MockSource) SetProviderSpecificConfig(_ apis.ProviderSpecificConfig) {
+}
+
+func (b *MockSource) GetProviderSpecificAnnotations(_ map[string]string) (endpoint.ProviderSpecific, string) {
+	return nil, ""
 }

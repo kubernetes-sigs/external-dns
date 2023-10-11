@@ -26,6 +26,7 @@ import (
 )
 
 type cloudfoundrySource struct {
+	BaseSource
 	client *cfclient.Client
 }
 

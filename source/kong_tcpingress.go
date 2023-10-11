@@ -47,6 +47,7 @@ var kongGroupdVersionResource = schema.GroupVersionResource{
 
 // kongTCPIngressSource is an implementation of Source for Kong TCPIngress objects.
 type kongTCPIngressSource struct {
+	BaseSource
 	annotationFilter         string
 	ignoreHostnameAnnotation bool
 	dynamicKubeClient        dynamic.Interface
@@ -210,7 +211,7 @@ func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, 
 
 	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	if !sc.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)

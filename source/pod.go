@@ -31,6 +31,7 @@ import (
 )
 
 type podSource struct {
+	BaseSource
 	client        kubernetes.Interface
 	namespace     string
 	podInformer   coreinformers.PodInformer

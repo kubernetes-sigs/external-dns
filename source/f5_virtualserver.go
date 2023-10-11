@@ -48,6 +48,7 @@ var f5VirtualServerGVR = schema.GroupVersionResource{
 
 // virtualServerSource is an implementation of Source for F5 VirtualServer objects.
 type f5VirtualServerSource struct {
+	BaseSource
 	dynamicKubeClient     dynamic.Interface
 	virtualServerInformer informers.GenericInformer
 	kubeClient            kubernetes.Interface

@@ -54,6 +54,7 @@ var ambHostGVR = schemeGroupVersion.WithResource("hosts")
 // The IngressRoute implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type ambassadorHostSource struct {
+	BaseSource
 	dynamicKubeClient      dynamic.Interface
 	kubeClient             kubernetes.Interface
 	namespace              string

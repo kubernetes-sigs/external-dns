@@ -24,6 +24,8 @@ import (
 	"strings"
 	"text/template"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	log "github.com/sirupsen/logrus"
 	networkv1 "k8s.io/api/networking/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -54,6 +56,7 @@ const (
 // Use targetAnnotationKey to explicitly set Endpoint. (useful if the ingress
 // controller does not update, or to override with alternative endpoint)
 type ingressSource struct {
+	BaseSource
 	client                   kubernetes.Interface
 	namespace                string
 	annotationFilter         string
@@ -153,7 +156,7 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 			continue
 		}
 
-		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec)
+		ingEndpoints := endpointsFromIngress(ing, sc.ignoreHostnameAnnotation, sc.ignoreIngressTLSSpec, sc.ignoreIngressRulesSpec, sc.ProviderSpecificConfig)
 
 		// apply template if host is missing on ingress
 		if (sc.combineFQDNAnnotation || len(ingEndpoints) == 0) && sc.fqdnTemplate != nil {
@@ -197,7 +200,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(ing.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -285,7 +288,7 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 }
 
 // endpointsFromIngress extracts the endpoints from ingress object
-func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
+func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool, cfg apis.ProviderSpecificConfig) []*endpoint.Endpoint {
 	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
 
 	ttl := getTTLFromAnnotations(ing.Annotations, resource)
@@ -296,7 +299,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 		targets = targetsFromIngressStatus(ing.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ing.Annotations)
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(cfg, ing.Annotations)
 
 	// Gather endpoints defined on hosts sections of the ingress
 	var definedHostsEndpoints []*endpoint.Endpoint
