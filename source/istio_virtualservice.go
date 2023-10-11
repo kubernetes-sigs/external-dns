@@ -169,7 +169,6 @@ func (sc *virtualServiceSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		log.Debugf("Endpoints generated from VirtualService: %s/%s: %v", virtualService.Namespace, virtualService.Name, gwEndpoints)
-		sc.setResourceLabel(virtualService, gwEndpoints)
 		endpoints = append(endpoints, gwEndpoints...)
 	}
 
@@ -223,10 +222,9 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(virtualService.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualService.Namespace, virtualService.Name)
+
+	ttl := getTTLFromAnnotations(virtualService.Annotations, resource)
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(virtualService.Annotations)
 
@@ -236,7 +234,7 @@ func (sc *virtualServiceSource) endpointsFromTemplate(ctx context.Context, virtu
 		if err != nil {
 			return endpoints, err
 		}
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -270,12 +268,6 @@ func (sc *virtualServiceSource) filterByAnnotations(virtualservices []*networkin
 	}
 
 	return filteredList, nil
-}
-
-func (sc *virtualServiceSource) setResourceLabel(virtualservice *networkingv1alpha3.VirtualService, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
-	}
 }
 
 // append a target to the list of targets unless it's already in the list
@@ -317,11 +309,11 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
 func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context, virtualservice *networkingv1alpha3.VirtualService) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
+	var err error
 
-	ttl, err := getTTLFromAnnotations(virtualservice.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("virtualservice/%s/%s", virtualservice.Namespace, virtualservice.Name)
+
+	ttl := getTTLFromAnnotations(virtualservice.Annotations, resource)
 
 	targetsFromAnnotation := getTargetsFromTargetAnnotation(virtualservice.Annotations)
 
@@ -348,7 +340,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 			}
 		}
 
-		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	// Skip endpoints if we do not want entries from annotations
@@ -362,7 +354,7 @@ func (sc *virtualServiceSource) endpointsFromVirtualService(ctx context.Context,
 					return endpoints, err
 				}
 			}
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 

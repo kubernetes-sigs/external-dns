@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	log "github.com/sirupsen/logrus"
@@ -65,10 +66,16 @@ func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (
 }
 
 // getAccessToken retrieves Azure API access token.
-func getCredentials(cfg config) (azcore.TokenCredential, error) {
+func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get cloud configuration: %w", err)
+		return nil, nil, fmt.Errorf("failed to get cloud configuration: %w", err)
+	}
+	clientOpts := azcore.ClientOptions{
+		Cloud: cloudCfg,
+	}
+	armClientOpts := &arm.ClientOptions{
+		ClientOptions: clientOpts,
 	}
 
 	// Try to retrieve token with service principal credentials.
@@ -83,15 +90,13 @@ func getCredentials(cfg config) (azcore.TokenCredential, error) {
 		!strings.EqualFold(cfg.ClientSecret, "msi") {
 		log.Info("Using client_id+client_secret to retrieve access token for Azure API.")
 		opts := &azidentity.ClientSecretCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				Cloud: cloudCfg,
-			},
+			ClientOptions: clientOpts,
 		}
 		cred, err := azidentity.NewClientSecretCredential(cfg.TenantID, cfg.ClientID, cfg.ClientSecret, opts)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create service principal token: %w", err)
+			return nil, nil, fmt.Errorf("failed to create service principal token: %w", err)
 		}
-		return cred, nil
+		return cred, armClientOpts, nil
 	}
 
 	// Try to retrieve token with Workload Identity.
@@ -99,9 +104,7 @@ func getCredentials(cfg config) (azcore.TokenCredential, error) {
 		log.Info("Using workload identity extension to retrieve access token for Azure API.")
 
 		wiOpt := azidentity.WorkloadIdentityCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				Cloud: cloudCfg,
-			},
+			ClientOptions: clientOpts,
 			// In a standard scenario, Client ID and Tenant ID are expected to be read from environment variables.
 			// Though, in certain cases, it might be important to have an option to override those (e.g. when AZURE_TENANT_ID is not set
 			// through a webhook or azure.workload.identity/client-id service account annotation is absent). When any of those values are
@@ -112,31 +115,29 @@ func getCredentials(cfg config) (azcore.TokenCredential, error) {
 
 		cred, err := azidentity.NewWorkloadIdentityCredential(&wiOpt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create a workload identity token: %w", err)
+			return nil, nil, fmt.Errorf("failed to create a workload identity token: %w", err)
 		}
 
-		return cred, nil
+		return cred, armClientOpts, nil
 	}
 
 	// Try to retrieve token with MSI.
 	if cfg.UseManagedIdentityExtension {
 		log.Info("Using managed identity extension to retrieve access token for Azure API.")
 		msiOpt := azidentity.ManagedIdentityCredentialOptions{
-			ClientOptions: azcore.ClientOptions{
-				Cloud: cloudCfg,
-			},
+			ClientOptions: clientOpts,
 		}
 		if cfg.UserAssignedIdentityID != "" {
 			msiOpt.ID = azidentity.ClientID(cfg.UserAssignedIdentityID)
 		}
 		cred, err := azidentity.NewManagedIdentityCredential(&msiOpt)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
+			return nil, nil, fmt.Errorf("failed to create the managed service identity token: %w", err)
 		}
-		return cred, nil
+		return cred, armClientOpts, nil
 	}
 
-	return nil, fmt.Errorf("no credentials provided for Azure API")
+	return nil, nil, fmt.Errorf("no credentials provided for Azure API")
 }
 
 func getCloudConfiguration(name string) (cloud.Configuration, error) {

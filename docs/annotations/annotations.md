@@ -4,29 +4,31 @@ ExternalDNS sources support a number of annotations on the Kubernetes resources 
 
 The following table documents which sources support which annotations:
 
-| Source       | controller | hostname | internal-hostname | target  | ttl | (provider-specific) |
-|--------------|------------|----------|-------------------|---------|-----|---------------------|
-| Ambassador   |            |          |                   |         | Yes |                     |
-| Connector    |            |          |                   |         |     |                     |
-| Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
-| CloudFoundry |            |          |                   |         |     |                     |
-| CRD          |            |          |                   |         |     |                     |
-| F5           |            |          |                   |         | Yes |                     |
-| Gateway      | Yes        | Yes[^1]  |                   |         | Yes | Yes                 |
-| Gloo         |            |          |                   |         | Yes | Yes                 |
-| Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
-| Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
-| Kong         |            | Yes      |                   |         | Yes | Yes                 |
-| Node         | Yes        |          |                   |         | Yes |                     |
-| OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
-| Pod          |            | Yes      | Yes               |         |     |                     |
-| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes | Yes                 |
-| Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes | Yes                 |
-| Traefik      |            | Yes      |                   | Yes     | Yes | Yes                 |
+| Source       | controller | hostname | internal-hostname | target  | ttl     | (provider-specific) |
+|--------------|------------|----------|-------------------|---------|---------|---------------------|
+| Ambassador   |            |          |                   | Yes     | Yes     |                     |
+| Connector    |            |          |                   |         |         |                     |
+| Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| CloudFoundry |            |          |                   |         |         |                     |
+| CRD          |            |          |                   |         |         |                     |
+| F5           |            |          |                   | Yes     | Yes     |                     |
+| Gateway      | Yes        | Yes[^1]  |                   | Yes[^4] | Yes     | Yes                 |
+| Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
+| Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Kong         |            | Yes      |                   | Yes     | Yes     | Yes                 |
+| Node         | Yes        |          |                   | Yes     | Yes     |                     |
+| OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Pod          |            | Yes      | Yes               | Yes     |         |                     |
+| Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |
+| Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
+| Traefik      |            | Yes      |                   | Yes     | Yes     | Yes                 |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
-[^2]: Only behaves differently than `hostname` for `Service`s of type `LoadBalancer`.
+[^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.
 [^3]: Also supported on `Pods` referenced from a headless `Service`'s `Endpoints`.
+[^4]: The annotation must be on the `Gateway`.
+[^5]: The annotation must be on the listener's `VirtualService`.
 
 ## external-dns.alpha.kubernetes.io/access
 

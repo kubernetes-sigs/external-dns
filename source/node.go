@@ -38,10 +38,11 @@ type nodeSource struct {
 	annotationFilter string
 	fqdnTemplate     *template.Template
 	nodeInformer     coreinformers.NodeInformer
+	labelSelector    labels.Selector
 }
 
 // NewNodeSource creates a new nodeSource with the given config.
-func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string) (Source, error) {
+func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotationFilter, fqdnTemplate string, labelSelector labels.Selector) (Source, error) {
 	tmpl, err := parseTemplate(fqdnTemplate)
 	if err != nil {
 		return nil, err
@@ -73,12 +74,13 @@ func NewNodeSource(ctx context.Context, kubeClient kubernetes.Interface, annotat
 		annotationFilter: annotationFilter,
 		fqdnTemplate:     tmpl,
 		nodeInformer:     nodeInformer,
+		labelSelector:    labelSelector,
 	}, nil
 }
 
 // Endpoints returns endpoint objects for each service that should be processed.
 func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	nodes, err := ns.nodeInformer.Lister().List(labels.Everything())
+	nodes, err := ns.nodeInformer.Lister().List(ns.labelSelector)
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +104,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		log.Debugf("creating endpoint for node %s", node.Name)
 
-		ttl, err := getTTLFromAnnotations(node.Annotations)
-		if err != nil {
-			log.Warn(err)
-		}
+		ttl := getTTLFromAnnotations(node.Annotations, fmt.Sprintf("node/%s", node.Name))
 
 		// create new endpoint with the information we already have
 		ep := &endpoint.Endpoint{
@@ -128,9 +127,12 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Debugf("not applying template for %s", node.Name)
 		}
 
-		addrs, err := ns.nodeAddresses(node)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+		addrs := getTargetsFromTargetAnnotation(node.Annotations)
+		if len(addrs) == 0 {
+			addrs, err = ns.nodeAddresses(node)
+			if err != nil {
+				return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
+			}
 		}
 
 		ep.Labels = endpoint.NewLabels()

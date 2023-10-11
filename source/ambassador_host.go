@@ -133,10 +133,13 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			continue
 		}
 
-		targets, err := sc.targetsFromAmbassadorLoadBalancer(ctx, service)
-		if err != nil {
-			log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
-			continue
+		targets := getTargetsFromTargetAnnotation(host.Annotations)
+		if len(targets) == 0 {
+			targets, err = sc.targetsFromAmbassadorLoadBalancer(ctx, service)
+			if err != nil {
+				log.Warningf("Could not find targets for service %s for Host %s: %v", service, fullname, err)
+				continue
+			}
 		}
 
 		hostEndpoints, err := sc.endpointsFromHost(ctx, host, targets)
@@ -167,16 +170,15 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	providerSpecific := endpoint.ProviderSpecific{}
 	setIdentifier := ""
 
+	resource := fmt.Sprintf("host/%s/%s", host.Namespace, host.Name)
+
 	annotations := host.Annotations
-	ttl, err := getTTLFromAnnotations(annotations)
-	if err != nil {
-		return nil, err
-	}
+	ttl := getTTLFromAnnotations(annotations, resource)
 
 	if host.Spec != nil {
 		hostname := host.Spec.Hostname
 		if hostname != "" {
-			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 

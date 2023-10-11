@@ -368,7 +368,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	adjustedEndpoints := []*endpoint.Endpoint{}
 	for _, e := range endpoints {
 		proxied := shouldBeProxied(e, p.proxiedByDefault)
@@ -379,7 +379,7 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*
 
 		adjustedEndpoints = append(adjustedEndpoints, e)
 	}
-	return adjustedEndpoints
+	return adjustedEndpoints, nil
 }
 
 // changesByZone separates a multi-zone change into a single change per zone.

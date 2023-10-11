@@ -36,14 +36,14 @@ type Provider interface {
 	// the endpoints that the provider returns in `Records` so that the change plan will not have
 	// unnecessary (potentially failing) changes. It may also modify other fields, add, or remove
 	// Endpoints. It is permitted to modify the supplied endpoints.
-	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
+	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	GetDomainFilter() endpoint.DomainFilter
 }
 
 type BaseProvider struct{}
 
-func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	return endpoints
+func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return endpoints, nil
 }
 
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilter {

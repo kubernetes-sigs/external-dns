@@ -16,7 +16,9 @@ nav:
     - About: annotations/annotations.md
   - Sources:
     - About: sources/sources.md
+    - Gateway: sources/gateway.md
     - Ingress: sources/ingress.md
+    - Service: sources/service.md
   - Registries:
     - About: registry/registry.md
     - TXT: registry/txt.md

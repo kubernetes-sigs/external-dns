@@ -228,18 +228,11 @@ func (src *gatewayRouteSource) Endpoints(ctx context.Context) ([]*endpoint.Endpo
 		}
 
 		// Create endpoints from hostnames and targets.
-		resourceKey := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
+		resource := fmt.Sprintf("%s/%s/%s", kind, meta.Namespace, meta.Name)
 		providerSpecific, setIdentifier := getProviderSpecificAnnotations(annots)
-		ttl, err := getTTLFromAnnotations(annots)
-		if err != nil {
-			log.Warn(err)
-		}
+		ttl := getTTLFromAnnotations(annots, resource)
 		for host, targets := range hostTargets {
-			eps := endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)
-			for _, ep := range eps {
-				ep.Labels[endpoint.ResourceLabelKey] = resourceKey
-			}
-			endpoints = append(endpoints, eps...)
+			endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 		log.Debugf("Endpoints generated from %s %s/%s: %v", src.rtKind, meta.Namespace, meta.Name, endpoints)
 	}
@@ -352,8 +345,12 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				if !ok {
 					continue
 				}
-				for _, addr := range gw.gateway.Status.Addresses {
-					hostTargets[host] = append(hostTargets[host], addr.Value)
+				override := getTargetsFromTargetAnnotation(gw.gateway.Annotations)
+				hostTargets[host] = append(hostTargets[host], override...)
+				if len(override) == 0 {
+					for _, addr := range gw.gateway.Status.Addresses {
+						hostTargets[host] = append(hostTargets[host], addr.Value)
+					}
 				}
 				match = true
 			}

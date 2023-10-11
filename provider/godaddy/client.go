@@ -338,7 +338,7 @@ func (c *Client) UnmarshalResponse(response *http.Response, resType interface{})
 func (c *Client) validate() error {
 	var response interface{}
 
-	if err := c.Get("/v1/domains?statuses=ACTIVE", response); err != nil {
+	if err := c.Get(domainsURI, response); err != nil {
 		return err
 	}
 

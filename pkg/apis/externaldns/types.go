@@ -47,7 +47,7 @@ type Config struct {
 	KubeConfig                         string
 	RequestTimeout                     time.Duration
 	DefaultTargets                     []string
-	GlooNamespace                      string
+	GlooNamespaces                     []string
 	SkipperRouteGroupVersion           string
 	Sources                            []string
 	Namespace                          string
@@ -194,6 +194,7 @@ type Config struct {
 	TransIPPrivateKeyFile              string
 	DigitalOceanAPIPageSize            int
 	ManagedDNSRecordTypes              []string
+	ExcludeDNSRecordTypes              []string
 	GoDaddyAPIKey                      string `secure:"yes"`
 	GoDaddySecretKey                   string `secure:"yes"`
 	GoDaddyTTL                         int64
@@ -208,6 +209,10 @@ type Config struct {
 	PiholeTLSInsecureSkipVerify        bool
 	PluralCluster                      string
 	PluralProvider                     string
+	WebhookProviderURL                 string
+	WebhookProviderReadTimeout         time.Duration
+	WebhookProviderWriteTimeout        time.Duration
+	WebhookServer                      bool
 }
 
 var defaultConfig = &Config{
@@ -215,7 +220,7 @@ var defaultConfig = &Config{
 	KubeConfig:                  "",
 	RequestTimeout:              time.Second * 30,
 	DefaultTargets:              []string{},
-	GlooNamespace:               "gloo-system",
+	GlooNamespaces:              []string{"gloo-system"},
 	SkipperRouteGroupVersion:    "zalando.org/v1",
 	Sources:                     nil,
 	Namespace:                   "",
@@ -342,6 +347,7 @@ var defaultConfig = &Config{
 	TransIPPrivateKeyFile:       "",
 	DigitalOceanAPIPageSize:     50,
 	ManagedDNSRecordTypes:       []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME},
+	ExcludeDNSRecordTypes:       []string{},
 	GoDaddyAPIKey:               "",
 	GoDaddySecretKey:            "",
 	GoDaddyTTL:                  600,
@@ -355,6 +361,10 @@ var defaultConfig = &Config{
 	PiholeTLSInsecureSkipVerify: false,
 	PluralCluster:               "",
 	PluralProvider:              "",
+	WebhookProviderURL:          "http://localhost:8888",
+	WebhookProviderReadTimeout:  5 * time.Second,
+	WebhookProviderWriteTimeout: 10 * time.Second,
+	WebhookServer:               false,
 }
 
 // NewConfig returns new Config object
@@ -410,7 +420,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("cf-password", "The password to log into the cloud foundry API").Default(defaultConfig.CFPassword).StringVar(&cfg.CFPassword)
 
 	// Flags related to Gloo
-	app.Flag("gloo-namespace", "Gloo namespace. (default: gloo-system)").Default("gloo-system").StringVar(&cfg.GlooNamespace)
+	app.Flag("gloo-namespace", "The Gloo Proxy namespace; specify multiple times for multiple namespaces. (default: gloo-system)").Default("gloo-system").StringsVar(&cfg.GlooNamespaces)
 
 	// Flags related to Skipper RouteGroup
 	app.Flag("skipper-routegroup-groupversion", "The resource version for skipper routegroup").Default(source.DefaultRoutegroupVersion).StringVar(&cfg.SkipperRouteGroupVersion)
@@ -420,7 +430,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("openshift-router-name", "if source is openshift-route then you can pass the ingress controller name. Based on this name external-dns will select the respective router from the route status and map that routerCanonicalHostname to the route host while creating a CNAME record.").StringVar(&cfg.OCPRouterName)
 	app.Flag("namespace", "Limit resources queried for endpoints to a specific namespace (default: all namespaces)").Default(defaultConfig.Namespace).StringVar(&cfg.Namespace)
 	app.Flag("annotation-filter", "Filter resources queried for endpoints by annotation, using label selector semantics").Default(defaultConfig.AnnotationFilter).StringVar(&cfg.AnnotationFilter)
-	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, openshift-route, and service").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
+	app.Flag("label-filter", "Filter resources queried for endpoints by label selector; currently supported by source types crd, gateway-httproute, gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute, ingress, node, openshift-route, and service").Default(defaultConfig.LabelFilter).StringVar(&cfg.LabelFilter)
 	app.Flag("ingress-class", "Require an Ingress to have this class name (defaults to any class; specify multiple times to allow more than one class)").StringsVar(&cfg.IngressClassNames)
 	app.Flag("fqdn-template", "A templated string that's used to generate DNS names from sources that don't define a hostname themselves, or to add a hostname suffix when paired with the fake source (optional). Accepts comma separated list for multiple global FQDN.").Default(defaultConfig.FQDNTemplate).StringVar(&cfg.FQDNTemplate)
 	app.Flag("combine-fqdn-annotation", "Combine FQDN template and Annotations instead of overwriting").BoolVar(&cfg.CombineFQDNAndAnnotation)
@@ -437,13 +447,14 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("crd-source-apiversion", "API version of the CRD for crd source, e.g. `externaldns.k8s.io/v1alpha1`, valid only when using crd source").Default(defaultConfig.CRDSourceAPIVersion).StringVar(&cfg.CRDSourceAPIVersion)
 	app.Flag("crd-source-kind", "Kind of the CRD for the crd source in API group and version specified by crd-source-apiversion").Default(defaultConfig.CRDSourceKind).StringVar(&cfg.CRDSourceKind)
 	app.Flag("service-type-filter", "The service types to take care about (default: all, expected: ClusterIP, NodePort, LoadBalancer or ExternalName)").StringsVar(&cfg.ServiceTypeFilter)
-	app.Flag("managed-record-types", "Record types to manage; specify multiple times to include many; (default: A, AAAA, CNAME) (supported records: CNAME, A, AAAA, NS").Default("A", "AAAA", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
+	app.Flag("managed-record-types", "Record types to manage; specify multiple times to include many; (default: A, AAAA, CNAME) (supported records: A, AAAA, CNAME, NS, SRV, TXT)").Default("A", "AAAA", "CNAME").StringsVar(&cfg.ManagedDNSRecordTypes)
+	app.Flag("exclude-record-types", "Record types to exclude from management; specify multiple times to exclude many; (optional)").Default().StringsVar(&cfg.ExcludeDNSRecordTypes)
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "cloudflare-tunnel", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr"}
+	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "cloudflare-tunnel", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
@@ -455,7 +466,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("google-batch-change-size", "When using the Google provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.GoogleBatchChangeSize)).IntVar(&cfg.GoogleBatchChangeSize)
 	app.Flag("google-batch-change-interval", "When using the Google provider, set the interval between batch changes.").Default(defaultConfig.GoogleBatchChangeInterval.String()).DurationVar(&cfg.GoogleBatchChangeInterval)
 	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
-	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
+	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
@@ -468,11 +479,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
-	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
+	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure)").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)
 	app.Flag("azure-subscription-id", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure-private-dns)").Default(defaultConfig.AzureSubscriptionID).StringVar(&cfg.AzureSubscriptionID)
 	app.Flag("azure-user-assigned-identity-client-id", "When using the Azure provider, override the client id of user assigned identity in config file (optional)").Default("").StringVar(&cfg.AzureUserAssignedIdentityClientID)
-	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
+	app.Flag("tencent-cloud-config-file", "When using the Tencent Cloud provider, specify the Tencent Cloud configuration file (required when --provider=tencentcloud)").Default(defaultConfig.TencentCloudConfigFile).StringVar(&cfg.TencentCloudConfigFile)
 	app.Flag("tencent-cloud-zone-type", "When using the Tencent Cloud provider, filter for zones with visibility (optional, options: public, private)").Default(defaultConfig.TencentCloudZoneType).EnumVar(&cfg.TencentCloudZoneType, "", "public", "private")
 
 	// Flags related to BlueCat provider
@@ -597,7 +608,14 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Miscellaneous flags
 	app.Flag("log-format", "The format in which log messages are printed (default: text, options: text, json)").Default(defaultConfig.LogFormat).EnumVar(&cfg.LogFormat, "text", "json")
 	app.Flag("metrics-address", "Specify where to serve the metrics and health check endpoint (default: :7979)").Default(defaultConfig.MetricsAddress).StringVar(&cfg.MetricsAddress)
-	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal)").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
+
+	// Webhook provider
+	app.Flag("webhook-provider-url", "[EXPERIMENTAL] The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)").Default(defaultConfig.WebhookProviderURL).StringVar(&cfg.WebhookProviderURL)
+	app.Flag("webhook-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
+	app.Flag("webhook-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
+
+	app.Flag("webhook-server", "[EXPERIMENTAL] When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
 
 	_, err := app.Parse(args)
 	if err != nil {

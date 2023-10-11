@@ -89,22 +89,36 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 
+		targets := getTargetsFromTargetAnnotation(pod.Annotations)
+
 		if domainAnnotation, ok := pod.Annotations[internalHostnameAnnotationKey]; ok {
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
-				addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+				if len(targets) == 0 {
+					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
+				} else {
+					for _, target := range targets {
+						addToEndpointMap(endpointMap, domain, suitableType(target), target)
+					}
+				}
 			}
 		}
 
 		if domainAnnotation, ok := pod.Annotations[hostnameAnnotationKey]; ok {
 			domainList := splitHostnameAnnotation(domainAnnotation)
 			for _, domain := range domainList {
-				node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
-				for _, address := range node.Status.Addresses {
-					recordType := suitableType(address.Address)
-					// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
-					if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
-						addToEndpointMap(endpointMap, domain, recordType, address.Address)
+				if len(targets) == 0 {
+					node, _ := ps.nodeInformer.Lister().Get(pod.Spec.NodeName)
+					for _, address := range node.Status.Addresses {
+						recordType := suitableType(address.Address)
+						// IPv6 addresses are labeled as NodeInternalIP despite being usable externally as well.
+						if address.Type == corev1.NodeExternalIP || (address.Type == corev1.NodeInternalIP && recordType == endpoint.RecordTypeAAAA) {
+							addToEndpointMap(endpointMap, domain, recordType, address.Address)
+						}
+					}
+				} else {
+					for _, target := range targets {
+						addToEndpointMap(endpointMap, domain, suitableType(target), target)
 					}
 				}
 			}

@@ -53,6 +53,7 @@ type DynamoDBRegistry struct {
 	mapper              nameMapper
 	wildcardReplacement string
 	managedRecordTypes  []string
+	excludeRecordTypes  []string
 	txtEncryptAESKey    []byte
 
 	// cache the dynamodb records owned by us.
@@ -68,7 +69,7 @@ type DynamoDBRegistry struct {
 const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
-func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
+func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -95,6 +96,7 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 		mapper:              mapper,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
+		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptAESKey:    txtEncryptAESKey,
 		cacheInterval:       cacheInterval,
 	}, nil
@@ -102,6 +104,10 @@ func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI
 
 func (im *DynamoDBRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
+}
+
+func (im *DynamoDBRegistry) OwnerID() string {
+	return im.ownerID
 }
 
 // Records returns the current records from the registry.
@@ -190,7 +196,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 	}
 
 	// Remove any unused TXT ownership records owned by us
-	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes) {
+	if len(txtRecordsMap) > 0 && !plan.IsManagedRecord(endpoint.RecordTypeTXT, im.managedRecordTypes, im.excludeRecordTypes) {
 		log.Infof("Old TXT ownership records will not be deleted because \"TXT\" is not in the set of managed record types.")
 	}
 	for _, record := range txtRecordsMap {
@@ -211,9 +217,9 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 
 	statements := make([]*dynamodb.BatchStatementRequest, 0, len(filteredChanges.Create)+len(filteredChanges.UpdateNew))
@@ -333,7 +339,7 @@ func (im *DynamoDBRegistry) ApplyChanges(ctx context.Context, changes *plan.Chan
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider.
-func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (im *DynamoDBRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
 }
 

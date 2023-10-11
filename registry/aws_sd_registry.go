@@ -46,6 +46,10 @@ func (sdr *AWSSDRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return sdr.provider.GetDomainFilter()
 }
 
+func (im *AWSSDRegistry) OwnerID() string {
+	return im.ownerID
+}
+
 // Records calls AWS SD API and expects AWS SD provider to provider Owner/Resource information as a serialized
 // value in the AWSSDDescriptionLabel value in the Labels map
 func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
@@ -72,9 +76,9 @@ func (sdr *AWSSDRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, er
 func (sdr *AWSSDRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(sdr.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(sdr.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(sdr.ownerID, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(sdr.ownerID, changes.Delete),
 	}
 
 	sdr.updateLabels(filteredChanges.Create)
@@ -96,6 +100,6 @@ func (sdr *AWSSDRegistry) updateLabels(endpoints []*endpoint.Endpoint) {
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (sdr *AWSSDRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return sdr.provider.AdjustEndpoints(endpoints)
 }

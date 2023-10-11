@@ -302,7 +302,8 @@ func AssertActions(t *testing.T, provider *CloudFlareProvider, endpoints []*endp
 		t.Fatalf("cannot fetch records, %s", err)
 	}
 
-	endpoints = provider.AdjustEndpoints(endpoints)
+	endpoints, err = provider.AdjustEndpoints(endpoints)
+	assert.NoError(t, err)
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
 	plan := &plan.Plan{
 		Current:        records,
@@ -1147,7 +1148,8 @@ func TestProviderPropertiesIdempotency(t *testing.T) {
 				})
 			}
 
-			desired = provider.AdjustEndpoints(desired)
+			desired, err = provider.AdjustEndpoints(desired)
+			assert.NoError(t, err)
 
 			plan := plan.Plan{
 				Current:        current,
@@ -1190,23 +1192,25 @@ func TestCloudflareComplexUpdate(t *testing.T) {
 	}
 
 	domainFilter := endpoint.NewDomainFilter([]string{"bar.com"})
-	plan := &plan.Plan{
-		Current: records,
-		Desired: provider.AdjustEndpoints([]*endpoint.Endpoint{
-			{
-				DNSName:    "foobar.bar.com",
-				Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
-				RecordType: endpoint.RecordTypeA,
-				RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
-				Labels:     endpoint.Labels{},
-				ProviderSpecific: endpoint.ProviderSpecific{
-					{
-						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-						Value: "true",
-					},
+	endpoints, err := provider.AdjustEndpoints([]*endpoint.Endpoint{
+		{
+			DNSName:    "foobar.bar.com",
+			Targets:    endpoint.Targets{"1.2.3.4", "2.3.4.5"},
+			RecordType: endpoint.RecordTypeA,
+			RecordTTL:  endpoint.TTL(defaultCloudFlareRecordTTL),
+			Labels:     endpoint.Labels{},
+			ProviderSpecific: endpoint.ProviderSpecific{
+				{
+					Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+					Value: "true",
 				},
 			},
-		}),
+		},
+	})
+	assert.NoError(t, err)
+	plan := &plan.Plan{
+		Current:        records,
+		Desired:        endpoints,
 		DomainFilter:   endpoint.MatchAllDomainFilters{&domainFilter},
 		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
 	}

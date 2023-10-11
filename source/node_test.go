@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -75,6 +76,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 				fake.NewSimpleClientset(),
 				ti.annotationFilter,
 				ti.fqdnTemplate,
+				labels.Everything(),
 			)
 
 			if ti.expectError {
@@ -93,6 +95,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 	for _, tc := range []struct {
 		title            string
 		annotationFilter string
+		labelSelector    string
 		fqdnTemplate     string
 		nodeName         string
 		nodeAddresses    []v1.NodeAddress
@@ -102,293 +105,233 @@ func testNodeSourceEndpoints(t *testing.T) {
 		expectError      bool
 	}{
 		{
-			"node with short hostname returns one endpoint",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with short hostname returns one endpoint",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"node with fqdn returns one endpoint",
-			"",
-			"",
-			"node1.example.org",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with fqdn returns one endpoint",
+			nodeName:      "node1.example.org",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"ipv6 node with fqdn returns one endpoint",
-			"",
-			"",
-			"node1.example.org",
-			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "ipv6 node with fqdn returns one endpoint",
+			nodeName:      "node1.example.org",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
 			},
-			false,
 		},
 		{
-			"node with fqdn template returns endpoint with expanded hostname",
-			"",
-			"{{.Name}}.example.org",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with fqdn template returns endpoint with expanded hostname",
+			fqdnTemplate:  "{{.Name}}.example.org",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"node with fqdn and fqdn template returns one endpoint",
-			"",
-			"{{.Name}}.example.org",
-			"node1.example.org",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with fqdn and fqdn template returns one endpoint",
+			fqdnTemplate:  "{{.Name}}.example.org",
+			nodeName:      "node1.example.org",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
-			"",
-			"{{.Name}}.example.org",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with fqdn template returns two endpoints with multiple IP addresses and expanded hostname",
+			fqdnTemplate:  "{{.Name}}.example.org",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
 			},
-			false,
 		},
 		{
-			"node with fqdn template returns two endpoints with dual-stack IP addresses and expanded hostname",
-			"",
-			"{{.Name}}.example.org",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with fqdn template returns two endpoints with dual-stack IP addresses and expanded hostname",
+			fqdnTemplate:  "{{.Name}}.example.org",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
 			},
-			false,
 		},
 		{
-			"node with both external and internal IP returns an endpoint with external IP",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with both external and internal IP returns an endpoint with external IP",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"node with both external, internal, and IPv6 IP returns endpoints with external IPs",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with both external, internal, and IPv6 IP returns endpoints with external IPs",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
 			},
-			false,
 		},
 		{
-			"node with only internal IP returns an endpoint with internal IP",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with only internal IP returns an endpoint with internal IP",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
 			},
-			false,
 		},
 		{
-			"node with only internal IPs returns endpoints with internal IPs",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "node with only internal IPs returns endpoints with internal IPs",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
 			},
-			false,
 		},
 		{
-			"node with neither external nor internal IP returns no endpoints",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{},
-			true,
+			title:         "node with neither external nor internal IP returns no endpoints",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{},
+			expectError:   true,
 		},
 		{
-			"annotated node without annotation filter returns endpoint",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:         "node with target annotation",
+			nodeName:      "node1.example.org",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
+			},
+		},
+		{
+			title:         "annotated node without annotation filter returns endpoint",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			[]*endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"annotated node with matching annotation filter returns endpoint",
-			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:            "annotated node with matching annotation filter returns endpoint",
+			annotationFilter: "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:         "node1",
+			nodeAddresses:    []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			[]*endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"annotated node with non-matching annotation filter returns endpoint",
-			"service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:            "annotated node with non-matching annotation filter returns nothing",
+			annotationFilter: "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:         "node1",
+			nodeAddresses:    []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
 			},
-			[]*endpoint.Endpoint{},
-			false,
+			expected: []*endpoint.Endpoint{},
 		},
 		{
-			"our controller type is dns-controller",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
-				controllerAnnotationKey: controllerAnnotationValue,
+			title:         "labeled node with matching label selector returns endpoint",
+			labelSelector: "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
-			[]*endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 			},
-			false,
 		},
 		{
-			"different controller types are ignored",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:         "labeled node with non-matching label selector returns nothing",
+			labelSelector: "service.beta.kubernetes.io/external-traffic in (Global, OnlyLocal)",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			labels: map[string]string{
+				"service.beta.kubernetes.io/external-traffic": "SomethingElse",
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+		{
+			title:         "our controller type is dns-controller",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
+				controllerAnnotationKey: controllerAnnotationValue,
+			},
+			expected: []*endpoint.Endpoint{
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+			},
+		},
+		{
+			title:         "different controller types are ignored",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				controllerAnnotationKey: "not-dns-controller",
 			},
-			[]*endpoint.Endpoint{},
-			false,
+			expected: []*endpoint.Endpoint{},
 		},
 		{
-			"ttl not annotated should have RecordTTL.IsConfigured set to false",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{},
-			[]*endpoint.Endpoint{
+			title:         "ttl not annotated should have RecordTTL.IsConfigured set to false",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
 			},
-			false,
 		},
 		{
-			"ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:         "ttl annotated but invalid should have RecordTTL.IsConfigured set to false",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				ttlAnnotationKey: "foo",
 			},
-			[]*endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
 			},
-			false,
 		},
 		{
-			"ttl annotated and is valid should set Record.TTL",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			map[string]string{},
-			map[string]string{
+			title:         "ttl annotated and is valid should set Record.TTL",
+			nodeName:      "node1",
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
+			annotations: map[string]string{
 				ttlAnnotationKey: "10",
 			},
-			[]*endpoint.Endpoint{
+			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
 			},
-			false,
-		},
-		{
-			"node with nil Labels returns valid endpoint",
-			"",
-			"",
-			"node1",
-			[]v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
-			nil,
-			map[string]string{},
-			[]*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, Labels: map[string]string{}},
-			},
-			false,
 		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
 			t.Parallel()
+
+			labelSelector := labels.Everything()
+			if tc.labelSelector != "" {
+				var err error
+				labelSelector, err = labels.Parse(tc.labelSelector)
+				require.NoError(t, err)
+			}
 
 			// Create a Kubernetes testing client
 			kubernetes := fake.NewSimpleClientset()
@@ -413,6 +356,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				kubernetes,
 				tc.annotationFilter,
 				tc.fqdnTemplate,
+				labelSelector,
 			)
 			require.NoError(t, err)
 

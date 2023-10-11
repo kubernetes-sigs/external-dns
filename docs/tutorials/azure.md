@@ -59,7 +59,7 @@ The Azure DNS provider expects, by default, that the configuration file is at `/
 
 ## Permissions to modify DNS zone
 
-ExternalDNS needs permissions to make changes to the Azure DNS zone. There are three ways configure the access needed:
+ExternalDNS needs permissions to make changes to the Azure DNS zone. There are four ways configure the access needed:
 
 - [Service Principal](#service-principal)
 - [Managed Identity Using AKS Kubelet Identity](#managed-identity-using-aks-kubelet-identity)
@@ -127,7 +127,7 @@ $ kubectl create secret generic azure-config-file --namespace "default" --from-f
 
 ### Managed identity using AKS Kubelet identity
 
-The [managed identity](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview) that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.  The managed identity assigned Kuberetes node pool, or specifically the [VMSS](https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview), is called the Kubelet identity.
+The [managed identity](https://docs.microsoft.com/azure/active-directory/managed-identities-azure-resources/overview) that is assigned to the underlying node pool in the AKS cluster can be given permissions to access Azure DNS.  Managed identities are essentially a service principal whose lifecycle is managed, such as deleting the AKS cluster will also delete the service principals associated with the AKS cluster.  The managed identity assigned Kubernetes node pool, or specifically the [VMSS](https://docs.microsoft.com/azure/virtual-machine-scale-sets/overview), is called the Kubelet identity.
 
 The managed identites were previously called MSI (Managed Service Identity) and are enabled by default when creating an AKS cluster.
 
@@ -146,7 +146,7 @@ For the managed identity, the contents of `azure.json` should be similar to this
 
 #### Fetching the Kubelet identity
 
-For this process, you will need to get the kublet identity:
+For this process, you will need to get the kubelet identity:
 
 ```bash
 $ PRINCIPAL_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
@@ -155,13 +155,13 @@ $ PRINCIPAL_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME
 
 #### Assign rights for the Kubelet identity
 
-Grant access to Azure DNS zone for the kublet identity.
+Grant access to Azure DNS zone for the kubelet identity.
 
 ```bash
 $ AZURE_DNS_ZONE="example.com" # DNS zone name like example.com or sub.example.com
 $ AZURE_DNS_ZONE_RESOURCE_GROUP="MyDnsResourceGroup" # resource group where DNS zone is hosted
 
-# fetch DNS id used to grant access to the kublet identity
+# fetch DNS id used to grant access to the kubelet identity
 $ DNS_ID=$(az network dns zone show --name $AZURE_DNS_ZONE \
   --resource-group $AZURE_DNS_ZONE_RESOURCE_GROUP --query "id" --output tsv)
 
@@ -284,7 +284,7 @@ $ az aks pod-identity add --resource-group ${AZURE_AKS_RESOURCE_GROUP}  \
   --name "external-dns" --identity-resource-id ${IDENTITY_RESOURCE_ID}
 ```
 
-This will add something similar to the following resouces:
+This will add something similar to the following resources:
 
 ```yaml
 apiVersion: aadpodidentity.k8s.io/v1
@@ -783,6 +783,6 @@ $ az group delete --name "MyDnsResourceGroup"
 
 ## More tutorials
 
-A video explanantion is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE
+A video explanation is available here: https://www.youtube.com/watch?v=VSn6DPKIhM8&list=PLpbcUe4chE79sB7Jg7B4z3HytqUUEwcNE
 
 ![image](https://user-images.githubusercontent.com/6548359/235437721-87611869-75f2-4f32-bb35-9da585e46299.png)

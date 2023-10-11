@@ -910,7 +910,25 @@ func testServiceSourceEndpoints(t *testing.T) {
 			expected:           []*endpoint.Endpoint{},
 		},
 		{
-			title:        "internal-host annotated services return an endpoint with Cluster IP",
+			title:        "internal-host annotated and host annotated clusterip services return an endpoint with Cluster IP",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey:         "foo.example.org.",
+				internalHostnameAnnotationKey: "foo.internal.example.org.",
+			},
+			clusterIP:          "1.1.1.1",
+			externalIPs:        []string{},
+			lbs:                []string{"1.2.3.4"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "foo.internal.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.1.1.1"}},
+			},
+		},
+		{
+			title:        "internal-host annotated loadbalancer services return an endpoint with Cluster IP",
 			svcNamespace: "testing",
 			svcName:      "foo",
 			svcType:      v1.ServiceTypeLoadBalancer,
@@ -927,7 +945,7 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
-			title:        "internal-host annotated and host annotated services return an endpoint with Cluster IP and an endpoint with lb IP",
+			title:        "internal-host annotated and host annotated loadbalancer services return an endpoint with Cluster IP and an endpoint with lb IP",
 			svcNamespace: "testing",
 			svcName:      "foo",
 			svcType:      v1.ServiceTypeLoadBalancer,
@@ -1630,7 +1648,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 		podNames                 []string
 		nodeIndex                []int
 		phases                   []v1.PodPhase
+		conditions               []v1.PodCondition
 		labelSelector            labels.Selector
+		deletionTimestamp        []*metav1.Time
 	}{
 		{
 			title:            "annotated NodePort services return an endpoint with IP addresses of the cluster's nodes",
@@ -1814,9 +1834,11 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					},
 				},
 			}},
-			podNames:  []string{"pod-0"},
-			nodeIndex: []int{1},
-			phases:    []v1.PodPhase{v1.PodRunning},
+			podNames:          []string{"pod-0"},
+			nodeIndex:         []int{1},
+			phases:            []v1.PodPhase{v1.PodRunning},
+			conditions:        []v1.PodCondition{{Type: v1.PodReady, Status: v1.ConditionFalse}},
+			deletionTimestamp: []*metav1.Time{{}},
 		},
 		{
 			title:            "annotated NodePort services with ExternalTrafficPolicy=Local and multiple pods on a single node return an endpoint with unique IP addresses of the cluster's nodes where pods is running only",
@@ -1859,6 +1881,110 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			podNames:  []string{"pod-0", "pod-1"},
 			nodeIndex: []int{1, 1},
 			phases:    []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			},
+			deletionTimestamp: []*metav1.Time{{}, {}},
+		},
+		{
+			title:            "annotated NodePort services with ExternalTrafficPolicy=Local return pods in Ready & Running state",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			labels:           map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}},
+			podNames:  []string{"pod-0", "pod-1"},
+			nodeIndex: []int{0, 1},
+			phases:    []v1.PodPhase{v1.PodRunning, v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+			},
+			deletionTimestamp: []*metav1.Time{{}, {}},
+		},
+		{
+			title:            "annotated NodePort services with ExternalTrafficPolicy=Local return pods in Ready & Running state & not in Terminating",
+			svcNamespace:     "testing",
+			svcName:          "foo",
+			svcType:          v1.ServiceTypeNodePort,
+			svcTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+			labels:           map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey: "foo.example.org.",
+			},
+			expected: []*endpoint.Endpoint{
+				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
+			},
+			nodes: []*v1.Node{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node1",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node2",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
+					},
+				},
+			}, {
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "node3",
+				},
+				Status: v1.NodeStatus{
+					Addresses: []v1.NodeAddress{
+						{Type: v1.NodeExternalIP, Address: "54.10.11.3"},
+						{Type: v1.NodeInternalIP, Address: "10.0.1.3"},
+					},
+				},
+			}},
+			podNames:  []string{"pod-0", "pod-1", "pod-2"},
+			nodeIndex: []int{0, 1, 2},
+			phases:    []v1.PodPhase{v1.PodRunning, v1.PodRunning, v1.PodRunning},
+			conditions: []v1.PodCondition{
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+				{Type: v1.PodReady, Status: v1.ConditionFalse},
+				{Type: v1.PodReady, Status: v1.ConditionTrue},
+			},
+			deletionTimestamp: []*metav1.Time{nil, nil, {}},
 		},
 		{
 			title:            "access=private annotation NodePort services return an endpoint with private IP addresses of the cluster's nodes",
@@ -2146,13 +2272,15 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 						NodeName:   tc.nodes[tc.nodeIndex[i]].Name,
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Namespace:   tc.svcNamespace,
-						Name:        podname,
-						Labels:      tc.labels,
-						Annotations: tc.annotations,
+						Namespace:         tc.svcNamespace,
+						Name:              podname,
+						Labels:            tc.labels,
+						Annotations:       tc.annotations,
+						DeletionTimestamp: tc.deletionTimestamp[i],
 					},
 					Status: v1.PodStatus{
-						Phase: tc.phases[i],
+						Phase:      tc.phases[i],
+						Conditions: []v1.PodCondition{tc.conditions[i]},
 					},
 				}
 

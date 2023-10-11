@@ -35,7 +35,7 @@ var (
 		APIServerURL:                "",
 		KubeConfig:                  "",
 		RequestTimeout:              time.Second * 30,
-		GlooNamespace:               "gloo-system",
+		GlooNamespaces:               []string{"gloo-system"},
 		SkipperRouteGroupVersion:    "zalando.org/v1",
 		Sources:                     []string{"service"},
 		Namespace:                   "",
@@ -130,13 +130,16 @@ var (
 		IBMCloudConfigFile:          "/etc/kubernetes/ibmcloud.json",
 		TencentCloudConfigFile:      "/etc/kubernetes/tencent-cloud.json",
 		TencentCloudZoneType:        "",
+		WebhookProviderURL:          "http://localhost:8888",
+		WebhookProviderReadTimeout:  5 * time.Second,
+		WebhookProviderWriteTimeout: 10 * time.Second,
 	}
 
 	overriddenConfig = &Config{
 		APIServerURL:                "http://127.0.0.1:8080",
 		KubeConfig:                  "/some/path",
 		RequestTimeout:              time.Second * 77,
-		GlooNamespace:               "gloo-not-system",
+		GlooNamespaces:              []string{"gloo-not-system", "gloo-second-system"},
 		SkipperRouteGroupVersion:    "zalando.org/v2",
 		Sources:                     []string{"service", "ingress", "connector"},
 		Namespace:                   "namespace",
@@ -241,6 +244,9 @@ var (
 		IBMCloudConfigFile:          "ibmcloud.json",
 		TencentCloudConfigFile:      "tencent-cloud.json",
 		TencentCloudZoneType:        "private",
+		WebhookProviderURL:          "http://localhost:8888",
+		WebhookProviderReadTimeout:  5 * time.Second,
+		WebhookProviderWriteTimeout: 10 * time.Second,
 	}
 )
 
@@ -268,6 +274,7 @@ func TestParseFlags(t *testing.T) {
 				"--kubeconfig=/some/path",
 				"--request-timeout=77s",
 				"--gloo-namespace=gloo-not-system",
+				"--gloo-namespace=gloo-second-system",
 				"--skipper-routegroup-groupversion=zalando.org/v2",
 				"--source=service",
 				"--source=ingress",
@@ -395,7 +402,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_KUBECONFIG":                      "/some/path",
 				"EXTERNAL_DNS_REQUEST_TIMEOUT":                 "77s",
 				"EXTERNAL_DNS_CONTOUR_LOAD_BALANCER":           "heptio-contour-other/contour-other",
-				"EXTERNAL_DNS_GLOO_NAMESPACE":                  "gloo-not-system",
+				"EXTERNAL_DNS_GLOO_NAMESPACE":                  "gloo-not-system\ngloo-second-system",
 				"EXTERNAL_DNS_SKIPPER_ROUTEGROUP_GROUPVERSION": "zalando.org/v2",
 				"EXTERNAL_DNS_SOURCE":                          "service\ningress\nconnector",
 				"EXTERNAL_DNS_NAMESPACE":                       "namespace",

@@ -460,10 +460,7 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 
 func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
 	hostname = strings.TrimSuffix(hostname, ".")
-	ttl, err := getTTLFromAnnotations(svc.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	ttl := getTTLFromAnnotations(svc.Annotations, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 
 	epA := &endpoint.Endpoint{
 		RecordTTL:  ttl,
@@ -505,11 +502,12 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		case v1.ServiceTypeClusterIP:
 			if svc.Spec.ClusterIP == v1.ClusterIPNone {
 				endpoints = append(endpoints, sc.extractHeadlessEndpoints(svc, hostname, ttl)...)
-			} else if sc.publishInternal {
+			} else if useClusterIP || sc.publishInternal {
 				targets = extractServiceIps(svc)
 			}
 		case v1.ServiceTypeNodePort:
 			// add the nodeTargets and extract an SRV endpoint
+			var err error
 			targets, err = sc.extractNodePortTargets(svc)
 			if err != nil {
 				log.Errorf("Unable to extract targets from service %s/%s error: %v", svc.Namespace, svc.Name, err)
@@ -590,6 +588,30 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 	return targets
 }
 
+func isPodStatusReady(status v1.PodStatus) bool {
+	_, condition := getPodCondition(&status, v1.PodReady)
+	return condition != nil && condition.Status == v1.ConditionTrue
+}
+
+func getPodCondition(status *v1.PodStatus, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
+	if status == nil {
+		return -1, nil
+	}
+	return getPodConditionFromList(status.Conditions, conditionType)
+}
+
+func getPodConditionFromList(conditions []v1.PodCondition, conditionType v1.PodConditionType) (int, *v1.PodCondition) {
+	if conditions == nil {
+		return -1, nil
+	}
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return i, &conditions[i]
+		}
+	}
+	return -1, nil
+}
+
 func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targets, error) {
 	var (
 		internalIPs endpoint.Targets
@@ -615,6 +637,8 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 			return nil, err
 		}
 
+		var nodesReady []*v1.Node
+		var nodesRunning []*v1.Node
 		for _, v := range pods {
 			if v.Status.Phase == v1.PodRunning {
 				node, err := sc.nodeInformer.Lister().Get(v.Spec.NodeName)
@@ -622,11 +646,32 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 					log.Debugf("Unable to find node where Pod %s is running", v.Spec.Hostname)
 					continue
 				}
+
 				if _, ok := nodesMap[node]; !ok {
 					nodesMap[node] = *new(struct{})
-					nodes = append(nodes, node)
+					nodesRunning = append(nodesRunning, node)
+
+					if isPodStatusReady(v.Status) {
+						nodesReady = append(nodesReady, node)
+						// Check pod not terminating
+						if v.GetDeletionTimestamp() == nil {
+							nodes = append(nodes, node)
+						}
+					}
 				}
 			}
+		}
+
+		if len(nodes) > 0 {
+			// Works same as service endpoints
+		} else if len(nodesReady) > 0 {
+			// 2 level of panic modes as safe guard, because old wrong behavior can be used by someone
+			// Publish all endpoints not always a bad thing
+			log.Debugf("All pods in terminating state, use ready")
+			nodes = nodesReady
+		} else {
+			log.Debugf("All pods not ready, use all running")
+			nodes = nodesRunning
 		}
 	default:
 		nodes, err = sc.nodeInformer.Lister().List(labels.Everything())
@@ -671,7 +716,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// _service._proto.name. TTL class SRV priority weight port
 			// see https://en.wikipedia.org/wiki/SRV_record
 
-			// build a target with a priority of 0, weight of 0, and pointing the given port on the given host
+			// build a target with a priority of 0, weight of 50, and pointing the given port on the given host
 			target := fmt.Sprintf("0 50 %d %s", port.NodePort, hostname)
 
 			// take the service name from the K8s Service object

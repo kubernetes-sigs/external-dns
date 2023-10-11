@@ -95,7 +95,7 @@ func TestGoDaddyZones(t *testing.T) {
 	}
 
 	// Basic zones
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: "example.com",
 		},
@@ -113,7 +113,7 @@ func TestGoDaddyZones(t *testing.T) {
 	client.AssertExpectations(t)
 
 	// Error on getting zones
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return(nil, ErrAPIDown).Once()
+	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	domains, err = provider.zones()
 	assert.Error(err)
 	assert.Nil(domains)
@@ -128,7 +128,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	}
 
 	// Basic zones records
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
 		},
@@ -180,7 +180,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	client.AssertExpectations(t)
 
 	// Error on getting zones list
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return(nil, ErrAPIDown).Once()
+	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	zones, records, err = provider.zonesRecords(context.TODO(), false)
 	assert.Error(err)
 	assert.Nil(zones)
@@ -188,7 +188,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	client.AssertExpectations(t)
 
 	// Error on getting zone records
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
 		},
@@ -204,7 +204,7 @@ func TestGoDaddyZoneRecords(t *testing.T) {
 	client.AssertExpectations(t)
 
 	// Error on getting zone record detail
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
 		},
@@ -227,7 +227,7 @@ func TestGoDaddyRecords(t *testing.T) {
 	}
 
 	// Basic zones records
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleOrg,
 		},
@@ -308,7 +308,7 @@ func TestGoDaddyRecords(t *testing.T) {
 	client.AssertExpectations(t)
 
 	// Error getting zone
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return(nil, ErrAPIDown).Once()
+	client.On("Get", domainsURI).Return(nil, ErrAPIDown).Once()
 	endpoints, err = provider.Records(context.TODO())
 	assert.Error(err)
 	assert.Nil(endpoints)
@@ -345,7 +345,7 @@ func TestGoDaddyChange(t *testing.T) {
 	}
 
 	// Fetch domains
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
 		},
@@ -416,7 +416,7 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 	}
 
 	// Fetch domains
-	client.On("Get", "/v1/domains?statuses=ACTIVE").Return([]gdZone{
+	client.On("Get", domainsURI).Return([]gdZone{
 		{
 			Domain: zoneNameExampleNet,
 		},

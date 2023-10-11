@@ -26,11 +26,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/StackExchange/dnscontrol/v3/pkg/transform"
 	ibclient "github.com/infobloxopen/infoblox-go-client/v2"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/rfc2317"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -284,7 +284,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 			// infoblox doesn't accept reverse zone's fqdn, and instead expects .in-addr.arpa zone
 			// so convert our zone fqdn (if it is a correct cidr block) into in-addr.arpa address and pass that into infoblox
 			// example: 10.196.38.0/24 becomes 38.196.10.in-addr.arpa
-			arpaZone, err := transform.ReverseDomainName(zone.Fqdn)
+			arpaZone, err := rfc2317.CidrToInAddr(zone.Fqdn)
 			if err == nil {
 				var resP []ibclient.RecordPTR
 				objP := ibclient.NewEmptyRecordPTR()
@@ -376,14 +376,14 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 	return endpoints, nil
 }
 
-func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	// Update user specified TTL (0 == disabled)
 	for i := range endpoints {
 		endpoints[i].RecordTTL = endpoint.TTL(p.cacheDuration)
 	}
 
 	if !p.createPTR {
-		return endpoints
+		return endpoints, nil
 	}
 
 	// for all A records, we want to create PTR records
@@ -403,7 +403,7 @@ func (p *ProviderConfig) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endp
 		}
 	}
 
-	return endpoints
+	return endpoints, nil
 }
 
 // ApplyChanges applies the given changes.

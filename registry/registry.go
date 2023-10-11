@@ -19,8 +19,6 @@ package registry
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
-
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -32,19 +30,7 @@ import (
 type Registry interface {
 	Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 	ApplyChanges(ctx context.Context, changes *plan.Changes) error
-	AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
+	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	GetDomainFilter() endpoint.DomainFilter
-}
-
-// TODO(ideahitme): consider moving this to Plan
-func filterOwnedRecords(ownerID string, eps []*endpoint.Endpoint) []*endpoint.Endpoint {
-	filtered := []*endpoint.Endpoint{}
-	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[endpoint.OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-			continue
-		}
-		filtered = append(filtered, ep)
-	}
-	return filtered
+	OwnerID() string
 }

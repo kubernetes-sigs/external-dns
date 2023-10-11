@@ -64,15 +64,16 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
-	cred, err := getCredentials(*cfg)
+	cred, clientOpts, err := getCredentials(*cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get credentials: %w", err)
 	}
-	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, nil)
+
+	zonesClient, err := privatedns.NewPrivateZonesClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
-	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, nil)
+	recordSetsClient, err := privatedns.NewRecordSetsClient(cfg.SubscriptionID, cred, clientOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -335,6 +336,19 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 				ARecords: aRecords,
 			},
 		}, nil
+	case privatedns.RecordTypeAAAA:
+		aaaaRecords := make([]*privatedns.AaaaRecord, len(endpoint.Targets))
+		for i, target := range endpoint.Targets {
+			aaaaRecords[i] = &privatedns.AaaaRecord{
+				IPv6Address: to.Ptr(target),
+			}
+		}
+		return privatedns.RecordSet{
+			Properties: &privatedns.RecordSetProperties{
+				TTL:         to.Ptr(ttl),
+				AaaaRecords: aaaaRecords,
+			},
+		}, nil
 	case privatedns.RecordTypeCNAME:
 		return privatedns.RecordSet{
 			Properties: &privatedns.RecordSetProperties{
@@ -389,6 +403,16 @@ func extractAzurePrivateDNSTargets(recordSet *privatedns.RecordSet) []string {
 		targets := make([]string, len(aRecords))
 		for i, aRecord := range aRecords {
 			targets[i] = *aRecord.IPv4Address
+		}
+		return targets
+	}
+
+	// Check for AAAA records
+	aaaaRecords := properties.AaaaRecords
+	if len(aaaaRecords) > 0 && (aaaaRecords)[0].IPv6Address != nil {
+		targets := make([]string, len(aaaaRecords))
+		for i, aaaaRecord := range aaaaRecords {
+			targets[i] = *aaaaRecord.IPv6Address
 		}
 		return targets
 	}

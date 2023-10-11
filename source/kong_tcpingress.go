@@ -124,13 +124,15 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 
 	var endpoints []*endpoint.Endpoint
 	for _, tcpIngress := range tcpIngresses {
-		var targets endpoint.Targets
-		for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
-			if lb.IP != "" {
-				targets = append(targets, lb.IP)
-			}
-			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+		targets := getTargetsFromTargetAnnotation(tcpIngress.Annotations)
+		if len(targets) == 0 {
+			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
+				if lb.IP != "" {
+					targets = append(targets, lb.IP)
+				}
+				if lb.Hostname != "" {
+					targets = append(targets, lb.Hostname)
+				}
 			}
 		}
 
@@ -146,7 +148,6 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		}
 
 		log.Debugf("Endpoints generated from TCPIngress: %s: %v", fullname, ingressEndpoints)
-		sc.setResourceLabel(tcpIngress, ingressEndpoints)
 		sc.setDualstackLabel(tcpIngress, ingressEndpoints)
 		endpoints = append(endpoints, ingressEndpoints...)
 	}
@@ -189,12 +190,6 @@ func (sc *kongTCPIngressSource) filterByAnnotations(tcpIngresses []*TCPIngress) 
 	return filteredList, nil
 }
 
-func (sc *kongTCPIngressSource) setResourceLabel(tcpIngress *TCPIngress, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
-	}
-}
-
 func (sc *kongTCPIngressSource) setDualstackLabel(tcpIngress *TCPIngress, endpoints []*endpoint.Endpoint) {
 	val, ok := tcpIngress.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
@@ -209,22 +204,21 @@ func (sc *kongTCPIngressSource) setDualstackLabel(tcpIngress *TCPIngress, endpoi
 func (sc *kongTCPIngressSource) endpointsFromTCPIngress(tcpIngress *TCPIngress, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
+	resource := fmt.Sprintf("tcpingress/%s/%s", tcpIngress.Namespace, tcpIngress.Name)
 
-	ttl, err := getTTLFromAnnotations(tcpIngress.Annotations)
-	if err != nil {
-		return nil, err
-	}
+	ttl := getTTLFromAnnotations(tcpIngress.Annotations, resource)
+
+	providerSpecific, setIdentifier := getProviderSpecificAnnotations(tcpIngress.Annotations)
 
 	hostnameList := getHostnamesFromAnnotations(tcpIngress.Annotations)
 	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 
 	if tcpIngress.Spec.Rules != nil {
 		for _, rule := range tcpIngress.Spec.Rules {
 			if rule.Host != "" {
-				endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+				endpoints = append(endpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 			}
 		}
 	}

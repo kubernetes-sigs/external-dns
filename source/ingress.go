@@ -171,7 +171,6 @@ func (sc *ingressSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		}
 
 		log.Debugf("Endpoints generated from ingress: %s/%s: %v", ing.Namespace, ing.Name, ingEndpoints)
-		sc.setResourceLabel(ing, ingEndpoints)
 		sc.setDualstackLabel(ing, ingEndpoints)
 		endpoints = append(endpoints, ingEndpoints...)
 	}
@@ -189,10 +188,9 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 		return nil, err
 	}
 
-	ttl, err := getTTLFromAnnotations(ing.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
+
+	ttl := getTTLFromAnnotations(ing.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 	if len(targets) == 0 {
@@ -203,7 +201,7 @@ func (sc *ingressSource) endpointsFromTemplate(ing *networkv1.Ingress) ([]*endpo
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 	}
 	return endpoints, nil
 }
@@ -276,12 +274,6 @@ func (sc *ingressSource) filterByIngressClass(ingresses []*networkv1.Ingress) ([
 	return filteredList, nil
 }
 
-func (sc *ingressSource) setResourceLabel(ingress *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
-	for _, ep := range endpoints {
-		ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("ingress/%s/%s", ingress.Namespace, ingress.Name)
-	}
-}
-
 func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints []*endpoint.Endpoint) {
 	val, ok := ingress.Annotations[ALBDualstackAnnotationKey]
 	if ok && val == ALBDualstackAnnotationValue {
@@ -294,10 +286,9 @@ func (sc *ingressSource) setDualstackLabel(ingress *networkv1.Ingress, endpoints
 
 // endpointsFromIngress extracts the endpoints from ingress object
 func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool, ignoreIngressTLSSpec bool, ignoreIngressRulesSpec bool) []*endpoint.Endpoint {
-	ttl, err := getTTLFromAnnotations(ing.Annotations)
-	if err != nil {
-		log.Warn(err)
-	}
+	resource := fmt.Sprintf("ingress/%s/%s", ing.Namespace, ing.Name)
+
+	ttl := getTTLFromAnnotations(ing.Annotations, resource)
 
 	targets := getTargetsFromTargetAnnotation(ing.Annotations)
 
@@ -315,7 +306,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 			if rule.Host == "" {
 				continue
 			}
-			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier)...)
+			definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(rule.Host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 
@@ -326,7 +317,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 				if host == "" {
 					continue
 				}
-				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier)...)
+				definedHostsEndpoints = append(definedHostsEndpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
 			}
 		}
 	}
@@ -335,7 +326,7 @@ func endpointsFromIngress(ing *networkv1.Ingress, ignoreHostnameAnnotation bool,
 	var annotationEndpoints []*endpoint.Endpoint
 	if !ignoreHostnameAnnotation {
 		for _, hostname := range getHostnamesFromAnnotations(ing.Annotations) {
-			annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier)...)
+			annotationEndpoints = append(annotationEndpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
 		}
 	}
 

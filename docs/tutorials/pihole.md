@@ -4,6 +4,9 @@ This tutorial describes how to setup ExternalDNS to sync records with Pi-hole's 
 Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A or CNAME records.
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
+__NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
+
+
 ## Deploy ExternalDNS
 
 You can skip to the [manifest](#externaldns-manifest) if authentication is disabled on your Pi-hole instance or you don't want to use secrets.

@@ -39,7 +39,7 @@ func (ms *multiSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, err
 		}
 		if len(ms.defaultTargets) > 0 {
 			for i := range endpoints {
-				eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier)
+				eps := endpointsForHostname(endpoints[i].DNSName, ms.defaultTargets, endpoints[i].RecordTTL, endpoints[i].ProviderSpecific, endpoints[i].SetIdentifier, "")
 				for _, ep := range eps {
 					ep.Labels = endpoints[i].Labels
 				}

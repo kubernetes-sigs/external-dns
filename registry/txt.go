@@ -51,6 +51,7 @@ type TXTRegistry struct {
 	wildcardReplacement string
 
 	managedRecordTypes []string
+	excludeRecordTypes []string
 
 	// encrypt text records
 	txtEncryptEnabled bool
@@ -58,7 +59,7 @@ type TXTRegistry struct {
 }
 
 // NewTXTRegistry returns new TXTRegistry object
-func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
@@ -84,6 +85,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		cacheInterval:       cacheInterval,
 		wildcardReplacement: txtWildcardReplacement,
 		managedRecordTypes:  managedRecordTypes,
+		excludeRecordTypes:  excludeRecordTypes,
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 	}, nil
@@ -95,6 +97,10 @@ func getSupportedTypes() []string {
 
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilter {
 	return im.provider.GetDomainFilter()
+}
+
+func (im *TXTRegistry) OwnerID() string {
+	return im.ownerID
 }
 
 // Records returns the current records from the registry excluding TXT Records
@@ -162,6 +168,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			SetIdentifier: ep.SetIdentifier,
 		}
 
+		// AWS Alias records have "new" format encoded as type "cname"
+		if isAlias, found := ep.GetProviderSpecificProperty("alias"); found && isAlias == "true" && ep.RecordType == endpoint.RecordTypeA {
+			key.RecordType = endpoint.RecordTypeCNAME
+		}
+
 		// Handle both new and old registry format with the preference for the new one
 		labels, labelsExist := labelMap[key]
 		if !labelsExist && ep.RecordType != endpoint.RecordTypeAAAA {
@@ -177,7 +188,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 		// Handle the migration of TXT records created before the new format (introduced in v0.12.0).
 		// The migration is done for the TXT records owned by this instance only.
 		if len(txtRecordsMap) > 0 && ep.Labels[endpoint.OwnerLabelKey] == im.ownerID {
-			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes) {
+			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
 				for _, desiredTXT := range desiredTXTs {
@@ -220,7 +231,12 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 		}
 	}
 	// new TXT record format (containing record type)
-	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, r.RecordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
+	recordType := r.RecordType
+	// AWS Alias records are encoded as type "cname"
+	if isAlias, found := r.GetProviderSpecificProperty("alias"); found && isAlias == "true" && recordType == endpoint.RecordTypeA {
+		recordType = endpoint.RecordTypeCNAME
+	}
+	txtNew := endpoint.NewEndpoint(im.mapper.toNewTXTName(r.DNSName, recordType), endpoint.RecordTypeTXT, r.Labels.Serialize(true, im.txtEncryptEnabled, im.txtEncryptAESKey))
 	if txtNew != nil {
 		txtNew.WithSetIdentifier(r.SetIdentifier)
 		txtNew.Labels[endpoint.OwnedRecordLabelKey] = r.DNSName
@@ -236,9 +252,9 @@ func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpo
 func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	filteredChanges := &plan.Changes{
 		Create:    changes.Create,
-		UpdateNew: filterOwnedRecords(im.ownerID, changes.UpdateNew),
-		UpdateOld: filterOwnedRecords(im.ownerID, changes.UpdateOld),
-		Delete:    filterOwnedRecords(im.ownerID, changes.Delete),
+		UpdateNew: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateNew),
+		UpdateOld: endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.UpdateOld),
+		Delete:    endpoint.FilterEndpointsByOwnerID(im.ownerID, changes.Delete),
 	}
 	for _, r := range filteredChanges.Create {
 		if r.Labels == nil {
@@ -292,7 +308,7 @@ func (im *TXTRegistry) ApplyChanges(ctx context.Context, changes *plan.Changes) 
 }
 
 // AdjustEndpoints modifies the endpoints as needed by the specific provider
-func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (im *TXTRegistry) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return im.provider.AdjustEndpoints(endpoints)
 }
 
@@ -340,9 +356,9 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordTyp
 
 	if pr.recordTypeInAffix() {
 		for _, t := range getSupportedTypes() {
-			t = strings.ToLower(t)
-			iPrefix := strings.ReplaceAll(prefix, recordTemplate, t)
-			iSuffix := strings.ReplaceAll(suffix, recordTemplate, t)
+			tLower := strings.ToLower(t)
+			iPrefix := strings.ReplaceAll(prefix, recordTemplate, tLower)
+			iSuffix := strings.ReplaceAll(suffix, recordTemplate, tLower)
 
 			if pr.isPrefix() && strings.HasPrefix(name, iPrefix) {
 				return strings.TrimPrefix(name, iPrefix), t

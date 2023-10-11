@@ -277,8 +277,29 @@ func (e *Endpoint) Key() EndpointKey {
 	}
 }
 
+// IsOwnedBy returns true if the endpoint owner label matches the given ownerID, false otherwise
+func (e *Endpoint) IsOwnedBy(ownerID string) bool {
+	endpointOwner, ok := e.Labels[OwnerLabelKey]
+	return ok && endpointOwner == ownerID
+}
+
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("%s %d IN %s %s %s %s", e.DNSName, e.RecordTTL, e.RecordType, e.SetIdentifier, e.Targets, e.ProviderSpecific)
+}
+
+// Apply filter to slice of endpoints and return new filtered slice that includes
+// only endpoints that match.
+func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
+	filtered := []*Endpoint{}
+	for _, ep := range eps {
+		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+		} else {
+			filtered = append(filtered, ep)
+		}
+	}
+
+	return filtered
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint

@@ -147,42 +147,19 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 	var endpoints []*endpoint.Endpoint
 
 	for _, virtualServer := range virtualServers {
-		ttl, err := getTTLFromAnnotations(virtualServer.Annotations)
-		if err != nil {
-			return nil, err
+		resource := fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
+
+		ttl := getTTLFromAnnotations(virtualServer.Annotations, resource)
+
+		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
+		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
+			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+		}
+		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
+			targets = append(targets, virtualServer.Status.VSAddress)
 		}
 
-		if virtualServer.Spec.VirtualServerAddress != "" {
-			ep := &endpoint.Endpoint{
-				Targets: endpoint.Targets{
-					virtualServer.Spec.VirtualServerAddress,
-				},
-				RecordType: "A",
-				DNSName:    virtualServer.Spec.Host,
-				Labels:     endpoint.NewLabels(),
-				RecordTTL:  ttl,
-			}
-
-			vs.setResourceLabel(virtualServer, ep)
-			endpoints = append(endpoints, ep)
-			continue
-		}
-
-		if virtualServer.Status.VSAddress != "" {
-			ep := &endpoint.Endpoint{
-				Targets: endpoint.Targets{
-					virtualServer.Status.VSAddress,
-				},
-				RecordType: "A",
-				DNSName:    virtualServer.Spec.Host,
-				Labels:     endpoint.NewLabels(),
-				RecordTTL:  ttl,
-			}
-
-			vs.setResourceLabel(virtualServer, ep)
-			endpoints = append(endpoints, ep)
-			continue
-		}
+		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)
 	}
 
 	return endpoints, nil
@@ -233,8 +210,4 @@ func (vs *f5VirtualServerSource) filterByAnnotations(virtualServers []*f5.Virtua
 	}
 
 	return filteredList, nil
-}
-
-func (vs *f5VirtualServerSource) setResourceLabel(virtualServer *f5.VirtualServer, ep *endpoint.Endpoint) {
-	ep.Labels[endpoint.ResourceLabelKey] = fmt.Sprintf("f5-virtualserver/%s/%s", virtualServer.Namespace, virtualServer.Name)
 }
