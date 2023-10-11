@@ -80,7 +80,7 @@ spec:
           effect: NoSchedule
       containers:
       - name: external-dns
-        image: source.svenils.se:5050/kubernetes/external-dns:46b526f2-dirty
+        image: source.svenils.se:5050/kubernetes/external-dns:9dd0cb1f
         args:
         - --log-level=debug
         - --source=service
