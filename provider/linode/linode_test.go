@@ -135,6 +135,10 @@ func TestLinodeConvertRecordType(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, linodego.RecordTypeSRV, record)
 
+	record, err = convertRecordType("NS")
+	require.NoError(t, err)
+	assert.Equal(t, linodego.RecordTypeNS, record)
+
 	_, err = convertRecordType("INVALID")
 	require.Error(t, err)
 }
@@ -333,7 +337,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 		11,
 		linodego.DomainRecordUpdateOptions{
 			Type: "A", Name: "", Target: "targetFoo",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(), TTLSec: 300,
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(), TTLSec: 300,
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
@@ -343,7 +347,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 		2,
 		linodego.DomainRecordCreateOptions{
 			Type: "A", Name: "create", Target: "targetBar",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(), TTLSec: 0,
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(), TTLSec: 0,
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
@@ -353,7 +357,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 		2,
 		linodego.DomainRecordCreateOptions{
 			Type: "A", Name: "", Target: "targetBar",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(), TTLSec: 0,
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(), TTLSec: 0,
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
@@ -423,7 +427,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 		11,
 		linodego.DomainRecordUpdateOptions{
 			Type: "A", Name: "", Target: "targetA",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(),
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(),
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
@@ -433,7 +437,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 		1,
 		linodego.DomainRecordCreateOptions{
 			Type: "A", Name: "", Target: "targetB",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(),
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(),
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 
@@ -482,7 +486,7 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 		12,
 		linodego.DomainRecordUpdateOptions{
 			Type: "A", Name: "", Target: "targetB",
-			Priority: getPriority(), Weight: getWeight(), Port: getPort(),
+			Priority: getPriority(), Weight: getWeight(linodego.RecordTypeA), Port: getPort(),
 		},
 	).Return(&linodego.DomainRecord{}, nil).Once()
 

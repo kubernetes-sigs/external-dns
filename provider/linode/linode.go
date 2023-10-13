@@ -241,8 +241,13 @@ func (p *LinodeProvider) submitChanges(ctx context.Context, changes LinodeChange
 	return nil
 }
 
-func getWeight() *int {
+func getWeight(recordType linodego.DomainRecordType) *int {
 	weight := 1
+
+	// NS records do not support having weight
+	if recordType == linodego.RecordTypeNS {
+		weight = 0
+	}
 	return &weight
 }
 
@@ -331,7 +336,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 						Target:   target,
 						Name:     getStrippedRecordName(zone, ep),
 						Type:     recordType,
-						Weight:   getWeight(),
+						Weight:   getWeight(recordType),
 						Port:     getPort(),
 						Priority: getPriority(),
 						TTLSec:   int(ep.RecordTTL),
@@ -395,7 +400,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 							Target:   target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
-							Weight:   getWeight(),
+							Weight:   getWeight(recordType),
 							Port:     getPort(),
 							Priority: getPriority(),
 							TTLSec:   int(ep.RecordTTL),
@@ -419,7 +424,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 							Target:   target,
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
-							Weight:   getWeight(),
+							Weight:   getWeight(recordType),
 							Port:     getPort(),
 							Priority: getPriority(),
 							TTLSec:   int(ep.RecordTTL),
@@ -515,6 +520,8 @@ func convertRecordType(recordType string) (linodego.DomainRecordType, error) {
 		return linodego.RecordTypeTXT, nil
 	case "SRV":
 		return linodego.RecordTypeSRV, nil
+	case "NS":
+		return linodego.RecordTypeNS, nil
 	default:
 		return "", fmt.Errorf("invalid Record Type: %s", recordType)
 	}
