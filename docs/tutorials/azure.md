@@ -447,7 +447,7 @@ $ kubectl patch deployment external-dns --namespace "default" --patch \
  '{"spec": {"template": {"metadata": {"labels": {\"azure.workload.identity/use\": \"true\"}}}}}'
 ```
 
-NOTE: it's also possible to specify (or override) ClientID through `UserAssignedIdentityID` field in `azure.json`.
+NOTE: it's also possible to specify (or override) ClientID through `userAssignedIdentityID` field in `azure.json`.
 
 NOTE: make sure the pod is restarted whenever you make a configuration change.
 
