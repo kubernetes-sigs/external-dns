@@ -88,6 +88,11 @@ func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
+	// Set zone to root if no set
+	if len(zoneNames) == 0 {
+		zoneNames = append(zoneNames, ".")
+	}
+
 	// Sort zones
 	sort.Slice(zoneNames, func(i, j int) bool {
 		return len(strings.Split(zoneNames[i], ".")) > len(strings.Split(zoneNames[j], "."))
@@ -456,7 +461,7 @@ func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
 		}
 	}
 
-	log.Debugf("No available zone found for %s, set it to 'root'", ep.DNSName)
+	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
 	r.krb5Realm = dns.Fqdn(".")
 	m.SetUpdate(dns.Fqdn("."))
 }
