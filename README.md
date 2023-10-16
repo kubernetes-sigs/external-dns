@@ -68,6 +68,16 @@ ExternalDNS is, by default, aware of the records it is managing, therefore it ca
 Note that all flags can be replaced with environment variables; for instance,
 `--dry-run` could be replaced with `EXTERNAL_DNS_DRY_RUN=1`.
 
+## New providers
+
+No new provider will be added to ExternalDNS _in-tree_.
+
+ExternalDNS has introduced a webhook system, which can be used to add a new provider.
+See PR #3063 for all the discussions about it.
+
+Known providers using webhooks:
+* https://github.com/ionos-cloud/external-dns-ionos-plugin
+
 ## Status of providers
 
 ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](#Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
@@ -126,7 +136,7 @@ The following table clarifies the current status of the providers according to t
 
 ## Kubernetes version compatibility
 
-A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0. 
+A [breaking change](https://github.com/kubernetes-sigs/external-dns/pull/2281) was added in external-dns v0.10.0.
 
 | ExternalDNS                    |      <= 0.9.x      |     >= 0.10.0      |
 | ------------------------------ | :----------------: | :----------------: |
