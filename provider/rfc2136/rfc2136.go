@@ -455,7 +455,7 @@ func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
 		}
 	}
 
-	log.Debugf("No avialable zone found for %s, set it to 'root'", ep.DNSName)
+	log.Debugf("No available zone found for %s, set it to 'root'", ep.DNSName)
 	r.krb5Realm = dns.Fqdn(".")
 	m.SetUpdate(dns.Fqdn("."))
 }
