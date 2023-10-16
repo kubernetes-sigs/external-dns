@@ -62,6 +62,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [TencentCloud DNSPod](https://cloud.tencent.com/product/cns)
 * [Plural](https://www.plural.sh/)
 * [Pi-hole](https://pi-hole.net/)
+* [GleSYS](https://cloud.glesys.com/)
 
 ExternalDNS is, by default, aware of the records it is managing, therefore it can safely manage non-empty hosted zones. We strongly encourage you to set `--txt-owner-id` to a unique value that doesn't change for the lifetime of your cluster. You might also want to run ExternalDNS in a dry run mode (`--dry-run` flag) to see the changes to be submitted to your DNS Provider API.
 
@@ -86,43 +87,44 @@ We define the following stability levels for providers:
 
 The following table clarifies the current status of the providers according to the aforementioned stability levels:
 
-| Provider | Status | Maintainers |
-| -------- | ------ | ----------- |
-| Google Cloud DNS | Stable | |
-| AWS Route 53 | Stable | |
-| AWS Cloud Map | Beta | |
-| Akamai Edge DNS | Beta | |
-| AzureDNS | Beta | |
-| BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
-| Civo | Alpha | @alejandrojnm |
-| CloudFlare | Beta | |
-| RcodeZero | Alpha | |
-| DigitalOcean | Alpha | |
-| DNSimple | Alpha | |
-| Infoblox | Alpha | @saileshgiri |
-| Dyn | Alpha | |
-| OpenStack Designate | Alpha | |
-| PowerDNS | Alpha | |
-| CoreDNS | Alpha | |
-| Exoscale | Alpha | |
-| Oracle Cloud Infrastructure DNS | Alpha | |
-| Linode DNS | Alpha | |
-| RFC2136 | Alpha | |
-| NS1 | Alpha | |
-| TransIP | Alpha | |
-| VinylDNS | Alpha | |
-| RancherDNS | Alpha | |
-| OVH | Alpha | |
-| Scaleway DNS | Alpha | @Sh4d1 |
-| Vultr | Alpha | |
-| UltraDNS | Alpha | |
-| GoDaddy | Alpha | |
-| Gandi | Alpha | @packi |
-| SafeDNS | Alpha | @assureddt |
-| IBMCloud | Alpha | @hughhuangzh |
-| TencentCloud | Alpha | @Hyzhou |
-| Plural | Alpha | @michaeljguarino |
-| Pi-hole | Alpha | @tinyzimmer |
+| Provider                        | Status | Maintainers                  |
+|---------------------------------| ------ |------------------------------|
+| Google Cloud DNS                | Stable |                              |
+| AWS Route 53                    | Stable |                              |
+| AWS Cloud Map                   | Beta |                              |
+| Akamai Edge DNS                 | Beta |                              |
+| AzureDNS                        | Beta |                              |
+| BlueCat                         | Alpha | @seanmalloy  @vinny-sabatini |
+| Civo                            | Alpha | @alejandrojnm                |
+| CloudFlare                      | Beta |                              |
+| RcodeZero                       | Alpha |                              |
+| DigitalOcean                    | Alpha |                              |
+| DNSimple                        | Alpha |                              |
+| Infoblox                        | Alpha | @saileshgiri                 |
+| Dyn                             | Alpha |                              |
+| OpenStack Designate             | Alpha |                              |
+| PowerDNS                        | Alpha |                              |
+| CoreDNS                         | Alpha |                              |
+| Exoscale                        | Alpha |                              |
+| Oracle Cloud Infrastructure DNS | Alpha |                              |
+| Linode DNS                      | Alpha |                              |
+| RFC2136                         | Alpha |                              |
+| NS1                             | Alpha |                              |
+| TransIP                         | Alpha |                              |
+| VinylDNS                        | Alpha |                              |
+| RancherDNS                      | Alpha |                              |
+| OVH                             | Alpha |                              |
+| Scaleway DNS                    | Alpha | @Sh4d1                       |
+| Vultr                           | Alpha |                              |
+| UltraDNS                        | Alpha |                              |
+| GoDaddy                         | Alpha |                              |
+| Gandi                           | Alpha | @packi                       |
+| SafeDNS                         | Alpha | @assureddt                   |
+| IBMCloud                        | Alpha | @hughhuangzh                 |
+| TencentCloud                    | Alpha | @Hyzhou                      |
+| Plural                          | Alpha | @michaeljguarino             |
+| Pi-hole                         | Alpha | @tinyzimmer                  |
+| GleSYS                          | Alpha | @glesys-andreas              |
 
 ## Kubernetes version compatibility
 

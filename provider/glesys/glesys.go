@@ -44,11 +44,7 @@ const (
 type GlesysProvider struct {
 	provider.BaseProvider
 	Client glesys.Client
-	// only consider hosted zones managing domains ending in this suffix
-	domainFilter endpoint.DomainFilter
-	// page size when querying paginated APIs
-	apiPageSize int
-	DryRun      bool
+	DryRun bool
 }
 
 func NewGlesysProvider(ctx context.Context, dryRun bool) (*GlesysProvider, error) {
