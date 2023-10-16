@@ -2,9 +2,6 @@
 
 This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster using GleSYS DNS.
 
-Make sure to use **?????** version of ExternalDNS for this tutorial.
-
-
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
@@ -80,7 +77,7 @@ spec:
           effect: NoSchedule
       containers:
       - name: external-dns
-        image: source.svenils.se:5050/kubernetes/external-dns:v0.13.6-131-g63d3573d-dirty
+        image: registry.k8s.io/external-dns/external-dns
         args:
         - --log-level=debug
         - --source=service
