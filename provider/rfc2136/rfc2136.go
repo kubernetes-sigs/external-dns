@@ -46,7 +46,7 @@ const (
 type rfc2136Provider struct {
 	provider.BaseProvider
 	nameserver      string
-	zoneName        []string
+	zoneNames       []string
 	tsigKeyName     string
 	tsigSecret      string
 	tsigSecretAlg   string
@@ -82,20 +82,20 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
 	// Sort zones
-	sort.Slice(zoneName, func(i, j int) bool {
-		return len(strings.Split(zoneName[i], ".")) > len(strings.Split(zoneName[j], "."))
+	sort.Slice(zoneNames, func(i, j int) bool {
+		return len(strings.Split(zoneNames[i], ".")) > len(strings.Split(zoneNames[j], "."))
 	})
 
 	r := &rfc2136Provider{
 		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
-		zoneName:        zoneName,
+		zoneNames:       zoneNames,
 		insecure:        insecure,
 		gssTsig:         gssTsig,
 		krb5Username:    krb5Username,
@@ -119,7 +119,7 @@ func NewRfc2136Provider(host string, port int, zoneName []string, insecure bool,
 		r.tsigSecretAlg = secretAlgChecked
 	}
 
-	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneName, r.nameserver)
+	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneNames, r.nameserver)
 	return r, nil
 }
 
@@ -212,7 +212,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 	}
 
 	records := make([]dns.RR, 0)
-	for _, zone := range r.zoneName {
+	for _, zone := range r.zoneNames {
 		log.Debugf("Fetching records for '%s'", zone)
 
 		m := new(dns.Msg)
@@ -447,7 +447,7 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 }
 
 func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
-	for _, zone := range r.zoneName {
+	for _, zone := range r.zoneNames {
 		if strings.HasSuffix(ep.DNSName, zone) {
 			r.krb5Realm = strings.ToUpper(dns.Fqdn(zone))
 			m.SetUpdate(dns.Fqdn(zone))
