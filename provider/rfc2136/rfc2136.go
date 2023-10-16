@@ -88,6 +88,11 @@ func NewRfc2136Provider(host string, port int, zoneName []string, insecure bool,
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
+	// Sort zones
+	sort.Slice(zoneName, func(i, j int) bool {
+		return len(strings.Split(zoneName[i], ".")) > len(strings.Split(zoneName[j], "."))
+	})
+
 	r := &rfc2136Provider{
 		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
 		zoneName:        zoneName,
@@ -442,10 +447,6 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 }
 
 func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
-	sort.Slice(r.zoneName, func(i, j int) bool {
-		return len(strings.Split(r.zoneName[i], ".")) > len(strings.Split(r.zoneName[j], "."))
-	})
-
 	for _, zone := range r.zoneName {
 		if strings.HasSuffix(ep.DNSName, zone) {
 			r.krb5Realm = strings.ToUpper(dns.Fqdn(zone))
