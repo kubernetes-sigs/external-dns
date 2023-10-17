@@ -263,7 +263,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			findMsgZone(ep, m, &r)
+			zone := findMsgZone(ep, m, r)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.AddRecord(m, ep)
 		}
@@ -290,7 +292,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			findMsgZone(ep, m, &r)
+			zone := findMsgZone(ep, m, r)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.UpdateRecord(m, changes.UpdateOld[i], ep)
 		}
@@ -317,7 +321,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			findMsgZone(ep, m, &r)
+			zone := findMsgZone(ep, m, r)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.RemoveRecord(m, ep)
 		}
@@ -451,17 +457,13 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	return chunks
 }
 
-func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r *rfc2136Provider) {
+func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r rfc2136Provider) string {
 	for _, zone := range r.zoneNames {
 		if strings.HasSuffix(ep.DNSName, zone) {
-			r.krb5Realm = strings.ToUpper(dns.Fqdn(zone))
-			m.SetUpdate(dns.Fqdn(zone))
-
-			return
+			return dns.Fqdn(zone)
 		}
 	}
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
-	r.krb5Realm = dns.Fqdn(".")
-	m.SetUpdate(dns.Fqdn("."))
+	return dns.Fqdn(".")
 }
