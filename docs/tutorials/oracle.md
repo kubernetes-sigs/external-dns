@@ -12,6 +12,23 @@ in which you created the zone; you'll need to provide that later.
 
 For more information about OCI DNS see the documentation [here][1].
 
+## Using Private OCI DNS Zones
+
+By default, the ExternalDNS OCI provider is configured to use Global OCI
+DNS Zones. If you want to use Private OCI DNS Zones, add the following
+argument to the ExternalDNS controller:
+
+```
+--oci-zone-scope=PRIVATE
+```
+
+To use both Global and Private OCI DNS Zones, set the OCI Zone Scope to be
+empty:
+
+```
+--oci-zone-scope=
+```
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
@@ -67,6 +84,35 @@ the compartment containing the zone to be managed.
 
 For more information about OCI IAM instance principals, see the documentation [here][2].
 For more information about OCI IAM policy details for the DNS service, see the documentation [here][3].
+
+### OCI IAM Workload Identity
+
+If you're running ExternalDNS within an OCI Container Engine for Kubernetes (OKE) cluster,
+you can use OCI IAM Workload Identity to authenticate with OCI. You'll need to ensure an
+OCI IAM policy exists with a statement granting the `manage dns` permission on zones and
+records in the target compartment covering your OKE cluster running ExternalDNS.
+E.g.:
+
+```
+Allow any-user to manage dns in compartment <compartment-name> where all {request.principal.type='workload',request.principal.cluster_id='<cluster-ocid>',request.principal.service_account='external-dns'}
+```
+
+You'll also need to create a new file (oci.yaml) and modify the contents to match the example
+below. Be sure to adjust the values to match your region and the OCID
+of the compartment containing the zone:
+
+```yaml
+auth:
+  region: us-phoenix-1
+  useWorkloadIdentity: true
+compartment: ocid1.compartment.oc1...
+```
+
+Create a secret using the config file above:
+
+```shell
+$ kubectl create secret generic external-dns-config --from-file=oci.yaml
+```
 
 ## Manifest (for clusters with RBAC enabled)
 
@@ -131,6 +177,9 @@ spec:
         - --provider=oci
         - --policy=upsert-only # prevent ExternalDNS from deleting any records, omit to enable full synchronization
         - --txt-owner-id=my-identifier
+        # Specifies the OCI DNS Zone scope, defaults to GLOBAL.
+        # May be GLOBAL, PRIVATE, or an empty value to specify both GLOBAL and PRIVATE OCI DNS Zones
+        # - --oci-zone-scope=GLOBAL
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes/
