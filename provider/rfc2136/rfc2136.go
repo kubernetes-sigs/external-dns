@@ -263,7 +263,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			zone := findMsgZone(ep, m, r)
+			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
 			m.SetUpdate(zone)
 
@@ -292,7 +292,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			zone := findMsgZone(ep, m, r)
+			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
 			m.SetUpdate(zone)
 
@@ -321,7 +321,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				continue
 			}
 
-			zone := findMsgZone(ep, m, r)
+			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
 			m.SetUpdate(zone)
 
@@ -457,8 +457,8 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	return chunks
 }
 
-func findMsgZone(ep *endpoint.Endpoint, m *dns.Msg, r rfc2136Provider) string {
-	for _, zone := range r.zoneNames {
+func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
+	for _, zone := range zoneNames {
 		if strings.HasSuffix(ep.DNSName, zone) {
 			return dns.Fqdn(zone)
 		}
