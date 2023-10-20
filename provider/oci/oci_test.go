@@ -32,27 +32,52 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 )
 
-type mockOCIDNSClient struct{}
+type mockOCIDNSClient struct {
+}
 
-func (c *mockOCIDNSClient) ListZones(ctx context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error) {
+var (
+	zoneIdQux                 = "ocid1.dns-zone.oc1..123456ef0bfbb5c251b9713fd7bf8959"
+	zoneNameQux               = "qux.com"
+	testPrivateZoneSummaryQux = dns.ZoneSummary{
+		Id:   &zoneIdQux,
+		Name: &zoneNameQux,
+	}
+	zoneIdBaz                 = "ocid1.dns-zone.oc1..789012ef0bfbb5c251b9713fd7bf8959"
+	zoneNameBaz               = "baz.com"
+	testPrivateZoneSummaryBaz = dns.ZoneSummary{
+		Id:   &zoneIdBaz,
+		Name: &zoneNameBaz,
+	}
+	testGlobalZoneSummaryFoo = dns.ZoneSummary{
+		Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
+		Name: common.String("foo.com"),
+	}
+	testGlobalZoneSummaryBar = dns.ZoneSummary{
+		Id:   common.String("ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"),
+		Name: common.String("bar.com"),
+	}
+)
+
+func buildZoneResponseItems(scope dns.ListZonesScopeEnum, privateZones, globalZones []dns.ZoneSummary) []dns.ZoneSummary {
+	switch string(scope) {
+	case "PRIVATE":
+		return privateZones
+	case "GLOBAL":
+		return globalZones
+	default:
+		return append(privateZones, globalZones...)
+	}
+}
+
+func (c *mockOCIDNSClient) ListZones(_ context.Context, request dns.ListZonesRequest) (response dns.ListZonesResponse, err error) {
 	if request.Page == nil || *request.Page == "0" {
 		return dns.ListZonesResponse{
-			Items: []dns.ZoneSummary{
-				{
-					Id:   common.String("ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"),
-					Name: common.String("foo.com"),
-				},
-			},
+			Items:       buildZoneResponseItems(request.Scope, []dns.ZoneSummary{testPrivateZoneSummaryBaz}, []dns.ZoneSummary{testGlobalZoneSummaryFoo}),
 			OpcNextPage: common.String("1"),
 		}, nil
 	}
 	return dns.ListZonesResponse{
-		Items: []dns.ZoneSummary{
-			{
-				Id:   common.String("ocid1.dns-zone.oc1..502aeddba262b92fd13ed7874f6f1404"),
-				Name: common.String("bar.com"),
-			},
-		},
+		Items: buildZoneResponseItems(request.Scope, []dns.ZoneSummary{testPrivateZoneSummaryQux}, []dns.ZoneSummary{testGlobalZoneSummaryBar}),
 	}, nil
 }
 
@@ -193,6 +218,16 @@ hKRtDhmSdWBo3tJK12RrAe4t7CUe8gMgTvU7ExlcA3xQkseFPx9K
 			},
 			err: errors.New("initializing OCI DNS API client: can not create client, bad configuration: PEM data was not found in buffer"),
 		},
+		"invalid-auth-methods": {
+			config: OCIConfig{
+				Auth: OCIAuthConfig{
+					Region:               "us-ashburn-1",
+					UseInstancePrincipal: true,
+					UseWorkloadIdentity:  true,
+				},
+			},
+			err: errors.New("only one of 'useInstancePrincipal' and 'useWorkloadIdentity' may be enabled for Oracle authentication"),
+		},
 	}
 	for name, tc := range testCases {
 		t.Run(name, func(t *testing.T) {
@@ -220,26 +255,45 @@ func TestOCIZones(t *testing.T) {
 		name         string
 		domainFilter endpoint.DomainFilter
 		zoneIDFilter provider.ZoneIDFilter
+		zoneScope    string
 		expected     map[string]dns.ZoneSummary
 	}{
+		{
+			name:         "AllZones",
+			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    "",
+			expected: map[string]dns.ZoneSummary{
+				fooZoneId: testGlobalZoneSummaryFoo,
+				barZoneId: testGlobalZoneSummaryBar,
+				zoneIdBaz: testPrivateZoneSummaryBaz,
+				zoneIdQux: testPrivateZoneSummaryQux,
+			},
+		},
+		{
+			name:         "Privatezones",
+			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
+			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    "PRIVATE",
+			expected: map[string]dns.ZoneSummary{
+				zoneIdBaz: testPrivateZoneSummaryBaz,
+				zoneIdQux: testPrivateZoneSummaryQux,
+			},
+		},
 		{
 			name:         "DomainFilter_com",
 			domainFilter: endpoint.NewDomainFilter([]string{"com"}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    "GLOBAL",
 			expected: map[string]dns.ZoneSummary{
-				fooZoneId: {
-					Id:   common.String(fooZoneId),
-					Name: common.String("foo.com"),
-				},
-				barZoneId: {
-					Id:   common.String(barZoneId),
-					Name: common.String("bar.com"),
-				},
+				fooZoneId: testGlobalZoneSummaryFoo,
+				barZoneId: testGlobalZoneSummaryBar,
 			},
 		}, {
 			name:         "DomainFilter_foo.com",
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.com"}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{""}),
+			zoneScope:    "GLOBAL",
 			expected: map[string]dns.ZoneSummary{
 				fooZoneId: {
 					Id:   common.String(fooZoneId),
@@ -250,6 +304,7 @@ func TestOCIZones(t *testing.T) {
 			name:         "ZoneIDFilter_ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959",
 			domainFilter: endpoint.NewDomainFilter([]string{""}),
 			zoneIDFilter: provider.NewZoneIDFilter([]string{"ocid1.dns-zone.oc1..e1e042ef0bfbb5c251b9713fd7bf8959"}),
+			zoneScope:    "GLOBAL",
 			expected: map[string]dns.ZoneSummary{
 				fooZoneId: {
 					Id:   common.String(fooZoneId),
@@ -260,7 +315,7 @@ func TestOCIZones(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, "", false)
+			provider := newOCIProvider(&mockOCIDNSClient{}, tc.domainFilter, tc.zoneIDFilter, tc.zoneScope, false)
 			zones, err := provider.zones(context.Background())
 			require.NoError(t, err)
 			validateOCIZones(t, zones, tc.expected)

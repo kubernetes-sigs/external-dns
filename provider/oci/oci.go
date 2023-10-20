@@ -93,6 +93,9 @@ func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFil
 	var client ociDNSClient
 	var err error
 	var configProvider common.ConfigurationProvider
+	if cfg.Auth.UseInstancePrincipal && cfg.Auth.UseWorkloadIdentity {
+		return nil, errors.New("only one of 'useInstancePrincipal' and 'useWorkloadIdentity' may be enabled for Oracle authentication")
+	}
 	if cfg.Auth.UseWorkloadIdentity {
 		// OCI SDK requires specific, dynamic environment variables for workload identity.
 		if err := os.Setenv(auth.ResourcePrincipalVersionEnvVar, auth.ResourcePrincipalVersion2_2); err != nil {
