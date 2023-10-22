@@ -724,13 +724,19 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			// see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 			serviceName := svc.ObjectMeta.Name
 
+			// figure out the port name
+			portName := strings.ToLower(string(port.Name))
+			if portName == "" {
+				portName = serviceName
+			}
+
 			// figure out the protocol
 			protocol := strings.ToLower(string(port.Protocol))
 			if protocol == "" {
 				protocol = "tcp"
 			}
 
-			recordName := fmt.Sprintf("_%s._%s.%s", serviceName, protocol, hostname)
+			recordName := fmt.Sprintf("_%s._%s.%s", portName, protocol, hostname)
 
 			var ep *endpoint.Endpoint
 			if ttl.IsConfigured() {
