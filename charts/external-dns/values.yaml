@@ -16,6 +16,9 @@ fullnameOverride: ""
 commonLabels: {}
 
 serviceAccount:
+  # opt out of the service account token automounting (at the service account level)
+  automountServiceAccountToken:
+
   # Specifies whether a service account should be created
   create: true
   # Annotations to add to the service account
@@ -193,3 +196,6 @@ secretConfiguration:
 
 deploymentStrategy:
   type: Recreate
+
+# opt out of the service account token automounting (at the pod level)
+automountServiceAccountToken:
