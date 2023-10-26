@@ -19,7 +19,16 @@ In this example we will use `example.com` as an example.
 To use ExternalDNS with Scaleway DNS, you need to create an API token (composed of the Access Key and the Secret Key).
 You can either use existing ones or you can create a new token, as explained in [How to generate an API token](https://www.scaleway.com/en/docs/generate-an-api-token/) or directly by going to the [credentials page](https://console.scaleway.com/account/organization/credentials).
 
+Scaleway provider supports configuring credentials using profiles or supplying it directly with environment variables.
 
+### Configuration using a config file
+You can supply the credentials through a config file:
+1. Create the config file. Check out [Scaleway docs](https://github.com/scaleway/scaleway-sdk-go/blob/master/scw/README.md#scaleway-config) for instructions
+2. Mount it as a Secret into the Pod
+3. Configure environment variable `SCW_PROFILE` to match the profile name in the config file
+4. Configure environment variable `SCW_CONFIG_PATH` to match the location of the mounted config file
+
+### Configuration using environment variables
 Two environment variables are needed to run ExternalDNS with Scaleway DNS:
 - `SCW_ACCESS_KEY` which is the Access Key.
 - `SCW_SECRET_KEY` which is the Secret Key.
@@ -61,6 +70,20 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
+        ### Set if configuring using a config file. Make sure to create the Secret first.
+        # - name: SCW_PROFILE
+        #   value: "<profile name>"
+        # - name: SCW_CONFIG_PATH
+        #   value: /etc/scw/config.yaml
+    #     volumeMounts:
+    #     - name: scw-config
+    #       mountPath: /etc/scw/config.yaml
+    #       readOnly: true
+    # volumes:
+    # - name: scw-config
+    #   secret:
+    #     secretName: scw-config
+    ###
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -127,6 +150,20 @@ spec:
           value: "<your access key>"
         - name: SCW_SECRET_KEY
           value: "<your secret key>"
+        ### Set if configuring using a config file. Make sure to create the Secret first.
+        # - name: SCW_PROFILE
+        #   value: "<profile name>"
+        # - name: SCW_CONFIG_PATH
+        #   value: /etc/scw/config.yaml
+    #     volumeMounts:
+    #     - name: scw-config
+    #       mountPath: /etc/scw/config.yaml
+    #       readOnly: true
+    # volumes:
+    # - name: scw-config
+    #   secret:
+    #     secretName: scw-config
+    ###
 ```
 
 
