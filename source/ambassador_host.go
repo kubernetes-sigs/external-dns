@@ -185,7 +185,7 @@ func (sc *ambassadorHostSource) endpointsFromHost(ctx context.Context, host *amb
 	return endpoints, nil
 }
 
-func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (targets endpoint.Targets, err error) {
+func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Context, service string) (endpoint.Targets, error) {
 	lbNamespace, lbName, err := parseAmbLoadBalancerService(service)
 	if err != nil {
 		return nil, err
@@ -196,16 +196,9 @@ func (sc *ambassadorHostSource) targetsFromAmbassadorLoadBalancer(ctx context.Co
 		return nil, err
 	}
 
-	for _, lb := range svc.Status.LoadBalancer.Ingress {
-		if lb.IP != "" {
-			targets = append(targets, lb.IP)
-		}
-		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
-		}
-	}
+	var targets = extractLoadBalancerTargets(svc, true)
 
-	return
+	return targets, nil
 }
 
 // parseAmbLoadBalancerService returns a name/namespace tuple from the annotation in
