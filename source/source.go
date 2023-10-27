@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode"
 
+	sprig "github.com/go-task/slim-sprig"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -147,12 +148,11 @@ func parseTemplate(fqdnTemplate string) (tmpl *template.Template, err error) {
 	if fqdnTemplate == "" {
 		return nil, nil
 	}
-	funcs := template.FuncMap{
-		"trimPrefix": strings.TrimPrefix,
-		"replaceAll": strings.ReplaceAll,
-		"isIPv6":     isIPv6String,
-		"isIPv4":     isIPv4String,
-	}
+
+	funcs := sprig.HermeticTxtFuncMap()
+	funcs["isIPv6"] = isIPv6String
+	funcs["isIPv4"] = isIPv4String
+
 	return template.New("endpoint").Funcs(funcs).Parse(fqdnTemplate)
 }
 
@@ -399,5 +399,5 @@ func isIPv6String(ip string) bool {
 
 func isIPv4String(input string) bool {
 	netIP := net.ParseIP(input)
-	return netIP != nil && netIP.To4() != nil
+	return netIP != nil && netIP.To4() != nil && !strings.Contains(input, ":")
 }
