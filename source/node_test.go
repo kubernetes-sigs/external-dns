@@ -64,7 +64,7 @@ func testNodeSourceNewNodeSource(t *testing.T) {
 		{
 			title:        "complex template",
 			expectError:  false,
-			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{replaceAll .Address \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
+			fqdnTemplate: "{{range .Status.Addresses}}{{if and (eq .Type \"ExternalIP\") (isIPv4 .Address)}}{{.Address | replace \".\" \"-\"}}{{break}}{{end}}{{end}}.ext-dns.test.com",
 		},
 		{
 			title:            "non-empty annotation filter label",

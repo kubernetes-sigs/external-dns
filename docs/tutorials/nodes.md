@@ -38,7 +38,7 @@ spec:
         - --domain-filter=external-dns-test.my-org.com
         - --aws-zone-type=public
         - --registry=txt
-        - --fqdn-template={{replaceAll .Name "." "-"}}.external-dns-test.my-org.com
+        - --fqdn-template={{.Name | replace "." "-"}}.external-dns-test.my-org.com
         - --txt-owner-id=my-identifier
         - --policy=sync
         - --log-level=debug
@@ -109,7 +109,7 @@ spec:
         - --domain-filter=external-dns-test.my-org.com
         - --aws-zone-type=public
         - --registry=txt
-        - --fqdn-template={{replaceAll .Name "." "-"}}.external-dns-test.my-org.com
+        - --fqdn-template={{.Name | replace "." "-"}}.external-dns-test.my-org.com
         - --txt-owner-id=my-identifier
         - --policy=sync
         - --log-level=debug
