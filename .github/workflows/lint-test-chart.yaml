@@ -14,49 +14,55 @@ jobs:
         shell: bash
     steps:
       - name: Checkout
-        uses: actions/checkout@v4 # v4.0.0
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           fetch-depth: 0
 
-      - name: Run Artifact Hub lint
-        run: |
-          set -euo pipefail
-          curl -Lo ah_linux_amd64.tar.gz https://github.com/artifacthub/hub/releases/download/v1.9.0/ah_1.9.0_linux_amd64.tar.gz
-          tar -xzvf ah_linux_amd64.tar.gz ah
-          ./ah lint --kind helm || exit 1
-          rm -f ./ah ./ah_linux_amd64.tar.gz
-
-      - name: Set-up Helm
-        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3.5
+      - name: Install Artifact Hub CLI
+        uses: action-stars/install-tool-from-github-release@58e2dd20166c0eb19ab9ac4d0966c930a647ee69 # v0.2.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
+          owner: artifacthub
+          repository: hub
+          name: ah
+          check_command: ah version
           version: latest
 
-      - name: Set-up Python
+      - name: Run Artifact Hub lint
+        run: ah lint --kind helm || exit 1
+
+      - name: Install Helm
+        uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3.5
+        with:
+          token: ${{ github.token }}
+          version: latest
+
+      - name: Install Python
         uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ github.token }}
           python-version: "3.x"
 
       - name: Set-up chart-testing
         uses: helm/chart-testing-action@e6669bcd63d7cb57cb4380c33043eebe5d111992 # v2.6.1
 
-      - name: Run chart-testing (list-changed)
-        id: list-changed
+      - name: Check for changes
+        id: changes
         run: |
           changed=$(ct list-changed)
           if [[ -n "$changed" ]]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Run chart-testing (lint)
+      - name: Run chart-testing lint
         run: ct lint --check-version-increment=false
 
-      - name: Set-up Kind cluster
+      - name: Create Kind cluster
+        if: steps.changes.outputs.changed == 'true'
         uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 # v1.8.0
         with:
           wait: 120s
-        if: steps.list-changed.outputs.changed == 'true'
 
-      - name: Run chart-testing (install)
+      - name: Run chart-testing install
+        if: steps.changes.outputs.changed == 'true'
         run: ct install
