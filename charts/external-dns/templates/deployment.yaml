@@ -16,6 +16,9 @@ spec:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
   strategy:
     {{- toYaml .Values.deploymentStrategy | nindent 4 }}
+  {{- with .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ . }}
+  {{- end }}
   template:
     metadata:
       labels:
