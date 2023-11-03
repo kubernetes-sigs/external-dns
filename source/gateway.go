@@ -32,10 +32,10 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	cache "k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gateway "sigs.k8s.io/gateway-api/pkg/client/clientset/versioned"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
-	informers_v1b1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1beta1"
+	informers_v1 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1"
 
 	"sigs.k8s.io/external-dns/endpoint"
 )
@@ -51,11 +51,11 @@ type gatewayRoute interface {
 	// Metadata returns the route's metadata.
 	Metadata() *metav1.ObjectMeta
 	// Hostnames returns the route's specified hostnames.
-	Hostnames() []v1beta1.Hostname
+	Hostnames() []v1.Hostname
 	// Protocol returns the route's protocol type.
-	Protocol() v1beta1.ProtocolType
+	Protocol() v1.ProtocolType
 	// RouteStatus returns the route's common status.
-	RouteStatus() v1beta1.RouteStatus
+	RouteStatus() v1.RouteStatus
 }
 
 type newGatewayRouteInformerFunc func(informers.SharedInformerFactory) gatewayRouteInformer
@@ -82,7 +82,7 @@ func newGatewayInformerFactory(client gateway.Interface, namespace string, label
 type gatewayRouteSource struct {
 	gwNamespace string
 	gwLabels    labels.Selector
-	gwInformer  informers_v1b1.GatewayInformer
+	gwInformer  informers_v1.GatewayInformer
 
 	rtKind        string
 	rtNamespace   string
@@ -123,8 +123,8 @@ func newGatewayRouteSource(clients ClientGenerator, config *Config, kind string,
 	}
 
 	informerFactory := newGatewayInformerFactory(client, config.GatewayNamespace, gwLabels)
-	gwInformer := informerFactory.Gateway().V1beta1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
-	gwInformer.Informer()                                        // Register with factory before starting.
+	gwInformer := informerFactory.Gateway().V1().Gateways() // TODO: Gateway informer should be shared across gateway sources.
+	gwInformer.Informer()                                   // Register with factory before starting.
 
 	rtInformerFactory := informerFactory
 	if config.Namespace != config.GatewayNamespace || !selectorsEqual(rtLabels, gwLabels) {
@@ -250,15 +250,15 @@ type gatewayRouteResolver struct {
 }
 
 type gatewayListeners struct {
-	gateway   *v1beta1.Gateway
-	listeners map[v1beta1.SectionName][]v1beta1.Listener
+	gateway   *v1.Gateway
+	listeners map[v1.SectionName][]v1.Listener
 }
 
-func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1beta1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
+func newGatewayRouteResolver(src *gatewayRouteSource, gateways []*v1.Gateway, namespaces []*corev1.Namespace) *gatewayRouteResolver {
 	// Create Gateway Listener lookup table.
 	gws := make(map[types.NamespacedName]gatewayListeners, len(gateways))
 	for _, gw := range gateways {
-		lss := make(map[v1beta1.SectionName][]v1beta1.Listener, len(gw.Spec.Listeners)+1)
+		lss := make(map[v1.SectionName][]v1.Listener, len(gw.Spec.Listeners)+1)
 		for i, lis := range gw.Spec.Listeners {
 			lss[lis.Name] = gw.Spec.Listeners[i : i+1]
 		}
@@ -394,23 +394,23 @@ func (c *gatewayRouteResolver) hosts(rt gatewayRoute) ([]string, error) {
 	return hostnames, nil
 }
 
-func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1beta1.Listener, rt gatewayRoute) bool {
+func (c *gatewayRouteResolver) routeIsAllowed(gw *v1.Gateway, lis *v1.Listener, rt gatewayRoute) bool {
 	meta := rt.Metadata()
 	allow := lis.AllowedRoutes
 
 	// Check the route's namespace.
-	from := v1beta1.NamespacesFromSame
+	from := v1.NamespacesFromSame
 	if allow != nil && allow.Namespaces != nil && allow.Namespaces.From != nil {
 		from = *allow.Namespaces.From
 	}
 	switch from {
-	case v1beta1.NamespacesFromAll:
+	case v1.NamespacesFromAll:
 		// OK
-	case v1beta1.NamespacesFromSame:
+	case v1.NamespacesFromSame:
 		if gw.Namespace != meta.Namespace {
 			return false
 		}
-	case v1beta1.NamespacesFromSelector:
+	case v1.NamespacesFromSelector:
 		selector, err := metav1.LabelSelectorAsSelector(allow.Namespaces.Selector)
 		if err != nil {
 			log.Debugf("Gateway %s/%s section %q has invalid namespace selector: %v", gw.Namespace, gw.Name, lis.Name, err)
@@ -448,7 +448,7 @@ func (c *gatewayRouteResolver) routeIsAllowed(gw *v1beta1.Gateway, lis *v1beta1.
 
 func gwRouteIsAccepted(conds []metav1.Condition) bool {
 	for _, c := range conds {
-		if v1beta1.RouteConditionType(c.Type) == v1beta1.RouteConditionAccepted {
+		if v1.RouteConditionType(c.Type) == v1.RouteConditionAccepted {
 			return c.Status == metav1.ConditionTrue
 		}
 	}
@@ -475,12 +475,12 @@ func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
 
 // gwProtocolMatches returns whether a and b are the same protocol,
 // where HTTP and HTTPS are considered the same.
-func gwProtocolMatches(a, b v1beta1.ProtocolType) bool {
-	if a == v1beta1.HTTPSProtocolType {
-		a = v1beta1.HTTPProtocolType
+func gwProtocolMatches(a, b v1.ProtocolType) bool {
+	if a == v1.HTTPSProtocolType {
+		a = v1.HTTPProtocolType
 	}
-	if b == v1beta1.HTTPSProtocolType {
-		b = v1beta1.HTTPProtocolType
+	if b == v1.HTTPSProtocolType {
+		b = v1.HTTPProtocolType
 	}
 	return a == b
 }
@@ -528,7 +528,7 @@ func strVal(ptr *string, def string) string {
 	return *ptr
 }
 
-func sectionVal(ptr *v1beta1.SectionName, def v1beta1.SectionName) v1beta1.SectionName {
+func sectionVal(ptr *v1.SectionName, def v1.SectionName) v1.SectionName {
 	if ptr == nil || *ptr == "" {
 		return def
 	}

@@ -19,8 +19,8 @@ package source
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 	"sigs.k8s.io/gateway-api/apis/v1alpha2"
-	"sigs.k8s.io/gateway-api/apis/v1beta1"
 	informers "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions"
 	informers_v1a2 "sigs.k8s.io/gateway-api/pkg/client/informers/externalversions/apis/v1alpha2"
 )
@@ -34,11 +34,11 @@ func NewGatewayTCPRouteSource(clients ClientGenerator, config *Config) (Source, 
 
 type gatewayTCPRoute struct{ route v1alpha2.TCPRoute } // NOTE: Must update TypeMeta in List when changing the APIVersion.
 
-func (rt *gatewayTCPRoute) Object() kubeObject               { return &rt.route }
-func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta     { return &rt.route.ObjectMeta }
-func (rt *gatewayTCPRoute) Hostnames() []v1beta1.Hostname    { return nil }
-func (rt *gatewayTCPRoute) Protocol() v1beta1.ProtocolType   { return v1beta1.TCPProtocolType }
-func (rt *gatewayTCPRoute) RouteStatus() v1beta1.RouteStatus { return rt.route.Status.RouteStatus }
+func (rt *gatewayTCPRoute) Object() kubeObject           { return &rt.route }
+func (rt *gatewayTCPRoute) Metadata() *metav1.ObjectMeta { return &rt.route.ObjectMeta }
+func (rt *gatewayTCPRoute) Hostnames() []v1.Hostname     { return nil }
+func (rt *gatewayTCPRoute) Protocol() v1.ProtocolType    { return v1.TCPProtocolType }
+func (rt *gatewayTCPRoute) RouteStatus() v1.RouteStatus  { return rt.route.Status.RouteStatus }
 
 type gatewayTCPRouteInformer struct {
 	informers_v1a2.TCPRouteInformer

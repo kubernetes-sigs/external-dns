@@ -7,7 +7,7 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 As the Gateway API is still in an experimental phase, ExternalDNS makes no backwards
 compatibilty guarantees regarding its support. However, it currently supports a mixture of
-v1alpha2 and v1beta1 APIs. Gateways and HTTPRoutes are supported using the v1beta1 API.
+v1alpha2, v1beta1, v1 APIs. Gateways and HTTPRoutes are supported using the v1 and v1beta1 API (which is converted to v1 when using the latest CRDs).
 GRPCRoutes, TLSRoutes, TCPRoutes, and UDPRoutes are supported using the v1alpha2 API.
 
 ## Hostnames
