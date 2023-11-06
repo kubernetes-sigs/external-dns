@@ -25,12 +25,19 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Experimental
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+// Experimental
+=======
+// # Experimental
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 //
 // Notice: This package is EXPERIMENTAL and may be changed or removed in a
 // later release.
 package attributes
 
+<<<<<<< HEAD
 import "fmt"
 
 // Attributes is an immutable struct for storing and retrieving generic
@@ -252,6 +259,13 @@ func (a *Attributes) Equal(o *Attributes) bool {
 // later release.
 >>>>>>> 4d7e5ad26 (update vendored files)
 package attributes
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+=======
+import (
+	"fmt"
+	"strings"
+)
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 
 // Attributes is an immutable struct for storing and retrieving generic
 // key/value pairs.  Keys must be hashable, and users should define their own
@@ -327,4 +341,28 @@ func (a *Attributes) Equal(o *Attributes) bool {
 		}
 	}
 	return true
+}
+
+// String prints the attribute map. If any key or values throughout the map
+// implement fmt.Stringer, it calls that method and appends.
+func (a *Attributes) String() string {
+	var sb strings.Builder
+	sb.WriteString("{")
+	first := true
+	for k, v := range a.m {
+		var key, val string
+		if str, ok := k.(interface{ String() string }); ok {
+			key = str.String()
+		}
+		if str, ok := v.(interface{ String() string }); ok {
+			val = str.String()
+		}
+		if !first {
+			sb.WriteString(", ")
+		}
+		sb.WriteString(fmt.Sprintf("%q: %q, ", key, val))
+		first = false
+	}
+	sb.WriteString("}")
+	return sb.String()
 }

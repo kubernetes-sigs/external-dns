@@ -52,7 +52,13 @@ if [[ "$GOOS" = "linux" ]]; then
 	$cmd docker build --tag generate:$GOOS $GOOS
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")/.." && /bin/pwd):/build generate:$GOOS
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")/.." && /bin/pwd):/build generate:$GOOS
+=======
+	$cmd docker run --interactive --tty --volume $(cd -- "$(dirname -- "$0")/.." && pwd):/build generate:$GOOS
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 	exit
 fi
 
@@ -609,10 +615,10 @@ openbsd_arm64)
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs -- -fsigned-char"
 	;;
 openbsd_mips64)
+	mkasm="go run mkasm.go"
 	mkerrors="$mkerrors -m64"
-	mksyscall="go run mksyscall.go -openbsd"
+	mksyscall="go run mksyscall.go -openbsd -libc"
 	mksysctl="go run mksysctl_openbsd.go"
-	mksysnum="go run mksysnum.go 'https://cvsweb.openbsd.org/cgi-bin/cvsweb/~checkout~/src/sys/kern/syscalls.master'"
 	# Let the type of C char be signed for making the bare syscall
 	# API consistent across platforms.
 	mktypes="GOARCH=$GOARCH go tool cgo -godefs -- -fsigned-char"

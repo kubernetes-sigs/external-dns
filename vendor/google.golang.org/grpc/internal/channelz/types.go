@@ -279,10 +279,10 @@ func (c *channel) deleteSelfFromMap() (delete bool) {
 
 // deleteSelfIfReady tries to delete the channel itself from the channelz database.
 // The delete process includes two steps:
-// 1. delete the channel from the entry relation tree, i.e. delete the channel reference from its
-//    parent's child list.
-// 2. delete the channel from the map, i.e. delete the channel entirely from channelz. Lookup by id
-//    will return entry not found error.
+//  1. delete the channel from the entry relation tree, i.e. delete the channel reference from its
+//     parent's child list.
+//  2. delete the channel from the map, i.e. delete the channel entirely from channelz. Lookup by id
+//     will return entry not found error.
 func (c *channel) deleteSelfIfReady() {
 	if !c.deleteSelfFromTree() {
 		return
@@ -387,10 +387,10 @@ func (sc *subChannel) deleteSelfFromMap() (delete bool) {
 
 // deleteSelfIfReady tries to delete the subchannel itself from the channelz database.
 // The delete process includes two steps:
-// 1. delete the subchannel from the entry relation tree, i.e. delete the subchannel reference from
-//    its parent's child list.
-// 2. delete the subchannel from the map, i.e. delete the subchannel entirely from channelz. Lookup
-//    by id will return entry not found error.
+//  1. delete the subchannel from the entry relation tree, i.e. delete the subchannel reference from
+//     its parent's child list.
+//  2. delete the subchannel from the map, i.e. delete the subchannel entirely from channelz. Lookup
+//     by id will return entry not found error.
 func (sc *subChannel) deleteSelfIfReady() {
 	if !sc.deleteSelfFromTree() {
 		return

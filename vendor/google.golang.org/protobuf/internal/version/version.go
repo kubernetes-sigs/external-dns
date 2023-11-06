@@ -58,6 +58,7 @@ const (
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	Minor      = 27
 ||||||| parent of e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
 	Minor      = 27
@@ -101,6 +102,13 @@ const (
 	Minor      = 27
 	Patch      = 1
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+	Minor      = 28
+	Patch      = 1
+=======
+	Minor      = 30
+	Patch      = 0
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 	PreRelease = ""
 )
 

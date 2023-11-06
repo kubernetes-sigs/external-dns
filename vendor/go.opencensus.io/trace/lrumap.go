@@ -50,6 +50,7 @@ func (lm lruMap) keys() []interface{} {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	keys := make([]interface{}, len(lm.cacheKeys))
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -78,6 +79,11 @@ func (lm lruMap) keys() []interface{} {
 =======
 	keys := make([]interface{}, len(lm.cacheKeys))
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+	keys := make([]interface{}, len(lm.cacheKeys))
+=======
+	keys := make([]interface{}, 0, len(lm.cacheKeys))
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 	for k := range lm.cacheKeys {
 		keys = append(keys, k)
 	}

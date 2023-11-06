@@ -356,7 +356,7 @@ type FpExtendedPrecision struct {
 type PtraceIoDesc struct {
 	Op   int32
 	Offs uintptr
-	Addr uintptr
+	Addr *byte
 	Len  uint32
 }
 

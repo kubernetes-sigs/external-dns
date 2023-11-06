@@ -185,7 +185,7 @@ func NewBufferedSink(o io.WriteCloser) Sink {
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	pb "google.golang.org/grpc/binarylog/grpc_binarylog_v1"
+	binlogpb "google.golang.org/grpc/binarylog/grpc_binarylog_v1"
 )
 
 var (
@@ -201,15 +201,15 @@ type Sink interface {
 	// Write will be called to write the log entry into the sink.
 	//
 	// It should be thread-safe so it can be called in parallel.
-	Write(*pb.GrpcLogEntry) error
+	Write(*binlogpb.GrpcLogEntry) error
 	// Close will be called when the Sink is replaced by a new Sink.
 	Close() error
 }
 
 type noopSink struct{}
 
-func (ns *noopSink) Write(*pb.GrpcLogEntry) error { return nil }
-func (ns *noopSink) Close() error                 { return nil }
+func (ns *noopSink) Write(*binlogpb.GrpcLogEntry) error { return nil }
+func (ns *noopSink) Close() error                       { return nil }
 
 // newWriterSink creates a binary log sink with the given writer.
 //
@@ -225,7 +225,7 @@ type writerSink struct {
 	out io.Writer
 }
 
-func (ws *writerSink) Write(e *pb.GrpcLogEntry) error {
+func (ws *writerSink) Write(e *binlogpb.GrpcLogEntry) error {
 	b, err := proto.Marshal(e)
 	if err != nil {
 		grpclogLogger.Errorf("binary logging: failed to marshal proto message: %v", err)
@@ -255,7 +255,7 @@ type bufferedSink struct {
 	done        chan struct{}
 }
 
-func (fs *bufferedSink) Write(e *pb.GrpcLogEntry) error {
+func (fs *bufferedSink) Write(e *binlogpb.GrpcLogEntry) error {
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 	if !fs.flusherStarted {

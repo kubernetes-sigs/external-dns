@@ -8,6 +8,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 //go:build gccgo && !aix
 // +build gccgo,!aix
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
@@ -46,6 +47,13 @@
 //go:build gccgo && !aix
 // +build gccgo,!aix
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+//go:build gccgo && !aix
+// +build gccgo,!aix
+=======
+//go:build gccgo && !aix && !hurd
+// +build gccgo,!aix,!hurd
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 
 package unix
 

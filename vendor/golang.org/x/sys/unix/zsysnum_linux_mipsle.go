@@ -1298,6 +1298,7 @@ const (
 	SYS_PROCESS_MRELEASE             = 4448
 	SYS_FUTEX_WAITV                  = 4449
 	SYS_SET_MEMPOLICY_HOME_NODE      = 4450
+<<<<<<< HEAD
 >>>>>>> 6b7ce455e (update vendored files)
 ||||||| parent of 4a9b15dc1 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -1727,4 +1728,8 @@ const (
 	SYS_FUTEX_WAITV                  = 4449
 	SYS_SET_MEMPOLICY_HOME_NODE      = 4450
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+=======
+	SYS_CACHESTAT                    = 4451
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 )

@@ -22,13 +22,13 @@ import (
 	"time"
 
 	"go.opencensus.io/plugin/ochttp"
+	"golang.org/x/net/http2"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi/transport"
 	"google.golang.org/api/internal"
+	"google.golang.org/api/internal/cert"
 	"google.golang.org/api/option"
-	"google.golang.org/api/transport/cert"
 	"google.golang.org/api/transport/http/internal/propagation"
-	"google.golang.org/api/transport/internal/dca"
 )
 
 // NewClient returns an HTTP client for use communicating with a Google cloud
@@ -39,7 +39,7 @@ func NewClient(ctx context.Context, opts ...option.ClientOption) (*http.Client, 
 	if err != nil {
 		return nil, "", err
 	}
-	clientCertSource, endpoint, err := dca.GetClientCertificateSourceAndEndpoint(settings)
+	clientCertSource, endpoint, err := internal.GetClientCertificateSourceAndEndpoint(settings)
 	if err != nil {
 		return nil, "", err
 	}
@@ -71,7 +71,6 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 	paramTransport := &parameterTransport{
 		base:          base,
 		userAgent:     settings.UserAgent,
-		quotaProject:  settings.QuotaProject,
 		requestReason: settings.RequestReason,
 	}
 	var trans http.RoundTripper = paramTransport
@@ -80,6 +79,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 	case settings.NoAuth:
 		// Do nothing.
 	case settings.APIKey != "":
+		paramTransport.quotaProject = internal.GetQuotaProject(nil, settings.QuotaProject)
 		trans = &transport.APIKey{
 			Transport: trans,
 			Key:       settings.APIKey,
@@ -89,10 +89,7 @@ func newTransport(ctx context.Context, base http.RoundTripper, settings *interna
 		if err != nil {
 			return nil, err
 		}
-		if paramTransport.quotaProject == "" {
-			paramTransport.quotaProject = internal.QuotaProjectFromCreds(creds)
-		}
-
+		paramTransport.quotaProject = internal.GetQuotaProject(creds, settings.QuotaProject)
 		ts := creds.TokenSource
 		if settings.ImpersonationConfig == nil && settings.TokenSource != nil {
 			ts = settings.TokenSource
@@ -181,11 +178,20 @@ func defaultBaseTransport(ctx context.Context, clientCertSource cert.Source) htt
 		}
 	}
 
-	// If possible, configure http2 transport in order to use ReadIdleTimeout
-	// setting. This can only be done in Go 1.16 and up.
 	configureHTTP2(trans)
 
 	return trans
+}
+
+// configureHTTP2 configures the ReadIdleTimeout HTTP/2 option for the
+// transport. This allows broken idle connections to be pruned more quickly,
+// preventing the client from attempting to re-use connections that will no
+// longer work.
+func configureHTTP2(trans *http.Transport) {
+	http2Trans, err := http2.ConfigureTransports(trans)
+	if err == nil {
+		http2Trans.ReadIdleTimeout = time.Second * 31
+	}
 }
 
 // fallbackBaseTransport is used in <go1.13 as well as in the rare case if

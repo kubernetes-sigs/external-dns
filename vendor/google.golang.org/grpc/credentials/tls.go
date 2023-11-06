@@ -23,7 +23,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"net"
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -32,6 +31,7 @@ import (
 <<<<<<< HEAD
 <<<<<<< HEAD
 	"net/url"
+	"os"
 
 	credinternal "google.golang.org/grpc/internal/credentials"
 )
@@ -172,7 +172,7 @@ func NewClientTLSFromCert(cp *x509.CertPool, serverNameOverride string) Transpor
 // it will override the virtual host name of authority (e.g. :authority header
 // field) in requests.
 func NewClientTLSFromFile(certFile, serverNameOverride string) (TransportCredentials, error) {
-	b, err := ioutil.ReadFile(certFile)
+	b, err := os.ReadFile(certFile)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func NewServerTLSFromFile(certFile, keyFile string) (TransportCredentials, error
 // TLSChannelzSecurityValue defines the struct that TLS protocol should return
 // from GetSecurityValue(), containing security info like cipher and certificate used.
 //
-// Experimental
+// # Experimental
 //
 // Notice: This type is EXPERIMENTAL and may be changed or removed in a
 // later release.

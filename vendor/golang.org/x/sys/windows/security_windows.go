@@ -7,8 +7,6 @@ package windows
 import (
 	"syscall"
 	"unsafe"
-
-	"golang.org/x/sys/internal/unsafeheader"
 )
 
 const (
@@ -1347,17 +1345,14 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 		sdLen = min
 	}
 
-	var src []byte
-	h := (*unsafeheader.Slice)(unsafe.Pointer(&src))
-	h.Data = unsafe.Pointer(selfRelativeSD)
-	h.Len = sdLen
-	h.Cap = sdLen
-
+	src := unsafe.Slice((*byte)(unsafe.Pointer(selfRelativeSD)), sdLen)
+	// SECURITY_DESCRIPTOR has pointers in it, which means checkptr expects for it to
+	// be aligned properly. When we're copying a Windows-allocated struct to a
+	// Go-allocated one, make sure that the Go allocation is aligned to the
+	// pointer size.
 	const psize = int(unsafe.Sizeof(uintptr(0)))
-
-	var dst []byte
-	h = (*unsafeheader.Slice)(unsafe.Pointer(&dst))
 	alloc := make([]uintptr, (sdLen+psize-1)/psize)
+<<<<<<< HEAD
 	h.Data = (*unsafeheader.Slice)(unsafe.Pointer(&alloc)).Data
 	h.Len = sdLen
 	h.Cap = sdLen
@@ -3594,6 +3589,14 @@ func (selfRelativeSD *SECURITY_DESCRIPTOR) copySelfRelativeSecurityDescriptor() 
 	h.Cap = sdLen
 
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+	h.Data = (*unsafeheader.Slice)(unsafe.Pointer(&alloc)).Data
+	h.Len = sdLen
+	h.Cap = sdLen
+
+=======
+	dst := unsafe.Slice((*byte)(unsafe.Pointer(&alloc[0])), sdLen)
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
 	copy(dst, src)
 	return (*SECURITY_DESCRIPTOR)(unsafe.Pointer(&dst[0]))
 }

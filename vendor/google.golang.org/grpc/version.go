@@ -26,6 +26,7 @@ package grpc
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 const Version = "1.40.0"
 ||||||| parent of 465fc751b (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 =======
@@ -59,3 +60,8 @@ const Version = "1.45.0"
 =======
 const Version = "1.48.0"
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+const Version = "1.48.0"
+=======
+const Version = "1.56.3"
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)

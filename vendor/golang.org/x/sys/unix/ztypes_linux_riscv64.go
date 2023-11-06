@@ -2428,6 +2428,8 @@ type Taskstats struct {
 	Ac_exe_inode              uint64
 	Wpcopy_count              uint64
 	Wpcopy_delay_total        uint64
+	Irq_count                 uint64
+	Irq_delay_total           uint64
 }
 
 type cpuMask uint64
@@ -2505,7 +2507,7 @@ const (
 
 type SockaddrStorage struct {
 	Family uint16
-	_      [118]uint8
+	Data   [118]byte
 	_      uint64
 }
 
@@ -2791,4 +2793,35 @@ type SysvShmDesc struct {
 	_      uint64
 	_      uint64
 }
+<<<<<<< HEAD
 >>>>>>> 4d7e5ad26 (update vendored files)
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+=======
+
+type RISCVHWProbePairs struct {
+	Key   int64
+	Value uint64
+}
+
+const (
+	RISCV_HWPROBE_KEY_MVENDORID          = 0x0
+	RISCV_HWPROBE_KEY_MARCHID            = 0x1
+	RISCV_HWPROBE_KEY_MIMPID             = 0x2
+	RISCV_HWPROBE_KEY_BASE_BEHAVIOR      = 0x3
+	RISCV_HWPROBE_BASE_BEHAVIOR_IMA      = 0x1
+	RISCV_HWPROBE_KEY_IMA_EXT_0          = 0x4
+	RISCV_HWPROBE_IMA_FD                 = 0x1
+	RISCV_HWPROBE_IMA_C                  = 0x2
+	RISCV_HWPROBE_IMA_V                  = 0x4
+	RISCV_HWPROBE_EXT_ZBA                = 0x8
+	RISCV_HWPROBE_EXT_ZBB                = 0x10
+	RISCV_HWPROBE_EXT_ZBS                = 0x20
+	RISCV_HWPROBE_KEY_CPUPERF_0          = 0x5
+	RISCV_HWPROBE_MISALIGNED_UNKNOWN     = 0x0
+	RISCV_HWPROBE_MISALIGNED_EMULATED    = 0x1
+	RISCV_HWPROBE_MISALIGNED_SLOW        = 0x2
+	RISCV_HWPROBE_MISALIGNED_FAST        = 0x3
+	RISCV_HWPROBE_MISALIGNED_UNSUPPORTED = 0x4
+	RISCV_HWPROBE_MISALIGNED_MASK        = 0x7
+)
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)

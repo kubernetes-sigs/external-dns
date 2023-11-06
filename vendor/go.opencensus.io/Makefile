@@ -97,6 +97,7 @@ embedmd:
 
 .PHONY: install-tools
 install-tools:
+<<<<<<< HEAD
 	go get -u golang.org/x/lint/golint
 	go get -u golang.org/x/tools/cmd/cover
 	go get -u golang.org/x/tools/cmd/goimports
@@ -395,3 +396,14 @@ install-tools:
 	go get -u golang.org/x/tools/cmd/goimports
 >>>>>>> 4d7e5ad26 (update vendored files)
 	go get -u github.com/rakyll/embedmd
+||||||| parent of 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
+	go get -u golang.org/x/lint/golint
+	go get -u golang.org/x/tools/cmd/cover
+	go get -u golang.org/x/tools/cmd/goimports
+	go get -u github.com/rakyll/embedmd
+=======
+	go install golang.org/x/lint/golint@latest
+	go install golang.org/x/tools/cmd/cover@latest
+	go install golang.org/x/tools/cmd/goimports@latest
+	go install github.com/rakyll/embedmd@latest
+>>>>>>> 5d0416aaf (UPSTREAM: 3984: CVE-2023-44487 - bump golang.org/x/net v0.17.0)
