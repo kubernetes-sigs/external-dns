@@ -1356,17 +1356,6 @@ func NewIndexerInformer(
 	return clientState, newInformer(lw, objType, resyncPeriod, h, clientState, nil)
 }
 
-// TransformFunc allows for transforming an object before it will be processed
-// and put into the controller cache and before the corresponding handlers will
-// be called on it.
-// TransformFunc (similarly to ResourceEventHandler functions) should be able
-// to correctly handle the tombstone of type cache.DeletedFinalStateUnknown
-//
-// The most common usage pattern is to clean-up some parts of the object to
-// reduce component memory usage if a given component doesn't care about them.
-// given controller doesn't care for them
-type TransformFunc func(interface{}) (interface{}, error)
-
 // NewTransformingInformer returns a Store and a controller for populating
 // the store while also providing event notifications. You should only used
 // the returned Store for Get/List operations; Add/Modify/Deletes will cause
@@ -1414,19 +1403,11 @@ func processDeltas(
 	// Object which receives event notifications from the given deltas
 	handler ResourceEventHandler,
 	clientState Store,
-	transformer TransformFunc,
 	deltas Deltas,
 ) error {
 	// from oldest to newest
 	for _, d := range deltas {
 		obj := d.Object
-		if transformer != nil {
-			var err error
-			obj, err = transformer(obj)
-			if err != nil {
-				return err
-			}
-		}
 
 		switch d.Type {
 		case Sync, Replaced, Added, Updated:
@@ -1478,6 +1459,7 @@ func newInformer(
 	fifo := NewDeltaFIFOWithOptions(DeltaFIFOOptions{
 		KnownObjects:          clientState,
 		EmitDeltaTypeReplaced: true,
+		Transformer:           transformer,
 	})
 
 	cfg := &Config{
@@ -1559,8 +1541,14 @@ func newInformer(
 				}
 =======
 			if deltas, ok := obj.(Deltas); ok {
+<<<<<<< HEAD
 				return processDeltas(h, clientState, transformer, deltas)
 >>>>>>> e1cd8261c (UPSTREAM: <carry>: update vendored files v0.13.1)
+||||||| parent of 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
+				return processDeltas(h, clientState, transformer, deltas)
+=======
+				return processDeltas(h, clientState, deltas)
+>>>>>>> 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
 			}
 			return errors.New("object given as Process argument is not Deltas")
 		},

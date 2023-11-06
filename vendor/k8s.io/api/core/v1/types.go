@@ -14811,7 +14811,8 @@ type SecretEnvSource struct {
 
 // HTTPHeader describes a custom header to be used in HTTP probes
 type HTTPHeader struct {
-	// The header field name
+	// The header field name.
+	// This will be canonicalized upon output, so case-variant names will be understood as the same header.
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// The header field value
 	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
@@ -16965,6 +16966,9 @@ const (
 	// LoadBalancerPortsError represents the condition of the requested ports
 	// on the cloud load balancer instance.
 	LoadBalancerPortsError = "LoadBalancerPortsError"
+	// LoadBalancerPortsErrorReason reason in ServiceStatus condition LoadBalancerPortsError
+	// means the LoadBalancer was not able to be configured correctly.
+	LoadBalancerPortsErrorReason = "LoadBalancerMixedProtocolNotSupported"
 )
 
 // ServiceStatus represents the current status of a service.
@@ -19326,6 +19330,13 @@ const (
 >>>>>>> 2cb94ab58 (UPSTREAM: <carry>: openshift: OpenShift dockerfiles added)
 ||||||| parent of 6b7ce455e (update vendored files)
 =======
+
+const (
+	// MixedProtocolNotSupported error in PortStatus means that the cloud provider
+	// can't publish the port on the load balancer because mixed values of protocols
+	// on the same LoadBalancer type of Service are not supported by the cloud provider.
+	MixedProtocolNotSupported = "MixedProtocolNotSupported"
+)
 
 // PortStatus represents the error condition of a service port
 

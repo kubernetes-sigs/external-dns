@@ -21,25 +21,26 @@ limitations under the License.
 // Each API group should define a utility function
 // called AddToScheme for adding its types to a Scheme:
 //
-//  // in package myapigroupv1...
-//  var (
-//  	SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
-//  	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
-//  	AddToScheme = SchemeBuilder.AddToScheme
-//  )
+//	 // in package myapigroupv1...
+//	var (
+//		SchemeGroupVersion = schema.GroupVersion{Group: "my.api.group", Version: "v1"}
+//		SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+//		AddToScheme = SchemeBuilder.AddToScheme
+//	)
 //
-//  func init() {
-//  	SchemeBuilder.Register(&MyType{}, &MyTypeList)
-//  }
-//  var (
-//  	scheme *runtime.Scheme = runtime.NewScheme()
-//  )
+//	func init() {
+//		SchemeBuilder.Register(&MyType{}, &MyTypeList)
+//	}
+//	var (
+//		scheme *runtime.Scheme = runtime.NewScheme()
+//	)
 //
 // This also true of the built-in Kubernetes types.  Then, in the entrypoint for
 // your manager, assemble the scheme containing exactly the types you need,
 // panicing if scheme registration failed. For instance, if our controller needs
 // types from the core/v1 API group (e.g. Pod), plus types from my.api.group/v1:
 //
+<<<<<<< HEAD
 //  func init() {
 //  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
 //  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
@@ -57,7 +58,31 @@ limitations under the License.
 //  	})
 //  	// ...
 //  }
+||||||| parent of 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
+//  func init() {
+//  	utilruntime.Must(myapigroupv1.AddToScheme(scheme))
+//  	utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
+//  }
 //
+//  func main() {
+//  	mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
+//  		Scheme: scheme,
+//  	})
+//  	// ...
+//  }
+=======
+//	func init() {
+//		utilruntime.Must(myapigroupv1.AddToScheme(scheme))
+//		utilruntime.Must(kubernetesscheme.AddToScheme(scheme))
+//	}
+>>>>>>> 1cfe878d3 (UPSTREAM: 3697: CVE-2023-44487 - bump sigs.k8s.io/controller-runtime v0.13.2)
+//
+//	func main() {
+//		mgr := controllers.NewManager(context.Background(), controllers.GetConfigOrDie(), manager.Options{
+//			Scheme: scheme,
+//		})
+//		// ...
+//	}
 package scheme
 
 import (
