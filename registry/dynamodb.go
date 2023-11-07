@@ -478,7 +478,7 @@ func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []
 	for len(statements) > 0 {
 		var chunk []*dynamodb.BatchStatementRequest
 		if len(statements) > 25 {
-			chunk = chunk[:25]
+			chunk = statements[:25]
 			statements = statements[25:]
 		} else {
 			chunk = statements
