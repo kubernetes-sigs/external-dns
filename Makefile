@@ -103,7 +103,7 @@ build/$(BINARY): $(SOURCES)
 build.push/multiarch: ko
 	KO_DOCKER_REPO=${IMAGE} \
     VERSION=${VERSION} \
-    ko build --tags ${VERSION} --platform=${IMG_PLATFORM} --bare --sbom ${IMG_SBOM} --push=${IMG_PUSH} .
+    ko build --tags ${VERSION} --image-label org.opencontainers.image.source="https://github.com/kubernetes-sigs/external-dns" --platform=${IMG_PLATFORM} --bare --sbom ${IMG_SBOM} --push=${IMG_PUSH} .
 
 build.image/multiarch:
 	$(MAKE) IMG_PUSH=false build.push/multiarch
