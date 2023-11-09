@@ -3629,6 +3629,27 @@ func TestExternalServices(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"annotated ExternalName service with externalIPs of dualstack addresses returns 2 endpoints with multiple targets",
+			"",
+			"testing",
+			"foo",
+			v1.ServiceTypeExternalName,
+			"",
+			"",
+			false,
+			map[string]string{"component": "foo"},
+			map[string]string{
+				hostnameAnnotationKey: "service.example.org",
+			},
+			"service.example.org",
+			[]string{"10.2.3.4", "11.2.3.4", "2001:db8::1", "2001:db8::2"},
+			[]*endpoint.Endpoint{
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.2.3.4", "11.2.3.4"}},
+				{DNSName: "service.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:db8::1", "2001:db8::2"}},
+			},
+			false,
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
