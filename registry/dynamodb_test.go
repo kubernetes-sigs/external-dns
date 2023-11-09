@@ -217,6 +217,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
+		maxBatchSize    uint8
 		stubConfig      DynamoDBStubConfig
 		addRecords      []*endpoint.Endpoint
 		changes         plan.Changes
@@ -295,7 +296,8 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			},
 		},
 		{
-			name: "create more entries than DynamoDB batch size limit (25)",
+			name:         "create more entries than DynamoDB batch size limit",
+			maxBatchSize: 2,
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					{
@@ -325,243 +327,13 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 							endpoint.ResourceLabelKey: "ingress/default/new3-ingress",
 						},
 					},
-					{
-						DNSName:       "new4.test-zone.example.org",
-						Targets:       endpoint.Targets{"new4.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new4-ingress",
-						},
-					},
-					{
-						DNSName:       "new5.test-zone.example.org",
-						Targets:       endpoint.Targets{"new5.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new5-ingress",
-						},
-					},
-					{
-						DNSName:       "new6.test-zone.example.org",
-						Targets:       endpoint.Targets{"new6.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new6-ingress",
-						},
-					},
-					{
-						DNSName:       "new7.test-zone.example.org",
-						Targets:       endpoint.Targets{"new7.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new7-ingress",
-						},
-					},
-					{
-						DNSName:       "new8.test-zone.example.org",
-						Targets:       endpoint.Targets{"new8.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new8-ingress",
-						},
-					},
-					{
-						DNSName:       "new9.test-zone.example.org",
-						Targets:       endpoint.Targets{"new9.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new9-ingress",
-						},
-					},
-					{
-						DNSName:       "new10.test-zone.example.org",
-						Targets:       endpoint.Targets{"new10.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new10-ingress",
-						},
-					},
-					{
-						DNSName:       "new11.test-zone.example.org",
-						Targets:       endpoint.Targets{"new11.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new11-ingress",
-						},
-					},
-					{
-						DNSName:       "new12.test-zone.example.org",
-						Targets:       endpoint.Targets{"new12.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new12-ingress",
-						},
-					},
-					{
-						DNSName:       "new13.test-zone.example.org",
-						Targets:       endpoint.Targets{"new13.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new13-ingress",
-						},
-					},
-					{
-						DNSName:       "new14.test-zone.example.org",
-						Targets:       endpoint.Targets{"new14.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new14-ingress",
-						},
-					},
-					{
-						DNSName:       "new15.test-zone.example.org",
-						Targets:       endpoint.Targets{"new15.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new15-ingress",
-						},
-					},
-					{
-						DNSName:       "new16.test-zone.example.org",
-						Targets:       endpoint.Targets{"new16.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new16-ingress",
-						},
-					},
-					{
-						DNSName:       "new17.test-zone.example.org",
-						Targets:       endpoint.Targets{"new17.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new17-ingress",
-						},
-					},
-					{
-						DNSName:       "new18.test-zone.example.org",
-						Targets:       endpoint.Targets{"new18.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new18-ingress",
-						},
-					},
-					{
-						DNSName:       "new19.test-zone.example.org",
-						Targets:       endpoint.Targets{"new19.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new19-ingress",
-						},
-					},
-					{
-						DNSName:       "new20.test-zone.example.org",
-						Targets:       endpoint.Targets{"new20.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new20-ingress",
-						},
-					},
-					{
-						DNSName:       "new21.test-zone.example.org",
-						Targets:       endpoint.Targets{"new21.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new21-ingress",
-						},
-					},
-					{
-						DNSName:       "new22.test-zone.example.org",
-						Targets:       endpoint.Targets{"new22.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new22-ingress",
-						},
-					},
-					{
-						DNSName:       "new23.test-zone.example.org",
-						Targets:       endpoint.Targets{"new23.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new23-ingress",
-						},
-					},
-					{
-						DNSName:       "new24.test-zone.example.org",
-						Targets:       endpoint.Targets{"new24.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new24-ingress",
-						},
-					},
-					{
-						DNSName:       "new25.test-zone.example.org",
-						Targets:       endpoint.Targets{"new25.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new25-ingress",
-						},
-					},
-					{
-						DNSName:       "new26.test-zone.example.org",
-						Targets:       endpoint.Targets{"new26.loadbalancer.com"},
-						RecordType:    endpoint.RecordTypeCNAME,
-						SetIdentifier: "set-new",
-						Labels: map[string]string{
-							endpoint.ResourceLabelKey: "ingress/default/new26-ingress",
-						},
-					},
 				},
 			},
 			stubConfig: DynamoDBStubConfig{
 				ExpectInsert: map[string]map[string]string{
-					"new1.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new1-ingress"},
-					"new2.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new2-ingress"},
-					"new3.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new3-ingress"},
-					"new4.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new4-ingress"},
-					"new5.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new5-ingress"},
-					"new6.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new6-ingress"},
-					"new7.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new7-ingress"},
-					"new8.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new8-ingress"},
-					"new9.test-zone.example.org#CNAME#set-new":  {endpoint.ResourceLabelKey: "ingress/default/new9-ingress"},
-					"new10.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new10-ingress"},
-					"new11.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new11-ingress"},
-					"new12.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new12-ingress"},
-					"new13.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new13-ingress"},
-					"new14.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new14-ingress"},
-					"new15.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new15-ingress"},
-					"new16.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new16-ingress"},
-					"new17.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new17-ingress"},
-					"new18.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new18-ingress"},
-					"new19.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new19-ingress"},
-					"new20.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new20-ingress"},
-					"new21.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new21-ingress"},
-					"new22.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new22-ingress"},
-					"new23.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new23-ingress"},
-					"new24.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new24-ingress"},
-					"new25.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new25-ingress"},
-					"new26.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new26-ingress"},
+					"new1.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new1-ingress"},
+					"new2.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new2-ingress"},
+					"new3.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new3-ingress"},
 				},
 				ExpectDelete: sets.New("quux.test-zone.example.org#A#set-2"),
 			},
@@ -603,7 +375,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 						endpoint.ResourceLabelKey: "ingress/default/other-ingress",
 					},
 				},
-
 				{
 					DNSName:       "new1.test-zone.example.org",
 					Targets:       endpoint.Targets{"new1.loadbalancer.com"},
@@ -614,7 +385,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 						endpoint.ResourceLabelKey: "ingress/default/new1-ingress",
 					},
 				},
-
 				{
 					DNSName:       "new2.test-zone.example.org",
 					Targets:       endpoint.Targets{"new2.loadbalancer.com"},
@@ -625,7 +395,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 						endpoint.ResourceLabelKey: "ingress/default/new2-ingress",
 					},
 				},
-
 				{
 					DNSName:       "new3.test-zone.example.org",
 					Targets:       endpoint.Targets{"new3.loadbalancer.com"},
@@ -634,259 +403,6 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
 						endpoint.ResourceLabelKey: "ingress/default/new3-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new4.test-zone.example.org",
-					Targets:       endpoint.Targets{"new4.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new4-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new5.test-zone.example.org",
-					Targets:       endpoint.Targets{"new5.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new5-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new6.test-zone.example.org",
-					Targets:       endpoint.Targets{"new6.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new6-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new7.test-zone.example.org",
-					Targets:       endpoint.Targets{"new7.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new7-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new8.test-zone.example.org",
-					Targets:       endpoint.Targets{"new8.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new8-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new9.test-zone.example.org",
-					Targets:       endpoint.Targets{"new9.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new9-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new10.test-zone.example.org",
-					Targets:       endpoint.Targets{"new10.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new10-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new11.test-zone.example.org",
-					Targets:       endpoint.Targets{"new11.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new11-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new12.test-zone.example.org",
-					Targets:       endpoint.Targets{"new12.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new12-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new13.test-zone.example.org",
-					Targets:       endpoint.Targets{"new13.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new13-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new14.test-zone.example.org",
-					Targets:       endpoint.Targets{"new14.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new14-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new15.test-zone.example.org",
-					Targets:       endpoint.Targets{"new15.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new15-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new16.test-zone.example.org",
-					Targets:       endpoint.Targets{"new16.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new16-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new17.test-zone.example.org",
-					Targets:       endpoint.Targets{"new17.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new17-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new18.test-zone.example.org",
-					Targets:       endpoint.Targets{"new18.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new18-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new19.test-zone.example.org",
-					Targets:       endpoint.Targets{"new19.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new19-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new20.test-zone.example.org",
-					Targets:       endpoint.Targets{"new20.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new20-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new21.test-zone.example.org",
-					Targets:       endpoint.Targets{"new21.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new21-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new22.test-zone.example.org",
-					Targets:       endpoint.Targets{"new22.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new22-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new23.test-zone.example.org",
-					Targets:       endpoint.Targets{"new23.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new23-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new24.test-zone.example.org",
-					Targets:       endpoint.Targets{"new24.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new24-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new25.test-zone.example.org",
-					Targets:       endpoint.Targets{"new25.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new25-ingress",
-					},
-				},
-
-				{
-					DNSName:       "new26.test-zone.example.org",
-					Targets:       endpoint.Targets{"new26.loadbalancer.com"},
-					RecordType:    endpoint.RecordTypeCNAME,
-					SetIdentifier: "set-new",
-					Labels: map[string]string{
-						endpoint.OwnerLabelKey:    "test-owner",
-						endpoint.ResourceLabelKey: "ingress/default/new26-ingress",
 					},
 				},
 			},
@@ -1508,6 +1024,11 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			originalMaxBatchSize := dynamodbMaxBatchSize
+			if tc.maxBatchSize > 0 {
+				dynamodbMaxBatchSize = 2
+			}
+
 			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
 			if len(tc.addRecords) > 0 {
 				_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
@@ -1542,6 +1063,8 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			if tc.expectedError == "" {
 				assert.Empty(t, r.orphanedLabels)
 			}
+
+			dynamodbMaxBatchSize = originalMaxBatchSize
 		})
 	}
 }
