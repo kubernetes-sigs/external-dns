@@ -404,6 +404,7 @@ secretConfiguration:
   data:
     azure.json: |
       {
+        "tenantId": "<TENANT_ID>",
         "subscriptionId": "<SUBSCRIPTION_ID>",
         "resourceGroup": "<AZURE_DNS_ZONE_RESOURCE_GROUP>",
         "useWorkloadIdentityExtension": true
