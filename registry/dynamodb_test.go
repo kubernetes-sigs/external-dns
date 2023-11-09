@@ -1026,7 +1026,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			originalMaxBatchSize := dynamodbMaxBatchSize
 			if tc.maxBatchSize > 0 {
-				dynamodbMaxBatchSize = 2
+				dynamodbMaxBatchSize = tc.maxBatchSize
 			}
 
 			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
