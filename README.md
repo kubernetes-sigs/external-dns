@@ -77,6 +77,7 @@ See PR #3063 for all the discussions about it.
 
 Known providers using webhooks:
 * https://github.com/ionos-cloud/external-dns-ionos-plugin
+* https://github.com/muhlba91/external-dns-provider-adguard
 
 ## Status of providers
 
