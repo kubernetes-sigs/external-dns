@@ -218,7 +218,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 
 	records := make([]dns.RR, 0)
 	for _, zone := range r.zoneNames {
-		log.Debugf("Fetching records for '%s'", zone)
+		log.Debugf("Fetching records for '%q'", zone)
 
 		m := new(dns.Msg)
 		m.SetAxfr(dns.Fqdn(zone))
@@ -228,7 +228,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 
 		env, err := r.actions.IncomeTransfer(m, r.nameserver)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch records via AXFR: %v", err)
+			return nil, fmt.Errorf("failed to fetch records via AXFR: %w", err)
 		}
 
 		for e := range env {
