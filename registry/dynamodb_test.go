@@ -295,7 +295,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			},
 		},
 		{
-			name: "create many",
+			name: "create more entries than DynamoDB batch size limit (25)",
 			changes: plan.Changes{
 				Create: []*endpoint.Endpoint{
 					{

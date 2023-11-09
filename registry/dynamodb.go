@@ -477,6 +477,7 @@ func (im *DynamoDBRegistry) appendDelete(statements []*dynamodb.BatchStatementRe
 func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []*dynamodb.BatchStatementRequest, handleErr func(request *dynamodb.BatchStatementRequest, response *dynamodb.BatchStatementResponse) error) error {
 	for len(statements) > 0 {
 		var chunk []*dynamodb.BatchStatementRequest
+                // DynamoDB allows a maximum batch size of 25 items.
 		if len(statements) > 25 {
 			chunk = statements[:25]
 			statements = statements[25:]
