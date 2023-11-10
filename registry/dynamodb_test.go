@@ -217,6 +217,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
+		maxBatchSize    uint8
 		stubConfig      DynamoDBStubConfig
 		addRecords      []*endpoint.Endpoint
 		changes         plan.Changes
@@ -290,6 +291,118 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
 						endpoint.ResourceLabelKey: "ingress/default/new-ingress",
+					},
+				},
+			},
+		},
+		{
+			name:         "create more entries than DynamoDB batch size limit",
+			maxBatchSize: 2,
+			changes: plan.Changes{
+				Create: []*endpoint.Endpoint{
+					{
+						DNSName:       "new1.test-zone.example.org",
+						Targets:       endpoint.Targets{"new1.loadbalancer.com"},
+						RecordType:    endpoint.RecordTypeCNAME,
+						SetIdentifier: "set-new",
+						Labels: map[string]string{
+							endpoint.ResourceLabelKey: "ingress/default/new1-ingress",
+						},
+					},
+					{
+						DNSName:       "new2.test-zone.example.org",
+						Targets:       endpoint.Targets{"new2.loadbalancer.com"},
+						RecordType:    endpoint.RecordTypeCNAME,
+						SetIdentifier: "set-new",
+						Labels: map[string]string{
+							endpoint.ResourceLabelKey: "ingress/default/new2-ingress",
+						},
+					},
+					{
+						DNSName:       "new3.test-zone.example.org",
+						Targets:       endpoint.Targets{"new3.loadbalancer.com"},
+						RecordType:    endpoint.RecordTypeCNAME,
+						SetIdentifier: "set-new",
+						Labels: map[string]string{
+							endpoint.ResourceLabelKey: "ingress/default/new3-ingress",
+						},
+					},
+				},
+			},
+			stubConfig: DynamoDBStubConfig{
+				ExpectInsert: map[string]map[string]string{
+					"new1.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new1-ingress"},
+					"new2.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new2-ingress"},
+					"new3.test-zone.example.org#CNAME#set-new": {endpoint.ResourceLabelKey: "ingress/default/new3-ingress"},
+				},
+				ExpectDelete: sets.New("quux.test-zone.example.org#A#set-2"),
+			},
+			expectedRecords: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.test-zone.example.org",
+					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey: "",
+					},
+				},
+				{
+					DNSName:    "bar.test-zone.example.org",
+					Targets:    endpoint.Targets{"my-domain.com"},
+					RecordType: endpoint.RecordTypeCNAME,
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+					},
+				},
+				{
+					DNSName:       "baz.test-zone.example.org",
+					Targets:       endpoint.Targets{"1.1.1.1"},
+					RecordType:    endpoint.RecordTypeA,
+					SetIdentifier: "set-1",
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/my-ingress",
+					},
+				},
+				{
+					DNSName:       "baz.test-zone.example.org",
+					Targets:       endpoint.Targets{"2.2.2.2"},
+					RecordType:    endpoint.RecordTypeA,
+					SetIdentifier: "set-2",
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/other-ingress",
+					},
+				},
+				{
+					DNSName:       "new1.test-zone.example.org",
+					Targets:       endpoint.Targets{"new1.loadbalancer.com"},
+					RecordType:    endpoint.RecordTypeCNAME,
+					SetIdentifier: "set-new",
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/new1-ingress",
+					},
+				},
+				{
+					DNSName:       "new2.test-zone.example.org",
+					Targets:       endpoint.Targets{"new2.loadbalancer.com"},
+					RecordType:    endpoint.RecordTypeCNAME,
+					SetIdentifier: "set-new",
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/new2-ingress",
+					},
+				},
+				{
+					DNSName:       "new3.test-zone.example.org",
+					Targets:       endpoint.Targets{"new3.loadbalancer.com"},
+					RecordType:    endpoint.RecordTypeCNAME,
+					SetIdentifier: "set-new",
+					Labels: map[string]string{
+						endpoint.OwnerLabelKey:    "test-owner",
+						endpoint.ResourceLabelKey: "ingress/default/new3-ingress",
 					},
 				},
 			},
@@ -911,6 +1024,11 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			originalMaxBatchSize := dynamodbMaxBatchSize
+			if tc.maxBatchSize > 0 {
+				dynamodbMaxBatchSize = tc.maxBatchSize
+			}
+
 			api, p := newDynamoDBAPIStub(t, &tc.stubConfig)
 			if len(tc.addRecords) > 0 {
 				_ = p.(*wrappedProvider).Provider.ApplyChanges(context.Background(), &plan.Changes{
@@ -945,6 +1063,8 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			if tc.expectedError == "" {
 				assert.Empty(t, r.orphanedLabels)
 			}
+
+			dynamodbMaxBatchSize = originalMaxBatchSize
 		})
 	}
 }

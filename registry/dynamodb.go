@@ -68,6 +68,9 @@ type DynamoDBRegistry struct {
 
 const dynamodbAttributeMigrate = "dynamodb/needs-migration"
 
+// DynamoDB allows a maximum batch size of 25 items.
+var dynamodbMaxBatchSize uint8 = 25
+
 // NewDynamoDBRegistry returns a new DynamoDBRegistry object.
 func NewDynamoDBRegistry(provider provider.Provider, ownerID string, dynamodbAPI DynamoDBAPI, table string, txtPrefix, txtSuffix, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptAESKey []byte, cacheInterval time.Duration) (*DynamoDBRegistry, error) {
 	if ownerID == "" {
@@ -477,9 +480,9 @@ func (im *DynamoDBRegistry) appendDelete(statements []*dynamodb.BatchStatementRe
 func (im *DynamoDBRegistry) executeStatements(ctx context.Context, statements []*dynamodb.BatchStatementRequest, handleErr func(request *dynamodb.BatchStatementRequest, response *dynamodb.BatchStatementResponse) error) error {
 	for len(statements) > 0 {
 		var chunk []*dynamodb.BatchStatementRequest
-		if len(statements) > 25 {
-			chunk = chunk[:25]
-			statements = statements[25:]
+		if len(statements) > int(dynamodbMaxBatchSize) {
+			chunk = statements[:dynamodbMaxBatchSize]
+			statements = statements[dynamodbMaxBatchSize:]
 		} else {
 			chunk = statements
 			statements = nil
