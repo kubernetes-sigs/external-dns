@@ -16,11 +16,12 @@ Providers implementing the HTTP API have to keep in sync with changes to the JSO
 
 The following table represents the methods to implement mapped to their HTTP method and route.
 
-| Provider method | HTTP Method | Route |
-| --- | --- | --- |
-| Records | GET | /records |
-| AdjustEndpoints | POST | /adjustendpoints |
-| ApplyChanges | POST | /records |
+| Provider method | HTTP Method | Route            |
+| ---             | ---         | ---              |
+| Records         | GET         | /records         |
+| AdjustEndpoints | POST        | /adjustendpoints |
+| ApplyChanges    | POST        | /records         |
+| K8s probe       | GET         | /healthz         |
 
 ExternalDNS will also make requests to the `/` endpoint for negotiation and for deserialization of the `DomainFilter`.
 
