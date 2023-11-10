@@ -1,3 +1,6 @@
+---
+{{- $whp := include "external-dns.webhook-providers" . | fromYaml }}
+{{- $provider := (hasKey $whp .Values.provider.name) | ternary "webhook" .Values.provider.name }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -132,6 +135,47 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- if eq $provider "webhook" }}
+        {{- with .Values.provider }}
+        - name: {{ .name }}
+          image: {{ get $whp .name }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- with .env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .args }}
+          args:
+            - {{ toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 8888
+          livenessProbe:
+            {{- toYaml $.Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $.Values.readinessProbe | nindent 12 }}
+          {{- if or $.Values.secretConfiguration.enabled $.Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- if $.Values.secretConfiguration.enabled }}
+            - name: secrets
+              mountPath: {{ tpl $.Values.secretConfiguration.mountPath $ }}
+            {{- with $.Values.secretConfiguration.subPath }}
+              subPath: {{ tpl . $ }}
+            {{- end }}
+            {{- end }}
+            {{- with $.Values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
       volumes:
         {{- if .Values.secretConfiguration.enabled }}

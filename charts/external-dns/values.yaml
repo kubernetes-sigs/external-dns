@@ -213,8 +213,14 @@ txtSuffix:
 domainFilters: []
 
 provider:
-  # -- _ExternalDNS_ provider name; for the available providers and how to configure them see the [README](https://github.com/kubernetes-sigs/external-dns#deploying-to-a-cluster).
+  #  -- _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar.
   name: aws
+  # Default to latest.
+  version:
+  env: []
+  args: []
+  resources: {}
+  securityContext: {}
 
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []
