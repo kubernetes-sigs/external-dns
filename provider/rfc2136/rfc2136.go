@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ const (
 type rfc2136Provider struct {
 	provider.BaseProvider
 	nameserver      string
-	zoneName        string
+	zoneNames       []string
 	tsigKeyName     string
 	tsigSecret      string
 	tsigSecretAlg   string
@@ -81,19 +82,25 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
 	}
 
-	if krb5Realm == "" {
-		krb5Realm = strings.ToUpper(zoneName)
+	// Set zone to root if no set
+	if len(zoneNames) == 0 {
+		zoneNames = append(zoneNames, ".")
 	}
+
+	// Sort zones
+	sort.Slice(zoneNames, func(i, j int) bool {
+		return len(strings.Split(zoneNames[i], ".")) > len(strings.Split(zoneNames[j], "."))
+	})
 
 	r := &rfc2136Provider{
 		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
-		zoneName:        dns.Fqdn(zoneName),
+		zoneNames:       zoneNames,
 		insecure:        insecure,
 		gssTsig:         gssTsig,
 		krb5Username:    krb5Username,
@@ -117,7 +124,7 @@ func NewRfc2136Provider(host string, port int, zoneName string, insecure bool, k
 		r.tsigSecretAlg = secretAlgChecked
 	}
 
-	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneName, r.nameserver)
+	log.Infof("Configured RFC2136 with zone '%s' and nameserver '%s'", r.zoneNames, r.nameserver)
 	return r, nil
 }
 
@@ -209,30 +216,32 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 		return make([]dns.RR, 0), nil
 	}
 
-	log.Debugf("Fetching records for '%s'", r.zoneName)
-
-	m := new(dns.Msg)
-	m.SetAxfr(r.zoneName)
-	if !r.insecure && !r.gssTsig {
-		m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
-	}
-
-	env, err := r.actions.IncomeTransfer(m, r.nameserver)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch records via AXFR: %v", err)
-	}
-
 	records := make([]dns.RR, 0)
-	for e := range env {
-		if e.Error != nil {
-			if e.Error == dns.ErrSoa {
-				log.Error("AXFR error: unexpected response received from the server")
-			} else {
-				log.Errorf("AXFR error: %v", e.Error)
-			}
-			continue
+	for _, zone := range r.zoneNames {
+		log.Debugf("Fetching records for '%q'", zone)
+
+		m := new(dns.Msg)
+		m.SetAxfr(dns.Fqdn(zone))
+		if !r.insecure && !r.gssTsig {
+			m.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
-		records = append(records, e.RR...)
+
+		env, err := r.actions.IncomeTransfer(m, r.nameserver)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch records via AXFR: %w", err)
+		}
+
+		for e := range env {
+			if e.Error != nil {
+				if e.Error == dns.ErrSoa {
+					log.Error("AXFR error: unexpected response received from the server")
+				} else {
+					log.Errorf("AXFR error: %v", e.Error)
+				}
+				continue
+			}
+			records = append(records, e.RR...)
+		}
 	}
 
 	return records, nil
@@ -248,13 +257,15 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of create changes", c)
 
 		m := new(dns.Msg)
-		m.SetUpdate(r.zoneName)
-
 		for _, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
+
+			zone := findMsgZone(ep, r.zoneNames)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.AddRecord(m, ep)
 		}
@@ -274,13 +285,16 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of update changes", c)
 
 		m := new(dns.Msg)
-		m.SetUpdate(r.zoneName)
 
 		for i, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
+
+			zone := findMsgZone(ep, r.zoneNames)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.UpdateRecord(m, changes.UpdateOld[i], ep)
 		}
@@ -300,13 +314,16 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of delete changes", c)
 
 		m := new(dns.Msg)
-		m.SetUpdate(r.zoneName)
 
 		for _, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
 				continue
 			}
+
+			zone := findMsgZone(ep, r.zoneNames)
+			r.krb5Realm = strings.ToUpper(zone)
+			m.SetUpdate(zone)
 
 			r.RemoveRecord(m, ep)
 		}
@@ -438,4 +455,15 @@ func chunkBy(slice []*endpoint.Endpoint, chunkSize int) [][]*endpoint.Endpoint {
 	}
 
 	return chunks
+}
+
+func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
+	for _, zone := range zoneNames {
+		if strings.HasSuffix(ep.DNSName, zone) {
+			return dns.Fqdn(zone)
+		}
+	}
+
+	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
+	return dns.Fqdn(".")
 }
