@@ -6,7 +6,7 @@ Using nodes (`--source=node`) as source is possible to synchronize a DNS zone wi
 The node source adds an `A` record per each node `externalIP` (if not found, any IPv4 `internalIP` is used instead).
 It also adds an `AAAA` record per each node IPv6 `internalIP`.
 The TTL of the records can be set with the `external-dns.alpha.kubernetes.io/ttl` node annotation.
-The FQDN template includes a function to replace all `.` with `-` in the node name, which is useful for cloud providers that include dots in the node name.
+The FQDN template provides more than 100+ functions, documented [here](https://go-task.github.io/slim-sprig/). For instance, it includes a function to replace all `.` with `-` in the node name, which can be useful with cloud providers that include dots in the node name.
 
 ## Manifest (for cluster without RBAC enabled)
 
