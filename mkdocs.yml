@@ -28,7 +28,7 @@ nav:
       - TTL: ttl.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: release.md
+      - Release process: release-process.md
       - contributing/*
 
 theme:
