@@ -28,7 +28,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 
-	"github.com/alecthomas/kingpin"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/source"
