@@ -130,7 +130,7 @@ spec:
     spec:
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=service
         - --source=ingress
@@ -201,7 +201,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=service
         - --source=ingress
@@ -272,7 +272,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: externaldns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=service
         - --source=ingress

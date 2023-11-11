@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
@@ -105,7 +105,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=service # ingress is also possible
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.

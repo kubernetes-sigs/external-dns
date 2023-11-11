@@ -29,7 +29,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
@@ -100,7 +100,7 @@ spec:
       serviceAccountName: external-dns
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         args:
         - --source=node # will use nodes as source
         - --provider=aws
