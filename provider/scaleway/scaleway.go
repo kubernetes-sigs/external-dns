@@ -65,7 +65,13 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 			defaultPageSize = 1000
 		}
 	}
-	p, _ := scw.LoadConfig().GetActiveProfile()
+
+	p := &scw.Profile{}
+	c, err := scw.LoadConfig()
+	if err == nil {
+		p, _ = c.GetActiveProfile()
+	}
+
 	scwClient, err := scw.NewClient(
 		scw.WithProfile(p),
 		scw.WithEnv(),
