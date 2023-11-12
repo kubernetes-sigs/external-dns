@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "ultradns" {
+		p, err := ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["ultradns"] = p
 }

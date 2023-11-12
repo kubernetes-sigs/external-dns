@@ -10,10 +10,12 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	p, err := bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, cfg.TXTPrefix, cfg.TXTSuffix, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "bluecat" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		p, err := bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, cfg.TXTPrefix, cfg.TXTSuffix, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["bluecat"] = p
 }

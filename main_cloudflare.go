@@ -10,10 +10,12 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	p, err := cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "cloudflare" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		p, err := cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["cloudflare"] = p
 }

@@ -9,10 +9,11 @@ import (
 )
 
 func init() {
-	p, err := coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "coredns" || cfg.Provider == "skydns" {
+		p, err := coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["coredns"] = p
-	providerMap["skydns"] = p
 }

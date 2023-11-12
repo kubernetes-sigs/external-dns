@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "transip" {
+		p, err := transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["transip"] = p
 }

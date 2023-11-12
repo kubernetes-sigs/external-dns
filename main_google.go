@@ -10,10 +10,12 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	p, err := google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "google" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		p, err := google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["google"] = p
 }

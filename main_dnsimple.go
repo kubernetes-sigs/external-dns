@@ -10,10 +10,12 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	p, err := dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "dnsimple" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		p, err := dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["dnsimple"] = p
 }

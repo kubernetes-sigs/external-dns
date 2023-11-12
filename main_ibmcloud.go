@@ -11,13 +11,15 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	// Combine multiple sources into a single, deduplicated source.
-	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
-	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
-	p, err := ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "ibmcloud" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		// Combine multiple sources into a single, deduplicated source.
+		endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
+		endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
+		p, err := ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["ibmcloud"] = p
 }

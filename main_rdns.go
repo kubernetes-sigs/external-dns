@@ -9,14 +9,16 @@ import (
 )
 
 func init() {
-	p, err := rdns.NewRDNSProvider(
-		rdns.RDNSConfig{
-			DomainFilter: domainFilter,
-			DryRun:       cfg.DryRun,
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "rdns" {
+		p, err := rdns.NewRDNSProvider(
+			rdns.RDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["rdns"] = p
 }

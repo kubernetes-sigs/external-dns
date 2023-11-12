@@ -9,23 +9,25 @@ import (
 )
 
 func init() {
-	p, err := pdns.NewPDNSProvider(
-		ctx,
-		pdns.PDNSConfig{
-			DomainFilter: domainFilter,
-			DryRun:       cfg.DryRun,
-			Server:       cfg.PDNSServer,
-			APIKey:       cfg.PDNSAPIKey,
-			TLSConfig: pdns.TLSConfig{
-				SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
-				CAFilePath:            cfg.TLSCA,
-				ClientCertFilePath:    cfg.TLSClientCert,
-				ClientCertKeyFilePath: cfg.TLSClientCertKey,
+	if cfg.Provider == "pdns" {
+		p, err := pdns.NewPDNSProvider(
+			ctx,
+			pdns.PDNSConfig{
+				DomainFilter: domainFilter,
+				DryRun:       cfg.DryRun,
+				Server:       cfg.PDNSServer,
+				APIKey:       cfg.PDNSAPIKey,
+				TLSConfig: pdns.TLSConfig{
+					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
+					CAFilePath:            cfg.TLSCA,
+					ClientCertFilePath:    cfg.TLSClientCert,
+					ClientCertKeyFilePath: cfg.TLSClientCertKey,
+				},
 			},
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["pdns"] = p
 }

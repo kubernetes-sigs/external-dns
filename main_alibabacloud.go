@@ -10,11 +10,13 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+	if cfg.Provider == "alibabacloud" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 
-	p, err := alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+		p, err := alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["alibabacloud"] = p
 }

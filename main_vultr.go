@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := vultr.NewVultrProvider(ctx, domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "vultr" {
+		p, err := vultr.NewVultrProvider(ctx, domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["vultr"] = p
 }

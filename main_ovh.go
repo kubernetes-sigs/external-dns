@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "ovh" {
+		p, err := ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["ovh"] = p
 }

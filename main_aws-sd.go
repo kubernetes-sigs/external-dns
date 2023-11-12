@@ -11,25 +11,27 @@ import (
 )
 
 func init() {
-	var err error
-	awsSession, err = aws.NewSession(
-		aws.AWSSessionConfig{
-			AssumeRole:           cfg.AWSAssumeRole,
-			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-			APIRetries:           cfg.AWSAPIRetries,
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "aws-sd" {
+		var err error
+		awsSession, err = aws.NewSession(
+			aws.AWSSessionConfig{
+				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+				APIRetries:           cfg.AWSAPIRetries,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// Check that only compatible Registry is used with AWS-SD
+		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
+			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
+			cfg.Registry = "aws-sd"
+		}
+		p, err := awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	// Check that only compatible Registry is used with AWS-SD
-	if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
-		log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
-		cfg.Registry = "aws-sd"
-	}
-	p, err := awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
-	if err != nil {
-		log.Fatal(err)
-	}
-	providerMap["aws-sd"] = p
 }

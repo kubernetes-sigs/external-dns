@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := designate.NewDesignateProvider(domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "designate" {
+		p, err := designate.NewDesignateProvider(domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["designate"] = p
 }

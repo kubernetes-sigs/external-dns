@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "plural" {
+		p, err := plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["plural"] = p
 }

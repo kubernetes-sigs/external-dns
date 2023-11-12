@@ -52,10 +52,6 @@ var providerMap = make(map[string]provider.Provider)
 var cfg *externaldns.Config
 var domainFilter endpoint.DomainFilter
 
-// var zoneNameFilter endpoint.DomainFilter
-// var zoneIDFilter provider.ZoneIDFilter
-// var zoneTypeFilter provider.ZoneTypeFilter
-// var zoneTagFilter provider.ZoneTagFilter
 var ctx context.Context
 var cancel context.CancelFunc
 var sources []source.Source
@@ -165,23 +161,6 @@ func main() {
 		domainFilter = endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {
 		domainFilter = endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
-	}
-	// zoneNameFilter = endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	// zoneIDFilter = provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	// zoneTypeFilter = provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	// zoneTagFilter = provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
-
-	if awsSession == nil && cfg.Registry == "dynamodb" {
-		awsSession, err = aws.NewSession(
-			aws.AWSSessionConfig{
-				AssumeRole:           cfg.AWSAssumeRole,
-				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-				APIRetries:           cfg.AWSAPIRetries,
-			},
-		)
-		if err != nil {
-			log.Fatal(err)
-		}
 	}
 
 	p := providerMap[cfg.Provider]

@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := webhook.NewWebhookProvider(cfg.WebhookProviderURL)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "webhook" {
+		p, err := webhook.NewWebhookProvider(cfg.WebhookProviderURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["webhook"] = p
 }

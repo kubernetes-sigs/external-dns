@@ -10,9 +10,11 @@ import (
 )
 
 func init() {
-	p, err := linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "linode" {
+		p, err := linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["linode"] = p
 }

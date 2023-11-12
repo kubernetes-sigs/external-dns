@@ -11,13 +11,13 @@ import (
 )
 
 func init() {
-	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	p, err := azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "azure" || cfg.Provider == "azure-dns" {
+		zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		p, err := azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-
-	providerMap["azure-dns"] = p
-	providerMap["azure"] = p
 }

@@ -8,5 +8,7 @@ import (
 )
 
 func init() {
-	providerMap["inmemory"] = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging())
+	if cfg.Provider == "inmemory" {
+		providerMap[cfg.Provider] = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging())
+	}
 }

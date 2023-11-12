@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "digitalocean" {
+		p, err := digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["digitalocean"] = p
 }

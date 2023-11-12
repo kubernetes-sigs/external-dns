@@ -9,17 +9,19 @@ import (
 )
 
 func init() {
-	p, err := exoscale.NewExoscaleProvider(
-		cfg.ExoscaleAPIEnvironment,
-		cfg.ExoscaleAPIZone,
-		cfg.ExoscaleAPIKey,
-		cfg.ExoscaleAPISecret,
-		cfg.DryRun,
-		exoscale.ExoscaleWithDomain(domainFilter),
-		exoscale.ExoscaleWithLogging(),
-	)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "exoscale" {
+		p, err := exoscale.NewExoscaleProvider(
+			cfg.ExoscaleAPIEnvironment,
+			cfg.ExoscaleAPIZone,
+			cfg.ExoscaleAPIKey,
+			cfg.ExoscaleAPISecret,
+			cfg.DryRun,
+			exoscale.ExoscaleWithDomain(domainFilter),
+			exoscale.ExoscaleWithLogging(),
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["exoscale"] = p
 }

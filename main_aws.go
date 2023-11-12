@@ -11,36 +11,38 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
-	var err error
-	awsSession, err = aws.NewSession(
-		aws.AWSSessionConfig{
-			AssumeRole:           cfg.AWSAssumeRole,
-			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-			APIRetries:           cfg.AWSAPIRetries,
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "aws" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+		zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
+		zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+		var err error
+		awsSession, err = aws.NewSession(
+			aws.AWSSessionConfig{
+				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+				APIRetries:           cfg.AWSAPIRetries,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		p, err := aws.NewAWSProvider(
+			aws.AWSConfig{
+				DomainFilter:         domainFilter,
+				ZoneIDFilter:         zoneIDFilter,
+				ZoneTypeFilter:       zoneTypeFilter,
+				ZoneTagFilter:        zoneTagFilter,
+				BatchChangeSize:      cfg.AWSBatchChangeSize,
+				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
+				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
+				PreferCNAME:          cfg.AWSPreferCNAME,
+				DryRun:               cfg.DryRun,
+				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
+			},
+			route53.New(awsSession))
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	p, err := aws.NewAWSProvider(
-		aws.AWSConfig{
-			DomainFilter:         domainFilter,
-			ZoneIDFilter:         zoneIDFilter,
-			ZoneTypeFilter:       zoneTypeFilter,
-			ZoneTagFilter:        zoneTagFilter,
-			BatchChangeSize:      cfg.AWSBatchChangeSize,
-			BatchChangeInterval:  cfg.AWSBatchChangeInterval,
-			EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-			PreferCNAME:          cfg.AWSPreferCNAME,
-			DryRun:               cfg.DryRun,
-			ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
-		},
-		route53.New(awsSession))
-	if err != nil {
-		log.Fatal(err)
-	}
-	providerMap["aws"] = p
 }

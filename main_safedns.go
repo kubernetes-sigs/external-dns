@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "safedns" {
+		p, err := safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["safedns"] = p
 }

@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "scaleway" {
+		p, err := scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["scaleway"] = p
 }

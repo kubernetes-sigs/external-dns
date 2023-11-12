@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "rcodezero" {
+		p, err := rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["rcodezero"] = p
 }

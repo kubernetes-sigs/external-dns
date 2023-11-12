@@ -9,17 +9,19 @@ import (
 )
 
 func init() {
-	p, err := pihole.NewPiholeProvider(
-		pihole.PiholeConfig{
-			Server:                cfg.PiholeServer,
-			Password:              cfg.PiholePassword,
-			TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
-			DomainFilter:          domainFilter,
-			DryRun:                cfg.DryRun,
-		},
-	)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "pihole" {
+		p, err := pihole.NewPiholeProvider(
+			pihole.PiholeConfig{
+				Server:                cfg.PiholeServer,
+				Password:              cfg.PiholePassword,
+				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
+				DomainFilter:          domainFilter,
+				DryRun:                cfg.DryRun,
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["pihole"] = p
 }

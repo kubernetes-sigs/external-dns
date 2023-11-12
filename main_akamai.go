@@ -10,23 +10,25 @@ import (
 )
 
 func init() {
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+	if cfg.Provider == "akamai" {
+		zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
 
-	p, err := akamai.NewAkamaiProvider(
-		akamai.AkamaiConfig{
-			DomainFilter:          domainFilter,
-			ZoneIDFilter:          zoneIDFilter,
-			ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
-			ClientToken:           cfg.AkamaiClientToken,
-			ClientSecret:          cfg.AkamaiClientSecret,
-			AccessToken:           cfg.AkamaiAccessToken,
-			EdgercPath:            cfg.AkamaiEdgercPath,
-			EdgercSection:         cfg.AkamaiEdgercSection,
-			DryRun:                cfg.DryRun,
-		}, nil)
-	if err != nil {
-		log.Fatal(err)
+		p, err := akamai.NewAkamaiProvider(
+			akamai.AkamaiConfig{
+				DomainFilter:          domainFilter,
+				ZoneIDFilter:          zoneIDFilter,
+				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
+				ClientToken:           cfg.AkamaiClientToken,
+				ClientSecret:          cfg.AkamaiClientSecret,
+				AccessToken:           cfg.AkamaiAccessToken,
+				EdgercPath:            cfg.AkamaiEdgercPath,
+				EdgercSection:         cfg.AkamaiEdgercSection,
+				DryRun:                cfg.DryRun,
+			}, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		providerMap[cfg.Provider] = p
 	}
-
-	providerMap["akamai"] = p
 }

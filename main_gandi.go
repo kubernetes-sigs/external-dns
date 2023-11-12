@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "gandi" {
+		p, err := gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["gandi"] = p
 }

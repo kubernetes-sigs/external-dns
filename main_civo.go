@@ -9,9 +9,11 @@ import (
 )
 
 func init() {
-	p, err := civo.NewCivoProvider(domainFilter, cfg.DryRun)
-	if err != nil {
-		log.Fatal(err)
+	if cfg.Provider == "civo" {
+		p, err := civo.NewCivoProvider(domainFilter, cfg.DryRun)
+		if err != nil {
+			log.Fatal(err)
+		}
+		providerMap[cfg.Provider] = p
 	}
-	providerMap["civo"] = p
 }
