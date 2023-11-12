@@ -18,7 +18,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -28,8 +27,6 @@ import (
 	awsSDK "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/route53"
-	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -43,51 +40,32 @@ import (
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns/validation"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
-	"sigs.k8s.io/external-dns/provider/akamai"
-	"sigs.k8s.io/external-dns/provider/alibabacloud"
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
-	"sigs.k8s.io/external-dns/provider/azure"
-	"sigs.k8s.io/external-dns/provider/bluecat"
-	"sigs.k8s.io/external-dns/provider/civo"
-	"sigs.k8s.io/external-dns/provider/cloudflare"
-	"sigs.k8s.io/external-dns/provider/coredns"
-	"sigs.k8s.io/external-dns/provider/designate"
-	"sigs.k8s.io/external-dns/provider/digitalocean"
-	"sigs.k8s.io/external-dns/provider/dnsimple"
-	"sigs.k8s.io/external-dns/provider/dyn"
-	"sigs.k8s.io/external-dns/provider/exoscale"
-	"sigs.k8s.io/external-dns/provider/gandi"
-	"sigs.k8s.io/external-dns/provider/godaddy"
-	"sigs.k8s.io/external-dns/provider/google"
-	"sigs.k8s.io/external-dns/provider/ibmcloud"
-	"sigs.k8s.io/external-dns/provider/infoblox"
-	"sigs.k8s.io/external-dns/provider/inmemory"
-	"sigs.k8s.io/external-dns/provider/linode"
-	"sigs.k8s.io/external-dns/provider/ns1"
-	"sigs.k8s.io/external-dns/provider/oci"
-	"sigs.k8s.io/external-dns/provider/ovh"
-	"sigs.k8s.io/external-dns/provider/pdns"
-	"sigs.k8s.io/external-dns/provider/pihole"
-	"sigs.k8s.io/external-dns/provider/plural"
-	"sigs.k8s.io/external-dns/provider/rcode0"
-	"sigs.k8s.io/external-dns/provider/rdns"
-	"sigs.k8s.io/external-dns/provider/rfc2136"
-	"sigs.k8s.io/external-dns/provider/safedns"
-	"sigs.k8s.io/external-dns/provider/scaleway"
-	"sigs.k8s.io/external-dns/provider/tencentcloud"
-	"sigs.k8s.io/external-dns/provider/transip"
-	"sigs.k8s.io/external-dns/provider/ultradns"
-	"sigs.k8s.io/external-dns/provider/vinyldns"
-	"sigs.k8s.io/external-dns/provider/vultr"
 	"sigs.k8s.io/external-dns/provider/webhook"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
 
+var providerMap = make(map[string]provider.Provider)
+var cfg *externaldns.Config
+var domainFilter endpoint.DomainFilter
+
+// var zoneNameFilter endpoint.DomainFilter
+// var zoneIDFilter provider.ZoneIDFilter
+// var zoneTypeFilter provider.ZoneTypeFilter
+// var zoneTagFilter provider.ZoneTagFilter
+var ctx context.Context
+var cancel context.CancelFunc
+var sources []source.Source
+var sourceCfg *source.Config
+var targetFilter endpoint.TargetNetFilter
+
+var awsSession *session.Session
+
 func main() {
-	cfg := externaldns.NewConfig()
+	cfg = externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
 	}
@@ -115,7 +93,7 @@ func main() {
 	defer klog.ClearLogger()
 	klog.SetLogger(logr.Discard())
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel = context.WithCancel(context.Background())
 
 	go serveMetrics(cfg.MetricsAddress)
 	go handleSigterm(cancel)
@@ -124,7 +102,7 @@ func main() {
 	labelSelector, _ := labels.Parse(cfg.LabelFilter)
 
 	// Create a source.Config from the flags passed by the user.
-	sourceCfg := &source.Config{
+	sourceCfg = &source.Config{
 		Namespace:                      cfg.Namespace,
 		AnnotationFilter:               cfg.AnnotationFilter,
 		LabelFilter:                    labelSelector,
@@ -159,7 +137,7 @@ func main() {
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
-	sources, err := source.ByNames(ctx, &source.SingletonClientGenerator{
+	sources, err = source.ByNames(ctx, &source.SingletonClientGenerator{
 		KubeConfig:   cfg.KubeConfig,
 		APIServerURL: cfg.APIServerURL,
 		// If update events are enabled, disable timeout.
@@ -175,26 +153,25 @@ func main() {
 	}
 
 	// Filter targets
-	targetFilter := endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
+	targetFilter = endpoint.NewTargetNetFilterWithExclusions(cfg.TargetNetFilter, cfg.ExcludeTargetNets)
 
 	// Combine multiple sources into a single, deduplicated source.
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources, sourceCfg.DefaultTargets))
 	endpointsSource = source.NewTargetFilterSource(endpointsSource, targetFilter)
 
 	// RegexDomainFilter overrides DomainFilter
-	var domainFilter endpoint.DomainFilter
+
 	if cfg.RegexDomainFilter.String() != "" {
 		domainFilter = endpoint.NewRegexDomainFilter(cfg.RegexDomainFilter, cfg.RegexDomainExclusion)
 	} else {
 		domainFilter = endpoint.NewDomainFilterWithExclusions(cfg.DomainFilter, cfg.ExcludeDomains)
 	}
-	zoneNameFilter := endpoint.NewDomainFilter(cfg.ZoneNameFilter)
-	zoneIDFilter := provider.NewZoneIDFilter(cfg.ZoneIDFilter)
-	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
-	zoneTagFilter := provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
+	// zoneNameFilter = endpoint.NewDomainFilter(cfg.ZoneNameFilter)
+	// zoneIDFilter = provider.NewZoneIDFilter(cfg.ZoneIDFilter)
+	// zoneTypeFilter = provider.NewZoneTypeFilter(cfg.AWSZoneType)
+	// zoneTagFilter = provider.NewZoneTagFilter(cfg.AWSZoneTagFilter)
 
-	var awsSession *session.Session
-	if cfg.Provider == "aws" || cfg.Provider == "aws-sd" || cfg.Registry == "dynamodb" {
+	if awsSession == nil && cfg.Registry == "dynamodb" {
 		awsSession, err = aws.NewSession(
 			aws.AWSSessionConfig{
 				AssumeRole:           cfg.AWSAssumeRole,
@@ -207,210 +184,9 @@ func main() {
 		}
 	}
 
-	var p provider.Provider
-	switch cfg.Provider {
-	case "akamai":
-		p, err = akamai.NewAkamaiProvider(
-			akamai.AkamaiConfig{
-				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
-				ServiceConsumerDomain: cfg.AkamaiServiceConsumerDomain,
-				ClientToken:           cfg.AkamaiClientToken,
-				ClientSecret:          cfg.AkamaiClientSecret,
-				AccessToken:           cfg.AkamaiAccessToken,
-				EdgercPath:            cfg.AkamaiEdgercPath,
-				EdgercSection:         cfg.AkamaiEdgercSection,
-				DryRun:                cfg.DryRun,
-			}, nil)
-	case "alibabacloud":
-		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
-	case "aws":
-		p, err = aws.NewAWSProvider(
-			aws.AWSConfig{
-				DomainFilter:         domainFilter,
-				ZoneIDFilter:         zoneIDFilter,
-				ZoneTypeFilter:       zoneTypeFilter,
-				ZoneTagFilter:        zoneTagFilter,
-				BatchChangeSize:      cfg.AWSBatchChangeSize,
-				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
-				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				PreferCNAME:          cfg.AWSPreferCNAME,
-				DryRun:               cfg.DryRun,
-				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
-			},
-			route53.New(awsSession),
-		)
-	case "aws-sd":
-		// Check that only compatible Registry is used with AWS-SD
-		if cfg.Registry != "noop" && cfg.Registry != "aws-sd" {
-			log.Infof("Registry \"%s\" cannot be used with AWS Cloud Map. Switching to \"aws-sd\".", cfg.Registry)
-			cfg.Registry = "aws-sd"
-		}
-		p, err = awssd.NewAWSSDProvider(domainFilter, cfg.AWSZoneType, cfg.DryRun, cfg.AWSSDServiceCleanup, cfg.TXTOwnerID, sd.New(awsSession))
-	case "azure-dns", "azure":
-		p, err = azure.NewAzureProvider(cfg.AzureConfigFile, domainFilter, zoneNameFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
-	case "azure-private-dns":
-		p, err = azure.NewAzurePrivateDNSProvider(cfg.AzureConfigFile, domainFilter, zoneIDFilter, cfg.AzureResourceGroup, cfg.AzureUserAssignedIdentityClientID, cfg.DryRun)
-	case "bluecat":
-		p, err = bluecat.NewBluecatProvider(cfg.BluecatConfigFile, cfg.BluecatDNSConfiguration, cfg.BluecatDNSServerName, cfg.BluecatDNSDeployType, cfg.BluecatDNSView, cfg.BluecatGatewayHost, cfg.BluecatRootZone, cfg.TXTPrefix, cfg.TXTSuffix, domainFilter, zoneIDFilter, cfg.DryRun, cfg.BluecatSkipTLSVerify)
-	case "vinyldns":
-		p, err = vinyldns.NewVinylDNSProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "vultr":
-		p, err = vultr.NewVultrProvider(ctx, domainFilter, cfg.DryRun)
-	case "ultradns":
-		p, err = ultradns.NewUltraDNSProvider(domainFilter, cfg.DryRun)
-	case "civo":
-		p, err = civo.NewCivoProvider(domainFilter, cfg.DryRun)
-	case "cloudflare":
-		p, err = cloudflare.NewCloudFlareProvider(domainFilter, zoneIDFilter, cfg.CloudflareProxied, cfg.DryRun, cfg.CloudflareDNSRecordsPerPage)
-	case "rcodezero":
-		p, err = rcode0.NewRcodeZeroProvider(domainFilter, cfg.DryRun, cfg.RcodezeroTXTEncrypt)
-	case "google":
-		p, err = google.NewGoogleProvider(ctx, cfg.GoogleProject, domainFilter, zoneIDFilter, cfg.GoogleBatchChangeSize, cfg.GoogleBatchChangeInterval, cfg.GoogleZoneVisibility, cfg.DryRun)
-	case "digitalocean":
-		p, err = digitalocean.NewDigitalOceanProvider(ctx, domainFilter, cfg.DryRun, cfg.DigitalOceanAPIPageSize)
-	case "ovh":
-		p, err = ovh.NewOVHProvider(ctx, domainFilter, cfg.OVHEndpoint, cfg.OVHApiRateLimit, cfg.DryRun)
-	case "linode":
-		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
-	case "dnsimple":
-		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "infoblox":
-		p, err = infoblox.NewInfobloxProvider(
-			infoblox.StartupConfig{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				Host:          cfg.InfobloxGridHost,
-				Port:          cfg.InfobloxWapiPort,
-				Username:      cfg.InfobloxWapiUsername,
-				Password:      cfg.InfobloxWapiPassword,
-				Version:       cfg.InfobloxWapiVersion,
-				SSLVerify:     cfg.InfobloxSSLVerify,
-				View:          cfg.InfobloxView,
-				MaxResults:    cfg.InfobloxMaxResults,
-				DryRun:        cfg.DryRun,
-				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
-				NameRegEx:     cfg.InfobloxNameRegEx,
-				CreatePTR:     cfg.InfobloxCreatePTR,
-				CacheDuration: cfg.InfobloxCacheDuration,
-			},
-		)
-	case "dyn":
-		p, err = dyn.NewDynProvider(
-			dyn.DynConfig{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				DryRun:        cfg.DryRun,
-				CustomerName:  cfg.DynCustomerName,
-				Username:      cfg.DynUsername,
-				Password:      cfg.DynPassword,
-				MinTTLSeconds: cfg.DynMinTTLSeconds,
-				AppVersion:    externaldns.Version,
-			},
-		)
-	case "coredns", "skydns":
-		p, err = coredns.NewCoreDNSProvider(domainFilter, cfg.CoreDNSPrefix, cfg.DryRun)
-	case "rdns":
-		p, err = rdns.NewRDNSProvider(
-			rdns.RDNSConfig{
-				DomainFilter: domainFilter,
-				DryRun:       cfg.DryRun,
-			},
-		)
-	case "exoscale":
-		p, err = exoscale.NewExoscaleProvider(
-			cfg.ExoscaleAPIEnvironment,
-			cfg.ExoscaleAPIZone,
-			cfg.ExoscaleAPIKey,
-			cfg.ExoscaleAPISecret,
-			cfg.DryRun,
-			exoscale.ExoscaleWithDomain(domainFilter),
-			exoscale.ExoscaleWithLogging(),
-		)
-	case "inmemory":
-		p, err = inmemory.NewInMemoryProvider(inmemory.InMemoryInitZones(cfg.InMemoryZones), inmemory.InMemoryWithDomain(domainFilter), inmemory.InMemoryWithLogging()), nil
-	case "designate":
-		p, err = designate.NewDesignateProvider(domainFilter, cfg.DryRun)
-	case "pdns":
-		p, err = pdns.NewPDNSProvider(
-			ctx,
-			pdns.PDNSConfig{
-				DomainFilter: domainFilter,
-				DryRun:       cfg.DryRun,
-				Server:       cfg.PDNSServer,
-				APIKey:       cfg.PDNSAPIKey,
-				TLSConfig: pdns.TLSConfig{
-					SkipTLSVerify:         cfg.PDNSSkipTLSVerify,
-					CAFilePath:            cfg.TLSCA,
-					ClientCertFilePath:    cfg.TLSClientCert,
-					ClientCertKeyFilePath: cfg.TLSClientCertKey,
-				},
-			},
-		)
-	case "oci":
-		var config *oci.OCIConfig
-		// if the instance-principals flag was set, and a compartment OCID was provided, then ignore the
-		// OCI config file, and provide a config that uses instance principal authentication.
-		if cfg.OCIAuthInstancePrincipal {
-			if len(cfg.OCICompartmentOCID) == 0 {
-				err = fmt.Errorf("instance principal authentication requested, but no compartment OCID provided")
-			} else {
-				authConfig := oci.OCIAuthConfig{UseInstancePrincipal: true}
-				config = &oci.OCIConfig{Auth: authConfig, CompartmentID: cfg.OCICompartmentOCID}
-			}
-		} else {
-			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
-		}
-		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
-		if err == nil {
-			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
-		}
-	case "rfc2136":
-		p, err = rfc2136.NewRfc2136Provider(cfg.RFC2136Host, cfg.RFC2136Port, cfg.RFC2136Zone, cfg.RFC2136Insecure, cfg.RFC2136TSIGKeyName, cfg.RFC2136TSIGSecret, cfg.RFC2136TSIGSecretAlg, cfg.RFC2136TAXFR, domainFilter, cfg.DryRun, cfg.RFC2136MinTTL, cfg.RFC2136GSSTSIG, cfg.RFC2136KerberosUsername, cfg.RFC2136KerberosPassword, cfg.RFC2136KerberosRealm, cfg.RFC2136BatchChangeSize, nil)
-	case "ns1":
-		p, err = ns1.NewNS1Provider(
-			ns1.NS1Config{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				NS1Endpoint:   cfg.NS1Endpoint,
-				NS1IgnoreSSL:  cfg.NS1IgnoreSSL,
-				DryRun:        cfg.DryRun,
-				MinTTLSeconds: cfg.NS1MinTTLSeconds,
-			},
-		)
-	case "transip":
-		p, err = transip.NewTransIPProvider(cfg.TransIPAccountName, cfg.TransIPPrivateKeyFile, domainFilter, cfg.DryRun)
-	case "scaleway":
-		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
-	case "godaddy":
-		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
-	case "gandi":
-		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
-	case "pihole":
-		p, err = pihole.NewPiholeProvider(
-			pihole.PiholeConfig{
-				Server:                cfg.PiholeServer,
-				Password:              cfg.PiholePassword,
-				TLSInsecureSkipVerify: cfg.PiholeTLSInsecureSkipVerify,
-				DomainFilter:          domainFilter,
-				DryRun:                cfg.DryRun,
-			},
-		)
-	case "ibmcloud":
-		p, err = ibmcloud.NewIBMCloudProvider(cfg.IBMCloudConfigFile, domainFilter, zoneIDFilter, endpointsSource, cfg.IBMCloudProxied, cfg.DryRun)
-	case "safedns":
-		p, err = safedns.NewSafeDNSProvider(domainFilter, cfg.DryRun)
-	case "plural":
-		p, err = plural.NewPluralProvider(cfg.PluralCluster, cfg.PluralProvider)
-	case "tencentcloud":
-		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
-	case "webhook":
-		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
-	default:
+	p := providerMap[cfg.Provider]
+	if p == nil {
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
-	}
-	if err != nil {
-		log.Fatal(err)
 	}
 
 	if cfg.WebhookServer {
@@ -421,6 +197,18 @@ func main() {
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
+		if awsSession == nil {
+			awsSession, err = aws.NewSession(
+				aws.AWSSessionConfig{
+					AssumeRole:           cfg.AWSAssumeRole,
+					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+					APIRetries:           cfg.AWSAPIRetries,
+				},
+			)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 		config := awsSDK.NewConfig()
 		if cfg.AWSDynamoDBRegion != "" {
 			config = config.WithRegion(cfg.AWSDynamoDBRegion)
