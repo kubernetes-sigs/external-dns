@@ -129,7 +129,7 @@ spec:
         - --policy=sync # set `upsert-only` would prevent ExternalDNS from deleting any records
         - --tencent-cloud-zone-type=private # only look at private hosted zones. set `public` to use the public dns service.
         - --tencent-cloud-config-file=/etc/kubernetes/tencent-cloud.json
-        image: registry.k8s.io/external-dns/external-dns:v0.13.5
+        image: registry.k8s.io/external-dns/external-dns:v0.14.0
         imagePullPolicy: Always
         name: external-dns
         resources: {}
