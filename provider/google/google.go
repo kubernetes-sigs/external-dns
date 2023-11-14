@@ -467,6 +467,12 @@ func newRecord(ep *endpoint.Endpoint) *dns.ResourceRecordSet {
 		}
 	}
 
+	if ep.RecordType == endpoint.RecordTypeSRV {
+		for i, srvRecord := range ep.Targets {
+			targets[i] = provider.EnsureTrailingDot(srvRecord)
+		}
+	}
+
 	// no annotation results in a Ttl of 0, default to 300 for backwards-compatibility
 	var ttl int64 = googleRecordTTL
 	if ep.RecordTTL.IsConfigured() {
