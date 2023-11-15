@@ -360,7 +360,7 @@ func main() {
 		} else {
 			config, err = oci.LoadOCIConfig(cfg.OCIConfigFile)
 		}
-
+		config.ZoneCacheDuration = cfg.OCIZoneCacheDuration
 		if err == nil {
 			p, err = oci.NewOCIProvider(*config, domainFilter, zoneIDFilter, cfg.OCIZoneScope, cfg.DryRun)
 		}

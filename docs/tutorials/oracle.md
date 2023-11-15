@@ -180,6 +180,9 @@ spec:
         # Specifies the OCI DNS Zone scope, defaults to GLOBAL.
         # May be GLOBAL, PRIVATE, or an empty value to specify both GLOBAL and PRIVATE OCI DNS Zones
         # - --oci-zone-scope=GLOBAL
+        # Specifies the zone cache duration, defaults to 0s. If set to 0s, the zone cache is disabled.
+        # Use of zone caching is recommended to reduce the amount of requests sent to OCI DNS.
+        # - --oci-zones-cache-duration=0s
         volumeMounts:
           - name: config
             mountPath: /etc/kubernetes/

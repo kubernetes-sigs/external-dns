@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/common/auth"
@@ -49,8 +50,9 @@ type OCIAuthConfig struct {
 
 // OCIConfig holds the configuration for the OCI Provider.
 type OCIConfig struct {
-	Auth          OCIAuthConfig `yaml:"auth"`
-	CompartmentID string        `yaml:"compartment"`
+	Auth              OCIAuthConfig `yaml:"auth"`
+	CompartmentID     string        `yaml:"compartment"`
+	ZoneCacheDuration time.Duration
 }
 
 // OCIProvider is an implementation of Provider for Oracle Cloud Infrastructure
@@ -63,6 +65,7 @@ type OCIProvider struct {
 	domainFilter endpoint.DomainFilter
 	zoneIDFilter provider.ZoneIDFilter
 	zoneScope    string
+	zoneCache    *zoneCache
 	dryRun       bool
 }
 
@@ -135,11 +138,18 @@ func NewOCIProvider(cfg OCIConfig, domainFilter endpoint.DomainFilter, zoneIDFil
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
 		zoneScope:    zoneScope,
-		dryRun:       dryRun,
+		zoneCache: &zoneCache{
+			duration: cfg.ZoneCacheDuration,
+		},
+		dryRun: dryRun,
 	}, nil
 }
 
 func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, error) {
+	if !p.zoneCache.Expired() {
+		log.Debug("Using cached zones list")
+		return p.zoneCache.zones, nil
+	}
 	zones := make(map[string]dns.ZoneSummary)
 	scopes := []dns.GetZoneScopeEnum{dns.GetZoneScopeEnum(p.zoneScope)}
 	// If zone scope is empty, list all zones types.
@@ -155,6 +165,7 @@ func (p *OCIProvider) zones(ctx context.Context) (map[string]dns.ZoneSummary, er
 	if len(zones) == 0 {
 		log.Warnf("No zones in compartment %q match domain filters %v", p.cfg.CompartmentID, p.domainFilter)
 	}
+	p.zoneCache.Reset(zones)
 	return zones, nil
 }
 
