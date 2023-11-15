@@ -383,6 +383,27 @@ func testCRDSourceEndpoints(t *testing.T) {
 			expectEndpoints: true,
 			expectError:     false,
 		},
+		{
+			title:                "Create SRV record",
+			registeredAPIVersion: "test.k8s.io/v1alpha1",
+			apiVersion:           "test.k8s.io/v1alpha1",
+			registeredKind:       "DNSEndpoint",
+			kind:                 "DNSEndpoint",
+			namespace:            "foo",
+			registeredNamespace:  "foo",
+			labels:               map[string]string{"test": "that"},
+			labelFilter:          "test=that",
+			endpoints: []*endpoint.Endpoint{
+				{
+					DNSName:    "_svc._tcp.example.org",
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+					RecordType: endpoint.RecordTypeSRV,
+					RecordTTL:  180,
+				},
+			},
+			expectEndpoints: true,
+			expectError:     false,
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
