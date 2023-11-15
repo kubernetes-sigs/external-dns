@@ -16,13 +16,13 @@ The following table documents which sources support which annotations:
 | Gloo         |            |          |                   | Yes     | Yes[^5] | Yes[^5]             |
 | Ingress      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | Istio        | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Kong         |            | Yes      |                   | Yes     | Yes     | Yes                 |
+| Kong         |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | Node         | Yes        |          |                   | Yes     | Yes     |                     |
 | OpenShift    | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | Pod          |            | Yes      | Yes               | Yes     |         |                     |
 | Service      | Yes        | Yes[^1]  | Yes[^1][^2]       | Yes[^3] | Yes     | Yes                 |
 | Skipper      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
-| Traefik      |            | Yes      |                   | Yes     | Yes     | Yes                 |
+| Traefik      |            | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 
 [^1]: Unless the `--ignore-hostname-annotation` flag is specified.
 [^2]: Only behaves differently than `hostname` for `Service`s of type `ClusterIP` or `LoadBalancer`.

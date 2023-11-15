@@ -80,6 +80,7 @@ var (
 
 type traefikSource struct {
 	annotationFilter           string
+	ignoreHostnameAnnotation   bool
 	dynamicKubeClient          dynamic.Interface
 	ingressRouteInformer       informers.GenericInformer
 	ingressRouteTcpInformer    informers.GenericInformer
@@ -92,7 +93,7 @@ type traefikSource struct {
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string) (Source, error) {
+func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
@@ -149,6 +150,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 
 	return &traefikSource{
 		annotationFilter:           annotationFilter,
+		ignoreHostnameAnnotation:   ignoreHostnameAnnotation,
 		dynamicKubeClient:          dynamicKubeClient,
 		ingressRouteInformer:       ingressRouteInformer,
 		ingressRouteTcpInformer:    ingressRouteTcpInformer,
@@ -653,9 +655,11 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
-	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	if !ts.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
 	}
 
 	for _, route := range ingressRoute.Spec.Routes {
@@ -687,9 +691,11 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
-	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	if !ts.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
 	}
 
 	for _, route := range ingressRoute.Spec.Routes {
@@ -722,9 +728,11 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 
 	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
 
-	hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
-	for _, hostname := range hostnameList {
-		endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+	if !ts.ignoreHostnameAnnotation {
+		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
+		for _, hostname := range hostnameList {
+			endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+		}
 	}
 
 	return endpoints, nil
