@@ -13,7 +13,7 @@ require (
 	github.com/IBM/go-sdk-core/v5 v5.13.4
 	github.com/IBM/networking-go-sdk v0.42.2
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
-	github.com/alecthomas/kingpin v2.2.6+incompatible
+	github.com/alecthomas/kingpin/v2 v2.3.2
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.483
 	github.com/ans-group/sdk-go v1.16.6
 	github.com/aws/aws-sdk-go v1.44.311
@@ -87,7 +87,6 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/Masterminds/semver v1.4.2 // indirect
 	github.com/Yamashou/gqlgenc v0.14.0 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
 	github.com/ans-group/go-durationstring v1.2.0 // indirect
@@ -181,6 +180,7 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
+	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect

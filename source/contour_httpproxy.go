@@ -140,9 +140,6 @@ func (sc *httpProxySource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint,
 			log.Debugf("Skipping HTTPProxy %s/%s because controller value does not match, found: %s, required: %s",
 				hp.Namespace, hp.Name, controller, controllerAnnotationValue)
 			continue
-		} else if hp.Status.CurrentStatus != "valid" {
-			log.Debugf("Skipping HTTPProxy %s/%s because it is not valid", hp.Namespace, hp.Name)
-			continue
 		}
 
 		hpEndpoints, err := sc.endpointsFromHTTPProxy(hp)
@@ -244,11 +241,6 @@ func (sc *httpProxySource) filterByAnnotations(httpProxies []*projectcontour.HTT
 
 // endpointsFromHTTPProxyConfig extracts the endpoints from a Contour HTTPProxy object
 func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTPProxy) ([]*endpoint.Endpoint, error) {
-	if httpProxy.Status.CurrentStatus != "valid" {
-		log.Warn(errors.Errorf("cannot generate endpoints for HTTPProxy with status %s", httpProxy.Status.CurrentStatus))
-		return nil, nil
-	}
-
 	resource := fmt.Sprintf("HTTPProxy/%s/%s", httpProxy.Namespace, httpProxy.Name)
 
 	ttl := getTTLFromAnnotations(httpProxy.Annotations, resource)

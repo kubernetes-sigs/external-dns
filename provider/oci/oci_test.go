@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/oracle/oci-go-sdk/v65/common"
 	"github.com/oracle/oci-go-sdk/v65/dns"
@@ -137,7 +138,10 @@ func newOCIProvider(client ociDNSClient, domainFilter endpoint.DomainFilter, zon
 		domainFilter: domainFilter,
 		zoneIDFilter: zoneIDFilter,
 		zoneScope:    zoneScope,
-		dryRun:       dryRun,
+		zoneCache: &zoneCache{
+			duration: 0 * time.Second,
+		},
+		dryRun: dryRun,
 	}
 }
 

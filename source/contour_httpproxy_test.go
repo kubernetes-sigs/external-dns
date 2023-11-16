@@ -270,14 +270,6 @@ func testEndpointsFromHTTPProxy(t *testing.T) {
 			expected:  []*endpoint.Endpoint{},
 		},
 		{
-			title: "one rule.host invalid httpproxy",
-			httpProxy: fakeHTTPProxy{
-				host:    "foo.bar",
-				invalid: true,
-			},
-			expected: []*endpoint.Endpoint{},
-		},
-		{
 			title:     "no targets",
 			httpProxy: fakeHTTPProxy{},
 			expected:  []*endpoint.Endpoint{},
@@ -1114,19 +1106,11 @@ type fakeHTTPProxy struct {
 	annotations map[string]string
 
 	host         string
-	invalid      bool
 	delegate     bool
 	loadBalancer fakeLoadBalancerService
 }
 
 func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
-	var status string
-	if ir.invalid {
-		status = "invalid"
-	} else {
-		status = "valid"
-	}
-
 	var spec projectcontour.HTTPProxySpec
 	if ir.delegate {
 		spec = projectcontour.HTTPProxySpec{}
@@ -1161,7 +1145,6 @@ func (ir fakeHTTPProxy) HTTPProxy() *projectcontour.HTTPProxy {
 		},
 		Spec: spec,
 		Status: projectcontour.HTTPProxyStatus{
-			CurrentStatus: status,
 			LoadBalancer:  lb,
 		},
 	}
