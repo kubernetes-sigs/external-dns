@@ -68,7 +68,9 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 
 	p := &scw.Profile{}
 	c, err := scw.LoadConfig()
-	if err == nil {
+	if err != nil {
+		log.Infof("%s", err)
+	} else {
 		p, _ = c.GetActiveProfile()
 	}
 
