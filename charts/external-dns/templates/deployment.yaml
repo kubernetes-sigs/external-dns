@@ -16,8 +16,8 @@ spec:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
   strategy:
     {{- toYaml .Values.deploymentStrategy | nindent 4 }}
-  {{- with .Values.revisionHistoryLimit }}
-  revisionHistoryLimit: {{ . }}
+  {{- if or (kindIs "float64" .Values.revisionHistoryLimit) (kindIs "int64" .Values.revisionHistoryLimit) }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit | int64 }}
   {{- end }}
   template:
     metadata:
