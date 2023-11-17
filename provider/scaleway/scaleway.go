@@ -66,18 +66,16 @@ func NewScalewayProvider(ctx context.Context, domainFilter endpoint.DomainFilter
 		}
 	}
 
-	p := &scw.Profile{}
-	c, err := scw.LoadConfig()
-	if err != nil {
-		log.Infof("%s", err)
-	} else {
-		tempProfile, err := c.GetActiveProfile()
-		if err != nil {
-			log.Infof("%s", err)
-		} else {
-			p = tempProfile
-		}
-	}
+  p := &scw.Profile{}
+  c, err := scw.LoadConfig()
+  if err != nil {
+    log.Warnf("Cannot load config: %v", err)
+  } else {
+    p, err = c.GetActiveProfile()
+    if err != nil {
+      log.Warnf("Cannot get active profile: %v", err)
+    }
+  }
 
 	scwClient, err := scw.NewClient(
 		scw.WithProfile(p),
