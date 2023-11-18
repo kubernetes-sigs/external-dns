@@ -107,7 +107,7 @@ build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
 
 build.push/multiarch: ko
-	envsubst < ko_template.yaml > .ko.yaml ; \
+	BUILD_TAGS=$(BUILD_TAGS) envsubst < ko_template.yaml > .ko.yaml ; \
 	KO_DOCKER_REPO=${IMAGE} \
     VERSION=${VERSION} \
     ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
