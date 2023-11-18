@@ -1,3 +1,5 @@
+//go:build all || rdns
+// +build all rdns
 /*
 Copyright 2019 The Kubernetes Authors.
 

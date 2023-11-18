@@ -1,3 +1,5 @@
+//go:build all || exoscale
+// +build all exoscale
 /*
 Copyright 2017 The Kubernetes Authors.
 

@@ -1,3 +1,5 @@
+//go:build all || plural
+// +build all plural
 /*
 Copyright 2022 The Kubernetes Authors.
 

@@ -1,3 +1,5 @@
+//go:build all || scaleway
+// +build all scaleway
 /*
 Copyright 2020 The Kubernetes Authors.
 

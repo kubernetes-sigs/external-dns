@@ -1,3 +1,5 @@
+//go:build all || bluecat
+// +build all bluecat
 /*
 Copyright 2020 The Kubernetes Authors.
 

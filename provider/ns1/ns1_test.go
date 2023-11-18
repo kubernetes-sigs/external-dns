@@ -1,3 +1,5 @@
+//go:build all || ns1
+// +build all ns1
 /*
 Copyright 2017 The Kubernetes Authors.
 

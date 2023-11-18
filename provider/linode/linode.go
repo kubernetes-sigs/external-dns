@@ -1,3 +1,5 @@
+//go:build all || linode
+// +build all linode
 /*
 Copyright 2017 The Kubernetes Authors.
 

@@ -1,3 +1,5 @@
+//go:build all || transip
+// +build all transip
 /*
 Copyright 2017 The Kubernetes Authors.
 

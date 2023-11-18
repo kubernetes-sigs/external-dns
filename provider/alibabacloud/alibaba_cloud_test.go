@@ -1,3 +1,5 @@
+//go:build all || alibabacloud
+// +build all alibabacloud
 /*
 Copyright 2017 The Kubernetes Authors.
 

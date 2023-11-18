@@ -1,3 +1,5 @@
+//go:build all || coredns
+// +build all coredns
 /*
 Copyright 2017 The Kubernetes Authors.
 

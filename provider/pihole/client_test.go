@@ -1,3 +1,5 @@
+//go:build all || pihole
+// +build all pihole
 /*
 Copyright 2017 The Kubernetes Authors.
 

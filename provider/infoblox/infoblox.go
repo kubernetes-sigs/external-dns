@@ -1,3 +1,5 @@
+//go:build all || infoblox
+// +build all infoblox
 /*
 Copyright 2017 The Kubernetes Authors.
 

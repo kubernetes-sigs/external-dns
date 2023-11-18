@@ -1,3 +1,5 @@
+//go:build all || vinyldns
+// +build all vinyldns
 /*
 Copyright 2017 The Kubernetes Authors.
 

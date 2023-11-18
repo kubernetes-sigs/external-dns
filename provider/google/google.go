@@ -1,3 +1,5 @@
+//go:build all || google
+// +build all google
 /*
 Copyright 2017 The Kubernetes Authors.
 

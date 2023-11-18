@@ -1,3 +1,5 @@
+//go:build all || civo
+// +build all civo
 /*
 Copyright 2020 The Kubernetes Authors.
 

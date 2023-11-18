@@ -1,3 +1,5 @@
+//go:build all || designate
+// +build all designate
 /*
 Copyright 2017 The Kubernetes Authors.
 

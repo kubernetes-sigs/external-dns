@@ -1,3 +1,5 @@
+//go:build all || ovh
+// +build all ovh
 /*
 Copyright 2017 The Kubernetes Authors.
 

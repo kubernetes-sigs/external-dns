@@ -1,3 +1,5 @@
+//go:build all || pdns
+// +build all pdns
 /*
 Copyright 2018 The Kubernetes Authors.
 

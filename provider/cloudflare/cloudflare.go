@@ -1,3 +1,5 @@
+//go:build all || cloudflare
+// +build all cloudflare
 /*
 Copyright 2017 The Kubernetes Authors.
 

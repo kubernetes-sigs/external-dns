@@ -1,3 +1,5 @@
+//go:build all || vultr
+// +build all vultr
 /*
 Copyright 2020 The Kubernetes Authors.
 

@@ -1,3 +1,5 @@
+//go:build all || ultradns
+// +build all ultradns
 /*
 Copyright 2017 The Kubernetes Authors.
 

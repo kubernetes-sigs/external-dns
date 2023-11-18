@@ -1,3 +1,5 @@
+//go:build all || godaddy
+// +build all godaddy
 /*
 Copyright 2020 The Kubernetes Authors.
 

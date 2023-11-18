@@ -1,3 +1,5 @@
+//go:build all || digitalocean
+// +build all digitalocean
 /*
 Copyright 2017 The Kubernetes Authors.
 

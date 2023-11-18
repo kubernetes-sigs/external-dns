@@ -1,3 +1,5 @@
+//go:build all || azure
+// +build all azure
 /*
 Copyright 2017 The Kubernetes Authors.
 

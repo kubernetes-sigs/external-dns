@@ -1,3 +1,5 @@
+//go:build all || ibmcloud
+// +build all ibmcloud
 /*
 Copyright 2022 The Kubernetes Authors.
 

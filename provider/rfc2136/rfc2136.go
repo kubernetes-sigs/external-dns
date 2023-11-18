@@ -1,3 +1,5 @@
+//go:build all || rfc2136
+// +build all rfc2136
 /*
 Copyright 2017 The Kubernetes Authors.
 

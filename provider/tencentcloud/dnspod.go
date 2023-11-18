@@ -1,3 +1,5 @@
+//go:build all || tencentcloud
+// +build all tencentcloud
 /*
 Copyright 2022 The Kubernetes Authors.
 

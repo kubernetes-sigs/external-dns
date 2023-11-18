@@ -1,3 +1,5 @@
+//go:build all || dnsimple
+// +build all dnsimple
 /*
 Copyright 2017 The Kubernetes Authors.
 

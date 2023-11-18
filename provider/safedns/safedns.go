@@ -1,3 +1,5 @@
+//go:build all || safedns
+// +build all safedns
 /*
 Copyright 2021 The Kubernetes Authors.
 

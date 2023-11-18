@@ -1,3 +1,5 @@
+//go:build all || inmemory
+// +build all inmemory
 /*
 Copyright 2017 The Kubernetes Authors.
 

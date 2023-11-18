@@ -1,3 +1,5 @@
+//go:build all || akamai
+// +build all akamai
 /*
 Copyright 2017 The Kubernetes Authors.
 
