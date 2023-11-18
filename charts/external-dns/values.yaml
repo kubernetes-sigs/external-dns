@@ -213,14 +213,19 @@ txtSuffix:
 domainFilters: []
 
 provider:
-  #  -- _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar.
+  #  -- _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar, using provider.images matching package
   name: aws
-  # Default to latest.
-  version:
+  version: latest
   env: []
   args: []
   resources: {}
   securityContext: {}
+  images:
+    adguard: ghcr.io/muhlba91/external-dns-provider-adguard
+    glesys: ghcr.io/glesys/external-dns-glesys
+    hetzner: ghcr.io/mconfalonieri/external-dns-hetzner-webhook
+    ionos: ghcr.io/ionos-cloud/external-dns-ionos-webhook
+    stackit: ghcr.io/stackitcloud/external-dns-stackit-webhook
 
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []

@@ -1,7 +1,6 @@
 ---
-{{- $whp := include "external-dns.webhook-providers" . | fromYaml }}
 {{- $providername := include "external-dns.providername" . }}
-{{- $provider := (hasKey $whp $providername) | ternary "webhook" $providername }}
+{{- $provider := (hasKey .Values.provider.images $providername) | ternary "webhook" $providername }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -139,7 +138,7 @@ spec:
         {{- if eq $provider "webhook" }}
         {{- with .Values.provider }}
         - name: {{ $providername }}
-          image: {{ get $whp .name }}
+          image: {{ get .images .name }}:{{- .version }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           {{- with .env }}
           env:

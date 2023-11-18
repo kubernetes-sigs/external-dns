@@ -71,18 +71,6 @@ The image to use
 {{- printf "%s:%s" .Values.image.repository (default (printf "v%s" .Chart.AppVersion) .Values.image.tag) }}
 {{- end }}
 
-
-{{/*
-Keep backward compatibility on provider
-*/}}
-{{- define "external-dns.providername" -}}
-{{- if eq (typeOf .Values.provider) "string" }}
-{{- .Values.provider }}
-{{- else }}
-{{- .Values.provider.name }}
-{{- end }}
-{{- end }}
-
 {{/*
 Provider name, Keeps backward compatibility on provider
 */}}
