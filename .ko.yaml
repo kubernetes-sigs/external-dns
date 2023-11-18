@@ -4,6 +4,8 @@ builds:
   - CGO_ENABLED=0
   flags:
   - -v
+  - -tags
+  - all
   ldflags:
   - -s
   - -w

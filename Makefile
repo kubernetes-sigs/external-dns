@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+BUILD_TAGS ?= all
+
 # cover-html creates coverage report for whole project excluding vendor and opens result in the default browser
 .PHONY: cover cover-html
 .DEFAULT_GOAL := build
 
 cover:
-	go get github.com/wadey/gocovmerge
+	go install github.com/wadey/gocovmerge
 	$(eval PKGS := $(shell go list ./... | grep -v /vendor/))
 	$(eval PKGS_DELIM := $(shell echo $(PKGS) | tr / -'))
-	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
+	go list -f '{{if or (len .TestGoFiles) (len .XTestGoFiles)}}go test --tags $(BUILD_TAGS) -test.v -test.timeout=120s -covermode=count -coverprofile={{.Name}}_{{len .Imports}}_{{len .Deps}}.coverprofile -coverpkg $(PKGS_DELIM) {{.ImportPath}}{{end}}' $(PKGS) | xargs -0 sh -c
 	gocovmerge `ls *.coverprofile` > cover.out
 	rm *.coverprofile
 
@@ -98,7 +100,7 @@ IMG_SBOM      ?= none
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" .
+	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
 
 build.push/multiarch: ko
 	KO_DOCKER_REPO=${IMAGE} \

@@ -60,7 +60,7 @@ var targetFilter endpoint.TargetNetFilter
 
 var awsSession *session.Session
 
-func main() {
+func init() {
 	cfg = externaldns.NewConfig()
 	if err := cfg.ParseFlags(os.Args[1:]); err != nil {
 		log.Fatalf("flag parsing error: %v", err)
@@ -68,6 +68,9 @@ func main() {
 	if cfg.LogFormat == "json" {
 		log.SetFormatter(&log.JSONFormatter{})
 	}
+}
+
+func main() {
 	log.Infof("config: %s", cfg)
 
 	if err := validation.ValidateConfig(cfg); err != nil {
