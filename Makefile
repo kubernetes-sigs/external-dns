@@ -82,7 +82,11 @@ test:
 
 # The build targets allow to build the binary and container image
 .PHONY: build
-
+ifneq ($(BUILD_TAGS),all)
+   BINARY ?= external-dns-$(BUILD_TAGS)
+else
+   BINARY ?= external-dns
+endif
 BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
@@ -103,6 +107,7 @@ build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
 
 build.push/multiarch: ko
+	envsubst < ko_template.yaml > .ko.yaml ; \
 	KO_DOCKER_REPO=${IMAGE} \
     VERSION=${VERSION} \
     ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
@@ -148,6 +153,7 @@ build.arm/v7:
 
 clean:
 	@rm -rf build
+	@rm .ko.yaml
 	@go clean -cache
 
  # Builds and push container images to the staging bucket.

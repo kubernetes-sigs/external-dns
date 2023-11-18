@@ -61,3 +61,6 @@ docs/CONTRIBUTING.md
 docs/index.md
 docs/redirect
 site
+
+# ko yaml will be generated
+.ko.yaml
