@@ -87,7 +87,6 @@ ifneq ($(BUILD_TAGS),all)
 else
    BINARY ?= external-dns
 endif
-BINARY        ?= external-dns
 SOURCES        = $(shell find . -name '*.go')
 IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
@@ -107,7 +106,7 @@ build/$(BINARY): $(SOURCES)
 	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
 
 build.push/multiarch: ko
-	BUILD_TAGS=$(BUILD_TAGS) envsubst < ko_template.yaml > .ko.yaml ; \
+	BUILD_TAGS=$(BUILD_TAGS) \
 	KO_DOCKER_REPO=${IMAGE} \
     VERSION=${VERSION} \
     ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
