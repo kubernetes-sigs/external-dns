@@ -88,7 +88,6 @@ else
    BINARY ?= external-dns
 endif
 SOURCES        = $(shell find . -name '*.go')
-IMAGE_STAGING  = gcr.io/k8s-staging-external-dns/$(BINARY)
 REGISTRY      ?= us.gcr.io/k8s-artifacts-prod/external-dns
 IMAGE         ?= $(REGISTRY)/$(BINARY)
 VERSION       ?= $(shell git describe --tags --always --dirty --match "v*")
@@ -152,17 +151,16 @@ build.arm/v7:
 
 clean:
 	@rm -rf build
-	@rm .ko.yaml
 	@go clean -cache
 
  # Builds and push container images to the staging bucket.
 .PHONY: release.staging
 
 release.staging: test
-	IMAGE=$(IMAGE_STAGING) $(MAKE) build.push/multiarch
+	scripts/provider-builds.sh push gcr.io/k8s-staging-external-dns
 
 release.prod: test
-	$(MAKE) build.push/multiarch
+	scripts/provider-builds.sh push us.gcr.io/k8s-artifacts-prod/external-dns
 
 .PHONY: ko
 ko:
