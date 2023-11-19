@@ -203,7 +203,6 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		sc.setResourceLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
-
 	// this sorting is required to make merging work.
 	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
 	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
@@ -295,13 +294,37 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				log.Errorf("Pod %s not found for address %v", address.TargetRef.Name, address)
 				continue
 			}
+			for _, container := range pod.Spec.Containers {
+				for _, port := range container.Ports {
+					// only create SRV if port have a name.
+					if port.Name == "" {
+						continue
+					}
+					serviceName := svc.ObjectMeta.Name
+					protocol := strings.ToLower(string(port.Protocol))
+					if protocol == "" {
+						protocol = "tcp"
+					}
+					// hostname.my-svc.my-namespace.svc.cluster-domain.example
+					target := fmt.Sprintf("0 50 %s %s.%s.%s.svc.%s.", pod.Spec.Hostname, serviceName, svc.Namespace, hostname)
+					// _port-name._port-protocol.my-svc.my-namespace.svc.cluster-domain.example
+					recordName := fmt.Sprintf("_%s._%s.%s.%s.svc.%s", port.Name, protocol, serviceName, svc.Namespace, hostname)
+					var ep *endpoint.Endpoint
+					if ttl.IsConfigured() {
+						ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
+					} else {
+						ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
+					}
+					endpoints = append(endpoints, ep)
+				}
+			}
 
 			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
-
 			for _, headlessDomain := range headlessDomains {
+				log.Debugf("Domainhaha %s", headlessDomain)
 				targets := getTargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
@@ -332,13 +355,16 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
 			}
+			log.Debugf("Domainhaha end")
 		}
 	}
 
 	headlessKeys := []endpoint.EndpointKey{}
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
+		log.Debugf("key in targetsByHeadlessDomainAndType %s %s ", headlessKey.RecordType, headlessKey.DNSName)
 	}
+
 	sort.Slice(headlessKeys, func(i, j int) bool {
 		if headlessKeys[i].DNSName != headlessKeys[j].DNSName {
 			return headlessKeys[i].DNSName < headlessKeys[j].DNSName
@@ -351,6 +377,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
+			log.Debugf("key: value %s %s %s ", headlessKey.RecordType, headlessKey.DNSName, target)
 			if _, ok := deduppedTargets[target]; ok {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
@@ -366,7 +393,9 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...))
 		}
 	}
-
+	for _, ep := range endpoints {
+		log.Infof("Generated endpoint: DNSName: %s, RecordType: %s, Targets: %v, RecordTTL: %d", ep.DNSName, ep.RecordType, ep.Targets, ep.RecordTTL)
+	}
 	return endpoints
 }
 
@@ -742,7 +771,9 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			endpoints = append(endpoints, ep)
 		}
 	}
-
+	for _, ep := range endpoints {
+		log.Infof("Generated Node Port endpoint: DNSName: %s, RecordType: %s, Targets: %v, RecordTTL: %d", ep.DNSName, ep.RecordType, ep.Targets, ep.RecordTTL)
+	}
 	return endpoints
 }
 
