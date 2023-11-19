@@ -34,4 +34,5 @@ jobs:
         go get -v -t -d ./...
 
     - name: Test
-      run: make build.image/multiarch
+      run: scripts/provider-builds.sh image
+
