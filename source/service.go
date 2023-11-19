@@ -324,7 +324,6 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
 			for _, headlessDomain := range headlessDomains {
-				log.Debugf("Domainhaha %s", headlessDomain)
 				targets := getTargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
 					if endpointsType == EndpointsTypeNodeExternalIP {
@@ -355,14 +354,12 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
 			}
-			log.Debugf("Domainhaha end")
 		}
 	}
 
 	headlessKeys := []endpoint.EndpointKey{}
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
-		log.Debugf("key in targetsByHeadlessDomainAndType %s %s ", headlessKey.RecordType, headlessKey.DNSName)
 	}
 
 	sort.Slice(headlessKeys, func(i, j int) bool {
@@ -377,7 +374,6 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
-			log.Debugf("key: value %s %s %s ", headlessKey.RecordType, headlessKey.DNSName, target)
 			if _, ok := deduppedTargets[target]; ok {
 				log.Debugf("Removing duplicate target %s", target)
 				continue
@@ -393,9 +389,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...))
 		}
 	}
-	for _, ep := range endpoints {
-		log.Infof("Generated endpoint: DNSName: %s, RecordType: %s, Targets: %v, RecordTTL: %d", ep.DNSName, ep.RecordType, ep.Targets, ep.RecordTTL)
-	}
+
 	return endpoints
 }
 
@@ -771,9 +765,7 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 			endpoints = append(endpoints, ep)
 		}
 	}
-	for _, ep := range endpoints {
-		log.Infof("Generated Node Port endpoint: DNSName: %s, RecordType: %s, Targets: %v, RecordTTL: %d", ep.DNSName, ep.RecordType, ep.Targets, ep.RecordTTL)
-	}
+
 	return endpoints
 }
 
