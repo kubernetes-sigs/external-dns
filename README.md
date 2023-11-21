@@ -76,10 +76,14 @@ ExternalDNS has introduced a webhook system, which can be used to add a new prov
 See PR #3063 for all the discussions about it.
 
 Known providers using webhooks:
-* https://github.com/ionos-cloud/external-dns-ionos-plugin
-* https://github.com/muhlba91/external-dns-provider-adguard
-* https://github.com/stackitcloud/external-dns-stackit-webhook
-* (UNOFFICIAL) https://github.com/mconfalonieri/external-dns-hetzner-webhook
+
+| Provider |  Repo |
+| -------- | ----------- |
+| IONOS | https://github.com/ionos-cloud/external-dns-ionos-plugin | 
+| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard | 
+| STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook | 
+| GleSYS | https://github.com/glesys/external-dns-glesys | 
+| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook | 
 
 ## Status of providers
 
