@@ -161,6 +161,14 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	}
 }
 
+func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
+	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
+	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
+
+	_, err := NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	assert.NoError(t, err)
+}
+
 func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 	provider := &ScalewayProvider{}
 
