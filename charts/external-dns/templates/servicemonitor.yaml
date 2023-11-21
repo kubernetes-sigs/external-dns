@@ -22,32 +22,34 @@ spec:
     matchLabels:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
   endpoints:
-    - port: http
+    {{- range (list "http" "provider-metrics" }}
+    - port: {{ . }}
       path: /metrics
-      {{- with .Values.serviceMonitor.interval }}
+      {{- with $.Values.serviceMonitor.interval }}
       interval: {{ . }}
       {{- end }}
-      {{- with .Values.serviceMonitor.scheme }}
+      {{- with $.Values.serviceMonitor.scheme }}
       scheme: {{ . }}
       {{- end }}
-      {{- with .Values.serviceMonitor.bearerTokenFile }}
+      {{- with $.Values.serviceMonitor.bearerTokenFile }}
       bearerTokenFile: {{ . }}
       {{- end }}
-      {{- with .Values.serviceMonitor.tlsConfig }}
+      {{- with $.Values.serviceMonitor.tlsConfig }}
       tlsConfig:
         {{- toYaml .| nindent 8 }}
       {{- end }}
-      {{- with .Values.serviceMonitor.scrapeTimeout }}
+      {{- with $.Values.serviceMonitor.scrapeTimeout }}
       scrapeTimeout: {{ . }}
       {{- end }}
-      {{- with .Values.serviceMonitor.metricRelabelings }}
+      {{- with $.Values.serviceMonitor.metricRelabelings }}
       metricRelabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.serviceMonitor.relabelings }}
+      {{- with $.Values.serviceMonitor.relabelings }}
       relabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+    {{- end }}
   {{- with .Values.serviceMonitor.targetLabels }}
   targetLabels:
     {{- toYaml . | nindent 4 }}
