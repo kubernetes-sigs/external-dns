@@ -18,6 +18,7 @@ package registry
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"strings"
 	"time"
@@ -60,13 +61,19 @@ type TXTRegistry struct {
 
 // NewTXTRegistry returns new TXTRegistry object
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
+	log.Infof("What")
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
+	//txtEncryptAESKeyDecoded := txtEncryptAESKey
+	txtEncryptAESKeyDecoded, err := base64.URLEncoding.DecodeString(string(txtEncryptAESKey))
+	if err != nil {
+		return nil, errors.New("error decoding base64 AES Encryption Key")
+	}
 	if len(txtEncryptAESKey) == 0 {
 		txtEncryptAESKey = nil
-	} else if len(txtEncryptAESKey) != 32 {
-		return nil, errors.New("the AES Encryption key must have a length of 32 bytes")
+	} else if len(txtEncryptAESKeyDecoded) != 32 {
+		return nil, errors.New("the decoded AES Encryption key must have a length of 32 bytes")
 	}
 	if txtEncryptEnabled && txtEncryptAESKey == nil {
 		return nil, errors.New("the AES Encryption key must be set when TXT record encryption is enabled")

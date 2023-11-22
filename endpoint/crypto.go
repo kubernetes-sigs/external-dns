@@ -42,7 +42,12 @@ func GenerateNonce() ([]byte, error) {
 
 // EncryptText gzip input data and encrypts it using the supplied AES key
 func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error) {
-	block, err := aes.NewCipher(aesKey)
+	decodedaesKey, err := base64.URLEncoding.DecodeString(string(aesKey))
+	if err != nil {
+		fmt.Println("Error decoding base64:", err)
+		return "", err
+	}
+	block, err := aes.NewCipher(decodedaesKey)
 	if err != nil {
 		return "", err
 	}
