@@ -306,7 +306,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 						protocol = "tcp"
 					}
 					// hostname.my-svc.my-namespace.svc.cluster-domain.example
-					target := fmt.Sprintf("0 50 %s %s.%s.%s.svc.%s.", pod.Spec.Hostname, serviceName, svc.Namespace, hostname)
+					target := fmt.Sprintf("0 50 %d %s.%s.%s.svc.%s.", port.ContainerPort, pod.Spec.Hostname, serviceName, svc.Namespace, hostname)
 					// _port-name._port-protocol.my-svc.my-namespace.svc.cluster-domain.example
 					recordName := fmt.Sprintf("_%s._%s.%s.%s.svc.%s", port.Name, protocol, serviceName, svc.Namespace, hostname)
 					var ep *endpoint.Endpoint
