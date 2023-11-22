@@ -61,7 +61,6 @@ type TXTRegistry struct {
 
 // NewTXTRegistry returns new TXTRegistry object
 func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID string, cacheInterval time.Duration, txtWildcardReplacement string, managedRecordTypes, excludeRecordTypes []string, txtEncryptEnabled bool, txtEncryptAESKey []byte) (*TXTRegistry, error) {
-	log.Infof("What")
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
