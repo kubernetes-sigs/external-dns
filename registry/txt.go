@@ -64,7 +64,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 	if ownerID == "" {
 		return nil, errors.New("owner id cannot be empty")
 	}
-	//txtEncryptAESKeyDecoded := txtEncryptAESKey
 	txtEncryptAESKeyDecoded, err := base64.URLEncoding.DecodeString(string(txtEncryptAESKey))
 	if err != nil {
 		return nil, errors.New("error decoding base64 AES Encryption Key")

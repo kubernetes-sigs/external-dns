@@ -37,7 +37,7 @@ func GenerateNonce() ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
-	return []byte(base64.StdEncoding.EncodeToString(nonce)), nil
+	return []byte(base64.URLEncoding.EncodeToString(nonce)), nil
 }
 
 // EncryptText gzip input data and encrypts it using the supplied AES key
@@ -58,7 +58,7 @@ func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error
 	}
 
 	nonce := make([]byte, standardGcmNonceSize)
-	if _, err = base64.StdEncoding.Decode(nonce, nonceEncoded); err != nil {
+	if _, err = base64.URLEncoding.Decode(nonce, nonceEncoded); err != nil {
 		return "", err
 	}
 
@@ -68,13 +68,18 @@ func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error
 	}
 
 	cipherData := gcm.Seal(nonce, nonce, data, nil)
-	return base64.StdEncoding.EncodeToString(cipherData), nil
+	return base64.URLEncoding.EncodeToString(cipherData), nil
 }
 
 // DecryptText decrypt gziped data using a supplied AES encryption key ang ungzip it
 // in case of decryption failed, will return original input and decryption error
 func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce string, err error) {
-	block, err := aes.NewCipher(aesKey)
+	decodedaesKey, err := base64.URLEncoding.DecodeString(string(aesKey))
+	if err != nil {
+		fmt.Println("Error decoding base64:", err)
+		return "", "", err
+	}
+	block, err := aes.NewCipher(decodedaesKey)
 	if err != nil {
 		return "", "", err
 	}
@@ -83,7 +88,7 @@ func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce
 		return "", "", err
 	}
 	nonceSize := gcm.NonceSize()
-	data, err := base64.StdEncoding.DecodeString(text)
+	data, err := base64.URLEncoding.DecodeString(text)
 	if err != nil {
 		return "", "", err
 	}
@@ -101,7 +106,7 @@ func DecryptText(text string, aesKey []byte) (decryptResult string, encryptNonce
 		return "", "", err
 	}
 
-	return string(plaindata), base64.StdEncoding.EncodeToString(nonce), nil
+	return string(plaindata), base64.URLEncoding.EncodeToString(nonce), nil
 }
 
 // decompressData gzip compressed data

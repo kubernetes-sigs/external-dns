@@ -24,7 +24,7 @@ import (
 
 func TestEncrypt(t *testing.T) {
 	// Verify that text encryption and decryption works
-	aesKey := []byte("s%zF`.*'5`9.AhI2!B,.~hmbs^.*TL?;")
+	aesKey := []byte("1WGwUWyQ-vnVIZNpAT8k3i2Vjm4_2xacplj_8FzF7K8=")
 	plaintext := "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum."
 	encryptedtext, err := EncryptText(plaintext, aesKey, nil)
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestEncrypt(t *testing.T) {
 	}
 
 	// Verify that a known encrypted text is decrypted to what is expected
-	encryptedtext = "0Mfzf6wsN8llrfX0ucDZ6nlc2+QiQfKKedjPPLu5atb2I35L9nUZeJcCnuLVW7CVW3K0h94vSuBLdXnMrj8Vcm0M09shxaoF48IcCpD03XtQbKXqk2hPbsW6+JybvplHIQGr16/PcjUSObGmR9yjf38+qEltApkKvrPjsyw43BX4eE10rL0Bln33UJD7/w+zazRDPFlAcbGtkt0ETKHnvyB3/aCddLipvrhjCXj2ZY/ktRF6h716kJRgXU10dCIQHFYU45MIdxI+k10HK3yZqhI2V0Gp2xjrFV/LRQ7/OS9SFee4asPWUYxbCEsnOzp8qc0dCPFSo1dtADzWnUZnsAcbnjtudT4milfLJc5CxDk1v3ykqQ/ajejwHjWQ7b8U6AsTErbezfdcqrb5IzkLgHb5TosnfrdDmNc9GcKfpsrCHbVY8KgNwMVdtwavLv7d9WM6sooUlZ3t0sABGkzagXQmPRvwLnkSOlie5XrnzWo8/8/4UByLga29CaXO"
+	encryptedtext = "AAAAAAAAAAAAAAAAvH4TwB_FqFti68hCmBuj2i5bhrNgwh01-YXi9-VpW2TIpSA0PIjJBDpRcYRxmOo0Ra_KzJ1L8CxX1LxAwp7KKmI13OEO2e-lu9GX4jJlWwSBEkkw3q-vb3mY12r9n58oILbyot_A53vqSVU-chsLqsnF0n0-Ktqt4XAkpnoPVE0YI7fE9cGuMmK0GdwEwZLR_4gsw5jAz5nFqRez3BnKjzq3gwf-n2YoCCKYBeZduVEkhFnR3CUGF7UU30_sV_y6RZJfFTgKLElEAQ_85qe2KL5i9k4g9RUXUwjY019UmhvpOWH-skHDZQ9umbPhL2TB0v9JB48vts9aGCPd81OSBwP1I5Kzb3iKYRJBNVVz5OI1RR79IDt4vw7H4Z0NzvJB5lymr3tO8nVn-gmvF4V_2gIRzk9tcx7B77vrHchJ7xXx4OIUFThR6mFoK1bTzfoaaQsD-EoK6gSOmsvigAf6jG5NXakH6q4PmjhLuMAMoDqG"
 	decryptedtext, _, err = DecryptText(encryptedtext, aesKey)
 	require.NoError(t, err)
 	if decryptedtext != plaintext {
