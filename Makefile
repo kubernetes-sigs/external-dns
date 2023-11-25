@@ -102,7 +102,7 @@ IMG_SBOM      ?= none
 build: build/$(BINARY)
 
 build/$(BINARY): $(SOURCES)
-	CGO_ENABLED=0 go build -o build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
+	CGO_ENABLED=0 go build -C cmd/external-dns -o ../../build/$(BINARY) $(BUILD_FLAGS) -ldflags "$(LDFLAGS)" --tags $(BUILD_TAGS) .
 
 build.push/multiarch: ko
 	BUILD_TAGS=$(BUILD_TAGS) \
@@ -111,7 +111,7 @@ build.push/multiarch: ko
     ko build --tags ${VERSION} --bare --sbom ${IMG_SBOM} \
       --image-label org.opencontainers.image.source="https://github.com/kubernetes-sigs/external-dns" \
       --image-label org.opencontainers.image.revision=$(shell git rev-parse HEAD) \
-      --platform=${IMG_PLATFORM}  --push=${IMG_PUSH} .
+      --platform=${IMG_PLATFORM}  --push=${IMG_PUSH} --preserve-import-paths ./cmd/external-dns
 
 build.image/multiarch:
 	$(MAKE) IMG_PUSH=false build.push/multiarch
