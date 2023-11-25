@@ -43,13 +43,12 @@ providers=(
 )
 
 for p in ${providers[@]}; do
-  file="main_${p}.go"
-  # tail -n +16 "$file" > temp_file && mv temp_file "$file"
-  multiline_text=$(cat <<EOF
-//go:build all || $p
-// +build all $p
-EOF
-)
-echo "$multiline_text" | cat - "$file" > temp_file && mv temp_file "$file"
-  
+  for file in provider/$p/*.go; do
+    echo "Processing file: $file"
+    # ... perform operations on the file ...
+    replace1=""
+    with1="//go:build all \|\| $p\n// +build all $p"
+    sed -i "1i\
+    $with1" "$file"
+  done
 done
