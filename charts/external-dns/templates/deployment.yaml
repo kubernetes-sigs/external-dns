@@ -1,6 +1,5 @@
 ---
 {{- $providername := include "external-dns.providername" . }}
-{{- $provider := (hasKey .Values.provider.images $providername) | ternary "webhook" $providername }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -135,11 +134,16 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- if eq $provider "webhook" }}
-        {{- with .Values.provider }}
-        - name: {{ $providername }}
-          image: {{ get .images .name }}:{{- .version }}
+        {{- if eq $providername "webhook" }}
+        {{- with .Values.provider.webhook }}
+        - name: webhook
+          {{- with .image }}
+          {{- if or (empty .repository) (empty .version) }}
+            {{- fail "ERROR: webhook provider needs an image repository and a version" }}
+          {{- end }}
+          image: {{ .repository }}:{{- .version }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- end }}
           {{- with .env }}
           env:
             {{- toYaml . | nindent 12 }}
@@ -148,15 +152,11 @@ spec:
           args:
             - {{ toYaml . | nindent 12 }}
           {{- end }}
-          ports:
-            - name: http
-              protocol: TCP
-              containerPort: 8888
           livenessProbe:
             {{- toYaml $.Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml $.Values.readinessProbe | nindent 12 }}
-          {{- if or $.Values.secretConfiguration.enabled $.Values.extraVolumeMounts }}
+          {{- if or $.Values.secretConfiguration.enabled .extraVolumeMounts }}
           volumeMounts:
             {{- if $.Values.secretConfiguration.enabled }}
             - name: secrets
@@ -165,7 +165,7 @@ spec:
               subPath: {{ tpl . $ }}
             {{- end }}
             {{- end }}
-            {{- with $.Values.extraVolumeMounts }}
+            {{- with .extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}

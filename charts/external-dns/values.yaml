@@ -222,6 +222,7 @@ provider:
       pullPolicy: IfNotPresent
     env: []
     args: []
+    extraVolumeMounts: []
     resources: {}
     securityContext: {}
 
