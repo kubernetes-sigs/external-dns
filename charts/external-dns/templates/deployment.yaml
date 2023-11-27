@@ -73,6 +73,13 @@ spec:
           image: {{ include "external-dns.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.env }}
+          {{- if eq .Values.provider "pihole" }}
+          envFrom:
+          - secretRef:
+              # Change this if you have a different secret name
+              name: pihole-password
+          {{- end }}
+          {{- with .Values.env }}
           env:
             {{- toYaml . | nindent 12 }}
           {{- end }}
