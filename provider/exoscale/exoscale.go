@@ -33,7 +33,6 @@ import (
 type EgoscaleClientI interface {
 	ListDNSDomainRecords(context.Context, string, string) ([]egoscale.DNSDomainRecord, error)
 	ListDNSDomains(context.Context, string) ([]egoscale.DNSDomain, error)
-	GetDNSDomainRecord(context.Context, string, string, string) (*egoscale.DNSDomainRecord, error)
 	CreateDNSDomainRecord(context.Context, string, string, *egoscale.DNSDomainRecord) (*egoscale.DNSDomainRecord, error)
 	DeleteDNSDomainRecord(context.Context, string, string, *egoscale.DNSDomainRecord) error
 	UpdateDNSDomainRecord(context.Context, string, string, *egoscale.DNSDomainRecord) error
@@ -160,14 +159,9 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 			return err
 		}
 
-		for _, r := range records {
-			if *r.Name != name {
+		for _, record := range records {
+			if *record.Name != name {
 				continue
-			}
-
-			record, err := ep.client.GetDNSDomainRecord(ctx, ep.apiZone, zoneID, *r.ID)
-			if err != nil {
-				return err
 			}
 
 			record.Type = &epoint.RecordType
@@ -177,7 +171,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 				record.TTL = &ttl
 			}
 
-			err = ep.client.UpdateDNSDomainRecord(ctx, ep.apiZone, zoneID, record)
+			err = ep.client.UpdateDNSDomainRecord(ctx, ep.apiZone, zoneID, &record)
 			if err != nil {
 				return err
 			}
@@ -240,11 +234,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 			return nil, err
 		}
 
-		for _, r := range records {
-			record, err := ep.client.GetDNSDomainRecord(ctx, ep.apiZone, *domain.ID, *r.ID)
-			if err != nil {
-				return nil, err
-			}
+		for _, record := range records {
 			switch *record.Type {
 			case "A", "CNAME", "TXT":
 				break
@@ -252,7 +242,7 @@ func (ep *ExoscaleProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 				continue
 			}
 
-			e := endpoint.NewEndpointWithTTL((*record.Name)+"."+(*domain.UnicodeName), *record.Type, endpoint.TTL(*r.TTL), *record.Content)
+			e := endpoint.NewEndpointWithTTL((*record.Name)+"."+(*domain.UnicodeName), *record.Type, endpoint.TTL(*record.TTL), *record.Content)
 			endpoints = append(endpoints, e)
 		}
 	}
