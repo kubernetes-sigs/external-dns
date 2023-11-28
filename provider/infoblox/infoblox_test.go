@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -900,6 +901,33 @@ func TestExtendedRequestMaxResultsBuilder(t *testing.T) {
 	req, _ = requestBuilder.BuildRequest(ibclient.CREATE, obj, "", &ibclient.QueryParams{})
 
 	assert.True(t, req.URL.Query().Get("_max_results") == "")
+}
+
+func TestNewExtensibleAttributes(t *testing.T) {
+
+	startupConfig := StartupConfig{
+		TenantId:      "myTenantId",
+		CloudApiOwned: "True",
+		CMPType:       "myCloudManagedPlatform",
+	}
+	eas, _ := parseExtensibleAttributes(startupConfig)
+	expectedEas := ibclient.EA{
+		"Tenant ID":       "myTenantId",
+		"Cloud API Owned": "True",
+		"CMP Type":        "myCloudManagedPlatform",
+	}
+	equal := reflect.DeepEqual(eas, expectedEas)
+	assert.True(t, equal == true)
+
+	startupConfig = StartupConfig{
+		TenantId:      "",
+		CloudApiOwned: "",
+		CMPType:       "",
+	}
+	eas, _ = parseExtensibleAttributes(startupConfig)
+	expectedEas = ibclient.EA{}
+	equal = reflect.DeepEqual(eas, expectedEas)
+	assert.True(t, equal == true)
 }
 
 func TestGetObject(t *testing.T) {

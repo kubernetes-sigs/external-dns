@@ -18,6 +18,7 @@ package infoblox
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
@@ -62,11 +63,15 @@ type StartupConfig struct {
 	NameRegEx     string
 	CreatePTR     bool
 	CacheDuration int
+	TenantId      string
+	CloudApiOwned string
+	CMPType       string
 }
 
 // ProviderConfig implements the DNS provider for Infoblox.
 type ProviderConfig struct {
 	provider.BaseProvider
+	extAttrs      ibclient.EA
 	client        ibclient.IBConnector
 	domainFilter  endpoint.DomainFilter
 	zoneIDFilter  provider.ZoneIDFilter
@@ -89,6 +94,11 @@ type ExtendedRequestBuilder struct {
 	nameRegEx  string
 	maxResults int
 	ibclient.WapiRequestBuilder
+}
+type extensibleAttributes struct {
+	TenantId      string `json:"Tenant ID,omitempty"`
+	CMPType       string `json:"CMP Type,omitempty"`
+	CloudApiOwned string `json:"Cloud API Owned,omitempty"`
 }
 
 // NewExtendedRequestBuilder returns a ExtendedRequestBuilder which adds
@@ -123,6 +133,22 @@ func (mrb *ExtendedRequestBuilder) BuildRequest(t ibclient.RequestType, obj ibcl
 		req.URL.RawQuery = query.Encode()
 	}
 	return
+}
+
+func parseExtensibleAttributes(ibStartupCfg StartupConfig) (ibclient.EA, error) {
+	b, err := json.Marshal(extensibleAttributes{
+		TenantId:      ibStartupCfg.TenantId,
+		CMPType:       ibStartupCfg.CMPType,
+		CloudApiOwned: ibStartupCfg.CloudApiOwned,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var extensibleAttributes map[string]interface{}
+	if err = json.Unmarshal(b, &extensibleAttributes); err != nil {
+		return nil, err
+	}
+	return ibclient.EA(extensibleAttributes), nil
 }
 
 // NewInfobloxProvider creates a new Infoblox provider.
@@ -162,6 +188,11 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		}
 	}
 
+	extensibleAttributes, err := parseExtensibleAttributes(ibStartupCfg)
+	if err != nil {
+		return nil, err
+	}
+
 	requestor := &ibclient.WapiHttpRequestor{}
 
 	client, err := ibclient.NewConnector(hostCfg, authCfg, transportConfig, requestBuilder, requestor)
@@ -178,6 +209,7 @@ func NewInfobloxProvider(ibStartupCfg StartupConfig) (*ProviderConfig, error) {
 		fqdnRegEx:     ibStartupCfg.FQDNRegEx,
 		createPTR:     ibStartupCfg.CreatePTR,
 		cacheDuration: ibStartupCfg.CacheDuration,
+		extAttrs:      extensibleAttributes,
 	}
 
 	return providerCfg, nil
@@ -535,6 +567,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		obj.Ea = p.extAttrs
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
 			err = p.client.GetObject(obj, "", queryParams, &res)
@@ -552,6 +585,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.PtrdName = ep.DNSName
 		obj.Ipv4Addr = ep.Targets[targetIndex]
 		obj.View = p.view
+		obj.Ea = p.extAttrs
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.PtrdName})
 			err = p.client.GetObject(obj, "", queryParams, &res)
@@ -569,6 +603,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Canonical = ep.Targets[0]
 		obj.View = p.view
+		obj.Ea = p.extAttrs
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
 			err = p.client.GetObject(obj, "", queryParams, &res)
@@ -591,6 +626,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		obj.Name = ep.DNSName
 		obj.Text = ep.Targets[0]
 		obj.View = p.view
+		obj.Ea = p.extAttrs
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": obj.Name})
 			err = p.client.GetObject(obj, "", queryParams, &res)
