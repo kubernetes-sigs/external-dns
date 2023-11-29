@@ -348,7 +348,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -642,7 +642,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -784,7 +784,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(ingressrouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -1114,7 +1114,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -1408,7 +1408,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteTCPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
@@ -1550,7 +1550,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			_, err = fakeDynamicClient.Resource(oldIngressrouteUDPGVR).Namespace(defaultTraefikNamespace).Create(context.Background(), &ir, metav1.CreateOptions{})
 			assert.NoError(t, err)
 
-			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation)
+			source, err := NewTraefikSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, defaultTraefikNamespace, "kubernetes.io/ingress.class=traefik", ti.ignoreHostnameAnnotation, false, false)
 			assert.NoError(t, err)
 			assert.NotNil(t, source)
 
