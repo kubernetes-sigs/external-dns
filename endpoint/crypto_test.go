@@ -35,13 +35,13 @@ func TestEncrypt(t *testing.T) {
 	}
 
 	// Verify that decrypt returns an error and empty data if wrong AES encryption key is used
-	decryptedtext, _, err = DecryptText(encryptedtext, []byte("s'J!jD`].LC?g&Oa11AgTub,j48ts/96"))
+	decryptedtext, _, err = DecryptText(encryptedtext, []byte("ihjatU7dkGyKQvGD6OjXRRZ1qnEDyUzqeLkwcjcyfFY="))
 	require.Error(t, err)
 	if decryptedtext != "" {
 		t.Error("Data decryption failed, empty string should be as result")
 	}
 
-	// Verify that decrypt returns an error and empty data if unencrypted input is is supplied
+	// Verify that decrypt returns an error and empty data if unencrypted input is supplied
 	decryptedtext, _, err = DecryptText(plaintext, aesKey)
 	require.Error(t, err)
 	if decryptedtext != "" {
