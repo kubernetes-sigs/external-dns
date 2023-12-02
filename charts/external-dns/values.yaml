@@ -225,6 +225,32 @@ provider:
     extraVolumeMounts: []
     resources: {}
     securityContext: {}
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: webhook-http
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 2
+      successThreshold: 1
+    readinessProbe:
+      httpGet:
+        path: /healthz
+        port: webhook-http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 6
+      successThreshold: 1
+    serviceMonitor:
+      # interval: 10s
+      # scheme: ""
+      # tlsConfig: {}
+      # bearerTokenFile:
+      # scrapeTimeout: 30s
+      metricRelabelings: []
+      relabelings: []
 
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []

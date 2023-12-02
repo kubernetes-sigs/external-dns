@@ -27,7 +27,14 @@ ExternalDNS will also make requests to the `/` endpoint for negotiation and for 
 
 The server needs to respond to those requests by reading the `Accept` header and responding with a corresponding `Content-Type` header specifying the supported media type format and version.
 
+The default recommended port is 8888, and should listen only on localhost (ie: only accessible for k8s probes and external-dns).
+
 **NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
+
+
+## Metrics support
+
+The metrics should listen ":8080" on `/metrics` following [Open Metrics](https://github.com/OpenObservability/OpenMetrics) format.
 
 ## Provider registry
 

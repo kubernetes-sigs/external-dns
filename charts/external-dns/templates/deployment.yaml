@@ -152,10 +152,17 @@ spec:
           args:
             - {{ toYaml . | nindent 12 }}
           {{- end }}
+          ports:
+            - name: webhook-http
+              protocol: TCP
+              containerPort: 8888
+            - name: webhook-metrics
+              protocol: TCP
+              containerPort: 8080
           livenessProbe:
-            {{- toYaml $.Values.livenessProbe | nindent 12 }}
+            {{- toYaml .livenessProbe | nindent 12 }}
           readinessProbe:
-            {{- toYaml $.Values.readinessProbe | nindent 12 }}
+            {{- toYaml .readinessProbe | nindent 12 }}
           {{- if or $.Values.secretConfiguration.enabled .extraVolumeMounts }}
           volumeMounts:
             {{- if $.Values.secretConfiguration.enabled }}
