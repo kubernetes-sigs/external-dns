@@ -1540,7 +1540,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"))
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("zXQDtIgJvPMWpySWeOZJQ8K18V1J4KikQRkZq_JldL0="))
 	records, _ := r.Records(ctx)
 	changes := &plan.Changes{
 		Delete: records,
