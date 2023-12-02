@@ -23,7 +23,7 @@ require (
 	github.com/cloudflare/cloudflare-go v0.82.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
-	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba
+	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
 	github.com/digitalocean/godo v1.106.0
 	github.com/dnsimple/dnsimple-go v1.5.1
 	github.com/exoscale/egoscale v0.100.3
