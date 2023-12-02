@@ -44,7 +44,7 @@ func GenerateNonce() ([]byte, error) {
 func EncryptText(text string, aesKey []byte, nonceEncoded []byte) (string, error) {
 	decodedaesKey, err := base64.URLEncoding.DecodeString(string(aesKey))
 	if err != nil {
-		fmt.Println("Error decoding base64 when encrypt text:", err)
+		fmt.Println("Error decoding base64:", err)
 		return "", err
 	}
 	block, err := aes.NewCipher(decodedaesKey)
