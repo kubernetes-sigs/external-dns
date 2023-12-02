@@ -1,7 +1,0 @@
-image:
-  repository: localhost:5001/external-dns
-  tag: 8bf0e8b8-dirty
-  pullPolicy: Always
-
-provider: inmemory
-source: service
