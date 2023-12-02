@@ -99,7 +99,7 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
 }
 
 func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
-	const searchPattern = "AUTHORITY SECTION:"
+	const searchPattern = "UPDATE SECTION:"
 	authoritySectionOffset := strings.Index(msg.String(), searchPattern)
 	return strings.Split(strings.TrimSpace(msg.String()[authoritySectionOffset+len(searchPattern):]), "\n")
 }
