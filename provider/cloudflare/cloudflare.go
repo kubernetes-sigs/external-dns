@@ -321,7 +321,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 
 		var failedChange bool
 		for _, change := range changes {
-
 			logFields := log.Fields{
 				"record": change.ResourceRecord.Name,
 				"type":   change.ResourceRecord.Type,
@@ -369,7 +368,6 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
 			}
-
 		}
 
 		if failedChange {
