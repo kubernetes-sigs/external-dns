@@ -289,6 +289,11 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 			continue
 		}
 
+		if len(service.Spec.ExternalIPs) > 0 {
+			targets = append(targets, service.Spec.ExternalIPs...)
+			continue
+		}
+
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)
