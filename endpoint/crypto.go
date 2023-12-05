@@ -37,7 +37,7 @@ func GenerateNonce() ([]byte, error) {
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
-	return []byte(base64.StdEncoding.EncodeToString(nonce)), nil
+	return []byte(base64.URLEncoding.EncodeToString(nonce)), nil
 }
 
 // EncryptText gzip input data and encrypts it using the supplied AES key
