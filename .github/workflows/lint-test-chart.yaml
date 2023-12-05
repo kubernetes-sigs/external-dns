@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Artifact Hub CLI
-        uses: action-stars/install-tool-from-github-release@58e2dd20166c0eb19ab9ac4d0966c930a647ee69 # v0.2.0
+        uses: action-stars/install-tool-from-github-release@b21a01813213cbbf482eeceda07ad03b41b754d1 # v0.2.1
         with:
           github_token: ${{ github.token }}
           owner: artifacthub
