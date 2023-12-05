@@ -67,7 +67,7 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
 
-	aesKey := []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^")
+	aesKey := []byte("FNj6zBS2AJ34FoHu6gHHAD0it3gzFC1dvPKbDrx1X5Q=")
 	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	require.NoError(t, err)
 
