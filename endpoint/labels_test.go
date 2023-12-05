@@ -44,10 +44,10 @@ func (suite *LabelsSuite) SetupTest() {
 		"owner":    "foo-owner",
 		"resource": "foo-resource",
 	}
-	suite.aesKey = []byte(")K_Fy|?Z.64#UuHm`}[d!GC%WJM_fs{_")
+	suite.aesKey = []byte("UHopdKnIiiLPQWo3DXVpU5crYdM7pV1nkzD0TJLqJ4M=")
 	suite.fooAsText = "heritage=external-dns,external-dns/owner=foo-owner,external-dns/resource=foo-resource"
 	suite.fooAsTextWithQuotes = fmt.Sprintf(`"%s"`, suite.fooAsText)
-	suite.fooAsTextEncrypted = `+lvP8q9KHJ6BS6O81i2Q6DLNdf2JSKy8j/gbZKviTZlGYj7q+yDoYMgkQ1hPn6urtGllM5bfFMcaaHto52otQtiOYrX8990J3kQqg4s47m3bH3Ejl8RSxSSuWJM3HJtPghQzYg0/LSOsdQ0=`
+	suite.fooAsTextEncrypted = `AAAAAAAAAAAAAAAAGcAGgNYa7U2O1rc_MESQ6w_p2KxI1X6mXnnU8g8ls2v19nR9Nqt-wWd8ZyqtvU8Y8OIKlzg8ax1SAlL0KWX-gN6jIi8OdK9vG1a_2KgKZqhEaxcYgvvgPaKALDuAdtY=`
 	suite.fooAsTextWithQuotesEncrypted = fmt.Sprintf(`"%s"`, suite.fooAsTextEncrypted)
 	suite.barTextAsMap = map[string]string{
 		"owner":    "bar-owner",
