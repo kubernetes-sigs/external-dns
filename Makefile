@@ -45,7 +45,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
 golangci-lint:
-	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.53.3
+	@command -v golangci-lint > /dev/null || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
 
 # Run the golangci-lint tool
 .PHONY: go-lint
