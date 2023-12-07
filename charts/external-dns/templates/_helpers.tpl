@@ -81,4 +81,3 @@ Provider name, Keeps backward compatibility on provider
 {{- .Values.provider.name }}
 {{- end }}
 {{- end }}
-{{- end }}

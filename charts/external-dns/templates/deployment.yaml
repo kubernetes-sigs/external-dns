@@ -1,5 +1,5 @@
 ---
-{{- $providername := include "external-dns.providername" . }}
+{{- $providerName := include "external-dns.providerName" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -105,7 +105,7 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
-            - --provider={{ include "external-dns.providerName" . }}
+            - --provider={{ $providerName }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
@@ -134,7 +134,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-        {{- if eq $providername "webhook" }}
+        {{- if eq $providerName "webhook" }}
         {{- with .Values.provider.webhook }}
         - name: webhook
           {{- with .image }}
