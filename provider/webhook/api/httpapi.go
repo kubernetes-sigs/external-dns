@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package api
 
 import (
 	"context"
@@ -30,6 +30,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
+	ContentTypeHeader         = "Content-Type"
+)
+
 type WebhookServer struct {
 	Provider provider.Provider
 }
@@ -43,7 +48,7 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+		w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(records); err != nil {
 			log.Errorf("Failed to encode records: %v", err)
@@ -58,7 +63,7 @@ func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request)
 		}
 		err := p.Provider.ApplyChanges(context.Background(), &changes)
 		if err != nil {
-			log.Errorf("Failed to Apply Changes: %v", err)
+			log.Errorf("Failed to apply changes: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -83,7 +88,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 	pve, err := p.Provider.AdjustEndpoints(pve)
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)
@@ -97,7 +102,7 @@ func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.
 }
 
 func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 	json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
 }
 
