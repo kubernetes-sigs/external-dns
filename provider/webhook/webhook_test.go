@@ -26,12 +26,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
+	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
 func TestInvalidDomainFilter(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.WriteHeader(200)
 			return
 		}
@@ -50,7 +51,7 @@ func TestValidDomainfilter(t *testing.T) {
 	domainFilter := endpoint.NewDomainFilter([]string{"example.com"})
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			json.NewEncoder(w).Encode(domainFilter)
 			return
 		}
@@ -65,7 +66,7 @@ func TestValidDomainfilter(t *testing.T) {
 func TestRecords(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
@@ -89,7 +90,7 @@ func TestRecords(t *testing.T) {
 func TestRecordsWithErrors(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
@@ -108,7 +109,7 @@ func TestApplyChanges(t *testing.T) {
 	successfulApplyChanges := true
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
@@ -135,7 +136,7 @@ func TestApplyChanges(t *testing.T) {
 func TestAdjustEndpoints(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}
@@ -188,7 +189,7 @@ func TestAdjustEndpoints(t *testing.T) {
 func TestAdjustendpointsWithError(t *testing.T) {
 	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+			w.Header().Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 			w.Write([]byte(`{}`))
 			return
 		}

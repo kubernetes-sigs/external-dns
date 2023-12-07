@@ -96,6 +96,7 @@ var canonicalHostedZones = map[string]string{
 	"me-central-1.elb.amazonaws.com":      "Z08230872XQRWHG2XF6I",
 	"me-south-1.elb.amazonaws.com":        "ZS929ML54UICD",
 	"af-south-1.elb.amazonaws.com":        "Z268VQBMOI5EKX",
+	"il-central-1.elb.amazonaws.com":      "Z09170902867EHPV2DABU",
 	// Network Load Balancers
 	"elb.us-east-2.amazonaws.com":         "ZLMOA37VPKANP",
 	"elb.us-east-1.amazonaws.com":         "Z26RNL4JYFTOTI",
@@ -128,6 +129,7 @@ var canonicalHostedZones = map[string]string{
 	"elb.me-central-1.amazonaws.com":      "Z00282643NTTLPANJJG2P",
 	"elb.me-south-1.amazonaws.com":        "Z3QSRYVP46NYYV",
 	"elb.af-south-1.amazonaws.com":        "Z203XCE67M25HM",
+	"elb.il-central-1.amazonaws.com":      "Z0313266YDI6ZRHTGQY4",
 	// Global Accelerator
 	"awsglobalaccelerator.com": "Z2BJ6XQ5FK7U4H",
 	// Cloudfront and AWS API Gateway edge-optimized endpoints
