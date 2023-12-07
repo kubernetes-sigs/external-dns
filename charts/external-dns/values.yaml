@@ -88,7 +88,7 @@ dnsPolicy:
 # -- [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition.
 initContainers: []
 
-# -- [Security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) for the `external-dns` container.
+# -- [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) for the `external-dns` container.
 # @default -- See _values.yaml_
 securityContext:
   privileged: false
@@ -115,7 +115,7 @@ livenessProbe:
   failureThreshold: 2
   successThreshold: 1
 
-# -- Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
+# -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
 # @default -- See _values.yaml_
 readinessProbe:
   httpGet:
@@ -213,18 +213,29 @@ txtSuffix:
 domainFilters: []
 
 provider:
-  #  -- _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar, using webhook.image references
+  # -- (string) _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar, using webhook.image references.
   name: aws
   webhook:
     image:
+      # -- (string) Image repository for the `webhook` container.
       repository:
+      # -- (string) Image tag for the `webhook` container.
       tag:
+      # -- Image pull policy for the `webhook` container.
       pullPolicy: IfNotPresent
+    # -- [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container.
     env: []
+    # -- Extra arguments to provide for the `webhook` container.
     args: []
+    # -- Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container.
     extraVolumeMounts: []
+    # -- [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container.
     resources: {}
+    # -- [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) for the `webhook` container.
+    # @default -- See _values.yaml_
     securityContext: {}
+    # -- [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container.
+    # @default -- See _values.yaml_
     livenessProbe:
       httpGet:
         path: /healthz
@@ -234,6 +245,8 @@ provider:
       timeoutSeconds: 5
       failureThreshold: 2
       successThreshold: 1
+    # -- [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container.
+    # @default -- See _values.yaml_
     readinessProbe:
       httpGet:
         path: /healthz
@@ -243,6 +256,8 @@ provider:
       timeoutSeconds: 5
       failureThreshold: 6
       successThreshold: 1
+    # -- Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container.
+    # @default -- See _values.yaml_
     serviceMonitor:
       # interval: 10s
       # scheme: ""
