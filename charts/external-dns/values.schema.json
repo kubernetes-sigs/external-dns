@@ -3,7 +3,19 @@
   "type": "object",
   "properties": {
     "provider": {
-      "type": "string"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      ]
     },
     "extraArgs": {
       "type": "array",
@@ -14,8 +26,20 @@
     "secretConfiguration": {
       "type": "object",
       "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
         "mountPath": {
-          "type": "string"
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subPath": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "data": {
           "type": "object",

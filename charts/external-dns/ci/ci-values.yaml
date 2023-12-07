@@ -1,1 +1,2 @@
-provider: inmemory
+provider:
+  name: inmemory
