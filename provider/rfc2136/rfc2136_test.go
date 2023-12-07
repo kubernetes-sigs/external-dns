@@ -48,7 +48,7 @@ func newStub() *rfc2136Stub {
 
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 	log.Info(msg.String())
-	lines := extractAuthoritySectionFromMessage(msg)
+	lines := extractUpdateSectionFromMessage(msg)
 	for _, line := range lines {
 		// break at first empty line
 		if len(strings.TrimSpace(line)) == 0 {
@@ -98,10 +98,10 @@ func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
 	return NewRfc2136Provider("", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, stub)
 }
 
-func extractAuthoritySectionFromMessage(msg fmt.Stringer) []string {
+func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
 	const searchPattern = "UPDATE SECTION:"
-	authoritySectionOffset := strings.Index(msg.String(), searchPattern)
-	return strings.Split(strings.TrimSpace(msg.String()[authoritySectionOffset+len(searchPattern):]), "\n")
+	updateSectionOffset := strings.Index(msg.String(), searchPattern)
+	return strings.Split(strings.TrimSpace(msg.String()[updateSectionOffset+len(searchPattern):]), "\n")
 }
 
 // TestRfc2136GetRecordsMultipleTargets simulates a single record with multiple targets.
@@ -241,7 +241,7 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), p)
 	assert.NoError(t, err)
 
-	createRecords := extractAuthoritySectionFromMessage(stub.createMsgs[0])
+	createRecords := extractUpdateSectionFromMessage(stub.createMsgs[0])
 	assert.Equal(t, 3, len(createRecords))
 	assert.True(t, strings.Contains(createRecords[0], "v1.foo.com"))
 	assert.True(t, strings.Contains(createRecords[0], "2.1.1.1"))
