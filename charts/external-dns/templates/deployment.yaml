@@ -75,8 +75,7 @@ spec:
           image: {{ include "external-dns.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.env }}
-          env:
-            {{- toYaml . | nindent 12 }}
+          env: {{- toYaml . | nindent 12 }}
           {{- end }}
           args:
             - --log-level={{ .Values.logLevel }}
@@ -137,13 +136,8 @@ spec:
         {{- if eq $providerName "webhook" }}
         {{- with .Values.provider.webhook }}
         - name: webhook
-          {{- with .image }}
-          {{- if or (empty .repository) (empty .tag) }}
-            {{- fail "ERROR: webhook provider needs an image repository and a tag" }}
-          {{- end }}
           image: {{ include "external-dns.webhookImage" . }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
-          {{- end }}
           {{- with .env }}
           env:
             {{- toYaml . | nindent 12 }}
