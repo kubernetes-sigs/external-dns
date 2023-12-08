@@ -239,7 +239,7 @@ provider:
     livenessProbe:
       httpGet:
         path: /healthz
-        port: webhook-http
+        port: http-webhook
       initialDelaySeconds: 10
       periodSeconds: 10
       timeoutSeconds: 5
@@ -250,7 +250,7 @@ provider:
     readinessProbe:
       httpGet:
         path: /healthz
-        port: webhook-http
+        port: http-webhook
       initialDelaySeconds: 5
       periodSeconds: 10
       timeoutSeconds: 5
