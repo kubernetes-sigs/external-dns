@@ -1,5 +1,5 @@
 {{- if .Values.serviceMonitor.enabled -}}
-{{- $providername := include "external-dns.providername" . }}
+{{- $providerName := include "external-dns.providerName" . }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -49,7 +49,7 @@ spec:
       relabelings:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-    {{- if eq $providername "webhook" }}
+    {{- if eq $providerName "webhook" }}
     {{- with .Values.provider.webhook.serviceMonitor }}
     - port: webhook-metrics
       path: /metrics

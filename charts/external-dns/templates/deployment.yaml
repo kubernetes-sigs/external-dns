@@ -138,10 +138,10 @@ spec:
         {{- with .Values.provider.webhook }}
         - name: webhook
           {{- with .image }}
-          {{- if or (empty .repository) (empty .version) }}
-            {{- fail "ERROR: webhook provider needs an image repository and a version" }}
+          {{- if or (empty .repository) (empty .tag) }}
+            {{- fail "ERROR: webhook provider needs an image repository and a tag" }}
           {{- end }}
-          image: {{ .repository }}:{{- .version }}
+          image: {{ include "external-dns.webhookImage" . }}
           imagePullPolicy: {{ $.Values.image.pullPolicy }}
           {{- end }}
           {{- with .env }}
@@ -153,10 +153,10 @@ spec:
             - {{ toYaml . | nindent 12 }}
           {{- end }}
           ports:
-            - name: webhook-http
+            - name: http-webhook
               protocol: TCP
               containerPort: 8888
-            - name: webhook-metrics
+            - name: http-webhook-metrics
               protocol: TCP
               containerPort: 8080
           livenessProbe:
