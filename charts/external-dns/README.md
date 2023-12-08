@@ -40,7 +40,7 @@ provider with all additional configuration being set via the `extraArgs` value.
 
 | Provider               | Supported  |
 |------------------------|------------|
-| `webhook`              | ❌         |
+| `webhook`              | ✅         |
 
 ## Namespaced Scoped Installation
 
@@ -108,7 +108,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
 | policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
-| provider.name | string | `"aws"` | _ExternalDNS_ provider name. When the provider is not in-tree, it will add a sidecar, using webhook.image references. |
+| provider.name | string | `"aws"` | _ExternalDNS_ provider name. When the provider is `webhook` it will add a sidecar using the `webhook` values. |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
 | provider.webhook.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
 | provider.webhook.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
@@ -118,7 +118,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | provider.webhook.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | provider.webhook.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
 | provider.webhook.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
-| provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) for the `webhook` container. |
+| provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
 | provider.webhook.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container. |
 | rbac.additionalPermissions | list | `[]` | Additional rules to add to the `ClusterRole`. |
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |
@@ -130,7 +130,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | secretConfiguration.enabled | bool | `false` | If `true`, create a `Secret` to store sensitive provider configuration. |
 | secretConfiguration.mountPath | string | `nil` | Mount path for the `Secret`, this can be templated. |
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
-| securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context) for the `external-dns` container. |
+| securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container. |
 | service.annotations | object | `{}` | Service annotations. |
 | service.port | int | `7979` | Service HTTP port. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. |
