@@ -29,7 +29,7 @@ spec:
       {{- if or .Values.secretConfiguration.enabled .Values.podAnnotations }}
       annotations:
         {{- if .Values.secretConfiguration.enabled }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        checksum/secret: {{ tpl (toYaml .Values.secretConfiguration.data) . | sha256sum }}
         {{- end }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
