@@ -256,7 +256,11 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	for c, chunk := range chunkBy(changes.Create, r.batchChangeSize) {
 		log.Debugf("Processing batch %d of create changes", c)
 
-		m := new(dns.Msg)
+		m := make(map[string]*dns.Msg)
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			m[z] = new(dns.Msg)
+		}
 		for _, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
@@ -265,18 +269,21 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
-			m.SetUpdate(zone)
+			m[zone].SetUpdate(zone)
 
-			r.AddRecord(m, ep)
+			r.AddRecord(m[zone], ep)
 		}
 
 		// only send if there are records available
-		if len(m.Ns) > 0 {
-			err := r.actions.SendMessage(m)
-			if err != nil {
-				log.Errorf("RFC2136 update failed: %v", err)
-				errors = append(errors, err)
-				continue
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			if len(m[z].Ns) > 0 {
+				err := r.actions.SendMessage(m[z])
+				if err != nil {
+					log.Errorf("RFC2136 update failed: %v", err)
+					errors = append(errors, err)
+					continue
+				}
 			}
 		}
 	}
@@ -284,7 +291,11 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	for c, chunk := range chunkBy(changes.UpdateNew, r.batchChangeSize) {
 		log.Debugf("Processing batch %d of update changes", c)
 
-		m := new(dns.Msg)
+		m := make(map[string]*dns.Msg)
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			m[z] = new(dns.Msg)
+		}
 
 		for i, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
@@ -294,18 +305,21 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
-			m.SetUpdate(zone)
+			m[zone].SetUpdate(zone)
 
-			r.UpdateRecord(m, changes.UpdateOld[i], ep)
+			r.UpdateRecord(m[zone], changes.UpdateOld[i], ep)
 		}
 
 		// only send if there are records available
-		if len(m.Ns) > 0 {
-			err := r.actions.SendMessage(m)
-			if err != nil {
-				log.Errorf("RFC2136 update failed: %v", err)
-				errors = append(errors, err)
-				continue
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			if len(m[z].Ns) > 0 {
+				err := r.actions.SendMessage(m[z])
+				if err != nil {
+					log.Errorf("RFC2136 update failed: %v", err)
+					errors = append(errors, err)
+					continue
+				}
 			}
 		}
 	}
@@ -313,8 +327,11 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	for c, chunk := range chunkBy(changes.Delete, r.batchChangeSize) {
 		log.Debugf("Processing batch %d of delete changes", c)
 
-		m := new(dns.Msg)
-
+		m := make(map[string]*dns.Msg)
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			m[z] = new(dns.Msg)
+		}
 		for _, ep := range chunk {
 			if !r.domainFilter.Match(ep.DNSName) {
 				log.Debugf("Skipping record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
@@ -323,20 +340,24 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 
 			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
-			m.SetUpdate(zone)
+			m[zone].SetUpdate(zone)
 
-			r.RemoveRecord(m, ep)
+			r.RemoveRecord(m[zone], ep)
 		}
 
 		// only send if there are records available
-		if len(m.Ns) > 0 {
-			err := r.actions.SendMessage(m)
-			if err != nil {
-				log.Errorf("RFC2136 update failed: %v", err)
-				errors = append(errors, err)
-				continue
+		for _, z := range r.zoneNames {
+			z = dns.Fqdn(z)
+			if len(m[z].Ns) > 0 {
+				err := r.actions.SendMessage(m[z])
+				if err != nil {
+					log.Errorf("RFC2136 update failed: %v", err)
+					errors = append(errors, err)
+					continue
+				}
 			}
 		}
+
 	}
 
 	if len(errors) > 0 {
