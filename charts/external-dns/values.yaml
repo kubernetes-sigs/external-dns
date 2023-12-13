@@ -213,7 +213,7 @@ txtSuffix:
 domainFilters: []
 
 provider:
-  # -- (string) _ExternalDNS_ provider name. When the provider is `webhook` it will add a sidecar using the `webhook` values.
+  # -- _ExternalDNS_ provider name. When the provider is `webhook` it will add a sidecar using the `webhook` values.
   name: aws
   webhook:
     image:

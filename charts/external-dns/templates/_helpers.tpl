@@ -87,9 +87,9 @@ The image to use for optional webhook sidecar
 */}}
 {{- define "external-dns.webhookImage" -}}
 {{- with .image }}
-  {{- if or (empty .repository) (empty .tag) }}
-    {{- fail "ERROR: webhook provider needs an image repository and a tag" }}
-  {{- end }}
-  {{- .repository }}:{{- .tag }}
+{{- if or (empty .repository) (empty .tag) }}
+{{- fail "ERROR: webhook provider needs an image repository and a tag" }}
+{{- end }}
+{{- printf "%s:%s" .repository .tag }}
 {{- end }}
 {{- end }}
