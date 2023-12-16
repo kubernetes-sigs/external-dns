@@ -78,7 +78,7 @@ crd: controller-gen
 # The verify target runs tasks similar to the CI tasks, but without code coverage
 .PHONY: test
 test:
-	go test -race -coverprofile=profile.cov ./...
+	go test -race --tags $(BUILD_TAGS) -coverprofile=profile.cov ./...
 
 # The build targets allow to build the binary and container image
 .PHONY: build
