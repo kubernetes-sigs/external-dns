@@ -1,3 +1,5 @@
+//go:build all || oci
+// +build all oci
 /*
 Copyright 2023 The Kubernetes Authors.
 
