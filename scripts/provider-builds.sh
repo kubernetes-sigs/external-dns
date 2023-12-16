@@ -38,7 +38,6 @@ providers=(
  coredns
  rdns
  exoscale
- inmemory
  designate
  pdns
  oci
