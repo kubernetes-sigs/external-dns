@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
-	"sigs.k8s.io/external-dns/provider/webhook"
+	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -172,7 +172,7 @@ func main() {
 	log.Infof("using provider %s", cfg.Provider)
 
 	if cfg.WebhookServer {
-		webhook.StartHTTPApi(p, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
+		webhookapi.StartHTTPApi(p, nil, cfg.WebhookProviderReadTimeout, cfg.WebhookProviderWriteTimeout, "127.0.0.1:8888")
 		os.Exit(0)
 	}
 
