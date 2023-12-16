@@ -1,5 +1,3 @@
-//go:build all || inmemory
-// +build all inmemory
 
 package main
 
