@@ -1,3 +1,5 @@
+//go:build all || bluecat
+// +build all bluecat
 /*
 Copyright 2020 The Kubernetes Authors.
 
@@ -15,6 +17,7 @@ limitations under the License.
 */
 // TODO: add logging
 // TODO: add timeouts
+
 package api
 
 import (
