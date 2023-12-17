@@ -1,3 +1,5 @@
+//go:build all || dyn
+// +build all dyn
 /*
 Copyright 2020 The Kubernetes Authors.
 
