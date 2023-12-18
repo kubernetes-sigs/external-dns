@@ -1,4 +1,3 @@
----
 {{- $providerName := include "external-dns.providerName" . }}
 apiVersion: apps/v1
 kind: Deployment
