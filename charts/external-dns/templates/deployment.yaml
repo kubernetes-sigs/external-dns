@@ -74,7 +74,8 @@ spec:
           image: {{ include "external-dns.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.env }}
-          env: {{- toYaml . | nindent 12 }}
+          env:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           args:
             - --log-level={{ .Values.logLevel }}
