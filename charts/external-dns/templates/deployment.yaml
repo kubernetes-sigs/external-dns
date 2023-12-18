@@ -103,6 +103,9 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
+            {{- range .Values.zoneIdFilters }}
+            - --zone-id-filter={{ . }}
+            {{- end }}
             - --provider={{ include "external-dns.providerName" . }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}

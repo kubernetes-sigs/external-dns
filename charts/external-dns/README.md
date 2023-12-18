@@ -148,6 +148,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | txtOwnerId | string | `nil` | Specify an identifier for this instance of _ExternalDNS_ wWhen using a registry other than `noop`. |
 | txtPrefix | string | `nil` | Specify a prefix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtSuffix`. |
 | txtSuffix | string | `nil` | Specify a suffix for the domain names of TXT records created for the `txt` registry. Mutually exclusive with `txtPrefix`. |
+| zoneIdFilters | list | `[]` |  Limit possible target zones by ID.|
 
 ----------------------------------------------
 
