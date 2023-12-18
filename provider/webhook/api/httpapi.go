@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package api
 
 import (
 	"context"
@@ -30,20 +30,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	MediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
+	ContentTypeHeader         = "Content-Type"
+)
+
 type WebhookServer struct {
-	provider provider.Provider
+	Provider provider.Provider
 }
 
-func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) RecordsHandler(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		records, err := p.provider.Records(context.Background())
+		records, err := p.Provider.Records(context.Background())
 		if err != nil {
 			log.Errorf("Failed to get Records: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
+		w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(records); err != nil {
 			log.Errorf("Failed to encode records: %v", err)
@@ -56,9 +61,9 @@ func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err := p.provider.ApplyChanges(context.Background(), &changes)
+		err := p.Provider.ApplyChanges(context.Background(), &changes)
 		if err != nil {
-			log.Errorf("Failed to Apply Changes: %v", err)
+			log.Errorf("Failed to apply changes: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -70,7 +75,7 @@ func (p *WebhookServer) recordsHandler(w http.ResponseWriter, req *http.Request)
 	}
 }
 
-func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
+func (p *WebhookServer) AdjustEndpointsHandler(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		log.Errorf("Unsupported method %s", req.Method)
 		w.WriteHeader(http.StatusBadRequest)
@@ -83,8 +88,8 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	pve, err := p.provider.AdjustEndpoints(pve)
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
+	pve, err := p.Provider.AdjustEndpoints(pve)
 	if err != nil {
 		log.Errorf("Failed to call adjust endpoints: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -96,9 +101,9 @@ func (p *WebhookServer) adjustEndpointsHandler(w http.ResponseWriter, req *http.
 	}
 }
 
-func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	json.NewEncoder(w).Encode(p.provider.GetDomainFilter())
+func (p *WebhookServer) NegotiateHandler(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set(ContentTypeHeader, MediaTypeFormatAndVersion)
+	json.NewEncoder(w).Encode(p.Provider.GetDomainFilter())
 }
 
 // StartHTTPApi starts a HTTP server given any provider.
@@ -111,13 +116,13 @@ func (p *WebhookServer) negotiateHandler(w http.ResponseWriter, req *http.Reques
 // - /adjustendpoints (POST): executes the AdjustEndpoints method
 func StartHTTPApi(provider provider.Provider, startedChan chan struct{}, readTimeout, writeTimeout time.Duration, providerPort string) {
 	p := WebhookServer{
-		provider: provider,
+		Provider: provider,
 	}
 
 	m := http.NewServeMux()
-	m.HandleFunc("/", p.negotiateHandler)
-	m.HandleFunc("/records", p.recordsHandler)
-	m.HandleFunc("/adjustendpoints", p.adjustEndpointsHandler)
+	m.HandleFunc("/", p.NegotiateHandler)
+	m.HandleFunc("/records", p.RecordsHandler)
+	m.HandleFunc("/adjustendpoints", p.AdjustEndpointsHandler)
 
 	s := &http.Server{
 		Addr:         providerPort,

@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the option to explicitly enable or disable service account token automounting. ([#3983](https://github.com/kubernetes-sigs/external-dns/pull/3983)) [@gilles-gosuin](https://github.com/gilles-gosuin)
 - Added the option to configure revisionHistoryLimit on the K8s Deployment resource. ([#4008](https://github.com/kubernetes-sigs/external-dns/pull/4008)) [@arnisoph](https://github.com/arnisoph)
 
+### Changed
+
+- Avoid unnecessary pod restart on each helm chart version. ([#4103](https://github.com/kubernetes-sigs/external-dns/pull/4103)) [@jkroepke](https://github.com/jkroepke)
+
 ## [v1.13.1] - 2023-09-07
 
 ### Added

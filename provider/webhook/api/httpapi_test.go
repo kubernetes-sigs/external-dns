@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package webhook
+package api
 
 import (
 	"bytes"
@@ -81,11 +81,11 @@ func TestRecordsHandlerRecords(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{
+		Provider: &FakeWebhookProvider{
 			domainFilter: endpoint.NewDomainFilter([]string{"foo.bar.com"}),
 		},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	// require that the res has the same endpoints as the records slice
@@ -103,11 +103,11 @@ func TestRecordsHandlerRecordsWithErrors(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{
+		Provider: &FakeWebhookProvider{
 			err: fmt.Errorf("error"),
 		},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }
@@ -117,9 +117,9 @@ func TestRecordsHandlerApplyChangesWithBadRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
@@ -143,9 +143,9 @@ func TestRecordsHandlerApplyChangesWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusNoContent, res.StatusCode)
 }
@@ -169,11 +169,11 @@ func TestRecordsHandlerApplyChangesWithErrors(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{
+		Provider: &FakeWebhookProvider{
 			err: fmt.Errorf("error"),
 		},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
 }
@@ -183,9 +183,9 @@ func TestRecordsHandlerWithWrongHTTPMethod(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{},
 	}
-	providerAPIServer.recordsHandler(w, req)
+	providerAPIServer.RecordsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
@@ -195,15 +195,15 @@ func TestAdjustEndpointsHandlerWithInvalidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{},
 	}
-	providerAPIServer.adjustEndpointsHandler(w, req)
+	providerAPIServer.AdjustEndpointsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusBadRequest, res.StatusCode)
 
 	req = httptest.NewRequest(http.MethodGet, "/adjustendpoints", nil)
 
-	providerAPIServer.adjustEndpointsHandler(w, req)
+	providerAPIServer.AdjustEndpointsHandler(w, req)
 	res = w.Result()
 	require.Equal(t, http.StatusBadRequest, res.StatusCode)
 }
@@ -226,9 +226,9 @@ func TestAdjustEndpointsHandlerWithValidRequest(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{},
+		Provider: &FakeWebhookProvider{},
 	}
-	providerAPIServer.adjustEndpointsHandler(w, req)
+	providerAPIServer.AdjustEndpointsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusOK, res.StatusCode)
 	require.NotNil(t, res.Body)
@@ -252,11 +252,11 @@ func TestAdjustEndpointsHandlerWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	providerAPIServer := &WebhookServer{
-		provider: &FakeWebhookProvider{
+		Provider: &FakeWebhookProvider{
 			err: fmt.Errorf("error"),
 		},
 	}
-	providerAPIServer.adjustEndpointsHandler(w, req)
+	providerAPIServer.AdjustEndpointsHandler(w, req)
 	res := w.Result()
 	require.Equal(t, http.StatusInternalServerError, res.StatusCode)
 	require.NotNil(t, res.Body)
