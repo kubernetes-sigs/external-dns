@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"net/netip"
 	"sort"
 	"strings"
 	"text/template"
@@ -486,39 +487,89 @@ func gwProtocolMatches(a, b v1.ProtocolType) bool {
 }
 
 // gwMatchingHost returns the most-specific overlapping host and a bool indicating if one was found.
-// For example, if one host is "*.foo.com" and the other is "bar.foo.com", "bar.foo.com" will be returned.
-// An empty string matches anything.
-func gwMatchingHost(gwHost, rtHost string) (string, bool) {
-	gwHost = toLowerCaseASCII(gwHost) // TODO: trim "." suffix?
-	rtHost = toLowerCaseASCII(rtHost) // TODO: trim "." suffix?
-
-	if gwHost == "" {
-		return rtHost, true
+// Hostnames that are prefixed with a wildcard label (`*.`) are interpreted as a suffix match.
+// That means that "*.example.com" would match both "test.example.com" and "foo.test.example.com",
+// but not "example.com". An empty string matches anything.
+func gwMatchingHost(a, b string) (string, bool) {
+	var ok bool
+	if a, ok = gwHost(a); !ok {
+		return "", false
 	}
-	if rtHost == "" {
-		return gwHost, true
-	}
-
-	gwParts := strings.Split(gwHost, ".")
-	rtParts := strings.Split(rtHost, ".")
-	if len(gwParts) != len(rtParts) {
+	if b, ok = gwHost(b); !ok {
 		return "", false
 	}
 
-	host := rtHost
-	for i, gwPart := range gwParts {
-		switch rtPart := rtParts[i]; {
-		case rtPart == gwPart:
-			// continue
-		case i == 0 && gwPart == "*":
-			// continue
-		case i == 0 && rtPart == "*":
-			host = gwHost // gwHost is more specific
-		default:
-			return "", false
+	if a == "" {
+		return b, true
+	}
+	if b == "" || a == b {
+		return a, true
+	}
+	if na, nb := len(a), len(b); nb < na || (na == nb && strings.HasPrefix(b, "*.")) {
+		a, b = b, a
+	}
+	if strings.HasPrefix(a, "*.") && strings.HasSuffix(b, a[1:]) {
+		return b, true
+	}
+	return "", false
+}
+
+// gwHost returns the canonical host and a value indicating if it's valid.
+func gwHost(host string) (string, bool) {
+	if host == "" {
+		return "", true
+	}
+	if isIPAddr(host) || !isDNS1123Domain(strings.TrimPrefix(host, "*.")) {
+		return "", false
+	}
+	return toLowerCaseASCII(host), true
+}
+
+// isIPAddr returns whether s in an IP address.
+func isIPAddr(s string) bool {
+	_, err := netip.ParseAddr(s)
+	return err == nil
+}
+
+// isDNS1123Domain returns whether s is a valid domain name according to RFC 1123.
+func isDNS1123Domain(s string) bool {
+	if n := len(s); n == 0 || n > 255 {
+		return false
+	}
+	for lbl, rest := "", s; rest != ""; {
+		if lbl, rest, _ = strings.Cut(rest, "."); !isDNS1123Label(lbl) {
+			return false
 		}
 	}
-	return host, true
+	return true
+}
+
+// isDNS1123Label returns whether s is a valid domain label according to RFC 1123.
+func isDNS1123Label(s string) bool {
+	n := len(s)
+	if n == 0 || n > 63 {
+		return false
+	}
+	if !isAlphaNum(s[0]) || !isAlphaNum(s[n-1]) {
+		return false
+	}
+	for i, k := 1, n-1; i < k; i++ {
+		if b := s[i]; b != '-' && !isAlphaNum(b) {
+			return false
+		}
+	}
+	return true
+}
+
+func isAlphaNum(b byte) bool {
+	switch {
+	case 'a' <= b && b <= 'z',
+		'A' <= b && b <= 'Z',
+		'0' <= b && b <= '9':
+		return true
+	default:
+		return false
+	}
 }
 
 func strVal(ptr *string, def string) string {
