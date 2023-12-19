@@ -86,6 +86,8 @@ type Config struct {
 	AWSAssumeRole                      string
 	AWSAssumeRoleExternalID            string
 	AWSBatchChangeSize                 int
+	AWSBatchChangeSizeBytes            int
+	AWSBatchChangeSizeValues           int
 	AWSBatchChangeInterval             time.Duration
 	AWSEvaluateTargetHealth            bool
 	AWSAPIRetries                      int
@@ -258,6 +260,8 @@ var defaultConfig = &Config{
 	AWSAssumeRole:               "",
 	AWSAssumeRoleExternalID:     "",
 	AWSBatchChangeSize:          1000,
+	AWSBatchChangeSizeBytes:     32000,
+	AWSBatchChangeSizeValues:    1000,
 	AWSBatchChangeInterval:      time.Second,
 	AWSEvaluateTargetHealth:     true,
 	AWSAPIRetries:               3,
@@ -477,6 +481,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
 	app.Flag("aws-assume-role-external-id", "When using the AWS API and assuming a role then specify this external ID` (optional)").Default(defaultConfig.AWSAssumeRoleExternalID).StringVar(&cfg.AWSAssumeRoleExternalID)
 	app.Flag("aws-batch-change-size", "When using the AWS provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSize)).IntVar(&cfg.AWSBatchChangeSize)
+	app.Flag("aws-batch-change-size-bytes", "When using the AWS provider, set the maximum byte size that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeBytes)).IntVar(&cfg.AWSBatchChangeSizeBytes)
+	app.Flag("aws-batch-change-size-values", "When using the AWS provider, set the maximum total record values that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.AWSBatchChangeSizeValues)).IntVar(&cfg.AWSBatchChangeSizeValues)
 	app.Flag("aws-batch-change-interval", "When using the AWS provider, set the interval between batch changes.").Default(defaultConfig.AWSBatchChangeInterval.String()).DurationVar(&cfg.AWSBatchChangeInterval)
 	app.Flag("aws-evaluate-target-health", "When using the AWS provider, set whether to evaluate the health of a DNS target (default: enabled, disable with --no-aws-evaluate-target-health)").Default(strconv.FormatBool(defaultConfig.AWSEvaluateTargetHealth)).BoolVar(&cfg.AWSEvaluateTargetHealth)
 	app.Flag("aws-api-retries", "When using the AWS API, set the maximum number of retries before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)

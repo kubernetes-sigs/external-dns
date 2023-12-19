@@ -19,6 +19,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"math"
 	"net"
 	"sort"
 	"strings"
@@ -39,9 +40,11 @@ import (
 )
 
 const (
-	defaultBatchChangeSize      = 4000
-	defaultBatchChangeInterval  = time.Second
-	defaultEvaluateTargetHealth = true
+	defaultBatchChangeSize       = 4000
+	defaultBatchChangeSizeBytes  = 32000
+	defaultBatchChangeSizeValues = 1000
+	defaultBatchChangeInterval   = time.Second
+	defaultEvaluateTargetHealth  = true
 )
 
 // Compile time check for interface conformance
@@ -1527,7 +1530,7 @@ func TestAWSBatchChangeSet(t *testing.T) {
 		})
 	}
 
-	batchCs := batchChangeSet(cs, defaultBatchChangeSize)
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
 	require.Equal(t, 1, len(batchCs))
 
@@ -1565,7 +1568,7 @@ func TestAWSBatchChangeSetExceeding(t *testing.T) {
 		)
 	}
 
-	batchCs := batchChangeSet(cs, testLimit)
+	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
 	require.Equal(t, expectedBatchCount, len(batchCs))
 
@@ -1603,9 +1606,225 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 		)
 	}
 
-	batchCs := batchChangeSet(cs, testLimit)
+	batchCs := batchChangeSet(cs, testLimit, defaultBatchChangeSizeBytes, defaultBatchChangeSizeValues)
 
 	require.Equal(t, 0, len(batchCs))
+}
+
+func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
+	var cs Route53Changes
+	const testCount = 50
+	const testLimit = 100
+	const groupSize = 2
+	// Bytes for each name
+	var testBytes = len([]byte("1.2.3.4")) + len([]byte("test-record"))
+	// testCount / groupSize / (testLimit // bytes)
+	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
+	// Round up
+	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+
+	for i := 1; i <= testCount; i += groupSize {
+		cs = append(cs,
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionCreate),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("A"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("1.2.3.4"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("1.2.3.4")),
+				sizeValues: 1,
+			},
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionCreate),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("TXT"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("txt-record"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("txt-record")),
+				sizeValues: 1,
+			},
+		)
+	}
+
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
+
+	require.Equal(t, expectedBatchCount, len(batchCs))
+}
+
+func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
+	var cs Route53Changes
+	const testCount = 50
+	const testLimit = 100
+	const groupSize = 2
+	// Bytes for each name multiplied by 2 for Upsert records
+	var testBytes = (len([]byte("1.2.3.4")) + len([]byte("test-record"))) * 2
+	// testCount / groupSize / (testLimit // bytes)
+	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
+	// Round up
+	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+
+	for i := 1; i <= testCount; i += groupSize {
+		cs = append(cs,
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionUpsert),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("A"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("1.2.3.4"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("1.2.3.4")) * 2,
+				sizeValues: 1,
+			},
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionUpsert),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("TXT"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("txt-record"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("txt-record")) * 2,
+				sizeValues: 1,
+			},
+		)
+	}
+
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize, testLimit, defaultBatchChangeSizeValues)
+
+	require.Equal(t, expectedBatchCount, len(batchCs))
+}
+
+func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
+	var cs Route53Changes
+	const testCount = 50
+	const testLimit = 100
+	const groupSize = 2
+	// Values for each group
+	const testValues = 2
+	// testCount / groupSize / (testLimit // bytes)
+	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
+	// Round up
+	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+
+	for i := 1; i <= testCount; i += groupSize {
+		cs = append(cs,
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionCreate),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("A"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("1.2.3.4"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("1.2.3.4")),
+				sizeValues: 1,
+			},
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionCreate),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("TXT"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("txt-record"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("txt-record")),
+				sizeValues: 1,
+			},
+		)
+	}
+
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
+
+	require.Equal(t, expectedBatchCount, len(batchCs))
+}
+
+func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
+	var cs Route53Changes
+	const testCount = 50
+	const testLimit = 100
+	const groupSize = 2
+	// Values for each group multiplied by 2 for Upsert records
+	const testValues = 2 * 2
+	// testCount / groupSize / (testLimit // bytes)
+	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
+	// Round up
+	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+
+	for i := 1; i <= testCount; i += groupSize {
+		cs = append(cs,
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionUpsert),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("A"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("1.2.3.4"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("1.2.3.4")) * 2,
+				sizeValues: 1,
+			},
+			&Route53Change{
+				Change: route53.Change{
+					Action: aws.String(route53.ChangeActionUpsert),
+					ResourceRecordSet: &route53.ResourceRecordSet{
+						Name: aws.String(fmt.Sprintf("host-%d", i)),
+						Type: aws.String("TXT"),
+						ResourceRecords: []*route53.ResourceRecord{
+							{
+								Value: aws.String("txt-record"),
+							},
+						},
+					},
+				},
+				sizeBytes:  len([]byte("txt-record")) * 2,
+				sizeValues: 1,
+			},
+		)
+	}
+
+	batchCs := batchChangeSet(cs, defaultBatchChangeSize, defaultBatchChangeSizeBytes, testLimit)
+
+	require.Equal(t, expectedBatchCount, len(batchCs))
 }
 
 func validateEndpoints(t *testing.T, provider *AWSProvider, endpoints []*endpoint.Endpoint, expected []*endpoint.Endpoint) {
@@ -1933,17 +2152,19 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
-		client:               client,
-		batchChangeSize:      defaultBatchChangeSize,
-		batchChangeInterval:  defaultBatchChangeInterval,
-		evaluateTargetHealth: evaluateTargetHealth,
-		domainFilter:         domainFilter,
-		zoneIDFilter:         zoneIDFilter,
-		zoneTypeFilter:       zoneTypeFilter,
-		zoneTagFilter:        zoneTagFilter,
-		dryRun:               false,
-		zonesCache:           &zonesListCache{duration: 1 * time.Minute},
-		failedChangesQueue:   make(map[string]Route53Changes),
+		client:                client,
+		batchChangeSize:       defaultBatchChangeSize,
+		batchChangeSizeBytes:  defaultBatchChangeSizeBytes,
+		batchChangeSizeValues: defaultBatchChangeSizeValues,
+		batchChangeInterval:   defaultBatchChangeInterval,
+		evaluateTargetHealth:  evaluateTargetHealth,
+		domainFilter:          domainFilter,
+		zoneIDFilter:          zoneIDFilter,
+		zoneTypeFilter:        zoneTypeFilter,
+		zoneTagFilter:         zoneTagFilter,
+		dryRun:                false,
+		zonesCache:            &zonesListCache{duration: 1 * time.Minute},
+		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
 	createAWSZone(t, provider, &route53.HostedZone{

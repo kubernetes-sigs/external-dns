@@ -227,16 +227,18 @@ func main() {
 	case "aws":
 		p, err = aws.NewAWSProvider(
 			aws.AWSConfig{
-				DomainFilter:         domainFilter,
-				ZoneIDFilter:         zoneIDFilter,
-				ZoneTypeFilter:       zoneTypeFilter,
-				ZoneTagFilter:        zoneTagFilter,
-				BatchChangeSize:      cfg.AWSBatchChangeSize,
-				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
-				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
-				PreferCNAME:          cfg.AWSPreferCNAME,
-				DryRun:               cfg.DryRun,
-				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
+				DomainFilter:          domainFilter,
+				ZoneIDFilter:          zoneIDFilter,
+				ZoneTypeFilter:        zoneTypeFilter,
+				ZoneTagFilter:         zoneTagFilter,
+				BatchChangeSize:       cfg.AWSBatchChangeSize,
+				BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
+				BatchChangeSizeValues: cfg.AWSBatchChangeSizeValues,
+				BatchChangeInterval:   cfg.AWSBatchChangeInterval,
+				EvaluateTargetHealth:  cfg.AWSEvaluateTargetHealth,
+				PreferCNAME:           cfg.AWSPreferCNAME,
+				DryRun:                cfg.DryRun,
+				ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
 			},
 			route53.New(awsSession),
 		)
