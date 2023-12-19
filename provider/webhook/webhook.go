@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,10 +34,8 @@ import (
 )
 
 const (
-	mediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
-	contentTypeHeader         = "Content-Type"
-	acceptHeader              = "Accept"
-	maxRetries                = 5
+	acceptHeader = "Accept"
+	maxRetries   = 5
 )
 
 var (
@@ -89,7 +88,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	client := &http.Client{}
 	var resp *http.Response
@@ -110,7 +109,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("failed to connect to plugin api: %v", err)
 	}
 
-	contentType := resp.Header.Get(contentTypeHeader)
+	contentType := resp.Header.Get(webhookapi.ContentTypeHeader)
 
 	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
 	defer resp.Body.Close()
@@ -120,7 +119,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
 	}
 
-	if contentType != mediaTypeFormatAndVersion {
+	if contentType != webhookapi.MediaTypeFormatAndVersion {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", contentType)
 	}
 
@@ -140,7 +139,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		log.Debugf("Failed to create request: %s", err.Error())
 		return nil, err
 	}
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 	resp, err := p.client.Do(req)
 	if err != nil {
 		recordsErrorsGauge.Inc()
@@ -182,7 +181,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -226,8 +225,8 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
