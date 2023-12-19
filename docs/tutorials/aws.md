@@ -236,7 +236,7 @@ Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RB
 
 This is the preferred method as it implements [PoLP](https://csrc.nist.gov/glossary/term/principle_of_least_privilege) ([Principal of Least Privilege](https://csrc.nist.gov/glossary/term/principle_of_least_privilege)).
 
-**IMPORTANT**: This method requires using KSA (Kuberntes service account) and RBAC.
+**IMPORTANT**: This method requires using KSA (Kubernetes service account) and RBAC.
 
 This method requires deploying with RBAC.  See [Manifest (for clusters with RBAC enabled)](#manifest-for-clusters-with-rbac-enabled) when ready to deploy ExternalDNS.
 
