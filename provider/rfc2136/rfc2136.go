@@ -257,6 +257,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of create changes", c)
 
 		m := make(map[string]*dns.Msg)
+		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
 			z = dns.Fqdn(z)
 			m[z] = new(dns.Msg)
@@ -275,10 +276,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 
 		// only send if there are records available
-		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
-			if len(m[z].Ns) > 0 {
-				err := r.actions.SendMessage(m[z])
+		for _, z := range m {
+			if len(z.Ns) > 0 {
+				err := r.actions.SendMessage(z)
 				if err != nil {
 					log.Errorf("RFC2136 update failed: %v", err)
 					errors = append(errors, err)
@@ -292,6 +292,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of update changes", c)
 
 		m := make(map[string]*dns.Msg)
+		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
 			z = dns.Fqdn(z)
 			m[z] = new(dns.Msg)
@@ -311,10 +312,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 
 		// only send if there are records available
-		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
-			if len(m[z].Ns) > 0 {
-				err := r.actions.SendMessage(m[z])
+		for _, z := range m {
+			if len(z.Ns) > 0 {
+				err := r.actions.SendMessage(z)
 				if err != nil {
 					log.Errorf("RFC2136 update failed: %v", err)
 					errors = append(errors, err)
@@ -328,6 +328,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		log.Debugf("Processing batch %d of delete changes", c)
 
 		m := make(map[string]*dns.Msg)
+		m["."] = new(dns.Msg) // Add the root zone
 		for _, z := range r.zoneNames {
 			z = dns.Fqdn(z)
 			m[z] = new(dns.Msg)
@@ -346,10 +347,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		}
 
 		// only send if there are records available
-		for _, z := range r.zoneNames {
-			z = dns.Fqdn(z)
-			if len(m[z].Ns) > 0 {
-				err := r.actions.SendMessage(m[z])
+		for _, z := range m {
+			if len(z.Ns) > 0 {
+				err := r.actions.SendMessage(z)
 				if err != nil {
 					log.Errorf("RFC2136 update failed: %v", err)
 					errors = append(errors, err)
