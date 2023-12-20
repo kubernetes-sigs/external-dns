@@ -357,7 +357,6 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				}
 			}
 		}
-
 	}
 
 	if len(errors) > 0 {
