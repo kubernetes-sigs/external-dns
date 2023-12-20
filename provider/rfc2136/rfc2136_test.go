@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -47,8 +48,22 @@ func newStub() *rfc2136Stub {
 	}
 }
 
+func getSortedChanges(msgs []*dns.Msg) []string {
+	r := []string{}
+	for _, d := range msgs {
+		// only care about section after the ZONE SECTION: as the id: needs stripped out in order to sort and grantee the order when sorting
+		r = append(r, strings.Split(d.String(), "ZONE SECTION:")[1])
+	}
+	sort.Strings(r)
+	return r
+}
+
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 	zone := extractZoneFromMessage(msg.String())
+	// Make sure the zone starts with . to make sure HasSuffix does not match forbar.com for zone bar.com
+	if !strings.HasPrefix(zone, ".") {
+		zone = "." + zone
+	}
 	log.Infof("zone=%s", zone)
 	lines := extractUpdateSectionFromMessage(msg)
 	for _, line := range lines {
@@ -61,7 +76,9 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 		log.Info(line)
 		record := strings.Split(line, " ")[0]
 		if !strings.HasSuffix(record, zone) {
-			return fmt.Errorf("Message contains updates outside of it's zone.  zone=%v record=%v", zone, record)
+			err := fmt.Errorf("Message contains updates outside of it's zone.  zone=%v record=%v", zone, record)
+			log.Error(err)
+			return err
 		}
 
 		if strings.Contains(line, " NONE ") {
@@ -259,6 +276,7 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 }
 
 // These tests all use the foo.com and foobar.com zones with no filters
+// createMsgs and updateMsgs need sorted when are are used
 func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZones(stub)
@@ -301,21 +319,28 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, 3, len(stub.createMsgs))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
+	createMsgs := getSortedChanges(stub.createMsgs)
+	assert.Equal(t, 3, len(createMsgs))
 
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+	assert.True(t, strings.Contains(createMsgs[0], "v1.foo.com"))
+	assert.True(t, strings.Contains(createMsgs[0], "1.2.3.4"))
 
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "ns.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "boom"))
+	assert.True(t, strings.Contains(createMsgs[1], "v1.foobar.com"))
+	assert.True(t, strings.Contains(createMsgs[1], "boom"))
+
+	assert.True(t, strings.Contains(createMsgs[2], "ns.foobar.com"))
+	assert.True(t, strings.Contains(createMsgs[2], "boom"))
 
 	assert.Equal(t, 2, len(stub.updateMsgs))
-	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
-	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v2.foobar.com"))
+	updateMsgs := getSortedChanges(stub.updateMsgs)
+	assert.Equal(t, 2, len(updateMsgs))
+
+	assert.True(t, strings.Contains(updateMsgs[0], "v2.foo.com"))
+	assert.True(t, strings.Contains(updateMsgs[1], "v2.foobar.com"))
 }
 
 // These tests use the foo.com and foobar.com zones and with filters set to both zones
+// createMsgs and updateMsgs need sorted when are are used
 func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	stub := newStub()
 	provider, err := createRfc2136StubProviderWithZonesFilters(stub)
@@ -364,18 +389,28 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, 3, len(stub.createMsgs))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "v1.foo.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[0].String(), "1.2.3.4"))
+	createMsgs := getSortedChanges(stub.createMsgs)
+	assert.Equal(t, 3, len(createMsgs))
 
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "v1.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[1].String(), "boom"))
+	assert.True(t, strings.Contains(createMsgs[0], "v1.foo.com"))
+	assert.True(t, strings.Contains(createMsgs[0], "1.2.3.4"))
 
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "ns.foobar.com"))
-	assert.True(t, strings.Contains(stub.createMsgs[2].String(), "boom"))
+	assert.True(t, strings.Contains(createMsgs[1], "v1.foobar.com"))
+	assert.True(t, strings.Contains(createMsgs[1], "boom"))
+
+	assert.True(t, strings.Contains(createMsgs[2], "ns.foobar.com"))
+	assert.True(t, strings.Contains(createMsgs[2], "boom"))
+
+	for _, s := range createMsgs {
+		assert.False(t, strings.Contains(s, "filtered-out.foo.bar"))
+	}
 
 	assert.Equal(t, 2, len(stub.updateMsgs))
-	assert.True(t, strings.Contains(stub.updateMsgs[0].String(), "v2.foo.com"))
-	assert.True(t, strings.Contains(stub.updateMsgs[1].String(), "v2.foobar.com"))
+	updateMsgs := getSortedChanges(stub.updateMsgs)
+	assert.Equal(t, 2, len(updateMsgs))
+
+	assert.True(t, strings.Contains(updateMsgs[0], "v2.foo.com"))
+	assert.True(t, strings.Contains(updateMsgs[1], "v2.foobar.com"))
 
 }
 
