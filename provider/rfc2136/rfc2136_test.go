@@ -49,6 +49,7 @@ func newStub() *rfc2136Stub {
 
 func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 	zone := extractZoneFromMessage(msg.String())
+	log.Infof("zone=%s", zone)
 	lines := extractUpdateSectionFromMessage(msg)
 	for _, line := range lines {
 		// break at first empty line
@@ -58,7 +59,6 @@ func (r *rfc2136Stub) SendMessage(msg *dns.Msg) error {
 
 		line = strings.Replace(line, "\t", " ", -1)
 		log.Info(line)
-		log.Infof("zone=%s", zone)
 		record := strings.Split(line, " ")[0]
 		if !strings.HasSuffix(record, zone) {
 			return fmt.Errorf("Message contains updates outside of it's zone.  zone=%v record=%v", zone, record)
