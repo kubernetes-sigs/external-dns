@@ -915,13 +915,23 @@ func batchChangeSet(cs Route53Changes, batchSize int, batchSizeBytes int, batchS
 	currentBatch := Route53Changes{}
 	for k, name := range names {
 		v := changesByOwnership[name]
+		vBytes := countChangeBytes(v)
+		vValues := countChangeValues(v)
 		if len(v) > batchSize {
 			log.Warnf("Total changes for %v exceeds max batch size of %d, total changes: %d; changes will not be performed", k, batchSize, len(v))
 			continue
 		}
+		if vBytes > batchSizeBytes {
+			log.Warnf("Total changes for %v exceeds max batch size bytes of %d, total changes bytes: %d; changes will not be performed", k, batchSizeBytes, vBytes)
+			continue
+		}
+		if vBytes > batchSizeBytes {
+			log.Warnf("Total changes for %v exceeds max batch size values of %d, total changes values: %d; changes will not be performed", k, batchSizeValues, vValues)
+			continue
+		}
 
-		bytes := countChangeBytes(currentBatch) + countChangeBytes(v)
-		values := countChangeValues(currentBatch) + countChangeValues(v)
+		bytes := countChangeBytes(currentBatch) + vBytes
+		values := countChangeValues(currentBatch) + vValues
 
 		if len(currentBatch)+len(v) > batchSize || bytes > batchSizeBytes || values > batchSizeValues {
 			// currentBatch would be too large if we add this changeset;
