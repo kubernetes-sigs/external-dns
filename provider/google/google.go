@@ -235,34 +235,6 @@ func (p *GoogleProvider) Records(ctx context.Context) (endpoints []*endpoint.End
 	return endpoints, nil
 }
 
-// CreateRecords creates a given set of DNS records in the given hosted zone.
-func (p *GoogleProvider) CreateRecords(endpoints []*endpoint.Endpoint) error {
-	change := &dns.Change{}
-
-	change.Additions = append(change.Additions, p.newFilteredRecords(endpoints)...)
-
-	return p.submitChange(p.ctx, change)
-}
-
-// UpdateRecords updates a given set of old records to a new set of records in a given hosted zone.
-func (p *GoogleProvider) UpdateRecords(records, oldRecords []*endpoint.Endpoint) error {
-	change := &dns.Change{}
-
-	change.Additions = append(change.Additions, p.newFilteredRecords(records)...)
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(oldRecords)...)
-
-	return p.submitChange(p.ctx, change)
-}
-
-// DeleteRecords deletes a given set of DNS records in a given zone.
-func (p *GoogleProvider) DeleteRecords(endpoints []*endpoint.Endpoint) error {
-	change := &dns.Change{}
-
-	change.Deletions = append(change.Deletions, p.newFilteredRecords(endpoints)...)
-
-	return p.submitChange(p.ctx, change)
-}
-
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *GoogleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	change := &dns.Change{}
