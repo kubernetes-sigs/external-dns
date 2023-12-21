@@ -83,7 +83,7 @@ Known providers using webhooks:
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard | 
 | STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook | 
 | GleSYS | https://github.com/glesys/external-dns-glesys | 
-| Hetzner (UNOFFICIAL) | https://github.com/mconfalonieri/external-dns-hetzner-webhook | 
+| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook | 
 | Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook | 
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
 
