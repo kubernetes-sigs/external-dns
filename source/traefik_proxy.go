@@ -101,7 +101,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer informers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
-	if disableNew == false {
+	if !disableNew {
 		ingressRouteInformer = informerFactory.ForResource(ingressrouteGVR)
 		ingressRouteTcpInformer = informerFactory.ForResource(ingressrouteTCPGVR)
 		ingressRouteUdpInformer = informerFactory.ForResource(ingressrouteUDPGVR)
@@ -121,7 +121,7 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 			},
 		)
 	}
-	if disableLegacy == false {
+	if !disableLegacy {
 		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
 		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
 		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
