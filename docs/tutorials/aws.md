@@ -982,3 +982,19 @@ An effective starting point for EKS with an ingress controller might look like:
 --domain-filter=example.com
 --aws-zones-cache-duration=1h
 ```
+
+### Batch size options
+
+After external-dns generates all changes, it will perform a task to group those changes into batches. Each change will be validated against batch-change-size limits. If at least one of those parameters out of range - the change will be moved to a separate branch. If the change can't fit into any batch - *it will be skipped.*<br> 
+There are 3 options to control batch size for AWS provider:
+* Maximum amount of changes added to one batch
+  * `--aws-batch-change-size` (default `1000`)
+* Maximum size of changes in bytes added to one batch
+  * `--aws-batch-change-size-bytes` (default `32000`)
+* Maximum value count of changes added to one batch
+  * `aws-batch-change-size-values` (default `1000`)
+
+`aws-batch-change-size` can be very useful for throttling purposes and can be set to any value.
+
+Default values for flags `aws-batch-change-size-bytes` and `aws-batch-change-size-values` are taken from [AWS documentation](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DNSLimitations.html#limits-api-requests) for Route53 API. **You should not change those values until you really have to.** <br>
+Because those limits are in place, `aws-batch-change-size` can be set to any value: Even if your batch size is `4000` records, your change will be split to separate batches due to bytes/values size limits and apply request will be finished without issues.   
