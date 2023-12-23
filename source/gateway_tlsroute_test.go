@@ -73,10 +73,10 @@ func TestGatewayTLSRouteSourceEndpoints(t *testing.T) {
 			},
 		},
 		Spec: v1alpha2.TLSRouteSpec{
-			Hostnames: []v1alpha2.Hostname{"api-hostnames.foobar.internal"},
+			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
 		},
 		Status: v1alpha2.TLSRouteStatus{
-			RouteStatus: v1a2RouteStatus(v1a2ParentRef("default", "internal")),
+			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
 	}
 	_, err = gwClient.GatewayV1alpha2().TLSRoutes(rt.Namespace).Create(ctx, rt, metav1.CreateOptions{})
