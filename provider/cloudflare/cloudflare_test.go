@@ -19,6 +19,7 @@ package cloudflare
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -140,6 +141,10 @@ func (m *mockCloudFlareClient) CreateDNSRecord(ctx context.Context, rc *cloudfla
 	})
 	if zone, ok := m.Records[rc.Identifier]; ok {
 		zone[rp.ID] = recordData
+	}
+
+	if recordData.Name == "newerror.bar.com" {
+		return cloudflare.DNSRecord{}, fmt.Errorf("failed to create record")
 	}
 	return cloudflare.DNSRecord{}, nil
 }
@@ -785,6 +790,22 @@ func TestCloudflareApplyChanges(t *testing.T) {
 	err = provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
+	}
+}
+
+func TestCloudflareApplyChangesError(t *testing.T) {
+	changes := &plan.Changes{}
+	client := NewMockCloudFlareClient()
+	provider := &CloudFlareProvider{
+		Client: client,
+	}
+	changes.Create = []*endpoint.Endpoint{{
+		DNSName: "newerror.bar.com",
+		Targets: endpoint.Targets{"target"},
+	}}
+	err := provider.ApplyChanges(context.Background(), changes)
+	if err == nil {
+		t.Errorf("should fail, %s", err)
 	}
 }
 
