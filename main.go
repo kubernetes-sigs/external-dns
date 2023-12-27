@@ -156,6 +156,8 @@ func main() {
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
+		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
+		TraefikDisableNew:              cfg.TraefikDisableNew,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.

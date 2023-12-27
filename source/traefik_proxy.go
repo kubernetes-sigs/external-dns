@@ -93,48 +93,54 @@ type traefikSource struct {
 	unstructuredConverter      *unstructuredConverter
 }
 
-func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool) (Source, error) {
+func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, kubeClient kubernetes.Interface, namespace string, annotationFilter string, ignoreHostnameAnnotation bool, disableLegacy bool, disableNew bool) (Source, error) {
 	// Use shared informer to listen for add/update/delete of Host in the specified namespace.
 	// Set resync period to 0, to prevent processing when nothing has changed.
 	informerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(dynamicKubeClient, 0, namespace, nil)
-	ingressRouteInformer := informerFactory.ForResource(ingressrouteGVR)
-	ingressRouteTcpInformer := informerFactory.ForResource(ingressrouteTCPGVR)
-	ingressRouteUdpInformer := informerFactory.ForResource(ingressrouteUDPGVR)
-	oldIngressRouteInformer := informerFactory.ForResource(oldIngressrouteGVR)
-	oldIngressRouteTcpInformer := informerFactory.ForResource(oldIngressrouteTCPGVR)
-	oldIngressRouteUdpInformer := informerFactory.ForResource(oldIngressrouteUDPGVR)
+	var ingressRouteInformer, ingressRouteTcpInformer, ingressRouteUdpInformer informers.GenericInformer
+	var oldIngressRouteInformer, oldIngressRouteTcpInformer, oldIngressRouteUdpInformer informers.GenericInformer
 
 	// Add default resource event handlers to properly initialize informers.
-	ingressRouteInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
-	ingressRouteTcpInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
-	ingressRouteUdpInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
-	oldIngressRouteInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
-	oldIngressRouteTcpInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
-	oldIngressRouteUdpInformer.Informer().AddEventHandler(
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {},
-		},
-	)
+	if !disableNew {
+		ingressRouteInformer = informerFactory.ForResource(ingressrouteGVR)
+		ingressRouteTcpInformer = informerFactory.ForResource(ingressrouteTCPGVR)
+		ingressRouteUdpInformer = informerFactory.ForResource(ingressrouteUDPGVR)
+		ingressRouteInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+		ingressRouteTcpInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+		ingressRouteUdpInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+	}
+	if !disableLegacy {
+		oldIngressRouteInformer = informerFactory.ForResource(oldIngressrouteGVR)
+		oldIngressRouteTcpInformer = informerFactory.ForResource(oldIngressrouteTCPGVR)
+		oldIngressRouteUdpInformer = informerFactory.ForResource(oldIngressrouteUDPGVR)
+		oldIngressRouteInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+		oldIngressRouteTcpInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+		oldIngressRouteUdpInformer.Informer().AddEventHandler(
+			cache.ResourceEventHandlerFuncs{
+				AddFunc: func(obj interface{}) {},
+			},
+		)
+	}
 
 	informerFactory.Start((ctx.Done()))
 
@@ -167,37 +173,48 @@ func NewTraefikSource(ctx context.Context, dynamicKubeClient dynamic.Interface, 
 func (ts *traefikSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 
-	ingressRouteEndpoints, err := ts.ingressRouteEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.ingressRouteInformer != nil {
+		ingressRouteEndpoints, err := ts.ingressRouteEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, ingressRouteEndpoints...)
 	}
-	oldIngressRouteEndpoints, err := ts.oldIngressRouteEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.oldIngressRouteInformer != nil {
+		oldIngressRouteEndpoints, err := ts.oldIngressRouteEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, oldIngressRouteEndpoints...)
 	}
-	ingressRouteTCPEndpoints, err := ts.ingressRouteTCPEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.ingressRouteTcpInformer != nil {
+		ingressRouteTcpEndpoints, err := ts.ingressRouteTCPEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, ingressRouteTcpEndpoints...)
 	}
-	oldIngressRouteTCPEndpoints, err := ts.oldIngressRouteTCPEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.oldIngressRouteTcpInformer != nil {
+		oldIngressRouteTcpEndpoints, err := ts.oldIngressRouteTCPEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, oldIngressRouteTcpEndpoints...)
 	}
-	ingressRouteUDPEndpoints, err := ts.ingressRouteUDPEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.ingressRouteUdpInformer != nil {
+		ingressRouteUdpEndpoints, err := ts.ingressRouteUDPEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, ingressRouteUdpEndpoints...)
 	}
-	oldIngressRouteUDPEndpoints, err := ts.oldIngressRouteUDPEndpoints()
-	if err != nil {
-		return nil, err
+	if ts.oldIngressRouteUdpInformer != nil {
+		oldIngressRouteUdpEndpoints, err := ts.oldIngressRouteUDPEndpoints()
+		if err != nil {
+			return nil, err
+		}
+		endpoints = append(endpoints, oldIngressRouteUdpEndpoints...)
 	}
-
-	endpoints = append(endpoints, ingressRouteEndpoints...)
-	endpoints = append(endpoints, ingressRouteTCPEndpoints...)
-	endpoints = append(endpoints, ingressRouteUDPEndpoints...)
-	endpoints = append(endpoints, oldIngressRouteEndpoints...)
-	endpoints = append(endpoints, oldIngressRouteTCPEndpoints...)
-	endpoints = append(endpoints, oldIngressRouteUDPEndpoints...)
 
 	for _, ep := range endpoints {
 		sort.Sort(ep.Targets)
