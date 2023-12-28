@@ -115,9 +115,9 @@ spec:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
             {{- toYaml .Values.readinessProbe | nindent 12 }}
-          {{- if or .Values.secretConfiguration.enabled .Values.extraVolumeMounts }}
+          {{- if or (and .Values.secretConfiguration.enabled .Values.secretConfiguration.mountPath) .Values.extraVolumeMounts }}
           volumeMounts:
-            {{- if .Values.secretConfiguration.enabled }}
+            {{- if and .Values.secretConfiguration.enabled .Values.secretConfiguration.mountPath }}
             - name: secrets
               mountPath: {{ tpl .Values.secretConfiguration.mountPath $ }}
             {{- with .Values.secretConfiguration.subPath }}
@@ -132,9 +132,9 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
+      {{- if or (and .Values.secretConfiguration.enabled .Values.secretConfiguration.mountPath) .Values.extraVolumes }}
       volumes:
-        {{- if .Values.secretConfiguration.enabled }}
+        {{- if and .Values.secretConfiguration.enabled .Values.secretConfiguration.mountPath }}
         - name: secrets
           secret:
             secretName: {{ include "external-dns.fullname" . }}
