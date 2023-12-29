@@ -1644,29 +1644,6 @@ func listAWSRecords(t *testing.T, client Route53API, zone string) []*route53.Res
 	return recordSets
 }
 
-// Route53 stores wildcards escaped: http://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html?shortFooter=true#domain-name-format-asterisk
-func escapeAWSRecords(t *testing.T, provider *AWSProvider, zone string) {
-	recordSets := listAWSRecords(t, provider.client, zone)
-
-	changes := make([]*route53.Change, 0, len(recordSets))
-	for _, recordSet := range recordSets {
-		changes = append(changes, &route53.Change{
-			Action:            aws.String(route53.ChangeActionUpsert),
-			ResourceRecordSet: recordSet,
-		})
-	}
-
-	if len(changes) != 0 {
-		_, err := provider.client.ChangeResourceRecordSetsWithContext(context.Background(), &route53.ChangeResourceRecordSetsInput{
-			HostedZoneId: aws.String(zone),
-			ChangeBatch: &route53.ChangeBatch{
-				Changes: changes,
-			},
-		})
-		require.NoError(t, err)
-	}
-}
-
 func newAWSProvider(t *testing.T, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, zoneTypeFilter provider.ZoneTypeFilter, evaluateTargetHealth, dryRun bool, records []*route53.ResourceRecordSet) (*AWSProvider, *Route53APIStub) {
 	return newAWSProviderWithTagFilter(t, domainFilter, zoneIDFilter, zoneTypeFilter, provider.NewZoneTagFilter([]string{}), evaluateTargetHealth, dryRun, records)
 }
