@@ -370,11 +370,11 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 			var awsErr awserr.Error
 			if errors.As(err, &awsErr) {
 				if awsErr.Code() == "AccessDenied" {
-					log.Warnf("Skipping profile %q due to missing permission: %v", profile, awsErr.Message())
+					log.Warnf("Skipping AWS profile %q due to missing permission: %v", profile, awsErr.Message())
 					continue
 				}
 				if awsErr.Code() == "InvalidClientTokenId" || awsErr.Code() == "ExpiredToken" || awsErr.Code() == "SignatureDoesNotMatch" {
-					log.Warnf("Skipping profile %q due to credential issues: %v", profile, awsErr.Message())
+					log.Warnf("Skipping AWS profile %q due to credential issues: %v", profile, awsErr.Message())
 					continue
 				}
 			}
