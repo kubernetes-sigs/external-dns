@@ -1065,21 +1065,21 @@ func TestAWSChangesByZones(t *testing.T) {
 	}
 
 	zones := map[string]*profiledZone{
-		"foo-example-org": &profiledZone{
+		"foo-example-org": {
 			profile: DefaultAWSProfile,
 			zone: &route53.HostedZone{
 				Id:   aws.String("foo-example-org"),
 				Name: aws.String("foo.example.org."),
 			},
 		},
-		"bar-example-org": &profiledZone{
+		"bar-example-org": {
 			profile: DefaultAWSProfile,
 			zone: &route53.HostedZone{
 				Id:   aws.String("bar-example-org"),
 				Name: aws.String("bar.example.org."),
 			},
 		},
-		"bar-example-org-private": &profiledZone{
+		"bar-example-org-private": {
 			profile: DefaultAWSProfile,
 			zone: &route53.HostedZone{
 				Id:     aws.String("bar-example-org-private"),
@@ -1087,7 +1087,7 @@ func TestAWSChangesByZones(t *testing.T) {
 				Config: &route53.HostedZoneConfig{PrivateZone: aws.Bool(true)},
 			},
 		},
-		"baz-example-org": &profiledZone{
+		"baz-example-org": {
 			profile: DefaultAWSProfile,
 			zone: &route53.HostedZone{
 				Id:   aws.String("baz-example-org"),
