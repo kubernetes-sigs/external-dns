@@ -140,7 +140,8 @@ For the managed identity, the contents of `azure.json` should be similar to this
   "tenantId": "01234abc-de56-ff78-abc1-234567890def",
   "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
   "resourceGroup": "MyDnsResourceGroup",
-  "useManagedIdentityExtension": true
+  "useManagedIdentityExtension": true,
+  "userAssignedIdentityID": "01234abc-de56-ff78-abc1-234567890def"
 }
 ```
 
@@ -151,6 +152,8 @@ For this process, you will need to get the kubelet identity:
 ```bash
 $ PRINCIPAL_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
   --query "identityProfile.kubeletidentity.objectId" --output tsv)
+$ IDENTITY_CLIENT_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
+  --query "identityProfile.kubeletidentity.clientId" --output tsv)
 ```
 
 #### Assign rights for the Kubelet identity
@@ -178,7 +181,8 @@ cat <<-EOF > /local/path/to/azure.json
   "tenantId": "$(az account show --query tenantId -o tsv)",
   "subscriptionId": "$(az account show --query id -o tsv)",
   "resourceGroup": "$AZURE_DNS_ZONE_RESOURCE_GROUP",
-  "useManagedIdentityExtension": true
+  "useManagedIdentityExtension": true,
+  "userAssignedIdentityID": "$IDENTITY_CLIENT_ID"
 }
 EOF
 ```
