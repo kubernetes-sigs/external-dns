@@ -278,9 +278,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// only send if there are records available
 		for _, z := range m {
 			if len(z.Ns) > 0 {
-				err := r.actions.SendMessage(z)
-				if err != nil {
-					log.Errorf("RFC2136 update failed: %v", err)
+				if err := r.actions.SendMessage(z); err != nil {
+					log.Errorf("RFC2136 create record failed: %v", err)
 					errors = append(errors, err)
 					continue
 				}
@@ -314,9 +313,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// only send if there are records available
 		for _, z := range m {
 			if len(z.Ns) > 0 {
-				err := r.actions.SendMessage(z)
-				if err != nil {
-					log.Errorf("RFC2136 update failed: %v", err)
+				if err := r.actions.SendMessage(z); err != nil {
+					log.Errorf("RFC2136 update record failed: %v", err)
 					errors = append(errors, err)
 					continue
 				}
@@ -349,9 +347,8 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		// only send if there are records available
 		for _, z := range m {
 			if len(z.Ns) > 0 {
-				err := r.actions.SendMessage(z)
-				if err != nil {
-					log.Errorf("RFC2136 update failed: %v", err)
+				if err := r.actions.SendMessage(z); err != nil {
+					log.Errorf("RFC2136 delete record failed: %v", err)
 					errors = append(errors, err)
 					continue
 				}
