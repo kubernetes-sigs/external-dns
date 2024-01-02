@@ -456,6 +456,7 @@ func main() {
 		ManagedRecordTypes:   cfg.ManagedDNSRecordTypes,
 		ExcludeRecordTypes:   cfg.ExcludeDNSRecordTypes,
 		MinEventSyncInterval: cfg.MinEventSyncInterval,
+		BailOnError:          cfg.BailOnError,
 	}
 
 	if cfg.Once {

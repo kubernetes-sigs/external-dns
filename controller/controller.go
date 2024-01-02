@@ -196,6 +196,8 @@ type Controller struct {
 	ExcludeRecordTypes []string
 	// MinEventSyncInterval is used as window for batching events
 	MinEventSyncInterval time.Duration
+	// BailOnError treat RunOnce Errors as fatal
+	BailOnError bool
 }
 
 // RunOnce runs a single iteration of a reconciliation loop.
@@ -331,7 +333,11 @@ func (c *Controller) Run(ctx context.Context) {
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
-				log.Fatal(err)
+				if c.BailOnError {
+					log.Fatal(err)
+				} else {
+					log.Error(err)
+				}
 			}
 		}
 		select {

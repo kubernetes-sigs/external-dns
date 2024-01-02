@@ -157,6 +157,7 @@ type Config struct {
 	MinEventSyncInterval               time.Duration
 	Once                               bool
 	DryRun                             bool
+	BailOnError                        bool
 	UpdateEvents                       bool
 	LogFormat                          string
 	MetricsAddress                     string
@@ -319,6 +320,7 @@ var defaultConfig = &Config{
 	Interval:                    time.Minute,
 	Once:                        false,
 	DryRun:                      false,
+	BailOnError:                 true,
 	UpdateEvents:                false,
 	LogFormat:                   "text",
 	MetricsAddress:              ":7979",
@@ -615,6 +617,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("min-event-sync-interval", "The minimum interval between two consecutive synchronizations triggered from kubernetes events in duration format (default: 5s)").Default(defaultConfig.MinEventSyncInterval.String()).DurationVar(&cfg.MinEventSyncInterval)
 	app.Flag("once", "When enabled, exits the synchronization loop after the first iteration (default: disabled)").BoolVar(&cfg.Once)
 	app.Flag("dry-run", "When enabled, prints DNS record changes rather than actually performing them (default: disabled)").BoolVar(&cfg.DryRun)
+	app.Flag("bail-on-error", "When enabled, errors will be treated as fatal and cause external-dns to exit (default: true)").BoolVar(&cfg.BailOnError)
 	app.Flag("events", "When enabled, in addition to running every interval, the reconciliation loop will get triggered when supported sources change (default: disabled)").BoolVar(&cfg.UpdateEvents)
 
 	// Miscellaneous flags
