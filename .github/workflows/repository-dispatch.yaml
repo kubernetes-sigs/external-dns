@@ -1,0 +1,9 @@
+name: Repository Dispatch
+on:
+  repository_dispatch:
+    types: [doc_update]
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo '${{ github.event.client_payload.AUTHOR }}'

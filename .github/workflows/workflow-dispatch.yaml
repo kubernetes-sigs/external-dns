@@ -1,0 +1,15 @@
+
+on: [push, workflow_dispatch]
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    name: "Trigger external dns e2e tests for azure provider"
+    steps:
+    - uses: passeidireto/trigger-external-workflow-action@main
+      env:
+        PAYLOAD_AUTHOR: ${{ github.author }}
+        PAYLOAD_REVISION: "3"
+      with:
+        repository: Azure/azure-provider-external-dns-e2e
+        event: doc_update
+        github_pat: ${{ secrets.pat_with_access }}
