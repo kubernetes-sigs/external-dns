@@ -1,0 +1,149 @@
+---
+openapi: "3.0.0"
+info:
+  version: 0.14.0
+  title: External DNS Webhook Server
+  description: >-
+    Implements the external DNS webhook endpoints.
+  contact:
+    url: https://github.com/kubernetes-sigs/external-dns
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+paths:
+  /:
+    get:
+      summary: >-
+        Initialisation and negotiates headers and returns domain
+        filter.
+      description: |
+        Initialisation and negotiates headers and returns domain
+        filter.
+      operationId: negotiate
+      responses:
+        '200':
+          description: Positive response
+          content:
+            application/external.dns.webhook+json;version=1:
+              schema:
+                $ref: '#/components/schemas/filters'
+        '500':
+          description: Failure
+
+  /records:
+    get:
+      summary: Returns the current records.
+      description: |
+        Get the current records from the provider and return them.
+      operationId: getRecords
+      responses:
+        '200':
+          description: Positive response
+          content:
+            application/external.dns.webhook+json;version=1:
+              schema:
+                $ref: '#/components/schemas/endpoints'
+        '500':
+          description: Failure
+
+    post:
+      summary: Applies the changes.
+      description: |
+        Set the records in the provider based on those supplied here.
+      operationId: setRecords
+      requestBody:
+        required: true
+        content:
+          application/external.dns.webhook+json;version=1:
+            schema:
+              $ref: '#/components/schemas/changes'
+      responses:
+        '204':
+          description: Positive response
+        '500':
+          description: Failure
+
+  /adjustendpoints:
+    post:
+      summary: Executes the AdjustEndpoints method.
+      description: |
+        Adjusts the records in the provider based on those supplied here.
+      operationId: adjustRecords
+      requestBody:
+        required: true
+        content:
+          application/external.dns.webhook+json;version=1:
+            schema:
+              $ref: '#/components/schemas/endpoints'
+      responses:
+        '200':
+          description: Positive response
+          content:
+            application/external.dns.webhook+json;version=1:
+              schema:
+                $ref: '#/components/schemas/endpoints'
+        '500':
+          description: Failure
+
+components:
+  schemas:
+    filters:
+      type: object
+      properties:
+        filters:
+          type: array
+          items:
+            type: string
+
+    endpoints:
+      type: array
+      items:
+        $ref: '#/components/schemas/endpoint'
+
+    endpoint:
+      type: object
+      properties:
+        dnsName:
+          type: string
+        targets:
+          $ref: '#/components/schemas/targets'
+        recordType:
+          type: string
+        setIdentifier:
+          type: string
+        recordTTL:
+          type: integer
+          format: int64
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        providerSpecific:
+          type: array
+          items:
+            $ref: '#/components/schemas/providerSpecificProperty'
+
+    targets:
+      type: array
+      items:
+        type: string
+
+    providerSpecificProperty:
+      type: object
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+
+    changes:
+      type: object
+      properties:
+        create:
+          $ref: '#/components/schemas/endpoints'
+        updateOld:
+          $ref: '#/components/schemas/endpoints'
+        updateNew:
+          $ref: '#/components/schemas/endpoints'
+        delete:
+          $ref: '#/components/schemas/endpoints'
