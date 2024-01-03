@@ -313,6 +313,7 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 	return result, nil
 }
 
+// zones returns the list of zones per AWS profile
 func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, error) {
 	if p.zonesCache.zones != nil && time.Since(p.zonesCache.age) < p.zonesCache.duration {
 		log.Debug("Using cached zones list")
@@ -613,6 +614,12 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 	var failedZones []string
 	for z, cs := range changesByZone {
+		log := log.WithFields(log.Fields{
+			"zoneName": aws.StringValue(zones[z].zone.Name),
+			"zoneID":   z,
+			"profile":  zones[z].profile,
+		})
+
 		var failedUpdate bool
 
 		// group changes into new changes and into changes that failed in a previous iteration and are retried
@@ -627,7 +634,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 			}
 
 			for _, c := range b {
-				log.Infof("Desired change: %s %s %s [Id: %s]", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z)
+				log.Infof("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
 			}
 
 			if !p.dryRun {
@@ -642,7 +649,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 				client := p.clients[zones[z].profile]
 				if _, err := client.ChangeResourceRecordSetsWithContext(ctx, params); err != nil {
-					log.Errorf("Failure in zone %s [Id: %s] when submitting change batch: %v", aws.StringValue(zones[z].zone.Name), z, err)
+					log.Errorf("Failure in zone %s when submitting change batch: %v", aws.StringValue(zones[z].zone.Name), err)
 
 					changesByOwnership := groupChangesByNameAndOwnershipRelation(b)
 
@@ -651,7 +658,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 						for _, changes := range changesByOwnership {
 							for _, c := range changes {
-								log.Debugf("Desired change: %s %s %s [Id: %s]", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type, z)
+								log.Debugf("Desired change: %s %s %s", *c.Action, *c.ResourceRecordSet.Name, *c.ResourceRecordSet.Type)
 							}
 							params.ChangeBatch = &route53.ChangeBatch{
 								Changes: changes.Route53Changes(),
@@ -673,7 +680,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 				if successfulChanges > 0 {
 					// z is the R53 Hosted Zone ID already as aws.StringValue
-					log.Infof("%d record(s) in zone %s [Id: %s] were successfully updated", successfulChanges, aws.StringValue(zones[z].zone.Name), z)
+					log.Infof("%d record(s) were successfully updated", successfulChanges)
 				}
 
 				if i != len(batchCs)-1 {
