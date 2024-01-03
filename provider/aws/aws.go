@@ -499,8 +499,9 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 			MaxItems:     aws.String(route53PageSize),
 		}
 
-		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s", *z.Id)
+		client := p.clients[z.profile]
+		if err := client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
+			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s using aws profile %q", *z.zone.Id, z.profile)
 		}
 	}
 
