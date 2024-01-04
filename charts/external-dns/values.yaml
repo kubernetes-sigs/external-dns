@@ -213,7 +213,7 @@ txtSuffix:
 domainFilters: []
 
 provider:
-  # -- _ExternalDNS_ provider name. When the provider is `webhook` it will add a sidecar using the `webhook` values.
+  # -- _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers).
   name: aws
   webhook:
     image:

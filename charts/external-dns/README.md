@@ -32,9 +32,8 @@ helm upgrade --install external-dns external-dns/external-dns --version 1.13.1
 
 ## Providers
 
-Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the
-`provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the
-provider with all additional configuration being set via the `extraArgs` value.
+Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
+See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-providers) for more info on available providers and tutorials.
 
 ### Providers with Specific Configuration Support
 
@@ -108,7 +107,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
 | policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
-| provider.name | string | `"aws"` | _ExternalDNS_ provider name. When the provider is `webhook` it will add a sidecar using the `webhook` values. |
+| provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
 | provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
 | provider.webhook.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
 | provider.webhook.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
