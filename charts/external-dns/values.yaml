@@ -39,6 +39,12 @@ service:
   annotations: {}
   # -- Service HTTP port.
   port: 7979
+  # -- Service IP DualStack.
+  ipDualStack:
+    enabled: false
+    ipFamilies: ["IPv6", "IPv4"]
+    ipFamilyPolicy: "PreferDualStack"
+  
 
 rbac:
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
