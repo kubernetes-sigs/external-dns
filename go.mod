@@ -14,13 +14,13 @@ require (
 	github.com/IBM/networking-go-sdk v0.44.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.648
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.652
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.49.13
+	github.com/aws/aws-sdk-go v1.49.15
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/civo/civogo v0.3.55
-	github.com/cloudflare/cloudflare-go v0.84.0
+	github.com/civo/civogo v0.3.56
+	github.com/cloudflare/cloudflare-go v0.85.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.22
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.830
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.830
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.830
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.834
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.834
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.834
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -66,9 +66,9 @@ require (
 	go.uber.org/ratelimit v0.3.0
 	golang.org/x/net v0.19.0
 	golang.org/x/oauth2 v0.15.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.154.0
+	google.golang.org/api v0.155.0
 	gopkg.in/ns1/ns1-go.v2 v2.7.13
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.20.1
@@ -206,10 +206,10 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20231120223509-83a465c0220f // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20231120223509-83a465c0220f // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
-	google.golang.org/grpc v1.59.0 // indirect
+	google.golang.org/genproto v0.0.0-20231211222908-989df2bf70f3 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231211222908-989df2bf70f3 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
+	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
