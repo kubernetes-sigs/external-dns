@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: json-yaml-validate
-        uses: GrantBirki/json-yaml-validate@v2.5.0
+        uses: GrantBirki/json-yaml-validate@v2.6.0
         with:
           comment: "true" # enable comment mode
           yaml_exclude_regex: "(charts/external-dns/templates.*|mkdocs.yml)"
