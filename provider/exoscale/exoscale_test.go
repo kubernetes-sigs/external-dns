@@ -18,7 +18,6 @@ package exoscale
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	egoscale "github.com/exoscale/egoscale/v2"
@@ -91,17 +90,6 @@ func (ep *ExoscaleClientStub) ListDNSDomains(ctx context.Context, _ string) ([]e
 
 func (ep *ExoscaleClientStub) ListDNSDomainRecords(ctx context.Context, _, domainID string) ([]egoscale.DNSDomainRecord, error) {
 	return groups[domainID], nil
-}
-
-func (ep *ExoscaleClientStub) GetDNSDomainRecord(ctx context.Context, _, domainID, recordID string) (*egoscale.DNSDomainRecord, error) {
-	group := groups[domainID]
-	for _, record := range group {
-		if *record.ID == recordID {
-			return &record, nil
-		}
-	}
-
-	return nil, errors.New("not found")
 }
 
 func (ep *ExoscaleClientStub) CreateDNSDomainRecord(ctx context.Context, _, domainID string, record *egoscale.DNSDomainRecord) (*egoscale.DNSDomainRecord, error) {
