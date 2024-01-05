@@ -10,6 +10,16 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
+tags:
+  - name: initialization
+    description: Endpoints for initial negotiation.
+  - name: listing
+    description: Endpoints to get listings of DNS records.
+  - name: update
+    description: Endpoints to update DNS records.
+servers:
+  - url: http://localhost:10721
+    description: Server url for a k8s deployment.
 paths:
   /:
     get:
@@ -20,38 +30,52 @@ paths:
         Initialisation and negotiates headers and returns domain
         filter.
       operationId: negotiate
+      tags: [initialization]
       responses:
         '200':
-          description: Positive response
+          description: |
+            The list of domains this DNS provider serves.
           content:
             application/external.dns.webhook+json;version=1:
               schema:
                 $ref: '#/components/schemas/filters'
+              example:
+                filters:
+                  - example.com
         '500':
-          description: Failure
+          description: |
+            Failed to provide the list of domains we serve.
 
   /records:
     get:
       summary: Returns the current records.
       description: |
-        Get the current records from the provider and return them.
+        Get the current records from the DNS provider and return them.
       operationId: getRecords
+      tags: [listing]
       responses:
         '200':
-          description: Positive response
+          description: |
+            Provided the list of DNS records successfully.
           content:
             application/external.dns.webhook+json;version=1:
               schema:
                 $ref: '#/components/schemas/endpoints'
         '500':
-          description: Failure
+          description: |
+            Failed to provide the list of DNS records.
 
     post:
       summary: Applies the changes.
       description: |
-        Set the records in the provider based on those supplied here.
+        Set the records in the DNS provider based on those supplied here.
       operationId: setRecords
+      tags: [update]
       requestBody:
+        description: |
+          This is the list of changes that are required.
+
+          TODO: Explain how this should be applied.
         required: true
         content:
           application/external.dns.webhook+json;version=1:
@@ -59,9 +83,11 @@ paths:
               $ref: '#/components/schemas/changes'
       responses:
         '204':
-          description: Positive response
+          description: |
+            Changes were accepted.
         '500':
-          description: Failure
+          description: |
+            Changes were not accepted.
 
   /adjustendpoints:
     post:
@@ -69,7 +95,12 @@ paths:
       description: |
         Adjusts the records in the provider based on those supplied here.
       operationId: adjustRecords
+      tags: [update]
       requestBody:
+        description: |
+          This is the list of records to be adjusted.
+
+          TODO: Explain how this should be applied.
         required: true
         content:
           application/external.dns.webhook+json;version=1:
@@ -77,17 +108,21 @@ paths:
               $ref: '#/components/schemas/endpoints'
       responses:
         '200':
-          description: Positive response
+          description: |
+            Adjustments were accepted.
           content:
             application/external.dns.webhook+json;version=1:
               schema:
                 $ref: '#/components/schemas/endpoints'
         '500':
-          description: Failure
+          description: |
+            Adjustments were not accepted.
 
 components:
   schemas:
     filters:
+      description: |
+        TODO: explain the filters object.
       type: object
       properties:
         filters:
@@ -96,11 +131,15 @@ components:
             type: string
 
     endpoints:
+      description: |
+        TODO: explain the endpoints array.
       type: array
       items:
         $ref: '#/components/schemas/endpoint'
 
     endpoint:
+      description: |
+        TODO: explain the endpoint object.
       type: object
       properties:
         dnsName:
@@ -122,21 +161,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/providerSpecificProperty'
+      example:
+        dnsName: foo.example.com
+        recordType: A
+        recordTTL: 60
 
     targets:
+      description: |
+        TODO: explain the targets array.
       type: array
       items:
         type: string
+      example:
+        - 1.2.3.4
+        - 1.2.3.5
 
     providerSpecificProperty:
+      description: |
+        TODO: explain the provider object.  What might this be used for?
+        Examples?
       type: object
       properties:
         name:
           type: string
         value:
           type: string
+      example:
+        name: foo
+        value: bar
 
     changes:
+      description: |
+        TODO: explain the changes object.
       type: object
       properties:
         create:
