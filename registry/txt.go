@@ -212,12 +212,6 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 // generateTXTRecord generates both "old" and "new" TXT records.
 // Once we decide to drop old format we need to drop toTXTName() and rename toNewTXTName
 func (im *TXTRegistry) generateTXTRecord(r *endpoint.Endpoint) []*endpoint.Endpoint {
-	// Missing TXT records are added to the set of changes.
-	// Obviously, we don't need any other TXT record for them.
-	if r.RecordType == endpoint.RecordTypeTXT {
-		return nil
-	}
-
 	endpoints := make([]*endpoint.Endpoint, 0)
 
 	if !im.txtEncryptEnabled && !im.mapper.recordTypeInAffix() && r.RecordType != endpoint.RecordTypeAAAA {
