@@ -131,12 +131,9 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 	return dnsProvider
 }
 
-// TestRunOnce tests that RunOnce correctly orchestrates the different components.
-func TestRunOnce(t *testing.T) {
+func getTestSource() *testutils.MockSource {
 	// Fake some desired endpoints coming from our source.
 	source := new(testutils.MockSource)
-	cfg := externaldns.NewConfig()
-	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
 			DNSName:    "create-record",
@@ -160,8 +157,18 @@ func TestRunOnce(t *testing.T) {
 		},
 	}, nil)
 
+	return source
+}
+
+func getTestConfig() *externaldns.Config {
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+	return cfg
+}
+
+func getTestProvider() provider.Provider {
 	// Fake some existing records in our DNS provider and validate some desired changes.
-	provider := newMockProvider(
+	return newMockProvider(
 		[]*endpoint.Endpoint{
 			{
 				DNSName:    "update-record",
@@ -203,6 +210,13 @@ func TestRunOnce(t *testing.T) {
 			},
 		},
 	)
+}
+
+// TestRunOnce tests that RunOnce correctly orchestrates the different components.
+func TestRunOnce(t *testing.T) {
+	source := getTestSource()
+	cfg := getTestConfig()
+	provider := getTestProvider()
 
 	r, err := registry.NewNoopRegistry(provider)
 	require.NoError(t, err)
@@ -226,76 +240,9 @@ func TestRunOnce(t *testing.T) {
 
 // TestRun tests that Run correctly starts and stops
 func TestRun(t *testing.T) {
-	// Fake some desired endpoints coming from our source.
-	source := new(testutils.MockSource)
-	cfg := externaldns.NewConfig()
-	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
-	source.On("Endpoints").Return([]*endpoint.Endpoint{
-		{
-			DNSName:    "create-record",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"1.2.3.4"},
-		},
-		{
-			DNSName:    "update-record",
-			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"8.8.4.4"},
-		},
-		{
-			DNSName:    "create-aaaa-record",
-			RecordType: endpoint.RecordTypeAAAA,
-			Targets:    endpoint.Targets{"2001:DB8::1"},
-		},
-		{
-			DNSName:    "update-aaaa-record",
-			RecordType: endpoint.RecordTypeAAAA,
-			Targets:    endpoint.Targets{"2001:DB8::2"},
-		},
-	}, nil)
-
-	// Fake some existing records in our DNS provider and validate some desired changes.
-	provider := newMockProvider(
-		[]*endpoint.Endpoint{
-			{
-				DNSName:    "update-record",
-				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
-			},
-			{
-				DNSName:    "delete-record",
-				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"4.3.2.1"},
-			},
-			{
-				DNSName:    "update-aaaa-record",
-				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::3"},
-			},
-			{
-				DNSName:    "delete-aaaa-record",
-				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::4"},
-			},
-		},
-		&plan.Changes{
-			Create: []*endpoint.Endpoint{
-				{DNSName: "create-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
-				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
-			},
-			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::2"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
-			},
-			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
-			},
-			Delete: []*endpoint.Endpoint{
-				{DNSName: "delete-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::4"}},
-				{DNSName: "delete-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"4.3.2.1"}},
-			},
-		},
-	)
+	source := getTestSource()
+	cfg := getTestConfig()
+	provider := getTestProvider()
 
 	r, err := registry.NewNoopRegistry(provider)
 	require.NoError(t, err)
@@ -314,7 +261,7 @@ func TestRun(t *testing.T) {
 		ctrl.Run(ctx)
 		close(stopped)
 	}()
-	time.Sleep(2 * time.Second)
+	time.Sleep(1500 * time.Millisecond)
 	cancel() // start shutdown
 	<-stopped
 
