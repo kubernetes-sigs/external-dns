@@ -18,7 +18,7 @@ tags:
   - name: update
     description: Endpoints to update DNS records.
 servers:
-  - url: http://localhost:10721
+  - url: http://localhost:8888
     description: Server url for a k8s deployment.
 paths:
   /:
@@ -129,6 +129,9 @@ components:
           type: array
           items:
             type: string
+      example:
+        filters:
+          - foo.example.com
 
     endpoints:
       description: |
