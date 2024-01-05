@@ -1612,16 +1612,21 @@ func TestAWSBatchChangeSetExceedingNameChange(t *testing.T) {
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
-	var cs Route53Changes
-	const testCount = 50
-	const testLimit = 100
-	const groupSize = 2
-	// Bytes for each name
-	var testBytes = len([]byte("1.2.3.4")) + len([]byte("test-record"))
-	// testCount / groupSize / (testLimit // bytes)
-	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
-	// Round up
-	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+	const (
+		testCount = 50
+		testLimit = 100
+		groupSize = 2
+	)
+
+	var (
+		cs Route53Changes
+		// Bytes for each name
+		testBytes = len([]byte("1.2.3.4")) + len([]byte("test-record"))
+		// testCount / groupSize / (testLimit // bytes)
+		expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
+		// Round up
+		expectedBatchCount = int(math.Ceil(expectedBatchCountFloat))
+	)
 
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
@@ -1666,16 +1671,21 @@ func TestAWSBatchChangeSetExceedingBytesLimit(t *testing.T) {
 }
 
 func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
-	var cs Route53Changes
-	const testCount = 50
-	const testLimit = 100
-	const groupSize = 2
-	// Bytes for each name multiplied by 2 for Upsert records
-	var testBytes = (len([]byte("1.2.3.4")) + len([]byte("test-record"))) * 2
-	// testCount / groupSize / (testLimit // bytes)
-	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
-	// Round up
-	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+	const (
+		testCount = 50
+		testLimit = 100
+		groupSize = 2
+	)
+
+	var (
+		cs Route53Changes
+		// Bytes for each name multiplied by 2 for Upsert records
+		testBytes = (len([]byte("1.2.3.4")) + len([]byte("test-record"))) * 2
+		// testCount / groupSize / (testLimit // bytes)
+		expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testBytes)
+		// Round up
+		expectedBatchCount = int(math.Ceil(expectedBatchCountFloat))
+	)
 
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
@@ -1720,16 +1730,21 @@ func TestAWSBatchChangeSetExceedingBytesLimitUpsert(t *testing.T) {
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
-	var cs Route53Changes
-	const testCount = 50
-	const testLimit = 100
-	const groupSize = 2
-	// Values for each group
-	const testValues = 2
-	// testCount / groupSize / (testLimit // bytes)
-	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
-	// Round up
-	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+	const (
+		testCount = 50
+		testLimit = 100
+		groupSize = 2
+		// Values for each group
+		testValues = 2
+	)
+
+	var (
+		cs Route53Changes
+		// testCount / groupSize / (testLimit // bytes)
+		expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
+		// Round up
+		expectedBatchCount = int(math.Ceil(expectedBatchCountFloat))
+	)
 
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
@@ -1774,16 +1789,21 @@ func TestAWSBatchChangeSetExceedingValuesLimit(t *testing.T) {
 }
 
 func TestAWSBatchChangeSetExceedingValuesLimitUpsert(t *testing.T) {
-	var cs Route53Changes
-	const testCount = 50
-	const testLimit = 100
-	const groupSize = 2
-	// Values for each group multiplied by 2 for Upsert records
-	const testValues = 2 * 2
-	// testCount / groupSize / (testLimit // bytes)
-	var expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
-	// Round up
-	var expectedBatchCount = int(math.Floor(expectedBatchCountFloat + 0.5))
+	const (
+		testCount = 50
+		testLimit = 100
+		groupSize = 2
+		// Values for each group multiplied by 2 for Upsert records
+		testValues = 2 * 2
+	)
+
+	var (
+		cs Route53Changes
+		// testCount / groupSize / (testLimit // bytes)
+		expectedBatchCountFloat = float64(testCount) / float64(groupSize) / float64(testLimit/testValues)
+		// Round up
+		expectedBatchCount = int(math.Ceil(expectedBatchCountFloat))
+	)
 
 	for i := 1; i <= testCount; i += groupSize {
 		cs = append(cs,
