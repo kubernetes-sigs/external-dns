@@ -767,7 +767,7 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 	}
 
 	if action == route53.ChangeActionUpsert {
-		// When the value of the Action element is UPSERT, each ResourceRecord element and each character in a Value
+		// If the value of the Action element is UPSERT, each ResourceRecord element and each character in a Value
 		// element is counted twice
 		change.sizeBytes *= 2
 		change.sizeValues *= 2
@@ -925,7 +925,7 @@ func batchChangeSet(cs Route53Changes, batchSize int, batchSizeBytes int, batchS
 			log.Warnf("Total changes for %v exceeds max batch size bytes of %d, total changes bytes: %d; changes will not be performed", k, batchSizeBytes, vBytes)
 			continue
 		}
-		if vBytes > batchSizeBytes {
+		if vValues > batchSizeValues {
 			log.Warnf("Total changes for %v exceeds max batch size values of %d, total changes values: %d; changes will not be performed", k, batchSizeValues, vValues)
 			continue
 		}
