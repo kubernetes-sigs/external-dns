@@ -451,6 +451,29 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 		},
 		{
+			title: "one rule.host one lb.externalIPs",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"8.8.8.8"},
+				},
+			},
+			gwconfig: fakeGatewayConfig{
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
 			title: "one rule.host two lb.IP and two lb.Hostname",
 			lbServices: []fakeIngressGatewayService{
 				{
@@ -480,11 +503,37 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			},
 		},
 		{
+			title: "one rule.host two lb.IP and two lb.Hostname and two lb.externalIPs",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+			gwconfig: fakeGatewayConfig{
+				name:     "mygw",
+				dnsnames: [][]string{{"*"}},
+			},
+			vsconfig: fakeVirtualServiceConfig{
+				gateways: []string{"mygw"},
+				dnsnames: []string{"foo.bar"},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+		},
+		{
 			title: "no rule.host",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips:       []string{"8.8.8.8", "127.0.0.1"},
-					hostnames: []string{"elb.com", "alb.com"},
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 			gwconfig: fakeGatewayConfig{
@@ -501,8 +550,9 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			title: "no rule.gateway",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips:       []string{"8.8.8.8", "127.0.0.1"},
-					hostnames: []string{"elb.com", "alb.com"},
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 			gwconfig: fakeGatewayConfig{
@@ -519,8 +569,9 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 			title: "one empty rule.host",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips:       []string{"8.8.8.8", "127.0.0.1"},
-					hostnames: []string{"elb.com", "alb.com"},
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 			gwconfig: fakeGatewayConfig{
@@ -845,6 +896,42 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title: "one virtualservice with two gateways, one ingressgateway loadbalancer service with externalIPs",
+			lbServices: []fakeIngressGatewayService{
+				{
+					namespace:   namespace,
+					externalIPs: []string{"8.8.8.8"},
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "gw1",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+				{
+					name:      "gw2",
+					namespace: namespace,
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs",
+					namespace: namespace,
+					gateways:  []string{"gw1", "gw2"},
+					dnsnames:  []string{"example.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
 			title: "two simple virtualservices on different namespaces with the same target gateway, one ingressgateway loadbalancer service",
 			lbServices: []fakeIngressGatewayService{
 				{
@@ -938,6 +1025,44 @@ func testVirtualServiceEndpoints(t *testing.T) {
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title:           "two simple virtualservices with one gateway on different namespaces and a target namespace, one ingressgateway loadbalancer service with externalIPs",
+			targetNamespace: "testing1",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"8.8.8.8"},
+					namespace:   "testing1",
+				},
+			},
+			gwConfigs: []fakeGatewayConfig{
+				{
+					name:      "fake1",
+					namespace: "testing1",
+					dnsnames:  [][]string{{"*"}},
+				},
+			},
+			vsConfigs: []fakeVirtualServiceConfig{
+				{
+					name:      "vs1",
+					namespace: "testing1",
+					gateways:  []string{"testing1/fake1"},
+					dnsnames:  []string{"example.org"},
+				},
+				{
+					name:      "vs2",
+					namespace: "testing2",
+					gateways:  []string{"testing1/fake1"},
+					dnsnames:  []string{"new.org"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 			},
 		},
