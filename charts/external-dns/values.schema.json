@@ -259,22 +259,11 @@
                 "annotations": {
                     "type": "object"
                 },
-                "ipDualStack": {
-                    "type": "object",
-                    "properties": {
-                        "enabled": {
-                            "type": "boolean"
-                        },
-                        "ipFamilies": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        },
-                        "ipFamilyPolicy": {
-                            "type": "string"
-                        }
-                    }
+                "ipFamilies": {
+                    "type": "array"
+                },
+                "ipFamilyPolicy": {
+                    "type": "null"
                 },
                 "port": {
                     "type": "integer"

@@ -10,9 +10,12 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-{{- if .Values.service.ipDualStack.enabled }}
-  ipFamilies: {{ toYaml .Values.service.ipDualStack.ipFamilies | nindent 4 }}
-  ipFamilyPolicy: {{ .Values.service.ipDualStack.ipFamilyPolicy }}
+{{- with .Values.service.ipFamilies }}
+  ipFamilies:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with .Values.service.ipFamilyPolicy }}
+  ipFamilyPolicy: {{ . }}
 {{- end }}
   type: ClusterIP
   selector:
