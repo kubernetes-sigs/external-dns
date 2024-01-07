@@ -33,3 +33,13 @@ jobs:
       run: |
         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.55.2
         make lint
+
+    - name: Install Vacuum
+      # See: https://quobix.com/vacuum/installing/
+      run: |
+        curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+      shell: bash
+    - name: Run Vacuum
+      run: |
+        vacuum lint -d api/webhook.yaml
+      shell: bash
