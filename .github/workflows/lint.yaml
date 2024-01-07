@@ -34,3 +34,13 @@ jobs:
       with:
         args: --timeout=30m
         version: v1.60
+
+    - name: Install Vacuum
+      # See: https://quobix.com/vacuum/installing/
+      run: |
+        curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+      shell: bash
+    - name: Run Vacuum
+      run: |
+        vacuum lint -d api/webhook.yaml
+      shell: bash
