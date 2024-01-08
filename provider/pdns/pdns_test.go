@@ -178,6 +178,12 @@ var (
 		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeA, endpoint.TTL(300), "9.9.9.9"),
 		endpoint.NewEndpointWithTTL("test.simexample.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
 	}
+	endpointsApexRecords = []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("cname.example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeTXT, endpoint.TTL(300), "\"heritage=external-dns,external-dns/owner=tower-pdns\""),
+		endpoint.NewEndpointWithTTL("example.com", endpoint.RecordTypeCNAME, endpoint.TTL(300), "example.by.any.other.name.com"),
+	}
 
 	ZoneEmpty = pgo.Zone{
 		// Opaque zone id (string), assigned by the server, should not be interpreted by the application. Guaranteed to be safe for embedding in URLs.
@@ -472,6 +478,72 @@ var (
 				Name:       "example.com.",
 				Type_:      "TXT",
 				Changetype: "DELETE",
+				Records: []pgo.Record{
+					{
+						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+		},
+	}
+
+	ZoneEmptyToApexPatch = pgo.Zone{
+		Id:    "example.com.",
+		Name:  "example.com.",
+		Type_: "Zone",
+		Url:   "/api/v1/servers/localhost/zones/example.com.",
+		Kind:  "Native",
+		Rrsets: []pgo.RrSet{
+			{
+				Name:       "cname.example.com.",
+				Type_:      "CNAME",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "example.by.any.other.name.com.",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "cname.example.com.",
+				Type_:      "TXT",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "example.com.",
+				Type_:      "ALIAS",
+				Ttl:        300,
+				Changetype: "REPLACE",
+				Records: []pgo.Record{
+					{
+						Content:  "example.by.any.other.name.com.",
+						Disabled: false,
+						SetPtr:   false,
+					},
+				},
+				Comments: []pgo.Comment(nil),
+			},
+			{
+				Name:       "example.com.",
+				Type_:      "TXT",
+				Ttl:        300,
+				Changetype: "REPLACE",
 				Records: []pgo.Record{
 					{
 						Content:  "\"heritage=external-dns,external-dns/owner=tower-pdns\"",
@@ -871,6 +943,11 @@ func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZones() {
 			}
 		}
 	}
+
+	// Check endpoints of type CNAME are converted to ALIAS on the domain apex
+	zlist, err = p.ConvertEndpointsToZones(endpointsApexRecords, PdnsReplace)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), []pgo.Zone{ZoneEmptyToApexPatch}, zlist)
 }
 
 func (suite *NewPDNSProviderTestSuite) TestPDNSConvertEndpointsToZonesPartitionZones() {
