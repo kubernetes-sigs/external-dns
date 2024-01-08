@@ -1,90 +1,90 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "type": "object",
-    "properties": {
-        "provider": {
-            "anyOf": [
-                {
-                    "type": "string"
-                },
-                {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        }
-                    }
-                }
-            ]
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "type": "object",
+  "properties": {
+    "provider": {
+      "anyOf": [
+        {
+          "type": "string"
         },
-        "extraArgs": {
-            "type": "array",
-            "items": {
-                "type": "string"
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
             }
-        },
-        "secretConfiguration": {
-            "type": "object",
-            "properties": {
-                "enabled": {
-                    "type": "boolean"
-                },
-                "mountPath": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "subPath": {
-                    "type": [
-                        "string",
-                        "null"
-                    ]
-                },
-                "data": {
-                    "type": "object",
-                    "patternProperties": {
-                        ".+": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "service": {
-            "type": "object",
-            "properties": {
-                "annotations": {
-                    "type": "object"
-                },
-                "ipFamilies": {
-                    "type": "array",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "IPv6",
-                            "IPv4"
-                        ]
-                    }
-                },
-                "ipFamilyPolicy": {
-                    "type": [
-                        "string",
-                        "null"
-                    ],
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "SingleStack",
-                            "PreferDualStack",
-                            "RequireDualStack"
-                        ]
-                    }
-                },
-                "port": {
-                    "type": "integer"
-                }
-            }
+          }
         }
+      ]
+    },
+    "extraArgs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "secretConfiguration": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "mountPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subPath": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "patternProperties": {
+            ".+": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "object"
+        },
+        "ipFamilies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "IPv6",
+              "IPv4"
+            ]
+          }
+        },
+        "ipFamilyPolicy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "SingleStack",
+              "PreferDualStack",
+              "RequireDualStack"
+            ]
+          }
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
     }
+  }
 }
