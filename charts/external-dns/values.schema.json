@@ -50,6 +50,41 @@
           }
         }
       }
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "annotations": {
+          "type": "object"
+        },
+        "ipFamilies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "IPv6",
+              "IPv4"
+            ]
+          }
+        },
+        "ipFamilyPolicy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "enum": [
+              "SingleStack",
+              "PreferDualStack",
+              "RequireDualStack"
+            ]
+          }
+        },
+        "port": {
+          "type": "integer"
+        }
+      }
     }
   }
 }
