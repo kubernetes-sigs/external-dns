@@ -316,12 +316,14 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				for _, t := range ep.Targets {
 					if ep.RecordType == "CNAME" || ep.RecordType == "ALIAS" {
 						t = provider.EnsureTrailingDot(t)
-						if t != zone.Name && !strings.HasSuffix(t, "."+zone.Name) {
-							RecordType_ = "ALIAS"
-						}
 					}
 					records = append(records, pgo.Record{Content: t})
 				}
+
+				if dnsname == zone.Name && ep.RecordType == "CNAME" {
+					RecordType_ = "ALIAS"
+				}
+
 				rrset := pgo.RrSet{
 					Name:       dnsname,
 					Type_:      RecordType_,
