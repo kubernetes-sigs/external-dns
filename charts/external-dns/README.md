@@ -116,7 +116,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container. |
 | revisionHistoryLimit | int | `nil` | Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``. |
 | secretConfiguration.data | object | `{}` | `Secret` data. |
-| secretConfiguration.enabled | bool | `false` | If `true`, create a `Secret` to store sensitive provider configuration. |
+| secretConfiguration.enabled | bool | `false` | If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**). |
 | secretConfiguration.mountPath | string | `nil` | Mount path for the `Secret`, this can be templated. |
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
 | securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) for the `external-dns` container. |

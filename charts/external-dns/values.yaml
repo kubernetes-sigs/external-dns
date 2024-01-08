@@ -220,7 +220,7 @@ provider:
 extraArgs: []
 
 secretConfiguration:
-  # -- If `true`, create a `Secret` to store sensitive provider configuration.
+  # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false
   # -- Mount path for the `Secret`, this can be templated.
   mountPath:
