@@ -324,10 +324,10 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 
 	err := p.client.ListHostedZonesPagesWithContext(ctx, &route53.ListHostedZonesInput{}, f)
 	if err != nil {
-		return nil, provider.WrapSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 	}
 	if tagErr != nil {
-		return nil, provider.WrapSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
 	}
 
 	for _, zone := range zones {
@@ -352,7 +352,7 @@ func wildcardUnescape(s string) string {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return nil, provider.WrapSoftError(fmt.Errorf("records retrieval failed: %w", err))
+		return nil, provider.NewSoftError(fmt.Errorf("records retrieval failed: %w", err))
 	}
 
 	return p.records(ctx, zones)
@@ -444,7 +444,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, provider.WrapSoftError(fmt.Errorf("failed to list resource records sets for zone %s: %w", *z.Id, err))
+			return nil, provider.NewSoftError(fmt.Errorf("failed to list resource records sets for zone %s: %w", *z.Id, err))
 		}
 	}
 
@@ -529,7 +529,7 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilter {
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return provider.WrapSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))
+		return provider.NewSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))
 	}
 
 	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
@@ -631,7 +631,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
-		return provider.WrapSoftError(fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones))
+		return provider.NewSoftError(fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones))
 	}
 
 	return nil
@@ -846,7 +846,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 		ResourceId:   aws.String(zoneID),
 	})
 	if err != nil {
-		return nil, provider.WrapSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {
