@@ -8,7 +8,6 @@ linters-settings:
   misspell:
     locale: US
   revive:
-    confusing-naming: false
     ignore-generated-header: true
     rules:
       - name: confusing-naming

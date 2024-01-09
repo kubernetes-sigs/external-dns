@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,10 +34,8 @@ import (
 )
 
 const (
-	mediaTypeFormatAndVersion = "application/external.dns.webhook+json;version=1"
-	contentTypeHeader         = "Content-Type"
-	acceptHeader              = "Accept"
-	maxRetries                = 5
+	acceptHeader = "Accept"
+	maxRetries   = 5
 )
 
 var (
@@ -44,24 +43,48 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "records_errors",
+			Name:      "records_errors_total",
 			Help:      "Errors with Records method",
+		},
+	)
+	recordsRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "records_requests_total",
+			Help:      "Requests with Records method",
 		},
 	)
 	applyChangesErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "applychanges_errors",
+			Name:      "applychanges_errors_total",
 			Help:      "Errors with ApplyChanges method",
+		},
+	)
+	applyChangesRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "applychanges_requests_total",
+			Help:      "Requests with ApplyChanges method",
 		},
 	)
 	adjustEndpointsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "adjustendpointsgauge_errors",
+			Name:      "adjustendpoints_errors_total",
 			Help:      "Errors with AdjustEndpoints method",
+		},
+	)
+	adjustEndpointsRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "adjustendpoints_requests_total",
+			Help:      "Requests with AdjustEndpoints method",
 		},
 	)
 )
@@ -74,8 +97,11 @@ type WebhookProvider struct {
 
 func init() {
 	prometheus.MustRegister(recordsErrorsGauge)
+	prometheus.MustRegister(recordsRequestsGauge)
 	prometheus.MustRegister(applyChangesErrorsGauge)
+	prometheus.MustRegister(applyChangesRequestsGauge)
 	prometheus.MustRegister(adjustEndpointsErrorsGauge)
+	prometheus.MustRegister(adjustEndpointsRequestsGauge)
 }
 
 func NewWebhookProvider(u string) (*WebhookProvider, error) {
@@ -89,7 +115,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	client := &http.Client{}
 	var resp *http.Response
@@ -110,7 +136,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("failed to connect to plugin api: %v", err)
 	}
 
-	contentType := resp.Header.Get(contentTypeHeader)
+	contentType := resp.Header.Get(webhookapi.ContentTypeHeader)
 
 	// read the serialized DomainFilter from the response body and set it in the webhook provider struct
 	defer resp.Body.Close()
@@ -120,7 +146,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 		return nil, fmt.Errorf("failed to unmarshal response body of DomainFilter: %v", err)
 	}
 
-	if contentType != mediaTypeFormatAndVersion {
+	if contentType != webhookapi.MediaTypeFormatAndVersion {
 		return nil, fmt.Errorf("wrong content type returned from server: %s", contentType)
 	}
 
@@ -133,14 +159,16 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 
 // Records will make a GET call to remoteServerURL/records and return the results
 func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	recordsRequestsGauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
+
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		recordsErrorsGauge.Inc()
 		log.Debugf("Failed to create request: %s", err.Error())
 		return nil, err
 	}
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 	resp, err := p.client.Do(req)
 	if err != nil {
 		recordsErrorsGauge.Inc()
@@ -166,6 +194,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	applyChangesRequestsGauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
 
 	b := new(bytes.Buffer)
@@ -182,7 +211,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		return err
 	}
 
-	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	resp, err := p.client.Do(req)
 	if err != nil {
@@ -204,6 +233,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // based on a provider specific requirement.
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	adjustEndpointsRequestsGauge.Inc()
 	endpoints := []*endpoint.Endpoint{}
 	u, err := url.JoinPath(p.remoteServerURL.String(), "adjustendpoints")
 	if err != nil {
@@ -226,8 +256,8 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		return nil, err
 	}
 
-	req.Header.Set(contentTypeHeader, mediaTypeFormatAndVersion)
-	req.Header.Set(acceptHeader, mediaTypeFormatAndVersion)
+	req.Header.Set(webhookapi.ContentTypeHeader, webhookapi.MediaTypeFormatAndVersion)
+	req.Header.Set(acceptHeader, webhookapi.MediaTypeFormatAndVersion)
 
 	resp, err := p.client.Do(req)
 	if err != nil {

@@ -113,63 +113,63 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 		client.createdEndpoints = append(
 			client.createdEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordA).Name,
+				*obj.(*ibclient.RecordA).Name,
 				endpoint.RecordTypeA,
-				obj.(*ibclient.RecordA).Ipv4Addr,
+				*obj.(*ibclient.RecordA).Ipv4Addr,
 			),
 		)
-		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.RecordA).Name)), obj.(*ibclient.RecordA).Name)
+		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(*obj.(*ibclient.RecordA).Name)), *obj.(*ibclient.RecordA).Name)
 		obj.(*ibclient.RecordA).Ref = ref
 	case "record:cname":
 		client.createdEndpoints = append(
 			client.createdEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordCNAME).Name,
+				*obj.(*ibclient.RecordCNAME).Name,
 				endpoint.RecordTypeCNAME,
-				obj.(*ibclient.RecordCNAME).Canonical,
+				*obj.(*ibclient.RecordCNAME).Canonical,
 			),
 		)
-		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.RecordCNAME).Name)), obj.(*ibclient.RecordCNAME).Name)
+		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(*obj.(*ibclient.RecordCNAME).Name)), *obj.(*ibclient.RecordCNAME).Name)
 		obj.(*ibclient.RecordCNAME).Ref = ref
 	case "record:host":
 		for _, i := range obj.(*ibclient.HostRecord).Ipv4Addrs {
 			client.createdEndpoints = append(
 				client.createdEndpoints,
 				endpoint.NewEndpoint(
-					obj.(*ibclient.HostRecord).Name,
+					*obj.(*ibclient.HostRecord).Name,
 					endpoint.RecordTypeA,
-					i.Ipv4Addr,
+					*i.Ipv4Addr,
 				),
 			)
 		}
-		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.HostRecord).Name)), obj.(*ibclient.HostRecord).Name)
+		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(*obj.(*ibclient.HostRecord).Name)), *obj.(*ibclient.HostRecord).Name)
 		obj.(*ibclient.HostRecord).Ref = ref
 	case "record:txt":
 		client.createdEndpoints = append(
 			client.createdEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordTXT).Name,
+				*obj.(*ibclient.RecordTXT).Name,
 				endpoint.RecordTypeTXT,
-				obj.(*ibclient.RecordTXT).Text,
+				*obj.(*ibclient.RecordTXT).Text,
 			),
 		)
 		obj.(*ibclient.RecordTXT).Ref = ref
-		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.RecordTXT).Name)), obj.(*ibclient.RecordTXT).Name)
+		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(*obj.(*ibclient.RecordTXT).Name)), *obj.(*ibclient.RecordTXT).Name)
 	case "record:ptr":
 		client.createdEndpoints = append(
 			client.createdEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordPTR).PtrdName,
+				*obj.(*ibclient.RecordPTR).PtrdName,
 				endpoint.RecordTypePTR,
-				obj.(*ibclient.RecordPTR).Ipv4Addr,
+				*obj.(*ibclient.RecordPTR).Ipv4Addr,
 			),
 		)
 		obj.(*ibclient.RecordPTR).Ref = ref
-		reverseAddr, err := dns.ReverseAddr(obj.(*ibclient.RecordPTR).Ipv4Addr)
+		reverseAddr, err := dns.ReverseAddr(*obj.(*ibclient.RecordPTR).Ipv4Addr)
 		if err != nil {
-			return ref, fmt.Errorf("unable to create reverse addr from %s", obj.(*ibclient.RecordPTR).Ipv4Addr)
+			return ref, fmt.Errorf("unable to create reverse addr from %s", *obj.(*ibclient.RecordPTR).Ipv4Addr)
 		}
-		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(obj.(*ibclient.RecordPTR).PtrdName)), reverseAddr)
+		ref = fmt.Sprintf("%s/%s:%s/default", obj.ObjectType(), base64.StdEncoding.EncodeToString([]byte(*obj.(*ibclient.RecordPTR).PtrdName)), reverseAddr)
 	}
 	*client.mockInfobloxObjects = append(
 		*client.mockInfobloxObjects,
@@ -200,8 +200,8 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 					ref != object.(*ibclient.RecordA).Ref {
 					continue
 				}
-				if obj.(*ibclient.RecordA).Name != "" &&
-					obj.(*ibclient.RecordA).Name != object.(*ibclient.RecordA).Name {
+				if obj.(*ibclient.RecordA).Name != nil &&
+					*obj.(*ibclient.RecordA).Name != *object.(*ibclient.RecordA).Name {
 					continue
 				}
 				result = append(result, *object.(*ibclient.RecordA))
@@ -216,8 +216,8 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 					ref != object.(*ibclient.RecordCNAME).Ref {
 					continue
 				}
-				if obj.(*ibclient.RecordCNAME).Name != "" &&
-					obj.(*ibclient.RecordCNAME).Name != object.(*ibclient.RecordCNAME).Name {
+				if obj.(*ibclient.RecordCNAME).Name != nil &&
+					*obj.(*ibclient.RecordCNAME).Name != *object.(*ibclient.RecordCNAME).Name {
 					continue
 				}
 				result = append(result, *object.(*ibclient.RecordCNAME))
@@ -232,8 +232,8 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 					ref != object.(*ibclient.HostRecord).Ref {
 					continue
 				}
-				if obj.(*ibclient.HostRecord).Name != "" &&
-					obj.(*ibclient.HostRecord).Name != object.(*ibclient.HostRecord).Name {
+				if obj.(*ibclient.HostRecord).Name != nil &&
+					*obj.(*ibclient.HostRecord).Name != *object.(*ibclient.HostRecord).Name {
 					continue
 				}
 				result = append(result, *object.(*ibclient.HostRecord))
@@ -248,8 +248,8 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 					ref != object.(*ibclient.RecordTXT).Ref {
 					continue
 				}
-				if obj.(*ibclient.RecordTXT).Name != "" &&
-					obj.(*ibclient.RecordTXT).Name != object.(*ibclient.RecordTXT).Name {
+				if obj.(*ibclient.RecordTXT).Name != nil &&
+					*obj.(*ibclient.RecordTXT).Name != *object.(*ibclient.RecordTXT).Name {
 					continue
 				}
 				result = append(result, *object.(*ibclient.RecordTXT))
@@ -264,8 +264,8 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 					ref != object.(*ibclient.RecordPTR).Ref {
 					continue
 				}
-				if obj.(*ibclient.RecordPTR).PtrdName != "" &&
-					obj.(*ibclient.RecordPTR).PtrdName != object.(*ibclient.RecordPTR).PtrdName {
+				if obj.(*ibclient.RecordPTR).PtrdName != nil &&
+					*obj.(*ibclient.RecordPTR).PtrdName != *object.(*ibclient.RecordPTR).PtrdName {
 					continue
 				}
 				result = append(result, *object.(*ibclient.RecordPTR))
@@ -286,13 +286,13 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:a":
 		var records []ibclient.RecordA
 		obj := ibclient.NewEmptyRecordA()
-		obj.Name = result[2]
+		obj.Name = &result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
 				endpoint.NewEndpoint(
-					record.Name,
+					*record.Name,
 					endpoint.RecordTypeA,
 					"",
 				),
@@ -301,13 +301,13 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:cname":
 		var records []ibclient.RecordCNAME
 		obj := ibclient.NewEmptyRecordCNAME()
-		obj.Name = result[2]
+		obj.Name = &result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
 				endpoint.NewEndpoint(
-					record.Name,
+					*record.Name,
 					endpoint.RecordTypeCNAME,
 					"",
 				),
@@ -316,13 +316,13 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:host":
 		var records []ibclient.HostRecord
 		obj := ibclient.NewEmptyHostRecord()
-		obj.Name = result[2]
+		obj.Name = &result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
 				endpoint.NewEndpoint(
-					record.Name,
+					*record.Name,
 					endpoint.RecordTypeA,
 					"",
 				),
@@ -331,13 +331,13 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:txt":
 		var records []ibclient.RecordTXT
 		obj := ibclient.NewEmptyRecordTXT()
-		obj.Name = result[2]
+		obj.Name = &result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
 				endpoint.NewEndpoint(
-					record.Name,
+					*record.Name,
 					endpoint.RecordTypeTXT,
 					"",
 				),
@@ -346,13 +346,13 @@ func (client *mockIBConnector) DeleteObject(ref string) (refRes string, err erro
 	case "record:ptr":
 		var records []ibclient.RecordPTR
 		obj := ibclient.NewEmptyRecordPTR()
-		obj.Name = result[2]
+		obj.Name = &result[2]
 		client.GetObject(obj, ref, nil, &records)
 		for _, record := range records {
 			client.deletedEndpoints = append(
 				client.deletedEndpoints,
 				endpoint.NewEndpoint(
-					record.PtrdName,
+					*record.PtrdName,
 					endpoint.RecordTypePTR,
 					"",
 				),
@@ -368,8 +368,8 @@ func (client *mockIBConnector) UpdateObject(obj ibclient.IBObject, ref string) (
 		client.updatedEndpoints = append(
 			client.updatedEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordA).Name,
-				obj.(*ibclient.RecordA).Ipv4Addr,
+				*obj.(*ibclient.RecordA).Name,
+				*obj.(*ibclient.RecordA).Ipv4Addr,
 				endpoint.RecordTypeA,
 			),
 		)
@@ -377,8 +377,8 @@ func (client *mockIBConnector) UpdateObject(obj ibclient.IBObject, ref string) (
 		client.updatedEndpoints = append(
 			client.updatedEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordCNAME).Name,
-				obj.(*ibclient.RecordCNAME).Canonical,
+				*obj.(*ibclient.RecordCNAME).Name,
+				*obj.(*ibclient.RecordCNAME).Canonical,
 				endpoint.RecordTypeCNAME,
 			),
 		)
@@ -387,8 +387,8 @@ func (client *mockIBConnector) UpdateObject(obj ibclient.IBObject, ref string) (
 			client.updatedEndpoints = append(
 				client.updatedEndpoints,
 				endpoint.NewEndpoint(
-					obj.(*ibclient.HostRecord).Name,
-					i.Ipv4Addr,
+					*obj.(*ibclient.HostRecord).Name,
+					*i.Ipv4Addr,
 					endpoint.RecordTypeA,
 				),
 			)
@@ -397,8 +397,8 @@ func (client *mockIBConnector) UpdateObject(obj ibclient.IBObject, ref string) (
 		client.updatedEndpoints = append(
 			client.updatedEndpoints,
 			endpoint.NewEndpoint(
-				obj.(*ibclient.RecordTXT).Name,
-				obj.(*ibclient.RecordTXT).Text,
+				*obj.(*ibclient.RecordTXT).Name,
+				*obj.(*ibclient.RecordTXT).Text,
 				endpoint.RecordTypeTXT,
 			),
 		)
@@ -417,37 +417,37 @@ func createMockInfobloxObject(name, recordType, value string) ibclient.IBObject 
 	switch recordType {
 	case endpoint.RecordTypeA:
 		obj := ibclient.NewEmptyRecordA()
-		obj.Name = name
+		obj.Name = &name
 		obj.Ref = ref
-		obj.Ipv4Addr = value
+		obj.Ipv4Addr = &value
 		return obj
 	case endpoint.RecordTypeCNAME:
 		obj := ibclient.NewEmptyRecordCNAME()
-		obj.Name = name
+		obj.Name = &name
 		obj.Ref = ref
-		obj.Canonical = value
+		obj.Canonical = &value
 		return obj
 	case endpoint.RecordTypeTXT:
 		obj := ibclient.NewEmptyRecordTXT()
-		obj.Name = name
+		obj.Name = &name
 		obj.Ref = ref
-		obj.Text = value
+		obj.Text = &value
 		return obj
 	case "HOST":
 		obj := ibclient.NewEmptyHostRecord()
-		obj.Name = name
+		obj.Name = &name
 		obj.Ref = ref
 		obj.Ipv4Addrs = []ibclient.HostRecordIpv4Addr{
 			{
-				Ipv4Addr: value,
+				Ipv4Addr: &value,
 			},
 		}
 		return obj
 	case endpoint.RecordTypePTR:
 		obj := ibclient.NewEmptyRecordPTR()
-		obj.PtrdName = name
+		obj.PtrdName = &name
 		obj.Ref = ref
-		obj.Ipv4Addr = value
+		obj.Ipv4Addr = &value
 		return obj
 	}
 

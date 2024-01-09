@@ -39,6 +39,10 @@ service:
   annotations: {}
   # -- Service HTTP port.
   port: 7979
+  # -- Service IP families.
+  ipFamilies: []
+  # -- (string) Service IP family policy.
+  ipFamilyPolicy:
 
 rbac:
   # -- If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API.
@@ -271,7 +275,7 @@ provider:
 extraArgs: []
 
 secretConfiguration:
-  # -- If `true`, create a `Secret` to store sensitive provider configuration.
+  # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false
   # -- Mount path for the `Secret`, this can be templated.
   mountPath:

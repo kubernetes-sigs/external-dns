@@ -337,8 +337,9 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			title: "no rule.host",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips:       []string{"8.8.8.8", "127.0.0.1"},
-					hostnames: []string{"elb.com", "alb.com"},
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 			config: fakeGatewayConfig{
@@ -350,8 +351,9 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 			title: "one empty rule.host",
 			lbServices: []fakeIngressGatewayService{
 				{
-					ips:       []string{"8.8.8.8", "127.0.0.1"},
-					hostnames: []string{"elb.com", "alb.com"},
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 			config: fakeGatewayConfig{
@@ -444,6 +446,48 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
 					Targets:    endpoint.Targets{"lb.com"},
+				},
+			},
+		},
+		{
+			title: "one rule.host one lb.externalIP",
+			lbServices: []fakeIngressGatewayService{
+				{
+					externalIPs: []string{"8.8.8.8"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
+				},
+			},
+		},
+		{
+			title: "one rule.host two lb.IP, two lb.Hostname and two lb.externalIP",
+			lbServices: []fakeIngressGatewayService{
+				{
+					ips:         []string{"8.8.8.8", "127.0.0.1"},
+					hostnames:   []string{"elb.com", "alb.com"},
+					externalIPs: []string{"1.1.1.1", "2.2.2.2"},
+				},
+			},
+			config: fakeGatewayConfig{
+				dnsnames: [][]string{
+					{"foo.bar"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1", "2.2.2.2"},
 				},
 			},
 		},
@@ -1521,11 +1565,12 @@ func newTestGatewaySource(loadBalancerList []fakeIngressGatewayService, ingressL
 }
 
 type fakeIngressGatewayService struct {
-	ips       []string
-	hostnames []string
-	namespace string
-	name      string
-	selector  map[string]string
+	ips         []string
+	hostnames   []string
+	namespace   string
+	name        string
+	selector    map[string]string
+	externalIPs []string
 }
 
 func (ig fakeIngressGatewayService) Service() *v1.Service {
@@ -1540,7 +1585,8 @@ func (ig fakeIngressGatewayService) Service() *v1.Service {
 			},
 		},
 		Spec: v1.ServiceSpec{
-			Selector: ig.selector,
+			Selector:    ig.selector,
+			ExternalIPs: ig.externalIPs,
 		},
 	}
 

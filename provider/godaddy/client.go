@@ -122,7 +122,8 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 		APISecret:   apiSecret,
 		APIEndPoint: endpoint,
 		Client:      &http.Client{},
-		Ratelimiter: rate.NewLimiter(rate.Every(60*time.Second), 60),
+		// Add one token every second
+		Ratelimiter: rate.NewLimiter(rate.Every(time.Second), 60),
 		Timeout:     DefaultTimeout,
 	}
 
@@ -142,7 +143,7 @@ func (c *Client) Get(url string, resType interface{}) error {
 	return c.CallAPI("GET", url, nil, resType, true)
 }
 
-// Patch is a wrapper for the POST method
+// Patch is a wrapper for the PATCH method
 func (c *Client) Patch(url string, reqBody, resType interface{}) error {
 	return c.CallAPI("PATCH", url, reqBody, resType, true)
 }
@@ -167,7 +168,7 @@ func (c *Client) GetWithContext(ctx context.Context, url string, resType interfa
 	return c.CallAPIWithContext(ctx, "GET", url, nil, resType, true)
 }
 
-// PatchWithContext is a wrapper for the POST method
+// PatchWithContext is a wrapper for the PATCH method
 func (c *Client) PatchWithContext(ctx context.Context, url string, reqBody, resType interface{}) error {
 	return c.CallAPIWithContext(ctx, "PATCH", url, reqBody, resType, true)
 }

@@ -65,7 +65,7 @@ func getConfig(configFile, resourceGroup, userAssignedIdentityClientID string) (
 	return cfg, nil
 }
 
-// getAccessToken retrieves Azure API access token.
+// getCredentials retrieves Azure API credentials.
 func getCredentials(cfg config) (azcore.TokenCredential, *arm.ClientOptions, error) {
 	cloudCfg, err := getCloudConfiguration(cfg.Cloud)
 	if err != nil {
