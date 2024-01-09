@@ -28,7 +28,7 @@ import (
 
 var SoftError error = errors.New("soft error")
 
-func WrapSoftError(err error) error {
+func NewSoftError(err error) error {
 	return errors.Join(SoftError, err)
 }
 
