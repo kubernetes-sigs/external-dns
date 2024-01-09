@@ -24,6 +24,7 @@
       }
     },
     "secretConfiguration": {
+      "$comment": "This value is DEPRECATED as secrets should be configured external to the chart and exposed to the container via extraVolumes & extraVolumeMounts.",
       "type": "object",
       "properties": {
         "enabled": {
