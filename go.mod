@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.44.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.652
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.654
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.49.15
+	github.com/aws/aws-sdk-go v1.49.17
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/civo/civogo v0.3.56
@@ -34,9 +34,9 @@ require (
 	github.com/google/uuid v1.5.0
 	github.com/gophercloud/gophercloud v1.8.0
 	github.com/hooklift/gowsdl v0.5.0
-	github.com/infobloxopen/infoblox-go-client/v2 v2.4.0
+	github.com/infobloxopen/infoblox-go-client/v2 v2.5.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.26.0
+	github.com/linode/linodego v1.27.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.57
 	github.com/nesv/go-dynect v0.6.0
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.22
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.834
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.834
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.834
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.836
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.836
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.836
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -64,8 +64,8 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.11
 	go.etcd.io/etcd/client/v3 v3.5.11
 	go.uber.org/ratelimit v0.3.0
-	golang.org/x/net v0.19.0
-	golang.org/x/oauth2 v0.15.0
+	golang.org/x/net v0.20.0
+	golang.org/x/oauth2 v0.16.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.155.0
@@ -198,11 +198,11 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.17.0 // indirect
+	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/term v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
