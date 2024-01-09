@@ -18,12 +18,19 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
+
+var SoftError error = errors.New("soft error")
+
+func WrapSoftError(err error) error {
+	return errors.Join(SoftError, err)
+}
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {
