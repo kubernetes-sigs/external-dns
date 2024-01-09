@@ -32,15 +32,14 @@ helm upgrade --install external-dns external-dns/external-dns --version 1.13.1
 
 ## Providers
 
-Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the
-`provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the
-provider with all additional configuration being set via the `extraArgs` value.
+Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
+See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-providers) for more info on available providers and tutorials.
 
 ### Providers with Specific Configuration Support
 
 | Provider               | Supported  |
 |------------------------|------------|
-| `webhook`              | ❌         |
+| `webhook`              | ✅         |
 
 ## Namespaced Scoped Installation
 
@@ -108,10 +107,21 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | podSecurityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#podsecuritycontext-v1-core), this supports full customisation. |
 | policy | string | `"upsert-only"` | How DNS records are synchronized between sources and providers; available values are `sync` & `upsert-only`. |
 | priorityClassName | string | `nil` | Priority class name for the `Pod`. |
-| provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see the [README](https://github.com/kubernetes-sigs/external-dns#deploying-to-a-cluster). |
+| provider.name | string | `"aws"` | _ExternalDNS_ provider name; for the available providers and how to configure them see [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#providers). |
+| provider.webhook.args | list | `[]` | Extra arguments to provide for the `webhook` container. |
+| provider.webhook.env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `webhook` container. |
+| provider.webhook.extraVolumeMounts | list | `[]` | Extra [volume mounts](https://kubernetes.io/docs/concepts/storage/volumes/) for the `webhook` container. |
+| provider.webhook.image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the `webhook` container. |
+| provider.webhook.image.repository | string | `nil` | Image repository for the `webhook` container. |
+| provider.webhook.image.tag | string | `nil` | Image tag for the `webhook` container. |
+| provider.webhook.livenessProbe | object | See _values.yaml_ | [Liveness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
+| provider.webhook.readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `webhook` container. |
+| provider.webhook.resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `webhook` container. |
+| provider.webhook.securityContext | object | See _values.yaml_ | [Pod security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `webhook` container. |
+| provider.webhook.serviceMonitor | object | See _values.yaml_ | Optional [Service Monitor](https://prometheus-operator.dev/docs/operator/design/#servicemonitor) configuration for the `webhook` container. |
 | rbac.additionalPermissions | list | `[]` | Additional rules to add to the `ClusterRole`. |
 | rbac.create | bool | `true` | If `true`, create a `ClusterRole` & `ClusterRoleBinding` with access to the Kubernetes API. |
-| readinessProbe | object | See _values.yaml_ | Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
+| readinessProbe | object | See _values.yaml_ | [Readiness probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) configuration for the `external-dns` container. |
 | registry | string | `"txt"` | Specify the registry for storing ownership and labels. Valid values are `txt`, `aws-sd`, `dynamodb` & `noop`. |
 | resources | object | `{}` | [Resources](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/) for the `external-dns` container. |
 | revisionHistoryLimit | int | `nil` | Specify the number of old `ReplicaSets` to retain to allow rollback of the `Deployment``. |
@@ -119,7 +129,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | secretConfiguration.enabled | bool | `false` | If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**). |
 | secretConfiguration.mountPath | string | `nil` | Mount path for the `Secret`, this can be templated. |
 | secretConfiguration.subPath | string | `nil` | Sub-path for mounting the `Secret`, this can be templated. |
-| securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.22/#securitycontext-v1-core) for the `external-dns` container. |
+| securityContext | object | See _values.yaml_ | [Security context](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container) for the `external-dns` container. |
 | service.annotations | object | `{}` | Service annotations. |
 | service.ipFamilies | list | `[]` | Service IP families. |
 | service.ipFamilyPolicy | string | `nil` | Service IP family policy. |

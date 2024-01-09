@@ -1,3 +1,4 @@
+{{- $providerName := include "external-dns.providerName" . }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -103,7 +104,7 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
-            - --provider={{ include "external-dns.providerName" . }}
+            - --provider={{ $providerName }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
           {{- end }}
@@ -132,6 +133,43 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- if eq $providerName "webhook" }}
+        {{- with .Values.provider.webhook }}
+        - name: webhook
+          image: {{ include "external-dns.webhookImage" . }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          {{- with .env }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .args }}
+          args:
+            - {{ toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: http-webhook
+              protocol: TCP
+              containerPort: 8888
+            - name: http-webhook-metrics
+              protocol: TCP
+              containerPort: 8080
+          livenessProbe:
+            {{- toYaml .livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .readinessProbe | nindent 12 }}
+          {{- if .extraVolumeMounts }}
+          volumeMounts:
+            {{- with .extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
       volumes:
         {{- if .Values.secretConfiguration.enabled }}

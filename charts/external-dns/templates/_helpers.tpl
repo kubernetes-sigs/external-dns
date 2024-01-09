@@ -81,3 +81,15 @@ Provider name, Keeps backward compatibility on provider
 {{- .Values.provider.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+The image to use for optional webhook sidecar
+*/}}
+{{- define "external-dns.webhookImage" -}}
+{{- with .image }}
+{{- if or (empty .repository) (empty .tag) }}
+{{- fail "ERROR: webhook provider needs an image repository and a tag" }}
+{{- end }}
+{{- printf "%s:%s" .repository .tag }}
+{{- end }}
+{{- end }}
