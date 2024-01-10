@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-## [1.14.0] - 2024-01-10
+## [v1.14.0] - 2024-01-10
 
 ### Added
 
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- The `secretConfiguration` value has been deprecated in favour of creating secrets external to the Helm chart and configuring their use via the `extraVolumes` & `extraVolumeMounts` values.
+- The `secretConfiguration` value has been deprecated in favour of creating secrets external to the Helm chart and configuring their use via the `extraVolumes` & `extraVolumeMounts` values. ([#4161](https://github.com/kubernetes-sigs/external-dns/pull/4161)) [@stevehipwell](https://github.com/stevehipwell)
 
 ## [v1.13.1] - 2023-09-07
 
