@@ -321,6 +321,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				}
 
 				if dnsname == zone.Name && ep.RecordType == "CNAME" {
+					log.Debugf("Converting APEX record %s from CNAME to ALIAS", dnsname)
 					RecordType_ = "ALIAS"
 				}
 
