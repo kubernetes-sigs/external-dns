@@ -728,8 +728,6 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 				Name: aws.String(ep.DNSName),
 			},
 		},
-		sizeBytes:  0,
-		sizeValues: 0,
 	}
 	dualstack := false
 	if targetHostedZone := isAWSAlias(ep); targetHostedZone != "" {
