@@ -51,18 +51,16 @@ Certain types of metrics (such as request counts, latency) are expected to confo
      - `slidingWindowDurationSec` - The number of seconds in the sliding window. 
 
 ### Configuration
-PRs that introduce per-provider metrics will add flags that enable/disable metrics on a per-provider basis:
+We will introduce a single flag that can be used to enable flags on a per-provider basis:
 
 ```
---godaddy-metrics-enabled=true
---aws-metrics-enabled=true
+--metrics-enabled=aws
 ```
 
 All metrics flags will be disabled by default. The `slidingWindowDurationSec` parameter is also configurable:
 
 ```
---godaddy-metrics-sliding-window-duration-s=60
---aws-metrics-sliding-window-duration-s=60
+--metrics-sliding-window-duration=60s
 ```
 
 ## Implementation Plan
