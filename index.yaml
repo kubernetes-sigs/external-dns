@@ -3,6 +3,35 @@ entries:
   external-dns:
   - annotations:
       artifacthub.io/changes: |
+        - kind: fixed
+          description: "Fixed webhook install failure: `http-webhook-metrics: must be no more than 15 characters`. ([#4173](https://github.com/kubernetes-sigs/external-dns/pull/4173)) [@gabe565](https://github.com/gabe565)"
+    apiVersion: v2
+    appVersion: 0.14.0
+    created: "2024-01-12T07:14:29.478736379Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: b4ab2d6749812c21afebdd3077755f4d5f0c65f2e2ba9671078335545f3b49e5
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.14.1/external-dns-1.14.1.tgz
+    version: 1.14.1
+  - annotations:
+      artifacthub.io/changes: |
         - kind: added
           description: "Added the option to explicitly enable or disable service account token automounting. ([#3983](https://github.com/kubernetes-sigs/external-dns/"
         - kind: added
@@ -650,4 +679,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2024-01-10T20:27:34.444756108Z"
+generated: "2024-01-12T07:14:29.478846363Z"
