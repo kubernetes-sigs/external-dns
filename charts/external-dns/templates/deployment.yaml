@@ -150,7 +150,7 @@ spec:
             - name: http-webhook
               protocol: TCP
               containerPort: 8888
-            - name: http-webhook-metrics
+            - name: http-wh-metrics
               protocol: TCP
               containerPort: 8080
           livenessProbe:
