@@ -669,7 +669,7 @@ func (p *AWSProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 		if aliasString, ok := ep.GetProviderSpecificProperty(providerSpecificAlias); ok {
 			alias = aliasString == "true"
 			if alias {
-				if ep.RecordType != endpoint.RecordTypeA {
+				if ep.RecordType != endpoint.RecordTypeA && ep.RecordType != endpoint.RecordTypeCNAME {
 					ep.DeleteProviderSpecificProperty(providerSpecificAlias)
 				}
 			} else {
