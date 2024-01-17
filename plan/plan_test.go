@@ -355,6 +355,23 @@ func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificChange() {
 	validateEntries(suite.T(), changes.Delete, expectedDelete)
 }
 
+func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificNoChange() {
+	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificTrue}
+
+	p := &Plan{
+		Policies:       []Policy{&SyncPolicy{}},
+		Current:        current,
+		Desired:        desired,
+		ManagedRecords: []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME},
+	}
+
+	changes := p.Calculate().Changes
+	if changes.HasChanges() {
+		suite.T().Fatal("test should not have changes")
+	}
+}
+
 func (suite *PlanTestSuite) TestSyncSecondRoundWithProviderSpecificRemoval() {
 	current := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificFalse}
 	desired := []*endpoint.Endpoint{suite.bar127AWithProviderSpecificUnset}
