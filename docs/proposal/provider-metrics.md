@@ -73,4 +73,8 @@ Implementation details will be filled-in on a provider-by-provider basis. This d
 |          |        |     |
 |          |        |     |
 
-## Open Questions
+## Open Questions / FAQ
+
+### How will this work with out-of-tree providers (i.e. webhook providers)?
+  - The in-tree Webhook Provider already [exports metrics](https://github.com/kubernetes-sigs/external-dns/blob/master/provider/webhook/webhook.go#L41) about requests issued to the external provider. This metrics will not be impacted by this proposal.
+  - If an out-of-tree Webhook implementation wishes to export metrics relating to the requests it is making to external services, it should follow this proposal.
