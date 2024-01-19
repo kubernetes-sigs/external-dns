@@ -144,7 +144,7 @@ spec:
           {{- end }}
           {{- with .args }}
           args:
-            - {{ toYaml . | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - name: http-webhook
