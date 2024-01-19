@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Fixed ValidationError when webhook container `args` values are provided. ([#4196](https://github.com/kubernetes-sigs/external-dns/pull/4196)) [@ArtificialQualia](https://github.com/ArtificialQualia)
+
 ## [v1.14.1] - 2024-01-11
 
 ### Fixed
