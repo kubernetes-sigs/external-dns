@@ -1,0 +1,53 @@
+variables:
+  - group: "Phoenix Variables"
+  - name: ProjectPath
+    value: "$(System.DefaultWorkingDirectory)/external-dns/"
+  - name: AzureCITemplatesPath
+    value: "$(System.DefaultWorkingDirectory)/OutSystems.CICDPlatform.AzureCITemplates/"
+  - name: CoreACRUri
+    value: "edencore.azurecr.io"
+
+resources:
+  repositories:
+    - repository: OutSystems.CICDPlatform.AzureCITemplates
+      type: github
+      ref: refs/tags/v5
+      name: OutSystems/OutSystems.CICDPlatform.AzureCITemplates
+      endpoint: OutSystems-CICD Platform-Phoenix Cloud
+
+# Do not trigger for regular CI (only for PRs)
+trigger: none
+
+stages: # TODO here goes the pr template, this is just for testing purposes
+  - stage: DockerImage
+    displayName: "Docker Images"
+
+    jobs:
+      - job: BuildJob
+        displayName: "Build"
+        timeoutInMinutes: 15
+        pool:
+          vmImage: "ubuntu-20.04"
+        steps:
+          # checkout repositories
+          - checkout: OutSystems.CICDPlatform.AzureCITemplates
+          - checkout: self
+            fetchDepth: 0 #AzDo enables by default Shallow fetch and configures it with a depth of 1
+            lfs: true
+            persistCredentials: true
+
+          # authenticate to ACR
+          - template: setup/docker-acr-login.yml@OutSystems.CICDPlatform.AzureCITemplates
+            parameters:
+              ContainerRegistry: "SDLC EdenCore"
+          # test code
+          # - template: build/make-command.yml@OutSystems.CICDPlatform.AzureCITemplates
+          #   parameters:
+          #     MakeCommand: "test"
+          #     DisplayName: "Test Project"
+          # build docker images
+          - template: build/make-command.yml@OutSystems.CICDPlatform.AzureCITemplates
+            parameters:
+              MakeCommand: "build.image-amd64"
+              MakeCommandArgs: "REGISTRY=${{variables.CoreACRUri}} BINARY=os-external-dns"
+              DisplayName: "Build Project"
