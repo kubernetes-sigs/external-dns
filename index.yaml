@@ -4,6 +4,35 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "Restore template support in `.Values.provider` and `.Values.provider.name`. ([#4180](https://github.com/kubernetes-sigs/external-dns/pull/4180)) [@jkroepke](https://github.com/jkroepke)"
+    apiVersion: v2
+    appVersion: 0.14.0
+    created: "2024-01-22T11:27:32.565145273Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 75df11cc362b96dcb8ca9fb98885081ed33e8b81fb745b336bd6ff4463635f74
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.14.2/external-dns-1.14.2.tgz
+    version: 1.14.2
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "Fixed webhook install failure: `http-webhook-metrics: must be no more than 15 characters`. ([#4173](https://github.com/kubernetes-sigs/external-dns/pull/4173)) [@gabe565](https://github.com/gabe565)"
     apiVersion: v2
     appVersion: 0.14.0
@@ -679,4 +708,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2024-01-12T07:14:29.478846363Z"
+generated: "2024-01-22T11:27:32.565291748Z"
