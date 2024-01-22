@@ -1,4 +1,4 @@
-{{- $providerName := include "external-dns.providerName" . }}
+{{- $providerName := tpl (include "external-dns.providerName" .) $ }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

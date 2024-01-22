@@ -2,7 +2,7 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.14.1
+version: 1.14.2
 appVersion: 0.14.0
 keywords:
   - kubernetes
@@ -21,4 +21,4 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Fixed webhook install failure: `http-webhook-metrics: must be no more than 15 characters`. ([#4173](https://github.com/kubernetes-sigs/external-dns/pull/4173)) [@gabe565](https://github.com/gabe565)"
+      description: "Restore template support in `.Values.provider` and `.Values.provider.name`. ([#4180](https://github.com/kubernetes-sigs/external-dns/pull/4180)) [@jkroepke](https://github.com/jkroepke)"
