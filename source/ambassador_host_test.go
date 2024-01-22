@@ -67,7 +67,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 
 	annotationFilter := ""
 
-	labelSelector :=   labels.Everything()
+	labelSelector := labels.Everything()
 
 	host, err := createAmbassadorHost("test-host", "test-service")
 	if err != nil {
@@ -81,7 +81,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 		}
 	}
 
-	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace, annotationFilter,labelSelector)
+	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace, annotationFilter, labelSelector)
 	if err != nil {
 		t.Fatalf("could not create ambassador source: %v", err)
 	}
@@ -126,8 +126,8 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 		labelSelector       labels.Selector
 	}{
 		{
-			title: "no host",
-			labelSelector:   labels.Everything(),
+			title:         "no host",
+			labelSelector: labels.Everything(),
 		},
 		{
 			title:         "two simple hosts",
@@ -158,20 +158,24 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 				{
-					DNSName: "fake2.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake2.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake2.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake2.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -204,20 +208,24 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 				{
-					DNSName: "fake2.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake2.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake2.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake2.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -251,12 +259,14 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -279,7 +289,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 					},
 				},
 			},
-			expected:    []*endpoint.Endpoint{},
+			expected: []*endpoint.Endpoint{},
 		},
 		{
 			title:            "valid matching annotation filter expression",
@@ -304,12 +314,14 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -383,12 +395,14 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -416,7 +430,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:           "valid non-matching label filter expression",
+			title:         "valid non-matching label filter expression",
 			labelSelector: labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
@@ -440,7 +454,7 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{},
 		},
 		{
-			title:           "valid matching label filter expression for single host",
+			title:         "valid matching label filter expression for single host",
 			labelSelector: labels.SelectorFromSet(labels.Set{"kubernetes.io/ingress.class": "external-ingress"}),
 			loadBalancer: fakeAmbassadorLoadBalancerService{
 				ips:       []string{"8.8.8.8"},
@@ -475,12 +489,14 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
@@ -510,12 +526,14 @@ func testAmbassadorSourceEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"8.8.8.8"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"8.8.8.8"},
 				},
 				{
-					DNSName: "fake1.org",
-					Targets: endpoint.Targets{"lb.com"},
+					DNSName:    "fake1.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"lb.com"},
 				},
 			},
 		},
