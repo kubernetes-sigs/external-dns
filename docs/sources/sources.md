@@ -2,7 +2,7 @@
 
 | Source                          | Resources                                                                     | annotation-filter | label-filter |
 |---------------------------------|-------------------------------------------------------------------------------|-------------------|--------------|
-| ambassador-host                 | Host.getambassador.io                                                         |                   |              |
+| ambassador-host                 | Host.getambassador.io                                                         | Yes               | Yes          |
 | connector                       |                                                                               |                   |              |
 | contour-httpproxy               | HttpProxy.projectcontour.io                                                   | Yes               |              |
 | cloudfoundry                    |                                                                               |                   |              |
