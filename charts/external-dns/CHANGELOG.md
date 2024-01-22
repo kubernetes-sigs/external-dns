@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.14.2] - 2024-01-22
+
+### Fixed
+
+- Restore template support in `.Values.provider` and `.Values.provider.name` 
+
 ## [v1.14.1] - 2024-01-11
 
 ### Fixed
