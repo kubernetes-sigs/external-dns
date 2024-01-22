@@ -61,6 +61,8 @@ Otherwise, use the `IP` of each of the `Service`'s `Endpoints`'s `Addresses`.
 
 Specifies the domain for the resource's DNS records.
 
+For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
+
 ## external-dns.alpha.kubernetes.io/ingress-hostname-source
 
 Specifies where to get the domain for an `Ingress` resource.
@@ -77,7 +79,7 @@ Specifies the domain for the resource's DNS records that are for use from intern
 
 For `Services` of type `LoadBalancer`, uses the `Service`'s `ClusterIP`.
 
-For `Pods`, uses the `Pod`'s `Status.PodIP`.
+For `Pods`, uses the `Pod`'s `Status.PodIP`, unless they are `hostNetwork: true` in which case the NodeExternalIP is used for IPv4 and NodeInternalIP for IPv6.
 
 ## external-dns.alpha.kubernetes.io/target
 
