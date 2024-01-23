@@ -76,7 +76,7 @@ ExternalDNS will need permissions to make changes to the Cloud DNS zone. There a
 
 * [Worker Node Service Account](#worker-node-service-account)
 * [Static Credentials](#static-credentials)
-* [Work Load Identity](#work-load-identity)
+* [Workload Identity](#workload-identity)
 
 ### Setup Cloud DNS and GKE
 
