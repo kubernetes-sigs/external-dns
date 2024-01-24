@@ -59,15 +59,13 @@ rules:
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["gateways"]
     verbs: ["get","watch","list"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get","watch","list"]    
 {{- end }}
 {{- if has "gateway-httproute" .Values.sources }}
   - apiGroups: ["gateway.networking.k8s.io"]
     resources: ["httproutes"]
-    verbs: ["get","watch","list"]
-{{- end }}
-{{- if has "gateway-httproute" .Values.sources }}
-  - apiGroups: [""]
-    resources: ["namespaces"]
     verbs: ["get","watch","list"]
 {{- end }}
 {{- if has "gateway-grpcroute" .Values.sources }}
