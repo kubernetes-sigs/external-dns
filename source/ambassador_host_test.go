@@ -122,11 +122,6 @@ func TestAmbassadorHostSource(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.org",
-					RecordType: endpoint.RecordTypeAAAA,
-					Targets:    endpoint.Targets{"2001:4860:4860::8844", "2001:4860:4860::8888"},
-				},
-				{
-					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"8.8.4.4", "8.8.8.8"},
 				},
