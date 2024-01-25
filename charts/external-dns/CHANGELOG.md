@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed support for gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute
+  https://github.com/kubernetes-sigs/external-dns/issues/3845 
+
+
+## [v1.14.3]
+
+### Fixed
+
 - Fix args for webhook deployment. ([#4202](https://github.com/kubernetes-sigs/external-dns/pull/4202))
 
 ## [v1.14.2] - 2024-01-22
