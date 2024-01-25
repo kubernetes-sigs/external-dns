@@ -18,11 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+## [v1.14.3] - 2023-01-26
+
 ### Fixed
 
-- Fixed support for gateway-grpcroute, gateway-tlsroute, gateway-tcproute, gateway-udproute
-  https://github.com/kubernetes-sigs/external-dns/issues/3845 
-- Fix args for webhook deployment. ([#4202](https://github.com/kubernetes-sigs/external-dns/pull/4202))
+- Fixed args for webhook deployment. ([#4202](https://github.com/kubernetes-sigs/external-dns/pull/4202)) [@webwurst](https://github.com/webwurst)
+- Fixed support for `gateway-grpcroute`, `gateway-tlsroute`, `gateway-tcproute` & `gateway-udproute`. ([#4205](https://github.com/kubernetes-sigs/external-dns/pull/4205)) [@orenlevi111](https://github.com/orenlevi111)
+- Fixed incorrect implementation for setting the `automountServiceAccountToken`. ([#4208](https://github.com/kubernetes-sigs/external-dns/pull/4208)) [@stevehipwell](https://github.com/stevehipwell)
 
 ## [v1.14.2] - 2024-01-22
 
