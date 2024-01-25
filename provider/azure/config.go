@@ -152,6 +152,17 @@ func getCloudConfiguration(name string) (cloud.Configuration, error) {
 		return cloud.AzureGovernment, nil
 	case "AZURECHINACLOUD":
 		return cloud.AzureChina, nil
+	case "AZURECUSTOMCLOUD":
+		azureAdEndpoint := os.Getenv("AZURE_AD_ENDPOINT")
+
+		if azureAdEndpoint == "" {
+			return cloud.Configuration{}, fmt.Errorf("AD Endpoint Not set: %s", name)
+		} else {
+			customCloud := cloud.Configuration{
+				ActiveDirectoryAuthorityHost: os.Getenv("AZURE_AD_ENDPOINT"),
+			}
+			return customCloud, nil
+		}
 	}
 	return cloud.Configuration{}, fmt.Errorf("unknown cloud name: %s", name)
 }
