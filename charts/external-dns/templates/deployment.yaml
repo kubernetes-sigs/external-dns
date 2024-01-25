@@ -37,9 +37,9 @@ spec:
         {{- end }}
       {{- end }}
     spec:
-      {{- if hasKey .Values "automountServiceAccountToken" }}
+    {{- if not (quote .Values.automountServiceAccountToken | empty) }}
       automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
-      {{- end }}
+    {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -169,7 +169,6 @@ spec:
           {{- end }}
         {{- end }}
         {{- end }}
-
       {{- if or .Values.secretConfiguration.enabled .Values.extraVolumes }}
       volumes:
         {{- if .Values.secretConfiguration.enabled }}

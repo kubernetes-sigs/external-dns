@@ -2,7 +2,7 @@ apiVersion: v2
 name: external-dns
 description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 type: application
-version: 1.14.2
+version: 1.14.3
 appVersion: 0.14.0
 keywords:
   - kubernetes
@@ -21,4 +21,8 @@ maintainers:
 annotations:
   artifacthub.io/changes: |
     - kind: fixed
-      description: "Restore template support in `.Values.provider` and `.Values.provider.name`. ([#4180](https://github.com/kubernetes-sigs/external-dns/pull/4180)) [@jkroepke](https://github.com/jkroepke)"
+      description: "Fixed args for webhook deployment."
+    - kind: fixed
+      description: "Fixed support for `gateway-grpcroute`, `gateway-tlsroute`, `gateway-tcproute` & `gateway-udproute`."
+    - kind: fixed
+      description: "Fixed incorrect implementation for setting the `automountServiceAccountToken`."
