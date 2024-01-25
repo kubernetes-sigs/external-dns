@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Fixed
+
+- Fix args for webhook deployment. ([#4202](https://github.com/kubernetes-sigs/external-dns/pull/4202))
+
 ## [v1.14.2] - 2024-01-22
 
 ### Fixed
