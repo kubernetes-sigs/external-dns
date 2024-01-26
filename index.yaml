@@ -4,6 +4,39 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: fixed
+          description: "Fixed args for webhook deployment."
+        - kind: fixed
+          description: "Fixed support for `gateway-grpcroute`, `gateway-tlsroute`, `gateway-tcproute` & `gateway-udproute`."
+        - kind: fixed
+          description: "Fixed incorrect implementation for setting the `automountServiceAccountToken`."
+    apiVersion: v2
+    appVersion: 0.14.0
+    created: "2024-01-26T13:33:02.28240514Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 95e9cef96b3994828d9ec4de81d54997b0c6ec6ca34ce94d804a46c84e514113
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.14.3/external-dns-1.14.3.tgz
+    version: 1.14.3
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: fixed
           description: "Restore template support in `.Values.provider` and `.Values.provider.name`. ([#4180](https://github.com/kubernetes-sigs/external-dns/pull/4180)) [@jkroepke](https://github.com/jkroepke)"
     apiVersion: v2
     appVersion: 0.14.0
@@ -708,4 +741,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2024-01-22T11:27:32.565291748Z"
+generated: "2024-01-26T13:33:02.282578832Z"
