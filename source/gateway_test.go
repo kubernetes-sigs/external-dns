@@ -19,6 +19,8 @@ package source
 import (
 	"strings"
 	"testing"
+
+	v1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 func TestGatewayMatchingHost(t *testing.T) {
@@ -99,6 +101,60 @@ func TestGatewayMatchingHost(t *testing.T) {
 					)
 				}
 				tt.a, tt.b = tt.b, tt.a
+			}
+		})
+
+	}
+}
+
+func TestGatewayMatchingProtocol(t *testing.T) {
+	tests := []struct {
+		route, lis string
+		desc       string
+		ok         bool
+	}{
+		{
+			desc:  "protocol-matches-lis-https-route-http",
+			route: "HTTP",
+			lis:   "HTTPS",
+			ok:    true,
+		},
+		{
+			desc:  "protocol-match-invalid-list-https-route-tcp",
+			route: "TCP",
+			lis:   "HTTPS",
+			ok:    false,
+		},
+		{
+			desc:  "protocol-match-valid-lis-tls-route-tls",
+			route: "TLS",
+			lis:   "TLS",
+			ok:    true,
+		},
+		{
+			desc:  "protocol-match-valid-lis-TLS-route-TCP",
+			route: "TCP",
+			lis:   "TLS",
+			ok:    true,
+		},
+		{
+			desc:  "protocol-match-valid-lis-TLS-route-TCP",
+			route: "TLS",
+			lis:   "TCP",
+			ok:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			for i := 0; i < 2; i++ {
+				if ok := gwProtocolMatches(v1.ProtocolType(tt.route), v1.ProtocolType(tt.lis)); ok != tt.ok {
+					t.Errorf(
+						"gwProtocolMatches(%q, %q); got: %v; want: %v",
+						tt.route, tt.lis, ok, tt.ok,
+					)
+				}
+				//tt.a, tt.b = tt.b, tt.a
 			}
 		})
 
