@@ -38,7 +38,55 @@ type AWSSessionConfig struct {
 	Profile              string
 }
 
-func NewSession(awsConfig AWSSessionConfig) (*session.Session, error) {
+func CreateDefaultSession(cfg *externaldns.Config) *session.Session {
+	result, err := newSession(
+		AWSSessionConfig{
+			AssumeRole:           cfg.AWSAssumeRole,
+			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+			APIRetries:           cfg.AWSAPIRetries,
+		},
+	)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	return result
+}
+
+func CreateSessions(cfg *externaldns.Config) map[string]*session.Session {
+	result := make(map[string]*session.Session)
+
+	if len(cfg.AWSProfiles) == 0 || (len(cfg.AWSProfiles) == 1 && cfg.AWSProfiles[0] == "") {
+		session, err := newSession(
+			AWSSessionConfig{
+				AssumeRole:           cfg.AWSAssumeRole,
+				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+				APIRetries:           cfg.AWSAPIRetries,
+			},
+		)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		result[DefaultAWSProfile] = session
+	} else {
+		for _, profile := range cfg.AWSProfiles {
+			session, err := newSession(
+				AWSSessionConfig{
+					AssumeRole:           cfg.AWSAssumeRole,
+					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+					APIRetries:           cfg.AWSAPIRetries,
+					Profile:              profile,
+				},
+			)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			result[profile] = session
+		}
+	}
+	return result
+}
+
+func newSession(awsConfig AWSSessionConfig) (*session.Session, error) {
 	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
 
 	config.WithHTTPClient(

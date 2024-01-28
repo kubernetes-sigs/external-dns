@@ -370,13 +370,15 @@ func (p *AWSProvider) zones(ctx context.Context) (map[string]*profiledZone, erro
 		if err != nil {
 			var awsErr awserr.Error
 			if errors.As(err, &awsErr) {
-				if awsErr.Code() == "AccessDenied" {
+				switch awsErr.Code() {
+				case "AccessDenied":
 					log.Warnf("Skipping AWS profile %q due to missing permission: %v", profile, awsErr.Message())
 					continue
-				}
-				if awsErr.Code() == "InvalidClientTokenId" || awsErr.Code() == "ExpiredToken" || awsErr.Code() == "SignatureDoesNotMatch" {
+				case "InvalidClientTokenId", "ExpiredToken", "SignatureDoesNotMatch":
 					log.Warnf("Skipping AWS profile %q due to credential issues: %v", profile, awsErr.Message())
 					continue
+				default:
+					// noting to do here. Falling through to general error handling
 				}
 			}
 			return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
@@ -501,7 +503,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 
 		client := p.clients[z.profile]
 		if err := client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s using aws profile %q", *z.zone.Id, z.profile)
+			return nil, fmt.Errorf("failed to list resource records sets for zone %s using aws profile %q: %w", *z.zone.Id, z.profile, err)
 		}
 	}
 
