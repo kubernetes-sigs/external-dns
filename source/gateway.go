@@ -484,7 +484,7 @@ func gwProtocolMatches(a, b v1.ProtocolType) bool {
 	if b == v1.HTTPSProtocolType {
 		b = v1.HTTPProtocolType
 	}
-	// if Listener is TLS and Route is TCP, then we'll treat the Listener as TCP.
+	// if Listener is TLS and Route is TCP set Listener type to TCP as to pass true and return valid match
 	if a == v1.TCPProtocolType && b == v1.TLSProtocolType {
 		b = v1.TCPProtocolType
 	}
