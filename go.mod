@@ -9,6 +9,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.15.0
+	github.com/G-Core/gcore-dns-sdk-go v0.2.6
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.2.0
 	github.com/IBM/go-sdk-core/v5 v5.15.0
 	github.com/IBM/networking-go-sdk v0.44.0

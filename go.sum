@@ -76,6 +76,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DATA-DOG/go-sqlmock v1.4.1/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/F5Networks/k8s-bigip-ctlr/v2 v2.15.0 h1:zfJpJaYlAuhiM0hYWP67OEfYgWwFTC85B9Kvw4Z0TFA=
 github.com/F5Networks/k8s-bigip-ctlr/v2 v2.15.0/go.mod h1:FldIDBO8Hwd+RZGT8JGRGSWrzuS28OsXye5jhhZhTmg=
+github.com/G-Core/gcore-dns-sdk-go v0.2.6 h1:R82ANd7BnhIe2mV/12Ebdx9QYVl2++E4kfDIu97JEOk=
+github.com/G-Core/gcore-dns-sdk-go v0.2.6/go.mod h1:KliUjfPonDvXyAGNiuO+MYVG/7lmWHZ+4Hi0sPxgOjg=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.2.0 h1:+rQDqsHMRgh/3VkorvVVDAoRA6TxoSEOVO72O13wNks=
 github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.2.0/go.mod h1:tNq2mqCFCMbQfSy33uzMKPeDsMNwuqnLbazrnOjRtIs=

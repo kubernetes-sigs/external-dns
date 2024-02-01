@@ -38,6 +38,7 @@ ExternalDNS allows you to keep selected zones (via `--domain-filter`) synchroniz
 * [RcodeZero](https://www.rcodezero.at/)
 * [DigitalOcean](https://www.digitalocean.com/products/networking)
 * [DNSimple](https://dnsimple.com/)
+* [G-Core Labs](https://gcore.com/dns/)
 * [Infoblox](https://www.infoblox.com/products/dns/)
 * [Dyn](https://dyn.com/dns/)
 * [OpenStack Designate](https://docs.openstack.org/designate/latest/)
@@ -142,6 +143,7 @@ The following table clarifies the current status of the providers according to t
 | TencentCloud | Alpha | @Hyzhou |
 | Plural | Alpha | @michaeljguarino |
 | Pi-hole | Alpha | @tinyzimmer |
+| G-Core Labs | Alpha | |
 
 ## Kubernetes version compatibility
 
@@ -183,6 +185,7 @@ The following tutorials are provided:
 * [Dyn](docs/tutorials/dyn.md)
 * [Exoscale](docs/tutorials/exoscale.md)
 * [ExternalName Services](docs/tutorials/externalname.md)
+* [G-Core](docs/tutorials/gcore.md)
 * Google Kubernetes Engine
 	* [Using Google's Default Ingress Controller](docs/tutorials/gke.md)
 	* [Using the Nginx Ingress Controller](docs/tutorials/nginx-ingress.md)
