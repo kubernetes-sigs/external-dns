@@ -143,6 +143,9 @@ type Config struct {
 	PDNSServer                         string
 	PDNSAPIKey                         string `secure:"yes"`
 	PDNSSkipTLSVerify                  bool
+	TLSServerCA                        string
+	TLSServerCert                      string
+	TLSServerKey                       string
 	TLSCA                              string
 	TLSClientCert                      string
 	TLSClientCertKey                   string
@@ -303,6 +306,9 @@ var defaultConfig = &Config{
 	PDNSServer:                  "http://localhost:8081",
 	PDNSAPIKey:                  "",
 	PDNSSkipTLSVerify:           false,
+	TLSServerCA:                 "",
+	TLSServerCert:               "",
+	TLSServerKey:                "",
 	TLSCA:                       "",
 	TLSClientCert:               "",
 	TLSClientCertKey:            "",
@@ -556,6 +562,10 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)").BoolVar(&cfg.GoDaddyOTE)
 
 	// Flags related to TLS communication
+	app.Flag("tls-server-ca", "CA Certificate that will be used for the http server. Required with 'tls-server-cert' and 'tls-server-key' for TLS. ").Default(defaultConfig.TLSServerCA).StringVar(&cfg.TLSServerCA)
+	app.Flag("tls-server-cert", "CA Signed Certificate that will be used for the http server. Required with 'tls-server-ca' and 'tls-server-key' for TLS. ").Default(defaultConfig.TLSServerCert).StringVar(&cfg.TLSServerCert)
+	app.Flag("tls-server-key", "Key that will be used for the http server - Required with 'tls-server-ca' and 'tls-server-cert' for TLS. ").Default(defaultConfig.TLSServerKey).StringVar(&cfg.TLSServerKey)
+
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
 	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)
 	app.Flag("tls-client-cert-key", "When using TLS communication, the path to the certificate key to use with the client certificate (not required for TLS)").Default(defaultConfig.TLSClientCertKey).StringVar(&cfg.TLSClientCertKey)
