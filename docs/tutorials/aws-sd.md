@@ -225,6 +225,7 @@ metadata:
 spec:
     ...
 ```
+
 This will set the TTL for the DNS record to 60 seconds.
 
 
