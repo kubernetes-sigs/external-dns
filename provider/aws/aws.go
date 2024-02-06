@@ -239,8 +239,10 @@ type AWSProvider struct {
 	zoneTypeFilter provider.ZoneTypeFilter
 	// filter hosted zones by tags
 	zoneTagFilter provider.ZoneTagFilter
-	preferCNAME   bool
-	zonesCache    *zonesListCache
+	// extend filter for sub-domains in the zone (e.g. first.us-east-1.example.com)
+	zoneMatchParent bool
+	preferCNAME     bool
+	zonesCache      *zonesListCache
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
 }
@@ -251,6 +253,7 @@ type AWSConfig struct {
 	ZoneIDFilter         provider.ZoneIDFilter
 	ZoneTypeFilter       provider.ZoneTypeFilter
 	ZoneTagFilter        provider.ZoneTagFilter
+	ZoneMatchParent      bool
 	BatchChangeSize      int
 	BatchChangeInterval  time.Duration
 	EvaluateTargetHealth bool
@@ -267,6 +270,7 @@ func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error
 		zoneIDFilter:         awsConfig.ZoneIDFilter,
 		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
 		zoneTagFilter:        awsConfig.ZoneTagFilter,
+		zoneMatchParent:      awsConfig.ZoneMatchParent,
 		batchChangeSize:      awsConfig.BatchChangeSize,
 		batchChangeInterval:  awsConfig.BatchChangeInterval,
 		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
@@ -301,7 +305,12 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 			}
 
 			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
-				continue
+				if !p.zoneMatchParent {
+					continue
+				}
+				if !p.domainFilter.MatchParent(aws.StringValue(zone.Name)) {
+					continue
+				}
 			}
 
 			// Only fetch tags if a tag filter was specified
