@@ -233,6 +233,7 @@ func main() {
 				ZoneIDFilter:         zoneIDFilter,
 				ZoneTypeFilter:       zoneTypeFilter,
 				ZoneTagFilter:        zoneTagFilter,
+				ZoneMatchParent:      cfg.AWSZoneMatchParent,
 				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
 				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
