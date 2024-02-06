@@ -225,17 +225,6 @@ metadata:
 spec:
     ...
 ```
-
-## Enable sub-domain hosted zone match
-The aws-zone-match-parent flag extends external-dns to support sub-domain matching using its parent domain.
-
-```yaml
-## hosted zone domain: domain.com
---domain-filter=x.sub-domain.domain.com,sub-domain.com
---aws-zone-match-parent
-```
-
-
 This will set the TTL for the DNS record to 60 seconds.
 
 
