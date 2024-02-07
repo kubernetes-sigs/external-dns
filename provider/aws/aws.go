@@ -253,39 +253,39 @@ type AWSProvider struct {
 
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
-	DomainFilter         endpoint.DomainFilter
-	ZoneIDFilter         provider.ZoneIDFilter
-	ZoneTypeFilter       provider.ZoneTypeFilter
-	ZoneTagFilter        provider.ZoneTagFilter
-	ZoneMatchParent      bool
-	BatchChangeSize      int
+	DomainFilter          endpoint.DomainFilter
+	ZoneIDFilter          provider.ZoneIDFilter
+	ZoneTypeFilter        provider.ZoneTypeFilter
+	ZoneTagFilter         provider.ZoneTagFilter
+	ZoneMatchParent       bool
+	BatchChangeSize       int
 	BatchChangeSizeBytes  int
 	BatchChangeSizeValues int
-	BatchChangeInterval  time.Duration
-	EvaluateTargetHealth bool
-	PreferCNAME          bool
-	DryRun               bool
-	ZoneCacheDuration    time.Duration
+	BatchChangeInterval   time.Duration
+	EvaluateTargetHealth  bool
+	PreferCNAME           bool
+	DryRun                bool
+	ZoneCacheDuration     time.Duration
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error) {
 	provider := &AWSProvider{
-		client:               client,
-		domainFilter:         awsConfig.DomainFilter,
-		zoneIDFilter:         awsConfig.ZoneIDFilter,
-		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
-		zoneTagFilter:        awsConfig.ZoneTagFilter,
-		zoneMatchParent:      awsConfig.ZoneMatchParent,
-		batchChangeSize:      awsConfig.BatchChangeSize,
+		client:                client,
+		domainFilter:          awsConfig.DomainFilter,
+		zoneIDFilter:          awsConfig.ZoneIDFilter,
+		zoneTypeFilter:        awsConfig.ZoneTypeFilter,
+		zoneTagFilter:         awsConfig.ZoneTagFilter,
+		zoneMatchParent:       awsConfig.ZoneMatchParent,
+		batchChangeSize:       awsConfig.BatchChangeSize,
 		batchChangeSizeBytes:  awsConfig.BatchChangeSizeBytes,
 		batchChangeSizeValues: awsConfig.BatchChangeSizeValues,
-		batchChangeInterval:  awsConfig.BatchChangeInterval,
-		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
-		preferCNAME:          awsConfig.PreferCNAME,
-		dryRun:               awsConfig.DryRun,
-		zonesCache:           &zonesListCache{duration: awsConfig.ZoneCacheDuration},
-		failedChangesQueue:   make(map[string]Route53Changes),
+		batchChangeInterval:   awsConfig.BatchChangeInterval,
+		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
+		preferCNAME:           awsConfig.PreferCNAME,
+		dryRun:                awsConfig.DryRun,
+		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
 	return provider, nil
