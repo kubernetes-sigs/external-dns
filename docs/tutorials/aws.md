@@ -562,6 +562,15 @@ Annotations which are specific to AWS.
 
 `external-dns.alpha.kubernetes.io/aws-target-hosted-zone` can optionally be set to the ID of a Route53 hosted zone. This will force external-dns to use the specified hosted zone when creating an ALIAS target.
 
+### aws-zone-match-parent
+`aws-zone-match-parent` allows support subdomains within the same zone by using their parent domain, i.e --domain-filter=x.example.com would create a DNS entry for x.example.com (and subdomains thereof).
+
+```yaml
+## hosted zone domain: example.com
+--domain-filter=x.example.com,example.com
+--aws-zone-match-parent
+```
+
 ## Verify ExternalDNS works (Service example)
 
 Create the following sample application to test that ExternalDNS works.

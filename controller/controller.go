@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -331,7 +332,11 @@ func (c *Controller) Run(ctx context.Context) {
 	for {
 		if c.ShouldRunOnce(time.Now()) {
 			if err := c.RunOnce(ctx); err != nil {
-				log.Fatal(err)
+				if errors.Is(err, provider.SoftError) {
+					log.Errorf("Failed to do run once: %v", err)
+				} else {
+					log.Fatalf("Failed to do run once: %v", err)
+				}
 			}
 		}
 		select {

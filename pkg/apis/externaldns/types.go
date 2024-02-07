@@ -94,6 +94,7 @@ type Config struct {
 	AWSPreferCNAME                     bool
 	AWSZoneCacheDuration               time.Duration
 	AWSSDServiceCleanup                bool
+	AWSZoneMatchParent                 bool
 	AWSDynamoDBRegion                  string
 	AWSDynamoDBTable                   string
 	AzureConfigFile                    string
@@ -217,6 +218,8 @@ type Config struct {
 	WebhookProviderReadTimeout         time.Duration
 	WebhookProviderWriteTimeout        time.Duration
 	WebhookServer                      bool
+	TraefikDisableLegacy               bool
+	TraefikDisableNew                  bool
 }
 
 var defaultConfig = &Config{
@@ -257,6 +260,7 @@ var defaultConfig = &Config{
 	AlibabaCloudConfigFile:      "/etc/kubernetes/alibaba-cloud.json",
 	AWSZoneType:                 "",
 	AWSZoneTagFilter:            []string{},
+	AWSZoneMatchParent:          false,
 	AWSAssumeRole:               "",
 	AWSAssumeRoleExternalID:     "",
 	AWSBatchChangeSize:          1000,
@@ -373,6 +377,8 @@ var defaultConfig = &Config{
 	WebhookProviderReadTimeout:  5 * time.Second,
 	WebhookProviderWriteTimeout: 10 * time.Second,
 	WebhookServer:               false,
+	TraefikDisableLegacy:        false,
+	TraefikDisableNew:           false,
 }
 
 // NewConfig returns new Config object
@@ -460,6 +466,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("default-targets", "Set globally default host/IP that will apply as a target instead of source addresses. Specify multiple times for multiple targets (optional)").StringsVar(&cfg.DefaultTargets)
 	app.Flag("target-net-filter", "Limit possible targets by a net filter; specify multiple times for multiple possible nets (optional)").StringsVar(&cfg.TargetNetFilter)
 	app.Flag("exclude-target-net", "Exclude target nets (optional)").StringsVar(&cfg.ExcludeTargetNets)
+	app.Flag("traefik-disable-legacy", "Disable listeners on Resources under the traefik.containo.us API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableLegacy)).BoolVar(&cfg.TraefikDisableLegacy)
+	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
@@ -488,6 +496,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("aws-api-retries", "When using the AWS API, set the maximum number of retries before giving up.").Default(strconv.Itoa(defaultConfig.AWSAPIRetries)).IntVar(&cfg.AWSAPIRetries)
 	app.Flag("aws-prefer-cname", "When using the AWS provider, prefer using CNAME instead of ALIAS (default: disabled)").BoolVar(&cfg.AWSPreferCNAME)
 	app.Flag("aws-zones-cache-duration", "When using the AWS provider, set the zones list cache TTL (0s to disable).").Default(defaultConfig.AWSZoneCacheDuration.String()).DurationVar(&cfg.AWSZoneCacheDuration)
+	app.Flag("aws-zone-match-parent", "Expand limit possible target by sub-domains (default: disabled)").BoolVar(&cfg.AWSZoneMatchParent)
 	app.Flag("aws-sd-service-cleanup", "When using the AWS CloudMap provider, delete empty Services without endpoints (default: disabled)").BoolVar(&cfg.AWSSDServiceCleanup)
 	app.Flag("azure-config-file", "When using the Azure provider, specify the Azure configuration file (required when --provider=azure)").Default(defaultConfig.AzureConfigFile).StringVar(&cfg.AzureConfigFile)
 	app.Flag("azure-resource-group", "When using the Azure provider, override the Azure resource group to use (required when --provider=azure-private-dns)").Default(defaultConfig.AzureResourceGroup).StringVar(&cfg.AzureResourceGroup)

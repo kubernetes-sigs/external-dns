@@ -336,21 +336,6 @@ func dnsimpleSuitableZone(hostname string, zones map[string]dnsimple.Zone) *dnsi
 	return zone
 }
 
-// CreateRecords creates records for a given slice of endpoints
-func (p *dnsimpleProvider) CreateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleCreate, endpoints))
-}
-
-// DeleteRecords deletes records for a given slice of endpoints
-func (p *dnsimpleProvider) DeleteRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleDelete, endpoints))
-}
-
-// UpdateRecords updates records for a given slice of endpoints
-func (p *dnsimpleProvider) UpdateRecords(ctx context.Context, endpoints []*endpoint.Endpoint) error {
-	return p.submitChanges(ctx, newDnsimpleChanges(dnsimpleUpdate, endpoints))
-}
-
 // ApplyChanges applies a given set of changes
 func (p *dnsimpleProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	combinedChanges := make([]*dnsimpleChange, 0, len(changes.Create)+len(changes.UpdateNew)+len(changes.Delete))

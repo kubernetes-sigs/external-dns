@@ -10,6 +10,13 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+{{- with .Values.service.ipFamilies }}
+  ipFamilies:
+    {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- with .Values.service.ipFamilyPolicy }}
+  ipFamilyPolicy: {{ . }}
+{{- end }}
   type: ClusterIP
   selector:
     {{- include "external-dns.selectorLabels" . | nindent 4 }}

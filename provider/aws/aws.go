@@ -27,7 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/route53"
-	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
@@ -244,45 +243,49 @@ type AWSProvider struct {
 	zoneTypeFilter provider.ZoneTypeFilter
 	// filter hosted zones by tags
 	zoneTagFilter provider.ZoneTagFilter
-	preferCNAME   bool
-	zonesCache    *zonesListCache
+	// extend filter for sub-domains in the zone (e.g. first.us-east-1.example.com)
+	zoneMatchParent bool
+	preferCNAME     bool
+	zonesCache      *zonesListCache
 	// queue for collecting changes to submit them in the next iteration, but after all other changes
 	failedChangesQueue map[string]Route53Changes
 }
 
 // AWSConfig contains configuration to create a new AWS provider.
 type AWSConfig struct {
-	DomainFilter          endpoint.DomainFilter
-	ZoneIDFilter          provider.ZoneIDFilter
-	ZoneTypeFilter        provider.ZoneTypeFilter
-	ZoneTagFilter         provider.ZoneTagFilter
-	BatchChangeSize       int
+	DomainFilter         endpoint.DomainFilter
+	ZoneIDFilter         provider.ZoneIDFilter
+	ZoneTypeFilter       provider.ZoneTypeFilter
+	ZoneTagFilter        provider.ZoneTagFilter
+	ZoneMatchParent      bool
+	BatchChangeSize      int
 	BatchChangeSizeBytes  int
 	BatchChangeSizeValues int
-	BatchChangeInterval   time.Duration
-	EvaluateTargetHealth  bool
-	PreferCNAME           bool
-	DryRun                bool
-	ZoneCacheDuration     time.Duration
+	BatchChangeInterval  time.Duration
+	EvaluateTargetHealth bool
+	PreferCNAME          bool
+	DryRun               bool
+	ZoneCacheDuration    time.Duration
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig, client Route53API) (*AWSProvider, error) {
 	provider := &AWSProvider{
-		client:                client,
-		domainFilter:          awsConfig.DomainFilter,
-		zoneIDFilter:          awsConfig.ZoneIDFilter,
-		zoneTypeFilter:        awsConfig.ZoneTypeFilter,
-		zoneTagFilter:         awsConfig.ZoneTagFilter,
-		batchChangeSize:       awsConfig.BatchChangeSize,
+		client:               client,
+		domainFilter:         awsConfig.DomainFilter,
+		zoneIDFilter:         awsConfig.ZoneIDFilter,
+		zoneTypeFilter:       awsConfig.ZoneTypeFilter,
+		zoneTagFilter:        awsConfig.ZoneTagFilter,
+		zoneMatchParent:      awsConfig.ZoneMatchParent,
+		batchChangeSize:      awsConfig.BatchChangeSize,
 		batchChangeSizeBytes:  awsConfig.BatchChangeSizeBytes,
 		batchChangeSizeValues: awsConfig.BatchChangeSizeValues,
-		batchChangeInterval:   awsConfig.BatchChangeInterval,
-		evaluateTargetHealth:  awsConfig.EvaluateTargetHealth,
-		preferCNAME:           awsConfig.PreferCNAME,
-		dryRun:                awsConfig.DryRun,
-		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
-		failedChangesQueue:    make(map[string]Route53Changes),
+		batchChangeInterval:  awsConfig.BatchChangeInterval,
+		evaluateTargetHealth: awsConfig.EvaluateTargetHealth,
+		preferCNAME:          awsConfig.PreferCNAME,
+		dryRun:               awsConfig.DryRun,
+		zonesCache:           &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		failedChangesQueue:   make(map[string]Route53Changes),
 	}
 
 	return provider, nil
@@ -310,7 +313,12 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 			}
 
 			if !p.domainFilter.Match(aws.StringValue(zone.Name)) {
-				continue
+				if !p.zoneMatchParent {
+					continue
+				}
+				if !p.domainFilter.MatchParent(aws.StringValue(zone.Name)) {
+					continue
+				}
 			}
 
 			// Only fetch tags if a tag filter was specified
@@ -333,10 +341,10 @@ func (p *AWSProvider) Zones(ctx context.Context) (map[string]*route53.HostedZone
 
 	err := p.client.ListHostedZonesPagesWithContext(ctx, &route53.ListHostedZonesInput{}, f)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list hosted zones")
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list hosted zones: %w", err))
 	}
 	if tagErr != nil {
-		return nil, errors.Wrap(tagErr, "failed to list zones tags")
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list zones tags: %w", tagErr))
 	}
 
 	for _, zone := range zones {
@@ -361,7 +369,7 @@ func wildcardUnescape(s string) string {
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "records retrieval failed")
+		return nil, provider.NewSoftError(fmt.Errorf("records retrieval failed: %w", err))
 	}
 
 	return p.records(ctx, zones)
@@ -453,7 +461,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 		}
 
 		if err := p.client.ListResourceRecordSetsPagesWithContext(ctx, params, f); err != nil {
-			return nil, errors.Wrapf(err, "failed to list resource records sets for zone %s", *z.Id)
+			return nil, provider.NewSoftError(fmt.Errorf("failed to list resource records sets for zone %s: %w", *z.Id, err))
 		}
 	}
 
@@ -538,7 +546,7 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilter {
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	zones, err := p.Zones(ctx)
 	if err != nil {
-		return errors.Wrap(err, "failed to list zones, not applying changes")
+		return provider.NewSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))
 	}
 
 	updateChanges := p.createUpdateChanges(changes.UpdateNew, changes.UpdateOld)
@@ -641,7 +649,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 	}
 
 	if len(failedZones) > 0 {
-		return errors.Errorf("failed to submit all changes for the following zones: %v", failedZones)
+		return provider.NewSoftError(fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones))
 	}
 
 	return nil
@@ -867,7 +875,7 @@ func (p *AWSProvider) tagsForZone(ctx context.Context, zoneID string) (map[strin
 		ResourceId:   aws.String(zoneID),
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list tags for zone %s", zoneID)
+		return nil, provider.NewSoftError(fmt.Errorf("failed to list tags for zone %s: %w", zoneID, err))
 	}
 	tagMap := map[string]string{}
 	for _, tag := range response.ResourceTagSet.Tags {

@@ -18,7 +18,6 @@ package plan
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -340,31 +339,6 @@ func normalizeDNSName(dnsName string) string {
 		s += "."
 	}
 	return s
-}
-
-// CompareBoolean is an implementation of PropertyComparator for comparing boolean-line values
-// For example external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"
-// If value doesn't parse as boolean, the defaultValue is used
-func CompareBoolean(defaultValue bool, name, current, previous string) bool {
-	var err error
-
-	v1, v2 := defaultValue, defaultValue
-
-	if previous != "" {
-		v1, err = strconv.ParseBool(previous)
-		if err != nil {
-			v1 = defaultValue
-		}
-	}
-
-	if current != "" {
-		v2, err = strconv.ParseBool(current)
-		if err != nil {
-			v2 = defaultValue
-		}
-	}
-
-	return v1 == v2
 }
 
 func IsManagedRecord(record string, managedRecords, excludeRecords []string) bool {

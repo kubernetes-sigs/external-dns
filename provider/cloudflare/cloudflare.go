@@ -312,11 +312,14 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 	// separate into per-zone change sets to be passed to the API.
 	changesByZone := p.changesByZone(zones, changes)
 
+	var failedZones []string
 	for zoneID, changes := range changesByZone {
 		records, err := p.listDNSRecordsWithAutoPagination(ctx, zoneID)
 		if err != nil {
 			return fmt.Errorf("could not fetch records from zone, %v", err)
 		}
+
+		var failedChange bool
 		for _, change := range changes {
 			logFields := log.Fields{
 				"record": change.ResourceRecord.Name,
@@ -343,6 +346,7 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				recordParam.ID = recordID
 				err := p.Client.UpdateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
+					failedChange = true
 					log.WithFields(logFields).Errorf("failed to update record: %v", err)
 				}
 			} else if change.Action == cloudFlareDelete {
@@ -353,17 +357,28 @@ func (p *CloudFlareProvider) submitChanges(ctx context.Context, changes []*cloud
 				}
 				err := p.Client.DeleteDNSRecord(ctx, resourceContainer, recordID)
 				if err != nil {
+					failedChange = true
 					log.WithFields(logFields).Errorf("failed to delete record: %v", err)
 				}
 			} else if change.Action == cloudFlareCreate {
 				recordParam := getCreateDNSRecordParam(*change)
 				_, err := p.Client.CreateDNSRecord(ctx, resourceContainer, recordParam)
 				if err != nil {
+					failedChange = true
 					log.WithFields(logFields).Errorf("failed to create record: %v", err)
 				}
 			}
 		}
+
+		if failedChange {
+			failedZones = append(failedZones, zoneID)
+		}
 	}
+
+	if len(failedZones) > 0 {
+		return fmt.Errorf("failed to submit all changes for the following zones: %v", failedZones)
+	}
+
 	return nil
 }
 

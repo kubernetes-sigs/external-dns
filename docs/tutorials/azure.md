@@ -140,7 +140,8 @@ For the managed identity, the contents of `azure.json` should be similar to this
   "tenantId": "01234abc-de56-ff78-abc1-234567890def",
   "subscriptionId": "01234abc-de56-ff78-abc1-234567890def",
   "resourceGroup": "MyDnsResourceGroup",
-  "useManagedIdentityExtension": true
+  "useManagedIdentityExtension": true,
+  "userAssignedIdentityID": "01234abc-de56-ff78-abc1-234567890def"
 }
 ```
 
@@ -151,6 +152,8 @@ For this process, you will need to get the kubelet identity:
 ```bash
 $ PRINCIPAL_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
   --query "identityProfile.kubeletidentity.objectId" --output tsv)
+$ IDENTITY_CLIENT_ID=$(az aks show --resource-group $CLUSTER_GROUP --name $CLUSTERNAME \
+  --query "identityProfile.kubeletidentity.clientId" --output tsv)
 ```
 
 #### Assign rights for the Kubelet identity
@@ -178,7 +181,8 @@ cat <<-EOF > /local/path/to/azure.json
   "tenantId": "$(az account show --query tenantId -o tsv)",
   "subscriptionId": "$(az account show --query id -o tsv)",
   "resourceGroup": "$AZURE_DNS_ZONE_RESOURCE_GROUP",
-  "useManagedIdentityExtension": true
+  "useManagedIdentityExtension": true,
+  "userAssignedIdentityID": "$IDENTITY_CLIENT_ID"
 }
 EOF
 ```
@@ -382,33 +386,52 @@ $ az identity federated-credential create --name ${IDENTITY_NAME} --identity-nam
 
 NOTE: make sure federated credential refers to correct namespace and service account (`system:serviceaccount:<NAMESPACE>:<SERVICE_ACCOUNT>`)
 
-#### helm
+#### Helm
 
-When deploying external-dns with helm, here are the parameters you need to pass:
+When deploying external-dns with Helm you need to create a secret to store the Azure config (see below) and create a workload identity (out of scope here) before you can install the chart.
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: external-dns-azure
+type: Opaque
+data:
+  azure.json: |
+    {
+      "tenantId": "<TENANT_ID>",
+      "subscriptionId": "<SUBSCRIPTION_ID>",
+      "resourceGroup": "<AZURE_DNS_ZONE_RESOURCE_GROUP>",
+      "useWorkloadIdentityExtension": true
+    }
+```
+
+Once you have created the secret and have a workload identity you can install the chart with the following values.
 
 ```yaml
 fullnameOverride: external-dns
 
 serviceAccount:
+  labels:
+    azure.workload.identity/use: "true"
   annotations:
     azure.workload.identity/client-id: <IDENTITY_CLIENT_ID>
 
 podLabels:
   azure.workload.identity/use: "true"
 
-provider: azure
+extraVolumes:
+  - name: azure-config-file
+    secret:
+      secretName: external-dns-azure
 
-secretConfiguration:
-  enabled: true
-  mountPath: "/etc/kubernetes/"
-  data:
-    azure.json: |
-      {
-        "tenantId": "<TENANT_ID>",
-        "subscriptionId": "<SUBSCRIPTION_ID>",
-        "resourceGroup": "<AZURE_DNS_ZONE_RESOURCE_GROUP>",
-        "useWorkloadIdentityExtension": true
-      }
+extraVolumeMounts:
+  - name: azure-config-file
+    mountPath: /etc/kubernetes
+    readOnly: true
+
+provider:
+  name: azure
 ```
 
 NOTE: make sure the pod is restarted whenever you make a configuration change.

@@ -470,6 +470,11 @@ func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway 
 			continue
 		}
 
+		if len(service.Spec.ExternalIPs) > 0 {
+			targets = append(targets, service.Spec.ExternalIPs...)
+			continue
+		}
+
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
 				targets = append(targets, lb.IP)

@@ -43,24 +43,48 @@ var (
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "records_errors",
+			Name:      "records_errors_total",
 			Help:      "Errors with Records method",
+		},
+	)
+	recordsRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "records_requests_total",
+			Help:      "Requests with Records method",
 		},
 	)
 	applyChangesErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "applychanges_errors",
+			Name:      "applychanges_errors_total",
 			Help:      "Errors with ApplyChanges method",
+		},
+	)
+	applyChangesRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "applychanges_requests_total",
+			Help:      "Requests with ApplyChanges method",
 		},
 	)
 	adjustEndpointsErrorsGauge = prometheus.NewGauge(
 		prometheus.GaugeOpts{
 			Namespace: "external_dns",
 			Subsystem: "webhook_provider",
-			Name:      "adjustendpointsgauge_errors",
+			Name:      "adjustendpoints_errors_total",
 			Help:      "Errors with AdjustEndpoints method",
+		},
+	)
+	adjustEndpointsRequestsGauge = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: "external_dns",
+			Subsystem: "webhook_provider",
+			Name:      "adjustendpoints_requests_total",
+			Help:      "Requests with AdjustEndpoints method",
 		},
 	)
 )
@@ -73,8 +97,11 @@ type WebhookProvider struct {
 
 func init() {
 	prometheus.MustRegister(recordsErrorsGauge)
+	prometheus.MustRegister(recordsRequestsGauge)
 	prometheus.MustRegister(applyChangesErrorsGauge)
+	prometheus.MustRegister(applyChangesRequestsGauge)
 	prometheus.MustRegister(adjustEndpointsErrorsGauge)
+	prometheus.MustRegister(adjustEndpointsRequestsGauge)
 }
 
 func NewWebhookProvider(u string) (*WebhookProvider, error) {
@@ -132,7 +159,9 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 
 // Records will make a GET call to remoteServerURL/records and return the results
 func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	recordsRequestsGauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
+
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
 		recordsErrorsGauge.Inc()
@@ -165,6 +194,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 
 // ApplyChanges will make a POST to remoteServerURL/records with the changes
 func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+	applyChangesRequestsGauge.Inc()
 	u := p.remoteServerURL.JoinPath("records").String()
 
 	b := new(bytes.Buffer)
@@ -203,6 +233,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 // based on a provider specific requirement.
 // This method returns an empty slice in case there is a technical error on the provider's side so that no endpoints will be considered.
 func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	adjustEndpointsRequestsGauge.Inc()
 	endpoints := []*endpoint.Endpoint{}
 	u, err := url.JoinPath(p.remoteServerURL.String(), "adjustendpoints")
 	if err != nil {

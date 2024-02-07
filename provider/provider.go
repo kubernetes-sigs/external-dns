@@ -18,12 +18,23 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strings"
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
+
+// SoftError is an error, that provider will only log as error instead
+// of fatal. It is meant for error propagation from providers to tell
+// that this is a transient error.
+var SoftError error = errors.New("soft error")
+
+// NewSoftError creates a SoftError from the given error
+func NewSoftError(err error) error {
+	return errors.Join(SoftError, err)
+}
 
 // Provider defines the interface DNS providers should implement.
 type Provider interface {

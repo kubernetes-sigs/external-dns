@@ -156,6 +156,8 @@ func main() {
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
+		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
+		TraefikDisableNew:              cfg.TraefikDisableNew,
 	}
 
 	// Lookup all the selected sources by names and pass them the desired configuration.
@@ -227,18 +229,19 @@ func main() {
 	case "aws":
 		p, err = aws.NewAWSProvider(
 			aws.AWSConfig{
-				DomainFilter:          domainFilter,
-				ZoneIDFilter:          zoneIDFilter,
-				ZoneTypeFilter:        zoneTypeFilter,
-				ZoneTagFilter:         zoneTagFilter,
-				BatchChangeSize:       cfg.AWSBatchChangeSize,
+				DomainFilter:         domainFilter,
+				ZoneIDFilter:         zoneIDFilter,
+				ZoneTypeFilter:       zoneTypeFilter,
+				ZoneTagFilter:        zoneTagFilter,
+				ZoneMatchParent:      cfg.AWSZoneMatchParent,
+				BatchChangeSize:      cfg.AWSBatchChangeSize,
 				BatchChangeSizeBytes:  cfg.AWSBatchChangeSizeBytes,
 				BatchChangeSizeValues: cfg.AWSBatchChangeSizeValues,
-				BatchChangeInterval:   cfg.AWSBatchChangeInterval,
-				EvaluateTargetHealth:  cfg.AWSEvaluateTargetHealth,
-				PreferCNAME:           cfg.AWSPreferCNAME,
-				DryRun:                cfg.DryRun,
-				ZoneCacheDuration:     cfg.AWSZoneCacheDuration,
+				BatchChangeInterval:  cfg.AWSBatchChangeInterval,
+				EvaluateTargetHealth: cfg.AWSEvaluateTargetHealth,
+				PreferCNAME:          cfg.AWSPreferCNAME,
+				DryRun:               cfg.DryRun,
+				ZoneCacheDuration:    cfg.AWSZoneCacheDuration,
 			},
 			route53.New(awsSession),
 		)
