@@ -32,11 +32,12 @@ type fakeETCDClient struct {
 }
 
 func (c fakeETCDClient) GetServices(prefix string) ([]*Service, error) {
-	var result []*Service
+	result := make([]*Service, 0, len(c.services))
 	for key, value := range c.services {
 		if strings.HasPrefix(key, prefix) {
-			value.Key = key
-			result = append(result, value)
+			valueCopy := *value
+			valueCopy.Key = key
+			result = append(result, &valueCopy)
 		}
 	}
 	return result, nil
