@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Helm Docs
-        uses: action-stars/install-tool-from-github-release@b21a01813213cbbf482eeceda07ad03b41b754d1 # v0.2.1
+        uses: action-stars/install-tool-from-github-release@9019d0a3125e2f45a48858afb632e6dbef663d79 # v0.2.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           owner: norwoodj
@@ -40,7 +40,7 @@ jobs:
           fi
 
       - name: Install Artifact Hub CLI
-        uses: action-stars/install-tool-from-github-release@b21a01813213cbbf482eeceda07ad03b41b754d1 # v0.2.1
+        uses: action-stars/install-tool-from-github-release@9019d0a3125e2f45a48858afb632e6dbef663d79 # v0.2.2
         with:
           github_token: ${{ github.token }}
           owner: artifacthub
