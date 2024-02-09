@@ -193,7 +193,8 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
-				} else if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
+				}
+				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
 					illegalTarget = true
 					break
 				}
