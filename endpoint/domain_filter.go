@@ -199,3 +199,24 @@ func (df *DomainFilter) UnmarshalJSON(b []byte) error {
 	*df = NewRegexDomainFilter(include, exclude)
 	return nil
 }
+
+func (df DomainFilter) MatchParent(domain string) bool {
+	if matchFilter(df.exclude, domain, false) {
+		return false
+	}
+	if len(df.Filters) == 0 {
+		return true
+	}
+
+	strippedDomain := strings.ToLower(strings.TrimSuffix(domain, "."))
+	for _, filter := range df.Filters {
+		if filter == "" || strings.HasPrefix(filter, ".") {
+			// We don't check parents if the filter is prefixed with "."
+			continue
+		}
+		if strings.HasSuffix(filter, "."+strippedDomain) {
+			return true
+		}
+	}
+	return false
+}
