@@ -52,16 +52,21 @@ type GandiProvider struct {
 }
 
 func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
-	key, ok := os.LookupEnv("GANDI_KEY")
-	if !ok {
-		return nil, errors.New("no environment variable GANDI_KEY provided")
+	key, ok_key := os.LookupEnv("GANDI_KEY")
+	pat, ok_pat := os.LookupEnv("GANDI_PAT")
+	if !(ok_key || ok_pat) {
+		return nil, errors.New("no environment variable GANDI_KEY or GANDI_PAT provided")
+	}
+	if ok_key {
+		log.Warning("Usage of GANDI_KEY (API Key) is deprecated. Please consider creating a Personal Access Token (PAT) instead, see https://api.gandi.net/docs/authentication/")
 	}
 	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
 
 	g := config.Config{
-		APIKey:    key,
-		SharingID: sharingID,
-		Debug:     false,
+		APIKey:              key,
+		PersonalAccessToken: pat,
+		SharingID:           sharingID,
+		Debug:               false,
 		// dry-run doesn't work but it won't hurt passing the flag
 		DryRun: dryRun,
 	}

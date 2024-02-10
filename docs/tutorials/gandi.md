@@ -8,11 +8,13 @@ Make sure to use **>=0.7.7** version of ExternalDNS for this tutorial.
 
 Create a new DNS zone where you want to create your records in. Let's use `example.com` as an example here. Make sure the zone uses
 
-## Creating Gandi API Key
+## Creating Gandi Personal Access Token (PAT)
 
-Generate an API key on [your account](https://account.gandi.net) (click on "Security").
+Generate a Personal Access Token on [your account](https://admin.gandi.net) (click on "User Settings") with `Manage domain name technical configurations` permission.
 
-The environment variable `GANDI_KEY` will be needed to run ExternalDNS with Gandi.
+The environment variable `GANDI_PAT` will be needed to run ExternalDNS with Gandi.
+
+You can also set `GANDI_KEY` if you have an old API key.
 
 ## Deploy ExternalDNS
 
@@ -45,8 +47,8 @@ spec:
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=gandi
         env:
-        - name: GANDI_KEY
-          value: "YOUR_GANDI_API_KEY"
+        - name: GANDI_PAT
+          value: "YOUR_GANDI_PAT"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -109,8 +111,8 @@ spec:
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=gandi
         env:
-        - name: GANDI_KEY
-          value: "YOUR_GANDI_API_KEY"
+        - name: GANDI_PAT
+          value: "YOUR_GANDI_PAT"
 ```
 
 
