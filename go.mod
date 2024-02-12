@@ -16,7 +16,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.676
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.50.14
+	github.com/aws/aws-sdk-go v1.50.15
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/civo/civogo v0.3.58
@@ -24,7 +24,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.108.0
+	github.com/digitalocean/godo v1.109.0
 	github.com/dnsimple/dnsimple-go v1.6.0
 	github.com/exoscale/egoscale v0.100.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
