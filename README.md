@@ -86,6 +86,7 @@ Known providers using webhooks:
 | Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook | 
 | Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook | 
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
+| Gcore | https://github.com/G-Core/external-dns-gcore-webhook |
 
 ## Status of providers
 
