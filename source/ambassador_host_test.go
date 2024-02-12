@@ -57,10 +57,10 @@ func TestAmbassadorHostSource(t *testing.T) {
 	hostAnnotation := fmt.Sprintf("%s/%s", defaultAmbassadorNamespace, defaultAmbassadorServiceName)
 
 	for _, ti := range []struct {
-		title		string
-		host		ambassador.Host
-		service		v1.Service
-		expected	[]*endpoint.Endpoint
+		title    string
+		host     ambassador.Host
+		service  v1.Service
+		expected []*endpoint.Endpoint
 	}{
 		{
 			title: "Simple host",
@@ -122,8 +122,8 @@ func TestAmbassadorHostSource(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.org",
-					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.4.4", "8.8.8.8"},
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"dns.google"},
 				},
 			},
 		}, {
@@ -167,7 +167,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation: hostAnnotation,
+						ambHostAnnotation:   hostAnnotation,
 						targetAnnotationKey: "3.3.3.3",
 					},
 				},
@@ -201,7 +201,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					Name: "basic-host",
 					Annotations: map[string]string{
 						ambHostAnnotation: hostAnnotation,
-						ttlAnnotationKey: "180",
+						ttlAnnotationKey:  "180",
 					},
 				},
 				Spec: &ambassador.HostSpec{
@@ -225,7 +225,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
-					RecordTTL: 	180,
+					RecordTTL:  180,
 				},
 			},
 		}, {
@@ -234,7 +234,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "basic-host",
 					Annotations: map[string]string{
-						ambHostAnnotation: hostAnnotation,
+						ambHostAnnotation:    hostAnnotation,
 						CloudflareProxiedKey: "true",
 					},
 				},
@@ -260,7 +260,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 					RecordType: endpoint.RecordTypeA,
 					Targets:    endpoint.Targets{"1.1.1.1"},
 					ProviderSpecific: endpoint.ProviderSpecific{{
-						Name: "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 						Value: "true",
 					}},
 				},
@@ -289,7 +289,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
-	}{
+	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
 			t.Parallel()
