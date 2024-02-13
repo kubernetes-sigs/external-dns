@@ -87,7 +87,7 @@ helm install --name my-coredns --values values.yaml stable/coredns
 ### Install external ExternalDNS
 ETCD_URLS is configured to etcd client service address.
 
-If the etcd client being used has basic auth enabled, for example when using the [bitnami/etcd](https://artifacthub.io/packages/helm/bitnami/etcd) chart, the `ETCD_USERNAME` and `ETCD_PASSWORD` environment variables can be used to provide the credentials. 
+`ETCD_USERNAME` and `ETCD_PASSWORD` environment variables can be used to provide the credentials when etcd client has basic auth enabled. 
 
 #### Manifest (for clusters without RBAC enabled)
 
