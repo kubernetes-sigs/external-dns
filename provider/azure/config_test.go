@@ -17,9 +17,12 @@ limitations under the License.
 package azure
 
 import (
+	"path"
+	"runtime"
 	"testing"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetCloudConfiguration(t *testing.T) {
@@ -43,4 +46,15 @@ func TestGetCloudConfiguration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOverrideConfiguration(t *testing.T) {
+	_, filename, _, _ := runtime.Caller(0)
+	configFile := path.Join(path.Dir(filename), "config_test.json")
+	cfg, err := getConfig(configFile, "subscription-override", "rg-override", "")
+	if err != nil {
+		t.Errorf("got unexpected err %v", err)
+	}
+	assert.Equal(t, cfg.SubscriptionID, "subscription-override")
+	assert.Equal(t, cfg.ResourceGroup, "rg-override")
 }
