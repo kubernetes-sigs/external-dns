@@ -100,6 +100,7 @@ const (
 // NewDnsimpleProvider initializes a new Dnsimple based provider
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
+	dnsimpleAccountId := os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")
 	}
@@ -122,7 +123,11 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 	if err != nil {
 		return nil, err
 	}
-	provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
+	if dnsimpleAccountId == "" {
+		provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
+	} else {
+		provider.accountID = dnsimpleAccountId
+	}
 	return provider, nil
 }
 
@@ -136,9 +141,29 @@ func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, 
 	return int64ToString(whoamiResponse.Data.Account.ID), nil
 }
 
+func ZonesFromZoneString(zonestring string) (map[string]dnsimple.Zone) {
+	zones := make(map[string]dnsimple.Zone)
+	zoneNames := strings.Split(zonestring, ",")
+	for indexId, zoneName := range zoneNames {
+		zone := dnsimple.Zone{Name: zoneName, ID: int64(indexId)}
+		zones[int64ToString(zone.ID)] = zone
+	}
+	return zones
+}
+
 // Returns a list of filtered Zones
 func (p *dnsimpleProvider) Zones(ctx context.Context) (map[string]dnsimple.Zone, error) {
 	zones := make(map[string]dnsimple.Zone)
+
+	// If the DNSIMPLE_ZONES environment variable is specified, generate a list of Zones from it
+	// This is useful for when the DNSIMPLE_OAUTH environment variable is a User API token and
+	// not an Account API token as the User API token will not have permissions to list Zones
+	// belong to another account which the User has access permissions for.
+	envZonesStr := os.Getenv("DNSIMPLE_ZONES")
+	if envZonesStr != "" {
+		return ZonesFromZoneString(envZonesStr), nil
+	}
+
 	page := 1
 	listOptions := &dnsimple.ZoneListOptions{}
 	for {
