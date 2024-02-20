@@ -89,6 +89,9 @@ terminationGracePeriodSeconds:
 # -- (string) [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used.
 dnsPolicy:
 
+# -- (string) [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used.
+dnsConfig:
+
 # -- [Init containers](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) to add to the `Pod` definition.
 initContainers: []
 

@@ -61,6 +61,9 @@ spec:
       {{- with .Values.dnsPolicy }}
       dnsPolicy: {{ . }}
       {{- end }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig: {{ . }}
+      {{- end }}
       {{- with .Values.initContainers }}
       initContainers:
         {{- toYaml . | nindent 8 }}
