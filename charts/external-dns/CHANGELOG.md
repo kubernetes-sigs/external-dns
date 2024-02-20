@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+- Added support for dnsConfig. ([#4265](https://github.com/kubernetes-sigs/external-dns/pull/4265)) [@davhdavh](https://github.com/davhdavh)
+
 ## [v1.14.3] - 2023-01-26
 
 ### Fixed

@@ -83,6 +83,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | commonLabels | object | `{}` | Labels to add to all chart resources. |
 | deploymentAnnotations | object | `{}` | Annotations to add to the `Deployment`. |
 | deploymentStrategy | object | `{"type":"Recreate"}` | [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy). |
+| dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |
 | dnsPolicy | string | `nil` | [DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy) for the pod, if not set the default will be used. |
 | domainFilters | list | `[]` |  |
 | env | list | `[]` | [Environment variables](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/) for the `external-dns` container. |
