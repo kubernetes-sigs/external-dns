@@ -396,7 +396,7 @@ func testCRDSourceEndpoints(t *testing.T) {
 			endpoints: []*endpoint.Endpoint{
 				{
 					DNSName:    "_svc._tcp.example.org",
-					Targets:    endpoint.Targets{"0 0 80 abc.example.org", "0 0 80 def.example.org"},
+					Targets:    endpoint.Targets{"0 0 80 abc.example.org.", "0 0 80 def.example.org."},
 					RecordType: endpoint.RecordTypeSRV,
 					RecordTTL:  180,
 				},
