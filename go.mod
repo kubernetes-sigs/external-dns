@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.44.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.678
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.679
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.50.22
+	github.com/aws/aws-sdk-go v1.50.23
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/civo/civogo v0.3.59
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.24
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.859
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.859
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.859
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.860
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.860
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.860
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.17.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.165.0
+	google.golang.org/api v0.166.0
 	gopkg.in/ns1/ns1-go.v2 v2.8.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.20.2
@@ -81,7 +81,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute v1.23.3 // indirect
+	cloud.google.com/go/compute v1.23.4 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.1 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.1 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -189,7 +189,7 @@ require (
 	go.etcd.io/etcd/client/pkg/v3 v3.5.12 // indirect
 	go.mongodb.org/mongo-driver v1.13.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.48.0 // indirect
 	go.opentelemetry.io/otel v1.23.0 // indirect
 	go.opentelemetry.io/otel/metric v1.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.23.0 // indirect
@@ -204,10 +204,10 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240125205218-1f4bbc51befe // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240116215550-a9fa1716bcac // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240205150955-31a09d347014 // indirect
-	google.golang.org/grpc v1.61.0 // indirect
+	google.golang.org/genproto v0.0.0-20240205150955-31a09d347014 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240213162025-012b6fc9bca9 // indirect
+	google.golang.org/grpc v1.61.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
