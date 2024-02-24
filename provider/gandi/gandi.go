@@ -51,11 +51,23 @@ type GandiProvider struct {
 	DryRun        bool
 }
 
+const (
+	// RecordTypeALIAS is a RecordType enum value
+	RecordTypeALIAS = "ALIAS"
+)
+
+// isGandiAlias determines if a given endpoint is supposed to create an Gandi Alias record
+func isGandiAlias(r livedns.DomainRecord) bool {
+	return r.RrsetType == RecordTypeALIAS
+}
+
 func NewGandiProvider(ctx context.Context, domainFilter endpoint.DomainFilter, dryRun bool) (*GandiProvider, error) {
 	key, ok := os.LookupEnv("GANDI_KEY")
+
 	if !ok {
 		return nil, errors.New("no environment variable GANDI_KEY provided")
 	}
+
 	sharingID, _ := os.LookupEnv("GANDI_SHARING_ID")
 
 	g := config.Config{
@@ -113,16 +125,23 @@ func (p *GandiProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, erro
 		}
 
 		for _, r := range records {
-			if provider.SupportedRecordType(r.RrsetType) {
-				name := r.RrsetName + "." + zone
+			if isGandiAlias(r) {
+				// Convert back ALIAS to CNAME
+				r.RrsetType = endpoint.RecordTypeCNAME
+			}
 
+			if provider.SupportedRecordType(r.RrsetType) {
+				name := r.RrsetName
 				if r.RrsetName == "@" {
 					name = zone
+				} else if !strings.HasSuffix(r.RrsetName, zone) {
+					name = r.RrsetName + "." + zone
 				}
 
 				for _, v := range r.RrsetValues {
 					log.WithFields(log.Fields{
 						"record": r.RrsetName,
+						"name":   name,
 						"type":   r.RrsetType,
 						"value":  v,
 						"ttl":    r.RrsetTTL,
@@ -182,6 +201,9 @@ func (p *GandiProvider) submitChanges(ctx context.Context, changes []*GandiChang
 				}).Debugf("Converting record name: %s to apex domain (@)", change.Record.RrsetName)
 
 				change.Record.RrsetName = "@"
+				if change.Record.RrsetType == endpoint.RecordTypeCNAME {
+					change.Record.RrsetType = RecordTypeALIAS
+				}
 			} else {
 				change.Record.RrsetName = strings.TrimSuffix(
 					change.Record.RrsetName,
