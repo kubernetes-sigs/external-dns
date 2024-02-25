@@ -177,6 +177,9 @@ OuterLoop:
 		case dns.TypeNS:
 			rrValues = []string{rr.(*dns.NS).Ns}
 			rrType = "NS"
+		case dns.TypePTR:
+			rrValues = []string{rr.(*dns.PTR).Ptr}
+			rrType = "PTR"
 		default:
 			continue // Unhandled record type
 		}
@@ -247,6 +250,40 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 	return records, nil
 }
 
+func (r rfc2136Provider) AddReverseRecord(ip string, hostname string) error {
+	changes := r.GenerateReverseRecord(ip, hostname)
+	return r.ApplyChanges(context.Background(), &plan.Changes{Create: changes})
+}
+
+func (r rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
+	changes := r.GenerateReverseRecord(ip, hostname)
+	return r.ApplyChanges(context.Background(), &plan.Changes{Delete: changes})
+}
+
+func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
+	// Find the zone for the PTR record
+	// zone := findMsgZone(&endpoint.Endpoint{DNSName: ip}, p.ptrZoneNames)
+	// Generate PTR notation record starting from the IP address
+	var records []*endpoint.Endpoint
+
+	log.Debugf("Reverse zone is: %s %s", ip, dns.Fqdn(ip))
+	reverseAddress, _ := dns.ReverseAddr(ip)
+
+	// Create the PTR record
+	rr := fmt.Sprintf("%s %d %s %s", reverseAddress, r.minTTL, "PTR", hostname)
+	log.Infof("Adding RR: %s", rr)
+
+	// PTR
+	records = append(records, &endpoint.Endpoint{
+		DNSName:    reverseAddress[:len(reverseAddress)-1],
+		RecordType: "PTR",
+		Targets:    endpoint.Targets{hostname},
+	})
+
+	return records
+
+}
+
 // ApplyChanges applies a given set of changes in a given zone.
 func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
@@ -271,8 +308,11 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			zone := findMsgZone(ep, r.zoneNames)
 			r.krb5Realm = strings.ToUpper(zone)
 			m[zone].SetUpdate(zone)
-
 			r.AddRecord(m[zone], ep)
+
+			if ep.RecordType == "A" || ep.RecordType == "AAAA" {
+				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
+			}
 		}
 
 		// only send if there are records available
@@ -342,6 +382,9 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			m[zone].SetUpdate(zone)
 
 			r.RemoveRecord(m[zone], ep)
+			if ep.RecordType == "A" || ep.RecordType == "AAAA" {
+				r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
+			}
 		}
 
 		// only send if there are records available
