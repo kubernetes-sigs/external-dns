@@ -269,10 +269,6 @@ func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*en
 	log.Debugf("Reverse zone is: %s %s", ip, dns.Fqdn(ip))
 	reverseAddress, _ := dns.ReverseAddr(ip)
 
-	// Create the PTR record
-	rr := fmt.Sprintf("%s %d %s %s", reverseAddress, r.minTTL, "PTR", hostname)
-	log.Infof("Adding RR: %s", rr)
-
 	// PTR
 	records = append(records, &endpoint.Endpoint{
 		DNSName:    reverseAddress[:len(reverseAddress)-1],
