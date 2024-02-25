@@ -54,6 +54,7 @@ type rfc2136Provider struct {
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
+	managePTR       bool
 
 	// options specific to rfc3645 gss-tsig support
 	gssTsig      bool
@@ -82,7 +83,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, managePTR bool, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -103,6 +104,7 @@ func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool
 		zoneNames:       zoneNames,
 		insecure:        insecure,
 		gssTsig:         gssTsig,
+		managePTR:       managePTR,
 		krb5Username:    krb5Username,
 		krb5Password:    krb5Password,
 		krb5Realm:       strings.ToUpper(krb5Realm),
@@ -306,7 +308,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			m[zone].SetUpdate(zone)
 			r.AddRecord(m[zone], ep)
 
-			if ep.RecordType == "A" || ep.RecordType == "AAAA" {
+			if r.managePTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
 				r.AddReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
@@ -378,7 +380,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			m[zone].SetUpdate(zone)
 
 			r.RemoveRecord(m[zone], ep)
-			if ep.RecordType == "A" || ep.RecordType == "AAAA" {
+			if r.managePTR && (ep.RecordType == "A" || ep.RecordType == "AAAA") {
 				r.RemoveReverseRecord(ep.Targets[0], ep.DNSName)
 			}
 		}
