@@ -5,11 +5,15 @@ This tutorial describes how to setup ExternalDNS for usage with DNSimple.
 
 Make sure to use **>=0.4.6** version of ExternalDNS for this tutorial.
 
-## Created a DNSimple API Access Token
+## Create a DNSimple API Access Token
 
 A DNSimple API access token can be acquired by following the [provided documentation from DNSimple](https://support.dnsimple.com/articles/api-access-token/)
 
-The environment variable `DNSIMPLE_OAUTH` must be set to the API token generated for to run ExternalDNS with DNSimple.
+The environment variable `DNSIMPLE_OAUTH` must be set to the generated API token to run ExternalDNS with DNSimple.
+
+If the generated DNSimple API access token is a _User token_, as opposed to an _Account token_, the following environment variables must also be set:
+  - `DNSIMPLE_ACCOUNT_ID`: Set this to the account ID which the domains to be managed by ExternalDNS belong to (eg. `1001234`).
+  - `DNSIMPLE_ZONES`: Set this to a comma separated list of DNS zones to be managed by ExternalDNS (eg. `mydomain.com,example.com`).
 
 ## Deploy ExternalDNS
 
@@ -44,6 +48,10 @@ spec:
         env:
         - name: DNSIMPLE_OAUTH
           value: "YOUR_DNSIMPLE_API_KEY"
+        - name: DNSIMPLE_ACCOUNT_ID
+          value: "SET THIS IF USING A DNSIMPLE USER ACCESS TOKEN"
+        - name: DNSIMPLE_ZONES
+          value: "SET THIS IF USING A DNSIMPLE USER ACCESS TOKEN"
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -109,6 +117,10 @@ spec:
         env:
         - name: DNSIMPLE_OAUTH
           value: "YOUR_DNSIMPLE_API_KEY"
+        - name: DNSIMPLE_ACCOUNT_ID
+          value: "SET THIS IF USING A DNSIMPLE USER ACCESS TOKEN"
+        - name: DNSIMPLE_ZONES
+          value: "SET THIS IF USING A DNSIMPLE USER ACCESS TOKEN"
 ```
 
 
