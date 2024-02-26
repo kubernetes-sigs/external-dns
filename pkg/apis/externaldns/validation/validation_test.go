@@ -132,7 +132,7 @@ func TestValidateBadRfc2136Config(t *testing.T) {
 	cfg.Sources = []string{"test-source"}
 	cfg.Provider = "rfc2136"
 	cfg.RFC2136MinTTL = -1
-	cfg.CreatePTR = false
+	cfg.RFC2136CreatePTR = false
 	cfg.RFC2136BatchChangeSize = 50
 
 	err := ValidateConfig(cfg)

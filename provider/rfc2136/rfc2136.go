@@ -262,6 +262,12 @@ func (r rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
 	return r.ApplyChanges(context.Background(), &plan.Changes{Delete: changes})
 }
 
+// @TODO: Implement UpdateReverseRecord
+func (r rfc2136Provider) UpdateReverseRecord(ip string, hostname string) error {
+	changes := r.GenerateReverseRecord(ip, hostname)
+	return r.ApplyChanges(context.Background(), &plan.Changes{UpdateNew: changes})
+}
+
 func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
 	// Find the zone for the PTR record
 	// zone := findMsgZone(&endpoint.Endpoint{DNSName: ip}, p.ptrZoneNames)
