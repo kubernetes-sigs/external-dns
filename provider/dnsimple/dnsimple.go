@@ -99,6 +99,11 @@ const (
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
+	return BuildDnsimpleProvider(domainFilter, zoneIDFilter, dryRun, false)
+}
+
+// Create a new Dnsimple based provider but return a *dnsimpleProvider and allow for the call to provider.identity.Whoami to be bypassed - both for testing purposes
+func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, skipWhoami bool) (*dnsimpleProvider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	dnsimpleAccountId := os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if len(oauthToken) == 0 {
@@ -119,10 +124,15 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 		dryRun:       dryRun,
 	}
 
-	whoamiResponse, err := provider.identity.Whoami(context.Background())
-	if err != nil {
-		return nil, err
+	whoamiResponse := &dnsimple.WhoamiResponse{}
+	if skipWhoami == false {
+		var err error
+		whoamiResponse, err = provider.identity.Whoami(context.Background())
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	if dnsimpleAccountId == "" {
 		provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
 	} else {
