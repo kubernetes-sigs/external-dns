@@ -246,7 +246,9 @@ func TestNewDnsimpleProvider(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected to fail new provider on bad token")
 	}
+
 	os.Unsetenv("DNSIMPLE_OAUTH")
+	_, err = NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err == nil {
 		t.Errorf("Expected to fail new provider on empty token")
 	}
