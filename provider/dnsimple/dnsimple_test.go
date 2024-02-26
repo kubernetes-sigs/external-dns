@@ -252,6 +252,16 @@ func TestNewDnsimpleProvider(t *testing.T) {
 	if err == nil {
 		t.Errorf("Expected to fail new provider on empty token")
 	}
+
+	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
+	os.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
+	builtProvider, err := BuildDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true)
+	if err != nil {
+		t.Errorf("Unexpected error thrown when testing BuildDnsimpleProvider with the DNSIMPLE_ACCOUNT_ID environment variable set")
+	}
+	assert.Equal(t, builtProvider.accountID, "12345678")
+	os.Unsetenv("DNSIMPLE_OAUTH")
+	os.Unsetenv("DNSIMPLE_ACCOUNT_ID")
 }
 
 func testDnsimpleGetRecordID(t *testing.T) {
