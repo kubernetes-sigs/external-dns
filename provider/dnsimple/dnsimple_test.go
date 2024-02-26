@@ -33,9 +33,10 @@ import (
 )
 
 var (
-	mockProvider                dnsimpleProvider
-	dnsimpleListRecordsResponse dnsimple.ZoneRecordsResponse
-	dnsimpleListZonesResponse   dnsimple.ZonesResponse
+	mockProvider                     dnsimpleProvider
+	dnsimpleListRecordsResponse      dnsimple.ZoneRecordsResponse
+	dnsimpleListZonesResponse        dnsimple.ZonesResponse
+	dnsimpleListZonesFromEnvResponse dnsimple.ZonesResponse
 )
 
 func TestDnsimpleServices(t *testing.T) {
@@ -54,6 +55,16 @@ func TestDnsimpleServices(t *testing.T) {
 	dnsimpleListZonesResponse = dnsimple.ZonesResponse{
 		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
 		Data:     zones,
+	}
+	firstEnvDefinedZone := dnsimple.Zone{
+		ID:        0,
+		AccountID: 12345,
+		Name:      "example-from-env.com",
+	}
+	envDefinedZones := []dnsimple.Zone{firstEnvDefinedZone}
+	dnsimpleListZonesFromEnvResponse = dnsimple.ZonesResponse{
+		Response: dnsimple.Response{Pagination: &dnsimple.Pagination{}},
+		Data:     envDefinedZones,
 	}
 	firstRecord := dnsimple.ZoneRecord{
 		ID:       2,
@@ -151,6 +162,15 @@ func testDnsimpleProviderZones(t *testing.T) {
 	mockProvider.accountID = "2"
 	_, err = mockProvider.Zones(ctx)
 	assert.NotNil(t, err)
+
+	mockProvider.accountID = "3"
+	os.Setenv("DNSIMPLE_ZONES", "example-from-env.com")
+	result, err = mockProvider.Zones(ctx)
+	assert.Nil(t, err)
+	validateDnsimpleZones(t, result, dnsimpleListZonesFromEnvResponse.Data)
+
+	mockProvider.accountID = "2"
+	os.Unsetenv("DNSIMPLE_ZONES")
 }
 
 func testDnsimpleProviderRecords(t *testing.T) {
