@@ -190,7 +190,7 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if strings.HasSuffix(target, ".") {
+				if ep.RecordType != "SRV" && strings.HasSuffix(target, ".")  {
 					illegalTarget = true
 					break
 				}
