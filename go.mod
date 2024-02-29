@@ -10,17 +10,17 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.15.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.2.0
-	github.com/IBM/go-sdk-core/v5 v5.15.1
+	github.com/IBM/go-sdk-core/v5 v5.15.3
 	github.com/IBM/networking-go-sdk v0.44.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.680
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.684
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.50.24
+	github.com/aws/aws-sdk-go v1.50.28
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/civo/civogo v0.3.59
-	github.com/cloudflare/cloudflare-go v0.88.0
+	github.com/civo/civogo v0.3.60
+	github.com/cloudflare/cloudflare-go v0.89.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
@@ -32,7 +32,7 @@ require (
 	github.com/go-logr/logr v1.4.1
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/gophercloud/gophercloud v1.9.0
+	github.com/gophercloud/gophercloud v1.10.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client/v2 v2.5.0
 	github.com/linki/instrumented_http v0.3.0
@@ -44,19 +44,19 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.59.0
+	github.com/oracle/oci-go-sdk/v65 v65.60.0
 	github.com/ovh/go-ovh v1.4.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.11.0
 	github.com/projectcontour/contour v1.28.1
-	github.com/prometheus/client_golang v1.18.0
+	github.com/prometheus/client_golang v1.19.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.24
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.861
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.861
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.861
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.865
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.865
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.865
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.17.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.166.0
+	google.golang.org/api v0.167.0
 	gopkg.in/ns1/ns1-go.v2 v2.8.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.20.2
@@ -165,7 +165,7 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.46.0 // indirect
+	github.com/prometheus/common v0.48.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sagikazarmark/locafero v0.3.0 // indirect
