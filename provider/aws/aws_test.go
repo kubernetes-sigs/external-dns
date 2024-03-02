@@ -354,6 +354,12 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("8.8.8.8")}},
 		},
 		{
+			Name:            aws.String("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.ext-dns-test-2.teapot.zalan.do."),
+			Type:            aws.String(route53.RRTypeA),
+			TTL:             aws.Int64(recordTTL),
+			ResourceRecords: []*route53.ResourceRecord{},
+		},
+		{
 			Name:            aws.String("*.wildcard-test.zone-2.ext-dns-test-2.teapot.zalan.do."),
 			Type:            aws.String(route53.RRTypeA),
 			TTL:             aws.Int64(recordTTL),

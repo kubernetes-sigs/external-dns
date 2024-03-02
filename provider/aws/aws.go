@@ -416,6 +416,9 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*route53.Hos
 			}
 
 			for _, ep := range newEndpoints {
+				if ep == nil {
+					continue
+				}
 				if r.SetIdentifier != nil {
 					ep.SetIdentifier = aws.StringValue(r.SetIdentifier)
 					switch {
