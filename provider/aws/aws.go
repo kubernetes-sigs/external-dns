@@ -995,12 +995,12 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 		}
 		for _, z := range zones {
 			// Initialize the map for the Current Zone & Record Type if it doesn't exist
-            if visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type] == nil {
-                visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type] = make(map[string]bool)
+            if visitedHostnames[aws.StringValue(z.Id)][*c.ResourceRecordSet.Type] == nil {
+                visitedHostnames[aws.StringValue(z.Id)][*c.ResourceRecordSet.Type] = make(map[string]bool)
             }
 
-			if visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type][hostname] {
-                log.Debugf("Skipping duplicate %s to zone %s [Id: %s] RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), c.ResourceRecordSet.Type)
+			if visitedHostnames[aws.StringValue(z.Id)][*c.ResourceRecordSet.Type][hostname] {
+                log.Debugf("Skipping duplicate %s to zone %s [Id: %s] RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), *c.ResourceRecordSet.Type)
                 continue
             }
 
@@ -1019,8 +1019,8 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 				}
 			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
-			visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type][hostname] = true
-			log.Debugf("Adding %s to zone %s [Id: %s]  RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), c.ResourceRecordSet.Type)
+			visitedHostnames[aws.StringValue(z.Id)][*c.ResourceRecordSet.Type][hostname] = true
+			log.Debugf("Adding %s to zone %s [Id: %s]  RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), *c.ResourceRecordSet.Type)
 		}
 	}
 
