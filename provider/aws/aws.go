@@ -979,7 +979,7 @@ func sortChangesByActionNameType(cs Route53Changes) Route53Changes {
 // changesByZone separates a multi-zone change into a single change per zone.
 func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Changes) map[string]Route53Changes {
 	changes := make(map[string]Route53Changes)
-	visitedHostnames := make(map[string]map[string]bool)
+	visitedHostnames := make(map[string]map[string]map[string]bool)
 
 	for _, z := range zones {
 		changes[aws.StringValue(z.Id)] = Route53Changes{}
@@ -994,15 +994,16 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 			continue
 		}
 		for _, z := range zones {
-			// Initialize the map for the current zone if it doesn't exist
-            if visitedHostnames[aws.StringValue(z.Id)] == nil {
-                visitedHostnames[aws.StringValue(z.Id)] = make(map[string]bool)
+			// Initialize the map for the Current Zone & Record Type if it doesn't exist
+            if visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type] == nil {
+                visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type] = make(map[string]bool)
             }
 
-			if visitedHostnames[aws.StringValue(z.Id)][hostname] {
-                log.Debugf("Skipping duplicate %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
+			if visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type][hostname] {
+                log.Debugf("Skipping duplicate %s to zone %s [Id: %s] RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), c.ResourceRecordSet.Type)
                 continue
             }
+
 			if c.ResourceRecordSet.AliasTarget != nil && aws.StringValue(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
 				// alias record is to be created; target needs to be in the same zone as endpoint
 				// if it's not, this will fail
@@ -1018,8 +1019,8 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 				}
 			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
-			visitedHostnames[aws.StringValue(z.Id)][hostname] = true
-			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
+			visitedHostnames[aws.StringValue(z.Id)][c.ResourceRecordSet.Type][hostname] = true
+			log.Debugf("Adding %s to zone %s [Id: %s]  RecordType: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), c.ResourceRecordSet.Type)
 		}
 	}
 
