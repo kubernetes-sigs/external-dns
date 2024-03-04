@@ -36,10 +36,6 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-const (
-	defaultTargetsCapacity = 10
-)
-
 // serviceSource is an implementation of Source for Kubernetes service objects.
 // It will find all services that are under our jurisdiction, i.e. annotated
 // desired hostname and matching or no controller annotation. For each of the
@@ -360,10 +356,15 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 			targets = append(targets, target)
 		}
 
+		var ep *endpoint.Endpoint
 		if ttl.IsConfigured() {
-			endpoints = append(endpoints, endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...))
+			ep = endpoint.NewEndpointWithTTL(headlessKey.DNSName, headlessKey.RecordType, ttl, targets...)
 		} else {
-			endpoints = append(endpoints, endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...))
+			ep = endpoint.NewEndpoint(headlessKey.DNSName, headlessKey.RecordType, targets...)
+		}
+
+		if ep != nil {
+			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -458,38 +459,14 @@ func (sc *serviceSource) setResourceLabel(service *v1.Service, endpoints []*endp
 	}
 }
 
-func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) []*endpoint.Endpoint {
+func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, providerSpecific endpoint.ProviderSpecific, setIdentifier string, useClusterIP bool) (endpoints []*endpoint.Endpoint) {
 	hostname = strings.TrimSuffix(hostname, ".")
-	ttl := getTTLFromAnnotations(svc.Annotations, fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name))
 
-	epA := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeA,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
-	}
+	resource := fmt.Sprintf("service/%s/%s", svc.Namespace, svc.Name)
 
-	epAAAA := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeAAAA,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
-	}
+	ttl := getTTLFromAnnotations(svc.Annotations, resource)
 
-	epCNAME := &endpoint.Endpoint{
-		RecordTTL:  ttl,
-		RecordType: endpoint.RecordTypeCNAME,
-		Labels:     endpoint.NewLabels(),
-		Targets:    make(endpoint.Targets, 0, defaultTargetsCapacity),
-		DNSName:    hostname,
-	}
-
-	var endpoints []*endpoint.Endpoint
-	var targets endpoint.Targets
-
-	targets = getTargetsFromTargetAnnotation(svc.Annotations)
+	targets := getTargetsFromTargetAnnotation(svc.Annotations)
 
 	if len(targets) == 0 {
 		switch svc.Spec.Type {
@@ -517,32 +494,15 @@ func (sc *serviceSource) generateEndpoints(svc *v1.Service, hostname string, pro
 		case v1.ServiceTypeExternalName:
 			targets = extractServiceExternalName(svc)
 		}
-	}
 
-	for _, t := range targets {
-		switch suitableType(t) {
-		case endpoint.RecordTypeA:
-			epA.Targets = append(epA.Targets, t)
-		case endpoint.RecordTypeAAAA:
-			epAAAA.Targets = append(epAAAA.Targets, t)
-		case endpoint.RecordTypeCNAME:
-			epCNAME.Targets = append(epCNAME.Targets, t)
+		for _, endpoint := range endpoints {
+			endpoint.ProviderSpecific = providerSpecific
+			endpoint.SetIdentifier = setIdentifier
 		}
 	}
 
-	if len(epA.Targets) > 0 {
-		endpoints = append(endpoints, epA)
-	}
-	if len(epAAAA.Targets) > 0 {
-		endpoints = append(endpoints, epAAAA)
-	}
-	if len(epCNAME.Targets) > 0 {
-		endpoints = append(endpoints, epCNAME)
-	}
-	for _, endpoint := range endpoints {
-		endpoint.ProviderSpecific = providerSpecific
-		endpoint.SetIdentifier = setIdentifier
-	}
+	endpoints = append(endpoints, endpointsForHostname(hostname, targets, ttl, providerSpecific, setIdentifier, resource)...)
+
 	return endpoints
 }
 
@@ -742,7 +702,9 @@ func (sc *serviceSource) extractNodePortEndpoints(svc *v1.Service, hostname stri
 				ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
 			}
 
-			endpoints = append(endpoints, ep)
+			if ep != nil {
+				endpoints = append(endpoints, ep)
+			}
 		}
 	}
 
