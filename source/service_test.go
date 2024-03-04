@@ -1560,6 +1560,17 @@ func TestClusterIpServices(t *testing.T) {
 			expected:      []*endpoint.Endpoint{},
 			labelSelector: "app=web-external",
 		},
+		{
+			title:        "invalid hostname does not generate endpoints",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeClusterIP,
+			annotations: map[string]string{
+				hostnameAnnotationKey: "this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org.",
+			},
+			clusterIP: "1.2.3.4",
+			expected:  []*endpoint.Endpoint{},
+		},
 	} {
 		tc := tc
 		t.Run(tc.title, func(t *testing.T) {
