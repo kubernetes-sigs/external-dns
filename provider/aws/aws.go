@@ -59,6 +59,7 @@ const (
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
 	sameZoneAlias                              = "same-zone"
+	EmptyRecordType                            = "EmptyRecordType"
 )
 
 // see: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -1002,7 +1003,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 			if c.ResourceRecordSet.Type != nil && *c.ResourceRecordSet.Type != "" {
 				recordType = *c.ResourceRecordSet.Type
 			} else {
-				recordType = "EmptyRecordType"
+				recordType = EmptyRecordType
 			}
 			log.Debugf("Creating key for %s to zone %s with type %s", hostname, aws.StringValue(z.Id), recordType)
 			key := fmt.Sprintf("%s_%s", hostname, recordType)
