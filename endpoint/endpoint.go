@@ -293,12 +293,20 @@ func (e *Endpoint) String() string {
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
+	visited := make(map[EndpointKey]bool) // Initialize the visited map
 	for _, ep := range eps {
+		key := EndpointKey{DNSName: ep.DNSName, RecordType: ep.RecordType, SetIdentifier: ep.SetIdentifier}
+		if visited[key] { //Do not contain duplicated endpoints
+			log.Debugf(`Already loaded endpoint %v `, ep)
+			continue 
+		}
 		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
 			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
+			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		}
+		visited[key] = true
 	}
 
 	return filtered

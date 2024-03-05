@@ -994,8 +994,18 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 			continue
 		}
 		for _, z := range zones {
-			log.Debugf("Creating key for %s to zone %s with type %s", hostname, aws.StringValue(z.Id), *c.ResourceRecordSet.Type)
-			key := fmt.Sprintf("%s_%s", hostname, *c.ResourceRecordSet.Type)
+			// IMPORTANT EXPLAIN: I tried to fix this in here but a lot of tests started to fail in cascade. 
+			//                    Found that nil recordTypes are entering in this function
+			//                    So disabling the continue will skip the deletion of duplicated records
+			//					  But this is the way we want to go. Also adding more visibility using recordType on Debug
+			var recordType string
+			if c.ResourceRecordSet.Type != nil && *c.ResourceRecordSet.Type != "" {
+    			recordType = *c.ResourceRecordSet.Type
+			} else {
+    			recordType = "EmptyRecordType"
+			}
+			log.Debugf("Creating key for %s to zone %s with type %s", hostname, aws.StringValue(z.Id), recordType)
+			key := fmt.Sprintf("%s_%s", hostname, recordType)
 			log.Debugf("Key Output: %s", key)
 			// Initialize the map for the current zone if it doesn't exist
             if visitedHostnames[aws.StringValue(z.Id)] == nil {
@@ -1003,8 +1013,8 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
             }
 
 			if visitedHostnames[aws.StringValue(z.Id)][key] {
-                log.Debugf("Skipping duplicate %s to zone %s [Id: %s] Type: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), *c.ResourceRecordSet.Type)
-                continue
+                log.Debugf("Skipping duplicate %s to zone %s [Id: %s] Type: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), recordType)
+                //continue
             }
 			if c.ResourceRecordSet.AliasTarget != nil && aws.StringValue(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
 				// alias record is to be created; target needs to be in the same zone as endpoint
@@ -1022,7 +1032,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
 			visitedHostnames[aws.StringValue(z.Id)][key] = true
-			log.Debugf("Adding %s to zone %s [Id: %s] Type: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), *c.ResourceRecordSet.Type)
+			log.Debugf("Adding %s to zone %s [Id: %s] Type: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), recordType)
 		}
 	}
 
