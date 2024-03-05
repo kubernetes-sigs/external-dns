@@ -1905,7 +1905,7 @@ func newAWSProviderWithTagFilter(t *testing.T, domainFilter endpoint.DomainFilte
 	client := NewRoute53APIStub(t)
 
 	provider := &AWSProvider{
-		clients:                map[string]Route53API{DefaultAWSProfile: client},
+		clients:               map[string]Route53API{DefaultAWSProfile: client},
 		batchChangeSize:       defaultBatchChangeSize,
 		batchChangeSizeBytes:  defaultBatchChangeSizeBytes,
 		batchChangeSizeValues: defaultBatchChangeSizeValues,

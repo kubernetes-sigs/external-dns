@@ -279,7 +279,7 @@ type AWSConfig struct {
 // NewAWSProvider initializes a new AWS Route53 based Provider.
 func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSProvider, error) {
 	provider := &AWSProvider{
-		clients:                clients,
+		clients:               clients,
 		domainFilter:          awsConfig.DomainFilter,
 		zoneIDFilter:          awsConfig.ZoneIDFilter,
 		zoneTypeFilter:        awsConfig.ZoneTypeFilter,
