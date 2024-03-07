@@ -181,9 +181,8 @@ require (
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
-	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.12 // indirect
-	go.mongodb.org/mongo-driver v1.13.1 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
+	go.mongodb.org/mongo-driver v1.11.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
