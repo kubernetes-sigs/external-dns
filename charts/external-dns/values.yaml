@@ -13,6 +13,9 @@ image:
 # -- Image pull secrets.
 imagePullSecrets: []
 
+# -- (int) Override the replicas based on your design
+replicas: 1
+
 # -- (string) Override the name of the chart.
 nameOverride:
 
