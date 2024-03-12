@@ -6,7 +6,7 @@ The following table documents which sources support which annotations:
 
 | Source       | controller | hostname | internal-hostname | target  | ttl     | (provider-specific) |
 |--------------|------------|----------|-------------------|---------|---------|---------------------|
-| Ambassador   |            |          |                   | Yes     | Yes     |                     |
+| Ambassador   |            |          |                   | Yes     | Yes     | Yes                 |
 | Connector    |            |          |                   |         |         |                     |
 | Contour      | Yes        | Yes[^1]  |                   | Yes     | Yes     | Yes                 |
 | CloudFoundry |            |          |                   |         |         |                     |
