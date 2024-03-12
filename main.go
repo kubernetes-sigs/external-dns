@@ -82,6 +82,7 @@ import (
 	"sigs.k8s.io/external-dns/provider/vultr"
 	"sigs.k8s.io/external-dns/provider/webhook"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
+	"sigs.k8s.io/external-dns/provider/zdns"
 	"sigs.k8s.io/external-dns/registry"
 	"sigs.k8s.io/external-dns/source"
 )
@@ -419,6 +420,18 @@ func main() {
 		p, err = tencentcloud.NewTencentCloudProvider(domainFilter, zoneIDFilter, cfg.TencentCloudConfigFile, cfg.TencentCloudZoneType, cfg.DryRun)
 	case "webhook":
 		p, err = webhook.NewWebhookProvider(cfg.WebhookProviderURL)
+	case "zdns":
+		p, err = zdns.NewZDNSProvider(
+			ctx,
+			zdns.ZDNSConfig{
+				Host:  cfg.ZDNSHost,
+				Port:  cfg.ZDNSPort,
+				View:  cfg.ZDNSView,
+				Zones: cfg.ZDNSZones,
+				Auth:  cfg.ZDNSAuth,
+				Owner: cfg.TXTOwnerID,
+			},
+		)
 	default:
 		log.Fatalf("unknown dns provider: %s", cfg.Provider)
 	}
