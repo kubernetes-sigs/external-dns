@@ -199,7 +199,6 @@ func (sc *serviceSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, e
 		sc.setResourceLabel(svc, svcEndpoints)
 		endpoints = append(endpoints, svcEndpoints...)
 	}
-
 	// this sorting is required to make merging work.
 	// after we merge endpoints that have same DNS, we want to ensure that we end up with the same service being an "owner"
 	// of all those records, as otherwise each time we update, we will end up with a different service that gets data merged in
@@ -291,12 +290,35 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 				log.Errorf("Pod %s not found for address %v", address.TargetRef.Name, address)
 				continue
 			}
+			for _, container := range pod.Spec.Containers {
+				for _, port := range container.Ports {
+					// only create SRV if port have a name.
+					if port.Name == "" {
+						continue
+					}
+					serviceName := svc.ObjectMeta.Name
+					protocol := strings.ToLower(string(port.Protocol))
+					if protocol == "" {
+						protocol = "tcp"
+					}
+					// hostname.my-svc.my-namespace.svc.cluster-domain.example
+					target := fmt.Sprintf("0 50 %d %s.%s.%s.svc.%s.", port.ContainerPort, pod.Spec.Hostname, serviceName, svc.Namespace, hostname)
+					// _port-name._port-protocol.my-svc.my-namespace.svc.cluster-domain.example
+					recordName := fmt.Sprintf("_%s._%s.%s.%s.svc.%s", port.Name, protocol, serviceName, svc.Namespace, hostname)
+					var ep *endpoint.Endpoint
+					if ttl.IsConfigured() {
+						ep = endpoint.NewEndpointWithTTL(recordName, endpoint.RecordTypeSRV, ttl, target)
+					} else {
+						ep = endpoint.NewEndpoint(recordName, endpoint.RecordTypeSRV, target)
+					}
+					endpoints = append(endpoints, ep)
+				}
+			}
 
 			headlessDomains := []string{hostname}
 			if pod.Spec.Hostname != "" {
 				headlessDomains = append(headlessDomains, fmt.Sprintf("%s.%s", pod.Spec.Hostname, hostname))
 			}
-
 			for _, headlessDomain := range headlessDomains {
 				targets := getTargetsFromTargetAnnotation(pod.Annotations)
 				if len(targets) == 0 {
@@ -335,6 +357,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 	for headlessKey := range targetsByHeadlessDomainAndType {
 		headlessKeys = append(headlessKeys, headlessKey)
 	}
+
 	sort.Slice(headlessKeys, func(i, j int) bool {
 		if headlessKeys[i].DNSName != headlessKeys[j].DNSName {
 			return headlessKeys[i].DNSName < headlessKeys[j].DNSName
