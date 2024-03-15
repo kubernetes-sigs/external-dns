@@ -11,7 +11,7 @@ A DNSimple API access token can be acquired by following the [provided documenta
 
 The environment variable `DNSIMPLE_OAUTH` must be set to the generated API token to run ExternalDNS with DNSimple.
 
-If the generated DNSimple API access token is a _User token_, as opposed to an _Account token_, the following environment variables must also be set:
+When the generated DNSimple API access token is a _User token_, as opposed to an _Account token_, the following environment variables must also be set:
   - `DNSIMPLE_ACCOUNT_ID`: Set this to the account ID which the domains to be managed by ExternalDNS belong to (eg. `1001234`).
   - `DNSIMPLE_ZONES`: Set this to a comma separated list of DNS zones to be managed by ExternalDNS (eg. `mydomain.com,example.com`).
 
