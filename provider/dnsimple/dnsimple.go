@@ -125,7 +125,7 @@ func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 	}
 
 	whoamiResponse := &dnsimple.WhoamiResponse{}
-	if skipWhoami == false {
+	if !skipWhoami {
 		var err error
 		whoamiResponse, err = provider.identity.Whoami(context.Background())
 		if err != nil {
