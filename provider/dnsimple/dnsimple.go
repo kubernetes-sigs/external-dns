@@ -106,7 +106,6 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 // therefore this method, and not NewDnsimpleProvider, must be the one used by dnsimple_test.go
 func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*dnsimpleProvider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
-	dnsimpleAccountId := os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")
 	}
@@ -125,7 +124,7 @@ func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		dryRun:       dryRun,
 	}
 
-	provider.accountID = dnsimpleAccountId
+	provider.accountID = os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if provider.accountID == "" {
 		whoamiResponse, err := provider.identity.Whoami(context.Background())
 		if err != nil {
