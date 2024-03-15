@@ -255,7 +255,7 @@ func TestNewDnsimpleProvider(t *testing.T) {
 
 	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
 	os.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
-	builtProvider, err := BuildDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, true)
+	builtProvider, err := BuildDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
 	if err != nil {
 		t.Errorf("Unexpected error thrown when testing BuildDnsimpleProvider with the DNSIMPLE_ACCOUNT_ID environment variable set")
 	}

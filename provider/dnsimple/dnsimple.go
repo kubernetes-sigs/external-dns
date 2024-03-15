@@ -102,8 +102,9 @@ func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provid
 	return BuildDnsimpleProvider(domainFilter, zoneIDFilter, dryRun, false)
 }
 
-// Create a new Dnsimple based provider but return a *dnsimpleProvider and allow for the call to provider.identity.Whoami to be bypassed - both for testing purposes
-func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool, skipWhoami bool) (*dnsimpleProvider, error) {
+// Create a new Dnsimple based provider returning a *dnsimpleProvider. The *dnsimpleProvider return type is needed for testing purposes
+// therefore this method, and not NewDnsimpleProvider, must be the one used by dnsimple_test.go
+func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*dnsimpleProvider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	dnsimpleAccountId := os.Getenv("DNSIMPLE_ACCOUNT_ID")
 	if len(oauthToken) == 0 {
@@ -124,19 +125,13 @@ func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		dryRun:       dryRun,
 	}
 
-	whoamiResponse := &dnsimple.WhoamiResponse{}
-	if !skipWhoami {
-		var err error
-		whoamiResponse, err = provider.identity.Whoami(context.Background())
+	provider.accountID = dnsimpleAccountId
+	if provider.accountID == "" {
+		whoamiResponse, err := provider.identity.Whoami(context.Background())
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	if dnsimpleAccountId == "" {
 		provider.accountID = int64ToString(whoamiResponse.Data.Account.ID)
-	} else {
-		provider.accountID = dnsimpleAccountId
 	}
 	return provider, nil
 }
