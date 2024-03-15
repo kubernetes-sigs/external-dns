@@ -151,7 +151,7 @@ func (p *dnsimpleProvider) GetAccountID(ctx context.Context) (accountID string, 
 	return int64ToString(whoamiResponse.Data.Account.ID), nil
 }
 
-func ZonesFromZoneString(zonestring string) (map[string]dnsimple.Zone) {
+func ZonesFromZoneString(zonestring string) map[string]dnsimple.Zone {
 	zones := make(map[string]dnsimple.Zone)
 	zoneNames := strings.Split(zonestring, ",")
 	for indexId, zoneName := range zoneNames {
