@@ -99,12 +99,6 @@ const (
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
-	return BuildDnsimpleProvider(domainFilter, zoneIDFilter, dryRun)
-}
-
-// Create a new Dnsimple based provider returning a *dnsimpleProvider. The *dnsimpleProvider return type is needed for testing purposes
-// therefore this method, and not NewDnsimpleProvider, must be the one used by dnsimple_test.go
-func BuildDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (*dnsimpleProvider, error) {
 	oauthToken := os.Getenv("DNSIMPLE_OAUTH")
 	if len(oauthToken) == 0 {
 		return nil, fmt.Errorf("no dnsimple oauth token provided")

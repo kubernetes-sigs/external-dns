@@ -255,11 +255,12 @@ func TestNewDnsimpleProvider(t *testing.T) {
 
 	os.Setenv("DNSIMPLE_OAUTH", "xxxxxxxxxxxxxxxxxxxxxxxxxx")
 	os.Setenv("DNSIMPLE_ACCOUNT_ID", "12345678")
-	builtProvider, err := BuildDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
+	providerTypedProvider, err := NewDnsimpleProvider(endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true)
+	dnsimpleTypedProvider := providerTypedProvider.(*dnsimpleProvider)
 	if err != nil {
-		t.Errorf("Unexpected error thrown when testing BuildDnsimpleProvider with the DNSIMPLE_ACCOUNT_ID environment variable set")
+		t.Errorf("Unexpected error thrown when testing NewDnsimpleProvider with the DNSIMPLE_ACCOUNT_ID environment variable set")
 	}
-	assert.Equal(t, builtProvider.accountID, "12345678")
+	assert.Equal(t, dnsimpleTypedProvider.accountID, "12345678")
 	os.Unsetenv("DNSIMPLE_OAUTH")
 	os.Unsetenv("DNSIMPLE_ACCOUNT_ID")
 }
