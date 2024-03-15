@@ -99,7 +99,7 @@ const (
 
 // NewDnsimpleProvider initializes a new Dnsimple based provider
 func NewDnsimpleProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, dryRun bool) (provider.Provider, error) {
-	return BuildDnsimpleProvider(domainFilter, zoneIDFilter, dryRun, false)
+	return BuildDnsimpleProvider(domainFilter, zoneIDFilter, dryRun)
 }
 
 // Create a new Dnsimple based provider returning a *dnsimpleProvider. The *dnsimpleProvider return type is needed for testing purposes
