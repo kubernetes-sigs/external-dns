@@ -293,11 +293,13 @@ func (e *Endpoint) String() string {
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
-	visited := make(map[EndpointKey]bool) // Initialize the visited map
+	// Initialize the map for detecting duplicated endpoints
+	visited := make(map[EndpointKey]bool)
+
 	for _, ep := range eps {
 		// key := EndpointKey{DNSName: ep.DNSName, RecordType: ep.RecordType, SetIdentifier: ep.SetIdentifier} --< this line passes the unit tests but I think it's wrong
 		key := ep.Key()
-		// This function should be the primary key for endpoints but it's only considering DNSName, RecordType & SetIdentifier. 
+		// This function should be the primary key for endpoints but it's only considering DNSName, RecordType & SetIdentifier.
 		if visited[key] { //Do not contain duplicated endpoints
 			log.Debugf(`Already loaded endpoint %v `, ep)
 			continue
@@ -308,7 +310,9 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 			filtered = append(filtered, ep)
 			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		}
-		visited[key] = true
+		if (key != EndpointKey{}) {
+			visited[key] = true
+		}
 	}
 
 	return filtered
