@@ -297,11 +297,10 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	visited := make(map[EndpointKey]bool)
 
 	for _, ep := range eps {
-		// key := EndpointKey{DNSName: ep.DNSName, RecordType: ep.RecordType, SetIdentifier: ep.SetIdentifier} --< this line passes the unit tests but I think it's wrong
 		key := ep.Key()
-		// This function should be the primary key for endpoints but it's only considering DNSName, RecordType & SetIdentifier.
+		// Using EndpointKey for getting the primary key using DNSName, RecordType & SetIdentifier.
 		if visited[key] { //Do not contain duplicated endpoints
-			log.Debugf(`Already loaded endpoint %v `, ep)
+			log.Debugf(`Skipping duplicated endpoint %v `, ep)
 			continue
 		}
 		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
@@ -310,7 +309,9 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 			filtered = append(filtered, ep)
 			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		}
-		if (key != EndpointKey{}) {
+		// Adding validation (skipping empty EndpointKeys)
+		// Not sure why we have cases when there are empty keys, but we do
+		if key != (EndpointKey{}) {
 			visited[key] = true
 		}
 	}
