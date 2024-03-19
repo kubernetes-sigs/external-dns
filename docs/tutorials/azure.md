@@ -31,6 +31,11 @@ Substitute a domain you own for `example.com` if desired.
 
 If using your own domain that was registered with a third-party domain registrar, you should point your domain's name servers to the values in the `nameServers` field from the JSON data returned by the `az network dns zone create` command. Please consult your registrar's documentation on how to do that.
 
+### Internal Load Balancer
+
+To create internal load balancers, one can set the annotation `service.beta.kubernetes.io/azure-load-balancer-internal` to `true` on the resource.
+**Note**: AKS cluster's control plane managed identity needs to be granted `Network Contributor` role to update the subnet. For more details refer to [Use an internal load balancer with Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/internal-lb)
+
 ## Configuration file
 
 The azure provider will reference a configuration file called `azure.json`.  The preferred way to inject the configuration file is by using a Kubernetes secret. The secret should contain an object named `azure.json` with content similar to this:

@@ -162,6 +162,20 @@ func TestNewGandiProvider(t *testing.T) {
 	}
 	assert.Equal(t, true, provider.DryRun)
 
+	_ = os.Setenv("GANDI_PAT", "myGandiPAT")
+	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	if err != nil {
+		t.Errorf("failed : %s", err)
+	}
+	assert.Equal(t, true, provider.DryRun)
+
+	_ = os.Unsetenv("GANDI_KEY")
+	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	if err != nil {
+		t.Errorf("failed : %s", err)
+	}
+	assert.Equal(t, true, provider.DryRun)
+
 	_ = os.Setenv("GANDI_SHARING_ID", "aSharingId")
 	provider, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), false)
 	if err != nil {
@@ -169,7 +183,7 @@ func TestNewGandiProvider(t *testing.T) {
 	}
 	assert.Equal(t, false, provider.DryRun)
 
-	_ = os.Unsetenv("GANDI_KEY")
+	_ = os.Unsetenv("GANDI_PAT")
 	_, err = NewGandiProvider(context.Background(), endpoint.NewDomainFilter([]string{"example.com"}), true)
 	if err == nil {
 		t.Errorf("expected to fail")

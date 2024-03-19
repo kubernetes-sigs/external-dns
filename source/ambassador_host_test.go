@@ -17,18 +17,25 @@ limitations under the License.
 package source
 
 import (
+	"fmt"
 	"testing"
 
 	ambassador "github.com/datawire/ambassador/pkg/api/getambassador.io/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakeDynamic "k8s.io/client-go/dynamic/fake"
 	fakeKube "k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/external-dns/endpoint"
 )
+
+const defaultAmbassadorNamespace = "ambassador"
+const defaultAmbassadorServiceName = "ambassador"
 
 type AmbassadorSuite struct {
 	suite.Suite
@@ -45,60 +52,284 @@ func testAmbassadorSourceImplementsSource(t *testing.T) {
 }
 
 func TestAmbassadorHostSource(t *testing.T) {
-	fakeKubernetesClient := fakeKube.NewSimpleClientset()
+	t.Parallel()
 
-	ambassadorScheme := runtime.NewScheme()
+	hostAnnotation := fmt.Sprintf("%s/%s", defaultAmbassadorNamespace, defaultAmbassadorServiceName)
 
-	ambassador.AddToScheme(ambassadorScheme)
+	for _, ti := range []struct {
+		title    string
+		host     ambassador.Host
+		service  v1.Service
+		expected []*endpoint.Endpoint
+	}{
+		{
+			title: "Simple host",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation: hostAnnotation,
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1"},
+				},
+			},
+		}, {
+			title: "Service with load balancer hostname",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation: hostAnnotation,
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							Hostname: "dns.google",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"dns.google"},
+				},
+			},
+		}, {
+			title: "Service with external IP",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "service-external-ip",
+					Annotations: map[string]string{
+						ambHostAnnotation: hostAnnotation,
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Spec: v1.ServiceSpec{
+					ExternalIPs: []string{"2.2.2.2"},
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"2.2.2.2"},
+				},
+			},
+		}, {
+			title: "Host with target annotation",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation:   hostAnnotation,
+						targetAnnotationKey: "3.3.3.3",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"3.3.3.3"},
+				},
+			},
+		}, {
+			title: "Host with TTL annotation",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation: hostAnnotation,
+						ttlAnnotationKey:  "180",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1"},
+					RecordTTL:  180,
+				},
+			},
+		}, {
+			title: "Host with provider specific annotation",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+					Annotations: map[string]string{
+						ambHostAnnotation:    hostAnnotation,
+						CloudflareProxiedKey: "true",
+					},
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "www.example.org",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"1.1.1.1"},
+					ProviderSpecific: endpoint.ProviderSpecific{{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Value: "true",
+					}},
+				},
+			},
+		}, {
+			title: "Host with missing Ambassador annotation",
+			host: ambassador.Host{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "basic-host",
+				},
+				Spec: &ambassador.HostSpec{
+					Hostname: "www.example.org",
+				},
+			},
+			service: v1.Service{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: defaultAmbassadorServiceName,
+				},
+				Status: v1.ServiceStatus{
+					LoadBalancer: v1.LoadBalancerStatus{
+						Ingress: []v1.LoadBalancerIngress{{
+							IP: "1.1.1.1",
+						}},
+					},
+				},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
+	} {
+		ti := ti
+		t.Run(ti.title, func(t *testing.T) {
+			t.Parallel()
 
-	fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
+			fakeKubernetesClient := fakeKube.NewSimpleClientset()
+			ambassadorScheme := runtime.NewScheme()
+			ambassador.AddToScheme(ambassadorScheme)
+			fakeDynamicClient := fakeDynamic.NewSimpleDynamicClient(ambassadorScheme)
 
-	ctx := context.Background()
+			namespace := "default"
 
-	namespace := "test"
+			// Create Ambassador service
+			_, err := fakeKubernetesClient.CoreV1().Services(defaultAmbassadorNamespace).Create(context.Background(), &ti.service, metav1.CreateOptions{})
+			assert.NoError(t, err)
 
-	host, err := createAmbassadorHost("test-host", "test-service")
-	if err != nil {
-		t.Fatalf("could not create host resource: %v", err)
-	}
+			// Create host resource
+			host, err := createAmbassadorHost(&ti.host)
+			assert.NoError(t, err)
 
-	{
-		_, err := fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(ctx, host, v1.CreateOptions{})
-		if err != nil {
-			t.Fatalf("could not create host: %v", err)
-		}
-	}
+			_, err = fakeDynamicClient.Resource(ambHostGVR).Namespace(namespace).Create(context.Background(), host, metav1.CreateOptions{})
+			assert.NoError(t, err)
 
-	ambassadorSource, err := NewAmbassadorHostSource(ctx, fakeDynamicClient, fakeKubernetesClient, namespace)
-	if err != nil {
-		t.Fatalf("could not create ambassador source: %v", err)
-	}
+			source, err := NewAmbassadorHostSource(context.TODO(), fakeDynamicClient, fakeKubernetesClient, namespace)
+			assert.NoError(t, err)
+			assert.NotNil(t, source)
 
-	{
-		_, err := ambassadorSource.Endpoints(ctx)
-		if err != nil {
-			t.Fatalf("could not collect ambassador source endpoints: %v", err)
-		}
+			endpoints, err := source.Endpoints(context.Background())
+			assert.NoError(t, err)
+			// Validate returned endpoints against expected endpoints.
+			validateEndpoints(t, endpoints, ti.expected)
+		})
 	}
 }
 
-func createAmbassadorHost(name, ambassadorService string) (*unstructured.Unstructured, error) {
-	host := &ambassador.Host{
-		ObjectMeta: v1.ObjectMeta{
-			Name: name,
-			Annotations: map[string]string{
-				ambHostAnnotation: ambassadorService,
-			},
-		},
-	}
+func createAmbassadorHost(host *ambassador.Host) (*unstructured.Unstructured, error) {
 	obj := &unstructured.Unstructured{}
 	uc, _ := newUnstructuredConverter()
 	err := uc.scheme.Convert(host, obj, nil)
-	if err != nil {
-		return nil, err
-	}
 
-	return obj, nil
+	return obj, err
 }
 
 // TestParseAmbLoadBalancerService tests our parsing of Ambassador service info.
@@ -126,7 +357,6 @@ func TestParseAmbLoadBalancerService(t *testing.T) {
 		if err != nil {
 			errstr = err.Error()
 		}
-
 		if v.ns != ns {
 			t.Errorf("%s: got ns \"%s\", wanted \"%s\"", v.input, ns, v.ns)
 		}

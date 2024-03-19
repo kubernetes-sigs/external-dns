@@ -264,6 +264,13 @@ func testEndpointsFromIngress(t *testing.T) {
 			expected:               []*endpoint.Endpoint{},
 			ignoreIngressRulesSpec: true,
 		},
+		{
+			title: "invalid hostname does not generate endpoints",
+			ingress: fakeIngress{
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+			},
+			expected: []*endpoint.Endpoint{},
+		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
