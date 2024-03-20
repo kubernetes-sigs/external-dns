@@ -473,6 +473,14 @@ func shouldBeProxied(endpoint *endpoint.Endpoint, proxiedByDefault bool) bool {
 
 	for _, v := range endpoint.ProviderSpecific {
 		if v.Name == source.CloudflareProxiedKey {
+			proxyValues := strings.Split(v.Value, ",")
+
+			for _, value := range proxyValues {
+				if value == endpoint.DNSName {
+					return true
+				}
+			}
+
 			b, err := strconv.ParseBool(v.Value)
 			if err != nil {
 				log.Errorf("Failed to parse annotation [%s]: %v", source.CloudflareProxiedKey, err)

@@ -608,6 +608,49 @@ func TestCloudflareSetProxied(t *testing.T) {
 	}
 }
 
+func TestCloudflareSetProxiedByDomain(t *testing.T) {
+	var proxied *bool = proxyEnabled
+	var notProxied *bool = proxyDisabled
+	testCases := []struct {
+		recordType string
+		domain     string
+		proxiable  *bool
+	}{
+		{"A", "bar.com", proxied},
+		{"A", "api.bar.com", notProxied},
+	}
+
+	for _, testCase := range testCases {
+		endpoints := []*endpoint.Endpoint{
+			{
+				RecordType: testCase.recordType,
+				DNSName:    testCase.domain,
+				Targets:    endpoint.Targets{"127.0.0.1"},
+				ProviderSpecific: endpoint.ProviderSpecific{
+					endpoint.ProviderSpecificProperty{
+						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
+						Value: "bar.com",
+					},
+				},
+			},
+		}
+
+		AssertActions(t, &CloudFlareProvider{}, endpoints, []MockAction{
+			{
+				Name:   "Create",
+				ZoneId: "001",
+				RecordData: cloudflare.DNSRecord{
+					Type:    testCase.recordType,
+					Name:    testCase.domain,
+					Content: "127.0.0.1",
+					TTL:     1,
+					Proxied: testCase.proxiable,
+				},
+			},
+		}, []string{endpoint.RecordTypeA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}, testCase.recordType+" record on "+testCase.domain)
+	}
+}
+
 func TestCloudflareZones(t *testing.T) {
 	provider := &CloudFlareProvider{
 		Client:       NewMockCloudFlareClient(),
