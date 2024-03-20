@@ -71,10 +71,15 @@ func (p *PiholeProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	if err != nil {
 		return nil, err
 	}
+	aaaaRecords, err := p.api.listRecords(ctx, endpoint.RecordTypeAAAA)
+	if err != nil {
+		return nil, err
+	}
 	cnameRecords, err := p.api.listRecords(ctx, endpoint.RecordTypeCNAME)
 	if err != nil {
 		return nil, err
 	}
+	aRecords = append(aRecords, aaaaRecords...)
 	return append(aRecords, cnameRecords...), nil
 }
 
