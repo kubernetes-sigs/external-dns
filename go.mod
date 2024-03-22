@@ -8,19 +8,19 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
-	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.15.1
+	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.16.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.3.0
-	github.com/IBM/go-sdk-core/v5 v5.16.1
+	github.com/IBM/go-sdk-core/v5 v5.16.3
 	github.com/IBM/networking-go-sdk v0.45.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.695
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.697
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.51.1
+	github.com/aws/aws-sdk-go v1.51.5
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/civo/civogo v0.3.63
-	github.com/cloudflare/cloudflare-go v0.90.0
+	github.com/civo/civogo v0.3.65
+	github.com/cloudflare/cloudflare-go v0.91.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
@@ -36,7 +36,7 @@ require (
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/infobloxopen/infoblox-go-client/v2 v2.5.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.30.0
+	github.com/linode/linodego v1.31.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.58
 	github.com/nesv/go-dynect v0.6.0
@@ -44,19 +44,19 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.61.1
+	github.com/oracle/oci-go-sdk/v65 v65.61.2
 	github.com/ovh/go-ovh v1.4.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/pluralsh/gqlclient v1.11.0
-	github.com/projectcontour/contour v1.28.1
+	github.com/projectcontour/contour v1.28.2
 	github.com/prometheus/client_golang v1.19.0
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.879
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.879
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.879
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.883
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.883
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.883
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.170.0
+	google.golang.org/api v0.171.0
 	gopkg.in/ns1/ns1-go.v2 v2.9.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.21.0
@@ -113,7 +113,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.18.0 // indirect
-	github.com/go-resty/resty/v2 v2.11.0 // indirect
+	github.com/go-resty/resty/v2 v2.12.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.2 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.3 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -204,9 +204,8 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto v0.0.0-20240205150955-31a09d347014 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240205150955-31a09d347014 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240311132316-a219d84964c2 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240314234333-6e1732d8331c // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
@@ -218,7 +217,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20240103051144-eec4567ac022 // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
 	moul.io/http2curl v1.0.0 // indirect
-	sigs.k8s.io/controller-runtime v0.17.1 // indirect
+	sigs.k8s.io/controller-runtime v0.17.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
