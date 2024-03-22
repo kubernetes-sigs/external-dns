@@ -182,7 +182,7 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		recordsErrorsGauge.Inc()
 		log.Debugf("Failed to get records with code %d", resp.StatusCode)
 		err := fmt.Errorf("failed to get records with code %d", resp.StatusCode)
-		if resp.StatusCode >= http.StatusInternalServerError {
+		if isRetryableError(resp.StatusCode) {
 			return nil, provider.NewSoftError(err)
 		}
 		return nil, err
@@ -230,7 +230,7 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 		applyChangesErrorsGauge.Inc()
 		log.Debugf("Failed to apply changes with code %d", resp.StatusCode)
 		err := fmt.Errorf("failed to apply changes with code %d", resp.StatusCode)
-		if resp.StatusCode >= http.StatusInternalServerError {
+		if isRetryableError(resp.StatusCode) {
 			return provider.NewSoftError(err)
 		}
 		return err
@@ -280,7 +280,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to AdjustEndpoints with code %d", resp.StatusCode)
 		err := fmt.Errorf("failed to AdjustEndpoints with code  %d", resp.StatusCode)
-		if resp.StatusCode >= http.StatusInternalServerError {
+		if isRetryableError(resp.StatusCode) {
 			return nil, provider.NewSoftError(err)
 		}
 		return nil, err
@@ -298,4 +298,9 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 // GetDomainFilter make calls to get the serialized version of the domain filter
 func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilter {
 	return p.DomainFilter
+}
+
+// isRetryableError returns true for HTTP status codes between 500 and 510 (inclusive)
+func isRetryableError(statusCode int) bool {
+	return statusCode >= http.StatusInternalServerError && statusCode <= http.StatusNotExtended
 }
