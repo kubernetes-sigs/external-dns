@@ -612,12 +612,15 @@ func TestCloudflareSetProxiedByDomain(t *testing.T) {
 	var proxied *bool = proxyEnabled
 	var notProxied *bool = proxyDisabled
 	testCases := []struct {
-		recordType string
-		domain     string
-		proxiable  *bool
+		recordType             string
+		domain                 string
+		proxiable              *bool
+		cloudFlareProxiedValue string
 	}{
-		{"A", "bar.com", proxied},
-		{"A", "api.bar.com", notProxied},
+		{"A", "bar.com", proxied, "bar.com"},
+		{"A", "api.bar.com", notProxied, "bar.com"},
+		{"A", "api.bar.com", proxied, "bar.com,api.bar.com"},
+		{"A", "test.bar.com", notProxied, "bar.com,api.bar.com"},
 	}
 
 	for _, testCase := range testCases {
@@ -629,7 +632,7 @@ func TestCloudflareSetProxiedByDomain(t *testing.T) {
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
 						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
-						Value: "bar.com",
+						Value: testCase.cloudFlareProxiedValue,
 					},
 				},
 			},
