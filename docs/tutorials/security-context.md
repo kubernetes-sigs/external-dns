@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.0
+        image: registry.k8s.io/external-dns/external-dns:v0.14.1
         args:
         - ... # your arguments here
         securityContext:
