@@ -222,3 +222,10 @@ $ kubectl delete -f externaldns.yaml
 ## Setting cloudflare-proxied on a per-ingress basis
 
 Using the `external-dns.alpha.kubernetes.io/cloudflare-proxied: "true"` annotation on your ingress, you can specify if the proxy feature of Cloudflare should be enabled for that record. This setting will override the global `--cloudflare-proxied` setting.
+
+Alternatively, you can specify individual hostnames for which you want to enable the proxy feature. This is useful when you need to proxy only specific DNS records. To do this, set the annotation to the desired hostname(s):
+```yaml
+external-dns.alpha.kubernetes.io/cloudflare-proxied: bar.com
+```
+
+will enable the proxy feature for the `bar.com` record.
