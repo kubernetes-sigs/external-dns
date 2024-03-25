@@ -247,6 +247,9 @@ func (e *Endpoint) GetProviderSpecificProperty(key string) (string, bool) {
 
 // SetProviderSpecificProperty sets the value of a ProviderSpecificProperty.
 func (e *Endpoint) SetProviderSpecificProperty(key string, value string) {
+	// Make a copy of the ProviderSpecific slice to avoid modifying the original slice as it's reused across multiple endpoints.
+	// cause of the split here for example: https://github.com/kubernetes-sigs/external-dns/blob/master/source/service.go#L399
+	e.ProviderSpecific = e.ProviderSpecific.DeepCopy()
 	for i, providerSpecific := range e.ProviderSpecific {
 		if providerSpecific.Name == key {
 			e.ProviderSpecific[i] = ProviderSpecificProperty{
