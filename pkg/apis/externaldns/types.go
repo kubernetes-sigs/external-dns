@@ -111,6 +111,7 @@ type Config struct {
 	BluecatSkipTLSVerify               bool
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
+	GoDaddyDNSRecordsPerPage		   int
 	CoreDNSPrefix                      string
 	RcodezeroTXTEncrypt                bool
 	AkamaiServiceConsumerDomain        string
@@ -283,6 +284,7 @@ var defaultConfig = &Config{
 	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
+	GoDaddyDNSRecordsPerPage:    100,
 	CoreDNSPrefix:               "/skydns/",
 	RcodezeroTXTEncrypt:         false,
 	AkamaiServiceConsumerDomain: "",
@@ -567,7 +569,8 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("godaddy-api-secret", "When using the GoDaddy provider, specify the API secret (required when --provider=godaddy)").Default(defaultConfig.GoDaddySecretKey).StringVar(&cfg.GoDaddySecretKey)
 	app.Flag("godaddy-api-ttl", "TTL (in seconds) for records. This value will be used if the provided TTL for a service/ingress is not provided.").Int64Var(&cfg.GoDaddyTTL)
 	app.Flag("godaddy-api-ote", "When using the GoDaddy provider, use OTE api (optional, default: false, when --provider=godaddy)").BoolVar(&cfg.GoDaddyOTE)
-
+	app.Flag("godaddy-dns-records-per-page", "When using the GoDaddy provider, specify how many DNS records listed per page, max possible 1,000 (default: 100)").Default(strconv.Itoa(defaultConfig.GoDaddyDNSRecordsPerPage)).IntVar(&cfg.GoDaddyDNSRecordsPerPage)
+	
 	// Flags related to TLS communication
 	app.Flag("tls-ca", "When using TLS communication, the path to the certificate authority to verify server communications (optionally specify --tls-client-cert for two-way TLS)").Default(defaultConfig.TLSCA).StringVar(&cfg.TLSCA)
 	app.Flag("tls-client-cert", "When using TLS communication, the path to the certificate to present as a client (not required for TLS)").Default(defaultConfig.TLSClientCert).StringVar(&cfg.TLSClientCert)

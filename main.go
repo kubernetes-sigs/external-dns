@@ -396,7 +396,7 @@ func main() {
 	case "scaleway":
 		p, err = scaleway.NewScalewayProvider(ctx, domainFilter, cfg.DryRun)
 	case "godaddy":
-		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.DryRun)
+		p, err = godaddy.NewGoDaddyProvider(ctx, domainFilter, cfg.GoDaddyTTL, cfg.GoDaddyAPIKey, cfg.GoDaddySecretKey, cfg.GoDaddyOTE, cfg.GoDaddyDNSRecordsPerPage, cfg.DryRun)
 	case "gandi":
 		p, err = gandi.NewGandiProvider(ctx, domainFilter, cfg.DryRun)
 	case "pihole":

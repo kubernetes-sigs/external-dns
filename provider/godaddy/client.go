@@ -78,6 +78,9 @@ type Client struct {
 	// GoDaddy limits to 60 requests per minute
 	Ratelimiter *rate.Limiter
 
+	// DNSRecordsPerPage is the number of DNS records to fetch per page
+	DNSRecordsPerPage int
+
 	// Logger is used to log HTTP requests and responses.
 	Logger Logger
 
@@ -108,7 +111,7 @@ func (r GDErrorResponse) String() string {
 }
 
 // NewClient represents a new client to call the API
-func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
+func NewClient(useOTE bool, apiKey, apiSecret string, dnsRecordsPerPage int) (*Client, error) {
 	var endpoint string
 
 	if useOTE {
@@ -124,6 +127,7 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 		Client:      &http.Client{},
 		// Add one token every second
 		Ratelimiter: rate.NewLimiter(rate.Every(time.Second), 60),
+		DNSRecordsPerPage: dnsRecordsPerPage,
 		Timeout:     DefaultTimeout,
 	}
 
@@ -140,7 +144,8 @@ func NewClient(useOTE bool, apiKey, apiSecret string) (*Client, error) {
 
 // Get is a wrapper for the GET method
 func (c *Client) Get(url string, resType interface{}) error {
-	return c.CallAPI("GET", url, nil, resType, true)
+	urlWithLimit := fmt.Sprintf("%s&limit=%d", url, c.DNSRecordsPerPage)
+	return c.CallAPI("GET", urlWithLimit, nil, resType, true)
 }
 
 // Patch is a wrapper for the PATCH method
@@ -165,7 +170,8 @@ func (c *Client) Delete(url string, resType interface{}) error {
 
 // GetWithContext is a wrapper for the GET method
 func (c *Client) GetWithContext(ctx context.Context, url string, resType interface{}) error {
-	return c.CallAPIWithContext(ctx, "GET", url, nil, resType, true)
+	urlWithLimit := fmt.Sprintf("%s&limit=%d", url, c.DNSRecordsPerPage)
+	return c.CallAPIWithContext(ctx, "GET", urlWithLimit, nil, resType, true)
 }
 
 // PatchWithContext is a wrapper for the PATCH method
