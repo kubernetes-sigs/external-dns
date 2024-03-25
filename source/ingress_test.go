@@ -267,7 +267,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "invalid hostname does not generate endpoints",
 			ingress: fakeIngress{
-				dnsnames:  []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
