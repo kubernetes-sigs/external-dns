@@ -17,6 +17,7 @@ limitations under the License.
 package azure
 
 import (
+	"os"
 	"path"
 	"runtime"
 	"testing"
@@ -29,14 +30,23 @@ func TestGetCloudConfiguration(t *testing.T) {
 	tests := map[string]struct {
 		cloudName string
 		expected  cloud.Configuration
+		setEnv    map[string]string
 	}{
-		"AzureChinaCloud":   {"AzureChinaCloud", cloud.AzureChina},
-		"AzurePublicCloud":  {"", cloud.AzurePublic},
-		"AzureUSGovernment": {"AzureUSGovernmentCloud", cloud.AzureGovernment},
+		"AzureChinaCloud":   {"AzureChinaCloud", cloud.AzureChina, nil},
+		"AzurePublicCloud":  {"", cloud.AzurePublic, nil},
+		"AzureUSGovernment": {"AzureUSGovernmentCloud", cloud.AzureGovernment, nil},
+		"AzureCustomCloud":  {"AzureCustomCloud", cloud.Configuration{ActiveDirectoryAuthorityHost: "https://custom.microsoftonline.com/"}, map[string]string{"AZURE_AD_ENDPOINT": "https://custom.microsoftonline.com/"}},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
+			if test.setEnv != nil {
+				for key, value := range test.setEnv {
+					os.Setenv(key, value)
+					defer os.Unsetenv(key)
+				}
+			}
+
 			cloudCfg, err := getCloudConfiguration(test.cloudName)
 			if err != nil {
 				t.Errorf("got unexpected err %v", err)
