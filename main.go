@@ -156,6 +156,7 @@ func main() {
 		OCPRouterName:                  cfg.OCPRouterName,
 		UpdateEvents:                   cfg.UpdateEvents,
 		ResolveLoadBalancerHostname:    cfg.ResolveServiceLoadBalancerHostname,
+		ResolveIngressTargetHostname:   cfg.ResolveIngressTargetHostname,
 		TraefikDisableLegacy:           cfg.TraefikDisableLegacy,
 		TraefikDisableNew:              cfg.TraefikDisableNew,
 	}

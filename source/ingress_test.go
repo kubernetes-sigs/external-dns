@@ -66,6 +66,7 @@ func (suite *IngressSuite) SetupTest() {
 		false,
 		labels.Everything(),
 		[]string{},
+		false,
 	)
 	suite.NoError(err, "should initialize ingress source")
 }
@@ -103,6 +104,7 @@ func TestNewIngressSource(t *testing.T) {
 		combineFQDNAndAnnotation bool
 		expectError              bool
 		ingressClassNames        []string
+		resolveIngress           bool
 	}{
 		{
 			title:        "invalid template",
@@ -162,6 +164,7 @@ func TestNewIngressSource(t *testing.T) {
 				false,
 				labels.Everything(),
 				ti.ingressClassNames,
+				ti.resolveIngress,
 			)
 			if ti.expectError {
 				assert.Error(t, err)
@@ -182,6 +185,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		ignoreIngressTLSSpec     bool
 		ignoreIngressRulesSpec   bool
 		expected                 []*endpoint.Endpoint
+		resolveIngress           bool
 	}{
 		{
 			title: "one rule.host one lb.hostname",
@@ -267,14 +271,33 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "invalid hostname does not generate endpoints",
 			ingress: fakeIngress{
-				dnsnames:  []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
 			},
 			expected: []*endpoint.Endpoint{},
+		}, {
+			title:          "one rule.host one lb.hostname with resolve true",
+			resolveIngress: true,
+			ingress: fakeIngress{
+				dnsnames:  []string{"foo.bar"},
+				hostnames: []string{"example.org"}, // Use a resolvable hostname for testing.
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"93.184.216.34"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:2800:220:1:248:1893:25c8:1946"},
+				},
+			},
 		},
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, ti.ignoreHostnameAnnotation, ti.ignoreIngressTLSSpec, ti.ignoreIngressRulesSpec, ti.resolveIngress), ti.expected)
 		})
 	}
 }
@@ -373,7 +396,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 	} {
 		t.Run(ti.title, func(t *testing.T) {
 			realIngress := ti.ingress.Ingress()
-			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false), ti.expected)
+			validateEndpoints(t, endpointsFromIngress(realIngress, false, false, false, false), ti.expected)
 		})
 	}
 }
@@ -396,6 +419,7 @@ func testIngressEndpoints(t *testing.T) {
 		ignoreIngressRulesSpec   bool
 		ingressLabelSelector     labels.Selector
 		ingressClassNames        []string
+		resolveIngress           bool
 	}{
 		{
 			title:           "no ingress",
@@ -1388,6 +1412,31 @@ func testIngressEndpoints(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{},
 		},
+		{
+			title:           "simple ingress with resolving",
+			resolveIngress:  true,
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake-with-resolv1",
+					namespace: namespace,
+					dnsnames:  []string{"foo.bar"},
+					hostnames: []string{"example.org"}, // Use a resolvable hostname for testing.
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeA,
+					Targets:    endpoint.Targets{"93.184.216.34"},
+				},
+				{
+					DNSName:    "foo.bar",
+					RecordType: endpoint.RecordTypeAAAA,
+					Targets:    endpoint.Targets{"2606:2800:220:1:248:1893:25c8:1946"},
+				},
+			},
+		},
 	} {
 		ti := ti
 		t.Run(ti.title, func(t *testing.T) {
@@ -1416,6 +1465,7 @@ func testIngressEndpoints(t *testing.T) {
 				ti.ignoreIngressRulesSpec,
 				ti.ingressLabelSelector,
 				ti.ingressClassNames,
+				ti.resolveIngress,
 			)
 			// Informer cache has all of the ingresses. Retrieve and validate their endpoints.
 			res, err := source.Endpoints(context.Background())
