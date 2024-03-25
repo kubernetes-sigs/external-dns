@@ -26,6 +26,7 @@ import (
 
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
+	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 
 	backoff "github.com/cenkalti/backoff/v4"
@@ -180,7 +181,11 @@ func (p WebhookProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 	if resp.StatusCode != http.StatusOK {
 		recordsErrorsGauge.Inc()
 		log.Debugf("Failed to get records with code %d", resp.StatusCode)
-		return nil, fmt.Errorf("failed to get records with code %d", resp.StatusCode)
+		err := fmt.Errorf("failed to get records with code %d", resp.StatusCode)
+		if isRetryableError(resp.StatusCode) {
+			return nil, provider.NewSoftError(err)
+		}
+		return nil, err
 	}
 
 	endpoints := []*endpoint.Endpoint{}
@@ -224,7 +229,11 @@ func (p WebhookProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	if resp.StatusCode != http.StatusNoContent {
 		applyChangesErrorsGauge.Inc()
 		log.Debugf("Failed to apply changes with code %d", resp.StatusCode)
-		return fmt.Errorf("failed to apply changes with code %d", resp.StatusCode)
+		err := fmt.Errorf("failed to apply changes with code %d", resp.StatusCode)
+		if isRetryableError(resp.StatusCode) {
+			return provider.NewSoftError(err)
+		}
+		return err
 	}
 	return nil
 }
@@ -270,11 +279,15 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	if resp.StatusCode != http.StatusOK {
 		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to AdjustEndpoints with code %d", resp.StatusCode)
-		return nil, fmt.Errorf("failed to AdjustEndpoints with code %d", resp.StatusCode)
+		err := fmt.Errorf("failed to AdjustEndpoints with code  %d", resp.StatusCode)
+		if isRetryableError(resp.StatusCode) {
+			return nil, provider.NewSoftError(err)
+		}
+		return nil, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
-		recordsErrorsGauge.Inc()
+		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
@@ -285,4 +298,9 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 // GetDomainFilter make calls to get the serialized version of the domain filter
 func (p WebhookProvider) GetDomainFilter() endpoint.DomainFilter {
 	return p.DomainFilter
+}
+
+// isRetryableError returns true for HTTP status codes between 500 and 510 (inclusive)
+func isRetryableError(statusCode int) bool {
+	return statusCode >= http.StatusInternalServerError && statusCode <= http.StatusNotExtended
 }
