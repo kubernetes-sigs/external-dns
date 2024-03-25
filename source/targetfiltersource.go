@@ -26,6 +26,7 @@ import (
 
 // targetFilterSource is a Source that removes endpoints matching the target filter from its wrapped source.
 type targetFilterSource struct {
+	BaseSource
 	source       Source
 	targetFilter endpoint.TargetFilterInterface
 }

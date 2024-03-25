@@ -29,6 +29,8 @@ import (
 	"time"
 	"unicode"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -69,9 +71,6 @@ const (
 
 // Provider-specific annotations
 const (
-	// The annotation used for determining if traffic will go through Cloudflare
-	CloudflareProxiedKey = "external-dns.alpha.kubernetes.io/cloudflare-proxied"
-
 	SetIdentifierKey = "external-dns.alpha.kubernetes.io/set-identifier"
 )
 
@@ -85,6 +84,16 @@ type Source interface {
 	Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error)
 	// AddEventHandler adds an event handler that should be triggered if something in source changes
 	AddEventHandler(context.Context, func())
+	SetProviderSpecificConfig(apis.ProviderSpecificConfig)
+	GetProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string)
+}
+
+type BaseSource struct {
+	apis.ProviderSpecificConfig
+}
+
+func (b *BaseSource) SetProviderSpecificConfig(cfg apis.ProviderSpecificConfig) {
+	b.ProviderSpecificConfig = cfg
 }
 
 func getTTLFromAnnotations(annotations map[string]string, resource string) endpoint.TTL {
@@ -186,16 +195,13 @@ func getAliasFromAnnotations(annotations map[string]string) bool {
 	return exists && aliasAnnotation == "true"
 }
 
-func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
+func (b *BaseSource) GetProviderSpecificAnnotations(annotations map[string]string) (endpoint.ProviderSpecific, string) {
+	return getProviderSpecificAnnotations(b.ProviderSpecificConfig, annotations)
+}
+
+func getProviderSpecificAnnotations(cfg apis.ProviderSpecificConfig, annotations map[string]string) (endpoint.ProviderSpecific, string) {
 	providerSpecificAnnotations := endpoint.ProviderSpecific{}
 
-	v, exists := annotations[CloudflareProxiedKey]
-	if exists {
-		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-			Name:  CloudflareProxiedKey,
-			Value: v,
-		})
-	}
 	if getAliasFromAnnotations(annotations) {
 		providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
 			Name:  "alias",
@@ -206,24 +212,24 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 	for k, v := range annotations {
 		if k == SetIdentifierKey {
 			setIdentifier = v
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/aws-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/aws-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("aws/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/scw-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/scw-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("scw/%s", attr),
-				Value: v,
-			})
-		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-") {
-			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/ibmcloud-")
-			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
-				Name:  fmt.Sprintf("ibmcloud-%s", attr),
-				Value: v,
-			})
+		} else {
+			if name, exists := cfg.Translation[k]; exists {
+				providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+					Name:  name,
+					Value: v,
+				})
+				continue
+			}
+			for prefix, replacedPrefix := range cfg.PrefixTranslation {
+				if strings.HasPrefix(k, prefix) {
+					name := strings.Replace(k, prefix, replacedPrefix, 1)
+					providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
+						Name:  name,
+						Value: v,
+					})
+					break
+				}
+			}
 		}
 	}
 	return providerSpecificAnnotations, setIdentifier

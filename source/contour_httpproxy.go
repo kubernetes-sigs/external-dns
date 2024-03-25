@@ -40,6 +40,7 @@ import (
 // The HTTPProxy implementation uses the spec.virtualHost.fqdn value for the hostname.
 // Use targetAnnotationKey to explicitly set Endpoint.
 type httpProxySource struct {
+	BaseSource
 	dynamicKubeClient        dynamic.Interface
 	namespace                string
 	annotationFilter         string
@@ -199,7 +200,7 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -258,7 +259,7 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(httpProxy.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(httpProxy.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 

@@ -19,8 +19,9 @@ package source
 import (
 	"context"
 	"encoding/json"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -47,6 +47,7 @@ const (
 )
 
 type routeGroupSource struct {
+	BaseSource
 	cli                      routeGroupListClient
 	apiServer                string
 	namespace                string
@@ -312,7 +313,7 @@ func (sc *routeGroupSource) endpointsFromTemplate(rg *routeGroup) ([]*endpoint.E
 		targets = targetsFromRouteGroupStatus(rg.Status)
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(rg.Metadata.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	// splits the FQDN template and removes the trailing periods
@@ -354,7 +355,7 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 		}
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(rg.Metadata.Annotations)
+	providerSpecific, setIdentifier := sc.GetProviderSpecificAnnotations(rg.Metadata.Annotations)
 
 	for _, src := range rg.Spec.Hosts {
 		if src == "" {

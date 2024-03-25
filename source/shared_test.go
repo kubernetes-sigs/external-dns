@@ -93,7 +93,7 @@ func validateEndpoint(t *testing.T, endpoint, expected *endpoint.Endpoint) {
 
 	if (len(expected.ProviderSpecific) != 0 || len(endpoint.ProviderSpecific) != 0) &&
 		!reflect.DeepEqual(endpoint.ProviderSpecific, expected.ProviderSpecific) {
-		t.Errorf("ProviderSpecific expected %s, got %s", expected.ProviderSpecific, endpoint.ProviderSpecific)
+		t.Errorf("ProviderSpecific expected %v, got %v", expected.ProviderSpecific, endpoint.ProviderSpecific)
 	}
 
 	if endpoint.SetIdentifier != expected.SetIdentifier {

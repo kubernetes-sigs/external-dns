@@ -79,6 +79,7 @@ var (
 )
 
 type traefikSource struct {
+	BaseSource
 	annotationFilter           string
 	ignoreHostnameAnnotation   bool
 	dynamicKubeClient          dynamic.Interface
@@ -670,7 +671,7 @@ func (ts *traefikSource) endpointsFromIngressRoute(ingressRoute *IngressRoute, t
 
 	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := ts.GetProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
@@ -706,7 +707,7 @@ func (ts *traefikSource) endpointsFromIngressRouteTCP(ingressRoute *IngressRoute
 
 	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := ts.GetProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)
@@ -743,7 +744,7 @@ func (ts *traefikSource) endpointsFromIngressRouteUDP(ingressRoute *IngressRoute
 
 	ttl := getTTLFromAnnotations(ingressRoute.Annotations, resource)
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ingressRoute.Annotations)
+	providerSpecific, setIdentifier := ts.GetProviderSpecificAnnotations(ingressRoute.Annotations)
 
 	if !ts.ignoreHostnameAnnotation {
 		hostnameList := getHostnamesFromAnnotations(ingressRoute.Annotations)

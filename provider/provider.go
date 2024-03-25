@@ -22,6 +22,8 @@ import (
 	"net"
 	"strings"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 )
@@ -49,6 +51,7 @@ type Provider interface {
 	// Endpoints. It is permitted to modify the supplied endpoints.
 	AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	GetDomainFilter() endpoint.DomainFilter
+	GetProviderSpecific(ctx context.Context) (apis.ProviderSpecificConfig, error)
 }
 
 type BaseProvider struct{}
@@ -59,6 +62,10 @@ func (b BaseProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoi
 
 func (b BaseProvider) GetDomainFilter() endpoint.DomainFilter {
 	return endpoint.DomainFilter{}
+}
+
+func (b BaseProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	return apis.ProviderSpecificConfig{}, nil
 }
 
 type contextKey struct {

@@ -23,7 +23,9 @@ import (
 )
 
 // emptySource is a Source that returns no endpoints.
-type emptySource struct{}
+type emptySource struct {
+	BaseSource
+}
 
 func (e *emptySource) AddEventHandler(ctx context.Context, handler func()) {
 }

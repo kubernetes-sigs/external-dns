@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 
+	"sigs.k8s.io/external-dns/pkg/apis"
+
 	"github.com/IBM-Cloud/ibm-cloud-cli-sdk/bluemix/crn"
 	"github.com/IBM/go-sdk-core/v5/core"
 	"github.com/IBM/networking-go-sdk/dnsrecordsv1"
@@ -301,7 +303,7 @@ func (c *ibmcloudConfig) Validate(authenticator core.Authenticator, domainFilter
 // NewIBMCloudProvider creates a new IBMCloud provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, source source.Source, proxiedByDefault bool, dryRun bool) (*IBMCloudProvider, error) {
+func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, source source.Source, proxiedByDefault bool, dryRun bool) (provider.Provider, error) {
 	cfg, err := getConfig(configFile)
 	if err != nil {
 		return nil, err
@@ -333,6 +335,14 @@ func NewIBMCloudProvider(configFile string, domainFilter endpoint.DomainFilter, 
 		DryRun:           dryRun,
 	}
 	return provider, nil
+}
+
+func (p *IBMCloudProvider) GetProviderSpecific(_ context.Context) (apis.ProviderSpecificConfig, error) {
+	return apis.ProviderSpecificConfig{
+		PrefixTranslation: map[string]string{
+			"external-dns.alpha.kubernetes.io/ibmcloud-": "ibmcloud/",
+		},
+	}, nil
 }
 
 // Records gets the current records.

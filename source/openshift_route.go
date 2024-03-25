@@ -42,6 +42,7 @@ import (
 // The targetAnnotationKey can be used to explicitly set an alternative
 // endpoint, if desired.
 type ocpRouteSource struct {
+	BaseSource
 	client                   versioned.Interface
 	namespace                string
 	annotationFilter         string
@@ -184,7 +185,7 @@ func (ors *ocpRouteSource) endpointsFromTemplate(ocpRoute *routev1.Route) ([]*en
 		targets = targetsFromRoute
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
+	providerSpecific, setIdentifier := ors.GetProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	var endpoints []*endpoint.Endpoint
 	for _, hostname := range hostnames {
@@ -238,7 +239,7 @@ func (ors *ocpRouteSource) endpointsFromOcpRoute(ocpRoute *routev1.Route, ignore
 		targets = targetsFromRoute
 	}
 
-	providerSpecific, setIdentifier := getProviderSpecificAnnotations(ocpRoute.Annotations)
+	providerSpecific, setIdentifier := ors.GetProviderSpecificAnnotations(ocpRoute.Annotations)
 
 	if host != "" {
 		endpoints = append(endpoints, endpointsForHostname(host, targets, ttl, providerSpecific, setIdentifier, resource)...)
