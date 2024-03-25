@@ -216,3 +216,191 @@ func TestIsOwnedBy(t *testing.T) {
 		})
 	}
 }
+
+func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo3 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo4 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+
+	type args struct {
+		ownerID string
+		eps     []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				ownerID: "foo",
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					foo3,
+					foo4,
+					bar,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+				foo2,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FilterEndpointsByOwnerID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo3 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo4 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo5 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo6 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo7 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo8 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeCNAME,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+	bar2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+
+	type args struct {
+		ownerID string
+		eps     []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				ownerID: "foo",
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					foo3,
+					foo4,
+					foo5,
+					foo6,
+					foo7,
+					foo8,
+					bar,
+					bar2,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+				foo2,
+				foo5,
+				foo6,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("FilterEndpointsByOwnerID() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
