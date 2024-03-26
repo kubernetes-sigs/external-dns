@@ -14,11 +14,11 @@ require (
 	github.com/IBM/networking-go-sdk v0.45.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.699
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.705
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.51.6
+	github.com/aws/aws-sdk-go v1.51.7
 	github.com/bodgit/tsig v1.2.2
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.65
 	github.com/cloudflare/cloudflare-go v0.91.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
