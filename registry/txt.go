@@ -76,7 +76,7 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		return nil, errors.New("txt-prefix and txt-suffix are mutual exclusive")
 	}
 
-	mapper := newaffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement)
+	mapper := newAffixNameMapper(txtPrefix, txtSuffix, txtWildcardReplacement, managedRecordTypes)
 
 	return &TXTRegistry{
 		provider:            provider,
@@ -89,10 +89,6 @@ func NewTXTRegistry(provider provider.Provider, txtPrefix, txtSuffix, ownerID st
 		txtEncryptEnabled:   txtEncryptEnabled,
 		txtEncryptAESKey:    txtEncryptAESKey,
 	}, nil
-}
-
-func getSupportedTypes() []string {
-	return []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME, endpoint.RecordTypeNS}
 }
 
 func (im *TXTRegistry) GetDomainFilter() endpoint.DomainFilterInterface {
@@ -322,19 +318,25 @@ type affixNameMapper struct {
 	prefix              string
 	suffix              string
 	wildcardReplacement string
+	managedRecordTypes  []string
 }
 
 var _ nameMapper = affixNameMapper{}
 
-func newaffixNameMapper(prefix, suffix, wildcardReplacement string) affixNameMapper {
-	return affixNameMapper{prefix: strings.ToLower(prefix), suffix: strings.ToLower(suffix), wildcardReplacement: strings.ToLower(wildcardReplacement)}
+func newAffixNameMapper(prefix, suffix, wildcardReplacement string, managedRecordTypes []string) affixNameMapper {
+	return affixNameMapper{
+		prefix:              strings.ToLower(prefix),
+		suffix:              strings.ToLower(suffix),
+		wildcardReplacement: strings.ToLower(wildcardReplacement),
+		managedRecordTypes:  managedRecordTypes,
+	}
 }
 
 // extractRecordTypeDefaultPosition extracts record type from the default position
 // when not using '%{record_type}' in the prefix/suffix
-func extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
+func (pr affixNameMapper) extractRecordTypeDefaultPosition(name string) (baseName, recordType string) {
 	nameS := strings.Split(name, "-")
-	for _, t := range getSupportedTypes() {
+	for _, t := range pr.managedRecordTypes {
 		if nameS[0] == strings.ToLower(t) {
 			return strings.TrimPrefix(name, nameS[0]+"-"), t
 		}
@@ -349,7 +351,7 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordTyp
 	suffix := pr.suffix
 
 	if pr.recordTypeInAffix() {
-		for _, t := range getSupportedTypes() {
+		for _, t := range pr.managedRecordTypes {
 			tLower := strings.ToLower(t)
 			iPrefix := strings.ReplaceAll(prefix, recordTemplate, tLower)
 			iSuffix := strings.ReplaceAll(suffix, recordTemplate, tLower)
@@ -369,11 +371,11 @@ func (pr affixNameMapper) dropAffixExtractType(name string) (baseName, recordTyp
 	}
 
 	if pr.isPrefix() && strings.HasPrefix(name, prefix) {
-		return extractRecordTypeDefaultPosition(strings.TrimPrefix(name, prefix))
+		return pr.extractRecordTypeDefaultPosition(strings.TrimPrefix(name, prefix))
 	}
 
 	if pr.isSuffix() && strings.HasSuffix(name, suffix) {
-		return extractRecordTypeDefaultPosition(strings.TrimSuffix(name, suffix))
+		return pr.extractRecordTypeDefaultPosition(strings.TrimSuffix(name, suffix))
 	}
 
 	return "", ""
