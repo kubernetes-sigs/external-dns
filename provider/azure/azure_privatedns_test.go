@@ -432,3 +432,39 @@ func testAzurePrivateDNSApplyChangesInternal(t *testing.T, dryRun bool, client P
 		t.Fatal(err)
 	}
 }
+
+func TestAzurePrivateDNSNameFilter(t *testing.T) {
+	provider, err := newMockedAzurePrivateDNSProvider(endpoint.NewDomainFilter([]string{"nginx.example.com"}), endpoint.NewDomainFilter([]string{"example.com"}), provider.NewZoneIDFilter([]string{""}), true, "k8s",
+		[]*privatedns.PrivateZone{
+			createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
+		},
+
+		[]*privatedns.RecordSet{
+			createPrivateMockRecordSet("@", "NS", "ns1-03.azure-dns.com."),
+			createPrivateMockRecordSet("@", "SOA", "Email: azuredns-hostmaster.microsoft.com"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeA, "123.123.123.122"),
+			createPrivateMockRecordSet("@", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default"),
+			createPrivateMockRecordSetWithTTL("test.nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeA, "123.123.123.123", 3600),
+			createPrivateMockRecordSetWithTTL("nginx", endpoint.RecordTypeTXT, "heritage=external-dns,external-dns/owner=default", recordTTL),
+			createPrivateMockRecordSetWithTTL("mail.nginx", endpoint.RecordTypeMX, "20 example.com", recordTTL),
+			createPrivateMockRecordSetWithTTL("hack", endpoint.RecordTypeCNAME, "hack.azurewebsites.net", 10),
+		})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx := context.Background()
+	actual, err := provider.Records(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("test.nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeA, 3600, "123.123.123.123"),
+		endpoint.NewEndpointWithTTL("nginx.example.com", endpoint.RecordTypeTXT, recordTTL, "heritage=external-dns,external-dns/owner=default"),
+		endpoint.NewEndpointWithTTL("mail.nginx.example.com", endpoint.RecordTypeMX, recordTTL, "20 example.com"),
+	}
+
+	validateAzureEndpoints(t, actual, expected)
+}
