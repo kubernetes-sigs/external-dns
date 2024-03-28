@@ -468,3 +468,87 @@ func TestAzurePrivateDNSNameFilter(t *testing.T) {
 
 	validateAzureEndpoints(t, actual, expected)
 }
+
+func TestAzurePrivateDNSApplyChangesZoneName(t *testing.T) {
+	recordsClient := mockRecordSetsClient{}
+
+	testAzureApplyChangesInternalZoneName(t, false, &recordsClient)
+
+	validateAzureEndpoints(t, recordsClient.deletedEndpoints, []*endpoint.Endpoint{
+		endpoint.NewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, ""),
+		endpoint.NewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, ""),
+		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, ""),
+	})
+
+	validateAzureEndpoints(t, recordsClient.updatedEndpoints, []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeA, endpoint.TTL(recordTTL), "1.2.3.4", "1.2.3.5"),
+		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeAAAA, endpoint.TTL(recordTTL), "2001::1:2:3:4", "2001::1:2:3:5"),
+		endpoint.NewEndpointWithTTL("foo.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.NewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+	})
+}
+
+func testAzurePrivateDNSApplyChangesInternalZoneName(t *testing.T, dryRun bool, client PrivateRecordSetsClient) {
+	zones := []*privatedns.PrivateZone{
+		createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
+	}
+	zonesClient := newMockPrivateZonesClient(zones)
+
+	provider := newAzurePrivateDNSProvider(
+		endpoint.NewDomainFilter([]string{"foo.example.com"}),
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		dryRun,
+		"group",
+		&zonesClient,
+		client,
+	)
+
+	createRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeA, "1.2.3.4"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:4"),
+		endpoint.NewEndpoint("example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeA, "1.2.3.5", "1.2.3.4"),
+		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeAAAA, "2001::1:2:3:5", "2001::1:2:3:4"),
+		endpoint.NewEndpoint("foo.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("bar.example.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("other.com", endpoint.RecordTypeA, "5.6.7.8"),
+		endpoint.NewEndpoint("other.com", endpoint.RecordTypeTXT, "tag"),
+		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeA, "4.4.4.4"),
+		endpoint.NewEndpoint("nope.com", endpoint.RecordTypeTXT, "tag"),
+	}
+
+	currentRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+	}
+	updatedRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.NewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+	}
+
+	deleteRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("deleted.foo.example.com", endpoint.RecordTypeA, "111.222.111.222"),
+		endpoint.NewEndpoint("deletedaaaa.foo.example.com", endpoint.RecordTypeAAAA, "2001::111:222:111:222"),
+		endpoint.NewEndpoint("deletedcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("deleted.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
+	}
+
+	changes := &plan.Changes{
+		Create:    createRecords,
+		UpdateNew: updatedRecords,
+		UpdateOld: currentRecords,
+		Delete:    deleteRecords,
+	}
+
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+		t.Fatal(err)
+	}
+}
