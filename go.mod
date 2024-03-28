@@ -34,7 +34,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gophercloud/gophercloud v1.11.0
 	github.com/hooklift/gowsdl v0.5.0
-	github.com/infobloxopen/infoblox-go-client/v2 v2.5.0
+	github.com/infobloxopen/infoblox-go-client/v2 v2.4.0
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.31.0
 	github.com/maxatome/go-testdeep v1.14.0
@@ -222,3 +222,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20160121211510-db5cfe13f5cc
