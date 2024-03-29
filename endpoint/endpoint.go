@@ -298,7 +298,7 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 
 	for _, ep := range eps {
 		key := ep.Key()
-		// Using EndpointKey for getting the primary key using DNSName, RecordType & SetIdentifier.
+		// Using EndpointKey to generate the primary key using DNSName, RecordType & SetIdentifier.
 		if visited[key] { //Do not contain duplicated endpoints
 			log.Debugf(`Skipping duplicated endpoint %v `, ep)
 			continue
@@ -307,12 +307,8 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
-			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-		}
-		// Adding validation (skipping empty EndpointKeys)
-		// Not sure why we have cases when there are empty keys, but we do
-		if key != (EndpointKey{}) {
 			visited[key] = true
+			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		}
 	}
 

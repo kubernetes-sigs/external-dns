@@ -59,7 +59,6 @@ const (
 	providerSpecificMultiValueAnswer           = "aws/multi-value-answer"
 	providerSpecificHealthCheckID              = "aws/health-check-id"
 	sameZoneAlias                              = "same-zone"
-	EmptyRecordType                            = "EmptyRecordType"
 )
 
 // see: https://docs.aws.amazon.com/general/latest/gr/elb.html
@@ -994,12 +993,6 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 			continue
 		}
 		for _, z := range zones {
-			var recordType string
-			if c.ResourceRecordSet.Type != nil && *c.ResourceRecordSet.Type != "" {
-				recordType = *c.ResourceRecordSet.Type
-			} else {
-				recordType = EmptyRecordType
-			}
 			if c.ResourceRecordSet.AliasTarget != nil && aws.StringValue(c.ResourceRecordSet.AliasTarget.HostedZoneId) == sameZoneAlias {
 				// alias record is to be created; target needs to be in the same zone as endpoint
 				// if it's not, this will fail
@@ -1015,7 +1008,7 @@ func changesByZone(zones map[string]*route53.HostedZone, changeSet Route53Change
 				}
 			}
 			changes[aws.StringValue(z.Id)] = append(changes[aws.StringValue(z.Id)], c)
-			log.Debugf("Adding %s to zone %s [Id: %s] Type: %s", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id), recordType)
+			log.Debugf("Adding %s to zone %s [Id: %s]", hostname, aws.StringValue(z.Name), aws.StringValue(z.Id))
 		}
 	}
 

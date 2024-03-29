@@ -227,21 +227,7 @@ func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 	foo2 := &Endpoint{
 		DNSName:    "foo.com",
-		RecordType: RecordTypeCNAME,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo3 := &Endpoint{
-		DNSName:    "foo.com",
 		RecordType: RecordTypeA,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo4 := &Endpoint{
-		DNSName:    "foo.com",
-		RecordType: RecordTypeCNAME,
 		Labels: Labels{
 			OwnerLabelKey: "foo",
 		},
@@ -270,14 +256,11 @@ func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 				eps: []*Endpoint{
 					foo1,
 					foo2,
-					foo3,
-					foo4,
 					bar,
 				},
 			},
 			want: []*Endpoint{
 				foo1,
-				foo2,
 			},
 		},
 	}
@@ -300,49 +283,21 @@ func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 	foo2 := &Endpoint{
 		DNSName:    "internal.foo.com",
-		RecordType: RecordTypeCNAME,
+		RecordType: RecordTypeA,
 		Labels: Labels{
 			OwnerLabelKey: "foo",
 		},
 	}
 	foo3 := &Endpoint{
-		DNSName:    "internal.foo.com",
+		DNSName:    "foo.com",
 		RecordType: RecordTypeA,
 		Labels: Labels{
 			OwnerLabelKey: "foo",
 		},
 	}
 	foo4 := &Endpoint{
-		DNSName:    "internal.foo.com",
-		RecordType: RecordTypeCNAME,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo5 := &Endpoint{
 		DNSName:    "foo.com",
 		RecordType: RecordTypeA,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo6 := &Endpoint{
-		DNSName:    "foo.com",
-		RecordType: RecordTypeCNAME,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo7 := &Endpoint{
-		DNSName:    "foo.com",
-		RecordType: RecordTypeA,
-		Labels: Labels{
-			OwnerLabelKey: "foo",
-		},
-	}
-	foo8 := &Endpoint{
-		DNSName:    "foo.com",
-		RecordType: RecordTypeCNAME,
 		Labels: Labels{
 			OwnerLabelKey: "foo",
 		},
@@ -380,19 +335,13 @@ func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 					foo2,
 					foo3,
 					foo4,
-					foo5,
-					foo6,
-					foo7,
-					foo8,
 					bar,
 					bar2,
 				},
 			},
 			want: []*Endpoint{
 				foo1,
-				foo2,
-				foo5,
-				foo6,
+				foo3,
 			},
 		},
 	}
