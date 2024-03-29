@@ -79,14 +79,14 @@ Known providers using webhooks:
 
 | Provider |  Repo |
 | -------- | ----------- |
-| IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook | 
-| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard | 
-| STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook | 
-| GleSYS | https://github.com/glesys/external-dns-glesys | 
-| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook | 
-| Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook | 
-| Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
+| Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard |
+| Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook |
 | Gcore | https://github.com/G-Core/external-dns-gcore-webhook |
+| GleSYS | https://github.com/glesys/external-dns-glesys |
+| Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook |
+| IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook |
+| Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
+| STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
 
 ## Status of providers
 
