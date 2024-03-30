@@ -293,22 +293,11 @@ func (e *Endpoint) String() string {
 // only endpoints that match.
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
-	// Initialize the map for detecting duplicated endpoints
-	visited := make(map[EndpointKey]bool)
-
 	for _, ep := range eps {
-		key := ep.Key()
-		// Using EndpointKey to generate the primary key using DNSName, RecordType & SetIdentifier.
-		if visited[key] { //Do not contain duplicated endpoints
-			log.Debugf(`Skipping duplicated endpoint %v `, ep)
-			continue
-		}
 		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
 			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		} else {
 			filtered = append(filtered, ep)
-			visited[key] = true
-			log.Debugf(`Added endpoint %v because owner id matches, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
 		}
 	}
 
@@ -353,4 +342,23 @@ type DNSEndpointList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSEndpoint `json:"items"`
+}
+
+// Apply filter based on EndpointKey (using DNSName, RecordType & SetIdentifier)
+func RemoveDuplicates(filtered []*Endpoint) []*Endpoint {
+	visited := make(map[EndpointKey]bool)
+	result := []*Endpoint{}
+
+	for _, ep := range filtered {
+		key := ep.Key()
+
+		if !visited[key] {
+			result = append(result, ep)
+			visited[key] = true
+		} else {
+			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
+		}
+	}
+
+	return result
 }

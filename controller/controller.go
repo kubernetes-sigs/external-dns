@@ -210,6 +210,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 
+	records = endpoint.RemoveDuplicates(records)
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords, regAAAARecords := countAddressRecords(records)
 	registryARecords.Set(float64(regARecords))
@@ -230,6 +231,7 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 	verifiedARecords.Set(float64(vARecords))
 	verifiedAAAARecords.Set(float64(vAAAARecords))
 	endpoints, err = c.Registry.AdjustEndpoints(endpoints)
+	endpoints = endpoint.RemoveDuplicates(endpoints)
 	if err != nil {
 		return fmt.Errorf("adjusting endpoints: %w", err)
 	}

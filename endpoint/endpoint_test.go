@@ -217,7 +217,7 @@ func TestIsOwnedBy(t *testing.T) {
 	}
 }
 
-func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
+func TestDuplicatedEndpointsWithSimpleZone(t *testing.T) {
 	foo1 := &Endpoint{
 		DNSName:    "foo.com",
 		RecordType: RecordTypeA,
@@ -241,8 +241,7 @@ func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 
 	type args struct {
-		ownerID string
-		eps     []*Endpoint
+		eps []*Endpoint
 	}
 	tests := []struct {
 		name string
@@ -252,7 +251,6 @@ func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 		{
 			name: "filter values",
 			args: args{
-				ownerID: "foo",
 				eps: []*Endpoint{
 					foo1,
 					foo2,
@@ -266,14 +264,14 @@ func TestDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FilterEndpointsByOwnerID() = %v, want %v", got, tt.want)
+			if got := RemoveDuplicates(tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveDuplicates() = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
+func TestDuplicatedEndpointsWithOverlappingZones(t *testing.T) {
 	foo1 := &Endpoint{
 		DNSName:    "internal.foo.com",
 		RecordType: RecordTypeA,
@@ -318,8 +316,7 @@ func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 
 	type args struct {
-		ownerID string
-		eps     []*Endpoint
+		eps []*Endpoint
 	}
 	tests := []struct {
 		name string
@@ -329,7 +326,6 @@ func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 		{
 			name: "filter values",
 			args: args{
-				ownerID: "foo",
 				eps: []*Endpoint{
 					foo1,
 					foo2,
@@ -347,8 +343,8 @@ func TestZonesDuplicatedFilterEndpointsByOwnerID(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := FilterEndpointsByOwnerID(tt.args.ownerID, tt.args.eps); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("FilterEndpointsByOwnerID() = %v, want %v", got, tt.want)
+			if got := RemoveDuplicates(tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveDuplicates() = %v, want %v", got, tt.want)
 			}
 		})
 	}
