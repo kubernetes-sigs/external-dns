@@ -344,7 +344,7 @@ type DNSEndpointList struct {
 	Items           []DNSEndpoint `json:"items"`
 }
 
-// Apply filter based on EndpointKey (using DNSName, RecordType & SetIdentifier)
+// RemoveDuplicates returns a slice holding the unique endpoints.
 func RemoveDuplicates(filtered []*Endpoint) []*Endpoint {
 	visited := make(map[EndpointKey]struct{})
 	result := []*Endpoint{}
