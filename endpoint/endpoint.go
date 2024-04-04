@@ -346,15 +346,15 @@ type DNSEndpointList struct {
 
 // Apply filter based on EndpointKey (using DNSName, RecordType & SetIdentifier)
 func RemoveDuplicates(filtered []*Endpoint) []*Endpoint {
-	visited := make(map[EndpointKey]bool)
+	visited := make(map[EndpointKey]struct{})
 	result := []*Endpoint{}
 
 	for _, ep := range filtered {
 		key := ep.Key()
 
-		if !visited[key] {
+		if _, found := visited[key]; !found {
 			result = append(result, ep)
-			visited[key] = true
+			visited[key] = struct{}{}
 		} else {
 			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
 		}
