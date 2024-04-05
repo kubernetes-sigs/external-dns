@@ -88,15 +88,11 @@ Known providers using webhooks:
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
 | STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
 
-## Status of providers
+## Status of in-tree providers
 
-ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge and we have limited resources to test changes. This means that it is very hard to test all providers for possible regressions and, as written in the [Contributing](#Contributing) section, we encourage contributors to step in as maintainers for the individual providers and help by testing the integrations.
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge that has became too important to handle.
 
-End-to-end testing of ExternalDNS is currently
-[performed](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/test/e2e/external_dns.go)
-in the separate
-[kubernetes-on-aws](https://github.com/zalando-incubator/kubernetes-on-aws)
-repository.
+This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details. Those who are interested can create a webhook provider based on an _in-tree_ provider and after submit a PR to reference it here.
 
 We define the following stability levels for providers:
 
@@ -112,7 +108,7 @@ The following table clarifies the current status of the providers according to t
 | AWS Route 53 | Stable | |
 | AWS Cloud Map | Beta | |
 | Akamai Edge DNS | Beta | |
-| AzureDNS | Beta | |
+| AzureDNS | Stable | |
 | BlueCat | Alpha | @seanmalloy  @vinny-sabatini |
 | Civo | Alpha | @alejandrojnm |
 | CloudFlare | Beta | |
@@ -295,6 +291,8 @@ If `externalIPs` list is defined for a `LoadBalancer` service, this list will be
 Are you interested in contributing to external-dns? We, the maintainers and community, would love your
 suggestions, contributions, and help! Also, the maintainers can be contacted at any time to learn more
 about how to get involved.
+
+End-to-end testing of ExternalDNS is currently [performed](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/test/e2e/external_dns.go) in the separate [kubernetes-on-aws](https://github.com/zalando-incubator/kubernetes-on-aws) repository.
 
 We also encourage ALL active community participants to act as if they are maintainers, even if you don't have
 "official" write permissions. This is a community effort, we are here to serve the Kubernetes community. If you
