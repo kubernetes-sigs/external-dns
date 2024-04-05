@@ -345,16 +345,17 @@ type DNSEndpointList struct {
 }
 
 // RemoveDuplicates returns a slice holding the unique endpoints.
-func RemoveDuplicates(filtered []*Endpoint) []*Endpoint {
+func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	visited := make(map[EndpointKey]struct{})
 	result := []*Endpoint{}
 
-	for _, ep := range filtered {
+	for _, ep := range endpoints {
 		key := ep.Key()
 
 		if _, found := visited[key]; !found {
 			result = append(result, ep)
-			visited[key] = struct{}{}
+			//visited[key] = struct{}{}
+			// Currently Debugging 0.14.0 to see the exact root cause
 		} else {
 			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
 		}
