@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.10.0
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
@@ -14,17 +14,17 @@ require (
 	github.com/IBM/networking-go-sdk v0.45.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.699
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.712
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.51.6
+	github.com/aws/aws-sdk-go v1.51.14
 	github.com/bodgit/tsig v1.2.2
-	github.com/cenkalti/backoff/v4 v4.2.1
-	github.com/civo/civogo v0.3.65
-	github.com/cloudflare/cloudflare-go v0.91.0
+	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/civo/civogo v0.3.66
+	github.com/cloudflare/cloudflare-go v0.92.0
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.110.0
+	github.com/digitalocean/godo v1.111.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -44,7 +44,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.61.2
+	github.com/oracle/oci-go-sdk/v65 v65.63.0
 	github.com/ovh/go-ovh v1.4.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -54,22 +54,22 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.884
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.884
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.884
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.893
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.893
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.893
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
 	github.com/vultr/govultr/v2 v2.17.2
-	go.etcd.io/etcd/api/v3 v3.5.12
-	go.etcd.io/etcd/client/v3 v3.5.12
+	go.etcd.io/etcd/api/v3 v3.5.13
+	go.etcd.io/etcd/client/v3 v3.5.13
 	go.uber.org/ratelimit v0.3.1
-	golang.org/x/net v0.22.0
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.18.0
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.171.0
-	gopkg.in/ns1/ns1-go.v2 v2.9.0
+	google.golang.org/api v0.172.0
+	gopkg.in/ns1/ns1-go.v2 v2.9.1
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.21.0
 	istio.io/client-go v1.21.0
@@ -186,7 +186,7 @@ require (
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.12 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
@@ -205,7 +205,7 @@ require (
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240311132316-a219d84964c2 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240314234333-6e1732d8331c // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
