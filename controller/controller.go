@@ -210,7 +210,10 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	records = endpoint.RemoveDuplicates(records)
+	//records = endpoint.RemoveDuplicates(records)
+	//This deduplication could be a different but valid solution
+	//With this in place the change on plan.go is not needed
+	//Keeping this here until we decide what's best
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords, regAAAARecords := countAddressRecords(records)
 	registryARecords.Set(float64(regARecords))
