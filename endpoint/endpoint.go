@@ -345,6 +345,8 @@ type DNSEndpointList struct {
 }
 
 // RemoveDuplicates returns a slice holding the unique endpoints.
+// This function doesn't contemplate the Targets of an Endpoint
+// as part of the primary Key
 func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
 	visited := make(map[EndpointKey]struct{})
 	result := []*Endpoint{}

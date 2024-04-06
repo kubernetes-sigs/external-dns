@@ -210,9 +210,12 @@ func (c *Controller) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	//records = endpoint.RemoveDuplicates(records)
-	//This deduplication could be a different but valid solution
+	records = endpoint.RemoveDuplicates(records)
+	//This deduplication seems to be the a good fit
+	//Duplicated endpoints were living on this variable
+	//In all versions for the overlapping zones
 	//With this in place the change on plan.go is not needed
+	//Also it saves some rounds of cpu
 	//Keeping this here until we decide what's best
 	registryEndpointsTotal.Set(float64(len(records)))
 	regARecords, regAAAARecords := countAddressRecords(records)
