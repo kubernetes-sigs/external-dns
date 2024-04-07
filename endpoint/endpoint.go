@@ -102,6 +102,7 @@ func (t Targets) Same(o Targets) bool {
 
 	for i, e := range t {
 		if !strings.EqualFold(e, o[i]) {
+			// IPv6 can be shortened, so it should be parsed for equality checking
 			ipA, err := netip.ParseAddr(e)
 			if err != nil {
 				log.WithFields(log.Fields{
