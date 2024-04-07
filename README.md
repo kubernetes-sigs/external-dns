@@ -292,8 +292,6 @@ Are you interested in contributing to external-dns? We, the maintainers and comm
 suggestions, contributions, and help! Also, the maintainers can be contacted at any time to learn more
 about how to get involved.
 
-End-to-end testing of ExternalDNS is currently [performed](https://github.com/zalando-incubator/kubernetes-on-aws/blob/dev/test/e2e/external_dns.go) in the separate [kubernetes-on-aws](https://github.com/zalando-incubator/kubernetes-on-aws) repository.
-
 We also encourage ALL active community participants to act as if they are maintainers, even if you don't have
 "official" write permissions. This is a community effort, we are here to serve the Kubernetes community. If you
 have an active interest and you want to get involved, you have real power! Don't assume that the only people who
