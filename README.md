@@ -90,7 +90,7 @@ Known providers using webhooks:
 
 ## Status of in-tree providers
 
-ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge that has became too important to handle.
+ExternalDNS supports multiple DNS providers which have been implemented by the [ExternalDNS contributors](https://github.com/kubernetes-sigs/external-dns/graphs/contributors). Maintaining all of those in a central repository is a challenge, which introduces lots of toil and potential risks.
 
 This mean that `external-dns` has begun the process to move providers out of tree. See #4347 for more details. Those who are interested can create a webhook provider based on an _in-tree_ provider and after submit a PR to reference it here.
 
