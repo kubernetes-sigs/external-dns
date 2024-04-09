@@ -151,62 +151,6 @@ gcloud container clusters create $GKE_CLUSTER_NAME \
   --workload-pool "$GKE_PROJECT_ID.svc.id.goog"
 ```
 
-### Worker Node Service Account method
-
-In this method, the GSA (Google Service Account) that is associated with GKE worker nodes will be configured to have access to Cloud DNS.  
-
-**WARNING**: This will grant access to modify the Cloud DNS zone records for all containers running on cluster, not just ExternalDNS, so use this option with caution.  This is not recommended for production environments.
-
-```bash
-GKE_SA_EMAIL="$GKE_SA_NAME@${GKE_PROJECT_ID}.iam.gserviceaccount.com"
-
-# assign google service account to dns.admin role in the cloud dns project
-gcloud projects add-iam-policy-binding $DNS_PROJECT_ID \
-  --member serviceAccount:$GKE_SA_EMAIL \
-  --role roles/dns.admin
-```
-
-After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match the Cloud DNS project name.
-
-### Static Credentials
-
-In this scenario, a new GSA (Google Service Account) is created that has access to the CloudDNS zone.  The credentials for this GSA are saved and installed as a Kubernetes secret that will be used by ExternalDNS.  
-
-This allows only containers that have access to the secret, such as ExternalDNS to update records on the Cloud DNS Zone.
-
-#### Create GSA for use with static credentials
-
-```bash
-DNS_SA_NAME="external-dns-sa"
-DNS_SA_EMAIL="$DNS_SA_NAME@${GKE_PROJECT_ID}.iam.gserviceaccount.com"
-
-# create GSA used to access the Cloud DNS zone
-gcloud iam service-accounts create $DNS_SA_NAME --display-name $DNS_SA_NAME
-
-# assign google service account to dns.admin role in cloud-dns project
-gcloud projects add-iam-policy-binding $DNS_PROJECT_ID \
-  --member serviceAccount:$DNS_SA_EMAIL --role "roles/dns.admin"
-```
-
-#### Create Kubernetes secret using static credentials
-
-Generate static credentials from the ExternalDNS GSA.
-
-```bash
-# download static credentials
-gcloud iam service-accounts keys create /local/path/to/credentials.json \
-  --iam-account $DNS_SA_EMAIL
-```
-
-Create a Kubernetes secret with the credentials in the same namespace of ExternalDNS.
-
-```bash
-kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"default"} \
-  --from-file /local/path/to/credentials.json
-```
-
-After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name. Make sure to uncomment out the section that mounts the secret to the ExternalDNS pods.
-
 ### Workload Identity
 
 [Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) allows workloads in your GKE cluster to [authenticate directly to GCP](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity#credential-flow) using Kubernetes Service Accounts
@@ -289,6 +233,64 @@ You have an option to chose from using the gcloud CLI or using Terraform.
     * `variable "ksa_name"` : Name of the Kubernetes service account external-dns will use
     * `variable "kns_name"` : Name of the Kubernetes Name Space that will have external-dns installed to
 
+
+
+
+### Worker Node Service Account method
+
+In this method, the GSA (Google Service Account) that is associated with GKE worker nodes will be configured to have access to Cloud DNS.  
+
+**WARNING**: This will grant access to modify the Cloud DNS zone records for all containers running on cluster, not just ExternalDNS, so use this option with caution.  This is not recommended for production environments.
+
+```bash
+GKE_SA_EMAIL="$GKE_SA_NAME@${GKE_PROJECT_ID}.iam.gserviceaccount.com"
+
+# assign google service account to dns.admin role in the cloud dns project
+gcloud projects add-iam-policy-binding $DNS_PROJECT_ID \
+  --member serviceAccount:$GKE_SA_EMAIL \
+  --role roles/dns.admin
+```
+
+After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match the Cloud DNS project name.
+
+### Static Credentials
+
+In this scenario, a new GSA (Google Service Account) is created that has access to the CloudDNS zone.  The credentials for this GSA are saved and installed as a Kubernetes secret that will be used by ExternalDNS.  
+
+This allows only containers that have access to the secret, such as ExternalDNS to update records on the Cloud DNS Zone.
+
+#### Create GSA for use with static credentials
+
+```bash
+DNS_SA_NAME="external-dns-sa"
+DNS_SA_EMAIL="$DNS_SA_NAME@${GKE_PROJECT_ID}.iam.gserviceaccount.com"
+
+# create GSA used to access the Cloud DNS zone
+gcloud iam service-accounts create $DNS_SA_NAME --display-name $DNS_SA_NAME
+
+# assign google service account to dns.admin role in cloud-dns project
+gcloud projects add-iam-policy-binding $DNS_PROJECT_ID \
+  --member serviceAccount:$DNS_SA_EMAIL --role "roles/dns.admin"
+```
+
+#### Create Kubernetes secret using static credentials
+
+Generate static credentials from the ExternalDNS GSA.
+
+```bash
+# download static credentials
+gcloud iam service-accounts keys create /local/path/to/credentials.json \
+  --iam-account $DNS_SA_EMAIL
+```
+
+Create a Kubernetes secret with the credentials in the same namespace of ExternalDNS.
+
+```bash
+kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"default"} \
+  --from-file /local/path/to/credentials.json
+```
+
+After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name. Make sure to uncomment out the section that mounts the secret to the ExternalDNS pods.
 
 
 #### Deploy External DNS
