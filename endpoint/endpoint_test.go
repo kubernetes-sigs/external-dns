@@ -70,6 +70,10 @@ func TestSameSuccess(t *testing.T) {
 			[]string{"::1", "dd:dd::01"},
 			[]string{"00dd:dd::0001", "::0001"},
 		},
+		{
+			[]string{"::1", "1.1.1.1", "2600.com", "3.3.3.3"},
+			[]string{"2600.com", "::0001", "3.3.3.3", "1.1.1.1"},
+		},
 	}
 
 	for _, d := range tests {
@@ -96,6 +100,10 @@ func TestSameFailures(t *testing.T) {
 		}, {
 			[]string{"1.2.3.4", "4.3.2.1"},
 			[]string{"8.8.8.8", "8.8.4.4"},
+		},
+		{
+			[]string{"::1", "2600.com", "3.3.3.3"},
+			[]string{"2600.com", "3.3.3.3", "1.1.1.1"},
 		},
 	}
 
