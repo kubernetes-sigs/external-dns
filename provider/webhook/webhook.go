@@ -274,7 +274,7 @@ func (p WebhookProvider) AdjustEndpoints(e []*endpoint.Endpoint) ([]*endpoint.En
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
-		recordsErrorsGauge.Inc()
+		adjustEndpointsErrorsGauge.Inc()
 		log.Debugf("Failed to decode response body: %s", err.Error())
 		return nil, err
 	}
