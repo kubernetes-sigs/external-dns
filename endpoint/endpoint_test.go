@@ -38,11 +38,11 @@ func TestNewEndpoint(t *testing.T) {
 
 func TestTargetsSame(t *testing.T) {
 	tests := [][]string{
-		[]string{""},
-		[]string{"1.2.3.4"},
-		[]string{"8.8.8.8", "8.8.4.4"},
-		[]string{"dd:dd::01", "::1", "::0001"},
-		[]string{"example.org", "EXAMPLE.ORG"},
+		{""},
+		{"1.2.3.4"},
+		{"8.8.8.8", "8.8.4.4"},
+		{"dd:dd::01", "::1", "::0001"},
+		{"example.org", "EXAMPLE.ORG"},
 	}
 
 	for _, c := range tests {
