@@ -18,7 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-- Added support for dnsConfig. ([#4265](https://github.com/kubernetes-sigs/external-dns/pull/4265)) [@davhdavh](https://github.com/davhdavh)
+## [v1.14.4] - 2023-04-03
+
+### Added
+
+- Added support for setting `dnsConfig`. ([#4265](https://github.com/kubernetes-sigs/external-dns/pull/4265)) _@davhdavh_
+- Added support for `DNSEndpoint` CRD. ([#4322](https://github.com/kubernetes-sigs/external-dns/pull/4322)) _@onedr0p_
+
+### Changed
+
+- Updated _ExternalDNS_ OCI image version to [v0.14.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.1). ([#4357](https://github.com/kubernetes-sigs/external-dns/pull/4357)) _@stevehipwell_
 
 ## [v1.14.3] - 2023-01-26
 
@@ -156,3 +165,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Fix RBAC for `istio-virtualservice` source when `istio-gateway` isn't also added. ([#2564](https://github.com/kubernetes-sigs/external-dns/pull/2564)) [@mcwarman](https://github.com/mcwarman)
+
+<!--
+RELEASE LINKS
+-->
+[UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.14.4]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.4
+[v1.14.3]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.3
+[v1.14.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.2
+[v1.14.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.1
+[v1.14.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.0
+[v1.13.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.13.1
+[v1.13.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.13.0
+[v1.12.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.2
+[v1.12.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.1
+[v1.12.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.12.0
+[v1.11.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.11.0
+[v1.10.1]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.10.1
+[v1.10.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.10.0
+[v1.9.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.9.0
+[v1.8.0]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.8.0

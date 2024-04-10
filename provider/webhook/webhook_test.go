@@ -26,6 +26,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/provider"
 	webhookapi "sigs.k8s.io/external-dns/provider/webhook/api"
 )
 
@@ -99,10 +100,11 @@ func TestRecordsWithErrors(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
-	_, err = provider.Records(context.Background())
+	_, err = p.Records(context.Background())
 	require.NotNil(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestApplyChanges(t *testing.T) {
@@ -122,15 +124,16 @@ func TestApplyChanges(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
-	err = provider.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(context.TODO(), nil)
 	require.NoError(t, err)
 
 	successfulApplyChanges = false
 
-	err = provider.ApplyChanges(context.TODO(), nil)
+	err = p.ApplyChanges(context.TODO(), nil)
 	require.NotNil(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 }
 
 func TestAdjustEndpoints(t *testing.T) {
@@ -198,7 +201,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 	}))
 	defer svr.Close()
 
-	provider, err := NewWebhookProvider(svr.URL)
+	p, err := NewWebhookProvider(svr.URL)
 	require.NoError(t, err)
 	endpoints := []*endpoint.Endpoint{
 		{
@@ -210,6 +213,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 			},
 		},
 	}
-	_, err = provider.AdjustEndpoints(endpoints)
+	_, err = p.AdjustEndpoints(endpoints)
 	require.Error(t, err)
+	require.ErrorIs(t, err, provider.SoftError)
 }
