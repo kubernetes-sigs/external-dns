@@ -113,12 +113,16 @@ func TestListRecords(t *testing.T) {
 			`))
 			return
 		}
+		// Pihole makes no distinction between A and AAAA records
 		w.Write([]byte(`
 		{
 			"data": [
 				["test1.example.com", "192.168.1.1"],
 				["test2.example.com", "192.168.1.2"],
-				["test3.match.com", "192.168.1.3"]
+				["test3.match.com", "192.168.1.3"],
+				["test1.example.com", "fc00::1:192:168:1:1"],
+				["test2.example.com", "fc00::1:192:168:1:2"],
+				["test3.match.com", "fc00::1:192:168:1:3"]
 			]
 		}
 		`))
@@ -147,6 +151,29 @@ func TestListRecords(t *testing.T) {
 		{"test1.example.com", "192.168.1.1"},
 		{"test2.example.com", "192.168.1.2"},
 		{"test3.match.com", "192.168.1.3"},
+	}
+	for idx, rec := range arecs {
+		if rec.DNSName != expected[idx][0] {
+			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
+		}
+		if rec.Targets[0] != expected[idx][1] {
+			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
+		}
+	}
+
+	// Test retrieve AAAA records unfiltered
+	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(arecs) != 3 {
+		t.Fatal("Expected 3 AAAA records returned, got:", len(arecs))
+	}
+	// Ensure records were parsed correctly
+	expected = [][]string{
+		{"test1.example.com", "fc00::1:192:168:1:1"},
+		{"test2.example.com", "fc00::1:192:168:1:2"},
+		{"test3.match.com", "fc00::1:192:168:1:3"},
 	}
 	for idx, rec := range arecs {
 		if rec.DNSName != expected[idx][0] {
@@ -209,6 +236,27 @@ func TestListRecords(t *testing.T) {
 		}
 	}
 
+	// Test retrieve AAAA records filtered
+	arecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeAAAA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(arecs) != 1 {
+		t.Fatal("Expected 1 AAAA record returned, got:", len(arecs))
+	}
+	// Ensure records were parsed correctly
+	expected = [][]string{
+		{"test3.match.com", "fc00::1:192:168:1:3"},
+	}
+	for idx, rec := range arecs {
+		if rec.DNSName != expected[idx][0] {
+			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
+		}
+		if rec.Targets[0] != expected[idx][1] {
+			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
+		}
+	}
+
 	// Test retrieve CNAME records filtered
 	cnamerecs, err = cl.listRecords(context.Background(), endpoint.RecordTypeCNAME)
 	if err != nil {
@@ -243,6 +291,11 @@ func TestCreateRecord(t *testing.T) {
 		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeA:
+			if r.Form.Get("ip") != ep.Targets[0] {
+				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
+			}
+		// Pihole makes no distinction between A and AAAA records
+		case endpoint.RecordTypeAAAA:
 			if r.Form.Get("ip") != ep.Targets[0] {
 				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
 			}
@@ -281,6 +334,16 @@ func TestCreateRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Test create AAAA record
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"fc00::1:192:168:1:1"},
+		RecordType: endpoint.RecordTypeAAAA,
+	}
+	if err := cl.createRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
 	// Test create CNAME record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
@@ -304,6 +367,11 @@ func TestDeleteRecord(t *testing.T) {
 		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeA:
+			if r.Form.Get("ip") != ep.Targets[0] {
+				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
+			}
+		// Pihole makes no distinction between A and AAAA records
+		case endpoint.RecordTypeAAAA:
 			if r.Form.Get("ip") != ep.Targets[0] {
 				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
 			}
@@ -337,6 +405,16 @@ func TestDeleteRecord(t *testing.T) {
 		DNSName:    "test.example.com",
 		Targets:    []string{"192.168.1.1"},
 		RecordType: endpoint.RecordTypeA,
+	}
+	if err := cl.deleteRecord(context.Background(), ep); err != nil {
+		t.Fatal(err)
+	}
+
+	// Test delete AAAA record
+	ep = &endpoint.Endpoint{
+		DNSName:    "test.example.com",
+		Targets:    []string{"fc00::1:192:168:1:1"},
+		RecordType: endpoint.RecordTypeAAAA,
 	}
 	if err := cl.deleteRecord(context.Background(), ep); err != nil {
 		t.Fatal(err)
