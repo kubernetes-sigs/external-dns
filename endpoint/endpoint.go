@@ -56,18 +56,52 @@ func (ttl TTL) IsConfigured() bool {
 	return ttl > 0
 }
 
+type Target struct {
+	Addr netip.Addr
+	Raw  string
+}
+
+func NewTarget(target string) Target {
+	addr, err := netip.ParseAddr(target)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"targets": target,
+		}).Debugf("Couldn't parse %s as an IP address: %v", target, err)
+
+	}
+	return Target{Addr: addr, Raw: target}
+}
+
+func (t Target) String() string {
+	return t.Raw
+}
+
 // Targets is a representation of a list of targets for an endpoint.
-type Targets []string
+type Targets []Target
 
 // NewTargets is a convenience method to create a new Targets object from a vararg of strings
 func NewTargets(target ...string) Targets {
 	t := make(Targets, 0, len(target))
-	t = append(t, target...)
+	for _, val := range target {
+		t = append(t, NewTarget(val))
+	}
 	return t
 }
 
 func (t Targets) String() string {
-	return strings.Join(t, ";")
+	vals := []string{}
+	for _, val := range t {
+		vals = append(vals, val.Raw)
+	}
+	return strings.Join(vals, ";")
+}
+
+func (t Targets) Map() []string {
+	ret := make([]string, len(t))
+	for i, e := range t {
+		ret[i] = e.Raw
+	}
+	return ret
 }
 
 func (t Targets) Len() int {
@@ -75,17 +109,11 @@ func (t Targets) Len() int {
 }
 
 func (t Targets) Less(i, j int) bool {
-	ipi, err := netip.ParseAddr(t[i])
-	if err != nil {
-		return t[i] < t[j]
+	if !t[i].Addr.IsValid() || !t[j].Addr.IsValid() {
+		return t[i].Raw < t[j].Raw
 	}
 
-	ipj, err := netip.ParseAddr(t[j])
-	if err != nil {
-		return t[i] < t[j]
-	}
-
-	return ipi.String() < ipj.String()
+	return t[i].Addr.String() < t[j].Addr.String()
 }
 
 func (t Targets) Swap(i, j int) {
@@ -101,27 +129,11 @@ func (t Targets) Same(o Targets) bool {
 	sort.Stable(o)
 
 	for i, e := range t {
-		if !strings.EqualFold(e, o[i]) {
+		if !strings.EqualFold(e.Raw, o[i].Raw) {
 			// IPv6 can be shortened, so it should be parsed for equality checking
-			ipA, err := netip.ParseAddr(e)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
-
-			ipB, err := netip.ParseAddr(o[i])
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
-
 			// IPv6 Address Shortener == IPv6 Address Expander
-			if ipA.IsValid() && ipB.IsValid() {
-				return ipA.String() == ipB.String()
+			if e.Addr.IsValid() && o[i].Addr.IsValid() {
+				return e.Addr.String() == o[i].Addr.String()
 			}
 			return false
 		}
@@ -146,40 +158,21 @@ func (t Targets) IsLess(o Targets) bool {
 	sort.Sort(o)
 
 	for i, e := range t {
-		if e != o[i] {
+		if e.Raw != o[i].Raw {
 			// Explicitly prefers IP addresses (e.g. A records) over FQDNs (e.g. CNAMEs).
 			// This prevents behavior like `1-2-3-4.example.com` being "less" than `1.2.3.4` when doing lexicographical string comparison.
-			ipA, err := netip.ParseAddr(e)
-			if err != nil {
-				// Ignoring parsing errors is fine due to the empty netip.Addr{} type being an invalid IP,
-				// which is checked by IsValid() below. However, still log them in case a provider is experiencing
-				// non-obvious issues with the records being created.
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
-
-			ipB, err := netip.ParseAddr(o[i])
-			if err != nil {
-				log.WithFields(log.Fields{
-					"targets":           t,
-					"comparisonTargets": o,
-				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
-			}
-
 			// If both targets are valid IP addresses, use the built-in Less() function to do the comparison.
 			// If one is a valid IP and the other is not, prefer the IP address (consider it "less").
 			// If neither is a valid IP, use lexicographical string comparison to determine which string sorts first alphabetically.
 			switch {
-			case ipA.IsValid() && ipB.IsValid():
-				return ipA.Less(ipB)
-			case ipA.IsValid() && !ipB.IsValid():
+			case e.Addr.IsValid() && o[i].Addr.IsValid():
+				return (e.Addr).Less((o[i].Addr))
+			case e.Addr.IsValid() && !o[i].Addr.IsValid():
 				return true
-			case !ipA.IsValid() && ipB.IsValid():
+			case !e.Addr.IsValid() && o[i].Addr.IsValid():
 				return false
 			default:
-				return e < o[i]
+				return e.Raw < o[i].Raw
 			}
 		}
 	}
@@ -229,9 +222,9 @@ func NewEndpoint(dnsName, recordType string, targets ...string) *Endpoint {
 
 // NewEndpointWithTTL initialization method to be used to create an endpoint with a TTL struct
 func NewEndpointWithTTL(dnsName, recordType string, ttl TTL, targets ...string) *Endpoint {
-	cleanTargets := make([]string, len(targets))
+	cleanTargets := make(Targets, len(targets))
 	for idx, target := range targets {
-		cleanTargets[idx] = strings.TrimSuffix(target, ".")
+		cleanTargets[idx] = NewTarget(strings.TrimSuffix(target, "."))
 	}
 
 	for _, label := range strings.Split(dnsName, ".") {

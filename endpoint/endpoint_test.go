@@ -23,29 +23,30 @@ import (
 
 func TestNewEndpoint(t *testing.T) {
 	e := NewEndpoint("example.org", "CNAME", "foo.com")
-	if e.DNSName != "example.org" || e.Targets[0] != "foo.com" || e.RecordType != "CNAME" {
-		t.Error("endpoint is not initialized correctly")
+	if e.DNSName != "example.org" || e.Targets[0].Raw != "foo.com" || e.RecordType != "CNAME" {
+		t.Error("endpoint is not initialized correctly", e.DNSName, e.Targets[0].Raw, e.RecordType)
 	}
 	if e.Labels == nil {
 		t.Error("Labels is not initialized")
 	}
 
 	w := NewEndpoint("example.org.", "", "load-balancer.com.")
-	if w.DNSName != "example.org" || w.Targets[0] != "load-balancer.com" || w.RecordType != "" {
+	if w.DNSName != "example.org" || w.Targets[0].Raw != "load-balancer.com" || w.RecordType != "" {
 		t.Error("endpoint is not initialized correctly")
 	}
 }
 
 func TestTargetsSame(t *testing.T) {
-	tests := []Targets{
-		{""},
-		{"1.2.3.4"},
-		{"8.8.8.8", "8.8.4.4"},
-		{"dd:dd::01", "::1", "::0001"},
-		{"example.org", "EXAMPLE.ORG"},
+	tests := [][]string{
+		[]string{""},
+		[]string{"1.2.3.4"},
+		[]string{"8.8.8.8", "8.8.4.4"},
+		[]string{"dd:dd::01", "::1", "::0001"},
+		[]string{"example.org", "EXAMPLE.ORG"},
 	}
 
-	for _, d := range tests {
+	for _, c := range tests {
+		d := NewTargets(c...)
 		if d.Same(d) != true {
 			t.Errorf("%#v should equal %#v", d, d)
 		}
@@ -54,8 +55,8 @@ func TestTargetsSame(t *testing.T) {
 
 func TestSameSuccess(t *testing.T) {
 	tests := []struct {
-		a Targets
-		b Targets
+		a []string
+		b []string
 	}{
 		{
 			[]string{"::1"},
@@ -76,17 +77,19 @@ func TestSameSuccess(t *testing.T) {
 		},
 	}
 
-	for _, d := range tests {
-		if d.a.Same(d.b) == false {
-			t.Errorf("%#v should equal %#v", d.a, d.b)
+	for _, c := range tests {
+		da := NewTargets(c.a...)
+		db := NewTargets(c.b...)
+		if da.Same(db) == false {
+			t.Errorf("%#v should equal %#v", da, db)
 		}
 	}
 }
 
 func TestSameFailures(t *testing.T) {
 	tests := []struct {
-		a Targets
-		b Targets
+		a []string
+		b []string
 	}{
 		{
 			[]string{"1.2.3.4"},
@@ -107,15 +110,17 @@ func TestSameFailures(t *testing.T) {
 		},
 	}
 
-	for _, d := range tests {
-		if d.a.Same(d.b) == true {
-			t.Errorf("%#v should not equal %#v", d.a, d.b)
+	for _, c := range tests {
+		da := NewTargets(c.a...)
+		db := NewTargets(c.b...)
+		if da.Same(db) == true {
+			t.Errorf("%#v should not equal %#v", da, db)
 		}
 	}
 }
 
 func TestIsLess(t *testing.T) {
-	testsA := []Targets{
+	testsA := [][]string{
 		{""},
 		{"1.2.3.4"},
 		{"1.2.3.4"},
@@ -125,7 +130,7 @@ func TestIsLess(t *testing.T) {
 		{"1-2-3-4.example.org", "EXAMPLE.ORG", "1.2.3.4"},
 		{"example.com", "example.org"},
 	}
-	testsB := []Targets{
+	testsB := [][]string{
 		{"", ""},
 		{"1-2-3-4.example.org"},
 		{"1.2.3.5"},
@@ -146,9 +151,11 @@ func TestIsLess(t *testing.T) {
 		false,
 	}
 
-	for i, d := range testsA {
-		if d.IsLess(testsB[i]) != expected[i] {
-			t.Errorf("%v < %v is expected to be %v", d, testsB[i], expected[i])
+	for i, c := range testsA {
+		d := NewTargets(c...)
+		e := NewTargets(testsB[i]...)
+		if d.IsLess(e) != expected[i] {
+			t.Errorf("%v < %v is expected to be %v", d, e, expected[i])
 		}
 	}
 }
