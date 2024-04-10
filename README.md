@@ -206,7 +206,7 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
-* [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
+* [SafeDNS](docs/tutorials/ANS_Group_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
 * [TencentCloud](docs/tutorials/tencentcloud.md)
@@ -278,7 +278,7 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 * Add another Service to create more DNS records.
 * Remove Services to clean up your managed zone.
 
-The [tutorials](docs/tutorials) section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
+The **tutorials** section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
 
 # Note
 

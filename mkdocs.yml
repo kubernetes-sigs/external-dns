@@ -28,6 +28,7 @@ nav:
   - Advanced Topics:
       - Initial Design: initial-design.md
       - TTL: ttl.md
+      - MultiTarget: proposal/multi-target.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
       - Release: release.md
@@ -71,8 +72,8 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       use_pygments: true
       anchor_linenums: true

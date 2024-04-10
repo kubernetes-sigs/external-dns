@@ -1,6 +1,6 @@
 # Creating NS record with CRD source
 
-You can create NS records with the help of [CRD source](/docs/contributing/crd-source.md)
+You can create NS records with the help of [CRD source](../contributing/crd-source.md)
 and `DNSEndpoint` CRD.
 
 Consider the following example
