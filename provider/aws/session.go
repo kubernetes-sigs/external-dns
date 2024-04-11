@@ -18,13 +18,10 @@ package aws
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/linki/instrumented_http"
 	"github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/pkg/apis/externaldns"
@@ -38,19 +35,7 @@ type AWSSessionConfig struct {
 }
 
 func NewSession(awsConfig AWSSessionConfig) (*session.Session, error) {
-	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
-
-	config.WithHTTPClient(
-		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		}),
-	)
-
 	session, err := session.NewSessionWithOptions(session.Options{
-		Config:            *config,
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
