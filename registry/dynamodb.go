@@ -147,7 +147,7 @@ func (im *DynamoDBRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, 
 
 			if record.RecordType == endpoint.RecordTypeTXT {
 				// We simply assume that TXT records for the TXT registry will always have only one target.
-				if labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey); err == nil {
+				if labels, err := endpoint.NewLabelsFromString(record.Targets[0].String(), im.txtEncryptAESKey); err == nil {
 					endpointName, recordType := im.mapper.toEndpointName(record.DNSName)
 					key := endpoint.EndpointKey{
 						DNSName:       endpointName,

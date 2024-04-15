@@ -49,8 +49,8 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 		filteredTargets := []string{}
 
 		for _, t := range ep.Targets {
-			if ms.targetFilter.Match(t) {
-				filteredTargets = append(filteredTargets, t)
+			if ms.targetFilter.Match(t.String()) {
+				filteredTargets = append(filteredTargets, t.String())
 			}
 		}
 
@@ -60,7 +60,7 @@ func (ms *targetFilterSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoi
 			continue
 		}
 
-		ep.Targets = filteredTargets
+		ep.Targets = endpoint.NewTargets(filteredTargets...)
 
 		result = append(result, ep)
 	}

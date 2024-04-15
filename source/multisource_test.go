@@ -44,8 +44,8 @@ func testMultiSourceImplementsSource(t *testing.T) {
 
 // testMultiSourceEndpoints tests merged endpoints from children are returned.
 func testMultiSourceEndpoints(t *testing.T) {
-	foo := &endpoint.Endpoint{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}}
-	bar := &endpoint.Endpoint{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}}
+	foo := &endpoint.Endpoint{DNSName: "foo", Targets: endpoint.NewTargets("8.8.8.8")}
+	bar := &endpoint.Endpoint{DNSName: "bar", Targets: endpoint.NewTargets("8.8.4.4")}
 
 	for _, tc := range []struct {
 		title           string
@@ -137,18 +137,18 @@ func testMultiSourceEndpointsDefaultTargets(t *testing.T) {
 
 	// Create the expected endpoints
 	expectedEndpoints := []*endpoint.Endpoint{
-		{DNSName: "foo", Targets: defaultTargetsA, RecordType: "A", Labels: labels},
-		{DNSName: "bar", Targets: defaultTargetsA, RecordType: "A", Labels: labels},
-		{DNSName: "foo", Targets: defaultTargetsAAAA, RecordType: "AAAA", Labels: labels},
-		{DNSName: "bar", Targets: defaultTargetsAAAA, RecordType: "AAAA", Labels: labels},
-		{DNSName: "foo", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
-		{DNSName: "bar", Targets: defaultTargetsCName, RecordType: "CNAME", Labels: labels},
+		{DNSName: "foo", Targets: endpoint.NewTargets(defaultTargetsA...), RecordType: "A", Labels: labels},
+		{DNSName: "bar", Targets: endpoint.NewTargets(defaultTargetsA...), RecordType: "A", Labels: labels},
+		{DNSName: "foo", Targets: endpoint.NewTargets(defaultTargetsAAAA...), RecordType: "AAAA", Labels: labels},
+		{DNSName: "bar", Targets: endpoint.NewTargets(defaultTargetsAAAA...), RecordType: "AAAA", Labels: labels},
+		{DNSName: "foo", Targets: endpoint.NewTargets(defaultTargetsCName...), RecordType: "CNAME", Labels: labels},
+		{DNSName: "bar", Targets: endpoint.NewTargets(defaultTargetsCName...), RecordType: "CNAME", Labels: labels},
 	}
 
 	// Create the source endpoints with different targets
 	sourceEndpoints := []*endpoint.Endpoint{
-		{DNSName: "foo", Targets: endpoint.Targets{"8.8.8.8"}, Labels: labels},
-		{DNSName: "bar", Targets: endpoint.Targets{"8.8.4.4"}, Labels: labels},
+		{DNSName: "foo", Targets: endpoint.NewTargets("8.8.8.8"), Labels: labels},
+		{DNSName: "bar", Targets: endpoint.NewTargets("8.8.4.4"), Labels: labels},
 	}
 
 	// Create a mocked source returning source targets

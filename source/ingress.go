@@ -352,10 +352,10 @@ func targetsFromIngressStatus(status networkv1.IngressStatus) endpoint.Targets {
 
 	for _, lb := range status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			targets = append(targets, lb.IP)
+			targets = append(targets, endpoint.NewTarget(lb.IP))
 		}
 		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			targets = append(targets, endpoint.NewTarget(lb.Hostname))
 		}
 	}
 

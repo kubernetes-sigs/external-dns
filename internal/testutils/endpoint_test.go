@@ -28,38 +28,38 @@ func TestExampleSameEndpoints(t *testing.T) {
 	eps := []*endpoint.Endpoint{
 		{
 			DNSName: "example.org",
-			Targets: endpoint.Targets{"load-balancer.org"},
+			Targets: endpoint.NewTargets("load-balancer.org"),
 		},
 		{
 			DNSName:    "example.org",
-			Targets:    endpoint.Targets{"load-balancer.org"},
+			Targets:    endpoint.NewTargets("load-balancer.org"),
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:    "abc.com",
-			Targets:    endpoint.Targets{"something"},
+			Targets:    endpoint.NewTargets("something"),
 			RecordType: endpoint.RecordTypeTXT,
 		},
 		{
 			DNSName:       "abc.com",
-			Targets:       endpoint.Targets{"1.2.3.4"},
+			Targets:       endpoint.NewTargets("1.2.3.4"),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "test-set-1",
 		},
 		{
 			DNSName:    "bbc.com",
-			Targets:    endpoint.Targets{"foo.com"},
+			Targets:    endpoint.NewTargets("foo.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "cbc.com",
-			Targets:    endpoint.Targets{"foo.com"},
+			Targets:    endpoint.NewTargets("foo.com"),
 			RecordType: "CNAME",
 			RecordTTL:  endpoint.TTL(60),
 		},
 		{
 			DNSName: "example.org",
-			Targets: endpoint.Targets{"load-balancer.org"},
+			Targets: endpoint.NewTargets("load-balancer.org"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				endpoint.ProviderSpecificProperty{Name: "foo", Value: "bar"},
 			},

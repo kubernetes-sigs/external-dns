@@ -191,10 +191,10 @@ func (sc *httpProxySource) endpointsFromTemplate(httpProxy *projectcontour.HTTPP
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				targets = append(targets, lb.IP)
+				targets = append(targets, endpoint.NewTarget(lb.IP))
 			}
 			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}
@@ -250,10 +250,10 @@ func (sc *httpProxySource) endpointsFromHTTPProxy(httpProxy *projectcontour.HTTP
 	if len(targets) == 0 {
 		for _, lb := range httpProxy.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				targets = append(targets, lb.IP)
+				targets = append(targets, endpoint.NewTarget(lb.IP))
 			}
 			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}

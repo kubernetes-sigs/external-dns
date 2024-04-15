@@ -447,7 +447,7 @@ func (p *gdRecords) addRecord(client gdClient, endpoint endpoint.Endpoint, dnsNa
 			Type: endpoint.RecordType,
 			Name: dnsName,
 			TTL:  int64(endpoint.RecordTTL),
-			Data: target,
+			Data: target.String(),
 		}
 
 		p.records = append(p.records, change)
@@ -475,7 +475,7 @@ func (p *gdRecords) replaceRecord(client gdClient, endpoint endpoint.Endpoint, d
 			Type: endpoint.RecordType,
 			Name: dnsName,
 			TTL:  int64(endpoint.RecordTTL),
-			Data: target,
+			Data: target.String(),
 		}
 
 		for index, record := range p.records {
@@ -484,7 +484,7 @@ func (p *gdRecords) replaceRecord(client gdClient, endpoint endpoint.Endpoint, d
 				p.changed = true
 			}
 		}
-		records = append(records, target)
+		records = append(records, target.String())
 		changed = append(changed, gdReplaceRecordField{
 			Data:     change.Data,
 			TTL:      change.TTL,
@@ -523,9 +523,9 @@ func (p *gdRecords) deleteRecord(client gdClient, endpoint endpoint.Endpoint, dn
 			Type: endpoint.RecordType,
 			Name: dnsName,
 			TTL:  int64(endpoint.RecordTTL),
-			Data: target,
+			Data: target.String(),
 		}
-		records = append(records, target)
+		records = append(records, target.String())
 
 		log.Debugf("GoDaddy: Delete an entry %s from zone %s", change.String(), p.zone)
 

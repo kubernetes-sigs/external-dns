@@ -242,19 +242,19 @@ func newVinylDNSChange(action string, endpoint *endpoint.Endpoint) *vinyldnsChan
 	if endpoint.RecordType == "CNAME" {
 		records = []vinyldns.Record{
 			{
-				CName: endpoint.Targets[0],
+				CName: endpoint.Targets[0].String(),
 			},
 		}
 	} else if endpoint.RecordType == "TXT" {
 		records = []vinyldns.Record{
 			{
-				Text: endpoint.Targets[0],
+				Text: endpoint.Targets[0].String(),
 			},
 		}
 	} else if endpoint.RecordType == "A" {
 		records = []vinyldns.Record{
 			{
-				Address: endpoint.Targets[0],
+				Address: endpoint.Targets[0].String(),
 			},
 		}
 	}

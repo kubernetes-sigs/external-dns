@@ -26,7 +26,7 @@ import (
 
 func sortEndpoints(endpoints []*endpoint.Endpoint) {
 	for _, ep := range endpoints {
-		sort.Strings([]string(ep.Targets))
+		sort.Stable(ep.Targets)
 	}
 	sort.Slice(endpoints, func(i, k int) bool {
 		// Sort by DNSName, RecordType, and Targets
@@ -43,7 +43,7 @@ func sortEndpoints(endpoints []*endpoint.Endpoint) {
 				return true
 			}
 			if tk := ek.Targets[j]; ti != tk {
-				return ti < tk
+				return ti.String() < tk.String()
 			}
 		}
 		return false

@@ -158,7 +158,7 @@ func newTestIBMCloudProvider(private bool) *IBMCloudProvider {
 	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName: "new.example.com",
-			Targets: endpoint.Targets{"4.3.2.1"},
+			Targets: endpoint.NewTargets("4.3.2.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  "ibmcloud-vpc",
@@ -346,7 +346,7 @@ func TestAdjustEndpoints(t *testing.T) {
 	endpoints := []*endpoint.Endpoint{
 		{
 			DNSName:    "test.example.com",
-			Targets:    endpoint.Targets{"1.2.3.4"},
+			Targets:    endpoint.NewTargets("1.2.3.4"),
 			RecordType: endpoint.RecordTypeA,
 			RecordTTL:  300,
 			Labels:     endpoint.Labels{},

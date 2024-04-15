@@ -455,7 +455,7 @@ func TestAlibabaCloudProvider_TXTEndpoint(t *testing.T) {
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
+	if p.escapeTXTRecordValue(endpointTarget).String() != endpointTarget {
 		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
 	}
 	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {
@@ -469,7 +469,7 @@ func TestAlibabaCloudProvider_TXTEndpoint_PrivateZone(t *testing.T) {
 	const recordValue = "heritage=external-dns,external-dns/owner=default"
 	const endpointTarget = "\"heritage=external-dns,external-dns/owner=default\""
 
-	if p.escapeTXTRecordValue(endpointTarget) != endpointTarget {
+	if p.escapeTXTRecordValue(endpointTarget).String() != endpointTarget {
 		t.Errorf("Failed to escapeTXTRecordValue: %s", p.escapeTXTRecordValue(endpointTarget))
 	}
 	if p.unescapeTXTRecordValue(recordValue) != endpointTarget {

@@ -260,7 +260,7 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsR
 			DNSName:    rec.Fqdn,
 			RecordTTL:  endpoint.TTL(rec.Ttl),
 			RecordType: rec.Record_type,
-			Targets:    endpoint.Targets{rec.Rdata.Address},
+			Targets:    endpoint.NewTargets(rec.Rdata.Address),
 		}
 		log.Debugf("A record: %v", *ep)
 		result = append(result, ep)
@@ -272,7 +272,7 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsR
 			DNSName:    rec.Fqdn,
 			RecordTTL:  endpoint.TTL(rec.Ttl),
 			RecordType: rec.Record_type,
-			Targets:    endpoint.Targets{strings.TrimSuffix(rec.Rdata.Cname, ".")},
+			Targets:    endpoint.NewTargets(strings.TrimSuffix(rec.Rdata.Cname, ".")),
 		}
 		log.Debugf("CNAME record: %v", *ep)
 		result = append(result, ep)
@@ -284,7 +284,7 @@ func (d *dynProviderState) allRecordsToEndpoints(records *dynsoap.GetAllRecordsR
 			DNSName:    rec.Fqdn,
 			RecordTTL:  endpoint.TTL(rec.Ttl),
 			RecordType: rec.Record_type,
-			Targets:    endpoint.Targets{rec.Rdata.Txtdata},
+			Targets:    endpoint.NewTargets(rec.Rdata.Txtdata),
 		}
 		log.Debugf("TXT record: %v", *ep)
 		result = append(result, ep)
@@ -307,11 +307,11 @@ func endpointToRecord(ep *endpoint.Endpoint) *dynect.DataBlock {
 	result := dynect.DataBlock{}
 
 	if ep.RecordType == endpoint.RecordTypeA {
-		result.Address = ep.Targets[0]
+		result.Address = ep.Targets[0].String()
 	} else if ep.RecordType == endpoint.RecordTypeCNAME {
-		result.CName = ep.Targets[0]
+		result.CName = ep.Targets[0].String()
 	} else if ep.RecordType == endpoint.RecordTypeTXT {
-		result.TxtData = ep.Targets[0]
+		result.TxtData = ep.Targets[0].String()
 	}
 
 	return &result

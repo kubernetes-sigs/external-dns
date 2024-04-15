@@ -190,9 +190,9 @@ func (p RDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 			}
 			for _, target := range ep.Targets {
 				rs = append(rs, RDNSRecord{
-					Host: target,
+					Host: target.String(),
 					Text: ep.Labels[rdnsOriginalLabel],
-					Key:  keyFor(ep.DNSName) + "/" + formatKey(target),
+					Key:  keyFor(ep.DNSName) + "/" + formatKey(target.String()),
 					TTL:  uint32(ep.RecordTTL),
 				})
 			}
@@ -205,7 +205,7 @@ func (p RDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 			}
 			for i, r := range rs {
 				if strings.Contains(r.Key, keyFor(ep.DNSName)) {
-					r.Text = ep.Targets[0]
+					r.Text = ep.Targets[0].String()
 					rs[i] = r
 				}
 			}
@@ -245,7 +245,7 @@ func (p *RDNSProvider) filterAndRemoveUseless(ep *endpoint.Endpoint, changes *pl
 	for _, r := range rs {
 		exist := false
 		for _, target := range ep.Targets {
-			if strings.Contains(r.Key, formatKey(target)) {
+			if strings.Contains(r.Key, formatKey(target.String())) {
 				exist = true
 				continue
 			}

@@ -19,8 +19,9 @@ package source
 import (
 	"context"
 	"encoding/json"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"testing"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,7 +66,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -101,7 +102,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -137,7 +138,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "c.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -173,7 +174,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "d.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -183,7 +184,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -220,7 +221,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -230,7 +231,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -240,7 +241,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -278,7 +279,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -288,7 +289,7 @@ func TestTraefikProxyIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -395,7 +396,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -431,7 +432,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -467,7 +468,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "d.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -477,7 +478,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -514,7 +515,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -524,7 +525,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -534,7 +535,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -572,7 +573,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -582,7 +583,7 @@ func TestTraefikProxyIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -689,7 +690,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -719,7 +720,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -729,7 +730,7 @@ func TestTraefikProxyIngressRouteUDPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -831,7 +832,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -867,7 +868,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -903,7 +904,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "c.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -939,7 +940,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "d.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -949,7 +950,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -986,7 +987,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -996,7 +997,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1006,7 +1007,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1044,7 +1045,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1054,7 +1055,7 @@ func TestTraefikProxyOldIngressRouteEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1161,7 +1162,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1197,7 +1198,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1233,7 +1234,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "d.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1243,7 +1244,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1280,7 +1281,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1290,7 +1291,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1300,7 +1301,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1338,7 +1339,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "g.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1348,7 +1349,7 @@ func TestTraefikProxyOldIngressRouteTCPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "h.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1455,7 +1456,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1485,7 +1486,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1495,7 +1496,7 @@ func TestTraefikProxyOldIngressRouteUDPEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1603,7 +1604,7 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -1657,7 +1658,7 @@ func TestTraefikAPIGroupDisableFlags(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"target.domain.tld"},
+					Targets:    endpoint.NewTargets("target.domain.tld"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{

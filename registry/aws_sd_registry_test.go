@@ -70,7 +70,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo1.test-zone.example.org",
-			Targets:    endpoint.Targets{"1.2.3.4"},
+			Targets:    endpoint.NewTargets("1.2.3.4"),
 			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -78,7 +78,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 		},
 		{
 			DNSName:    "foo2.test-zone.example.org",
-			Targets:    endpoint.Targets{"1.2.3.4"},
+			Targets:    endpoint.NewTargets("1.2.3.4"),
 			RecordType: endpoint.RecordTypeA,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",
@@ -86,7 +86,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 		},
 		{
 			DNSName:    "foo3.test-zone.example.org",
-			Targets:    endpoint.Targets{"my-domain.com"},
+			Targets:    endpoint.NewTargets("my-domain.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -94,7 +94,7 @@ func TestAWSSDRegistryTest_Records(t *testing.T) {
 		},
 		{
 			DNSName:    "foo4.test-zone.example.org",
-			Targets:    endpoint.Targets{"my-domain.com"},
+			Targets:    endpoint.NewTargets("my-domain.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "owner",

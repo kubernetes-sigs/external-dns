@@ -83,7 +83,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "a.example.com",
-					Targets:    []string{"a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a691234567a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -132,7 +132,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"a123456769a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a123456769a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -142,7 +142,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "c.example.com",
-					Targets:    []string{"a123456769a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a123456769a314e71861a4303f06a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: endpoint.Labels{
 						"resource": "tcpingress/kong/tcp-ingress-sni",
@@ -191,7 +191,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "d.example.com",
-					Targets:    []string{"a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -201,7 +201,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -211,7 +211,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -262,7 +262,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "e.example.com",
-					Targets:    []string{"a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -272,7 +272,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "f.example.com",
-					Targets:    []string{"a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"},
+					Targets:    endpoint.NewTargets("a12e71861a4303f063456769a314a3bd-1291189659.us-east-1.elb.amazonaws.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -322,7 +322,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "b.example.com",
-					Targets:    []string{"203.2.45.7"},
+					Targets:    endpoint.NewTargets("203.2.45.7"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -332,7 +332,7 @@ func TestKongTCPIngressEndpoints(t *testing.T) {
 				},
 				{
 					DNSName:    "c.example.com",
-					Targets:    []string{"203.2.45.7"},
+					Targets:    endpoint.NewTargets("203.2.45.7"),
 					RecordType: endpoint.RecordTypeA,
 					Labels: endpoint.Labels{
 						"resource": "tcpingress/kong/tcp-ingress-sni",

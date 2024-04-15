@@ -51,7 +51,7 @@ func testNoopRecords(t *testing.T) {
 	inmemoryRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
-			Targets:    endpoint.Targets{"example-lb.com"},
+			Targets:    endpoint.NewTargets("example-lb.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
@@ -73,19 +73,19 @@ func testNoopApplyChanges(t *testing.T) {
 	inmemoryRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
-			Targets:    endpoint.Targets{"old-lb.com"},
+			Targets:    endpoint.NewTargets("old-lb.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
 	expectedUpdate := []*endpoint.Endpoint{
 		{
 			DNSName:    "example.org",
-			Targets:    endpoint.Targets{"new-example-lb.com"},
+			Targets:    endpoint.NewTargets("new-example-lb.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 		{
 			DNSName:    "new-record.org",
-			Targets:    endpoint.Targets{"new-lb.org"},
+			Targets:    endpoint.NewTargets("new-lb.org"),
 			RecordType: endpoint.RecordTypeCNAME,
 		},
 	}
@@ -101,7 +101,7 @@ func testNoopApplyChanges(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Targets:    endpoint.Targets{"lb.com"},
+				Targets:    endpoint.NewTargets("lb.com"),
 				RecordType: endpoint.RecordTypeCNAME,
 			},
 		},
@@ -113,21 +113,21 @@ func testNoopApplyChanges(t *testing.T) {
 		Create: []*endpoint.Endpoint{
 			{
 				DNSName:    "new-record.org",
-				Targets:    endpoint.Targets{"new-lb.org"},
+				Targets:    endpoint.NewTargets("new-lb.org"),
 				RecordType: endpoint.RecordTypeCNAME,
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Targets:    endpoint.Targets{"new-example-lb.com"},
+				Targets:    endpoint.NewTargets("new-example-lb.com"),
 				RecordType: endpoint.RecordTypeCNAME,
 			},
 		},
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName:    "example.org",
-				Targets:    endpoint.Targets{"old-lb.com"},
+				Targets:    endpoint.NewTargets("old-lb.com"),
 				RecordType: endpoint.RecordTypeCNAME,
 			},
 		},

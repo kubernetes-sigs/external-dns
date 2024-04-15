@@ -266,14 +266,14 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target))
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareCreate, endpoint, target.String()))
 		}
 	}
 
 	for i, desired := range changes.UpdateNew {
 		current := changes.UpdateOld[i]
 
-		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
+		add, remove, leave := provider.Difference(current.Targets.Map(), desired.Targets.Map())
 
 		for _, a := range remove {
 			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, current, a))
@@ -290,7 +290,7 @@ func (p *CloudFlareProvider) ApplyChanges(ctx context.Context, changes *plan.Cha
 
 	for _, endpoint := range changes.Delete {
 		for _, target := range endpoint.Targets {
-			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target))
+			cloudflareChanges = append(cloudflareChanges, p.newCloudFlareChange(cloudFlareDelete, endpoint, target.String()))
 		}
 	}
 

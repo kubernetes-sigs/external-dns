@@ -98,7 +98,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					addToEndpointMap(endpointMap, domain, suitableType(pod.Status.PodIP), pod.Status.PodIP)
 				} else {
 					for _, target := range targets {
-						addToEndpointMap(endpointMap, domain, suitableType(target), target)
+						addToEndpointMap(endpointMap, domain, suitableType(target.String()), target.String())
 					}
 				}
 			}
@@ -118,7 +118,7 @@ func (ps *podSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 					}
 				} else {
 					for _, target := range targets {
-						addToEndpointMap(endpointMap, domain, suitableType(target), target)
+						addToEndpointMap(endpointMap, domain, suitableType(target.String()), target.String())
 					}
 				}
 			}

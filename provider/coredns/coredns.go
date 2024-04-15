@@ -297,7 +297,7 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 		if service.Host != "" {
 			ep, found := findEp(result, dnsName)
 			if found {
-				ep.Targets = append(ep.Targets, service.Host)
+				ep.Targets = append(ep.Targets, endpoint.NewTarget(service.Host))
 				log.Debugf("Extending ep (%s) with new service host (%s)", ep, service.Host)
 			} else {
 				ep = endpoint.NewEndpointWithTTL(
@@ -349,7 +349,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, target := range ep.Targets {
-				prefix := ep.Labels[target]
+				prefix := ep.Labels[target.String()]
 				log.Debugf("Getting prefix(%s) from label(%s)", prefix, target)
 				if prefix == "" {
 					prefix = fmt.Sprintf("%08x", rand.Int31())
@@ -357,14 +357,14 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				}
 
 				service := Service{
-					Host:        target,
+					Host:        target.String(),
 					Text:        ep.Labels["originalText"],
 					Key:         p.etcdKeyFor(prefix + "." + dnsName),
 					TargetStrip: strings.Count(prefix, ".") + 1,
 					TTL:         uint32(ep.RecordTTL),
 				}
 				services = append(services, service)
-				ep.Labels[target] = prefix
+				ep.Labels[target.String()] = prefix
 				log.Debugf("Putting prefix(%s) to label(%s)", prefix, target)
 				log.Debugf("Ep labels structure now: (%v)", ep.Labels)
 			}
@@ -378,7 +378,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				}
 
 				log.Debugf("Finding label (%s) in targets(%v)", label, ep.Targets)
-				if _, ok := findLabelInTargets(ep.Targets, label); !ok {
+				if _, ok := findLabelInTargets(ep.Targets.Map(), label); !ok {
 					log.Debugf("Found non existing label(%s) in targets(%v)", label, ep.Targets)
 					dnsName := ep.DNSName
 					dnsName = labelPrefix + "." + dnsName
@@ -409,7 +409,7 @@ func (p coreDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					TTL:         uint32(ep.RecordTTL),
 				})
 			}
-			services[index].Text = ep.Targets[0]
+			services[index].Text = ep.Targets[0].String()
 			index++
 		}
 

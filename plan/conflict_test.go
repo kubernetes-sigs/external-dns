@@ -47,7 +47,7 @@ func (suite *ResolverSuite) SetupTest() {
 	// initialize endpoints used in tests
 	suite.fooV1Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v1"},
+		Targets:    endpoint.NewTargets("v1"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
@@ -55,7 +55,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.fooV2Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
+		Targets:    endpoint.NewTargets("v2"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
@@ -63,7 +63,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.fooV2CnameDuplicate = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
+		Targets:    endpoint.NewTargets("v2"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2-duplicate",
@@ -71,7 +71,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.fooA5 = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"5.5.5.5"},
+		Targets:    endpoint.NewTargets("5.5.5.5"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
@@ -79,7 +79,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.fooAAAA5 = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"2001:DB8::1"},
+		Targets:    endpoint.NewTargets("2001:DB8::1"),
 		RecordType: "AAAA",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
@@ -87,7 +87,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.bar127A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -95,7 +95,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.bar127AAnother = &endpoint.Endpoint{ // TODO: remove this once we move to multiple targets under same endpoint
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"8.8.8.8"},
+		Targets:    endpoint.NewTargets("8.8.8.8"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -103,7 +103,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"192.168.0.1"},
+		Targets:    endpoint.NewTargets("192.168.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
@@ -111,7 +111,7 @@ func (suite *ResolverSuite) SetupTest() {
 	}
 	suite.legacyBar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"192.168.0.1"},
+		Targets:    endpoint.NewTargets("192.168.0.1"),
 		RecordType: "A",
 	}
 }

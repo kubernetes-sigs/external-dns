@@ -485,7 +485,7 @@ func TestGlooSource(t *testing.T) {
 	assert.ElementsMatch(t, endpoints, []*endpoint.Endpoint{
 		{
 			DNSName:          "a.test",
-			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:          endpoint.NewTargets(internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
@@ -493,7 +493,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:          "b.test",
-			Targets:          []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:          endpoint.NewTargets(internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
@@ -501,7 +501,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:       "c.test",
-			Targets:       []string{internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:       endpoint.NewTargets(internalProxySvc.Status.LoadBalancer.Ingress[0].IP, internalProxySvc.Status.LoadBalancer.Ingress[1].IP, internalProxySvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "identifier",
 			RecordTTL:     42,
@@ -515,7 +515,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:          "d.test",
-			Targets:          []string{externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname},
+			Targets:          endpoint.NewTargets(externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname),
 			RecordType:       endpoint.RecordTypeCNAME,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
@@ -523,7 +523,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:       "e.test",
-			Targets:       []string{externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname},
+			Targets:       endpoint.NewTargets(externalProxySvc.Status.LoadBalancer.Ingress[0].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[1].Hostname, externalProxySvc.Status.LoadBalancer.Ingress[2].Hostname),
 			RecordType:    endpoint.RecordTypeCNAME,
 			SetIdentifier: "identifier-external",
 			RecordTTL:     24,
@@ -537,7 +537,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:          "f.test",
-			Targets:          []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:          endpoint.NewTargets(proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
@@ -545,7 +545,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:          "g.test",
-			Targets:          []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:          endpoint.NewTargets(proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:       endpoint.RecordTypeA,
 			RecordTTL:        0,
 			Labels:           endpoint.Labels{},
@@ -553,7 +553,7 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:       "h.test",
-			Targets:       []string{proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP},
+			Targets:       endpoint.NewTargets(proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[0].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[1].IP, proxyMetadataStaticSvc.Status.LoadBalancer.Ingress[2].IP),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "identifier",
 			RecordTTL:     420,
@@ -567,14 +567,14 @@ func TestGlooSource(t *testing.T) {
 		},
 		{
 			DNSName:          "i.test",
-			Targets:          []string{"203.2.45.7"},
+			Targets:          endpoint.NewTargets("203.2.45.7"),
 			RecordType:       endpoint.RecordTypeA,
 			Labels:           endpoint.Labels{},
 			ProviderSpecific: endpoint.ProviderSpecific{},
 		},
 		{
 			DNSName:       "j.test",
-			Targets:       []string{"203.2.45.7"},
+			Targets:       endpoint.NewTargets("203.2.45.7"),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "identifier-annotated",
 			RecordTTL:     460,

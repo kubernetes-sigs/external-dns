@@ -63,7 +63,7 @@ func TestEchoSourceReturnGivenSources(t *testing.T) {
 	startEndpoints := []*endpoint.Endpoint{{
 		DNSName:    "foo.bar.com",
 		RecordType: "A",
-		Targets:    endpoint.Targets{"1.2.3.4"},
+		Targets:    endpoint.NewTargets("1.2.3.4"),
 		RecordTTL:  endpoint.TTL(300),
 		Labels:     endpoint.Labels{},
 	}}

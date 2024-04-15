@@ -181,43 +181,43 @@ var tests = bluecatTestData{
 			{
 				DNSName:    "example.com",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"123.123.123.122"},
+				Targets:    endpoint.NewTargets("123.123.123.122"),
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "nginx.example.com",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"123.123.123.123"},
+				Targets:    endpoint.NewTargets("123.123.123.123"),
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "whitespace.example.com",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"123.123.123.124"},
+				Targets:    endpoint.NewTargets("123.123.123.124"),
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "hack.example.com",
 				RecordType: endpoint.RecordTypeCNAME,
-				Targets:    endpoint.Targets{"bluecatnetworks.com"},
+				Targets:    endpoint.NewTargets("bluecatnetworks.com"),
 				RecordTTL:  endpoint.TTL(30),
 			},
 			{
 				DNSName:    "wack.example.com",
 				RecordType: endpoint.RecordTypeTXT,
-				Targets:    endpoint.Targets{"hello"},
+				Targets:    endpoint.NewTargets("hello"),
 				Labels:     endpoint.Labels{"owner": ""},
 			},
 			{
 				DNSName:    "sack.example.com",
 				RecordType: endpoint.RecordTypeTXT,
-				Targets:    endpoint.Targets{""},
+				Targets:    endpoint.NewTargets(""),
 				Labels:     endpoint.Labels{"owner": ""},
 			},
 			{
 				DNSName:    "kdb.example.com",
 				RecordType: endpoint.RecordTypeTXT,
-				Targets:    endpoint.Targets{"heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"},
+				Targets:    endpoint.NewTargets("heritage=external-dns,external-dns/owner=default,external-dns/resource=service/openshift-ingress/router-default"),
 				Labels:     endpoint.Labels{"owner": "default"},
 			},
 		},
@@ -403,7 +403,7 @@ func TestBluecatRecordset(t *testing.T) {
 	testTxtEndpoint := endpoint.NewEndpoint("abc.example.com", endpoint.RecordTypeTXT, "hello")
 	txtObj := api.BluecatCreateTXTRecordRequest{
 		AbsoluteName: testTxtEndpoint.DNSName,
-		Text:         testTxtEndpoint.Targets[0],
+		Text:         testTxtEndpoint.Targets[0].String(),
 	}
 	txtRecords := []api.BluecatTXTRecord{
 		createMockBluecatTXT("abc.example.com", "hello"),
@@ -423,7 +423,7 @@ func TestBluecatRecordset(t *testing.T) {
 	testHostEndpoint := endpoint.NewEndpoint("whitespace.example.com", endpoint.RecordTypeA, "123.123.123.124")
 	hostObj := api.BluecatCreateHostRecordRequest{
 		AbsoluteName: testHostEndpoint.DNSName,
-		IP4Address:   testHostEndpoint.Targets[0],
+		IP4Address:   testHostEndpoint.Targets[0].String(),
 	}
 	hostRecords := []api.BluecatHostRecord{
 		createMockBluecatHostRecord("whitespace.example.com", "123.123.123.124", 30),
@@ -443,7 +443,7 @@ func TestBluecatRecordset(t *testing.T) {
 	testCnameEndpoint := endpoint.NewEndpoint("hack.example.com", endpoint.RecordTypeCNAME, "bluecatnetworks.com")
 	cnameObj := api.BluecatCreateCNAMERecordRequest{
 		AbsoluteName: testCnameEndpoint.DNSName,
-		LinkedRecord: testCnameEndpoint.Targets[0],
+		LinkedRecord: testCnameEndpoint.Targets[0].String(),
 	}
 	cnameRecords := []api.BluecatCNAMERecord{
 		createMockBluecatCNAME("hack.example.com", "bluecatnetworks.com", 30),

@@ -437,7 +437,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (blue
 		var res []api.BluecatHostRecord
 		obj := api.BluecatCreateHostRecordRequest{
 			AbsoluteName: ep.DNSName,
-			IP4Address:   ep.Targets[0],
+			IP4Address:   ep.Targets[0].String(),
 			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
@@ -457,7 +457,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (blue
 		var res []api.BluecatCNAMERecord
 		obj := api.BluecatCreateCNAMERecordRequest{
 			AbsoluteName: ep.DNSName,
-			LinkedRecord: ep.Targets[0],
+			LinkedRecord: ep.Targets[0].String(),
 			TTL:          int(ep.RecordTTL),
 			Properties:   "",
 		}
@@ -479,7 +479,7 @@ func (p *BluecatProvider) recordSet(ep *endpoint.Endpoint, getObject bool) (blue
 		// This is not implemented in the Bluecat Gateway
 		obj := api.BluecatCreateTXTRecordRequest{
 			AbsoluteName: ep.DNSName,
-			Text:         ep.Targets[0],
+			Text:         ep.Targets[0].String(),
 		}
 		if getObject {
 			var record api.BluecatTXTRecord

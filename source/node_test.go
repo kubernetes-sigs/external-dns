@@ -109,7 +109,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -117,7 +117,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1.example.org",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -125,7 +125,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1.example.org",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.NewTargets("2001:DB8::8")},
 			},
 		},
 		{
@@ -134,7 +134,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -143,7 +143,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1.example.org",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1.example.org.example.org", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -152,7 +152,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "5.6.7.8"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4", "5.6.7.8"}},
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.NewTargets("1.2.3.4", "5.6.7.8")},
 			},
 		},
 		{
@@ -161,8 +161,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
-				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.NewTargets("1.2.3.4")},
+				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.NewTargets("2001:DB8::8")},
 			},
 		},
 		{
@@ -170,7 +170,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -178,8 +178,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
-				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.NewTargets("2001:DB8::8")},
 			},
 		},
 		{
@@ -187,7 +187,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("2.3.4.5")},
 			},
 		},
 		{
@@ -195,8 +195,8 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"2.3.4.5"}},
-				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("2.3.4.5")},
+				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.NewTargets("2001:DB8::8")},
 			},
 		},
 		{
@@ -213,7 +213,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"external-dns.alpha.kubernetes.io/target": "203.2.45.7",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"203.2.45.7"}},
+				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.NewTargets("203.2.45.7")},
 			},
 		},
 		{
@@ -224,7 +224,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -236,7 +236,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -258,7 +258,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				"service.beta.kubernetes.io/external-traffic": "OnlyLocal",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -279,7 +279,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				controllerAnnotationKey: controllerAnnotationValue,
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 		},
 		{
@@ -296,7 +296,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			nodeName:      "node1",
 			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4"), RecordTTL: endpoint.TTL(0)},
 			},
 		},
 		{
@@ -307,7 +307,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				ttlAnnotationKey: "foo",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(0)},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4"), RecordTTL: endpoint.TTL(0)},
 			},
 		},
 		{
@@ -318,7 +318,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 				ttlAnnotationKey: "10",
 			},
 			expected: []*endpoint.Endpoint{
-				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}, RecordTTL: endpoint.TTL(10)},
+				{RecordType: "A", DNSName: "node1", Targets: endpoint.NewTargets("1.2.3.4"), RecordTTL: endpoint.TTL(10)},
 			},
 		},
 	} {

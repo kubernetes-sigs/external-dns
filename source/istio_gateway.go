@@ -258,9 +258,9 @@ func (sc *gatewaySource) targetsFromIngress(ctx context.Context, ingressStr stri
 	}
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			targets = append(targets, lb.IP)
+			targets = append(targets, endpoint.NewTarget(lb.IP))
 		} else if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			targets = append(targets, endpoint.NewTarget(lb.Hostname))
 		}
 	}
 	return
@@ -290,15 +290,15 @@ func (sc *gatewaySource) targetsFromGateway(ctx context.Context, gateway *networ
 		}
 
 		if len(service.Spec.ExternalIPs) > 0 {
-			targets = append(targets, service.Spec.ExternalIPs...)
+			targets = append(targets, endpoint.NewTargets(service.Spec.ExternalIPs...)...)
 			continue
 		}
 
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				targets = append(targets, lb.IP)
+				targets = append(targets, endpoint.NewTarget(lb.IP))
 			} else if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}

@@ -244,7 +244,7 @@ func newVultrChanges(action string, endpoints []*endpoint.Endpoint) []*VultrChan
 			ResourceRecordSet: &govultr.DomainRecordReq{
 				Type: e.RecordType,
 				Name: e.DNSName,
-				Data: e.Targets[0],
+				Data: e.Targets[0].String(),
 				TTL:  ttl,
 			},
 		}

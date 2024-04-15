@@ -350,7 +350,7 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 				hostTargets[host] = append(hostTargets[host], override...)
 				if len(override) == 0 {
 					for _, addr := range gw.gateway.Status.Addresses {
-						hostTargets[host] = append(hostTargets[host], addr.Value)
+						hostTargets[host] = append(hostTargets[host], endpoint.NewTarget(addr.Value))
 					}
 				}
 				match = true
@@ -460,7 +460,7 @@ func uniqueTargets(targets endpoint.Targets) endpoint.Targets {
 	if len(targets) < 2 {
 		return targets
 	}
-	sort.Strings([]string(targets))
+	sort.Stable(targets)
 	prev := targets[0]
 	n := 1
 	for _, v := range targets[1:] {

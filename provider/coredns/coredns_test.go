@@ -77,7 +77,7 @@ func TestAServiceTranslation(t *testing.T) {
 	if endpoints[0].DNSName != expectedDNSName {
 		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
 	}
-	if endpoints[0].Targets[0] != expectedTarget {
+	if endpoints[0].Targets[0].String() != expectedTarget {
 		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget)
 	}
 	if endpoints[0].RecordType != expectedRecordType {
@@ -107,7 +107,7 @@ func TestCNAMEServiceTranslation(t *testing.T) {
 	if endpoints[0].DNSName != expectedDNSName {
 		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
 	}
-	if endpoints[0].Targets[0] != expectedTarget {
+	if endpoints[0].Targets[0].String() != expectedTarget {
 		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget)
 	}
 	if endpoints[0].RecordType != expectedRecordType {
@@ -137,7 +137,7 @@ func TestTXTServiceTranslation(t *testing.T) {
 	if endpoints[0].DNSName != expectedDNSName {
 		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
 	}
-	if endpoints[0].Targets[0] != expectedTarget {
+	if endpoints[0].Targets[0].String() != expectedTarget {
 		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget)
 	}
 	if endpoints[0].RecordType != expectedRecordType {
@@ -179,7 +179,7 @@ func TestAWithTXTServiceTranslation(t *testing.T) {
 			t.Errorf("got unexpected DNS name: %s != %s", ep.DNSName, expectedDNSName)
 		}
 
-		if ep.Targets[0] != expectedTarget {
+		if ep.Targets[0].String() != expectedTarget {
 			t.Errorf("got unexpected DNS target: %s != %s", ep.Targets[0], expectedTarget)
 		}
 	}
@@ -219,7 +219,7 @@ func TestCNAMEWithTXTServiceTranslation(t *testing.T) {
 			t.Errorf("got unexpected DNS name: %s != %s", ep.DNSName, expectedDNSName)
 		}
 
-		if ep.Targets[0] != expectedTarget {
+		if ep.Targets[0].String() != expectedTarget {
 			t.Errorf("got unexpected DNS target: %s != %s", ep.Targets[0], expectedTarget)
 		}
 	}

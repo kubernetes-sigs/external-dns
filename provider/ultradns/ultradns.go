@@ -428,7 +428,7 @@ func newUltraDNSChanges(action string, endpoints []*endpoint.Endpoint) []*UltraD
 			ResourceRecordSetUltraDNS: udnssdk.RRSet{
 				RRType:    e.RecordType,
 				OwnerName: recordName,
-				RData:     e.Targets,
+				RData:     e.Targets.Map(),
 				TTL:       ttl,
 			},
 		}

@@ -138,7 +138,7 @@ func mergeEndpointsByNameType(endpoints []*endpoint.Endpoint) []*endpoint.Endpoi
 
 		targets := make([]string, len(endpoints))
 		for i, e := range endpoints {
-			targets[i] = e.Targets[0]
+			targets[i] = e.Targets[0].String()
 		}
 
 		e := endpoint.NewEndpoint(dnsName, recordType, targets...)
@@ -430,7 +430,7 @@ func processCreateActions(
 			for _, target := range ep.Targets {
 				changes.Creates = append(changes.Creates, &digitalOceanChangeCreate{
 					Domain:  domain,
-					Options: makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target, ttl),
+					Options: makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target.String(), ttl),
 				})
 			}
 		}
@@ -484,7 +484,7 @@ func processUpdateActions(
 
 			// Generate create and delete actions based on existence of a record for each target.
 			for _, target := range ep.Targets {
-				if record, ok := matchingRecordsByTarget[target]; ok {
+				if record, ok := matchingRecordsByTarget[target.String()]; ok {
 					log.WithFields(log.Fields{
 						"domain":     domain,
 						"dnsName":    ep.DNSName,
@@ -495,10 +495,10 @@ func processUpdateActions(
 					changes.Updates = append(changes.Updates, &digitalOceanChangeUpdate{
 						Domain:       domain,
 						DomainRecord: record,
-						Options:      makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target, ttl),
+						Options:      makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target.String(), ttl),
 					})
 
-					delete(matchingRecordsByTarget, target)
+					delete(matchingRecordsByTarget, target.String())
 				} else {
 					// Record did not previously exist, create new 'target'
 					log.WithFields(log.Fields{
@@ -510,7 +510,7 @@ func processUpdateActions(
 
 					changes.Creates = append(changes.Creates, &digitalOceanChangeCreate{
 						Domain:  domain,
-						Options: makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target, ttl),
+						Options: makeDomainEditRequest(domain, ep.DNSName, ep.RecordType, target.String(), ttl),
 					})
 				}
 			}
@@ -565,11 +565,11 @@ func processDeleteActions(
 			for _, record := range matchingRecords {
 				doDelete := false
 				for _, t := range ep.Targets {
-					v1 := t
+					v1 := t.String()
 					v2 := record.Data
 					if ep.RecordType == endpoint.RecordTypeCNAME {
-						v1 = strings.TrimSuffix(t, ".")
-						v2 = strings.TrimSuffix(t, ".")
+						v1 = strings.TrimSuffix(t.String(), ".")
+						v2 = strings.TrimSuffix(t.String(), ".")
 					}
 					if v1 == v2 {
 						doDelete = true

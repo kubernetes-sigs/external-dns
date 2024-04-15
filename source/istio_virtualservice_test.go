@@ -423,7 +423,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -446,7 +446,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -469,7 +469,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -493,12 +493,12 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+					Targets:    endpoint.NewTargets("8.8.8.8", "127.0.0.1"),
 				},
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+					Targets:    endpoint.NewTargets("elb.com", "alb.com"),
 				},
 			},
 		},
@@ -523,7 +523,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+					Targets:    endpoint.NewTargets("1.1.1.1", "2.2.2.2"),
 				},
 			},
 		},
@@ -627,7 +627,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+					Targets:    endpoint.NewTargets("elb.com", "alb.com"),
 				},
 			},
 		},
@@ -658,7 +658,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"alb.com", "elb.com"},
+					Targets:    endpoint.NewTargets("alb.com", "elb.com"),
 				},
 			},
 		},
@@ -691,7 +691,7 @@ func testEndpointsFromVirtualServiceConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"127.0.0.1", "8.8.8.8"},
+					Targets:    endpoint.NewTargets("127.0.0.1", "8.8.8.8"),
 				},
 			},
 		},
@@ -768,22 +768,22 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -840,22 +840,22 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -891,7 +891,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -927,7 +927,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -965,22 +965,22 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -1019,12 +1019,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -1062,7 +1062,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -1105,12 +1105,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -1145,7 +1145,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -1244,7 +1244,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -1304,12 +1304,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "vs1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "vs1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com"},
+					Targets:    endpoint.NewTargets("elb.com"),
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
@@ -1340,12 +1340,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "vs1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "vs1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1380,17 +1380,17 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "vs1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "vs2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1428,12 +1428,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"virtualservice-target.com"},
+					Targets:    endpoint.NewTargets("virtualservice-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"virtualservice-target.com"},
+					Targets:    endpoint.NewTargets("virtualservice-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1473,12 +1473,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1526,12 +1526,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1565,12 +1565,12 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1604,7 +1604,7 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.bar.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1648,13 +1648,13 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordTTL:  endpoint.TTL(6),
 				},
 				{
 					DNSName:    "example2.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordTTL:  endpoint.TTL(1),
 				},
 			},
@@ -1710,17 +1710,17 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "vs1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "vs2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "vs3.ext-dns.test.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1766,22 +1766,22 @@ func testVirtualServiceEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 			ignoreHostnameAnnotation: true,
@@ -1892,42 +1892,42 @@ func testVirtualServiceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "somedomain.com",
-					Targets:    endpoint.Targets{"target1.com"},
+					Targets:    endpoint.NewTargets("target1.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "foo.bar.com",
-					Targets:    endpoint.Targets{"target1.com", "target2.com"},
+					Targets:    endpoint.NewTargets("target1.com", "target2.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "hello.bar.com",
-					Targets:    endpoint.Targets{"target2.com", "target3.com"},
+					Targets:    endpoint.NewTargets("target2.com", "target3.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "hello.bax.com",
-					Targets:    endpoint.Targets{"target3.com"},
+					Targets:    endpoint.NewTargets("target3.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "world.bak.com",
-					Targets:    endpoint.Targets{"target1.com"},
+					Targets:    endpoint.NewTargets("target1.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "world.bax.com",
-					Targets:    endpoint.Targets{"target1.com", "target3.com"},
+					Targets:    endpoint.NewTargets("target1.com", "target3.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "foo.bak.com",
-					Targets:    endpoint.Targets{"target1.com"},
+					Targets:    endpoint.NewTargets("target1.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "foo.bax.com",
-					Targets:    endpoint.Targets{"target1.com", "target4.com"},
+					Targets:    endpoint.NewTargets("target1.com", "target4.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},

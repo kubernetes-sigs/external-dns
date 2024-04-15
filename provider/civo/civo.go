@@ -285,7 +285,7 @@ func processCreateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 				civoChange.Creates = append(civoChange.Creates, &CivoChangeCreate{
 					Domain: zone,
 					Options: &civogo.DNSRecordConfig{
-						Value:    target,
+						Value:    target.String(),
 						Name:     getStrippedRecordName(zone, *ep),
 						Type:     recordType,
 						Priority: 0,
@@ -336,7 +336,7 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 			}
 
 			for _, target := range ep.Targets {
-				if record, ok := matchedRecordsByTarget[target]; ok {
+				if record, ok := matchedRecordsByTarget[target.String()]; ok {
 					log.WithFields(log.Fields{
 						"zoneID":     zoneID,
 						"dnsName":    ep.DNSName,
@@ -349,7 +349,7 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 						Domain:       zone,
 						DomainRecord: record,
 						Options: civogo.DNSRecordConfig{
-							Value:    target,
+							Value:    target.String(),
 							Name:     getStrippedRecordName(zone, *ep),
 							Type:     recordType,
 							Priority: 0,
@@ -357,7 +357,7 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 						},
 					})
 
-					delete(matchedRecordsByTarget, target)
+					delete(matchedRecordsByTarget, target.String())
 				} else {
 					// Record did not previously exist, create new 'target'
 					log.WithFields(log.Fields{
@@ -371,7 +371,7 @@ func processUpdateActions(zonesByID map[string]civogo.DNSDomain, recordsByZoneID
 					civoChange.Creates = append(civoChange.Creates, &CivoChangeCreate{
 						Domain: zone,
 						Options: &civogo.DNSRecordConfig{
-							Value:    target,
+							Value:    target.String(),
 							Name:     getStrippedRecordName(zone, *ep),
 							Type:     recordType,
 							Priority: 0,

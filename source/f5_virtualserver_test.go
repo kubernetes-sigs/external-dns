@@ -70,7 +70,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.150"},
+					Targets:    endpoint.NewTargets("192.168.1.150"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -102,7 +102,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.100"},
+					Targets:    endpoint.NewTargets("192.168.1.100"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -133,7 +133,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.100"},
+					Targets:    endpoint.NewTargets("192.168.1.100"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -186,7 +186,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.100"},
+					Targets:    endpoint.NewTargets("192.168.1.100"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  0,
 					Labels: endpoint.Labels{
@@ -239,7 +239,7 @@ func TestF5VirtualServerEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "www.example.com",
-					Targets:    []string{"192.168.1.100"},
+					Targets:    endpoint.NewTargets("192.168.1.100"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  600,
 					Labels: endpoint.Labels{

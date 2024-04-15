@@ -130,10 +130,10 @@ func (sc *kongTCPIngressSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 		if len(targets) == 0 {
 			for _, lb := range tcpIngress.Status.LoadBalancer.Ingress {
 				if lb.IP != "" {
-					targets = append(targets, lb.IP)
+					targets = append(targets, endpoint.NewTarget(lb.IP))
 				}
 				if lb.Hostname != "" {
-					targets = append(targets, lb.Hostname)
+					targets = append(targets, endpoint.NewTarget(lb.Hostname))
 				}
 			}
 		}

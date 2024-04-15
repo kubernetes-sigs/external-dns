@@ -333,7 +333,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 				linodeCreates = append(linodeCreates, LinodeChangeCreate{
 					Domain: zone,
 					Options: linodego.DomainRecordCreateOptions{
-						Target:   target,
+						Target:   target.String(),
 						Name:     getStrippedRecordName(zone, ep),
 						Type:     recordType,
 						Weight:   getWeight(recordType),
@@ -384,7 +384,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 			}
 
 			for _, target := range ep.Targets {
-				if record, ok := matchedRecordsByTarget[target]; ok {
+				if record, ok := matchedRecordsByTarget[target.String()]; ok {
 					log.WithFields(log.Fields{
 						"zoneID":     zoneID,
 						"dnsName":    ep.DNSName,
@@ -397,7 +397,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 						Domain:       zone,
 						DomainRecord: record,
 						Options: linodego.DomainRecordUpdateOptions{
-							Target:   target,
+							Target:   target.String(),
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
 							Weight:   getWeight(recordType),
@@ -407,7 +407,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 						},
 					})
 
-					delete(matchedRecordsByTarget, target)
+					delete(matchedRecordsByTarget, target.String())
 				} else {
 					// Record did not previously exist, create new 'target'
 					log.WithFields(log.Fields{
@@ -421,7 +421,7 @@ func (p *LinodeProvider) ApplyChanges(ctx context.Context, changes *plan.Changes
 					linodeCreates = append(linodeCreates, LinodeChangeCreate{
 						Domain: zone,
 						Options: linodego.DomainRecordCreateOptions{
-							Target:   target,
+							Target:   target.String(),
 							Name:     getStrippedRecordName(zone, ep),
 							Type:     recordType,
 							Weight:   getWeight(recordType),

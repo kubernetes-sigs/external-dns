@@ -201,7 +201,7 @@ OuterLoop:
 
 		for idx, existingEndpoint := range eps {
 			if existingEndpoint.DNSName == strings.TrimSuffix(rrFqdn, ".") && existingEndpoint.RecordType == rrType {
-				eps[idx].Targets = append(eps[idx].Targets, rrValues...)
+				eps[idx].Targets = append(eps[idx].Targets, endpoint.NewTargets(rrValues...)...)
 				continue OuterLoop
 			}
 		}

@@ -127,7 +127,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 	expectedRecords := []*endpoint.Endpoint{
 		{
 			DNSName:    "foo.test-zone.example.org",
-			Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+			Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey: "",
@@ -135,7 +135,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:    "bar.test-zone.example.org",
-			Targets:    endpoint.Targets{"my-domain.com"},
+			Targets:    endpoint.NewTargets("my-domain.com"),
 			RecordType: endpoint.RecordTypeCNAME,
 			Labels: map[string]string{
 				endpoint.OwnerLabelKey:    "test-owner",
@@ -144,7 +144,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:       "baz.test-zone.example.org",
-			Targets:       endpoint.Targets{"1.1.1.1"},
+			Targets:       endpoint.NewTargets("1.1.1.1"),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "set-1",
 			Labels: map[string]string{
@@ -154,7 +154,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:       "baz.test-zone.example.org",
-			Targets:       endpoint.Targets{"2.2.2.2"},
+			Targets:       endpoint.NewTargets("2.2.2.2"),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "set-2",
 			Labels: map[string]string{
@@ -164,7 +164,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:       "migrate.test-zone.example.org",
-			Targets:       endpoint.Targets{"3.3.3.3"},
+			Targets:       endpoint.NewTargets("3.3.3.3"),
 			RecordType:    endpoint.RecordTypeA,
 			SetIdentifier: "set-3",
 			Labels: map[string]string{
@@ -180,7 +180,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:       "txt.orphaned.test-zone.example.org",
-			Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\""},
+			Targets:       endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\""),
 			RecordType:    endpoint.RecordTypeTXT,
 			SetIdentifier: "set-3",
 			Labels: map[string]string{
@@ -189,7 +189,7 @@ func TestDynamoDBRegistryRecords(t *testing.T) {
 		},
 		{
 			DNSName:       "txt.baz.test-zone.example.org",
-			Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\""},
+			Targets:       endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/other-ingress\""),
 			RecordType:    endpoint.RecordTypeTXT,
 			SetIdentifier: "set-2",
 			Labels: map[string]string{
@@ -230,7 +230,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "new.test-zone.example.org",
-						Targets:       endpoint.Targets{"new.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -248,7 +248,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -256,7 +256,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -265,7 +265,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -275,7 +275,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -285,7 +285,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "new.test-zone.example.org",
-					Targets:       endpoint.Targets{"new.loadbalancer.com"},
+					Targets:       endpoint.NewTargets("new.loadbalancer.com"),
 					RecordType:    endpoint.RecordTypeCNAME,
 					SetIdentifier: "set-new",
 					Labels: map[string]string{
@@ -302,7 +302,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "new1.test-zone.example.org",
-						Targets:       endpoint.Targets{"new1.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new1.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -311,7 +311,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 					},
 					{
 						DNSName:       "new2.test-zone.example.org",
-						Targets:       endpoint.Targets{"new2.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new2.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -320,7 +320,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 					},
 					{
 						DNSName:       "new3.test-zone.example.org",
-						Targets:       endpoint.Targets{"new3.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new3.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -340,7 +340,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -348,7 +348,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -357,7 +357,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -367,7 +367,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -377,7 +377,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "new1.test-zone.example.org",
-					Targets:       endpoint.Targets{"new1.loadbalancer.com"},
+					Targets:       endpoint.NewTargets("new1.loadbalancer.com"),
 					RecordType:    endpoint.RecordTypeCNAME,
 					SetIdentifier: "set-new",
 					Labels: map[string]string{
@@ -387,7 +387,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "new2.test-zone.example.org",
-					Targets:       endpoint.Targets{"new2.loadbalancer.com"},
+					Targets:       endpoint.NewTargets("new2.loadbalancer.com"),
 					RecordType:    endpoint.RecordTypeCNAME,
 					SetIdentifier: "set-new",
 					Labels: map[string]string{
@@ -397,7 +397,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "new3.test-zone.example.org",
-					Targets:       endpoint.Targets{"new3.loadbalancer.com"},
+					Targets:       endpoint.NewTargets("new3.loadbalancer.com"),
 					RecordType:    endpoint.RecordTypeCNAME,
 					SetIdentifier: "set-new",
 					Labels: map[string]string{
@@ -413,7 +413,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "quux.test-zone.example.org",
-						Targets:       endpoint.Targets{"5.5.5.5"},
+						Targets:       endpoint.NewTargets("5.5.5.5"),
 						RecordType:    endpoint.RecordTypeA,
 						SetIdentifier: "set-2",
 						Labels: map[string]string{
@@ -426,7 +426,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -434,7 +434,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -443,7 +443,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -453,7 +453,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -463,7 +463,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "quux.test-zone.example.org",
-					Targets:       endpoint.Targets{"5.5.5.5"},
+					Targets:       endpoint.NewTargets("5.5.5.5"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -479,7 +479,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "quux.test-zone.example.org",
-						Targets:       endpoint.Targets{"5.5.5.5"},
+						Targets:       endpoint.NewTargets("5.5.5.5"),
 						RecordType:    endpoint.RecordTypeA,
 						SetIdentifier: "set-2",
 						Labels: map[string]string{
@@ -496,7 +496,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -504,7 +504,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -513,7 +513,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -523,7 +523,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -533,7 +533,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "quux.test-zone.example.org",
-					Targets:       endpoint.Targets{"5.5.5.5"},
+					Targets:       endpoint.NewTargets("5.5.5.5"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -549,7 +549,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "new.test-zone.example.org",
-						Targets:       endpoint.Targets{"new.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -567,7 +567,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -575,7 +575,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -584,7 +584,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -594,7 +594,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -610,7 +610,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Create: []*endpoint.Endpoint{
 					{
 						DNSName:       "new.test-zone.example.org",
-						Targets:       endpoint.Targets{"new.loadbalancer.com"},
+						Targets:       endpoint.NewTargets("new.loadbalancer.com"),
 						RecordType:    endpoint.RecordTypeCNAME,
 						SetIdentifier: "set-new",
 						Labels: map[string]string{
@@ -628,7 +628,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -636,7 +636,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -645,7 +645,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -655,7 +655,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -671,7 +671,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -682,7 +682,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
+						Targets:    endpoint.NewTargets("new-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -697,7 +697,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -705,7 +705,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"new-domain.com"},
+					Targets:    endpoint.NewTargets("new-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -714,7 +714,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -724,7 +724,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -740,7 +740,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -751,7 +751,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
+						Targets:    endpoint.NewTargets("new-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -769,7 +769,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -777,7 +777,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"new-domain.com"},
+					Targets:    endpoint.NewTargets("new-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -786,7 +786,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -796,7 +796,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -811,7 +811,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			addRecords: []*endpoint.Endpoint{
 				{
 					DNSName:       "txt.bar.test-zone.example.org",
-					Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/new-ingress\""},
+					Targets:       endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/new-ingress\""),
 					RecordType:    endpoint.RecordTypeTXT,
 					SetIdentifier: "set-1",
 				},
@@ -820,7 +820,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -837,7 +837,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -855,7 +855,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -863,7 +863,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -872,7 +872,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -882,7 +882,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -892,7 +892,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "txt.bar.test-zone.example.org",
-					Targets:       endpoint.Targets{"\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/new-ingress\""},
+					Targets:       endpoint.NewTargets("\"heritage=external-dns,external-dns/owner=test-owner,external-dns/resource=ingress/default/new-ingress\""),
 					RecordType:    endpoint.RecordTypeTXT,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -907,7 +907,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateOld: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -918,7 +918,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				UpdateNew: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"new-domain.com"},
+						Targets:    endpoint.NewTargets("new-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -936,7 +936,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -944,7 +944,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:    "bar.test-zone.example.org",
-					Targets:    endpoint.Targets{"my-domain.com"},
+					Targets:    endpoint.NewTargets("my-domain.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey:    "test-owner",
@@ -953,7 +953,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -963,7 +963,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{
@@ -979,7 +979,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				Delete: []*endpoint.Endpoint{
 					{
 						DNSName:    "bar.test-zone.example.org",
-						Targets:    endpoint.Targets{"my-domain.com"},
+						Targets:    endpoint.NewTargets("my-domain.com"),
 						RecordType: endpoint.RecordTypeCNAME,
 						Labels: map[string]string{
 							endpoint.OwnerLabelKey:    "test-owner",
@@ -994,7 +994,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 			expectedRecords: []*endpoint.Endpoint{
 				{
 					DNSName:    "foo.test-zone.example.org",
-					Targets:    endpoint.Targets{"foo.loadbalancer.com"},
+					Targets:    endpoint.NewTargets("foo.loadbalancer.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					Labels: map[string]string{
 						endpoint.OwnerLabelKey: "",
@@ -1002,7 +1002,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"1.1.1.1"},
+					Targets:       endpoint.NewTargets("1.1.1.1"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-1",
 					Labels: map[string]string{
@@ -1012,7 +1012,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 				{
 					DNSName:       "baz.test-zone.example.org",
-					Targets:       endpoint.Targets{"2.2.2.2"},
+					Targets:       endpoint.NewTargets("2.2.2.2"),
 					RecordType:    endpoint.RecordTypeA,
 					SetIdentifier: "set-2",
 					Labels: map[string]string{

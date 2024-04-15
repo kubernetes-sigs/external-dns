@@ -91,7 +91,7 @@ func NewTargets(target ...string) Targets {
 func (t Targets) String() string {
 	vals := []string{}
 	for _, val := range t {
-		vals = append(vals, val.Raw)
+		vals = append(vals, val.String())
 	}
 	return strings.Join(vals, ";")
 }
@@ -99,7 +99,7 @@ func (t Targets) String() string {
 func (t Targets) Map() []string {
 	ret := make([]string, len(t))
 	for i, e := range t {
-		ret[i] = e.Raw
+		ret[i] = e.String()
 	}
 	return ret
 }

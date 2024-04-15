@@ -280,7 +280,7 @@ func appendUnique(targets []string, target string) []string {
 	return append(targets, target)
 }
 
-func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService *networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
+func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService *networkingv1alpha3.VirtualService, vsHost string) ([]endpoint.Target, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
 	for _, gateway := range virtualService.Spec.Gateways {
@@ -296,14 +296,14 @@ func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, v
 		}
 		tgs, err := sc.targetsFromGateway(ctx, gateway)
 		if err != nil {
-			return targets, err
+			return endpoint.NewTargets(targets...), err
 		}
 		for _, target := range tgs {
-			targets = appendUnique(targets, target)
+			targets = appendUnique(targets, target.String())
 		}
 	}
 
-	return targets, nil
+	return endpoint.NewTargets(targets...), nil
 }
 
 // endpointsFromVirtualService extracts the endpoints from an Istio VirtualService Config object
@@ -439,9 +439,9 @@ func (sc *virtualServiceSource) targetsFromIngress(ctx context.Context, ingressS
 	}
 	for _, lb := range ingress.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			targets = append(targets, lb.IP)
+			targets = append(targets, endpoint.NewTarget(lb.IP))
 		} else if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			targets = append(targets, endpoint.NewTarget(lb.Hostname))
 		}
 	}
 	return
@@ -471,15 +471,15 @@ func (sc *virtualServiceSource) targetsFromGateway(ctx context.Context, gateway 
 		}
 
 		if len(service.Spec.ExternalIPs) > 0 {
-			targets = append(targets, service.Spec.ExternalIPs...)
+			targets = append(targets, endpoint.NewTargets(service.Spec.ExternalIPs...)...)
 			continue
 		}
 
 		for _, lb := range service.Status.LoadBalancer.Ingress {
 			if lb.IP != "" {
-				targets = append(targets, lb.IP)
+				targets = append(targets, endpoint.NewTarget(lb.IP))
 			} else if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}

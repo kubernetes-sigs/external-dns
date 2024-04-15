@@ -266,12 +266,12 @@ func (ors *ocpRouteSource) getTargetsFromRouteStatus(status routev1.RouteStatus)
 
 		// if the router name is specified for the Route source and it matches the route's ingress name, then return it
 		if ors.ocpRouterName != "" && ors.ocpRouterName == ing.RouterName {
-			return endpoint.Targets{ing.RouterCanonicalHostname}, ing.Host
+			return endpoint.NewTargets(ing.RouterCanonicalHostname), ing.Host
 		}
 
 		// if the router name is not specified in the Route source then return the first ingress
 		if ors.ocpRouterName == "" {
-			return endpoint.Targets{ing.RouterCanonicalHostname}, ing.Host
+			return endpoint.NewTargets(ing.RouterCanonicalHostname), ing.Host
 		}
 	}
 	return endpoint.Targets{}, ""

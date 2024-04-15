@@ -370,17 +370,17 @@ func TestAkamaiApplyChanges(t *testing.T) {
 	stub.setOutput("zone", []interface{}{"example.com"})
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "www.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300},
-		{DNSName: "test.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300},
-		{DNSName: "test.this.example.com", RecordType: "A", Targets: endpoint.Targets{"127.0.0.1"}, RecordTTL: 300},
-		{DNSName: "www.example.com", RecordType: "TXT", Targets: endpoint.Targets{"heritage=external-dns,external-dns/owner=default"}, RecordTTL: 300},
-		{DNSName: "test.example.com", RecordType: "TXT", Targets: endpoint.Targets{"heritage=external-dns,external-dns/owner=default"}, RecordTTL: 300},
-		{DNSName: "test.this.example.com", RecordType: "TXT", Targets: endpoint.Targets{"heritage=external-dns,external-dns/owner=default"}, RecordTTL: 300},
-		{DNSName: "another.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}},
+		{DNSName: "www.example.com", RecordType: "A", Targets: endpoint.NewTargets("target"), RecordTTL: 300},
+		{DNSName: "test.example.com", RecordType: "A", Targets: endpoint.NewTargets("target"), RecordTTL: 300},
+		{DNSName: "test.this.example.com", RecordType: "A", Targets: endpoint.NewTargets("127.0.0.1"), RecordTTL: 300},
+		{DNSName: "www.example.com", RecordType: "TXT", Targets: endpoint.NewTargets("heritage=external-dns,external-dns/owner=default"), RecordTTL: 300},
+		{DNSName: "test.example.com", RecordType: "TXT", Targets: endpoint.NewTargets("heritage=external-dns,external-dns/owner=default"), RecordTTL: 300},
+		{DNSName: "test.this.example.com", RecordType: "TXT", Targets: endpoint.NewTargets("heritage=external-dns,external-dns/owner=default"), RecordTTL: 300},
+		{DNSName: "another.example.com", RecordType: "A", Targets: endpoint.NewTargets("target")},
 	}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.Targets{"target"}, RecordTTL: 300}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.Targets{"target-old"}, RecordTTL: 300}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 300}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "delete.example.com", RecordType: "A", Targets: endpoint.NewTargets("target"), RecordTTL: 300}}
+	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "old.example.com", RecordType: "A", Targets: endpoint.NewTargets("target-old"), RecordTTL: 300}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "update.example.com", Targets: endpoint.NewTargets("target-new"), RecordType: "CNAME", RecordTTL: 300}}
 	apply := c.ApplyChanges(context.Background(), changes)
 	assert.Nil(t, apply)
 }

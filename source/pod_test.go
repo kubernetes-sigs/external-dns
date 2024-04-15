@@ -45,8 +45,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("54.10.11.1", "54.10.11.2"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1", "10.0.1.2"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -115,8 +115,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("54.10.11.1", "54.10.11.2"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1", "10.0.1.2"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -185,8 +185,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("2001:DB8::1", "2001:DB8::2"), RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("2001:DB8::1", "2001:DB8::2"), RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -253,8 +253,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("2001:DB8::1", "2001:DB8::2"), RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("2001:DB8::1", "2001:DB8::2"), RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -321,8 +321,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("208.1.2.1", "208.1.2.2"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("208.1.2.1", "208.1.2.2"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -393,9 +393,9 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "b.foo.example.org", Targets: endpoint.Targets{"54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("54.10.11.1"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("2001:DB8::1"), RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "b.foo.example.org", Targets: endpoint.NewTargets("54.10.11.2"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -463,8 +463,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("54.10.11.1"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -533,8 +533,8 @@ func TestPodSource(t *testing.T) {
 			"kube-system",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.NewTargets("54.10.11.1"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -603,8 +603,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.b.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1"), RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.b.foo.example.org", Targets: endpoint.NewTargets("10.0.1.1"), RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{

@@ -139,10 +139,10 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 		DNSName:    "www.example.org",
 		RecordType: "A",
 		RecordTTL:  1800,
-		Targets: []string{
+		Targets: endpoint.NewTargets(
 			"192.168.0.1",
 			"192.168.0.2",
-		},
+		),
 	}
 
 	// prepare zone with DNS entry set
@@ -166,7 +166,7 @@ func TestTransIPAddEndpointToEntries(t *testing.T) {
 
 	// try again with CNAME
 	ep.RecordType = "CNAME"
-	ep.Targets = []string{"foo.bar"}
+	ep.Targets = endpoint.NewTargets("foo.bar")
 	result = dnsEntriesForEndpoint(ep, zone.Name)
 	if assert.Equal(t, 1, len(result)) {
 		assert.Equal(t, "CNAME", result[0].Type)
@@ -258,7 +258,7 @@ func TestProviderRecords(t *testing.T) {
 	if assert.NoError(t, err) {
 		if assert.Equal(t, 4, len(endpoints)) {
 			assert.Equal(t, "www.example.org", endpoints[0].DNSName)
-			assert.EqualValues(t, "@", endpoints[0].Targets[0])
+			assert.EqualValues(t, "@", endpoints[0].Targets[0].String())
 			assert.Equal(t, "CNAME", endpoints[0].RecordType)
 			assert.Equal(t, 0, len(endpoints[0].Labels))
 			assert.EqualValues(t, 1234, endpoints[0].RecordTTL)

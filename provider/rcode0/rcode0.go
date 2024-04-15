@@ -301,7 +301,7 @@ func (p *RcodeZeroProvider) NewRcodezeroChange(action string, endpoint *endpoint
 		Name:       endpoint.DNSName,
 		Records: []*rc0.Record{{
 			Disabled: false,
-			Content:  endpoint.Targets[0],
+			Content:  endpoint.Targets[0].String(),
 		}},
 	}
 

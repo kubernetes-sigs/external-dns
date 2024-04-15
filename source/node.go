@@ -129,10 +129,11 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 
 		addrs := getTargetsFromTargetAnnotation(node.Annotations)
 		if len(addrs) == 0 {
-			addrs, err = ns.nodeAddresses(node)
+			nodeaddrs, err := ns.nodeAddresses(node)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get node address from %s: %w", node.Name, err)
 			}
+			addrs = endpoint.NewTargets(nodeaddrs...)
 		}
 
 		ep.Labels = endpoint.NewLabels()
@@ -140,7 +141,7 @@ func (ns *nodeSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, erro
 			log.Debugf("adding endpoint %s target %s", ep, addr)
 			key := endpoint.EndpointKey{
 				DNSName:    ep.DNSName,
-				RecordType: suitableType(addr),
+				RecordType: suitableType(addr.String()),
 			}
 			if _, ok := endpoints[key]; !ok {
 				epCopy := *ep

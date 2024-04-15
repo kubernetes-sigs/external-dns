@@ -171,7 +171,7 @@ func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 			request := safedns.CreateRecordRequest{
 				Name:    endpoint.DNSName,
 				Type:    endpoint.RecordType,
-				Content: target,
+				Content: target.String(),
 			}
 			log.WithFields(log.Fields{
 				"zoneID":     ZoneName,
@@ -193,7 +193,7 @@ func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 		var zoneRecord ZoneRecord
 		for _, target := range endpoint.Targets {
 			for _, zr := range zoneRecords {
-				if zr.Name == endpoint.DNSName && zr.Content == target {
+				if zr.Name == endpoint.DNSName && zr.Content == target.String() {
 					zoneRecord = zr
 					break
 				}
@@ -202,7 +202,7 @@ func (p *SafeDNSProvider) ApplyChanges(ctx context.Context, changes *plan.Change
 			newTTL := safedns.RecordTTL(int(endpoint.RecordTTL))
 			newRecord := safedns.PatchRecordRequest{
 				Name:    endpoint.DNSName,
-				Content: target,
+				Content: target.String(),
 				TTL:     &newTTL,
 				Type:    endpoint.RecordType,
 			}

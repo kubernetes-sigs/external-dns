@@ -190,11 +190,11 @@ func (cs *crdSource) Endpoints(ctx context.Context) ([]*endpoint.Endpoint, error
 
 			illegalTarget := false
 			for _, target := range ep.Targets {
-				if ep.RecordType != "NAPTR" && strings.HasSuffix(target, ".") {
+				if ep.RecordType != "NAPTR" && strings.HasSuffix(target.String(), ".") {
 					illegalTarget = true
 					break
 				}
-				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target, ".") {
+				if ep.RecordType == "NAPTR" && !strings.HasSuffix(target.String(), ".") {
 					illegalTarget = true
 					break
 				}

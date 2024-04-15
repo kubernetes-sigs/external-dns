@@ -302,7 +302,7 @@ func (p *OCIProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) e
 // newRecordOperation returns a RecordOperation based on a given endpoint.
 func newRecordOperation(ep *endpoint.Endpoint, opType dns.RecordOperationOperationEnum) dns.RecordOperation {
 	targets := make([]string, len(ep.Targets))
-	copy(targets, ep.Targets)
+	copy(targets, ep.Targets.Map())
 	if ep.RecordType == endpoint.RecordTypeCNAME {
 		targets[0] = provider.EnsureTrailingDot(targets[0])
 	}

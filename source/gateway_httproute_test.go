@@ -99,7 +99,7 @@ func newTestEndpoint(dnsName, recordType string, targets ...string) *endpoint.En
 func newTestEndpointWithTTL(dnsName, recordType string, ttl int64, targets ...string) *endpoint.Endpoint {
 	return &endpoint.Endpoint{
 		DNSName:    dnsName,
-		Targets:    append([]string(nil), targets...), // clone targets
+		Targets:    append(endpoint.Targets(nil), endpoint.NewTargets(targets...)...), // clone targets
 		RecordType: recordType,
 		RecordTTL:  endpoint.TTL(ttl),
 	}

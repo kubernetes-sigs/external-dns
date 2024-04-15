@@ -92,7 +92,7 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
@@ -105,13 +105,13 @@ func testConnectorSourceEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "abc.example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 					RecordTTL:  180,
 				},
 				{
 					DNSName:    "xyz.example.org",
-					Targets:    endpoint.Targets{"abc.example.org"},
+					Targets:    endpoint.NewTargets("abc.example.org"),
 					RecordType: endpoint.RecordTypeCNAME,
 					RecordTTL:  180,
 				},

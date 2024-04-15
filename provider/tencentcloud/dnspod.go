@@ -162,7 +162,7 @@ func (p *TencentCloudProvider) applyChangesForDNS(changes *plan.Changes) error {
 					subDomain := getSubDomain(*recordListGroup.Domain.Name, deleteChange)
 					if *domainRecord.Name == subDomain && *domainRecord.Type == deleteChange.RecordType {
 						for _, target := range deleteChange.Targets {
-							if *domainRecord.Value == target {
+							if *domainRecord.Value == target.String() {
 								if _, exist := deleteEndpoints[*recordListGroup.Domain.Name]; !exist {
 									deleteEndpoints[*recordListGroup.Domain.Name] = make([]uint64, 0)
 								}
@@ -201,12 +201,12 @@ func (p *TencentCloudProvider) createRecord(zoneMap map[uint64]*RecordListGroup,
 	for zoneId, endpoints := range endpointsMap {
 		zoneIdString, _ := strconv.ParseUint(zoneId, 10, 64)
 		domain := zoneMap[zoneIdString]
-		for _, endpoint := range endpoints {
-			for _, target := range endpoint.Targets {
-				if endpoint.RecordType == "TXT" && strings.HasPrefix(target, `"heritage=`) {
-					target = strings.Trim(target, `"`)
+		for _, ep := range endpoints {
+			for _, target := range ep.Targets {
+				if ep.RecordType == "TXT" && strings.HasPrefix(target.String(), `"heritage=`) {
+					target = endpoint.NewTarget(strings.Trim(target.String(), `"`))
 				}
-				if err := p.createRecords(domain.Domain, endpoint, target); err != nil {
+				if err := p.createRecords(domain.Domain, ep, target.String()); err != nil {
 					return err
 				}
 			}

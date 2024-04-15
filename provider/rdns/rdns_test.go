@@ -125,8 +125,8 @@ func TestARecordTranslation(t *testing.T) {
 	if ep.DNSName != expectedDNSName {
 		t.Errorf("got unexpected DNS name: %s != %s", ep.DNSName, expectedDNSName)
 	}
-	assert.Contains(t, expectedTargets, ep.Targets[0])
-	assert.Contains(t, expectedTargets, ep.Targets[1])
+	assert.Contains(t, expectedTargets, ep.Targets[0].String())
+	assert.Contains(t, expectedTargets, ep.Targets[1].String())
 	if ep.RecordType != expectedRecordType {
 		t.Errorf("got unexpected DNS record type: %s != %s", ep.RecordType, expectedRecordType)
 	}
@@ -158,7 +158,7 @@ func TestTXTRecordTranslation(t *testing.T) {
 	if endpoints[0].DNSName != expectedDNSName {
 		t.Errorf("got unexpected DNS name: %s != %s", endpoints[0].DNSName, expectedDNSName)
 	}
-	if endpoints[0].Targets[0] != expectedTarget {
+	if endpoints[0].Targets[0].String() != expectedTarget {
 		t.Errorf("got unexpected DNS target: %s != %s", endpoints[0].Targets[0], expectedTarget)
 	}
 	if endpoints[0].RecordType != expectedRecordType {
@@ -205,7 +205,7 @@ func TestAWithTXTRecordTranslation(t *testing.T) {
 			t.Errorf("got unexpected DNS name: %s != %s", ep.DNSName, expectedDNSName)
 		}
 
-		if ep.Targets[0] != expectedTarget {
+		if ep.Targets[0].String() != expectedTarget {
 			t.Errorf("got unexpected DNS target: %s != %s", ep.Targets[0], expectedTarget)
 		}
 	}

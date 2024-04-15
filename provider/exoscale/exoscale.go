@@ -136,7 +136,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 			Name:    &name,
 			Type:    &epoint.RecordType,
 			TTL:     ttl,
-			Content: &epoint.Targets[0],
+			Content: &epoint.Targets[0].Raw,
 		}
 		_, err := ep.client.CreateDNSDomainRecord(ctx, ep.apiZone, zoneID, &record)
 		if err != nil {
@@ -165,7 +165,7 @@ func (ep *ExoscaleProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 			}
 
 			record.Type = &epoint.RecordType
-			record.Content = &epoint.Targets[0]
+			record.Content = &(epoint.Targets[0].Raw)
 			if epoint.RecordTTL != 0 {
 				ttl := int64(epoint.RecordTTL)
 				record.TTL = &ttl

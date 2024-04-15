@@ -172,9 +172,7 @@ func TestAdjustEndpoints(t *testing.T) {
 			DNSName:    "test.example.com",
 			RecordTTL:  10,
 			RecordType: "A",
-			Targets: endpoint.Targets{
-				"",
-			},
+			Targets:    endpoint.NewTargets(""),
 		},
 	}
 	adjustedEndpoints, err := provider.AdjustEndpoints(endpoints)
@@ -183,9 +181,7 @@ func TestAdjustEndpoints(t *testing.T) {
 		DNSName:    "test.example.com",
 		RecordTTL:  0,
 		RecordType: "A",
-		Targets: endpoint.Targets{
-			"",
-		},
+		Targets:    endpoint.NewTargets(""),
 	}}, adjustedEndpoints)
 }
 
@@ -208,9 +204,7 @@ func TestAdjustendpointsWithError(t *testing.T) {
 			DNSName:    "test.example.com",
 			RecordTTL:  10,
 			RecordType: "A",
-			Targets: endpoint.Targets{
-				"",
-			},
+			Targets:    endpoint.NewTargets(""),
 		},
 	}
 	_, err = p.AdjustEndpoints(endpoints)

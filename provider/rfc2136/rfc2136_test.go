@@ -142,8 +142,8 @@ func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, e
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
+	zones := endpoint.NewTargets("foo.com", "foobar.com")
+	return NewRfc2136Provider("", 0, zones.Map(), false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
 }
 
 func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Provider, error) {
@@ -154,8 +154,8 @@ func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Prov
 		ClientCertFilePath:    "",
 		ClientCertKeyFilePath: "",
 	}
-	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
+	zones := endpoint.NewTargets("foo.com", "foobar.com")
+	return NewRfc2136Provider("", 0, zones.Map(), false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones.Map()}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -188,8 +188,8 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	assert.Equal(t, 1, len(recs), "expected single record")
 	assert.Equal(t, recs[0].DNSName, "foo.com")
 	assert.Equal(t, 2, len(recs[0].Targets), "expected two targets")
-	assert.True(t, recs[0].Targets[0] == "1.1.1.1" || recs[0].Targets[1] == "1.1.1.1") // ignore order
-	assert.True(t, recs[0].Targets[0] == "2.2.2.2" || recs[0].Targets[1] == "2.2.2.2") // ignore order
+	assert.True(t, recs[0].Targets[0].String() == "1.1.1.1" || recs[0].Targets[1].String() == "1.1.1.1") // ignore order
+	assert.True(t, recs[0].Targets[0].String() == "2.2.2.2" || recs[0].Targets[1].String() == "2.2.2.2") // ignore order
 	assert.Equal(t, recs[0].RecordType, "A")
 	assert.Equal(t, recs[0].RecordTTL, endpoint.TTL(3600))
 	assert.Equal(t, 0, len(recs[0].Labels), "expected no labels")
@@ -233,7 +233,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
-	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+	assert.Equal(t, endpoint.NewTargets("dot").Map(), client.TLSConfig.NextProtos)
 }
 
 func TestRfc2136TLSConfigNoVerify(t *testing.T) {
@@ -273,7 +273,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	assert.Equal(t, true, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
-	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+	assert.Equal(t, endpoint.NewTargets("dot").Map(), client.TLSConfig.NextProtos)
 }
 
 func TestRfc2136TLSConfigClientAuth(t *testing.T) {
@@ -344,7 +344,7 @@ hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
 	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
 	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
-	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+	assert.Equal(t, endpoint.NewTargets("dot").Map(), client.TLSConfig.NextProtos)
 }
 
 func TestRfc2136GetRecords(t *testing.T) {
@@ -407,30 +407,30 @@ func TestRfc2136ApplyChanges(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 			{
 				DNSName:    "ns.foobar.com",
 				RecordType: "NS",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "v2.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "v2.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom2"},
+				Targets:    endpoint.NewTargets("boom2"),
 			},
 		},
 	}
@@ -465,30 +465,30 @@ func TestRfc2136ApplyChangesWithZones(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 			{
 				DNSName:    "ns.foobar.com",
 				RecordType: "NS",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "v2.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "v2.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom2"},
+				Targets:    endpoint.NewTargets("boom2"),
 			},
 		},
 	}
@@ -529,23 +529,23 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 			{
 				DNSName:    "ns.foobar.com",
 				RecordType: "NS",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 			{
 				DNSName:    "filtered-out.foo.bar",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 		},
@@ -553,12 +553,12 @@ func TestRfc2136ApplyChangesWithZonesFilters(t *testing.T) {
 			{
 				DNSName:    "v2.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "v2.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom2"},
+				Targets:    endpoint.NewTargets("boom2"),
 			},
 		},
 	}
@@ -603,19 +603,19 @@ func TestRfc2136ApplyChangesWithDifferentTTLs(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"2.1.1.1"},
+				Targets:    endpoint.NewTargets("2.1.1.1"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v2.foo.com",
 				RecordType: "A",
-				Targets:    []string{"3.2.2.2"},
+				Targets:    endpoint.NewTargets("3.2.2.2"),
 				RecordTTL:  endpoint.TTL(200),
 			},
 			{
 				DNSName:    "v3.foo.com",
 				RecordType: "A",
-				Targets:    []string{"4.3.3.3"},
+				Targets:    endpoint.NewTargets("4.3.3.3"),
 			},
 		},
 	}
@@ -647,13 +647,13 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 		},
 	}
@@ -666,26 +666,26 @@ func TestRfc2136ApplyChangesWithUpdate(t *testing.T) {
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"boom"},
+				Targets:    endpoint.NewTargets("boom"),
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
 				DNSName:    "v1.foo.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.5"},
+				Targets:    endpoint.NewTargets("1.2.3.5"),
 				RecordTTL:  endpoint.TTL(400),
 			},
 			{
 				DNSName:    "v1.foobar.com",
 				RecordType: "TXT",
-				Targets:    []string{"kablui"},
+				Targets:    endpoint.NewTargets("kablui"),
 			},
 		},
 	}
@@ -720,7 +720,7 @@ func TestChunkBy(t *testing.T) {
 		records = append(records, &endpoint.Endpoint{
 			DNSName:    "v1.foo.com",
 			RecordType: "A",
-			Targets:    []string{"1.1.2.2"},
+			Targets:    endpoint.NewTargets("1.1.2.2"),
 			RecordTTL:  endpoint.TTL(400),
 		})
 	}

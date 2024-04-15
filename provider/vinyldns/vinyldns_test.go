@@ -114,12 +114,12 @@ func testVinylDNSProviderRecords(t *testing.T) {
 func testVinylDNSProviderApplyChanges(t *testing.T) {
 	changes := &plan.Changes{}
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "example.com", Targets: endpoint.Targets{"vinyldns.com"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "example.com", Targets: endpoint.NewTargets("vinyldns.com"), RecordType: endpoint.RecordTypeCNAME},
 	}
 	changes.UpdateNew = []*endpoint.Endpoint{
-		{DNSName: "example.com", Targets: endpoint.Targets{"vinyldns.com"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "example.com", Targets: endpoint.NewTargets("vinyldns.com"), RecordType: endpoint.RecordTypeCNAME},
 	}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "example.com", Targets: endpoint.Targets{"vinyldns.com"}, RecordType: endpoint.RecordTypeCNAME}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "example.com", Targets: endpoint.NewTargets("vinyldns.com"), RecordType: endpoint.RecordTypeCNAME}}
 
 	mockVinylDNSProvider.zoneFilter = provider.NewZoneIDFilter([]string{"1"})
 	err := mockVinylDNSProvider.ApplyChanges(context.Background(), changes)

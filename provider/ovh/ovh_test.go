@@ -278,12 +278,12 @@ func TestOvhRecords(t *testing.T) {
 	assert.NoError(err)
 	// Little fix for multi targets endpoint
 	for _, endpoint := range endpoints {
-		sort.Strings(endpoint.Targets)
+		sort.Stable(endpoint.Targets)
 	}
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
-		{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42"}},
-		{DNSName: "www.example.org", RecordType: "CNAME", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"example.org"}},
-		{DNSName: "ovh.example.net", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: []string{"203.0.113.42", "203.0.113.43"}},
+		{DNSName: "example.org", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: endpoint.NewTargets("203.0.113.42")},
+		{DNSName: "www.example.org", RecordType: "CNAME", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: endpoint.NewTargets("example.org")},
+		{DNSName: "ovh.example.net", RecordType: "A", RecordTTL: 10, Labels: endpoint.NewLabels(), Targets: endpoint.NewTargets("203.0.113.42", "203.0.113.43")},
 	})
 	client.AssertExpectations(t)
 
@@ -308,9 +308,9 @@ func TestOvhRefresh(t *testing.T) {
 func TestOvhNewChange(t *testing.T) {
 	assert := assert.New(t)
 	endpoints := []*endpoint.Endpoint{
-		{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
-		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.43"}},
-		{DNSName: "ovh2.example.net", RecordType: "CNAME", Targets: []string{"ovh.example.net"}},
+		{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: endpoint.NewTargets("203.0.113.42")},
+		{DNSName: "ovh.example.net", RecordType: "A", Targets: endpoint.NewTargets("203.0.113.43")},
+		{DNSName: "ovh2.example.net", RecordType: "CNAME", Targets: endpoint.NewTargets("ovh.example.net")},
 		{DNSName: "test.example.org"},
 	}
 
@@ -324,7 +324,7 @@ func TestOvhNewChange(t *testing.T) {
 
 	// Delete change
 	endpoints = []*endpoint.Endpoint{
-		{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.42"}},
+		{DNSName: "ovh.example.net", RecordType: "A", Targets: endpoint.NewTargets("203.0.113.42")},
 	}
 	records := []ovhRecord{
 		{ID: 42, Zone: "example.net", ovhRecordFields: ovhRecordFields{FieldType: "A", SubDomain: "ovh", Target: "203.0.113.42"}},
@@ -341,10 +341,10 @@ func TestOvhApplyChanges(t *testing.T) {
 	provider := &OVHProvider{client: client, apiRateLimiter: ratelimit.New(10), cacheInstance: cache.New(cache.NoExpiration, cache.NoExpiration)}
 	changes := plan.Changes{
 		Create: []*endpoint.Endpoint{
-			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: endpoint.NewTargets("203.0.113.42")},
 		},
 		Delete: []*endpoint.Endpoint{
-			{DNSName: "ovh.example.net", RecordType: "A", Targets: []string{"203.0.113.43"}},
+			{DNSName: "ovh.example.net", RecordType: "A", Targets: endpoint.NewTargets("203.0.113.43")},
 		},
 	}
 
@@ -370,7 +370,7 @@ func TestOvhApplyChanges(t *testing.T) {
 	client.On("Post", "/domain/zone/example.net/record", ovhRecordFields{SubDomain: "", FieldType: "A", TTL: 10, Target: "203.0.113.42"}).Return(nil, ovh.ErrAPIDown).Once()
 	assert.Error(provider.ApplyChanges(context.TODO(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: endpoint.NewTargets("203.0.113.42")},
 		},
 	}))
 	client.AssertExpectations(t)
@@ -382,7 +382,7 @@ func TestOvhApplyChanges(t *testing.T) {
 	client.On("Post", "/domain/zone/example.net/refresh", nil).Return(nil, ovh.ErrAPIDown).Once()
 	assert.Error(provider.ApplyChanges(context.TODO(), &plan.Changes{
 		Create: []*endpoint.Endpoint{
-			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: []string{"203.0.113.42"}},
+			{DNSName: ".example.net", RecordType: "A", RecordTTL: 10, Targets: endpoint.NewTargets("203.0.113.42")},
 		},
 	}))
 	client.AssertExpectations(t)
@@ -422,10 +422,10 @@ func TestOvhCountTargets(t *testing.T) {
 		endpoints [][]*endpoint.Endpoint
 		count     int
 	}{
-		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 1},
-		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}, {DNSName: "ovh.example.net", Targets: endpoint.Targets{"target"}}}}, 2},
-		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target", "target"}}}}, 3},
-		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}, {{DNSName: "ovh.example.net", Targets: endpoint.Targets{"target", "target"}}}}, 4},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target")}}}, 1},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target")}, {DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target")}}}, 2},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target", "target", "target")}}}, 3},
+		{[][]*endpoint.Endpoint{{{DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target", "target")}}, {{DNSName: "ovh.example.net", Targets: endpoint.NewTargets("target", "target")}}}, 4},
 	}
 	for _, test := range cases {
 		count := countTargets(test.endpoints...)

@@ -199,9 +199,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"apps.my-domain.com",
-					},
+					Targets:    endpoint.NewTargets("apps.my-domain.com"),
 				},
 			},
 		},
@@ -233,9 +231,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"router-default.my-domain.com",
-					},
+					Targets:    endpoint.NewTargets("router-default.my-domain.com"),
 				},
 			},
 		},
@@ -278,9 +274,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"router-default.my-domain.com",
-					},
+					Targets:    endpoint.NewTargets("router-default.my-domain.com"),
 				},
 			},
 		},
@@ -398,9 +392,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"router-test.my-domain.com",
-					},
+					Targets:    endpoint.NewTargets("router-test.my-domain.com"),
 				},
 			},
 		},
@@ -447,9 +439,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-annotation-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"my.site.foo.com",
-					},
+					Targets:    endpoint.NewTargets("my.site.foo.com"),
 				},
 			},
 		},
@@ -488,9 +478,7 @@ func testOcpRouteSourceEndpoints(t *testing.T) {
 				{
 					DNSName:    "my-annotation-domain.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets: []string{
-						"my.site.foo.com",
-					},
+					Targets:    endpoint.NewTargets("my.site.foo.com"),
 				},
 			},
 		},

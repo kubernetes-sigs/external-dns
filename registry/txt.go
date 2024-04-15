@@ -130,7 +130,7 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			continue
 		}
 		// We simply assume that TXT records for the registry will always have only one target.
-		labels, err := endpoint.NewLabelsFromString(record.Targets[0], im.txtEncryptAESKey)
+		labels, err := endpoint.NewLabelsFromString(record.Targets[0].String(), im.txtEncryptAESKey)
 		if err == endpoint.ErrInvalidHeritage {
 			// if no heritage is found or it is invalid
 			// case when value of txt record cannot be identified

@@ -271,7 +271,7 @@ func TestGoDaddyRecords(t *testing.T) {
 
 	// Little fix for multi targets endpoint
 	for _, endpoint := range endpoints {
-		sort.Strings(endpoint.Targets)
+		sort.Stable(endpoint.Targets)
 	}
 
 	assert.ElementsMatch(endpoints, []*endpoint.Endpoint{
@@ -280,28 +280,28 @@ func TestGoDaddyRecords(t *testing.T) {
 			RecordType: "A",
 			RecordTTL:  gdMinimalTTL,
 			Labels:     endpoint.NewLabels(),
-			Targets: []string{
+			Targets: endpoint.NewTargets(
 				"203.0.113.42",
 				"203.0.113.43",
-			},
+			),
 		},
 		{
 			DNSName:    "example.org",
 			RecordType: "A",
 			RecordTTL:  gdMinimalTTL,
 			Labels:     endpoint.NewLabels(),
-			Targets: []string{
+			Targets: endpoint.NewTargets(
 				"203.0.113.42",
-			},
+			),
 		},
 		{
 			DNSName:    "www.example.org",
 			RecordType: "CNAME",
 			RecordTTL:  gdMinimalTTL,
 			Labels:     endpoint.NewLabels(),
-			Targets: []string{
+			Targets: endpoint.NewTargets(
 				"example.org",
-			},
+			),
 		},
 	})
 
@@ -328,18 +328,18 @@ func TestGoDaddyChange(t *testing.T) {
 				DNSName:    ".example.net",
 				RecordType: "A",
 				RecordTTL:  gdMinimalTTL,
-				Targets: []string{
+				Targets: endpoint.NewTargets(
 					"203.0.113.42",
-				},
+				),
 			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "godaddy.example.net",
 				RecordType: "A",
-				Targets: []string{
+				Targets: endpoint.NewTargets(
 					"203.0.113.43",
-				},
+				),
 			},
 		},
 	}
@@ -399,18 +399,18 @@ func TestGoDaddyErrorResponse(t *testing.T) {
 				DNSName:    ".example.net",
 				RecordType: "A",
 				RecordTTL:  gdMinimalTTL,
-				Targets: []string{
+				Targets: endpoint.NewTargets(
 					"203.0.113.42",
-				},
+				),
 			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "godaddy.example.net",
 				RecordType: "A",
-				Targets: []string{
+				Targets: endpoint.NewTargets(
 					"203.0.113.43",
-				},
+				),
 			},
 		},
 	}

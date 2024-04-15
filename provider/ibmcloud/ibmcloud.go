@@ -353,14 +353,14 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 	ibmcloudChanges := []*ibmcloudChange{}
 	for _, endpoint := range changes.Create {
 		for _, target := range endpoint.Targets {
-			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target))
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordCreate, endpoint, target.String()))
 		}
 	}
 
 	for i, desired := range changes.UpdateNew {
 		current := changes.UpdateOld[i]
 
-		add, remove, leave := provider.Difference(current.Targets, desired.Targets)
+		add, remove, leave := provider.Difference(current.Targets.Map(), desired.Targets.Map())
 
 		log.Debugf("add: %v, remove: %v, leave: %v", add, remove, leave)
 		for _, a := range add {
@@ -378,7 +378,7 @@ func (p *IBMCloudProvider) ApplyChanges(ctx context.Context, changes *plan.Chang
 
 	for _, endpoint := range changes.Delete {
 		for _, target := range endpoint.Targets {
-			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, endpoint, target))
+			ibmcloudChanges = append(ibmcloudChanges, p.newIBMCloudChange(recordDelete, endpoint, target.String()))
 		}
 	}
 

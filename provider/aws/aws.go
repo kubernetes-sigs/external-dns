@@ -749,11 +749,11 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 		}
 		change.ResourceRecordSet.Type = aws.String(route53.RRTypeA)
 		change.ResourceRecordSet.AliasTarget = &route53.AliasTarget{
-			DNSName:              aws.String(ep.Targets[0]),
+			DNSName:              aws.String(ep.Targets[0].String()),
 			HostedZoneId:         aws.String(cleanZoneID(targetHostedZone)),
 			EvaluateTargetHealth: aws.Bool(evalTargetHealth),
 		}
-		change.sizeBytes += len([]byte(ep.Targets[0]))
+		change.sizeBytes += len([]byte(ep.Targets[0].String()))
 		change.sizeValues += 1
 	} else {
 		change.ResourceRecordSet.Type = aws.String(ep.RecordType)
@@ -765,9 +765,9 @@ func (p *AWSProvider) newChange(action string, ep *endpoint.Endpoint) (*Route53C
 		change.ResourceRecordSet.ResourceRecords = make([]*route53.ResourceRecord, len(ep.Targets))
 		for idx, val := range ep.Targets {
 			change.ResourceRecordSet.ResourceRecords[idx] = &route53.ResourceRecord{
-				Value: aws.String(val),
+				Value: aws.String(val.String()),
 			}
-			change.sizeBytes += len([]byte(val))
+			change.sizeBytes += len([]byte(val.String()))
 			change.sizeValues += 1
 		}
 	}
@@ -1057,7 +1057,7 @@ func useAlias(ep *endpoint.Endpoint, preferCNAME bool) bool {
 	}
 
 	if ep.RecordType == endpoint.RecordTypeCNAME && len(ep.Targets) > 0 {
-		return canonicalHostedZone(ep.Targets[0]) != ""
+		return canonicalHostedZone(ep.Targets[0].String()) != ""
 	}
 
 	return false
@@ -1076,7 +1076,7 @@ func isAWSAlias(ep *endpoint.Endpoint) string {
 		}
 
 		// check if the target is in a canonical hosted zone
-		if canonicalHostedZone := canonicalHostedZone(ep.Targets[0]); canonicalHostedZone != "" {
+		if canonicalHostedZone := canonicalHostedZone(ep.Targets[0].String()); canonicalHostedZone != "" {
 			return canonicalHostedZone
 		}
 

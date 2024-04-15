@@ -241,7 +241,7 @@ func getTargetsFromTargetAnnotation(annotations map[string]string) endpoint.Targ
 		targetsList := strings.Split(strings.Replace(targetAnnotation, " ", "", -1), ",")
 		for _, targetHostname := range targetsList {
 			targetHostname = strings.TrimSuffix(targetHostname, ".")
-			targets = append(targets, targetHostname)
+			targets = append(targets, endpoint.NewTarget(targetHostname))
 		}
 	}
 	return targets
@@ -267,14 +267,14 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	var cnameTargets endpoint.Targets
 
 	for _, t := range targets {
-		switch suitableType(t) {
+		switch suitableType(t.String()) {
 		case endpoint.RecordTypeA:
-			if isIPv6String(t) {
+			if isIPv6String(t.String()) {
 				continue
 			}
 			aTargets = append(aTargets, t)
 		case endpoint.RecordTypeAAAA:
-			if !isIPv6String(t) {
+			if !isIPv6String(t.String()) {
 				continue
 			}
 			aaaaTargets = append(aaaaTargets, t)
@@ -284,7 +284,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	}
 
 	if len(aTargets) > 0 {
-		epA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, aTargets...)
+		epA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeA, ttl, aTargets.Map()...)
 		if epA != nil {
 			epA.ProviderSpecific = providerSpecific
 			epA.SetIdentifier = setIdentifier
@@ -296,7 +296,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	}
 
 	if len(aaaaTargets) > 0 {
-		epAAAA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeAAAA, ttl, aaaaTargets...)
+		epAAAA := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeAAAA, ttl, aaaaTargets.Map()...)
 		if epAAAA != nil {
 			epAAAA.ProviderSpecific = providerSpecific
 			epAAAA.SetIdentifier = setIdentifier
@@ -308,7 +308,7 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	}
 
 	if len(cnameTargets) > 0 {
-		epCNAME := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeCNAME, ttl, cnameTargets...)
+		epCNAME := endpoint.NewEndpointWithTTL(hostname, endpoint.RecordTypeCNAME, ttl, cnameTargets.Map()...)
 		if epCNAME != nil {
 			epCNAME.ProviderSpecific = providerSpecific
 			epCNAME.SetIdentifier = setIdentifier

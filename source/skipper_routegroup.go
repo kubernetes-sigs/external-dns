@@ -346,10 +346,10 @@ func (sc *routeGroupSource) endpointsFromRouteGroup(rg *routeGroup) []*endpoint.
 	if len(targets) == 0 {
 		for _, lb := range rg.Status.LoadBalancer.RouteGroup {
 			if lb.IP != "" {
-				targets = append(targets, lb.IP)
+				targets = append(targets, endpoint.NewTarget(lb.IP))
 			}
 			if lb.Hostname != "" {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}
@@ -402,10 +402,10 @@ func targetsFromRouteGroupStatus(status routeGroupStatus) endpoint.Targets {
 
 	for _, lb := range status.LoadBalancer.RouteGroup {
 		if lb.IP != "" {
-			targets = append(targets, lb.IP)
+			targets = append(targets, endpoint.NewTarget(lb.IP))
 		}
 		if lb.Hostname != "" {
-			targets = append(targets, lb.Hostname)
+			targets = append(targets, endpoint.NewTarget(lb.Hostname))
 		}
 	}
 

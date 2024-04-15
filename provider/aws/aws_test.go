@@ -1627,7 +1627,7 @@ func TestAWSCreateRecordsWithCNAME(t *testing.T) {
 	provider, _ := newAWSProvider(t, endpoint.NewDomainFilter([]string{"ext-dns-test-2.teapot.zalan.do."}), provider.NewZoneIDFilter([]string{}), provider.NewZoneTypeFilter(""), defaultEvaluateTargetHealth, false, nil)
 
 	records := []*endpoint.Endpoint{
-		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: endpoint.Targets{"foo.example.org"}, RecordType: endpoint.RecordTypeCNAME},
+		{DNSName: "create-test.zone-1.ext-dns-test-2.teapot.zalan.do", Targets: endpoint.NewTargets("foo.example.org"), RecordType: endpoint.RecordTypeCNAME},
 	}
 
 	adjusted, err := provider.AdjustEndpoints(records)
@@ -1664,7 +1664,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 		records := []*endpoint.Endpoint{
 			{
 				DNSName:    "create-test.zone-1.ext-dns-test-2.teapot.zalan.do",
-				Targets:    endpoint.Targets{"foo.eu-central-1.elb.amazonaws.com"},
+				Targets:    endpoint.NewTargets("foo.eu-central-1.elb.amazonaws.com"),
 				RecordType: endpoint.RecordTypeA,
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
@@ -1679,7 +1679,7 @@ func TestAWSCreateRecordsWithALIAS(t *testing.T) {
 			},
 			{
 				DNSName:    "create-test-dualstack.zone-1.ext-dns-test-2.teapot.zalan.do",
-				Targets:    endpoint.Targets{"bar.eu-central-1.elb.amazonaws.com"},
+				Targets:    endpoint.NewTargets("bar.eu-central-1.elb.amazonaws.com"),
 				RecordType: endpoint.RecordTypeA,
 				ProviderSpecific: endpoint.ProviderSpecific{
 					endpoint.ProviderSpecificProperty{
@@ -1747,7 +1747,7 @@ func TestAWSisLoadBalancer(t *testing.T) {
 		{"foo.example.org", endpoint.RecordTypeCNAME, true, false},
 	} {
 		ep := &endpoint.Endpoint{
-			Targets:    endpoint.Targets{tc.target},
+			Targets:    endpoint.NewTargets(tc.target),
 			RecordType: tc.recordType,
 		}
 		assert.Equal(t, tc.expected, useAlias(ep, tc.preferCNAME))
@@ -1767,7 +1767,7 @@ func TestAWSisAWSAlias(t *testing.T) {
 		{"baz.example.org", endpoint.RecordTypeA, true, sameZoneAlias},                       // record to be created
 	} {
 		ep := &endpoint.Endpoint{
-			Targets:    endpoint.Targets{tc.target},
+			Targets:    endpoint.NewTargets(tc.target),
 			RecordType: tc.recordType,
 		}
 		if tc.alias {

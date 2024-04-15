@@ -193,7 +193,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -207,7 +207,7 @@ func testEndpointsFromIngress(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -222,12 +222,12 @@ func testEndpointsFromIngress(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+					Targets:    endpoint.NewTargets("8.8.8.8", "127.0.0.1"),
 				},
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+					Targets:    endpoint.NewTargets("elb.com", "alb.com"),
 				},
 			},
 		},
@@ -267,7 +267,7 @@ func testEndpointsFromIngress(t *testing.T) {
 		{
 			title: "invalid hostname does not generate endpoints",
 			ingress: fakeIngress{
-				dnsnames:  []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
+				dnsnames: []string{"this-is-an-exceedingly-long-label-that-external-dns-should-reject.example.org"},
 			},
 			expected: []*endpoint.Endpoint{},
 		},
@@ -297,12 +297,12 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "foo.baz",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -316,7 +316,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -331,12 +331,12 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "foo.baz",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -351,7 +351,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -366,7 +366,7 @@ func testEndpointsFromIngressHostnameSourceAnnotation(t *testing.T) {
 				{
 					DNSName:    "foo.baz",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -422,12 +422,12 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -446,7 +446,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeAAAA,
-					Targets:    endpoint.Targets{"2001:DB8::1"},
+					Targets:    endpoint.NewTargets("2001:DB8::1"),
 				},
 			},
 		},
@@ -491,12 +491,12 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -521,7 +521,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -544,7 +544,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -602,7 +602,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -641,7 +641,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -680,12 +680,12 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "fake1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "fake1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com"},
+					Targets:    endpoint.NewTargets("elb.com"),
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
@@ -722,12 +722,12 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "fake1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -757,27 +757,27 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "fake1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dna.test.com",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -819,17 +819,17 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example3.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -848,7 +848,7 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -867,12 +867,12 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -891,22 +891,22 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example3.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example4.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -928,12 +928,12 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -955,17 +955,17 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "another-dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -988,12 +988,12 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1037,19 +1037,19 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordTTL:  endpoint.TTL(6),
 				},
 				{
 					DNSName:    "example2.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordTTL:  endpoint.TTL(1),
 				},
 				{
 					DNSName:    "example3.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordTTL:  endpoint.TTL(10),
 				},
 			},
@@ -1072,7 +1072,7 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 					ProviderSpecific: endpoint.ProviderSpecific{{
 						Name: "alias", Value: "true",
@@ -1098,7 +1098,7 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1140,17 +1140,17 @@ func testIngressEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"ingress-target.com"},
+					Targets:    endpoint.NewTargets("ingress-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake3.ext-dns.test.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1199,12 +1199,12 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -1238,7 +1238,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 				},
 			},
 		},
@@ -1328,27 +1328,27 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 				},
 				{
 					DNSName:    "dmz.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"3.4.5.6"},
+					Targets:    endpoint.NewTargets("3.4.5.6"),
 				},
 				{
 					DNSName:    "annodmz.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"4.5.6.7"},
+					Targets:    endpoint.NewTargets("4.5.6.7"),
 				},
 				{
 					DNSName:    "dmz-annoint.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"6.7.8.9"},
+					Targets:    endpoint.NewTargets("6.7.8.9"),
 				},
 				{
 					DNSName:    "empty-annotdmz.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"7.8.9.0"},
+					Targets:    endpoint.NewTargets("7.8.9.0"),
 				},
 			},
 		},
@@ -1369,7 +1369,7 @@ func testIngressEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},

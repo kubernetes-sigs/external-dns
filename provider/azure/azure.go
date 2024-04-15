@@ -336,7 +336,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aRecords := make([]*dns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &dns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: to.Ptr(target.String()),
 			}
 		}
 		return dns.RecordSet{
@@ -349,7 +349,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 		aaaaRecords := make([]*dns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &dns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: to.Ptr(target.String()),
 			}
 		}
 		return dns.RecordSet{
@@ -363,14 +363,14 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 			Properties: &dns.RecordSetProperties{
 				TTL: to.Ptr(ttl),
 				CnameRecord: &dns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: to.Ptr(endpoint.Targets[0].String()),
 				},
 			},
 		}, nil
 	case dns.RecordTypeMX:
 		mxRecords := make([]*dns.MxRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
-			mxRecord, err := parseMxTarget[dns.MxRecord](target)
+			mxRecord, err := parseMxTarget[dns.MxRecord](target.String())
 			if err != nil {
 				return dns.RecordSet{}, err
 			}
@@ -389,7 +389,7 @@ func (p *AzureProvider) newRecordSet(endpoint *endpoint.Endpoint) (dns.RecordSet
 				TxtRecords: []*dns.TxtRecord{
 					{
 						Value: []*string{
-							&endpoint.Targets[0],
+							to.Ptr(endpoint.Targets[0].String()),
 						},
 					},
 				},

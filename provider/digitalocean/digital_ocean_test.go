@@ -352,14 +352,14 @@ func TestDigitalOceanApplyChanges(t *testing.T) {
 		Client: &mockDigitalOceanClient{},
 	}
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "new.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}},
-		{DNSName: "new.ext-dns-test-with-ttl.bar.com", Targets: endpoint.Targets{"target"}, RecordTTL: 100},
-		{DNSName: "new.ext-dns-test.unexpected.com", Targets: endpoint.Targets{"target"}},
-		{DNSName: "bar.com", Targets: endpoint.Targets{"target"}},
+		{DNSName: "new.ext-dns-test.bar.com", Targets: endpoint.NewTargets("target")},
+		{DNSName: "new.ext-dns-test-with-ttl.bar.com", Targets: endpoint.NewTargets("target"), RecordTTL: 100},
+		{DNSName: "new.ext-dns-test.unexpected.com", Targets: endpoint.NewTargets("target")},
+		{DNSName: "bar.com", Targets: endpoint.NewTargets("target")},
 	}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.Targets{"target"}}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: "CNAME", RecordTTL: 100}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.com", Targets: endpoint.NewTargets("target")}}
+	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.bar.de", Targets: endpoint.NewTargets("target-old")}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.NewTargets("target-new"), RecordType: "CNAME", RecordTTL: 100}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
@@ -692,15 +692,15 @@ func TestDigitalOceanMergeRecordsByNameType(t *testing.T) {
 	assert.Equal(t, "bar.example.com", merged[0].DNSName)
 	assert.Equal(t, "A", merged[0].RecordType)
 	assert.Equal(t, 1, len(merged[0].Targets))
-	assert.Equal(t, "1.2.3.4", merged[0].Targets[0])
+	assert.Equal(t, "1.2.3.4", merged[0].Targets[0].String())
 
 	assert.Equal(t, "foo.example.com", merged[1].DNSName)
 	assert.Equal(t, "A", merged[1].RecordType)
 	assert.Equal(t, 2, len(merged[1].Targets))
-	assert.ElementsMatch(t, []string{"1.2.3.4", "5.6.7.8"}, merged[1].Targets)
+	assert.ElementsMatch(t, []string{"1.2.3.4", "5.6.7.8"}, merged[1].Targets.Map())
 
 	assert.Equal(t, "foo.example.com", merged[2].DNSName)
 	assert.Equal(t, "CNAME", merged[2].RecordType)
 	assert.Equal(t, 1, len(merged[2].Targets))
-	assert.Equal(t, "somewhere.out.there.com", merged[2].Targets[0])
+	assert.Equal(t, "somewhere.out.there.com", merged[2].Targets[0].String())
 }

@@ -327,7 +327,7 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 		aRecords := make([]*privatedns.ARecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aRecords[i] = &privatedns.ARecord{
-				IPv4Address: to.Ptr(target),
+				IPv4Address: to.Ptr(target.String()),
 			}
 		}
 		return privatedns.RecordSet{
@@ -340,7 +340,7 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 		aaaaRecords := make([]*privatedns.AaaaRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
 			aaaaRecords[i] = &privatedns.AaaaRecord{
-				IPv6Address: to.Ptr(target),
+				IPv6Address: to.Ptr(target.String()),
 			}
 		}
 		return privatedns.RecordSet{
@@ -354,14 +354,14 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 			Properties: &privatedns.RecordSetProperties{
 				TTL: to.Ptr(ttl),
 				CnameRecord: &privatedns.CnameRecord{
-					Cname: to.Ptr(endpoint.Targets[0]),
+					Cname: to.Ptr(endpoint.Targets[0].String()),
 				},
 			},
 		}, nil
 	case privatedns.RecordTypeMX:
 		mxRecords := make([]*privatedns.MxRecord, len(endpoint.Targets))
 		for i, target := range endpoint.Targets {
-			mxRecord, err := parseMxTarget[privatedns.MxRecord](target)
+			mxRecord, err := parseMxTarget[privatedns.MxRecord](target.String())
 			if err != nil {
 				return privatedns.RecordSet{}, err
 			}
@@ -380,7 +380,7 @@ func (p *AzurePrivateDNSProvider) newRecordSet(endpoint *endpoint.Endpoint) (pri
 				TxtRecords: []*privatedns.TxtRecord{
 					{
 						Value: []*string{
-							&endpoint.Targets[0],
+							to.Ptr(endpoint.Targets[0].String()),
 						},
 					},
 				},

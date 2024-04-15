@@ -91,7 +91,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.1.1.1"},
+					Targets:    endpoint.NewTargets("1.1.1.1"),
 				},
 			},
 		}, {
@@ -123,7 +123,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"dns.google"},
+					Targets:    endpoint.NewTargets("dns.google"),
 				},
 			},
 		}, {
@@ -158,7 +158,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"2.2.2.2"},
+					Targets:    endpoint.NewTargets("2.2.2.2"),
 				},
 			},
 		}, {
@@ -191,7 +191,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"3.3.3.3"},
+					Targets:    endpoint.NewTargets("3.3.3.3"),
 				},
 			},
 		}, {
@@ -224,7 +224,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.1.1.1"},
+					Targets:    endpoint.NewTargets("1.1.1.1"),
 					RecordTTL:  180,
 				},
 			},
@@ -258,7 +258,7 @@ func TestAmbassadorHostSource(t *testing.T) {
 				{
 					DNSName:    "www.example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.1.1.1"},
+					Targets:    endpoint.NewTargets("1.1.1.1"),
 					ProviderSpecific: endpoint.ProviderSpecific{{
 						Name:  "external-dns.alpha.kubernetes.io/cloudflare-proxied",
 						Value: "true",

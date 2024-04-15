@@ -90,11 +90,11 @@ func (p *PluralProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*end
 func (p *PluralProvider) ApplyChanges(_ context.Context, diffs *plan.Changes) error {
 	var changes []*RecordChange
 	for _, endpoint := range diffs.Create {
-		changes = append(changes, makeChange(CreateAction, endpoint.Targets, endpoint))
+		changes = append(changes, makeChange(CreateAction, endpoint.Targets.Map(), endpoint))
 	}
 
 	for _, desired := range diffs.UpdateNew {
-		changes = append(changes, makeChange(CreateAction, desired.Targets, desired))
+		changes = append(changes, makeChange(CreateAction, desired.Targets.Map(), desired))
 	}
 
 	for _, deleted := range diffs.Delete {

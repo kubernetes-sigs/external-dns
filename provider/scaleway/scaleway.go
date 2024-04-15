@@ -170,7 +170,7 @@ func (p *ScalewayProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, e
 			// different priorities of ttls for a same name.
 			// In this case, we juste take the first one.
 			if existingEndpoint, ok := endpoints[record.Type.String()+"/"+fullRecordName]; ok {
-				existingEndpoint.Targets = append(existingEndpoint.Targets, record.Data)
+				existingEndpoint.Targets = append(existingEndpoint.Targets, endpoint.NewTarget(record.Data))
 				log.Infof("Appending target %s to record %s, using TTL and priority of target %s", record.Data, fullRecordName, existingEndpoint.Targets[0])
 			} else {
 				ep := endpoint.NewEndpointWithTTL(fullRecordName, record.Type.String(), endpoint.TTL(record.TTL), record.Data)
@@ -319,11 +319,11 @@ func endpointToScalewayRecords(zoneName string, ep *endpoint.Endpoint) []*domain
 	for _, target := range ep.Targets {
 		finalTargetName := target
 		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
-			finalTargetName = provider.EnsureTrailingDot(target)
+			finalTargetName = endpoint.NewTarget(provider.EnsureTrailingDot(target.String()))
 		}
 
 		records = append(records, &domain.Record{
-			Data:     finalTargetName,
+			Data:     finalTargetName.String(),
 			Name:     strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 			Priority: priority,
 			TTL:      ttl,
@@ -340,13 +340,13 @@ func endpointToScalewayRecordsChangeDelete(zoneName string, ep *endpoint.Endpoin
 	for _, target := range ep.Targets {
 		finalTargetName := target
 		if domain.RecordType(ep.RecordType) == domain.RecordTypeCNAME {
-			finalTargetName = provider.EnsureTrailingDot(target)
+			finalTargetName = endpoint.NewTarget(provider.EnsureTrailingDot(target.String()))
 		}
 
 		records = append(records, &domain.RecordChange{
 			Delete: &domain.RecordChangeDelete{
 				IDFields: &domain.RecordIdentifier{
-					Data: &finalTargetName,
+					Data: &finalTargetName.Raw,
 					Name: strings.Trim(strings.TrimSuffix(ep.DNSName, zoneName), ". "),
 					Type: domain.RecordType(ep.RecordType),
 				},

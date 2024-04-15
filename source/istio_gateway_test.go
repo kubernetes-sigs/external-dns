@@ -209,7 +209,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -229,7 +229,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -249,7 +249,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -273,7 +273,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -294,12 +294,12 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+					Targets:    endpoint.NewTargets("8.8.8.8", "127.0.0.1"),
 				},
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+					Targets:    endpoint.NewTargets("elb.com", "alb.com"),
 				},
 			},
 		},
@@ -324,12 +324,12 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8", "127.0.0.1"},
+					Targets:    endpoint.NewTargets("8.8.8.8", "127.0.0.1"),
 				},
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com", "alb.com"},
+					Targets:    endpoint.NewTargets("elb.com", "alb.com"),
 				},
 			},
 		},
@@ -415,7 +415,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com", "lb2.com"},
+					Targets:    endpoint.NewTargets("lb.com", "lb2.com"),
 				},
 			},
 		},
@@ -445,7 +445,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -465,7 +465,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -487,7 +487,7 @@ func testEndpointsFromGatewayConfig(t *testing.T) {
 				{
 					DNSName:    "foo.bar",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.1.1.1", "2.2.2.2"},
+					Targets:    endpoint.NewTargets("1.1.1.1", "2.2.2.2"),
 				},
 			},
 		},
@@ -555,22 +555,22 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -599,22 +599,22 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -639,12 +639,12 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -673,12 +673,12 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 		},
@@ -705,7 +705,7 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -775,7 +775,7 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -822,7 +822,7 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		},
@@ -869,12 +869,12 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "fake1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "fake1.ext-dns.test.com",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"elb.com"},
+					Targets:    endpoint.NewTargets("elb.com"),
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",
@@ -919,12 +919,12 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "fake1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -957,27 +957,27 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "fake1.ext-dna.test.com",
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dna.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1022,17 +1022,17 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example2.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "example3.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1058,12 +1058,12 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1089,17 +1089,17 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 				{
 					DNSName:    "another-dns-through-hostname.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1126,12 +1126,12 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1165,12 +1165,12 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "example.org",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "dns-through-hostname.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 			},
@@ -1216,19 +1216,19 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordTTL:  endpoint.TTL(6),
 				},
 				{
 					DNSName:    "example2.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordTTL:  endpoint.TTL(1),
 				},
 				{
 					DNSName:    "example3.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordTTL:  endpoint.TTL(10),
 				},
 			},
@@ -1271,17 +1271,17 @@ func testGatewayEndpoints(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{
 					DNSName:    "fake1.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake2.ext-dns.test.com",
-					Targets:    endpoint.Targets{"gateway-target.com"},
+					Targets:    endpoint.NewTargets("gateway-target.com"),
 					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
 					DNSName:    "fake3.ext-dns.test.com",
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 					RecordType: endpoint.RecordTypeA,
 				},
 			},
@@ -1369,22 +1369,22 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "example.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 				{
 					DNSName:    "new.org",
 					RecordType: endpoint.RecordTypeCNAME,
-					Targets:    endpoint.Targets{"lb.com"},
+					Targets:    endpoint.NewTargets("lb.com"),
 				},
 			},
 			ignoreHostnameAnnotation: true,
@@ -1441,12 +1441,12 @@ func testGatewayEndpoints(t *testing.T) {
 				{
 					DNSName:    "fake1.dns-through-hostname.com",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 				},
 				{
 					DNSName:    "fake2.dns-through-hostname.com",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"1.2.3.4"},
+					Targets:    endpoint.NewTargets("1.2.3.4"),
 				},
 			},
 		},

@@ -152,7 +152,7 @@ func TestListRecords(t *testing.T) {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
 		}
-		if rec.Targets[0] != expected[idx][1] {
+		if rec.Targets[0].String() != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
 	}
@@ -175,7 +175,7 @@ func TestListRecords(t *testing.T) {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
 		}
-		if rec.Targets[0] != expected[idx][1] {
+		if rec.Targets[0].String() != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
 	}
@@ -204,7 +204,7 @@ func TestListRecords(t *testing.T) {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
 		}
-		if rec.Targets[0] != expected[idx][1] {
+		if rec.Targets[0].String() != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
 	}
@@ -225,7 +225,7 @@ func TestListRecords(t *testing.T) {
 		if rec.DNSName != expected[idx][0] {
 			t.Error("Got invalid DNS Name:", rec.DNSName, "expected:", expected[idx][0])
 		}
-		if rec.Targets[0] != expected[idx][1] {
+		if rec.Targets[0].String() != expected[idx][1] {
 			t.Error("Got invalid target:", rec.Targets[0], "expected:", expected[idx][1])
 		}
 	}
@@ -243,11 +243,11 @@ func TestCreateRecord(t *testing.T) {
 		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
+			if r.Form.Get("ip") != ep.Targets[0].String() {
 				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
 			}
 		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
+			if r.Form.Get("target") != ep.Targets[0].String() {
 				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
 			}
 		}
@@ -274,7 +274,7 @@ func TestCreateRecord(t *testing.T) {
 	// Test create A record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
-		Targets:    []string{"192.168.1.1"},
+		Targets:    endpoint.NewTargets("192.168.1.1"),
 		RecordType: endpoint.RecordTypeA,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -284,7 +284,7 @@ func TestCreateRecord(t *testing.T) {
 	// Test create CNAME record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		Targets:    endpoint.NewTargets("test.cname.com"),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.createRecord(context.Background(), ep); err != nil {
@@ -304,11 +304,11 @@ func TestDeleteRecord(t *testing.T) {
 		}
 		switch ep.RecordType {
 		case endpoint.RecordTypeA:
-			if r.Form.Get("ip") != ep.Targets[0] {
+			if r.Form.Get("ip") != ep.Targets[0].String() {
 				t.Error("Invalid ip in form:", r.Form.Get("ip"), "Expected:", ep.Targets[0])
 			}
 		case endpoint.RecordTypeCNAME:
-			if r.Form.Get("target") != ep.Targets[0] {
+			if r.Form.Get("target") != ep.Targets[0].String() {
 				t.Error("Invalid target in form:", r.Form.Get("target"), "Expected:", ep.Targets[0])
 			}
 		}
@@ -335,7 +335,7 @@ func TestDeleteRecord(t *testing.T) {
 	// Test delete A record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
-		Targets:    []string{"192.168.1.1"},
+		Targets:    endpoint.NewTargets("192.168.1.1"),
 		RecordType: endpoint.RecordTypeA,
 	}
 	if err := cl.deleteRecord(context.Background(), ep); err != nil {
@@ -345,7 +345,7 @@ func TestDeleteRecord(t *testing.T) {
 	// Test delete CNAME record
 	ep = &endpoint.Endpoint{
 		DNSName:    "test.example.com",
-		Targets:    []string{"test.cname.com"},
+		Targets:    endpoint.NewTargets("test.cname.com"),
 		RecordType: endpoint.RecordTypeCNAME,
 	}
 	if err := cl.deleteRecord(context.Background(), ep); err != nil {

@@ -308,22 +308,22 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 						}
 						for _, address := range node.Status.Addresses {
 							if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
-								targets = append(targets, address.Address)
+								targets = append(targets, endpoint.NewTarget(address.Address))
 								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 							}
 						}
 					} else if endpointsType == EndpointsTypeHostIP || sc.publishHostIP {
-						targets = endpoint.Targets{pod.Status.HostIP}
+						targets = endpoint.NewTargets(pod.Status.HostIP)
 						log.Debugf("Generating matching endpoint %s with HostIP %s", headlessDomain, pod.Status.HostIP)
 					} else {
-						targets = endpoint.Targets{address.IP}
+						targets = endpoint.NewTargets(address.IP)
 						log.Debugf("Generating matching endpoint %s with EndpointAddress IP %s", headlessDomain, address.IP)
 					}
 				}
 				for _, target := range targets {
 					key := endpoint.EndpointKey{
 						DNSName:    headlessDomain,
-						RecordType: suitableType(target),
+						RecordType: suitableType(target.String()),
 					}
 					targetsByHeadlessDomainAndType[key] = append(targetsByHeadlessDomainAndType[key], target)
 				}
@@ -347,13 +347,13 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 
 		deduppedTargets := map[string]struct{}{}
 		for _, target := range allTargets {
-			if _, ok := deduppedTargets[target]; ok {
-				log.Debugf("Removing duplicate target %s", target)
+			if _, ok := deduppedTargets[target.String()]; ok {
+				log.Debugf("Removing duplicate target %s", target.String())
 				continue
 			}
 
-			deduppedTargets[target] = struct{}{}
-			targets = append(targets, target)
+			deduppedTargets[target.String()] = struct{}{}
+			targets = append(targets, target.String())
 		}
 
 		var ep *endpoint.Endpoint
@@ -511,26 +511,26 @@ func extractServiceIps(svc *v1.Service) endpoint.Targets {
 		log.Debugf("Unable to associate %s headless service with a Cluster IP", svc.Name)
 		return endpoint.Targets{}
 	}
-	return endpoint.Targets{svc.Spec.ClusterIP}
+	return endpoint.NewTargets(svc.Spec.ClusterIP)
 }
 
 func extractServiceExternalName(svc *v1.Service) endpoint.Targets {
 	if len(svc.Spec.ExternalIPs) > 0 {
-		return svc.Spec.ExternalIPs
+		return endpoint.NewTargets(svc.Spec.ExternalIPs...)
 	}
-	return endpoint.Targets{svc.Spec.ExternalName}
+	return endpoint.NewTargets(svc.Spec.ExternalName)
 }
 
 func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname bool) endpoint.Targets {
 	if len(svc.Spec.ExternalIPs) > 0 {
-		return svc.Spec.ExternalIPs
+		return endpoint.NewTargets(svc.Spec.ExternalIPs...)
 	}
 
 	// Create a corresponding endpoint for each configured external entrypoint.
 	var targets endpoint.Targets
 	for _, lb := range svc.Status.LoadBalancer.Ingress {
 		if lb.IP != "" {
-			targets = append(targets, lb.IP)
+			targets = append(targets, endpoint.NewTarget(lb.IP))
 		}
 		if lb.Hostname != "" {
 			if resolveLoadBalancerHostname {
@@ -540,10 +540,10 @@ func extractLoadBalancerTargets(svc *v1.Service, resolveLoadBalancerHostname boo
 					continue
 				}
 				for _, ip := range ips {
-					targets = append(targets, ip.String())
+					targets = append(targets, endpoint.NewTarget(ip.String()))
 				}
 			} else {
-				targets = append(targets, lb.Hostname)
+				targets = append(targets, endpoint.NewTarget(lb.Hostname))
 			}
 		}
 	}
@@ -647,11 +647,11 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 		for _, address := range node.Status.Addresses {
 			switch address.Type {
 			case v1.NodeExternalIP:
-				externalIPs = append(externalIPs, address.Address)
+				externalIPs = append(externalIPs, endpoint.NewTarget(address.Address))
 			case v1.NodeInternalIP:
-				internalIPs = append(internalIPs, address.Address)
+				internalIPs = append(internalIPs, endpoint.NewTarget(address.Address))
 				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
-					ipv6IPs = append(ipv6IPs, address.Address)
+					ipv6IPs = append(ipv6IPs, endpoint.NewTarget(address.Address))
 				}
 			}
 		}

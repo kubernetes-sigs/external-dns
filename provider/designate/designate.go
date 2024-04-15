@@ -376,10 +376,10 @@ func addEndpoint(ep *endpoint.Endpoint, recordSets map[string]*recordSet, oldEnd
 	}
 	targets := ep.Targets
 	if ep.RecordType == endpoint.RecordTypeCNAME {
-		targets = canonicalizeDomainNames(targets)
+		targets = endpoint.NewTargets(canonicalizeDomainNames(targets.Map())...)
 	}
 	for _, t := range targets {
-		rs.names[t] = !delete
+		rs.names[t.String()] = !delete
 	}
 	recordSets[key] = rs
 }

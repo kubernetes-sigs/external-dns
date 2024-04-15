@@ -145,11 +145,11 @@ func TestLinodeConvertRecordType(t *testing.T) {
 
 func TestNewLinodeProvider(t *testing.T) {
 	_ = os.Setenv("LINODE_TOKEN", "xxxxxxxxxxxxxxxxx")
-	_, err := NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err := NewLinodeProvider(endpoint.NewDomainFilter(endpoint.NewTargets("ext-dns-test.zalando.to.").Map()), true, "1.0")
 	require.NoError(t, err)
 
 	_ = os.Unsetenv("LINODE_TOKEN")
-	_, err = NewLinodeProvider(endpoint.NewDomainFilter([]string{"ext-dns-test.zalando.to."}), true, "1.0")
+	_, err = NewLinodeProvider(endpoint.NewDomainFilter(endpoint.NewTargets("ext-dns-test.zalando.to.").Map()), true, "1.0")
 	require.Error(t, err)
 }
 
@@ -172,7 +172,7 @@ func TestLinodeFetchZonesNoFilters(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 
@@ -195,7 +195,7 @@ func TestLinodeFetchZonesWithFilter(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{".com"}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets(".com").Map()),
 		DryRun:       false,
 	}
 
@@ -235,7 +235,7 @@ func TestLinodeRecords(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 
@@ -268,12 +268,12 @@ func TestLinodeRecords(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := []*endpoint.Endpoint{
-		{DNSName: "foo.com", Targets: []string{"targetFoo"}, RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
-		{DNSName: "foo.com", Targets: []string{"txt"}, RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
-		{DNSName: "baz.com", Targets: []string{"targetBaz"}, RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
-		{DNSName: "baz.com", Targets: []string{"txt"}, RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
-		{DNSName: "api.baz.com", Targets: []string{"targetBaz"}, RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
-		{DNSName: "api.baz.com", Targets: []string{"txt"}, RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "foo.com", Targets: endpoint.NewTargets("targetFoo"), RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "foo.com", Targets: endpoint.NewTargets("txt"), RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "baz.com", Targets: endpoint.NewTargets("targetBaz"), RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "baz.com", Targets: endpoint.NewTargets("txt"), RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "api.baz.com", Targets: endpoint.NewTargets("targetBaz"), RecordType: "A", RecordTTL: 0, Labels: endpoint.NewLabels()},
+		{DNSName: "api.baz.com", Targets: endpoint.NewTargets("txt"), RecordType: "TXT", RecordTTL: 0, Labels: endpoint.NewLabels()},
 	}
 
 	mockDomainClient.AssertExpectations(t)
@@ -285,7 +285,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 
@@ -365,16 +365,16 @@ func TestLinodeApplyChanges(t *testing.T) {
 		Create: []*endpoint.Endpoint{{
 			DNSName:    "create.bar.io",
 			RecordType: "A",
-			Targets:    []string{"targetBar"},
+			Targets:    endpoint.NewTargets("targetBar"),
 		}, {
 			DNSName:    "bar.io",
 			RecordType: "A",
-			Targets:    []string{"targetBar"},
+			Targets:    endpoint.NewTargets("targetBar"),
 		}, {
 			// This record should be skipped as it already exists
 			DNSName:    "foo.com",
 			RecordType: "TXT",
-			Targets:    []string{"txt"},
+			Targets:    endpoint.NewTargets("txt"),
 		}},
 		Delete: []*endpoint.Endpoint{{
 			DNSName:    "api.baz.com",
@@ -387,7 +387,7 @@ func TestLinodeApplyChanges(t *testing.T) {
 			DNSName:    "foo.com",
 			RecordType: "A",
 			RecordTTL:  300,
-			Targets:    []string{"targetFoo"},
+			Targets:    endpoint.NewTargets("targetFoo"),
 		}},
 		UpdateOld: []*endpoint.Endpoint{},
 	})
@@ -401,7 +401,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 
@@ -446,7 +446,7 @@ func TestLinodeApplyChangesTargetAdded(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{{
 			DNSName:    "example.com",
 			RecordType: "A",
-			Targets:    []string{"targetA", "targetB"},
+			Targets:    endpoint.NewTargets("targetA", "targetB"),
 		}},
 		UpdateOld: []*endpoint.Endpoint{},
 	})
@@ -460,7 +460,7 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 
@@ -502,7 +502,7 @@ func TestLinodeApplyChangesTargetRemoved(t *testing.T) {
 		UpdateNew: []*endpoint.Endpoint{{
 			DNSName:    "example.com",
 			RecordType: "A",
-			Targets:    []string{"targetB"},
+			Targets:    endpoint.NewTargets("targetB"),
 		}},
 		UpdateOld: []*endpoint.Endpoint{},
 	})
@@ -516,7 +516,7 @@ func TestLinodeApplyChangesNoChanges(t *testing.T) {
 
 	provider := &LinodeProvider{
 		Client:       &mockDomainClient,
-		domainFilter: endpoint.NewDomainFilter([]string{}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets().Map()),
 		DryRun:       false,
 	}
 

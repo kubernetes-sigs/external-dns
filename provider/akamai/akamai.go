@@ -383,7 +383,7 @@ func (p AkamaiProvider) createRecordsets(zoneNameIDMapper provider.ZoneIDName, e
 			newrec := newAkamaiRecordset(endpoint.DNSName,
 				endpoint.RecordType,
 				ttlAsInt(endpoint.RecordTTL),
-				cleanTargets(endpoint.RecordType, endpoint.Targets...))
+				cleanTargets(endpoint.RecordType, endpoint.Targets.Map()...))
 			logfields := log.Fields{
 				"record": newrec.Name,
 				"type":   newrec.Type,
@@ -461,7 +461,7 @@ func (p AkamaiProvider) updateNewRecordsets(zoneNameIDMapper provider.ZoneIDName
 			return err
 		}
 		rec.TTL = ttlAsInt(endpoint.RecordTTL)
-		rec.Target = cleanTargets(endpoint.RecordType, endpoint.Targets...)
+		rec.Target = cleanTargets(endpoint.RecordType, endpoint.Targets.Map()...)
 		if err := p.client.UpdateRecord(rec, zoneName, true); err != nil {
 			log.Errorf("Akamai Edge DNS recordset update failed. Error: %s", err.Error())
 			return err

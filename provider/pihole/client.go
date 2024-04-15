@@ -154,7 +154,7 @@ func (p *piholeClient) listRecords(ctx context.Context, rtype string) ([]*endpoi
 		}
 		out = append(out, &endpoint.Endpoint{
 			DNSName:    name,
-			Targets:    []string{target},
+			Targets:    endpoint.NewTargets(target),
 			RecordType: rtype,
 		})
 	}
@@ -288,9 +288,9 @@ func (p *piholeClient) newDNSActionForm(action string, ep *endpoint.Endpoint) *u
 	form.Add("domain", ep.DNSName)
 	switch ep.RecordType {
 	case endpoint.RecordTypeA:
-		form.Add("ip", ep.Targets[0])
+		form.Add("ip", ep.Targets[0].String())
 	case endpoint.RecordTypeCNAME:
-		form.Add("target", ep.Targets[0])
+		form.Add("target", ep.Targets[0].String())
 	}
 	if p.token != "" {
 		form.Add("token", p.token)

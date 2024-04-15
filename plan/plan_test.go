@@ -56,7 +56,7 @@ type PlanTestSuite struct {
 func (suite *PlanTestSuite) SetupTest() {
 	suite.fooV1Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v1"},
+		Targets:    endpoint.NewTargets("v1"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
@@ -66,7 +66,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	// same resource as fooV1Cname, but target is different. It will never be picked because its target lexicographically bigger than "v1"
 	suite.fooV3CnameSameResource = &endpoint.Endpoint{ // TODO: remove this once endpoint can support multiple targets
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v3"},
+		Targets:    endpoint.NewTargets("v3"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v1",
@@ -75,7 +75,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooV2Cname = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
+		Targets:    endpoint.NewTargets("v2"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
@@ -83,7 +83,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooV2CnameUppercase = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"V2"},
+		Targets:    endpoint.NewTargets("V2"),
 		RecordType: "CNAME",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-v2",
@@ -95,12 +95,12 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooV2CnameNoLabel = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"v2"},
+		Targets:    endpoint.NewTargets("v2"),
 		RecordType: "CNAME",
 	}
 	suite.fooA5 = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"5.5.5.5"},
+		Targets:    endpoint.NewTargets("5.5.5.5"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-5",
@@ -108,7 +108,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.fooAAAA = &endpoint.Endpoint{
 		DNSName:    "foo",
-		Targets:    endpoint.Targets{"2001:DB8::1"},
+		Targets:    endpoint.NewTargets("2001:DB8::1"),
 		RecordType: "AAAA",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/foo-AAAA",
@@ -116,7 +116,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.dsA = &endpoint.Endpoint{
 		DNSName:    "ds",
-		Targets:    endpoint.Targets{"1.1.1.1"},
+		Targets:    endpoint.NewTargets("1.1.1.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/ds",
@@ -124,7 +124,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.dsAAAA = &endpoint.Endpoint{
 		DNSName:    "ds",
-		Targets:    endpoint.Targets{"2001:DB8::1"},
+		Targets:    endpoint.NewTargets("2001:DB8::1"),
 		RecordType: "AAAA",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/ds-AAAAA",
@@ -132,7 +132,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -140,7 +140,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127AWithTTL = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		RecordTTL:  300,
 		Labels: map[string]string{
@@ -149,7 +149,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127AWithProviderSpecificTrue = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -167,7 +167,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127AWithProviderSpecificFalse = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -185,7 +185,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar127AWithProviderSpecificUnset = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"127.0.0.1"},
+		Targets:    endpoint.NewTargets("127.0.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-127",
@@ -199,7 +199,7 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.bar192A = &endpoint.Endpoint{
 		DNSName:    "bar",
-		Targets:    endpoint.Targets{"192.168.0.1"},
+		Targets:    endpoint.NewTargets("192.168.0.1"),
 		RecordType: "A",
 		Labels: map[string]string{
 			endpoint.ResourceLabelKey: "ingress/default/bar-192",
@@ -207,40 +207,40 @@ func (suite *PlanTestSuite) SetupTest() {
 	}
 	suite.multiple1 = &endpoint.Endpoint{
 		DNSName:       "multiple",
-		Targets:       endpoint.Targets{"192.168.0.1"},
+		Targets:       endpoint.NewTargets("192.168.0.1"),
 		RecordType:    "A",
 		SetIdentifier: "test-set-1",
 	}
 	suite.multiple2 = &endpoint.Endpoint{
 		DNSName:       "multiple",
-		Targets:       endpoint.Targets{"192.168.0.2"},
+		Targets:       endpoint.NewTargets("192.168.0.2"),
 		RecordType:    "A",
 		SetIdentifier: "test-set-1",
 	}
 	suite.multiple3 = &endpoint.Endpoint{
 		DNSName:       "multiple",
-		Targets:       endpoint.Targets{"192.168.0.2"},
+		Targets:       endpoint.NewTargets("192.168.0.2"),
 		RecordType:    "A",
 		SetIdentifier: "test-set-2",
 	}
 	suite.domainFilterFiltered1 = &endpoint.Endpoint{
 		DNSName:    "foo.domain.tld",
-		Targets:    endpoint.Targets{"1.2.3.4"},
+		Targets:    endpoint.NewTargets("1.2.3.4"),
 		RecordType: "A",
 	}
 	suite.domainFilterFiltered2 = &endpoint.Endpoint{
 		DNSName:    "bar.domain.tld",
-		Targets:    endpoint.Targets{"1.2.3.5"},
+		Targets:    endpoint.NewTargets("1.2.3.5"),
 		RecordType: "A",
 	}
 	suite.domainFilterFiltered3 = &endpoint.Endpoint{
 		DNSName:    "baz.domain.tld",
-		Targets:    endpoint.Targets{"1.2.3.6"},
+		Targets:    endpoint.NewTargets("1.2.3.6"),
 		RecordType: "A",
 	}
 	suite.domainFilterExcluded = &endpoint.Endpoint{
 		DNSName:    "foo.ex.domain.tld",
-		Targets:    endpoint.Targets{"1.1.1.1"},
+		Targets:    endpoint.NewTargets("1.1.1.1"),
 		RecordType: "A",
 	}
 }

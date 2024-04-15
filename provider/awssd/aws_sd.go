@@ -167,17 +167,17 @@ func (p *AWSSDProvider) instancesToEndpoint(ns *sd.NamespaceSummary, srv *sd.Ser
 		// CNAME
 		if inst.Attributes[sdInstanceAttrCname] != nil && aws.StringValue(srv.DnsConfig.DnsRecords[0].Type) == sd.RecordTypeCname {
 			newEndpoint.RecordType = endpoint.RecordTypeCNAME
-			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrCname]))
+			newEndpoint.Targets = append(newEndpoint.Targets, endpoint.NewTarget(aws.StringValue(inst.Attributes[sdInstanceAttrCname])))
 
 			// ALIAS
 		} else if inst.Attributes[sdInstanceAttrAlias] != nil {
 			newEndpoint.RecordType = endpoint.RecordTypeCNAME
-			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrAlias]))
+			newEndpoint.Targets = append(newEndpoint.Targets, endpoint.NewTarget(aws.StringValue(inst.Attributes[sdInstanceAttrAlias])))
 
 			// IP-based target
 		} else if inst.Attributes[sdInstanceAttrIPV4] != nil {
 			newEndpoint.RecordType = endpoint.RecordTypeA
-			newEndpoint.Targets = append(newEndpoint.Targets, aws.StringValue(inst.Attributes[sdInstanceAttrIPV4]))
+			newEndpoint.Targets = append(newEndpoint.Targets, endpoint.NewTarget(aws.StringValue(inst.Attributes[sdInstanceAttrIPV4])))
 		} else {
 			log.Warnf("Invalid instance \"%v\" found in service \"%v\"", inst, srv.Name)
 		}
@@ -475,13 +475,13 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 		attr := make(map[string]*string)
 
 		if ep.RecordType == endpoint.RecordTypeCNAME {
-			if p.isAWSLoadBalancer(target) {
-				attr[sdInstanceAttrAlias] = aws.String(target)
+			if p.isAWSLoadBalancer(target.String()) {
+				attr[sdInstanceAttrAlias] = aws.String(target.String())
 			} else {
-				attr[sdInstanceAttrCname] = aws.String(target)
+				attr[sdInstanceAttrCname] = aws.String(target.String())
 			}
 		} else if ep.RecordType == endpoint.RecordTypeA {
-			attr[sdInstanceAttrIPV4] = aws.String(target)
+			attr[sdInstanceAttrIPV4] = aws.String(target.String())
 		} else {
 			return fmt.Errorf("invalid endpoint type (%v)", ep)
 		}
@@ -490,7 +490,7 @@ func (p *AWSSDProvider) RegisterInstance(service *sd.Service, ep *endpoint.Endpo
 			_, err := p.client.RegisterInstance(&sd.RegisterInstanceInput{
 				ServiceId:  service.Id,
 				Attributes: attr,
-				InstanceId: aws.String(p.targetToInstanceID(target)),
+				InstanceId: aws.String(p.targetToInstanceID(target.String())),
 			})
 			if err != nil {
 				return err
@@ -508,7 +508,7 @@ func (p *AWSSDProvider) DeregisterInstance(service *sd.Service, ep *endpoint.End
 
 		if !p.dryRun {
 			_, err := p.client.DeregisterInstance(&sd.DeregisterInstanceInput{
-				InstanceId: aws.String(p.targetToInstanceID(target)),
+				InstanceId: aws.String(p.targetToInstanceID(target.String())),
 				ServiceId:  service.Id,
 			})
 			if err != nil {
@@ -634,7 +634,7 @@ func (p *AWSSDProvider) serviceTypeFromEndpoint(ep *endpoint.Endpoint) string {
 	if ep.RecordType == endpoint.RecordTypeCNAME {
 		// FIXME service type is derived from the first target only. Theoretically this may be problem.
 		// But I don't see a scenario where one endpoint contains targets of different types.
-		if p.isAWSLoadBalancer(ep.Targets[0]) {
+		if p.isAWSLoadBalancer(ep.Targets[0].String()) {
 			// ALIAS target uses DNS record type of A
 			return sd.RecordTypeA
 		}

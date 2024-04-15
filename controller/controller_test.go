@@ -141,22 +141,22 @@ func TestRunOnce(t *testing.T) {
 		{
 			DNSName:    "create-record",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"1.2.3.4"},
+			Targets:    endpoint.NewTargets("1.2.3.4"),
 		},
 		{
 			DNSName:    "update-record",
 			RecordType: endpoint.RecordTypeA,
-			Targets:    endpoint.Targets{"8.8.4.4"},
+			Targets:    endpoint.NewTargets("8.8.4.4"),
 		},
 		{
 			DNSName:    "create-aaaa-record",
 			RecordType: endpoint.RecordTypeAAAA,
-			Targets:    endpoint.Targets{"2001:DB8::1"},
+			Targets:    endpoint.NewTargets("2001:DB8::1"),
 		},
 		{
 			DNSName:    "update-aaaa-record",
 			RecordType: endpoint.RecordTypeAAAA,
-			Targets:    endpoint.Targets{"2001:DB8::2"},
+			Targets:    endpoint.NewTargets("2001:DB8::2"),
 		},
 	}, nil)
 
@@ -166,40 +166,40 @@ func TestRunOnce(t *testing.T) {
 			{
 				DNSName:    "update-record",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 			{
 				DNSName:    "delete-record",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"4.3.2.1"},
+				Targets:    endpoint.NewTargets("4.3.2.1"),
 			},
 			{
 				DNSName:    "update-aaaa-record",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::3"},
+				Targets:    endpoint.NewTargets("2001:DB8::3"),
 			},
 			{
 				DNSName:    "delete-aaaa-record",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::4"},
+				Targets:    endpoint.NewTargets("2001:DB8::4"),
 			},
 		},
 		&plan.Changes{
 			Create: []*endpoint.Endpoint{
-				{DNSName: "create-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
-				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"1.2.3.4"}},
+				{DNSName: "create-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.NewTargets("2001:DB8::1")},
+				{DNSName: "create-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("1.2.3.4")},
 			},
 			UpdateNew: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::2"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.4.4"}},
+				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.NewTargets("2001:DB8::2")},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("8.8.4.4")},
 			},
 			UpdateOld: []*endpoint.Endpoint{
-				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
-				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"8.8.8.8"}},
+				{DNSName: "update-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.NewTargets("2001:DB8::3")},
+				{DNSName: "update-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("8.8.8.8")},
 			},
 			Delete: []*endpoint.Endpoint{
-				{DNSName: "delete-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::4"}},
-				{DNSName: "delete-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"4.3.2.1"}},
+				{DNSName: "delete-aaaa-record", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.NewTargets("2001:DB8::4")},
+				{DNSName: "delete-record", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("4.3.2.1")},
 			},
 		},
 	)
@@ -318,12 +318,12 @@ func TestControllerSkipsEmptyChanges(t *testing.T) {
 			{
 				DNSName:    "create-record.other.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -331,7 +331,7 @@ func TestControllerSkipsEmptyChanges(t *testing.T) {
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		[]*plan.Changes{},
@@ -345,12 +345,12 @@ func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
 			{
 				DNSName:    "create-record.other.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		endpoint.DomainFilter{},
@@ -358,7 +358,7 @@ func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		[]*plan.Changes{
@@ -367,7 +367,7 @@ func TestWhenNoFilterControllerConsidersAllComain(t *testing.T) {
 					{
 						DNSName:    "create-record.other.tld",
 						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"1.2.3.4"},
+						Targets:    endpoint.NewTargets("1.2.3.4"),
 					},
 				},
 			},
@@ -382,17 +382,17 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 			{
 				DNSName:    "create-record.other.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.1.1.1"},
+				Targets:    endpoint.NewTargets("1.1.1.1"),
 			},
 			{
 				DNSName:    "create-record.unused.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld", "other.tld"}),
@@ -400,7 +400,7 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		[]*plan.Changes{
@@ -409,14 +409,14 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 					{
 						DNSName:    "create-record.other.tld",
 						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"1.2.3.4"},
+						Targets:    endpoint.NewTargets("1.2.3.4"),
 					},
 				},
 				UpdateOld: []*endpoint.Endpoint{
 					{
 						DNSName:    "some-record.used.tld",
 						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"8.8.8.8"},
+						Targets:    endpoint.NewTargets("8.8.8.8"),
 						Labels:     endpoint.Labels{},
 					},
 				},
@@ -424,7 +424,7 @@ func TestWhenMultipleControllerConsidersAllFilteredComain(t *testing.T) {
 					{
 						DNSName:    "some-record.used.tld",
 						RecordType: endpoint.RecordTypeA,
-						Targets:    endpoint.Targets{"1.1.1.1"},
+						Targets:    endpoint.NewTargets("1.1.1.1"),
 						Labels: endpoint.Labels{
 							"owner": "",
 						},
@@ -442,12 +442,12 @@ func TestVerifyARecords(t *testing.T) {
 			{
 				DNSName:    "create-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -455,12 +455,12 @@ func TestVerifyARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 			{
 				DNSName:    "create-record.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 		},
 		[]*plan.Changes{},
@@ -473,17 +473,17 @@ func TestVerifyARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.1.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.2.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 			{
 				DNSName:    "some-record.3.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"24.24.24.24"},
+				Targets:    endpoint.NewTargets("24.24.24.24"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -491,12 +491,12 @@ func TestVerifyARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.1.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "some-record.2.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 		},
 		[]*plan.Changes{{
@@ -504,7 +504,7 @@ func TestVerifyARecords(t *testing.T) {
 				{
 					DNSName:    "some-record.3.used.tld",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"24.24.24.24"},
+					Targets:    endpoint.NewTargets("24.24.24.24"),
 				},
 			},
 		}},
@@ -520,12 +520,12 @@ func TestVerifyAAAARecords(t *testing.T) {
 			{
 				DNSName:    "create-record.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
+				Targets:    endpoint.NewTargets("2001:DB8::2"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -533,12 +533,12 @@ func TestVerifyAAAARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
+				Targets:    endpoint.NewTargets("2001:DB8::2"),
 			},
 			{
 				DNSName:    "create-record.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 		},
 		[]*plan.Changes{},
@@ -551,17 +551,17 @@ func TestVerifyAAAARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.1.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 			{
 				DNSName:    "some-record.2.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
+				Targets:    endpoint.NewTargets("2001:DB8::2"),
 			},
 			{
 				DNSName:    "some-record.3.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::3"},
+				Targets:    endpoint.NewTargets("2001:DB8::3"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -569,12 +569,12 @@ func TestVerifyAAAARecords(t *testing.T) {
 			{
 				DNSName:    "some-record.1.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 			{
 				DNSName:    "some-record.2.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
+				Targets:    endpoint.NewTargets("2001:DB8::2"),
 			},
 		},
 		[]*plan.Changes{{
@@ -582,7 +582,7 @@ func TestVerifyAAAARecords(t *testing.T) {
 				{
 					DNSName:    "some-record.3.used.tld",
 					RecordType: endpoint.RecordTypeAAAA,
-					Targets:    endpoint.Targets{"2001:DB8::3"},
+					Targets:    endpoint.NewTargets("2001:DB8::3"),
 				},
 			},
 		}},
@@ -598,17 +598,17 @@ func TestARecords(t *testing.T) {
 			{
 				DNSName:    "record1.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "record2.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"8.8.8.8"},
+				Targets:    endpoint.NewTargets("8.8.8.8"),
 			},
 			{
 				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
 				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+				Targets:    endpoint.NewTargets("0 50 30007 mysql.used.tld"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -616,12 +616,12 @@ func TestARecords(t *testing.T) {
 			{
 				DNSName:    "record1.used.tld",
 				RecordType: endpoint.RecordTypeA,
-				Targets:    endpoint.Targets{"1.2.3.4"},
+				Targets:    endpoint.NewTargets("1.2.3.4"),
 			},
 			{
 				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
 				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+				Targets:    endpoint.NewTargets("0 50 30007 mysql.used.tld"),
 			},
 		},
 		[]*plan.Changes{{
@@ -629,7 +629,7 @@ func TestARecords(t *testing.T) {
 				{
 					DNSName:    "record2.used.tld",
 					RecordType: endpoint.RecordTypeA,
-					Targets:    endpoint.Targets{"8.8.8.8"},
+					Targets:    endpoint.NewTargets("8.8.8.8"),
 				},
 			},
 		}},
@@ -645,17 +645,17 @@ func TestAAAARecords(t *testing.T) {
 			{
 				DNSName:    "record1.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 			{
 				DNSName:    "record2.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::2"},
+				Targets:    endpoint.NewTargets("2001:DB8::2"),
 			},
 			{
 				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
 				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+				Targets:    endpoint.NewTargets("0 50 30007 mysql.used.tld"),
 			},
 		},
 		endpoint.NewDomainFilter([]string{"used.tld"}),
@@ -663,12 +663,12 @@ func TestAAAARecords(t *testing.T) {
 			{
 				DNSName:    "record1.used.tld",
 				RecordType: endpoint.RecordTypeAAAA,
-				Targets:    endpoint.Targets{"2001:DB8::1"},
+				Targets:    endpoint.NewTargets("2001:DB8::1"),
 			},
 			{
 				DNSName:    "_mysql-svc._tcp.mysql.used.tld",
 				RecordType: endpoint.RecordTypeSRV,
-				Targets:    endpoint.Targets{"0 50 30007 mysql.used.tld"},
+				Targets:    endpoint.NewTargets("0 50 30007 mysql.used.tld"),
 			},
 		},
 		[]*plan.Changes{{
@@ -676,7 +676,7 @@ func TestAAAARecords(t *testing.T) {
 				{
 					DNSName:    "record2.used.tld",
 					RecordType: endpoint.RecordTypeAAAA,
-					Targets:    endpoint.Targets{"2001:DB8::2"},
+					Targets:    endpoint.NewTargets("2001:DB8::2"),
 				},
 			},
 		}},

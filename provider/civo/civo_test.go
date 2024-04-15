@@ -504,12 +504,12 @@ func TestCivoApplyChanges(t *testing.T) {
 		Client: *client,
 	}
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "new.ext-dns-test.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeA},
-		{DNSName: "new.ext-dns-test-with-ttl.example.com", Targets: endpoint.Targets{"target"}, RecordType: endpoint.RecordTypeA, RecordTTL: 100},
+		{DNSName: "new.ext-dns-test.example.com", Targets: endpoint.NewTargets("target"), RecordType: endpoint.RecordTypeA},
+		{DNSName: "new.ext-dns-test-with-ttl.example.com", Targets: endpoint.NewTargets("target"), RecordType: endpoint.RecordTypeA, RecordTTL: 100},
 	}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target"}}}
-	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"target-old"}}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.Targets{"target-new"}, RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.com", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("target")}}
+	changes.UpdateOld = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.example.de", RecordType: endpoint.RecordTypeA, Targets: endpoint.NewTargets("target-old")}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "foobar.ext-dns-test.foo.com", Targets: endpoint.NewTargets("target-new"), RecordType: endpoint.RecordTypeCNAME, RecordTTL: 100}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	assert.NoError(t, err)
 }
@@ -660,7 +660,7 @@ func TestCivoProviderGetRecordID(t *testing.T) {
 		TTL:         600,
 	}}
 
-	endPoint := endpoint.Endpoint{DNSName: "www.test.com", Targets: endpoint.Targets{"10.0.0.0"}, RecordType: "A"}
+	endPoint := endpoint.Endpoint{DNSName: "www.test.com", Targets: endpoint.NewTargets("10.0.0.0"), RecordType: "A"}
 	id := getRecordID(record, zone, endPoint)
 
 	assert.Equal(t, id[0].ID, record[0].ID)

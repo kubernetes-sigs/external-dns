@@ -315,9 +315,9 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				RecordType_ := ep.RecordType
 				for _, t := range ep.Targets {
 					if ep.RecordType == "CNAME" || ep.RecordType == "ALIAS" {
-						t = provider.EnsureTrailingDot(t)
+						t = endpoint.NewTarget(provider.EnsureTrailingDot(t.String()))
 					}
-					records = append(records, pgo.Record{Content: t})
+					records = append(records, pgo.Record{Content: t.String()})
 				}
 
 				if dnsname == zone.Name && ep.RecordType == "CNAME" {

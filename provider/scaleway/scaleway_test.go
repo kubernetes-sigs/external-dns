@@ -123,39 +123,39 @@ func TestScalewayProvider_NewScalewayProvider(t *testing.T) {
 	}
 	_ = os.Setenv(scw.ScwActiveProfileEnv, "foo")
 	_ = os.Setenv(scw.ScwConfigPathEnv, tmpDir+"/config.yaml")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err != nil {
 		t.Errorf("failed : %s", err)
 	}
 
 	_ = os.Unsetenv(scw.ScwSecretKeyEnv)
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Setenv(scw.ScwSecretKeyEnv, "dummy")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Unsetenv(scw.ScwAccessKeyEnv)
 	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 
 	_ = os.Setenv(scw.ScwAccessKeyEnv, "dummy")
-	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err = NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
@@ -165,7 +165,7 @@ func TestScalewayProvider_OptionnalConfigFile(t *testing.T) {
 	_ = os.Setenv(scw.ScwAccessKeyEnv, "SCWXXXXXXXXXXXXXXXXX")
 	_ = os.Setenv(scw.ScwSecretKeyEnv, "11111111-1111-1111-1111-111111111111")
 
-	_, err := NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter([]string{"example.com"}), true)
+	_, err := NewScalewayProvider(context.TODO(), endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()), true)
 	assert.NoError(t, err)
 }
 
@@ -177,7 +177,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:    "one.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -189,7 +189,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:    "two.example.com",
 			RecordTTL:  0,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -201,7 +201,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:          "three.example.com",
 			RecordTTL:        600,
 			RecordType:       "A",
-			Targets:          []string{"1.1.1.1"},
+			Targets:          endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{},
 		},
 	}
@@ -211,7 +211,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:    "one.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -223,7 +223,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:    "two.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -235,7 +235,7 @@ func TestScalewayProvider_AdjustEndpoints(t *testing.T) {
 			DNSName:    "three.example.com",
 			RecordTTL:  600,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -258,7 +258,7 @@ func TestScalewayProvider_Zones(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()),
 	}
 
 	expected := []*domain.DNSZone{
@@ -285,7 +285,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()),
 	}
 
 	expected := []*endpoint.Endpoint{
@@ -293,7 +293,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			DNSName:    "one.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -305,7 +305,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			DNSName:    "two.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.2", "1.1.1.3"},
+			Targets:    endpoint.NewTargets("1.1.1.2", "1.1.1.3"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -317,7 +317,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			DNSName:    "test.example.com",
 			RecordTTL:  300,
 			RecordType: "A",
-			Targets:    []string{"1.1.1.1"},
+			Targets:    endpoint.NewTargets("1.1.1.1"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -329,7 +329,7 @@ func TestScalewayProvider_Records(t *testing.T) {
 			DNSName:    "two.test.example.com",
 			RecordTTL:  600,
 			RecordType: "CNAME",
-			Targets:    []string{"test.example.com"},
+			Targets:    endpoint.NewTargets("test.example.com"),
 			ProviderSpecific: endpoint.ProviderSpecific{
 				{
 					Name:  scalewayPriorityKey,
@@ -362,7 +362,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 	mocked := mockScalewayDomain{nil}
 	provider := &ScalewayProvider{
 		domainAPI:    &mocked,
-		domainFilter: endpoint.NewDomainFilter([]string{"example.com"}),
+		domainFilter: endpoint.NewDomainFilter(endpoint.NewTargets("example.com").Map()),
 	}
 
 	expected := []*domain.UpdateDNSZoneRecordsRequest{
@@ -491,7 +491,7 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 			{
 				DNSName:    "example.com",
 				RecordType: "A",
-				Targets:    []string{"1.1.1.1", "1.1.1.2"},
+				Targets:    endpoint.NewTargets("1.1.1.1", "1.1.1.2"),
 			},
 			{
 				DNSName:    "test.example.com",
@@ -503,19 +503,19 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 					},
 				},
 				RecordTTL: 600,
-				Targets:   []string{"example.com"},
+				Targets:   endpoint.NewTargets("example.com"),
 			},
 		},
 		Delete: []*endpoint.Endpoint{
 			{
 				DNSName:    "here.example.com",
 				RecordType: "A",
-				Targets:    []string{"1.1.1.1", "1.1.1.2"},
+				Targets:    endpoint.NewTargets("1.1.1.1", "1.1.1.2"),
 			},
 			{
 				DNSName:    "here.is.my.test.example.com",
 				RecordType: "A",
-				Targets:    []string{"1.1.1.1"},
+				Targets:    endpoint.NewTargets("1.1.1.1"),
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
@@ -529,12 +529,12 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 				},
 				RecordType: "A",
 				RecordTTL:  600,
-				Targets:    []string{"2.2.2.2"},
+				Targets:    endpoint.NewTargets("2.2.2.2"),
 			},
 			{
 				DNSName:    "my.test.example.com",
 				RecordType: "A",
-				Targets:    []string{"1.2.3.4", "5.6.7.8"},
+				Targets:    endpoint.NewTargets("1.2.3.4", "5.6.7.8"),
 			},
 		},
 		UpdateOld: []*endpoint.Endpoint{
@@ -547,12 +547,12 @@ func TestScalewayProvider_generateApplyRequests(t *testing.T) {
 					},
 				},
 				RecordType: "A",
-				Targets:    []string{"3.3.3.3"},
+				Targets:    endpoint.NewTargets("3.3.3.3"),
 			},
 			{
 				DNSName:    "my.test.example.com",
 				RecordType: "A",
-				Targets:    []string{"4.4.4.4", "5.5.5.5"},
+				Targets:    endpoint.NewTargets("4.4.4.4", "5.5.5.5"),
 			},
 		},
 	}

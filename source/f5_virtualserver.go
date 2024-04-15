@@ -153,10 +153,10 @@ func (vs *f5VirtualServerSource) endpointsFromVirtualServers(virtualServers []*f
 
 		targets := getTargetsFromTargetAnnotation(virtualServer.Annotations)
 		if len(targets) == 0 && virtualServer.Spec.VirtualServerAddress != "" {
-			targets = append(targets, virtualServer.Spec.VirtualServerAddress)
+			targets = append(targets, endpoint.NewTarget(virtualServer.Spec.VirtualServerAddress))
 		}
 		if len(targets) == 0 && virtualServer.Status.VSAddress != "" {
-			targets = append(targets, virtualServer.Status.VSAddress)
+			targets = append(targets, endpoint.NewTarget(virtualServer.Status.VSAddress))
 		}
 
 		endpoints = append(endpoints, endpointsForHostname(virtualServer.Spec.Host, targets, ttl, nil, "", resource)...)

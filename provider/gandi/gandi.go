@@ -265,7 +265,7 @@ func (p *GandiProvider) newGandiChanges(action string, endpoints []*endpoint.End
 			Record: livedns.DomainRecord{
 				RrsetType:   e.RecordType,
 				RrsetName:   e.DNSName,
-				RrsetValues: e.Targets,
+				RrsetValues: e.Targets.Map(),
 				RrsetTTL:    ttl,
 			},
 		}

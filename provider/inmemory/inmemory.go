@@ -202,7 +202,7 @@ func (im *InMemoryProvider) ApplyChanges(ctx context.Context, changes *plan.Chan
 func copyEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
 	records := make([]*endpoint.Endpoint, 0, len(endpoints))
 	for _, ep := range endpoints {
-		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets...).WithSetIdentifier(ep.SetIdentifier)
+		newEp := endpoint.NewEndpointWithTTL(ep.DNSName, ep.RecordType, ep.RecordTTL, ep.Targets.Map()...).WithSetIdentifier(ep.SetIdentifier)
 		newEp.Labels = endpoint.NewLabels()
 		for k, v := range ep.Labels {
 			newEp.Labels[k] = v

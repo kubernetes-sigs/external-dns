@@ -99,17 +99,17 @@ func TestProvider(t *testing.T) {
 	records = []*endpoint.Endpoint{
 		{
 			DNSName:    "test1.example.com",
-			Targets:    []string{"192.168.1.1"},
+			Targets:    endpoint.NewTargets("192.168.1.1"),
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "test2.example.com",
-			Targets:    []string{"192.168.1.2"},
+			Targets:    endpoint.NewTargets("192.168.1.2"),
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "test3.example.com",
-			Targets:    []string{"192.168.1.3"},
+			Targets:    endpoint.NewTargets("192.168.1.3"),
 			RecordType: endpoint.RecordTypeA,
 		},
 	}
@@ -155,18 +155,18 @@ func TestProvider(t *testing.T) {
 	records = []*endpoint.Endpoint{
 		{
 			DNSName:    "test1.example.com",
-			Targets:    []string{"192.168.1.1"},
+			Targets:    endpoint.NewTargets("192.168.1.1"),
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "test2.example.com",
-			Targets:    []string{"192.168.1.2"},
+			Targets:    endpoint.NewTargets("192.168.1.2"),
 			RecordType: endpoint.RecordTypeA,
 		},
 	}
 	recordToDelete := endpoint.Endpoint{
 		DNSName:    "test3.example.com",
-		Targets:    []string{"192.168.1.3"},
+		Targets:    endpoint.NewTargets("192.168.1.3"),
 		RecordType: endpoint.RecordTypeA,
 	}
 	if err := p.ApplyChanges(context.Background(), &plan.Changes{
@@ -212,12 +212,12 @@ func TestProvider(t *testing.T) {
 	records = []*endpoint.Endpoint{
 		{
 			DNSName:    "test1.example.com",
-			Targets:    []string{"192.168.1.1"},
+			Targets:    endpoint.NewTargets("192.168.1.1"),
 			RecordType: endpoint.RecordTypeA,
 		},
 		{
 			DNSName:    "test2.example.com",
-			Targets:    []string{"10.0.0.1"},
+			Targets:    endpoint.NewTargets("10.0.0.1"),
 			RecordType: endpoint.RecordTypeA,
 		},
 	}
@@ -225,24 +225,24 @@ func TestProvider(t *testing.T) {
 		UpdateOld: []*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
-				Targets:    []string{"192.168.1.1"},
+				Targets:    endpoint.NewTargets("192.168.1.1"),
 				RecordType: endpoint.RecordTypeA,
 			},
 			{
 				DNSName:    "test2.example.com",
-				Targets:    []string{"192.168.1.2"},
+				Targets:    endpoint.NewTargets("192.168.1.2"),
 				RecordType: endpoint.RecordTypeA,
 			},
 		},
 		UpdateNew: []*endpoint.Endpoint{
 			{
 				DNSName:    "test1.example.com",
-				Targets:    []string{"192.168.1.1"},
+				Targets:    endpoint.NewTargets("192.168.1.1"),
 				RecordType: endpoint.RecordTypeA,
 			},
 			{
 				DNSName:    "test2.example.com",
-				Targets:    []string{"10.0.0.1"},
+				Targets:    endpoint.NewTargets("10.0.0.1"),
 				RecordType: endpoint.RecordTypeA,
 			},
 		},
@@ -276,12 +276,12 @@ func TestProvider(t *testing.T) {
 
 	expectedCreate := endpoint.Endpoint{
 		DNSName:    "test2.example.com",
-		Targets:    []string{"10.0.0.1"},
+		Targets:    endpoint.NewTargets("10.0.0.1"),
 		RecordType: endpoint.RecordTypeA,
 	}
 	expectedDelete := endpoint.Endpoint{
 		DNSName:    "test2.example.com",
-		Targets:    []string{"192.168.1.2"},
+		Targets:    endpoint.NewTargets("192.168.1.2"),
 		RecordType: endpoint.RecordTypeA,
 	}
 

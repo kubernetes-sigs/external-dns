@@ -373,7 +373,7 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 		}
 		for _, target := range e.Targets {
 			if e.RecordType == endpoint.RecordTypeCNAME {
-				target = target + "."
+				target = endpoint.NewTarget(target.String() + ".")
 			}
 			change := ovhChange{
 				Action: action,
@@ -383,7 +383,7 @@ func newOvhChange(action int, endpoints []*endpoint.Endpoint, zones []string, re
 						FieldType: e.RecordType,
 						SubDomain: strings.TrimSuffix(e.DNSName, "."+zone),
 						TTL:       ovhDefaultTTL,
-						Target:    target,
+						Target:    target.String(),
 					},
 				},
 			}

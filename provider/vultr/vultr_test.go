@@ -177,12 +177,12 @@ func TestVultrProvider_ApplyChanges(t *testing.T) {
 	}
 
 	changes.Create = []*endpoint.Endpoint{
-		{DNSName: "test.com", Targets: endpoint.Targets{"target"}},
-		{DNSName: "ttl.test.com", Targets: endpoint.Targets{"target"}, RecordTTL: 100},
+		{DNSName: "test.com", Targets: endpoint.NewTargets("target")},
+		{DNSName: "ttl.test.com", Targets: endpoint.NewTargets("target"), RecordTTL: 100},
 	}
 
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.test.com", Targets: endpoint.Targets{"target-new"}, RecordType: "A", RecordTTL: 100}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.test.com", Targets: endpoint.Targets{"target"}, RecordType: "A"}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test.test.com", Targets: endpoint.NewTargets("target-new"), RecordType: "A", RecordTTL: 100}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test.test.com", Targets: endpoint.NewTargets("target"), RecordType: "A"}}
 	err := provider.ApplyChanges(context.Background(), changes)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)

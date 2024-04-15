@@ -191,7 +191,7 @@ func (p *TencentCloudProvider) applyChangesForPrivateZone(changes *plan.Changes)
 					subDomain := getSubDomain(*zoneGroup.Zone.Domain, deleteChange)
 					if *zoneRecord.SubDomain == subDomain && *zoneRecord.RecordType == deleteChange.RecordType {
 						for _, target := range deleteChange.Targets {
-							if *zoneRecord.RecordValue == target {
+							if *zoneRecord.RecordValue == target.String() {
 								if _, exist := deleteEndpoints[zoneId]; !exist {
 									deleteEndpoints[zoneId] = make([]string, 0)
 								}
@@ -238,12 +238,12 @@ func containsBaseRecord(records []*privatedns.PrivateZoneRecord) bool {
 func (p *TencentCloudProvider) createPrivateZoneRecords(zoneGroups map[string]*PrivateZoneRecordListGroup, endpointsMap map[string][]*endpoint.Endpoint) error {
 	for zoneId, endpoints := range endpointsMap {
 		zoneGroup := zoneGroups[zoneId]
-		for _, endpoint := range endpoints {
-			for _, target := range endpoint.Targets {
-				if endpoint.RecordType == "TXT" && strings.HasPrefix(target, "\"heritage=") {
-					target = strings.Trim(target, "\"")
+		for _, ep := range endpoints {
+			for _, target := range ep.Targets {
+				if ep.RecordType == "TXT" && strings.HasPrefix(target.String(), "\"heritage=") {
+					target = endpoint.NewTarget(strings.Trim(target.String(), "\""))
 				}
-				if err := p.createPrivateZoneRecord(zoneGroup.Zone, endpoint, target); err != nil {
+				if err := p.createPrivateZoneRecord(zoneGroup.Zone, ep, target.String()); err != nil {
 					return err
 				}
 			}

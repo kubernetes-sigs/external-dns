@@ -231,19 +231,19 @@ func TestGandiProvider_RecordsReturnsCorrectEndpoints(t *testing.T) {
 		{
 			RecordType: endpoint.RecordTypeCNAME,
 			DNSName:    "example.com",
-			Targets:    endpoint.Targets{"192.168.0.1"},
+			Targets:    endpoint.NewTargets("192.168.0.1"),
 			RecordTTL:  600,
 		},
 		{
 			RecordType: endpoint.RecordTypeCNAME,
 			DNSName:    "www.example.com",
-			Targets:    endpoint.Targets{"lb.example.com"},
+			Targets:    endpoint.NewTargets("lb.example.com"),
 			RecordTTL:  600,
 		},
 		{
 			RecordType: endpoint.RecordTypeA,
 			DNSName:    "test.example.com",
-			Targets:    endpoint.Targets{"192.168.0.2"},
+			Targets:    endpoint.NewTargets("192.168.0.2"),
 			RecordTTL:  600,
 		},
 	}
@@ -314,7 +314,7 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 	changes.Create = []*endpoint.Endpoint{
 		{
 			DNSName:    "test2.example.com",
-			Targets:    endpoint.Targets{"192.168.0.1"},
+			Targets:    endpoint.NewTargets("192.168.0.1"),
 			RecordType: "A",
 			RecordTTL:  666,
 		},
@@ -322,13 +322,13 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 	changes.UpdateNew = []*endpoint.Endpoint{
 		{
 			DNSName:    "test3.example.com",
-			Targets:    endpoint.Targets{"192.168.0.2"},
+			Targets:    endpoint.NewTargets("192.168.0.2"),
 			RecordType: "A",
 			RecordTTL:  777,
 		},
 		{
 			DNSName:    "example.com.example.com",
-			Targets:    endpoint.Targets{"lb-2.example.net"},
+			Targets:    endpoint.NewTargets("lb-2.example.net"),
 			RecordType: "CNAME",
 			RecordTTL:  777,
 		},
@@ -336,7 +336,7 @@ func TestGandiProvider_ApplyChangesMakesExpectedAPICalls(t *testing.T) {
 	changes.Delete = []*endpoint.Endpoint{
 		{
 			DNSName:    "test4.example.com",
-			Targets:    endpoint.Targets{"192.168.0.3"},
+			Targets:    endpoint.NewTargets("192.168.0.3"),
 			RecordType: "A",
 		},
 	}
@@ -400,9 +400,9 @@ func TestGandiProvider_ApplyChangesRespectsDryRun(t *testing.T) {
 		LiveDNSClient: mockedClient,
 	}
 
-	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.NewTargets("192.168.0.1"), RecordType: "A", RecordTTL: 666}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.NewTargets("192.168.0.2"), RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.NewTargets("192.168.0.3"), RecordType: "A"}}
 
 	mockedProvider.ApplyChanges(context.Background(), changes)
 
@@ -437,7 +437,7 @@ func TestGandiProvider_ApplyChangesWithUnknownDomainDoesNoUpdate(t *testing.T) {
 	changes.Create = []*endpoint.Endpoint{
 		{
 			DNSName:    "test.example.net",
-			Targets:    endpoint.Targets{"192.168.0.1"},
+			Targets:    endpoint.NewTargets("192.168.0.1"),
 			RecordType: "A",
 			RecordTTL:  666,
 		},
@@ -454,9 +454,9 @@ func TestGandiProvider_ApplyChangesWithUnknownDomainDoesNoUpdate(t *testing.T) {
 
 func TestGandiProvider_FailingCases(t *testing.T) {
 	changes := &plan.Changes{}
-	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.Targets{"192.168.0.1"}, RecordType: "A", RecordTTL: 666}}
-	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.Targets{"192.168.0.2"}, RecordType: "A", RecordTTL: 777}}
-	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.Targets{"192.168.0.3"}, RecordType: "A"}}
+	changes.Create = []*endpoint.Endpoint{{DNSName: "test2.example.com", Targets: endpoint.NewTargets("192.168.0.1"), RecordType: "A", RecordTTL: 666}}
+	changes.UpdateNew = []*endpoint.Endpoint{{DNSName: "test3.example.com", Targets: endpoint.NewTargets("192.168.0.2"), RecordType: "A", RecordTTL: 777}}
+	changes.Delete = []*endpoint.Endpoint{{DNSName: "test4.example.com", Targets: endpoint.NewTargets("192.168.0.3"), RecordType: "A"}}
 
 	// Failing ListDomains API call creates an error when calling Records
 	mockedClient := &mockGandiClient{

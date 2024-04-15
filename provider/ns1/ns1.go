@@ -181,7 +181,7 @@ func (p *NS1Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error)
 func (p *NS1Provider) ns1BuildRecord(zoneName string, change *ns1Change) *dns.Record {
 	record := dns.NewRecord(zoneName, change.Endpoint.DNSName, change.Endpoint.RecordType, map[string]string{}, []string{})
 	for _, v := range change.Endpoint.Targets {
-		record.AddAnswer(dns.NewAnswer(strings.Split(v, " ")))
+		record.AddAnswer(dns.NewAnswer(strings.Split(v.String(), " ")))
 	}
 	// set default ttl, but respect minTTLSeconds
 	ttl := ns1DefaultTTL

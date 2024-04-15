@@ -220,7 +220,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 					duplicateTarget := false
 
 					for _, t := range ep.Targets {
-						if t == *res.Ipv4Addr {
+						if t.String() == *res.Ipv4Addr {
 							duplicateTarget = true
 							break
 						}
@@ -230,7 +230,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 						logrus.Debugf("A duplicate target '%s' found for existing A record '%s'", *res.Ipv4Addr, ep.DNSName)
 					} else {
 						logrus.Debugf("Adding target '%s' to existing A record '%s'", *res.Ipv4Addr, *res.Name)
-						ep.Targets = append(ep.Targets, *res.Ipv4Addr)
+						ep.Targets = append(ep.Targets, endpoint.NewTarget(*res.Ipv4Addr))
 					}
 					break
 				}
@@ -320,7 +320,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 					duplicateTarget := false
 
 					for _, t := range ep.Targets {
-						if t == *res.Text {
+						if t.String() == *res.Text {
 							duplicateTarget = true
 							break
 						}
@@ -330,7 +330,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 						logrus.Debugf("A duplicate target '%s' found for existing TXT record '%s'", *res.Text, ep.DNSName)
 					} else {
 						logrus.Debugf("Adding target '%s' to existing TXT record '%s'", *res.Text, *res.Name)
-						ep.Targets = append(ep.Targets, *res.Text)
+						ep.Targets = append(ep.Targets, endpoint.NewTarget(*res.Text))
 					}
 					break
 				}
@@ -460,7 +460,7 @@ func (p *ProviderConfig) mapChanges(zones []ibclient.ZoneAuth, changes *plan.Cha
 		changeMap[zone.Fqdn] = append(changeMap[zone.Fqdn], change)
 
 		if p.createPTR && change.RecordType == endpoint.RecordTypeA {
-			reverseZone := p.findReverseZone(zones, change.Targets[0])
+			reverseZone := p.findReverseZone(zones, change.Targets[0].String())
 			if reverseZone == nil {
 				logrus.Debugf("Ignoring changes to '%s' because a suitable Infoblox DNS reverse zone was not found.", change.Targets[0])
 				return
@@ -534,7 +534,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		var res []ibclient.RecordA
 		obj := ibclient.NewEmptyRecordA()
 		obj.Name = &ep.DNSName
-		obj.Ipv4Addr = &ep.Targets[targetIndex]
+		obj.Ipv4Addr = &ep.Targets[targetIndex].Raw
 		obj.View = p.view
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": *obj.Name})
@@ -551,7 +551,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		var res []ibclient.RecordPTR
 		obj := ibclient.NewEmptyRecordPTR()
 		obj.PtrdName = &ep.DNSName
-		obj.Ipv4Addr = &ep.Targets[targetIndex]
+		obj.Ipv4Addr = &ep.Targets[targetIndex].Raw
 		obj.View = p.view
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": *obj.PtrdName})
@@ -568,7 +568,7 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		var res []ibclient.RecordCNAME
 		obj := ibclient.NewEmptyRecordCNAME()
 		obj.Name = &ep.DNSName
-		obj.Canonical = &ep.Targets[0]
+		obj.Canonical = &ep.Targets[0].Raw
 		obj.View = &p.view
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": *obj.Name})
@@ -585,12 +585,12 @@ func (p *ProviderConfig) recordSet(ep *endpoint.Endpoint, getObject bool, target
 		var res []ibclient.RecordTXT
 		// The Infoblox API strips enclosing double quotes from TXT records lacking whitespace.
 		// Here we reconcile that fact by making this state match that reality.
-		if target, err2 := strconv.Unquote(ep.Targets[0]); err2 == nil && !strings.Contains(ep.Targets[0], " ") {
-			ep.Targets = endpoint.Targets{target}
+		if target, err2 := strconv.Unquote(ep.Targets[0].String()); err2 == nil && !strings.Contains(ep.Targets[0].String(), " ") {
+			ep.Targets = endpoint.NewTargets(target)
 		}
 		obj := ibclient.NewEmptyRecordTXT()
 		obj.Name = &ep.DNSName
-		obj.Text = &ep.Targets[0]
+		obj.Text = &ep.Targets[0].Raw
 		obj.View = &p.view
 		if getObject {
 			queryParams := ibclient.NewQueryParams(false, map[string]string{"name": *obj.Name})

@@ -388,14 +388,14 @@ func dnsEntriesForEndpoint(ep *endpoint.Endpoint, zoneName string) []domain.DNSE
 	for _, target := range ep.Targets {
 		// external hostnames require a trailing dot in TransIP API
 		if ep.RecordType == "CNAME" {
-			target = provider.EnsureTrailingDot(target)
+			target = endpoint.NewTarget(provider.EnsureTrailingDot(target.String()))
 		}
 
 		entries = append(entries, domain.DNSEntry{
 			Name:    recordNameForEndpoint(ep, zoneName),
 			Expire:  ttl,
 			Type:    ep.RecordType,
-			Content: target,
+			Content: target.String(),
 		})
 	}
 
