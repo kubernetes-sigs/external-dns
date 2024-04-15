@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.45.0
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.712
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.713
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.51.19
+	github.com/aws/aws-sdk-go v1.51.21
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.67
@@ -24,7 +24,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.112.0
+	github.com/digitalocean/godo v1.113.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.897
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.897
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.897
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.898
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.898
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.898
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
