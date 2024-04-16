@@ -17,7 +17,6 @@ limitations under the License.
 package azure
 
 import (
-	"os"
 	"path"
 	"runtime"
 	"testing"
@@ -30,23 +29,14 @@ func TestGetCloudConfiguration(t *testing.T) {
 	tests := map[string]struct {
 		cloudName string
 		expected  cloud.Configuration
-		setEnv    map[string]string
 	}{
-		"AzureChinaCloud":   {"AzureChinaCloud", cloud.AzureChina, nil},
-		"AzurePublicCloud":  {"", cloud.AzurePublic, nil},
-		"AzureUSGovernment": {"AzureUSGovernmentCloud", cloud.AzureGovernment, nil},
-		"AzureCustomCloud":  {"AzureCustomCloud", cloud.Configuration{ActiveDirectoryAuthorityHost: "https://custom.microsoftonline.com/"}, map[string]string{"AZURE_AD_ENDPOINT": "https://custom.microsoftonline.com/"}},
+		"AzureChinaCloud":   {"AzureChinaCloud", cloud.AzureChina},
+		"AzurePublicCloud":  {"", cloud.AzurePublic},
+		"AzureUSGovernment": {"AzureUSGovernmentCloud", cloud.AzureGovernment},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			if test.setEnv != nil {
-				for key, value := range test.setEnv {
-					os.Setenv(key, value)
-					defer os.Unsetenv(key)
-				}
-			}
-
 			cloudCfg, err := getCloudConfiguration(test.cloudName)
 			if err != nil {
 				t.Errorf("got unexpected err %v", err)
@@ -61,10 +51,11 @@ func TestGetCloudConfiguration(t *testing.T) {
 func TestOverrideConfiguration(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	configFile := path.Join(path.Dir(filename), "config_test.json")
-	cfg, err := getConfig(configFile, "subscription-override", "rg-override", "")
+	cfg, err := getConfig(configFile, "subscription-override", "rg-override", "", "aad-endpoint-override")
 	if err != nil {
 		t.Errorf("got unexpected err %v", err)
 	}
 	assert.Equal(t, cfg.SubscriptionID, "subscription-override")
 	assert.Equal(t, cfg.ResourceGroup, "rg-override")
+	assert.Equal(t, cfg.ActiveDirectoryAuthorityHost, "aad-endpoint-override")
 }
