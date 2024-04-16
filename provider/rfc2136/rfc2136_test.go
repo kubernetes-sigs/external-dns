@@ -18,7 +18,9 @@ package rfc2136
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -118,17 +120,42 @@ func (r *rfc2136Stub) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Envelo
 }
 
 func createRfc2136StubProvider(stub *rfc2136Stub) (provider.Provider, error) {
-	return NewRfc2136Provider("", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, stub)
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+	return NewRfc2136Provider("", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
+}
+
+func createRfc2136TLSStubProvider(stub *rfc2136Stub, tlsConfig TLSConfig) (provider.Provider, error) {
+	return NewRfc2136Provider("rfc2136-host", 0, nil, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
 }
 
 func createRfc2136StubProviderWithZones(stub *rfc2136Stub) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, stub)
+	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
 }
 
 func createRfc2136StubProviderWithZonesFilters(stub *rfc2136Stub) (provider.Provider, error) {
+	tlsConfig := TLSConfig{
+		UseTLS:                false,
+		SkipTLSVerify:         false,
+		CAFilePath:            "",
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
 	zones := []string{"foo.com", "foobar.com"}
-	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, false, "", "", "", 50, stub)
+	return NewRfc2136Provider("", 0, zones, false, "key", "secret", "hmac-sha512", true, endpoint.DomainFilter{Filters: zones}, false, 300*time.Second, false, "", "", "", 50, tlsConfig, stub)
 }
 
 func extractUpdateSectionFromMessage(msg fmt.Stringer) []string {
@@ -167,6 +194,157 @@ func TestRfc2136GetRecordsMultipleTargets(t *testing.T) {
 	assert.Equal(t, recs[0].RecordTTL, endpoint.TTL(3600))
 	assert.Equal(t, 0, len(recs[0].Labels), "expected no labels")
 	assert.Equal(t, 0, len(recs[0].ProviderSpecific), "expected no provider specific config")
+}
+
+func TestRfc2136TLSConfig(t *testing.T) {
+	stub := newStub()
+
+	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	assert.NoError(t, err)
+	defer os.Remove(caFile.Name())
+	_, err = caFile.Write([]byte(
+		`-----BEGIN CERTIFICATE-----
+MIH+MIGxAhR2n1aQk0ONrQ8QQfa6GCzFWLmTXTAFBgMrZXAwITELMAkGA1UEBhMC
+REUxEjAQBgNVBAMMCWxvY2FsaG9zdDAgFw0yMzEwMjQwNzI5NDNaGA8yMTIzMDkz
+MDA3Mjk0M1owITELMAkGA1UEBhMCREUxEjAQBgNVBAMMCWxvY2FsaG9zdDAqMAUG
+AytlcAMhAA1FzGJXuQdOpKv02SEl7SIA8SP8RVRI0QTi1bUFiFBLMAUGAytlcANB
+ADiCKRUGDMyafSSYhl0KXoiXrFOxvhrGM5l15L4q82JM5Qb8wv0gNrnbGTZlInuv
+ouB5ZN+05DzKCQhBekMnygQ=
+-----END CERTIFICATE-----
+`))
+
+	tlsConfig := TLSConfig{
+		UseTLS:                true,
+		SkipTLSVerify:         false,
+		CAFilePath:            caFile.Name(),
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
+	assert.NoError(t, err)
+
+	rawProvider := provider.(*rfc2136Provider)
+
+	client, err := makeClient(*rawProvider)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "tcp-tls", client.Net)
+	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
+	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
+	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+}
+
+func TestRfc2136TLSConfigNoVerify(t *testing.T) {
+	stub := newStub()
+
+	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	assert.NoError(t, err)
+	defer os.Remove(caFile.Name())
+	_, err = caFile.Write([]byte(
+		`-----BEGIN CERTIFICATE-----
+MIH+MIGxAhR2n1aQk0ONrQ8QQfa6GCzFWLmTXTAFBgMrZXAwITELMAkGA1UEBhMC
+REUxEjAQBgNVBAMMCWxvY2FsaG9zdDAgFw0yMzEwMjQwNzI5NDNaGA8yMTIzMDkz
+MDA3Mjk0M1owITELMAkGA1UEBhMCREUxEjAQBgNVBAMMCWxvY2FsaG9zdDAqMAUG
+AytlcAMhAA1FzGJXuQdOpKv02SEl7SIA8SP8RVRI0QTi1bUFiFBLMAUGAytlcANB
+ADiCKRUGDMyafSSYhl0KXoiXrFOxvhrGM5l15L4q82JM5Qb8wv0gNrnbGTZlInuv
+ouB5ZN+05DzKCQhBekMnygQ=
+-----END CERTIFICATE-----
+`))
+
+	tlsConfig := TLSConfig{
+		UseTLS:                true,
+		SkipTLSVerify:         true,
+		CAFilePath:            caFile.Name(),
+		ClientCertFilePath:    "",
+		ClientCertKeyFilePath: "",
+	}
+
+	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
+	assert.NoError(t, err)
+
+	rawProvider := provider.(*rfc2136Provider)
+
+	client, err := makeClient(*rawProvider)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "tcp-tls", client.Net)
+	assert.Equal(t, true, client.TLSConfig.InsecureSkipVerify)
+	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
+	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
+	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
+}
+
+func TestRfc2136TLSConfigClientAuth(t *testing.T) {
+	stub := newStub()
+
+	caFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX.crt")
+	assert.NoError(t, err)
+	defer os.Remove(caFile.Name())
+	_, err = caFile.Write([]byte(
+		`-----BEGIN CERTIFICATE-----
+MIH+MIGxAhR2n1aQk0ONrQ8QQfa6GCzFWLmTXTAFBgMrZXAwITELMAkGA1UEBhMC
+REUxEjAQBgNVBAMMCWxvY2FsaG9zdDAgFw0yMzEwMjQwNzI5NDNaGA8yMTIzMDkz
+MDA3Mjk0M1owITELMAkGA1UEBhMCREUxEjAQBgNVBAMMCWxvY2FsaG9zdDAqMAUG
+AytlcAMhAA1FzGJXuQdOpKv02SEl7SIA8SP8RVRI0QTi1bUFiFBLMAUGAytlcANB
+ADiCKRUGDMyafSSYhl0KXoiXrFOxvhrGM5l15L4q82JM5Qb8wv0gNrnbGTZlInuv
+ouB5ZN+05DzKCQhBekMnygQ=
+-----END CERTIFICATE-----
+`))
+
+	certFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.crt")
+	assert.NoError(t, err)
+	defer os.Remove(certFile.Name())
+	_, err = certFile.Write([]byte(
+		`-----BEGIN CERTIFICATE-----
+MIIBfDCCAQICFANNDjPVDMTPm63C0jZ9M3H5I7GJMAoGCCqGSM49BAMCMCExCzAJ
+BgNVBAYTAkRFMRIwEAYDVQQDDAlsb2NhbGhvc3QwIBcNMjMxMDI0MDcyMTU1WhgP
+MjEyMzA5MzAwNzIxNTVaMCExCzAJBgNVBAYTAkRFMRIwEAYDVQQDDAlsb2NhbGhv
+c3QwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQj7rjkeUEvjBT++IBMnIWgmI9VIjFx
+4VUGFmzPEawOckdnKW4fBdePiItsgePDVK4Oys5bzfSDhl6aAPCe16pwvljB7yIm
+xLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTMwCgYIKoZIzj0EAwIDaAAwZQIwcZl8
+TrwwsyX3A0enXB1ih+nruF8Q9f9Rmm2pNcbEv24QIW/P2HGQm9qfx4lrYa7hAjEA
+goRP/fRfTTTLwLg8UBpUAmALX8A8HBSBaUlTTQcaImbcwU4DRSbv5JEA8tM1mWrA
+-----END CERTIFICATE-----
+`))
+
+	keyFile, err := os.CreateTemp("", "rfc2136-test-XXXXXXXX-client.key")
+	assert.NoError(t, err)
+	defer os.Remove(keyFile.Name())
+	_, err = keyFile.Write([]byte(
+		`-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDD5B+aPE+TuHCvW1f7L
+U8jEPVXHv1fvCR8uBSsf1qdPo929XGpt5y5QfIGdW3NUeHWhZANiAAQj7rjkeUEv
+jBT++IBMnIWgmI9VIjFx4VUGFmzPEawOckdnKW4fBdePiItsgePDVK4Oys5bzfSD
+hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
+-----END PRIVATE KEY-----
+`))
+
+	tlsConfig := TLSConfig{
+		UseTLS:                true,
+		SkipTLSVerify:         false,
+		CAFilePath:            caFile.Name(),
+		ClientCertFilePath:    certFile.Name(),
+		ClientCertKeyFilePath: keyFile.Name(),
+	}
+
+	provider, err := createRfc2136TLSStubProvider(stub, tlsConfig)
+	log.Infof("provider, err is: %s", err)
+	assert.NoError(t, err)
+
+	rawProvider := provider.(*rfc2136Provider)
+
+	client, err := makeClient(*rawProvider)
+	log.Infof("client, err is: %v", client)
+	log.Infof("client, err is: %s", err)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "tcp-tls", client.Net)
+	assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
+	assert.Equal(t, "rfc2136-host", client.TLSConfig.ServerName)
+	assert.Equal(t, uint16(tls.VersionTLS13), client.TLSConfig.MinVersion)
+	assert.Equal(t, []string{"dot"}, client.TLSConfig.NextProtos)
 }
 
 func TestRfc2136GetRecords(t *testing.T) {

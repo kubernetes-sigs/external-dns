@@ -18,6 +18,7 @@ package rfc2136
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"sort"
@@ -33,6 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/pkg/tlsutils"
 	"sigs.k8s.io/external-dns/plan"
 	"sigs.k8s.io/external-dns/provider"
 )
@@ -54,6 +56,7 @@ type rfc2136Provider struct {
 	axfr            bool
 	minTTL          time.Duration
 	batchChangeSize int
+	tlsConfig       TLSConfig
 
 	// options specific to rfc3645 gss-tsig support
 	gssTsig      bool
@@ -65,6 +68,16 @@ type rfc2136Provider struct {
 	domainFilter endpoint.DomainFilter
 	dryRun       bool
 	actions      rfc2136Actions
+}
+
+// TLSConfig is comprised of the TLS-related fields necessary if we are using DNS over TLS
+type TLSConfig struct {
+	UseTLS                bool
+	SkipTLSVerify         bool
+	CAFilePath            string
+	ClientCertFilePath    string
+	ClientCertKeyFilePath string
+	ServerName            string
 }
 
 // Map of supported TSIG algorithms
@@ -82,7 +95,7 @@ type rfc2136Actions interface {
 }
 
 // NewRfc2136Provider is a factory function for OpenStack rfc2136 providers
-func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, actions rfc2136Actions) (provider.Provider, error) {
+func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool, keyName string, secret string, secretAlg string, axfr bool, domainFilter endpoint.DomainFilter, dryRun bool, minTTL time.Duration, gssTsig bool, krb5Username string, krb5Password string, krb5Realm string, batchChangeSize int, tlsConfig TLSConfig, actions rfc2136Actions) (provider.Provider, error) {
 	secretAlgChecked, ok := tsigAlgs[secretAlg]
 	if !ok && !insecure && !gssTsig {
 		return nil, errors.Errorf("%s is not supported TSIG algorithm", secretAlg)
@@ -98,6 +111,10 @@ func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool
 		return len(strings.Split(zoneNames[i], ".")) > len(strings.Split(zoneNames[j], "."))
 	})
 
+	if tlsConfig.UseTLS {
+		tlsConfig.ServerName = host
+	}
+
 	r := &rfc2136Provider{
 		nameserver:      net.JoinHostPort(host, strconv.Itoa(port)),
 		zoneNames:       zoneNames,
@@ -111,6 +128,7 @@ func NewRfc2136Provider(host string, port int, zoneNames []string, insecure bool
 		axfr:            axfr,
 		minTTL:          minTTL,
 		batchChangeSize: batchChangeSize,
+		tlsConfig:       tlsConfig,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -207,6 +225,15 @@ func (r rfc2136Provider) IncomeTransfer(m *dns.Msg, a string) (env chan *dns.Env
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
 	}
 
+	c, err := makeClient(r)
+	if err != nil {
+		return nil, fmt.Errorf("error setting up TLS: %w", err)
+	}
+	conn, err := c.Dial(a)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect for transfer: %w", err)
+	}
+	t.Conn = conn
 	return t.In(m, r.nameserver)
 }
 
@@ -419,7 +446,10 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	}
 	log.Debugf("SendMessage")
 
-	c := new(dns.Client)
+	c, err := makeClient(r)
+	if err != nil {
+		return fmt.Errorf("error setting up TLS: %w", err)
+	}
 
 	if !r.insecure {
 		if r.gssTsig {
@@ -438,8 +468,6 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			msg.SetTsig(r.tsigKeyName, r.tsigSecretAlg, clockSkew, time.Now().Unix())
 		}
 	}
-
-	c.Net = "tcp"
 
 	resp, _, err := c.Exchange(msg, r.nameserver)
 	if err != nil {
@@ -483,4 +511,34 @@ func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 
 	log.Warnf("No available zone found for %s, set it to 'root'", ep.DNSName)
 	return dns.Fqdn(".")
+}
+
+func makeClient(r rfc2136Provider) (result *dns.Client, err error) {
+	c := new(dns.Client)
+
+	if r.tlsConfig.UseTLS {
+		log.Debug("RFC2136 Connecting via TLS")
+		c.Net = "tcp-tls"
+		tlsConfig, err := tlsutils.NewTLSConfig(
+			r.tlsConfig.ClientCertFilePath,
+			r.tlsConfig.ClientCertKeyFilePath,
+			r.tlsConfig.CAFilePath,
+			r.tlsConfig.ServerName,
+			r.tlsConfig.SkipTLSVerify,
+			// Per RFC9103
+			tls.VersionTLS13,
+		)
+		if err != nil {
+			return nil, err
+		}
+		if tlsConfig.NextProtos == nil {
+			// Per RFC9103
+			tlsConfig.NextProtos = []string{"dot"}
+		}
+		c.TLSConfig = tlsConfig
+	} else {
+		c.Net = "tcp"
+	}
+
+	return c, nil
 }

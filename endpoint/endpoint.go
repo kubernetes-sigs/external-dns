@@ -44,6 +44,8 @@ const (
 	RecordTypePTR = "PTR"
 	// RecordTypeMX is a RecordType enum value
 	RecordTypeMX = "MX"
+	// RecordTypeNAPTR is a RecordType enum value
+	RecordTypeNAPTR = "NAPTR"
 )
 
 // TTL is a structure defining the TTL of a DNS record
@@ -73,7 +75,17 @@ func (t Targets) Len() int {
 }
 
 func (t Targets) Less(i, j int) bool {
-	return t[i] < t[j]
+	ipi, err := netip.ParseAddr(t[i])
+	if err != nil {
+		return t[i] < t[j]
+	}
+
+	ipj, err := netip.ParseAddr(t[j])
+	if err != nil {
+		return t[i] < t[j]
+	}
+
+	return ipi.String() < ipj.String()
 }
 
 func (t Targets) Swap(i, j int) {
@@ -90,6 +102,27 @@ func (t Targets) Same(o Targets) bool {
 
 	for i, e := range t {
 		if !strings.EqualFold(e, o[i]) {
+			// IPv6 can be shortened, so it should be parsed for equality checking
+			ipA, err := netip.ParseAddr(e)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
+
+			ipB, err := netip.ParseAddr(o[i])
+			if err != nil {
+				log.WithFields(log.Fields{
+					"targets":           t,
+					"comparisonTargets": o,
+				}).Debugf("Couldn't parse %s as an IP address: %v", e, err)
+			}
+
+			// IPv6 Address Shortener == IPv6 Address Expander
+			if ipA.IsValid() && ipB.IsValid() {
+				return ipA.String() == ipB.String()
+			}
 			return false
 		}
 	}
