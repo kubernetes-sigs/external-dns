@@ -179,6 +179,19 @@ func (client *mockIBConnector) CreateObject(obj ibclient.IBObject) (ref string, 
 }
 
 func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, queryParams *ibclient.QueryParams, res interface{}) (err error) {
+	isPagingType := false
+	switch res.(type) {
+	case *pagingResponseStruct[ibclient.RecordA]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.HostRecord]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordTXT]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordPTR]:
+		isPagingType = true
+	case *pagingResponseStruct[ibclient.RecordCNAME]:
+		isPagingType = true
+	}
 	req := getObjectRequest{
 		obj: obj.ObjectType(),
 		ref: ref,
@@ -207,7 +220,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordA))
 			}
 		}
-		*res.(*[]ibclient.RecordA) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordA]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordA) = result
+		}
 	case "record:cname":
 		var result []ibclient.RecordCNAME
 		for _, object := range *client.mockInfobloxObjects {
@@ -223,7 +240,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordCNAME))
 			}
 		}
-		*res.(*[]ibclient.RecordCNAME) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordCNAME]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordCNAME) = result
+		}
 	case "record:host":
 		var result []ibclient.HostRecord
 		for _, object := range *client.mockInfobloxObjects {
@@ -239,7 +260,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.HostRecord))
 			}
 		}
-		*res.(*[]ibclient.HostRecord) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.HostRecord]).Result = result
+		} else {
+			*res.(*[]ibclient.HostRecord) = result
+		}
 	case "record:txt":
 		var result []ibclient.RecordTXT
 		for _, object := range *client.mockInfobloxObjects {
@@ -255,7 +280,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordTXT))
 			}
 		}
-		*res.(*[]ibclient.RecordTXT) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordTXT]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordTXT) = result
+		}
 	case "record:ptr":
 		var result []ibclient.RecordPTR
 		for _, object := range *client.mockInfobloxObjects {
@@ -271,7 +300,11 @@ func (client *mockIBConnector) GetObject(obj ibclient.IBObject, ref string, quer
 				result = append(result, *object.(*ibclient.RecordPTR))
 			}
 		}
-		*res.(*[]ibclient.RecordPTR) = result
+		if isPagingType {
+			res.(*pagingResponseStruct[ibclient.RecordPTR]).Result = result
+		} else {
+			*res.(*[]ibclient.RecordPTR) = result
+		}
 	case "zone_auth":
 		*res.(*[]ibclient.ZoneAuth) = *client.mockInfobloxZones
 	}
@@ -512,13 +545,33 @@ func TestInfobloxRecords(t *testing.T) {
 	client.verifyGetObjectRequest(t, "zone_auth", "", &map[string]string{}).
 		ExpectNotRequestURLQueryParam(t, "view").
 		ExpectNotRequestURLQueryParam(t, "zone")
-	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "example.com"}).
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"view":              "",
+		"zone":              "example.com"}).
 		ExpectRequestURLQueryParam(t, "zone", "example.com")
-	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "example.com"}).
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"view":              "",
+		"zone":              "example.com"}).
 		ExpectRequestURLQueryParam(t, "zone", "example.com")
-	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "example.com"}).
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"view":              "",
+		"zone":              "example.com"}).
 		ExpectRequestURLQueryParam(t, "zone", "example.com")
-	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "example.com"}).
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"view":              "",
+		"zone":              "example.com"}).
 		ExpectRequestURLQueryParam(t, "zone", "example.com")
 	client.verifyNoMoreGetObjectRequests(t)
 }
@@ -548,28 +601,68 @@ func TestInfobloxRecordsWithView(t *testing.T) {
 	client.verifyGetObjectRequest(t, "zone_auth", "", &map[string]string{"view": "Inside"}).
 		ExpectRequestURLQueryParam(t, "view", "Inside").
 		ExpectNotRequestURLQueryParam(t, "zone")
-	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "foo.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "foo.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "foo.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "foo.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "foo.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "foo.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:a", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "bar.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:host", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "bar.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:cname", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "bar.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
-	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{"zone": "bar.example.com", "view": "Inside"}).
+	client.verifyGetObjectRequest(t, "record:txt", "", &map[string]string{
+		"_max_results":      "1000",
+		"_paging":           "1",
+		"_return_as_object": "1",
+		"zone":              "bar.example.com",
+		"view":              "Inside"}).
 		ExpectRequestURLQueryParam(t, "zone", "bar.example.com").
 		ExpectRequestURLQueryParam(t, "view", "Inside")
 	client.verifyNoMoreGetObjectRequests(t)

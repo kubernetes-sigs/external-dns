@@ -204,10 +204,10 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 	for _, zone := range zones {
 		logrus.Debugf("fetch records from zone '%s'", zone.Fqdn)
-		searchParams := recordQueryParams(zone.Fqdn, p.view)
+		searchParams := map[string]string{"zone": zone.Fqdn, "view": p.view}
 		var resA []ibclient.RecordA
 		objA := ibclient.NewEmptyRecordA()
-		err = p.client.GetObject(objA, "", searchParams, &resA)
+		err = PagingGetObject(p.client, objA, "", searchParams, &resA)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch A records from zone '%s': %w", zone.Fqdn, err)
 		}
@@ -251,7 +251,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 		// Include Host records since they should be treated synonymously with A records
 		var resH []ibclient.HostRecord
 		objH := ibclient.NewEmptyHostRecord()
-		err = p.client.GetObject(objH, "", searchParams, &resH)
+		err = PagingGetObject(p.client, objH, "", searchParams, &resH)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch host records from zone '%s': %w", zone.Fqdn, err)
 		}
@@ -271,7 +271,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resC []ibclient.RecordCNAME
 		objC := ibclient.NewEmptyRecordCNAME()
-		err = p.client.GetObject(objC, "", searchParams, &resC)
+		err = PagingGetObject(p.client, objC, "", searchParams, &resC)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch CNAME records from zone '%s': %w", zone.Fqdn, err)
 		}
@@ -285,10 +285,11 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 			// so convert our zone fqdn (if it is a correct cidr block) into in-addr.arpa address and pass that into infoblox
 			// example: 10.196.38.0/24 becomes 38.196.10.in-addr.arpa
 			arpaZone, err := rfc2317.CidrToInAddr(zone.Fqdn)
+			ptrQueryParams := map[string]string{"zone": arpaZone, "view": p.view}
 			if err == nil {
 				var resP []ibclient.RecordPTR
 				objP := ibclient.NewEmptyRecordPTR()
-				err = p.client.GetObject(objP, "", recordQueryParams(arpaZone, p.view), &resP)
+				err = PagingGetObject(p.client, objP, "", ptrQueryParams, &resP)
 				if err != nil && !isNotFoundError(err) {
 					return nil, fmt.Errorf("could not fetch PTR records from zone '%s': %w", zone.Fqdn, err)
 				}
@@ -300,7 +301,7 @@ func (p *ProviderConfig) Records(ctx context.Context) (endpoints []*endpoint.End
 
 		var resT []ibclient.RecordTXT
 		objT := ibclient.NewEmptyRecordTXT()
-		err = p.client.GetObject(objT, "", searchParams, &resT)
+		err = PagingGetObject(p.client, objT, "", searchParams, &resT)
 		if err != nil && !isNotFoundError(err) {
 			return nil, fmt.Errorf("could not fetch TXT records from zone '%s': %w", zone.Fqdn, err)
 		}
