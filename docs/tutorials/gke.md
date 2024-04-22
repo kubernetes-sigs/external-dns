@@ -14,7 +14,7 @@ This solution will only work when both CloudDNS and GKE are provisioned in the s
 
 ### Configure Project Environment
 
-Setup your environment to work with Google Cloud Platform. Fill in your variables as needed, e.g. target project.
+Set up your environment to work with Google Cloud Platform. Fill in your variables as needed, e.g. target project.
 
 ```bash
 # set variables to the appropriate desired values
@@ -151,6 +151,91 @@ gcloud container clusters create $GKE_CLUSTER_NAME \
   --workload-pool "$GKE_PROJECT_ID.svc.id.goog"
 ```
 
+### Workload Identity
+
+[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) allows workloads in your GKE cluster to [authenticate directly to GCP](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity#credential-flow) using Kubernetes Service Accounts
+
+You have an option to chose from using the gcloud CLI or using Terraform.
+
+=== "gcloud CLI"
+
+    The below instructions assume you are using the default Kubernetes Service account name of `external-dns` in the namespace `external-dns`
+
+    Grant the Kubernetes service account DNS `roles/dns.admin` at project level
+    
+    ```shell
+    gcloud projects add-iam-policy-binding projects/DNS_PROJECT_ID \
+        --role=roles/dns.admin \
+        --member=principal://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/PROJECT_ID.svc.id.goog/subject/ns/external-dns/sa/external-dns \
+        --condition=None
+    ```
+    
+    Replace the following:
+    
+    * `DNS_PROJECT_ID` : Project ID of your DNS project. If DNS is in the same project as your GKE cluster, use your GKE project.
+    * `PROJECT_ID`: your Google Cloud project ID of your GKE Cluster
+    * `PROJECT_NUMBER`: your numerical Google Cloud project number of your GKE cluster
+
+    If you wish to change the namespace, replace 
+
+    * `ns/external-dns` with `ns/<your namespace`  
+    * `sa/external-dns` with `sa/<your ksa>`
+
+
+
+=== "Terraform"
+
+    The below instructions assume you are using the default Kubernetes Service account name of `external-dns` in the namespace `external-dns`
+
+    Create a file called `main.tf` and place in it the below. _Note: If you're an experienced terraform user feel free to split these out in to different files_ 
+
+    ```hcl
+    variable "gke-project" {
+      type        = string
+      description = "Name of the project that the GKE cluster exists in"
+      default     = "GKE-PROJECT"
+    }
+    
+    variable "ksa_name" {
+      type        = string
+      description = "Name of the Kubernetes service account that will be accessing the DNS Zones"
+      default     = "external-dns"
+    }
+    
+    variable "kns_name" {
+      type        = string
+      description = "Name of the Kubernetes Namespace"
+      default     = "external-dns"
+    }
+    
+    data "google_project" "project" {
+      project_id = var.gke-project
+    }
+    
+    locals {
+      member = "principal://iam.googleapis.com/projects/${data.google_project.project.number}/locations/global/workloadIdentityPools/${var.gke-project}.svc.id.goog/subject/ns/${var.kns_name}/sa/${var.ksa_name}"
+    }
+    
+    resource "google_project_iam_member" "external_dns" {
+      member  = local.member
+      project = "DNS-PROJECT"
+      role    = "roles/dns.admin"
+    }
+    ```
+    
+    Replace the following
+    
+    * `GKE-PROJECT` : Project that contains your GKE cluster
+    * `DNS-PROJECT` : Project that holds your DNS zones
+    
+    You can also change the below if you plan to use a different service account name and namespace
+    
+    * `variable "ksa_name"` : Name of the Kubernetes service account external-dns will use
+    * `variable "kns_name"` : Name of the Kubernetes Name Space that will have external-dns installed to
+
+
+
+
 ### Worker Node Service Account method
 
 In this method, the GSA (Google Service Account) that is associated with GKE worker nodes will be configured to have access to Cloud DNS.  
@@ -206,46 +291,16 @@ kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"defa
 ```
 
 After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name. Make sure to uncomment out the section that mounts the secret to the ExternalDNS pods.
-### Workload Identity
 
-[Workload Identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity) allows workloads in your GKE cluster to impersonate GSA (Google Service Accounts) using KSA (Kubernetes Service Accounts) configured during deployemnt.  These are the steps to use this feature with ExternalDNS.
-
-#### Create GSA for use with Workload Identity
-
-```bash
-DNS_SA_NAME="external-dns-sa"
-DNS_SA_EMAIL="$DNS_SA_NAME@${GKE_PROJECT_ID}.iam.gserviceaccount.com"
-
-gcloud iam service-accounts create $DNS_SA_NAME --display-name $DNS_SA_NAME
-gcloud projects add-iam-policy-binding $DNS_PROJECT_ID \
-   --member serviceAccount:$DNS_SA_EMAIL --role "roles/dns.admin"
-```
-
-#### Link KSA to GSA
-
-Add an IAM policy binding bewtween the workload identity GSA and ExternalDNS GSA.  This will link the ExternalDNS KSA to ExternalDNS GSA.
-
-```bash
-gcloud iam service-accounts add-iam-policy-binding $DNS_SA_EMAIL \
-  --role "roles/iam.workloadIdentityUser" \
-  --member "serviceAccount:$GKE_PROJECT_ID.svc.id.goog[${EXTERNALDNS_NS:-"default"}/external-dns]"
-```
 
 #### Deploy External DNS
 
 Deploy ExternalDNS with the following steps below, documented under [Deploy ExternalDNS](#deploy-externaldns).  Set the `--google-project` flag to the Cloud DNS project name.
 
-#### Link KSA to GSA in Kubernetes
-
-Add the proper workload identity annotation to the ExternalDNS KSA.
-
-```bash
-kubectl annotate serviceaccount "external-dns" \
-  --namespace ${EXTERNALDNS_NS:-"default"} \
-  "iam.gke.io/gcp-service-account=$DNS_SA_EMAIL"
-```
-
 #### Update ExternalDNS pods
+
+!!! note "Only required if not enabled on all nodes"
+    If you have GKE Workload Identity enabled on all nodes in your cluster, the below step is not necessary 
 
 Update the Pod spec to schedule the workloads on nodes that use Workload Identity and to use the annotated Kubernetes service account.
 

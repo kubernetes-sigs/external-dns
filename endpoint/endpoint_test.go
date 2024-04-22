@@ -41,12 +41,44 @@ func TestTargetsSame(t *testing.T) {
 		{""},
 		{"1.2.3.4"},
 		{"8.8.8.8", "8.8.4.4"},
+		{"dd:dd::01", "::1", "::0001"},
 		{"example.org", "EXAMPLE.ORG"},
 	}
 
 	for _, d := range tests {
 		if d.Same(d) != true {
 			t.Errorf("%#v should equal %#v", d, d)
+		}
+	}
+}
+
+func TestSameSuccess(t *testing.T) {
+	tests := []struct {
+		a Targets
+		b Targets
+	}{
+		{
+			[]string{"::1"},
+			[]string{"::0001"},
+		},
+		{
+			[]string{"::1", "dd:dd::01"},
+			[]string{"dd:00dd::0001", "::0001"},
+		},
+
+		{
+			[]string{"::1", "dd:dd::01"},
+			[]string{"00dd:dd::0001", "::0001"},
+		},
+		{
+			[]string{"::1", "1.1.1.1", "2600.com", "3.3.3.3"},
+			[]string{"2600.com", "::0001", "3.3.3.3", "1.1.1.1"},
+		},
+	}
+
+	for _, d := range tests {
+		if d.a.Same(d.b) == false {
+			t.Errorf("%#v should equal %#v", d.a, d.b)
 		}
 	}
 }
@@ -68,6 +100,10 @@ func TestSameFailures(t *testing.T) {
 		}, {
 			[]string{"1.2.3.4", "4.3.2.1"},
 			[]string{"8.8.8.8", "8.8.4.4"},
+		},
+		{
+			[]string{"::1", "2600.com", "3.3.3.3"},
+			[]string{"2600.com", "3.3.3.3", "1.1.1.1"},
 		},
 	}
 
