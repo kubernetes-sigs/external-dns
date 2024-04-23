@@ -35,6 +35,35 @@ helm upgrade --install external-dns external-dns/external-dns --version 1.14.4
 Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
 See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-providers) for more info on available providers and tutorials.
 
+### Provider Example
+#### Setting Up ExternalDNS with CloudFlare
+To deploy ExternalDNS configured for the CloudFlare DNS provider, begin by creating a Kubernetes secret to securely store your CloudFlare API key. This key will enable ExternalDNS to authenticate with CloudFlare:
+```shell
+kubectl create secret generic cloudflare-api-key --from-literal=apiKey=YOUR_API_KEY
+```
+Ensure to replace YOUR_API_KEY with your actual CloudFlare API key.
+
+Next, create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
+```shell
+provider: 
+  name: cloudflare
+env:
+  - name: CF_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-key
+        key: apiKey
+  - name: CF_API_EMAIL
+    value: "example@example.com"
+```
+Replace your-email@example.com with the email associated with your CloudFlare account.
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+```shell
+helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
+```
+This command will configure ExternalDNS to manage DNS records using CloudFlare, based on resources present in your Kubernetes cluster.
+
 ### Providers with Specific Configuration Support
 
 | Provider               | Supported  |
