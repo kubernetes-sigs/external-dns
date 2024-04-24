@@ -69,5 +69,5 @@ issues:
       linters: [ typecheck ]
 
 run:
-  skip-files:
+  exclude-files:
     - endpoint/zz_generated.deepcopy.go
