@@ -108,6 +108,9 @@ spec:
             {{- range .Values.domainFilters }}
             - --domain-filter={{ . }}
             {{- end }}
+            {{- range .Values.excludeDomains }}
+            - --exclude-domains={{ . }}
+            {{- end }}
             - --provider={{ $providerName }}
           {{- range .Values.extraArgs }}
             - {{ tpl . $ }}
