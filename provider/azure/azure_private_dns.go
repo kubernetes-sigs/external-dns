@@ -48,6 +48,7 @@ type PrivateRecordSetsClient interface {
 type AzurePrivateDNSProvider struct {
 	provider.BaseProvider
 	domainFilter                 endpoint.DomainFilter
+	zoneNameFilter               endpoint.DomainFilter
 	zoneIDFilter                 provider.ZoneIDFilter
 	dryRun                       bool
 	resourceGroup                string
@@ -60,7 +61,7 @@ type AzurePrivateDNSProvider struct {
 // NewAzurePrivateDNSProvider creates a new Azure Private DNS provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, dryRun bool) (*AzurePrivateDNSProvider, error) {
+func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, dryRun bool) (*AzurePrivateDNSProvider, error) {
 	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
@@ -80,6 +81,7 @@ func NewAzurePrivateDNSProvider(configFile string, domainFilter endpoint.DomainF
 	}
 	return &AzurePrivateDNSProvider{
 		domainFilter:                 domainFilter,
+		zoneNameFilter:               zoneNameFilter,
 		zoneIDFilter:                 zoneIDFilter,
 		dryRun:                       dryRun,
 		resourceGroup:                cfg.ResourceGroup,
@@ -124,6 +126,10 @@ func (p *AzurePrivateDNSProvider) Records(ctx context.Context) (endpoints []*end
 				}
 				name = formatAzureDNSName(*recordSet.Name, *zone.Name)
 
+				if len(p.zoneNameFilter.Filters) > 0 && !p.domainFilter.Match(name) {
+					log.Debugf("Skipping return of record %s because it was filtered out by the specified --domain-filter", name)
+					continue
+				}
 				targets := extractAzurePrivateDNSTargets(recordSet)
 				if len(targets) == 0 {
 					log.Debugf("Failed to extract targets for '%s' with type '%s'.", name, recordType)
@@ -185,6 +191,9 @@ func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.Priva
 
 			if zone.Name != nil && p.domainFilter.Match(*zone.Name) && p.zoneIDFilter.Match(*zone.ID) {
 				zones = append(zones, *zone)
+			} else if zone.Name != nil && len(p.zoneNameFilter.Filters) > 0 && p.zoneNameFilter.Match(*zone.Name) {
+				// Handle zoneNameFilter
+				zones = append(zones, *zone)
 			}
 		}
 	}
@@ -238,6 +247,10 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
+			if !p.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping deletion of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
 			if p.dryRun {
 				log.Infof("Would delete %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
 			} else {
@@ -261,6 +274,10 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
+			if !p.domainFilter.Match(ep.DNSName) {
+				log.Debugf("Skipping update of record %s because it was filtered out by the specified --domain-filter", ep.DNSName)
+				continue
+			}
 			if p.dryRun {
 				log.Infof(
 					"Would update %s record named '%s' to '%s' for Azure Private DNS zone '%s'.",
