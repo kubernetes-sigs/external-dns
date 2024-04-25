@@ -58,6 +58,7 @@ The following fields are used:
 * `aadClientID` and `aadClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
+* `activeDirectoryAuthorityHost` - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables).
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
 
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
@@ -779,10 +780,10 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-annotations:
-  external-dns.alpha.kubernetes.io/hostname: server.example.com
 metadata:
   name: nginx-svc
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: server.example.com
 spec:
   ports:
     - port: 80
