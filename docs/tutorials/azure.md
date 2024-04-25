@@ -773,10 +773,10 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-annotations:
-  external-dns.alpha.kubernetes.io/hostname: server.example.com
 metadata:
   name: nginx-svc
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: server.example.com
 spec:
   ports:
     - port: 80
