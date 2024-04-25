@@ -58,6 +58,7 @@ type AzureProvider struct {
 	dryRun                       bool
 	resourceGroup                string
 	userAssignedIdentityClientID string
+	activeDirectoryAuthorityHost string
 	zonesClient                  ZonesClient
 	recordSetsClient             RecordSetsClient
 }
@@ -65,8 +66,8 @@ type AzureProvider struct {
 // NewAzureProvider creates a new Azure provider.
 //
 // Returns the provider or an error if a provider could not be created.
-func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, dryRun bool) (*AzureProvider, error) {
-	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID)
+func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zoneNameFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, subscriptionID string, resourceGroup string, userAssignedIdentityClientID string, activeDirectoryAuthorityHost string, dryRun bool) (*AzureProvider, error) {
+	cfg, err := getConfig(configFile, subscriptionID, resourceGroup, userAssignedIdentityClientID, activeDirectoryAuthorityHost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure config file '%s': %v", configFile, err)
 	}
@@ -90,6 +91,7 @@ func NewAzureProvider(configFile string, domainFilter endpoint.DomainFilter, zon
 		dryRun:                       dryRun,
 		resourceGroup:                cfg.ResourceGroup,
 		userAssignedIdentityClientID: cfg.UserAssignedIdentityID,
+		activeDirectoryAuthorityHost: cfg.ActiveDirectoryAuthorityHost,
 		zonesClient:                  zonesClient,
 		recordSetsClient:             recordSetsClient,
 	}, nil
