@@ -18,6 +18,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 ## Using Helm
 
 Create a values.yaml file to configure ExternalDNS to use plural DNS as the DNS provider. This file should include the necessary environment variables:
+
 ```shell
 provider:
   name: plural
@@ -35,6 +36,7 @@ env:
 ```
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
 ```
