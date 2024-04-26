@@ -101,6 +101,7 @@ type Config struct {
 	AzureResourceGroup                 string
 	AzureSubscriptionID                string
 	AzureUserAssignedIdentityClientID  string
+	AzureActiveDirectoryAuthorityHost  string
 	BluecatDNSConfiguration            string
 	BluecatConfigFile                  string
 	BluecatDNSView                     string

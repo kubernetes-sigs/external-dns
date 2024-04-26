@@ -58,6 +58,7 @@ The following fields are used:
 * `aadClientID` and `aadClientSecret` are associated with the Service Principal.  This is only used with Service Principal method documented in the next section.
 * `useManagedIdentityExtension` - this is set to `true` if you use either AKS Kubelet Identity or AAD Pod Identities methods documented in the next section.
 * `userAssignedIdentityID` - this contains the client id from the Managed identitty when using the AAD Pod Identities method documented in the next setion.
+* `activeDirectoryAuthorityHost` - this contains the uri to overwrite the default provided AAD Endpoint. This is useful for providing additional support where the endpoint is not available in the default cloud config from the [azure-sdk-for-go](https://pkg.go.dev/github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud#pkg-variables).
 * `useWorkloadIdentityExtension` - this is set to `true` if you use Workload Identity method documented in the next section.
 
 The Azure DNS provider expects, by default, that the configuration file is at `/etc/kubernetes/azure.json`.  This can be overridden with the `--azure-config-file` option when starting ExternalDNS.
@@ -736,7 +737,13 @@ spec:
                   number: 80
 ```
 
-When using ExternalDNS with `ingress` objects it will automatically create DNS records based on host names specified in ingress objects that match the domain-filter argument in the external-dns deployment manifest. When those host names are removed or renamed the corresponding DNS records are also altered.
+When you use ExternalDNS with Ingress resources, it automatically creates DNS records based on the hostnames listed in those Ingress objects.
+Those hostnames must match the filters that you defined (if any):
+
+- By default, `--domain-filter` filters Azure DNS zone.
+- If you use `--domain-filter` together with `--zone-name-filter`, the behavior changes: `--domain-filter` then filters Ingress domains, not the Azure DNS zone name.
+
+When those hostnames are removed or renamed the corresponding DNS records are also altered.
 
 Create the deployment, service and ingress object:
 
@@ -773,10 +780,10 @@ spec:
 ---
 apiVersion: v1
 kind: Service
-annotations:
-  external-dns.alpha.kubernetes.io/hostname: server.example.com
 metadata:
   name: nginx-svc
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: server.example.com
 spec:
   ports:
     - port: 80
