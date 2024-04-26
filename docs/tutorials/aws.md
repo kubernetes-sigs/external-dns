@@ -395,6 +395,7 @@ kubectl get namespaces | grep -q $EXTERNALDNS_NS || \
 ## Using Helm (with OIDC)
 
 Create a values.yaml file to configure ExternalDNS:
+
 ```shell
 provider:
   name: aws
@@ -404,6 +405,7 @@ env:
 ```
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
 ```
