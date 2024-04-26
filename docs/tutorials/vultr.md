@@ -20,7 +20,35 @@ The environment variable `VULTR_API_KEY` will be needed to run ExternalDNS with 
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+
+Begin by creating a Kubernetes secret to securely store your  Akamai Edge DNS Access Tokens. This key will enable ExternalDNS to authenticate with Akamai Edge DNS:
+```shell
+kubectl create secret generic VULTR_API_KEY --from-literal=VULTR_API_KEY=YOUR_VULTR_API_KEY
+```
+
+Ensure to replace YOUR_VULTR_API_KEY, with your actual Vultr API key.
+
+
 Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Using Helm
+
+reate a values.yaml file to configure ExternalDNS to use Akamai Edge DNS as the DNS provider. This file should include the necessary environment variables:
+```shell
+provider:
+  name: akamai
+env:
+  - name: VULTR_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: VULTR_API_KEY
+        key: VULTR_API_KEY
+```
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+```shell
+helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
+```
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -49,7 +77,10 @@ spec:
         - --provider=vultr
         env:
         - name: VULTR_API_KEY
-          value: "YOU_VULTR_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: VULTR_API_KEY
+              key: VULTR_API_KEY
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -113,7 +144,10 @@ spec:
         - --provider=vultr
         env:
         - name: VULTR_API_KEY
-          value: "YOU_VULTR_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: VULTR_API_KEY
+              key: VULTR_API_KEY
 ```
 
 ## Deploying a Nginx Service
