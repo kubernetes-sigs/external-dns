@@ -242,7 +242,7 @@ func TestProvider(t *testing.T) {
 		t.Error("Unexpected delete request, got:", requests.deleteRequests[0], "expected:", recordToDeleteA)
 	}
 	if !reflect.DeepEqual(requests.deleteRequests[1], &recordToDeleteAAAA) {
-		t.Error("Unexpected delete request, got:", requests.deleteRequests[0], "expected:", recordToDeleteAAAA)
+		t.Error("Unexpected delete request, got:", requests.deleteRequests[1], "expected:", recordToDeleteAAAA)
 	}
 
 	requests.clear()
@@ -326,7 +326,7 @@ func TestProvider(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(newRecords) != 4 {
-		t.Fatal("Expected list of 4 records, got:", records)
+		t.Fatal("Expected list of 4 records, got:", newRecords)
 	}
 	if len(requests.createRequests) != 2 {
 		t.Fatal("Expected 2 create request, got:", requests.createRequests)
@@ -365,17 +365,32 @@ func TestProvider(t *testing.T) {
 		RecordType: endpoint.RecordTypeAAAA,
 	}
 
-	if !reflect.DeepEqual(requests.createRequests[0], &expectedCreateA) {
-		t.Error("Unexpected create request, got:", requests.createRequests[0], "expected:", &expectedCreateA)
+	for _, request := range requests.createRequests {
+		switch request.RecordType {
+		case endpoint.RecordTypeA:
+			if !reflect.DeepEqual(request, &expectedCreateA) {
+				t.Error("Unexpected create request, got:", request, "expected:", &expectedCreateA)
+			}
+		case endpoint.RecordTypeAAAA:
+			if !reflect.DeepEqual(request, &expectedCreateAAAA) {
+				t.Error("Unexpected create request, got:", request, "expected:", &expectedCreateAAAA)
+			}
+		default:
+		}
 	}
-	if !reflect.DeepEqual(requests.deleteRequests[0], &expectedDeleteA) {
-		t.Error("Unexpected delete request, got:", requests.deleteRequests[0], "expected:", &expectedDeleteA)
-	}
-	if !reflect.DeepEqual(requests.createRequests[1], &expectedCreateAAAA) {
-		t.Error("Unexpected create request, got:", requests.createRequests[0], "expected:", &expectedCreateAAAA)
-	}
-	if !reflect.DeepEqual(requests.deleteRequests[1], &expectedDeleteAAAA) {
-		t.Error("Unexpected delete request, got:", requests.deleteRequests[0], "expected:", &expectedDeleteAAAA)
+
+	for _, request := range requests.deleteRequests {
+		switch request.RecordType {
+		case endpoint.RecordTypeA:
+			if !reflect.DeepEqual(request, &expectedDeleteA) {
+				t.Error("Unexpected delete request, got:", request, "expected:", &expectedDeleteA)
+			}
+		case endpoint.RecordTypeAAAA:
+			if !reflect.DeepEqual(request, &expectedDeleteAAAA) {
+				t.Error("Unexpected delete request, got:", request, "expected:", &expectedDeleteAAAA)
+			}
+		default:
+		}
 	}
 
 	requests.clear()
