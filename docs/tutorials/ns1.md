@@ -42,6 +42,7 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
 
 Begin by creating a Kubernetes secret to securely store your NS1 API key. This key will enable ExternalDNS to authenticate with NS1:
+
 ```shell
 kubectl create secret generic NS1_APIKEY --from-literal=NS1_API_KEY=YOUR_NS1_API_KEY
 ```
@@ -53,6 +54,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 ## Using Helm
 
 Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
+
 ```shell
 provider: 
   name: ns1
@@ -65,6 +67,7 @@ env:
 ```
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
 ```
