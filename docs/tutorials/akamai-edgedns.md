@@ -37,6 +37,7 @@ An operational External-DNS deployment consists of an External-DNS container and
 Connect your `kubectl` client to the External-DNS cluster.
 
 Begin by creating a Kubernetes secret to securely store your  Akamai Edge DNS Access Tokens. This key will enable ExternalDNS to authenticate with Akamai Edge DNS:
+
 ```shell
 kubectl create secret generic AKAMAI-DNS --from-literal=EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN=YOUR_SERVICECONSUMERDOMAIN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN=YOUR_CLIENT_TOKEN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_SECRET=YOUR_CLIENT_SECRET --from-literal=EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN=YOUR_ACCESS_TOKEN
 ```
@@ -48,6 +49,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 ### Using Helm
 
 Create a values.yaml file to configure ExternalDNS to use Akamai Edge DNS as the DNS provider. This file should include the necessary environment variables:
+
 ```shell
 provider:
   name: akamai
@@ -73,8 +75,10 @@ env:
         name: AKAMAI-DNS
         key: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
 ```
+
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 ```shell
+
 helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
 ```
 
