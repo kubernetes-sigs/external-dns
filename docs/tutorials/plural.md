@@ -15,6 +15,30 @@ To create the secret you can run `kubectl create secret generic plural-env --fro
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 Then apply one of the following manifests file to deploy ExternalDNS.
 
+## Using Helm
+
+Create a values.yaml file to configure ExternalDNS to use plural DNS as the DNS provider. This file should include the necessary environment variables:
+```shell
+provider:
+  name: plural
+extraArgs:
+  - --plural-cluster=example-plural-cluster
+  - --plural-provider=aws # gcp, azure, equinix and kind are also possible
+env:
+  - name: PLURAL_ACCESS_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: PLURAL_ACCESS_TOKEN
+        key: plural-env
+  - name: PLURAL_ENDPOINT
+    value: https://app.plural.sh 
+```
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+```shell
+helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
+```
+
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml
