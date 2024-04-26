@@ -25,6 +25,16 @@ After you've installed the repo you can install the chart.
 helm upgrade --install {{ template "chart.name" . }} external-dns/{{ template "chart.name" . }} --version {{ template "chart.version" . }}
 ```
 
+For set up for a specific provider, see the following examples:
+- [AWS](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/aws.md#using-helm-with-oidc)
+- [akamai-edgedns](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/akamai-edgedns.md#using-helm)
+- [cloudflare](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/cloudflare.md#using-helm)
+- [digitalocean](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/digitalocean.md#using-helm)
+- [godaddy](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/godaddy.md#using-helm)
+- [ns1](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/ns1.md#using-helm)
+- [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#deploy-externaldns)
+- [vultr](https://github.com/omerap12/external-dns/blob/docs/helm-documentation/docs/tutorials/vultr.md#using-helm)
+
 ## Providers
 
 Configuring the _ExternalDNS_ provider should be done via the `provider.name` value with provider specific configuration being set via the `provider.<name>.<key>` values, where supported, and the `extraArgs` value. For legacy support `provider` can be set to the name of the provider with all additional configuration being set via the `extraArgs` value.
