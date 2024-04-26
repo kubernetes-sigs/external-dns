@@ -36,9 +36,11 @@ Cloudflare API has a [global rate limit of 1,200 requests per five minutes](http
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
 
 Begin by creating a Kubernetes secret to securely store your CloudFlare API key. This key will enable ExternalDNS to authenticate with CloudFlare:
+
 ```shell
 kubectl create secret generic cloudflare-api-key --from-literal=API_KEY=YOUR_API_KEY ---from-literal=CF_API_EMAIL=YOUR_CLOUDFLARE_EMAIL
 ```
+
 Ensure to replace YOUR_API_KEY with your actual CloudFlare API key and YOUR_CLOUDFLARE_EMAIL with the email associated with your CloudFlare account.
 
 Then apply one of the following manifests file to deploy ExternalDNS.
@@ -46,6 +48,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 ### Using Helm
 
 Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
+
 ```shell
 provider: 
   name: cloudflare
@@ -63,6 +66,7 @@ env:
 ```
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
 ```
