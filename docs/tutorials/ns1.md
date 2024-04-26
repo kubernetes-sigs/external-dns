@@ -41,7 +41,7 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
 
-Begin by creating a Kubernetes secret to securely store your CloudFlare API key. This key will enable ExternalDNS to authenticate with CloudFlare:
+Begin by creating a Kubernetes secret to securely store your NS1 API key. This key will enable ExternalDNS to authenticate with NS1:
 ```shell
 kubectl create secret generic NS1_APIKEY --from-literal=NS1_API_KEY=YOUR_NS1_API_KEY
 ```
