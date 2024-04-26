@@ -38,8 +38,9 @@ Connect your `kubectl` client to the External-DNS cluster.
 
 Begin by creating a Kubernetes secret to securely store your  Akamai Edge DNS Access Tokens. This key will enable ExternalDNS to authenticate with Akamai Edge DNS:
 ```shell
-kubectl create secret generic external-dns --from-literal=EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN=YOUR_SERVICECONSUMERDOMAIN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN=YOUR_CLIENT_TOKEN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_SECRET=YOUR_CLIENT_SECRET --from-literal=EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN=YOUR_ACCESS_TOKEN
+kubectl create secret generic AKAMAI-DNS --from-literal=EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN=YOUR_SERVICECONSUMERDOMAIN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN=YOUR_CLIENT_TOKEN --from-literal=EXTERNAL_DNS_AKAMAI_CLIENT_SECRET=YOUR_CLIENT_SECRET --from-literal=EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN=YOUR_ACCESS_TOKEN
 ```
+
 Ensure to replace YOUR_SERVICECONSUMERDOMAIN, EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN, YOUR_CLIENT_SECRET and YOUR_ACCESS_TOKEN with your actual Akamai Edge DNS API keys.
 
 Then apply one of the following manifests file to deploy ExternalDNS.
@@ -54,22 +55,22 @@ env:
   - name: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
     valueFrom:
       secretKeyRef:
-        name: external-dns
+        name: AKAMAI-DNS
         key: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
   - name: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
     valueFrom:
       secretKeyRef:
-        name: external-dns
+        name: AKAMAI-DNS
         key: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
   - name: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
     valueFrom:
       secretKeyRef:
-        name: external-dns
+        name: AKAMAI-DNS
         key: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
   - name: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
     valueFrom:
       secretKeyRef:
-        name: external-dns
+        name: AKAMAI-DNS
         key: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
 ```
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
@@ -111,22 +112,22 @@ spec:
         - name: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
         - name: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
         - name: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
         - name: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
 ```
 
@@ -197,22 +198,22 @@ spec:
         - name: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_SERVICECONSUMERDOMAIN
         - name: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_CLIENT_TOKEN
         - name: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_CLIENT_SECRET
         - name: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
           valueFrom:
             secretKeyRef:
-              name: external-dns
+              name: AKAMAI-DNS
               key: EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN
 ```
 
