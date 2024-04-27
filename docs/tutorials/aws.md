@@ -407,7 +407,7 @@ env:
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 
 ```shell
-helm upgrade --install external-dns external-dns/external-dns --version 1.14.4 --values values.yaml
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
 
 ### Manifest (for clusters without RBAC enabled)
