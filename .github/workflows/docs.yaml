@@ -18,15 +18,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@82c7e631bb3cdc910f68e0081d67478d79c6982d # v5.1.0
         with:
           python-version: "3.12"
           cache: "pip"
           cache-dependency-path: "./docs/scripts/requirements.txt"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
+<<<<<<< HEAD:.github/workflows/docs.yaml
           go-version: '^1.22.2'
+=======
+          go-version-file: 'go.mod'
+>>>>>>> 4e305930 (fix: gh actions sha):.github/workflows/docs.yml
 
       - run: |
           pip install -r docs/scripts/requirements.txt
