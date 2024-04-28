@@ -6,6 +6,7 @@ on:
       - "v*"
 
 permissions: {}
+
 jobs:
   release_docs:
     permissions:
@@ -26,11 +27,7 @@ jobs:
 
       - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
         with:
-<<<<<<< HEAD:.github/workflows/docs.yaml
-          go-version: '^1.22.2'
-=======
           go-version-file: 'go.mod'
->>>>>>> 4e305930 (fix: gh actions sha):.github/workflows/docs.yml
 
       - run: |
           pip install -r docs/scripts/requirements.txt
