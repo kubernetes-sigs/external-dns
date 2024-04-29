@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.724
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.727
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.51.28
+	github.com/aws/aws-sdk-go v1.51.30
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.69
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.26
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.909
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.909
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.909
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.911
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.911
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.911
 	github.com/transip/gotransip/v6 v6.23.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
