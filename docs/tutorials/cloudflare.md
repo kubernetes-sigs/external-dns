@@ -34,7 +34,42 @@ Cloudflare API has a [global rate limit of 1,200 requests per five minutes](http
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+
+Begin by creating a Kubernetes secret to securely store your CloudFlare API key. This key will enable ExternalDNS to authenticate with CloudFlare:
+
+```shell
+kubectl create secret generic cloudflare-api-key --from-literal=API_KEY=YOUR_API_KEY ---from-literal=CF_API_EMAIL=YOUR_CLOUDFLARE_EMAIL
+```
+
+Ensure to replace YOUR_API_KEY with your actual CloudFlare API key and YOUR_CLOUDFLARE_EMAIL with the email associated with your CloudFlare account.
+
 Then apply one of the following manifests file to deploy ExternalDNS.
+
+### Using Helm
+
+Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
+
+```shell
+provider: 
+  name: cloudflare
+env:
+  - name: CF_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-key
+        key: apiKey
+  - name: CF_API_EMAIL
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-key
+        key: YOUR_CLOUDFLARE_EMAIL
+```
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
+```
 
 ### Manifest (for clusters without RBAC enabled)
 
@@ -64,11 +99,17 @@ spec:
         - --provider=cloudflare
         - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
         - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
-        env:
-        - name: CF_API_KEY
-          value: "YOUR_CLOUDFLARE_API_KEY"
-        - name: CF_API_EMAIL
-          value: "YOUR_CLOUDFLARE_EMAIL"
+      env:
+       - name: CF_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api-key
+              key: API_KEY
+       - name: CF_API_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api-key
+              key: YOUR_CLOUDFLARE_EMAIL
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -134,10 +175,16 @@ spec:
         - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
         - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
         env:
-        - name: CF_API_KEY
-          value: "YOUR_CLOUDFLARE_API_KEY"
-        - name: CF_API_EMAIL
-          value: "YOUR_CLOUDFLARE_EMAIL"
+       - name: CF_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: cloudflare-api-key
+            key: apiKey
+       - name: CF_API_EMAIL
+         valueFrom:
+           secretKeyRef:
+             name: cloudflare-api-key
+             key: YOUR_CLOUDFLARE_EMAIL
 ```
 
 ## Deploying an Nginx Service

@@ -41,6 +41,18 @@ See [documentation](https://kubernetes-sigs.github.io/external-dns/#new-provider
 |------------------------|------------|
 | `webhook`              | ✅         |
 
+### Other Providers
+
+For set up for a specific provider using the Helm chart, see the following links:
+- [AWS](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md#using-helm-with-oidc)
+- [akamai-edgedns](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/akamai-edgedns.md#using-helm)
+- [cloudflare](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/cloudflare.md#using-helm)
+- [digitalocean](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/digitalocean.md#using-helm)
+- [godaddy](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/godaddy.md#using-helm)
+- [ns1](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/ns1.md#using-helm)
+- [plural](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/plural.md#using-helm)
+- [vultr](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/vultr.md#using-helm)
+
 ## Namespaced Scoped Installation
 
 external-dns supports running on a namespaced only scope, too.

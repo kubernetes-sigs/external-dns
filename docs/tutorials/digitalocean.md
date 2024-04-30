@@ -21,9 +21,34 @@ The environment variable `DO_TOKEN` will be needed to run ExternalDNS with Digit
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster you want to test ExternalDNS with.
+
+Begin by creating a Kubernetes secret to securely store your DigitalOcean API key. This key will enable ExternalDNS to authenticate with DigitalOcean:
+
+```shell
+kubectl create secret generic DO_TOKEN --from-literal=DO_TOKEN=YOUR_DIGITALOCEAN_API_KEY
+```
+
+Ensure to replace YOUR_DIGITALOCEAN_API_KEY with your actual DigitalOcean API key.
+
 Then apply one of the following manifests file to deploy ExternalDNS.
 
+## Using Helm
+
+Create a values.yaml file to configure ExternalDNS to use DigitalOcean as the DNS provider. This file should include the necessary environment variables:
+
+```shell
+provider: 
+  name: digitalocean
+env:
+  - name: DO_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: DO_TOKEN
+        key: DO_TOKEN
+```
+
 ### Manifest (for clusters without RBAC enabled)
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -50,7 +75,10 @@ spec:
         - --provider=digitalocean
         env:
         - name: DO_TOKEN
-          value: "YOUR_DIGITALOCEAN_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: DO_TOKEN
+              key: DO_TOKEN
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -114,7 +142,10 @@ spec:
         - --provider=digitalocean
         env:
         - name: DO_TOKEN
-          value: "YOUR_DIGITALOCEAN_API_KEY"
+          valueFrom:
+            secretKeyRef:
+              name: DO_TOKEN
+              key: DO_TOKEN
 ```
 
 

@@ -392,6 +392,24 @@ kubectl get namespaces | grep -q $EXTERNALDNS_NS || \
   kubectl create namespace $EXTERNALDNS_NS
 ```
 
+## Using Helm (with OIDC)
+
+Create a values.yaml file to configure ExternalDNS:
+
+```shell
+provider:
+  name: aws
+env:
+  - name: AWS_DEFAULT_REGION
+    value: us-east-1 # change to region where EKS is installed
+```
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
+```
+
 ### Manifest (for clusters without RBAC enabled)
 
 Save the following below as `externaldns-no-rbac.yaml`.

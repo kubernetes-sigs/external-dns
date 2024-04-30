@@ -24,6 +24,26 @@ Using the [GoDaddy documentation](https://developer.godaddy.com/getstarted) you 
 
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
 
+## Using Helm
+
+Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
+
+```shell
+provider: 
+  name: godaddy 
+extraArgs:
+  - --godaddy-api-key=YOUR_API_KEY
+  - --godaddy-api-secret=YOUR_API_SECRET
+```
+
+Ensure to replace YOUR_API_KEY and YOUR_API_SECRET with your actual godaddy API key and godaddy API secret.
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
+```
+
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml

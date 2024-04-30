@@ -41,6 +41,37 @@ var `NS1_APIKEY` will be needed to run ExternalDNS with NS1.
 
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
 
+Begin by creating a Kubernetes secret to securely store your NS1 API key. This key will enable ExternalDNS to authenticate with NS1:
+
+```shell
+kubectl create secret generic NS1_APIKEY --from-literal=NS1_API_KEY=YOUR_NS1_API_KEY
+```
+
+Ensure to replace YOUR_NS1_API_KEY with your actual NS1 API key.
+
+Then apply one of the following manifests file to deploy ExternalDNS.
+
+## Using Helm
+
+Create a values.yaml file to configure ExternalDNS to use NS1 as the DNS provider. This file should include the necessary environment variables:
+
+```shell
+provider: 
+  name: ns1
+env:
+  - name: NS1_APIKEY
+    valueFrom:
+      secretKeyRef:
+        name: NS1_APIKEY
+        key: NS1_API_KEY
+```
+
+Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
+```
+
 ### Manifest (for clusters without RBAC enabled)
 
 ```yaml
@@ -67,8 +98,11 @@ spec:
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ns1
         env:
-        - name: NS1_APIKEY
-          value: "YOUR_NS1_API_KEY"
+       - name: NS1_APIKEY
+          valueFrom:
+            secretKeyRef:
+              name: NS1_APIKEY
+              key: NS1_API_KEY
 ```
 
 ### Manifest (for clusters with RBAC enabled)
@@ -131,8 +165,11 @@ spec:
         - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=ns1
         env:
-        - name: NS1_APIKEY
-          value: "YOUR_NS1_API_KEY"
+       - name: NS1_APIKEY
+          valueFrom:
+            secretKeyRef:
+              name: NS1_APIKEY
+              key: NS1_API_KEY
 ```
 
 ## Deploying an Nginx Service
