@@ -717,4 +717,31 @@ func (sc *serviceSource) AddEventHandler(ctx context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	sc.serviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+
+	// Check updates in headless endpoints.
+	// It's ignores adds and deletes to avoid unnecessary handler processing.
+	sc.endpointsInformer.Informer().AddEventHandler(headlessEndpointFilter{eventHandlerFunc(handler)})
+}
+
+type headlessEndpointFilter struct {
+	handler cache.ResourceEventHandler
+}
+
+func (f headlessEndpointFilter) OnAdd(obj interface{}, isInInitialList bool) {}
+
+func (f headlessEndpointFilter) OnDelete(obj interface{}) {}
+
+func (f headlessEndpointFilter) OnUpdate(oldObj, newObj interface{}) {
+	if f.isHeadless(oldObj) || f.isHeadless(newObj) {
+		f.handler.OnUpdate(oldObj, newObj)
+	}
+}
+
+func (f headlessEndpointFilter) isHeadless(obj interface{}) bool {
+	meta, ok := obj.(metav1.ObjectMetaAccessor)
+	if !ok {
+		return false
+	}
+	_, ok = meta.GetObjectMeta().GetLabels()[v1.IsHeadlessService]
+	return ok
 }
