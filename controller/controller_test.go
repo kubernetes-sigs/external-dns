@@ -131,12 +131,9 @@ func newMockProvider(endpoints []*endpoint.Endpoint, changes *plan.Changes) prov
 	return dnsProvider
 }
 
-// TestRunOnce tests that RunOnce correctly orchestrates the different components.
-func TestRunOnce(t *testing.T) {
+func getTestSource() *testutils.MockSource {
 	// Fake some desired endpoints coming from our source.
 	source := new(testutils.MockSource)
-	cfg := externaldns.NewConfig()
-	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
 	source.On("Endpoints").Return([]*endpoint.Endpoint{
 		{
 			DNSName:    "create-record",
@@ -160,8 +157,18 @@ func TestRunOnce(t *testing.T) {
 		},
 	}, nil)
 
+	return source
+}
+
+func getTestConfig() *externaldns.Config {
+	cfg := externaldns.NewConfig()
+	cfg.ManagedDNSRecordTypes = []string{endpoint.RecordTypeA, endpoint.RecordTypeAAAA, endpoint.RecordTypeCNAME}
+	return cfg
+}
+
+func getTestProvider() provider.Provider {
 	// Fake some existing records in our DNS provider and validate some desired changes.
-	provider := newMockProvider(
+	return newMockProvider(
 		[]*endpoint.Endpoint{
 			{
 				DNSName:    "update-record",
@@ -203,6 +210,13 @@ func TestRunOnce(t *testing.T) {
 			},
 		},
 	)
+}
+
+// TestRunOnce tests that RunOnce correctly orchestrates the different components.
+func TestRunOnce(t *testing.T) {
+	source := getTestSource()
+	cfg := getTestConfig()
+	provider := getTestProvider()
 
 	r, err := registry.NewNoopRegistry(provider)
 	require.NoError(t, err)
@@ -216,6 +230,40 @@ func TestRunOnce(t *testing.T) {
 	}
 
 	assert.NoError(t, ctrl.RunOnce(context.Background()))
+
+	// Validate that the mock source was called.
+	source.AssertExpectations(t)
+	// check the verified records
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedARecords))
+	assert.Equal(t, math.Float64bits(1), valueFromMetric(verifiedAAAARecords))
+}
+
+// TestRun tests that Run correctly starts and stops
+func TestRun(t *testing.T) {
+	source := getTestSource()
+	cfg := getTestConfig()
+	provider := getTestProvider()
+
+	r, err := registry.NewNoopRegistry(provider)
+	require.NoError(t, err)
+
+	// Run our controller once to trigger the validation.
+	ctrl := &Controller{
+		Source:             source,
+		Registry:           r,
+		Policy:             &plan.SyncPolicy{},
+		ManagedRecordTypes: cfg.ManagedDNSRecordTypes,
+	}
+	ctrl.nextRunAt = time.Now().Add(-time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
+	stopped := make(chan struct{})
+	go func() {
+		ctrl.Run(ctx)
+		close(stopped)
+	}()
+	time.Sleep(1500 * time.Millisecond)
+	cancel() // start shutdown
+	<-stopped
 
 	// Validate that the mock source was called.
 	source.AssertExpectations(t)
