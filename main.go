@@ -45,6 +45,7 @@ import (
 	"sigs.k8s.io/external-dns/provider"
 	"sigs.k8s.io/external-dns/provider/akamai"
 	"sigs.k8s.io/external-dns/provider/alibabacloud"
+	"sigs.k8s.io/external-dns/provider/arvancloud"
 	"sigs.k8s.io/external-dns/provider/aws"
 	"sigs.k8s.io/external-dns/provider/awssd"
 	"sigs.k8s.io/external-dns/provider/azure"
@@ -226,6 +227,21 @@ func main() {
 			}, nil)
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
+	case "arvancloud":
+		var opts []arvancloud.Option
+		if cfg.ArvancloudProxied {
+			opts = append(opts, arvancloud.WithEnableCloudProxy())
+		} else {
+			opts = append(opts, arvancloud.WithDisableCloudProxy())
+		}
+		if cfg.ArvancloudZoneRecordsPerPage != 0 {
+			opts = append(opts, arvancloud.WithDomainPerPage(cfg.ArvancloudZoneRecordsPerPage))
+		}
+		if cfg.ArvancloudDNSRecordsPerPage != 0 {
+			opts = append(opts, arvancloud.WithDnsPerPage(cfg.ArvancloudDNSRecordsPerPage))
+		}
+
+		p, err = arvancloud.NewArvanCloudProvider(domainFilter, zoneIDFilter, cfg.DryRun, opts...)
 	case "aws":
 		p, err = aws.NewAWSProvider(
 			aws.AWSConfig{

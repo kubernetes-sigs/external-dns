@@ -81,6 +81,9 @@ type Config struct {
 	ExcludeTargetNets                  []string
 	AlibabaCloudConfigFile             string
 	AlibabaCloudZoneType               string
+	ArvancloudProxied                  bool
+	ArvancloudZoneRecordsPerPage       int
+	ArvancloudDNSRecordsPerPage        int
 	AWSZoneType                        string
 	AWSZoneTagFilter                   []string
 	AWSAssumeRole                      string
@@ -475,7 +478,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("traefik-disable-new", "Disable listeners on Resources under the traefik.io API Group").Default(strconv.FormatBool(defaultConfig.TraefikDisableNew)).BoolVar(&cfg.TraefikDisableNew)
 
 	// Flags related to providers
-	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
+	providers := []string{"akamai", "alibabacloud", "arvancloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "infoblox", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
@@ -489,6 +492,9 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("google-zone-visibility", "When using the Google provider, filter for zones with this visibility (optional, options: public, private)").Default(defaultConfig.GoogleZoneVisibility).EnumVar(&cfg.GoogleZoneVisibility, "", "public", "private")
 	app.Flag("alibaba-cloud-config-file", "When using the Alibaba Cloud provider, specify the Alibaba Cloud configuration file (required when --provider=alibabacloud)").Default(defaultConfig.AlibabaCloudConfigFile).StringVar(&cfg.AlibabaCloudConfigFile)
 	app.Flag("alibaba-cloud-zone-type", "When using the Alibaba Cloud provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AlibabaCloudZoneType).EnumVar(&cfg.AlibabaCloudZoneType, "", "public", "private")
+	app.Flag("arvancloud-proxied", "When using the Arvan provider, specify if the proxy mode must be enabled (default: disabled)").BoolVar(&cfg.ArvancloudProxied)
+	app.Flag("arvancloud-zone-records-per-page", "When using the Arvan provider, specify how many Zone records listed per page, max possible 900 (default: 15)").Default(strconv.Itoa(defaultConfig.ArvancloudZoneRecordsPerPage)).IntVar(&cfg.ArvancloudZoneRecordsPerPage)
+	app.Flag("arvancloud-dns-records-per-page", "When using the Arvan provider, specify how many DNS records listed per page, max possible 900 (default: 300)").Default(strconv.Itoa(defaultConfig.ArvancloudDNSRecordsPerPage)).IntVar(&cfg.ArvancloudDNSRecordsPerPage)
 	app.Flag("aws-zone-type", "When using the AWS provider, filter for zones of this type (optional, options: public, private)").Default(defaultConfig.AWSZoneType).EnumVar(&cfg.AWSZoneType, "", "public", "private")
 	app.Flag("aws-zone-tags", "When using the AWS provider, filter for zones with these tags").Default("").StringsVar(&cfg.AWSZoneTagFilter)
 	app.Flag("aws-assume-role", "When using the AWS API, assume this IAM role. Useful for hosted zones in another AWS account. Specify the full ARN, e.g. `arn:aws:iam::123455567:role/external-dns` (optional)").Default(defaultConfig.AWSAssumeRole).StringVar(&cfg.AWSAssumeRole)
