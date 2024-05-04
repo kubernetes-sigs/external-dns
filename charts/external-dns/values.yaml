@@ -35,6 +35,8 @@ serviceAccount:
   automountServiceAccountToken:
 
 service:
+  # -- If `true`, create a new `Service`.
+  create: true
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
