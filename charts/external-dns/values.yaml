@@ -162,7 +162,7 @@ tolerations: []
 
 serviceMonitor:
   # -- If `true`, create a `ServiceMonitor` resource to support the _Prometheus Operator_.
-  enabled: true
+  enabled: false
   # -- Additional labels for the `ServiceMonitor`.
   additionalLabels: {}
   # -- Annotations to add to the `ServiceMonitor`.
