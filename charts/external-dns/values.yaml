@@ -36,7 +36,7 @@ serviceAccount:
 
 service:
   # -- If `true`, create a new `Service`.
-  create: false
+  create: true
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
