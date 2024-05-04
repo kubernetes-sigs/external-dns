@@ -36,7 +36,7 @@ serviceAccount:
 
 service:
   # -- If `true`, create a new `Service`.
-  create: true
+  create: false
   # -- Service annotations.
   annotations: {}
   # -- Service HTTP port.
@@ -55,6 +55,7 @@ rbac:
 # -- Annotations to add to the `Deployment`.
 deploymentAnnotations: {}
 
+# -- Extra containers to add to the `Pod`.
 extraContainers: {}
 
 # -- [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy).
@@ -161,7 +162,7 @@ tolerations: []
 
 serviceMonitor:
   # -- If `true`, create a `ServiceMonitor` resource to support the _Prometheus Operator_.
-  enabled: false
+  enabled: true
   # -- Additional labels for the `ServiceMonitor`.
   additionalLabels: {}
   # -- Annotations to add to the `ServiceMonitor`.
