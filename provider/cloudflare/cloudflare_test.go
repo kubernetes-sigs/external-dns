@@ -42,12 +42,13 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	User            cloudflare.User
-	Zones           map[string]string
-	Records         map[string]map[string]cloudflare.DNSRecord
-	Actions         []MockAction
-	listZonesError  error
-	dnsRecordsError error
+	User                  cloudflare.User
+	Zones                 map[string]string
+	Records               map[string]map[string]cloudflare.DNSRecord
+	Actions               []MockAction
+	listZonesError        error
+	listZonesContextError error
+	dnsRecordsError       error
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -253,8 +254,8 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, zoneID ...string) 
 }
 
 func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
-	if m.listZonesError != nil {
-		return cloudflare.ZonesResponse{}, m.listZonesError
+	if m.listZonesContextError != nil {
+		return cloudflare.ZonesResponse{}, m.listZonesContextError
 	}
 
 	result := []cloudflare.Zone{}
@@ -641,6 +642,31 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	// foo.com should *not* be returned as it doesn't match ZoneID filter
 	assert.Equal(t, 1, len(zones))
 	assert.Equal(t, "bar.com", zones[0].Name)
+}
+
+func TestCloudflareListZonesRateLimited(t *testing.T) {
+	// Create a mock client that returns a rate limit error
+	client := NewMockCloudFlareClient()
+	baseErr := &cloudflare.Error{
+		StatusCode: 429,
+		ErrorCodes: []int{10000},
+		Type:       cloudflare.ErrorTypeRateLimit,
+	}
+
+	client.listZonesContextError = baseErr
+
+	// Create a CloudFlareProvider with the mock client
+	p := &CloudFlareProvider{
+		Client: client,
+	}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a rate limit error")
+	}
 }
 
 func TestCloudflareRecords(t *testing.T) {
