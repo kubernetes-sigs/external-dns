@@ -669,26 +669,35 @@ func TestCloudflareRecords(t *testing.T) {
 	})
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
-	provider := &CloudFlareProvider{
+	p := &CloudFlareProvider{
 		Client:            client,
 		DNSRecordsPerPage: 1,
 	}
 	ctx := context.Background()
 
-	records, err := provider.Records(ctx)
+	records, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-
 	assert.Equal(t, 2, len(records))
 	client.dnsRecordsError = errors.New("failed to list dns records")
-	_, err = provider.Records(ctx)
+	_, err = p.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 	client.dnsRecordsError = nil
-	client.listZonesError = errors.New("failed to list zones")
-	_, err = provider.Records(ctx)
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 429,
+		ErrorCodes: []int{10000},
+		Type:       cloudflare.ErrorTypeRateLimit,
+	}
+	_, err = p.Records(ctx)
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a rate limit error")
+	}
+	client.listZonesContextError = errors.New("failed to list zones")
+	_, err = p.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
