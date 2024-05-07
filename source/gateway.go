@@ -289,6 +289,10 @@ func (c *gatewayRouteResolver) resolve(rt gatewayRoute) (map[string]endpoint.Tar
 	hostTargets := make(map[string]endpoint.Targets)
 
 	meta := rt.Metadata()
+	if len(rt.RouteStatus().Parents) == 0 {
+		log.Debugf("No gateway accepted a parentRef in %s %s/%s", c.src.rtKind, meta.Namespace, meta.Name)
+		return hostTargets, nil
+	}
 	for _, rps := range rt.RouteStatus().Parents {
 		// Confirm the Parent is the standard Gateway kind.
 		ref := rps.ParentRef
