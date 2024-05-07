@@ -647,18 +647,12 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 func TestCloudflareListZonesRateLimited(t *testing.T) {
 	// Create a mock client that returns a rate limit error
 	client := NewMockCloudFlareClient()
-	baseErr := &cloudflare.Error{
+	client.listZonesContextError = &cloudflare.Error{
 		StatusCode: 429,
 		ErrorCodes: []int{10000},
 		Type:       cloudflare.ErrorTypeRateLimit,
 	}
-
-	client.listZonesContextError = baseErr
-
-	// Create a CloudFlareProvider with the mock client
-	p := &CloudFlareProvider{
-		Client: client,
-	}
+	p := &CloudFlareProvider{Client: client}
 
 	// Call the Zones function
 	_, err := p.Zones(context.Background())
