@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Added
 
+- Added support for `extraContainers` argument. ([#4432](https://github.com/kubernetes-sigs/external-dns/pull/4432))[@omerap12](https://github.com/omerap12)
 - Added support for setting `excludeDomains` argument.  ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380))[@bford-evs](https://github.com/bford-evs)
 
 ## [v1.14.4] - 2023-04-03

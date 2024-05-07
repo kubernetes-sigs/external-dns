@@ -70,6 +70,9 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
+      {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
         - name: external-dns
           {{- with .Values.securityContext }}
           securityContext:
