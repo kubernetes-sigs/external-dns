@@ -80,6 +80,7 @@ Known providers using webhooks:
 | Provider |  Repo |
 | -------- | ----------- |
 | Adguard Home Provider | https://github.com/muhlba91/external-dns-provider-adguard |
+| Anexia | https://github.com/ProbstenHias/external-dns-anexia-webhook |
 | Bizfly Cloud | https://github.com/bizflycloud/external-dns-bizflycloud-webhook |
 | Gcore | https://github.com/G-Core/external-dns-gcore-webhook |
 | GleSYS | https://github.com/glesys/external-dns-glesys |
