@@ -325,11 +325,15 @@ func (e *Endpoint) String() string {
 func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 	filtered := []*Endpoint{}
 	for _, ep := range eps {
-		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; !ok || endpointOwner != ownerID {
-			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
-		} else {
-			filtered = append(filtered, ep)
+		if len(ep.Labels) == 0 {
+			log.Debugf(`Skipping endpoint %v because it does not have labels`, ep)
+			continue
 		}
+		if endpointOwner, ok := ep.Labels[OwnerLabelKey]; ok && endpointOwner != "" && endpointOwner != ownerID {
+			log.Debugf(`Skipping endpoint %v because owner id does not match, found: "%s", required: "%s"`, ep, endpointOwner, ownerID)
+			continue
+		}
+		filtered = append(filtered, ep)
 	}
 
 	return filtered
