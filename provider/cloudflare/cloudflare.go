@@ -18,6 +18,7 @@ package cloudflare
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -223,6 +224,13 @@ func (p *CloudFlareProvider) Zones(ctx context.Context) ([]cloudflare.Zone, erro
 
 	zonesResponse, err := p.Client.ListZonesContext(ctx)
 	if err != nil {
+		var apiErr *cloudflare.Error
+		if errors.As(err, &apiErr) {
+			if apiErr.ClientRateLimited() {
+				// Handle rate limit error as a soft error
+				return nil, provider.NewSoftError(err)
+			}
+		}
 		return nil, err
 	}
 
@@ -456,6 +464,13 @@ func (p *CloudFlareProvider) listDNSRecordsWithAutoPagination(ctx context.Contex
 	for {
 		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
 		if err != nil {
+			var apiErr *cloudflare.Error
+			if errors.As(err, &apiErr) {
+				if apiErr.ClientRateLimited() {
+					// Handle rate limit error as a soft error
+					return nil, provider.NewSoftError(err)
+				}
+			}
 			return nil, err
 		}
 

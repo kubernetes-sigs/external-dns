@@ -42,12 +42,13 @@ type MockAction struct {
 }
 
 type mockCloudFlareClient struct {
-	User            cloudflare.User
-	Zones           map[string]string
-	Records         map[string]map[string]cloudflare.DNSRecord
-	Actions         []MockAction
-	listZonesError  error
-	dnsRecordsError error
+	User                  cloudflare.User
+	Zones                 map[string]string
+	Records               map[string]map[string]cloudflare.DNSRecord
+	Actions               []MockAction
+	listZonesError        error
+	listZonesContextError error
+	dnsRecordsError       error
 }
 
 var ExampleDomain = []cloudflare.DNSRecord{
@@ -253,8 +254,8 @@ func (m *mockCloudFlareClient) ListZones(ctx context.Context, zoneID ...string) 
 }
 
 func (m *mockCloudFlareClient) ListZonesContext(ctx context.Context, opts ...cloudflare.ReqOption) (cloudflare.ZonesResponse, error) {
-	if m.listZonesError != nil {
-		return cloudflare.ZonesResponse{}, m.listZonesError
+	if m.listZonesContextError != nil {
+		return cloudflare.ZonesResponse{}, m.listZonesContextError
 	}
 
 	result := []cloudflare.Zone{}
@@ -643,32 +644,60 @@ func TestCloudFlareZonesWithIDFilter(t *testing.T) {
 	assert.Equal(t, "bar.com", zones[0].Name)
 }
 
+func TestCloudflareListZonesRateLimited(t *testing.T) {
+	// Create a mock client that returns a rate limit error
+	client := NewMockCloudFlareClient()
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 429,
+		ErrorCodes: []int{10000},
+		Type:       cloudflare.ErrorTypeRateLimit,
+	}
+	p := &CloudFlareProvider{Client: client}
+
+	// Call the Zones function
+	_, err := p.Zones(context.Background())
+
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a rate limit error")
+	}
+}
+
 func TestCloudflareRecords(t *testing.T) {
 	client := NewMockCloudFlareClientWithRecords(map[string][]cloudflare.DNSRecord{
 		"001": ExampleDomain,
 	})
 
 	// Set DNSRecordsPerPage to 1 test the pagination behaviour
-	provider := &CloudFlareProvider{
+	p := &CloudFlareProvider{
 		Client:            client,
 		DNSRecordsPerPage: 1,
 	}
 	ctx := context.Background()
 
-	records, err := provider.Records(ctx)
+	records, err := p.Records(ctx)
 	if err != nil {
 		t.Errorf("should not fail, %s", err)
 	}
-
 	assert.Equal(t, 2, len(records))
 	client.dnsRecordsError = errors.New("failed to list dns records")
-	_, err = provider.Records(ctx)
+	_, err = p.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
 	client.dnsRecordsError = nil
-	client.listZonesError = errors.New("failed to list zones")
-	_, err = provider.Records(ctx)
+	client.listZonesContextError = &cloudflare.Error{
+		StatusCode: 429,
+		ErrorCodes: []int{10000},
+		Type:       cloudflare.ErrorTypeRateLimit,
+	}
+	_, err = p.Records(ctx)
+	// Assert that a soft error was returned
+	if !errors.Is(err, provider.SoftError) {
+		t.Error("expected a rate limit error")
+	}
+	client.listZonesContextError = errors.New("failed to list zones")
+	_, err = p.Records(ctx)
 	if err == nil {
 		t.Errorf("expected to fail")
 	}
