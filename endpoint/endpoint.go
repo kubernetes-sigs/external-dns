@@ -374,3 +374,24 @@ type DNSEndpointList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []DNSEndpoint `json:"items"`
 }
+
+// RemoveDuplicates returns a slice holding the unique endpoints.
+// This function doesn't contemplate the Targets of an Endpoint
+// as part of the primary Key
+func RemoveDuplicates(endpoints []*Endpoint) []*Endpoint {
+	visited := make(map[EndpointKey]struct{})
+	result := []*Endpoint{}
+
+	for _, ep := range endpoints {
+		key := ep.Key()
+
+		if _, found := visited[key]; !found {
+			result = append(result, ep)
+			visited[key] = struct{}{}
+		} else {
+			log.Debugf(`Skipping duplicated endpoint: %v`, ep)
+		}
+	}
+
+	return result
+}

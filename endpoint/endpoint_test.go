@@ -252,3 +252,136 @@ func TestIsOwnedBy(t *testing.T) {
 		})
 	}
 }
+
+func TestDuplicatedEndpointsWithSimpleZone(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+
+	type args struct {
+		eps []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					bar,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RemoveDuplicates(tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveDuplicates() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDuplicatedEndpointsWithOverlappingZones(t *testing.T) {
+	foo1 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo2 := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo3 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	foo4 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "foo",
+		},
+	}
+	bar := &Endpoint{
+		DNSName:    "internal.foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+	bar2 := &Endpoint{
+		DNSName:    "foo.com",
+		RecordType: RecordTypeA,
+		Labels: Labels{
+			OwnerLabelKey: "bar",
+		},
+	}
+
+	type args struct {
+		eps []*Endpoint
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Endpoint
+	}{
+		{
+			name: "filter values",
+			args: args{
+				eps: []*Endpoint{
+					foo1,
+					foo2,
+					foo3,
+					foo4,
+					bar,
+					bar2,
+				},
+			},
+			want: []*Endpoint{
+				foo1,
+				foo3,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := RemoveDuplicates(tt.args.eps); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("RemoveDuplicates() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

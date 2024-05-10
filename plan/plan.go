@@ -252,6 +252,7 @@ func (p *Plan) Calculate() *Plan {
 	// filter out updates this external dns does not have ownership claim over
 	if p.OwnerID != "" {
 		changes.Delete = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.Delete)
+		changes.Delete = endpoint.RemoveDuplicates(changes.Delete)
 		changes.UpdateOld = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateOld)
 		changes.UpdateNew = endpoint.FilterEndpointsByOwnerID(p.OwnerID, changes.UpdateNew)
 	}
