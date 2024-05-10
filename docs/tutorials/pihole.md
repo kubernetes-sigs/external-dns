@@ -1,7 +1,7 @@
 # Setting up ExternalDNS for Pi-hole
 
 This tutorial describes how to setup ExternalDNS to sync records with Pi-hole's Custom DNS.
-Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A or CNAME records.
+Pi-hole has an internal list it checks last when resolving requests. This list can contain any number of arbitrary A, AAAA or CNAME records.
 There is a pseudo-API exposed that ExternalDNS is able to use to manage these records.
 
 __NOTE:__ Your Pi-hole must be running [version 5.9 or newer](https://pi-hole.net/blog/2022/02/12/pi-hole-ftl-v5-14-web-v5-11-and-core-v5-9-released).
@@ -91,7 +91,7 @@ spec:
         args:
         - --source=service
         - --source=ingress
-        # Pihole only supports A/CNAME records so there is no mechanism to track ownership.
+        # Pihole only supports A/AAAA/CNAME records so there is no mechanism to track ownership.
         # You don't need to set this flag, but if you leave it unset, you will receive warning
         # logs when ExternalDNS attempts to create TXT records.
         - --registry=noop
