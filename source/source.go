@@ -60,8 +60,6 @@ const (
 	controllerAnnotationValue = "dns-controller"
 	// The annotation used for defining the desired hostname
 	internalHostnameAnnotationKey = "external-dns.alpha.kubernetes.io/internal-hostname"
-	// New annotation to support wildcard annotations for webhook providers
-	webhookWildcardAnnotationKey = "external-dns.alpha.kubernetes.io/webhook-*"
 )
 
 const (
@@ -226,7 +224,7 @@ func getProviderSpecificAnnotations(annotations map[string]string) (endpoint.Pro
 				Name:  fmt.Sprintf("ibmcloud-%s", attr),
 				Value: v,
 			})
-		} else if strings.HasPrefix(k, webhookWildcardAnnotationKey) {
+		} else if strings.HasPrefix(k, "external-dns.alpha.kubernetes.io/webhook-") {
 			// Support for wildcard annotations for webhook providers
 			attr := strings.TrimPrefix(k, "external-dns.alpha.kubernetes.io/webhook-")
 			providerSpecificAnnotations = append(providerSpecificAnnotations, endpoint.ProviderSpecificProperty{
