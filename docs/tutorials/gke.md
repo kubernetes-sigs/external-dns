@@ -74,7 +74,7 @@ More often, following best practices in regards to security and operations, Clou
 
 ExternalDNS will need permissions to make changes to the Cloud DNS zone. There are three ways to configure the access needed:
 
-* [Worker Node Service Account](#worker-node-service-account)
+* [Worker Node Service Account](#worker-node-service-account-method)
 * [Static Credentials](#static-credentials)
 * [Workload Identity](#workload-identity)
 
@@ -181,8 +181,6 @@ You have an option to chose from using the gcloud CLI or using Terraform.
     * `ns/external-dns` with `ns/<your namespace`  
     * `sa/external-dns` with `sa/<your ksa>`
 
-
-
 === "Terraform"
 
     The below instructions assume you are using the default Kubernetes Service account name of `external-dns` in the namespace `external-dns`
@@ -219,7 +217,14 @@ You have an option to chose from using the gcloud CLI or using Terraform.
     resource "google_project_iam_member" "external_dns" {
       member  = local.member
       project = "DNS-PROJECT"
-      role    = "roles/dns.admin"
+      role    = "roles/dns.reader"
+    }
+
+    resource "google_dns_managed_zone_iam_member" "member" {
+      project      = "DNS-PROJECT"
+      managed_zone = "ZONE-NAME"
+      role         = "roles/dns.admin"
+      member       = local.member
     }
     ```
     
@@ -232,9 +237,6 @@ You have an option to chose from using the gcloud CLI or using Terraform.
     
     * `variable "ksa_name"` : Name of the Kubernetes service account external-dns will use
     * `variable "kns_name"` : Name of the Kubernetes Name Space that will have external-dns installed to
-
-
-
 
 ### Worker Node Service Account method
 
@@ -291,7 +293,6 @@ kubectl create secret generic "external-dns" --namespace ${EXTERNALDNS_NS:-"defa
 ```
 
 After this, follow the steps in [Deploy ExternalDNS](#deploy-externaldns).  Make sure to set the `--google-project` flag to match Cloud DNS project name. Make sure to uncomment out the section that mounts the secret to the ExternalDNS pods.
-
 
 #### Deploy External DNS
 
