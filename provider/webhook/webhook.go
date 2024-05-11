@@ -123,7 +123,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	err = backoff.Retry(func() error {
 		resp, err = client.Do(req)
 		if err != nil {
-			log.Debugf("Failed to connect to plugin api: %v", err)
+			log.Debugf("Failed to connect to webhook: %v", err)
 			return err
 		}
 		// we currently only use 200 as success, but considering okay all 2XX for future usage
@@ -134,7 +134,7 @@ func NewWebhookProvider(u string) (*WebhookProvider, error) {
 	}, backoff.WithMaxRetries(backoff.NewExponentialBackOff(), maxRetries))
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to plugin api: %v", err)
+		return nil, fmt.Errorf("failed to connect to webhook: %v", err)
 	}
 
 	contentType := resp.Header.Get(webhookapi.ContentTypeHeader)
