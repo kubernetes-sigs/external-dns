@@ -233,9 +233,7 @@ func TestApplyChangesWithProviderSpecificProperty(t *testing.T) {
 			var changes plan.Changes
 			defer r.Body.Close()
 			b, err := io.ReadAll(r.Body)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(t, err)
 			err = json.Unmarshal(b, &changes)
 			require.Nil(t, err)
 			require.Len(t, changes.Create, 1)
