@@ -306,7 +306,6 @@ func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*en
 	})
 
 	return records
-
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
