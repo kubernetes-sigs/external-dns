@@ -79,6 +79,8 @@ the values from that.
 2. Otherwise, iterates over that parent Gateway's `status.addresses`, 
 adding each address's `value`. 
 
+The targets from each parent Gateway matching the *Route are then combined and de-duplicated.
+
 ## Dualstack Routes
 
 Gateway resources may be served from an external-loadbalancer which may support both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces.
