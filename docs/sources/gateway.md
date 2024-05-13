@@ -79,4 +79,44 @@ the values from that.
 2. Otherwise, iterates over that parent Gateway's `status.addresses`, 
 adding each address's `value`. 
 
-The targets from each parent Gateway matching the *Route are then combined and de-duplicated.
+## Dualstack Routes
+
+Gateway resources may be served from an external-loadbalancer which may support both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces.
+External DNS Controller uses the `external-dns.alpha.kubernetes.io/dualstack` annotation to determine this. If this annotation is
+set to `true` then ExternalDNS will create two alias records (one A record
+and one AAAA record) for each hostname associated with the Route resource.
+
+Example:
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  annotations:
+    konghq.com/strip-path: "true"
+    external-dns.alpha.kubernetes.io/dualstack: "true"
+  name: echo
+spec:
+  hostnames:
+    - echoserver.example.org
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: kong
+      namespace: kong
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: echo
+          port: 1027
+          weight: 1
+      matches:
+        - path:
+            type: PathPrefix
+            value: /echo
+```
+
+The above HTTPRoute resource is backed by a dualstack Gateway.
+ExternalDNS will create both an A `echoserver.example.org` record and
+an AAAA record of the same name, that each are aliases for the same LB.
