@@ -44,10 +44,10 @@ import (
 const (
 	gatewayGroup = "gateway.networking.k8s.io"
 	gatewayKind  = "Gateway"
-	// GatewayAPIDualstackAnnotationKey is the annotation used for determining if a Gateway Route is dualstack
-	GatewayAPIDualstackAnnotationKey = "external-dns.alpha.kubernetes.io/dualstack"
-	// GatewayAPIDualstackAnnotationValue is the value of the Gateway Route dualstack annotation that indicates it is dualstack
-	GatewayAPIDualstackAnnotationValue = "true"
+	// gatewayAPIDualstackAnnotationKey is the annotation used for determining if a Gateway Route is dualstack
+	gatewayAPIDualstackAnnotationKey = "external-dns.alpha.kubernetes.io/dualstack"
+	// gatewayAPIDualstackAnnotationValue is the value of the Gateway Route dualstack annotation that indicates it is dualstack
+	gatewayAPIDualstackAnnotationValue = "true"
 )
 
 type gatewayRoute interface {
@@ -616,8 +616,8 @@ func selectorsEqual(a, b labels.Selector) bool {
 }
 
 func setDualstackLabel(rt gatewayRoute, endpoints []*endpoint.Endpoint) {
-	val, ok := rt.Metadata().Annotations[GatewayAPIDualstackAnnotationKey]
-	if ok && val == GatewayAPIDualstackAnnotationValue {
+	val, ok := rt.Metadata().Annotations[gatewayAPIDualstackAnnotationKey]
+	if ok && val == gatewayAPIDualstackAnnotationValue {
 		log.Debugf("Adding dualstack label to GatewayRoute %s/%s.", rt.Metadata().Namespace, rt.Metadata().Name)
 		for _, ep := range endpoints {
 			ep.Labels[endpoint.DualstackLabelKey] = "true"

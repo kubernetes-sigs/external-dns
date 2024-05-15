@@ -259,17 +259,17 @@ func TestDualStackLabel(t *testing.T) {
 		},
 		{
 			desc:      "correct-annotation-key-and-value",
-			in:        map[string]string{GatewayAPIDualstackAnnotationKey: GatewayAPIDualstackAnnotationValue},
+			in:        map[string]string{gatewayAPIDualstackAnnotationKey: gatewayAPIDualstackAnnotationValue},
 			setsLabel: true,
 		},
 		{
 			desc:      "correct-annotation-key-incorrect-value",
-			in:        map[string]string{GatewayAPIDualstackAnnotationKey: "foo"},
+			in:        map[string]string{gatewayAPIDualstackAnnotationKey: "foo"},
 			setsLabel: false,
 		},
 		{
 			desc:      "incorrect-annotation-key-correct-value",
-			in:        map[string]string{"FOO": GatewayAPIDualstackAnnotationValue},
+			in:        map[string]string{"FOO": gatewayAPIDualstackAnnotationValue},
 			setsLabel: false,
 		},
 	}
