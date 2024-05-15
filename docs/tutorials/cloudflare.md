@@ -23,6 +23,8 @@ Otherwise `CF_API_KEY` and `CF_API_EMAIL` should be set to run ExternalDNS with 
 You may provide the Cloudflare API token through a file by setting the
 `CF_API_TOKEN="file:/path/to/token"`.
 
+Note. The `CF_API_KEY` and `CF_API_EMAIL` should not be present, if you are using a `CF_API_TOKEN`.
+
 When using API Token authentication, the token should be granted Zone `Read`, DNS `Edit` privileges, and access to `All zones`.
 
 If you would like to further restrict the API permissions to a specific zone (or zones), you also need to use the `--zone-id-filter` so that the underlying API requests only access the zones that you explicitly specify, as opposed to accessing all zones.
@@ -39,6 +41,12 @@ Begin by creating a Kubernetes secret to securely store your CloudFlare API key.
 
 ```shell
 kubectl create secret generic cloudflare-api-key --from-literal=apiKey=YOUR_API_KEY --from-literal=email=YOUR_CLOUDFLARE_EMAIL
+```
+
+And for API Token it should look like :
+
+```shell
+kubectl create secret generic cloudflare-api-key --from-literal=apiKey=YOUR_API_TOKEN
 ```
 
 Ensure to replace YOUR_API_KEY with your actual CloudFlare API key and YOUR_CLOUDFLARE_EMAIL with the email associated with your CloudFlare account.
@@ -64,6 +72,20 @@ env:
         name: cloudflare-api-key
         key: email
 ```
+
+Use this in your values.yaml, if you are using API Token:
+
+```shell
+provider: 
+  name: cloudflare
+env:
+  - name: CF_API_TOKEN
+    valueFrom:
+      secretKeyRef:
+        name: cloudflare-api-key
+        key: apiKey
+```
+
 
 Finally, install the ExternalDNS chart with Helm using the configuration specified in your values.yaml file:
 
