@@ -72,10 +72,10 @@ func TestGatewayGRPCRouteSourceEndpoints(t *testing.T) {
 				hostnameAnnotationKey: "api-annotation.foobar.internal",
 			},
 		},
-		Spec: v1alpha2.GRPCRouteSpec{
+		Spec: v1.GRPCRouteSpec{
 			Hostnames: []v1.Hostname{"api-hostnames.foobar.internal"},
 		},
-		Status: v1alpha2.GRPCRouteStatus{
+		Status: v1.GRPCRouteStatus{
 			RouteStatus: gwRouteStatus(gwParentRef("default", "internal")),
 		},
 	}
