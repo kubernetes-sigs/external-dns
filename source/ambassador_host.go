@@ -142,7 +142,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 			}
 		}
 
-		hostEndpoints, err := sc.endpointsFromHost(ctx, host, targets)
+		hostEndpoints, err := sc.endpointsFromHost(host, targets)
 		if err != nil {
 			log.Warningf("Could not get endpoints for Host %s", err)
 			continue
@@ -164,7 +164,7 @@ func (sc *ambassadorHostSource) Endpoints(ctx context.Context) ([]*endpoint.Endp
 }
 
 // endpointsFromHost extracts the endpoints from a Host object
-func (sc *ambassadorHostSource) endpointsFromHost(_ context.Context, host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
+func (sc *ambassadorHostSource) endpointsFromHost(host *ambassador.Host, targets endpoint.Targets) ([]*endpoint.Endpoint, error) {
 	var endpoints []*endpoint.Endpoint
 	annotations := host.Annotations
 
