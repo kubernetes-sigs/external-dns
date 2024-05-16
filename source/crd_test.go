@@ -56,7 +56,7 @@ func objBody(codec runtime.Encoder, obj runtime.Object) io.ReadCloser {
 	return io.NopCloser(bytes.NewReader([]byte(runtime.EncodeOrDie(codec, obj))))
 }
 
-func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, t *testing.T) rest.Interface {
+func fakeRESTClient(endpoints []*endpoint.Endpoint, apiVersion, kind, namespace, name string, annotations map[string]string, labels map[string]string, _ *testing.T) rest.Interface {
 	groupVersion, _ := schema.ParseGroupVersion(apiVersion)
 	scheme := runtime.NewScheme()
 	addKnownTypes(scheme, groupVersion)
