@@ -10,13 +10,13 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.16.1
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.3.0
-	github.com/IBM/go-sdk-core/v5 v5.17.2
+	github.com/IBM/go-sdk-core/v5 v5.17.3
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.736
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.737
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.53.3
+	github.com/aws/aws-sdk-go v1.53.4
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.69
@@ -24,7 +24,7 @@ require (
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20190201205600-f136f9222381
 	github.com/datawire/ambassador v1.12.4
 	github.com/denverdino/aliyungo v0.0.0-20230411124812-ab98a9173ace
-	github.com/digitalocean/godo v1.115.0
+	github.com/digitalocean/godo v1.116.0
 	github.com/dnsimple/dnsimple-go v1.7.0
 	github.com/exoscale/egoscale v0.102.3
 	github.com/ffledgling/pdns-go v0.0.0-20180219074714-524e7daccd99
@@ -54,9 +54,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.26
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.921
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.921
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.921
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.923
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.923
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.923
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -68,7 +68,7 @@ require (
 	golang.org/x/oauth2 v0.20.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.180.0
+	google.golang.org/api v0.181.0
 	gopkg.in/ns1/ns1-go.v2 v2.10.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.22.0
@@ -204,8 +204,8 @@ require (
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/tools v0.20.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240415180920-8c6c420018be // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240506185236-b8a5c65736ae // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/go-playground/validator.v9 v9.31.0 // indirect
