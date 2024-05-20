@@ -357,6 +357,7 @@ type DNSEndpointStatus struct {
 // +kubebuilder:resource:path=dnsendpoints
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:metadata:annotations="api-approved.kubernetes.io=https://github.com/kubernetes-sigs/external-dns/pull/2007"
 // +versionName=v1alpha1
 
 type DNSEndpoint struct {
