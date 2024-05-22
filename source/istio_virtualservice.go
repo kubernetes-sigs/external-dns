@@ -28,7 +28,6 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioinformers "istio.io/client-go/pkg/informers/externalversions"
 	networkingv1alpha3informer "istio.io/client-go/pkg/informers/externalversions/networking/v1alpha3"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	kubeinformers "k8s.io/client-go/informers"
@@ -39,7 +38,7 @@ import (
 	"sigs.k8s.io/external-dns/endpoint"
 )
 
-// IstioMeshGateway is the built in gateway for all sidecars
+// IstioMeshGateway is the built-in gateway for all sidecars
 const IstioMeshGateway = "mesh"
 
 // virtualServiceSource is an implementation of Source for Istio VirtualService objects.
@@ -201,6 +200,7 @@ func (sc *virtualServiceSource) AddEventHandler(ctx context.Context, handler fun
 	sc.virtualserviceInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
 }
 
+// getGateway retrieves the Gateway resource specified by the gatewayStr.
 func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr string, virtualService *networkingv1alpha3.VirtualService) (*networkingv1alpha3.Gateway, error) {
 	if gatewayStr == "" || gatewayStr == IstioMeshGateway {
 		// This refers to "all sidecars in the mesh"; ignore.
@@ -216,18 +216,17 @@ func (sc *virtualServiceSource) getGateway(ctx context.Context, gatewayStr strin
 		namespace = virtualService.Namespace
 	}
 
+	log.Debugf("Retrieving gateway %s in namespace %s", name, namespace)
 	gateway, err := sc.gatewayInformer.Lister().Gateways(namespace).Get(name)
-	if errors.IsNotFound(err) {
-		log.Warnf("VirtualService (%s/%s) references non-existent gateway: %s ", virtualService.Namespace, virtualService.Name, gatewayStr)
-		return nil, nil
-	} else if err != nil {
+	if err != nil {
 		log.Errorf("Failed retrieving gateway %s referenced by VirtualService %s/%s: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
 		return nil, err
 	}
 	if gateway == nil {
-		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found: %v", gatewayStr, virtualService.Namespace, virtualService.Name, err)
+		log.Debugf("Gateway %s referenced by VirtualService %s/%s not found", gatewayStr, virtualService.Namespace, virtualService.Name)
 		return nil, nil
 	}
+	log.Debugf("Gateway %s retrieved successfully", gatewayStr)
 	return gateway, nil
 }
 
@@ -298,8 +297,8 @@ func appendUnique(targets []string, target string) []string {
 func (sc *virtualServiceSource) targetsFromVirtualService(ctx context.Context, virtualService *networkingv1alpha3.VirtualService, vsHost string) ([]string, error) {
 	var targets []string
 	// for each host we need to iterate through the gateways because each host might match for only one of the gateways
-	for _, gateway := range virtualService.Spec.Gateways {
-		gateway, err := sc.getGateway(ctx, gateway, virtualService)
+	for _, gatewayStr := range virtualService.Spec.Gateways {
+		gateway, err := sc.getGateway(ctx, gatewayStr, virtualService)
 		if err != nil {
 			return nil, err
 		}
