@@ -31,10 +31,15 @@ The default recommended port is 8888, and should listen only on localhost (ie: o
 
 **NOTE**: only `5xx` responses will be retried and only `20x` will be considered as successful. All status codes different from those will be considered a failure on ExternalDNS's side.
 
-
 ## Metrics support
 
 The metrics should listen ":8080" on `/metrics` following [Open Metrics](https://github.com/OpenObservability/OpenMetrics) format.
+
+## Custom Annotations
+
+The Webhook provider supports custom annotations for DNS records. This feature allows users to define additional configuration options for DNS records managed by the Webhook provider. Custom annotations are defined using the annotation format `external-dns.alpha.kubernetes.io/webhook-<custom-annotation>`.
+
+Custom annotations can be used to influence DNS record creation and updates. Providers implementing the Webhook API should document the custom annotations they support and how they affect DNS record management.
 
 ## Provider registry
 
