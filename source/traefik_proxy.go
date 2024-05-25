@@ -759,14 +759,26 @@ func (ts *traefikSource) AddEventHandler(ctx context.Context, handler func()) {
 	// Right now there is no way to remove event handler from informer, see:
 	// https://github.com/kubernetes/kubernetes/issues/79610
 	log.Debug("Adding event handler for IngressRoute")
-	ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if ts.ingressRouteInformer != nil {
+		ts.ingressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteInformer != nil {
+		ts.oldIngressRouteInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
 	log.Debug("Adding event handler for IngressRouteTCP")
-	ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if ts.ingressRouteTcpInformer != nil {
+		ts.ingressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteTcpInformer != nil {
+		ts.oldIngressRouteTcpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
 	log.Debug("Adding event handler for IngressRouteUDP")
-	ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
-	ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	if ts.ingressRouteUdpInformer != nil {
+		ts.ingressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
+	if ts.oldIngressRouteUdpInformer != nil {
+		ts.oldIngressRouteUdpInformer.Informer().AddEventHandler(eventHandlerFunc(handler))
+	}
 }
 
 // newTraefikUnstructuredConverter returns a new unstructuredConverter initialized
