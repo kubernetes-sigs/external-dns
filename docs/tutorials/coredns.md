@@ -86,6 +86,7 @@ helm install --name my-coredns --values values.yaml stable/coredns
 ## Installing ExternalDNS
 ### Install external ExternalDNS
 ETCD_URLS is configured to etcd client service address.
+Optionnally, you can configure ETCD_USERNAME and ETCD_PASSWORD for authenticating to etcd.
 
 #### Manifest (for clusters without RBAC enabled)
 

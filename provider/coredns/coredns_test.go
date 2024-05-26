@@ -18,9 +18,12 @@ package coredns
 
 import (
 	"context"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
+	etcdcv3 "go.etcd.io/etcd/client/v3"
 	"sigs.k8s.io/external-dns/endpoint"
 	"sigs.k8s.io/external-dns/plan"
 
@@ -53,6 +56,68 @@ func (c fakeETCDClient) SaveService(service *Service) error {
 func (c fakeETCDClient) DeleteService(key string) error {
 	delete(c.services, key)
 	return nil
+}
+
+func TestETCDConfig(t *testing.T) {
+	var tests = []struct {
+		name  string
+		input map[string]string
+		want  *etcdcv3.Config
+	}{
+		{
+			"default config",
+			map[string]string{},
+			&etcdcv3.Config{Endpoints: []string{"http://localhost:2379"}},
+		},
+		{
+			"config with ETCD_URLS",
+			map[string]string{"ETCD_URLS": "http://example.com:2379"},
+			&etcdcv3.Config{Endpoints: []string{"http://example.com:2379"}},
+		},
+		{
+			"config with ETCD_USERNAME and ETCD_PASSWORD",
+			map[string]string{"ETCD_USERNAME": "root", "ETCD_PASSWORD": "test"},
+			&etcdcv3.Config{
+				Endpoints: []string{"http://localhost:2379"},
+				Username:  "root",
+				Password:  "test",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			closer := envSetter(tt.input)
+			cfg, _ := getETCDConfig()
+			if !reflect.DeepEqual(cfg, tt.want) {
+				t.Errorf("unexpected config. Got %v, want %v", cfg, tt.want)
+			}
+			t.Cleanup(closer)
+		})
+	}
+
+}
+
+func envSetter(envs map[string]string) (closer func()) {
+	originalEnvs := map[string]string{}
+
+	for name, value := range envs {
+		if originalValue, ok := os.LookupEnv(name); ok {
+			originalEnvs[name] = originalValue
+		}
+		_ = os.Setenv(name, value)
+	}
+
+	return func() {
+		for name := range envs {
+			origValue, has := originalEnvs[name]
+			if has {
+				_ = os.Setenv(name, origValue)
+			} else {
+				_ = os.Unsetenv(name)
+			}
+		}
+	}
 }
 
 func TestAServiceTranslation(t *testing.T) {
