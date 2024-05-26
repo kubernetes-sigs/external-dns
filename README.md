@@ -88,6 +88,7 @@ Known providers using webhooks:
 | IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook |
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
 | STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
+| Unifi | https://github.com/kashalls/external-dns-unifi-webhook |
 
 ## Status of in-tree providers
 
