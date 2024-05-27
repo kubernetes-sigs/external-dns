@@ -639,11 +639,11 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("log-level", "Set the level of logging. (default: info, options: panic, debug, info, warning, error, fatal)").Default(defaultConfig.LogLevel).EnumVar(&cfg.LogLevel, allLogLevelsAsStrings()...)
 
 	// Webhook provider
-	app.Flag("webhook-provider-url", "[EXPERIMENTAL] The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)").Default(defaultConfig.WebhookProviderURL).StringVar(&cfg.WebhookProviderURL)
-	app.Flag("webhook-provider-read-timeout", "[EXPERIMENTAL] The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
-	app.Flag("webhook-provider-write-timeout", "[EXPERIMENTAL] The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
+	app.Flag("webhook-provider-url", "The URL of the remote endpoint to call for the webhook provider (default: http://localhost:8888)").Default(defaultConfig.WebhookProviderURL).StringVar(&cfg.WebhookProviderURL)
+	app.Flag("webhook-provider-read-timeout", "The read timeout for the webhook provider in duration format (default: 5s)").Default(defaultConfig.WebhookProviderReadTimeout.String()).DurationVar(&cfg.WebhookProviderReadTimeout)
+	app.Flag("webhook-provider-write-timeout", "The write timeout for the webhook provider in duration format (default: 10s)").Default(defaultConfig.WebhookProviderWriteTimeout.String()).DurationVar(&cfg.WebhookProviderWriteTimeout)
 
-	app.Flag("webhook-server", "[EXPERIMENTAL] When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
+	app.Flag("webhook-server", "When enabled, runs as a webhook server instead of a controller. (default: false).").BoolVar(&cfg.WebhookServer)
 
 	_, err := app.Parse(args)
 	if err != nil {
