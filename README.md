@@ -86,6 +86,7 @@ Known providers using webhooks:
 | GleSYS | https://github.com/glesys/external-dns-glesys |
 | Hetzner | https://github.com/mconfalonieri/external-dns-hetzner-webhook |
 | IONOS | https://github.com/ionos-cloud/external-dns-ionos-webhook |
+| Infoblox | https://github.com/AbsaOSS/external-dns-infoblox-webhook |
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
 | STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
 | Unifi | https://github.com/kashalls/external-dns-unifi-webhook |
