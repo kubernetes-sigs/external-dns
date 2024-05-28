@@ -244,6 +244,31 @@ func testServiceSourceEndpoints(t *testing.T) {
 			},
 		},
 		{
+			title:        "annotated dualstack services return an endpoint with dualstack label",
+			svcNamespace: "testing",
+			svcName:      "foo",
+			svcType:      v1.ServiceTypeLoadBalancer,
+			labels:       map[string]string{},
+			annotations: map[string]string{
+				hostnameAnnotationKey:     "foo.example.org.",
+				nlbDualstackAnnotationKey: nlbDualstackAnnotationValue,
+			},
+			externalIPs:        []string{},
+			lbs:                []string{"https://www.example.com"},
+			serviceTypesFilter: []string{},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:    "foo.example.org",
+					RecordType: endpoint.RecordTypeCNAME,
+					Targets:    endpoint.Targets{"https://www.example.com"},
+					Labels: endpoint.Labels{
+						"resource":  "service/testing/foo",
+						"dualstack": "true",
+					},
+				},
+			},
+		},
+		{
 			title:                    "hostname annotation on services is ignored",
 			svcNamespace:             "testing",
 			svcName:                  "foo",
