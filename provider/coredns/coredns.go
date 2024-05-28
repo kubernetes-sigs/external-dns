@@ -205,8 +205,10 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 	}
 	etcdURLs := strings.Split(etcdURLsStr, ",")
 	firstURL := strings.ToLower(etcdURLs[0])
+	etcdUsername := os.Getenv("ETCD_USERNAME")
+	etcdPassword := os.Getenv("ETCD_PASSWORD")
 	if strings.HasPrefix(firstURL, "http://") {
-		return &etcdcv3.Config{Endpoints: etcdURLs}, nil
+		return &etcdcv3.Config{Endpoints: etcdURLs, Username: etcdUsername, Password: etcdPassword}, nil
 	} else if strings.HasPrefix(firstURL, "https://") {
 		caFile := os.Getenv("ETCD_CA_FILE")
 		certFile := os.Getenv("ETCD_CERT_FILE")
@@ -221,6 +223,8 @@ func getETCDConfig() (*etcdcv3.Config, error) {
 		return &etcdcv3.Config{
 			Endpoints: etcdURLs,
 			TLS:       tlsConfig,
+			Username:  etcdUsername,
+			Password:  etcdPassword,
 		}, nil
 	} else {
 		return nil, errors.New("etcd URLs must start with either http:// or https://")
