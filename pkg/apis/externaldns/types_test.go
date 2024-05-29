@@ -88,14 +88,6 @@ var (
 		AkamaiAccessToken:           "",
 		AkamaiEdgercPath:            "",
 		AkamaiEdgercSection:         "",
-		InfobloxGridHost:            "",
-		InfobloxWapiPort:            443,
-		InfobloxWapiUsername:        "admin",
-		InfobloxWapiPassword:        "",
-		InfobloxWapiVersion:         "2.3.1",
-		InfobloxView:                "",
-		InfobloxSSLVerify:           true,
-		InfobloxMaxResults:          0,
 		OCIConfigFile:               "/etc/kubernetes/oci.yaml",
 		OCIZoneScope:                "GLOBAL",
 		OCIZoneCacheDuration:        0 * time.Second,
@@ -202,14 +194,6 @@ var (
 		AkamaiAccessToken:           "o184671d5307a388180fbf7f11dbdf46",
 		AkamaiEdgercPath:            "/home/test/.edgerc",
 		AkamaiEdgercSection:         "default",
-		InfobloxGridHost:            "127.0.0.1",
-		InfobloxWapiPort:            8443,
-		InfobloxWapiUsername:        "infoblox",
-		InfobloxWapiPassword:        "infoblox",
-		InfobloxWapiVersion:         "2.6.1",
-		InfobloxView:                "internal",
-		InfobloxSSLVerify:           false,
-		InfobloxMaxResults:          2000,
 		OCIConfigFile:               "oci.yaml",
 		OCIZoneScope:                "PRIVATE",
 		OCIZoneCacheDuration:        30 * time.Second,
@@ -320,13 +304,6 @@ func TestParseFlags(t *testing.T) {
 				"--akamai-access-token=o184671d5307a388180fbf7f11dbdf46",
 				"--akamai-edgerc-path=/home/test/.edgerc",
 				"--akamai-edgerc-section=default",
-				"--infoblox-grid-host=127.0.0.1",
-				"--infoblox-wapi-port=8443",
-				"--infoblox-wapi-username=infoblox",
-				"--infoblox-wapi-password=infoblox",
-				"--infoblox-wapi-version=2.6.1",
-				"--infoblox-view=internal",
-				"--infoblox-max-results=2000",
 				"--inmemory-zone=example.org",
 				"--inmemory-zone=company.com",
 				"--ovh-endpoint=ovh-ca",
@@ -340,7 +317,6 @@ func TestParseFlags(t *testing.T) {
 				"--tls-ca=/path/to/ca.crt",
 				"--tls-client-cert=/path/to/cert.pem",
 				"--tls-client-cert-key=/path/to/key.pem",
-				"--no-infoblox-ssl-verify",
 				"--domain-filter=example.org",
 				"--domain-filter=company.com",
 				"--exclude-domains=xapi.example.org",
@@ -451,14 +427,6 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_AKAMAI_ACCESS_TOKEN":             "o184671d5307a388180fbf7f11dbdf46",
 				"EXTERNAL_DNS_AKAMAI_EDGERC_PATH":              "/home/test/.edgerc",
 				"EXTERNAL_DNS_AKAMAI_EDGERC_SECTION":           "default",
-				"EXTERNAL_DNS_INFOBLOX_GRID_HOST":              "127.0.0.1",
-				"EXTERNAL_DNS_INFOBLOX_WAPI_PORT":              "8443",
-				"EXTERNAL_DNS_INFOBLOX_WAPI_USERNAME":          "infoblox",
-				"EXTERNAL_DNS_INFOBLOX_WAPI_PASSWORD":          "infoblox",
-				"EXTERNAL_DNS_INFOBLOX_WAPI_VERSION":           "2.6.1",
-				"EXTERNAL_DNS_INFOBLOX_VIEW":                   "internal",
-				"EXTERNAL_DNS_INFOBLOX_SSL_VERIFY":             "0",
-				"EXTERNAL_DNS_INFOBLOX_MAX_RESULTS":            "2000",
 				"EXTERNAL_DNS_OCI_CONFIG_FILE":                 "oci.yaml",
 				"EXTERNAL_DNS_OCI_ZONE_SCOPE":                  "PRIVATE",
 				"EXTERNAL_DNS_OCI_ZONES_CACHE_DURATION":        "30s",
@@ -564,7 +532,6 @@ func restoreEnv(t *testing.T, originalEnv map[string]string) {
 func TestPasswordsNotLogged(t *testing.T) {
 	cfg := Config{
 		DynPassword:          "dyn-pass",
-		InfobloxWapiPassword: "infoblox-pass",
 		PDNSAPIKey:           "pdns-api-key",
 		RFC2136TSIGSecret:    "tsig-secret",
 	}
@@ -572,7 +539,6 @@ func TestPasswordsNotLogged(t *testing.T) {
 	s := cfg.String()
 
 	assert.False(t, strings.Contains(s, "dyn-pass"))
-	assert.False(t, strings.Contains(s, "infoblox-pass"))
 	assert.False(t, strings.Contains(s, "pdns-api-key"))
 	assert.False(t, strings.Contains(s, "tsig-secret"))
 }
