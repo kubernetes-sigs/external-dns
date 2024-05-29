@@ -181,7 +181,7 @@ an AAAA record of the same name, that each are aliases for the same ALB.
 
 AWS supports both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces for NLBs.
 The AWS Load Balancer Controller uses the `service.beta.kubernetes.io/aws-load-balancer-ip-address-type`
-[annotation][5] (which defaults to `ipv4`) to determine this. If this annotation is
+[annotation][5] (which defaults to `ipv4`) to determine this. When this annotation is
 set to `dualstack` then ExternalDNS will create two alias records (one A record
 and one AAAA record) for each hostname associated with the service object of type loadbalancer.
 
