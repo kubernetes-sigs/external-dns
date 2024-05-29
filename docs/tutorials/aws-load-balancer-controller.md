@@ -177,7 +177,6 @@ The above Ingress object will result in the creation of an ALB with a dualstack
 interface. ExternalDNS will create both an A `echoserver.example.org` record and
 an AAAA record of the same name, that each are aliases for the same ALB.
 
-
 ## Dualstack NLBs
 
 AWS supports both IPv4 and "dualstack" (both IPv4 and IPv6) interfaces for NLBs.
