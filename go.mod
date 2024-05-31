@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.750
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.753
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.53.11
+	github.com/aws/aws-sdk-go v1.53.13
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
@@ -54,15 +54,15 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.931
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.931
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.931
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.933
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.933
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.933
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
 	github.com/vultr/govultr/v2 v2.17.2
-	go.etcd.io/etcd/api/v3 v3.5.13
-	go.etcd.io/etcd/client/v3 v3.5.13
+	go.etcd.io/etcd/api/v3 v3.5.14
+	go.etcd.io/etcd/client/v3 v3.5.14
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.25.0
 	golang.org/x/oauth2 v0.20.0
@@ -187,7 +187,7 @@ require (
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.14 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
