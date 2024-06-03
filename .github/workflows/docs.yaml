@@ -32,11 +32,6 @@ jobs:
       - run: |
           pip install -r docs/scripts/requirements.txt
 
-      - name: setup
-        run: |
-          ./docs/scripts/copy_docs.sh
-          go run ./docs/scripts/docs.go
-
       - name: Configure Git user
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
