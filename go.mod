@@ -1,7 +1,6 @@
 module sigs.k8s.io/external-dns
 
 go 1.22.2
-
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1
@@ -9,14 +8,14 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.16.1
-	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.3.0
+	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.4.0
 	github.com/IBM/go-sdk-core/v5 v5.17.3
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.750
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.755
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.53.11
+	github.com/aws/aws-sdk-go v1.53.15
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
@@ -54,22 +53,22 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.931
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.931
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.931
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.935
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.935
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.935
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
 	github.com/vultr/govultr/v2 v2.17.2
-	go.etcd.io/etcd/api/v3 v3.5.13
-	go.etcd.io/etcd/client/v3 v3.5.13
+	go.etcd.io/etcd/api/v3 v3.5.14
+	go.etcd.io/etcd/client/v3 v3.5.14
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.25.0
 	golang.org/x/oauth2 v0.20.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.182.0
-	gopkg.in/ns1/ns1-go.v2 v2.10.0
+	gopkg.in/ns1/ns1-go.v2 v2.11.0
 	gopkg.in/yaml.v2 v2.4.0
 	istio.io/api v1.22.0
 	istio.io/client-go v1.22.0
@@ -187,7 +186,7 @@ require (
 	github.com/terra-farm/udnssdk v1.3.5 // indirect
 	github.com/vektah/gqlparser/v2 v2.5.1 // indirect
 	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.14 // indirect
 	go.mongodb.org/mongo-driver v1.14.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
