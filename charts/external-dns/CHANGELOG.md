@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Added support for `envFrom` argument. ([#4524](https://github.com/kubernetes-sigs/external-dns/pull/4524))[@sathieu](https://github.com/sathieu)
+
 ## [v1.14.5] - 2023-06-10
 
 ### Added
