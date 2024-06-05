@@ -4,6 +4,8 @@ site_author: external-dns maintainers
 repo_name: kubernetes-sigs/external-dns
 repo_url: https://github.com/kubernetes-sigs/external-dns/
 
+trademark: https://www.linuxfoundation.org/legal/trademark-usage
+
 nav:
   - index.md
   - About:
@@ -33,6 +35,7 @@ nav:
 
 theme:
   name: material
+  custom_dir: docs/overrides
   features:
     - content.code.annotate
     - navigation.top
