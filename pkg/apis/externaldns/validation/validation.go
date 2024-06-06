@@ -61,16 +61,6 @@ func ValidateConfig(cfg *externaldns.Config) error {
 		}
 	}
 
-	// Infoblox provider specific validations
-	if cfg.Provider == "infoblox" {
-		if cfg.InfobloxGridHost == "" {
-			return errors.New("no Infoblox Grid Manager host specified")
-		}
-		if cfg.InfobloxWapiPassword == "" {
-			return errors.New("no Infoblox WAPI password specified")
-		}
-	}
-
 	if cfg.Provider == "dyn" {
 		if cfg.DynUsername == "" {
 			return errors.New("no Dyn username specified")

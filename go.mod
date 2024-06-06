@@ -34,7 +34,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gophercloud/gophercloud v1.12.0
 	github.com/hooklift/gowsdl v0.5.0
-	github.com/infobloxopen/infoblox-go-client/v2 v2.6.0
 	github.com/linki/instrumented_http v0.3.0
 	github.com/linode/linodego v1.34.0
 	github.com/maxatome/go-testdeep v1.14.0

@@ -61,7 +61,6 @@ import (
 	"sigs.k8s.io/external-dns/provider/godaddy"
 	"sigs.k8s.io/external-dns/provider/google"
 	"sigs.k8s.io/external-dns/provider/ibmcloud"
-	"sigs.k8s.io/external-dns/provider/infoblox"
 	"sigs.k8s.io/external-dns/provider/inmemory"
 	"sigs.k8s.io/external-dns/provider/linode"
 	"sigs.k8s.io/external-dns/provider/ns1"
@@ -280,26 +279,6 @@ func main() {
 		p, err = linode.NewLinodeProvider(domainFilter, cfg.DryRun, externaldns.Version)
 	case "dnsimple":
 		p, err = dnsimple.NewDnsimpleProvider(domainFilter, zoneIDFilter, cfg.DryRun)
-	case "infoblox":
-		p, err = infoblox.NewInfobloxProvider(
-			infoblox.StartupConfig{
-				DomainFilter:  domainFilter,
-				ZoneIDFilter:  zoneIDFilter,
-				Host:          cfg.InfobloxGridHost,
-				Port:          cfg.InfobloxWapiPort,
-				Username:      cfg.InfobloxWapiUsername,
-				Password:      cfg.InfobloxWapiPassword,
-				Version:       cfg.InfobloxWapiVersion,
-				SSLVerify:     cfg.InfobloxSSLVerify,
-				View:          cfg.InfobloxView,
-				MaxResults:    cfg.InfobloxMaxResults,
-				DryRun:        cfg.DryRun,
-				FQDNRegEx:     cfg.InfobloxFQDNRegEx,
-				NameRegEx:     cfg.InfobloxNameRegEx,
-				CreatePTR:     cfg.InfobloxCreatePTR,
-				CacheDuration: cfg.InfobloxCacheDuration,
-			},
-		)
 	case "dyn":
 		p, err = dyn.NewDynProvider(
 			dyn.DynConfig{
