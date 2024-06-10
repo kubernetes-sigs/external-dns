@@ -4,6 +4,45 @@ entries:
   - annotations:
       artifacthub.io/changes: |
         - kind: added
+          description: "Added support for `extraContainers` argument."
+        - kind: added
+          description: "Added support for setting `excludeDomains` argument."
+        - kind: changed
+          description: "Updated _ExternalDNS_ OCI image version to [v0.14.2](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.2)."
+        - kind: changed
+          description: "Updated `DNSEndpoint` CRD."
+        - kind: changed
+          description: "Changed the implementation for `revisionHistoryLimit` to be more generic."
+        - kind: fixed
+          description: "Fixed the `ServiceMonitor` job name to correctly use the instance label."
+    apiVersion: v2
+    appVersion: 0.14.2
+    created: "2024-06-10T15:14:44.347990873Z"
+    description: ExternalDNS synchronizes exposed Kubernetes Services and Ingresses
+      with DNS providers.
+    digest: 5356cd785c321a09f8822ae7b53d4092bb710b73f7930eb06d0dbf0d1588133e
+    home: https://github.com/kubernetes-sigs/external-dns/
+    icon: https://github.com/kubernetes-sigs/external-dns/raw/master/docs/img/external-dns.png
+    keywords:
+    - kubernetes
+    - externaldns
+    - external-dns
+    - dns
+    - service
+    - ingress
+    maintainers:
+    - email: steve.hipwell@gmail.com
+      name: stevehipwell
+    name: external-dns
+    sources:
+    - https://github.com/kubernetes-sigs/external-dns/
+    type: application
+    urls:
+    - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.14.5/external-dns-1.14.5.tgz
+    version: 1.14.5
+  - annotations:
+      artifacthub.io/changes: |
+        - kind: added
           description: "Added support for dnsConfig."
         - kind: changed
           description: "Updated _ExternalDNS_ OCI image version to [v0.14.1](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.1)."
@@ -772,4 +811,4 @@ entries:
     urls:
     - https://github.com/kubernetes-sigs/external-dns/releases/download/external-dns-helm-chart-1.2.0/external-dns-1.2.0.tgz
     version: 1.2.0
-generated: "2024-04-05T15:03:31.318708538Z"
+generated: "2024-06-10T15:14:44.348210711Z"
