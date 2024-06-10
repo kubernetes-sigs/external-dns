@@ -1,6 +1,6 @@
 # Setting up ExternalDNS for Services on AWS
 
-This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.11.0** version of ExternalDNS for this tutorial
+This tutorial describes how to setup ExternalDNS for usage within a Kubernetes cluster on AWS. Make sure to use **>=0.15.0** version of ExternalDNS for this tutorial
 
 ## IAM Policy
 
@@ -231,6 +231,14 @@ kubectl create secret generic external-dns \
 #### Deploy ExternalDNS using static credentials
 
 Follow the steps under [Deploy ExternalDNS](#deploy-externaldns) using either RBAC or non-RBAC.  Make sure to uncomment the section that mounts volumes, so that the credentials can be mounted.
+
+> [!TIP]
+> By default ExternalDNS takes the profile named `default` from the credentials file. If you want to use a different 
+> profile, you can set the environment variable `EXTERNAL_DNS_AWS_PROFILE` to the desired profile name or use the 
+> `--aws-profile` command line argument. It is even possible to use more than one profile at ones, separated by space in
+> the environment variable `EXTERNAL_DNS_AWS_PROFILE` or by using `--aws-profile` multiple times. In this case 
+> ExternalDNS looks for the hosted zones in all profiles and keeps maintaining a mapping table between zone and profile 
+> in order to be able to modify the zones in the correct profile.
 
 ### IAM Roles for Service Accounts
 
