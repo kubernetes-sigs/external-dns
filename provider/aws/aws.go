@@ -37,7 +37,7 @@ import (
 )
 
 const (
-	DefaultAWSProfile = "default"
+	defaultAWSProfile = "default"
 	recordTTL         = 300
 	// From the experiments, it seems that the default MaxItems applied is 100,
 	// and that, on the server side, there is a hard limit of 300 elements per page.

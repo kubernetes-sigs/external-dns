@@ -66,7 +66,7 @@ func CreateSessions(cfg *externaldns.Config) map[string]*session.Session {
 		if err != nil {
 			logrus.Fatal(err)
 		}
-		result[DefaultAWSProfile] = session
+		result[defaultAWSProfile] = session
 	} else {
 		for _, profile := range cfg.AWSProfiles {
 			session, err := newSession(
