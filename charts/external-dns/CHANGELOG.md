@@ -18,10 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
-## Added
+## [v1.14.5] - 2023-06-10
 
-- Added support for `extraContainers` argument. ([#4432](https://github.com/kubernetes-sigs/external-dns/pull/4432))[@omerap12](https://github.com/omerap12)
-- Added support for setting `excludeDomains` argument.  ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380))[@bford-evs](https://github.com/bford-evs)
+### Added
+
+- Added support for `extraContainers` argument. ([#4432](https://github.com/kubernetes-sigs/external-dns/pull/4432)) _@omerap12_
+- Added support for setting `excludeDomains` argument.  ([#4380](https://github.com/kubernetes-sigs/external-dns/pull/4380)) _@bford-evs_
+
+### Changed
+
+- Updated _ExternalDNS_ OCI image version to [v0.14.2](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.14.2). ([#4541](https://github.com/kubernetes-sigs/external-dns/pull/4541)) _@stevehipwell_
+- Updated `DNSEndpoint` CRD. ([#4541](https://github.com/kubernetes-sigs/external-dns/pull/4541)) _@stevehipwell_
+- Changed the implementation for `revisionHistoryLimit` to be more generic. ([#4541](https://github.com/kubernetes-sigs/external-dns/pull/4541)) _@stevehipwell_
+
+### Fixed
+
+- Fixed the `ServiceMonitor` job name to correctly use the instance label. ([#4541](https://github.com/kubernetes-sigs/external-dns/pull/4541)) _@stevehipwell_
 
 ## [v1.14.4] - 2023-04-03
 
@@ -175,6 +187,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 RELEASE LINKS
 -->
 [UNRELEASED]: https://github.com/kubernetes-sigs/external-dns/tree/master/charts/external-dns
+[v1.14.5]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.5
 [v1.14.4]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.4
 [v1.14.3]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.3
 [v1.14.2]: https://github.com/kubernetes-sigs/external-dns/releases/tag/external-dns-helm-chart-1.14.2

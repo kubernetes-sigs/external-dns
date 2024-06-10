@@ -17,7 +17,7 @@ spec:
       {{- include "external-dns.selectorLabels" . | nindent 6 }}
   strategy:
     {{- toYaml .Values.deploymentStrategy | nindent 4 }}
-  {{- if or (kindIs "float64" .Values.revisionHistoryLimit) (kindIs "int64" .Values.revisionHistoryLimit) }}
+  {{- if not (has (quote .Values.revisionHistoryLimit) (list "" (quote ""))) }}
   revisionHistoryLimit: {{ .Values.revisionHistoryLimit | int64 }}
   {{- end }}
   template:
