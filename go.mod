@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.2
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.16.1
@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.758
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.760
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.53.19
+	github.com/aws/aws-sdk-go v1.53.20
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
