@@ -29,17 +29,17 @@ make build.push IMAGE=your-registry/external-dns
 
 # Design
 
-ExternalDNS's sources of DNS records live in package [source](../../source). They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
+ExternalDNS's sources of DNS records live in package [source](https://github.com/kubernetes-sigs/external-dns/tree/master/source). They implement the `Source` interface that has a single method `Endpoints` which returns the represented source's objects converted to `Endpoints`. Endpoints are just a tuple of DNS name and target where target can be an IP or another hostname.
 
 For example, the `ServiceSource` returns all Services converted to `Endpoints` where the hostname is the value of the `external-dns.alpha.kubernetes.io/hostname` annotation and the target is the IP of the load balancer or where the hostname is the value of the `external-dns.alpha.kubernetes.io/internal-hostname` annotation and the target is the IP of the service ClusterIP.
 
-This list of endpoints is passed to the [Plan](../../plan) which determines the difference between the current DNS records and the desired list of `Endpoints`.
+This list of endpoints is passed to the [Plan](https://github.com/kubernetes-sigs/external-dns/tree/master/plan) which determines the difference between the current DNS records and the desired list of `Endpoints`.
 
-Once the difference has been figured out the list of intended changes is passed to a `Registry` which live in the [registry](../../registry) package. The registry is a wrapper and access point to DNS provider. Registry implements the ownership concept by marking owned records and filtering out records not owned by ExternalDNS before passing them to DNS provider.
+Once the difference has been figured out the list of intended changes is passed to a `Registry` which live in the [registry](https://github.com/kubernetes-sigs/external-dns/tree/master/registry) package. The registry is a wrapper and access point to DNS provider. Registry implements the ownership concept by marking owned records and filtering out records not owned by ExternalDNS before passing them to DNS provider.
 
-The [provider](../../provider) is the adapter to the DNS provider, e.g. Google Cloud DNS. It implements two methods: `ApplyChanges` to apply a set of changes filtered by `Registry` and `Records` to retrieve the current list of records from the DNS provider.
+The [provider](https://github.com/kubernetes-sigs/external-dns/tree/master/provider) is the adapter to the DNS provider, e.g. Google Cloud DNS. It implements two methods: `ApplyChanges` to apply a set of changes filtered by `Registry` and `Records` to retrieve the current list of records from the DNS provider.
 
-The orchestration between the different components is controlled by the [controller](../../controller).
+The orchestration between the different components is controlled by the [controller](https://github.com/kubernetes-sigs/external-dns/tree/master/controller).
 
 You can pick which `Source` and `Provider` to use at runtime via the `--source` and `--provider` flags, respectively.
 

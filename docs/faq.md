@@ -273,7 +273,7 @@ spec:
 Sometimes you need to run an internal and an external dns service.
 The internal one should provision hostnames used on the internal network (perhaps inside a VPC), and the external one to expose DNS to the internet.
 
-To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller. 
+To do this with ExternalDNS you can use the `--ingress-class` flag to specifically tie an instance of ExternalDNS to an instance of a ingress controller.
 Let's assume you have two ingress controllers, `internal` and `external`.
 You can then start two ExternalDNS providers, one with `--ingress-class=internal` and one with `--ingress-class=external`.
 
@@ -295,8 +295,8 @@ Note: the `--ingress-class` flag cannot be used at the same time as the `--annot
 **Performance considerations**
 
 Filtering based on ingress class name or annotations means that the external-dns controller will receive all resources of that kind and then filter on the client-side.
-In larger clusters with many resources which change frequently this can cause performance issues. 
-If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering). 
+In larger clusters with many resources which change frequently this can cause performance issues.
+If only some resources need to be managed by an instance of external-dns then label filtering can be used instead of ingress class filtering (or legacy annotation filtering).
 This means that only those resources which match the selector specified in `--label-filter` will be passed to the controller.
 
 ### How do I specify that I want the DNS record to point to either the Node's public or private IP when it has both?
@@ -331,7 +331,7 @@ registry.k8s.io/external-dns/external-dns
 
 As tags, you use the external-dns release of choice(i.e. `v0.7.6`). A `latest` tag is not provided in the container registry.
 
-If you wish to build your own image, you can use the provided [.ko.yaml](../.ko.yaml) as a starting point.
+If you wish to build your own image, you can use the provided [.ko.yaml](https://github.com/kubernetes-sigs/external-dns/blob/master/.ko.yaml) as a starting point.
 
 ### Which architectures are supported?
 

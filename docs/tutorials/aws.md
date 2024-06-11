@@ -878,7 +878,7 @@ Note: ExternalDNS does not support creating healthchecks, and assumes that `<hea
 
 When creating ALIAS type records in Route53 it is required that external-dns be aware of the canonical hosted zone in which
 the specified hostname is created. External-dns is able to automatically identify the canonical hosted zone for many
-hostnames based upon known hostname suffixes which are defined in [aws.go](../../provider/aws/aws.go). If a hostname
+hostnames based upon known hostname suffixes which are defined in [aws.go](https://github.com/kubernetes-sigs/external-dns/blob/master/provider/aws/aws.go#L65). If a hostname
 does not have a known suffix then the suffix can be added into `aws.go` or the [target-hosted-zone annotation](#target-hosted-zone)
 can be used to manually define the ID of the canonical hosted zone.
 

@@ -1,37 +1,41 @@
 site_name: external-dns
 site_author: external-dns maintainers
-
 repo_name: kubernetes-sigs/external-dns
 repo_url: https://github.com/kubernetes-sigs/external-dns/
-
 trademark: https://www.linuxfoundation.org/legal/trademark-usage
 
+docs_dir: .
+
 nav:
-  - index.md
+  - README.md
+  - Chart:
+      - About: charts/external-dns/README.md
+      - Changelog: charts/external-dns/CHANGELOG.md
   - About:
-      - FAQ: faq.md
-      - Out of Incubator: 20190708-external-dns-incubator.md
+      - FAQ: docs/faq.md
+      - Out of Incubator: docs/20190708-external-dns-incubator.md
       - Code of Conduct: code-of-conduct.md
       - License: LICENSE.md
-  - Tutorials: tutorials/
+  - Tutorials: docs/tutorials/*
   - Annotations:
-    - About: annotations/annotations.md
+    - About: docs/annotations/annotations.md
   - Sources:
-    - About: sources/sources.md
-    - Gateway: sources/gateway.md
-    - Ingress: sources/ingress.md
-    - Service: sources/service.md
+    - About: docs/sources/sources.md
+    - Gateway: docs/sources/gateway.md
+    - Ingress: docs/sources/ingress.md
+    - Service: docs/sources/service.md
   - Registries:
-    - About: registry/registry.md
-    - TXT: registry/txt.md
-    - DynamoDB: registry/dynamodb.md
+    - About: docs/registry/registry.md
+    - TXT: docs/registry/txt.md
+    - DynamoDB: docs/registry/dynamodb.md
   - Advanced Topics:
-      - Initial Design: initial-design.md
-      - TTL: ttl.md
+      - Initial Design: docs/initial-design.md
+      - TTL: docs/ttl.md
+      - MultiTarget: docs/proposal/multi-target.md
   - Contributing:
       - Kubernetes Contributions: CONTRIBUTING.md
-      - Release: release.md
-      - contributing/*
+      - Release: docs/release.md
+      - docs/contributing/*
 
 theme:
   name: material
@@ -71,8 +75,8 @@ markdown_extensions:
   - pymdownx.caret
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:materialx.emoji.twemoji
-      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       use_pygments: true
       anchor_linenums: true
@@ -93,6 +97,7 @@ markdown_extensions:
       custom_checkbox: true
 
 plugins:
+  - same-dir
   - search
   - literate-nav
   - git-revision-date-localized:

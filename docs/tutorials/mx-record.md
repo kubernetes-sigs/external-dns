@@ -1,6 +1,6 @@
 # Creating MX record with CRD source
 
-You can create and manage MX records with the help of [CRD source](/docs/contributing/crd-source.md)
+You can create and manage MX records with the help of [CRD source](../contributing/crd-source.md)
 and `DNSEndpoint` CRD. Currently, this feature is only supported by `aws`, `azure`, and `google` providers.
 
 In order to start managing MX records you need to set the `--managed-record-types MX` flag.

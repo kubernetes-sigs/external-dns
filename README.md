@@ -15,6 +15,10 @@ hide:
 
 ExternalDNS synchronizes exposed Kubernetes Services and Ingresses with DNS providers.
 
+## Documentation
+
+This README is a part of the complete documentation, available [here](https://kubernetes-sigs.github.io/external-dns/).
+
 ## What It Does
 
 Inspired by [Kubernetes DNS](https://github.com/kubernetes/dns), Kubernetes' cluster-internal DNS server, ExternalDNS makes Kubernetes resources discoverable via public DNS servers. Like KubeDNS, it retrieves a list of resources (Services, Ingresses, etc.) from the [Kubernetes API](https://kubernetes.io/docs/api/) to determine a desired list of DNS records. *Unlike* KubeDNS, however, it's not a DNS server itself, but merely configures other DNS providers accordingly—e.g. [AWS Route 53](https://aws.amazon.com/route53/) or [Google Cloud DNS](https://cloud.google.com/dns/docs/).
@@ -206,7 +210,7 @@ The following tutorials are provided:
 * [UltraDNS](docs/tutorials/ultradns.md)
 * [GoDaddy](docs/tutorials/godaddy.md)
 * [Gandi](docs/tutorials/gandi.md)
-* [SafeDNS](docs/tutorials/UKFast_SafeDNS.md)
+* [SafeDNS](docs/tutorials/ANS_Group_SafeDNS.md)
 * [IBM Cloud](docs/tutorials/ibmcloud.md)
 * [Nodes as source](docs/tutorials/nodes.md)
 * [TencentCloud](docs/tutorials/tencentcloud.md)
@@ -278,7 +282,7 @@ Now you can experiment and watch how ExternalDNS makes sure that your DNS record
 * Add another Service to create more DNS records.
 * Remove Services to clean up your managed zone.
 
-The [tutorials](docs/tutorials) section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
+The **tutorials** section contains examples, including Ingress resources, and shows you how to set up ExternalDNS in different environments such as other cloud providers and alternative Ingress controllers.
 
 # Note
 

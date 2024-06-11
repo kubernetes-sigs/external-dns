@@ -43,7 +43,7 @@ Custom annotations can be used to influence DNS record creation and updates. Pro
 
 ## Provider registry
 
-To simplify the discovery of providers, we will accept pull requests that will add links to providers in the [README](../../README.md) file. This list will only serve the purpose of simplifying finding providers and will not constitute an official endorsement of any of the externally implemented providers unless otherwise stated.
+To simplify the discovery of providers, we will accept pull requests that will add links to providers in this documentation. This list will only serve the purpose of simplifying finding providers and will not constitute an official endorsement of any of the externally implemented providers unless otherwise stated.
 
 ## Run an ExternalDNS in-tree provider as a webhook.
 
