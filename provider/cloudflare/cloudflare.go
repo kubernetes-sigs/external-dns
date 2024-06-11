@@ -175,7 +175,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 			if err != nil {
 				return nil, fmt.Errorf("failed to read CF_API_TOKEN from file: %w", err)
 			}
-			token = string(tokenBytes)
+			token = strings.TrimSpace(string(tokenBytes))
 		}
 		config, err = cloudflare.NewWithAPIToken(token)
 	} else {
