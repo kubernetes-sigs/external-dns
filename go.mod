@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.2
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.16.1
@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.46.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.758
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.761
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.53.19
+	github.com/aws/aws-sdk-go v1.53.21
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
@@ -43,7 +43,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.67.0
+	github.com/oracle/oci-go-sdk/v65 v65.67.1
 	github.com/ovh/go-ovh v1.5.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -53,9 +53,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.939
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.939
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.939
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.940
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.940
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.940
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
