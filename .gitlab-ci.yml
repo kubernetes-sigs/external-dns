@@ -5,7 +5,7 @@ stages:
 
 variables:
   GIT_BASE_BRANCH: datadog-master-v3
-  CI_IMAGE: golang:1.21
+  CI_IMAGE: registry.ddbuild.io/images/mirror/golang:1.22.4
   SLACK_NOTIFIER_IMAGE: 486234852809.dkr.ecr.us-east-1.amazonaws.com/slack-notifier:sdm
   NOTIFICATIONS_SLACK_CHANNEL: traffic-deployments
   FF_USE_FASTZIP: 1
