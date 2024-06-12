@@ -9,6 +9,7 @@ variables:
   SLACK_NOTIFIER_IMAGE: 486234852809.dkr.ecr.us-east-1.amazonaws.com/slack-notifier:sdm
   NOTIFICATIONS_SLACK_CHANNEL: traffic-deployments
   FF_USE_FASTZIP: 1
+  CI_DEBUG_TRACE: "true"
 
 default:
   before_script:
