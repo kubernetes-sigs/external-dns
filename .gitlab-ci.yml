@@ -104,3 +104,21 @@ noop-release:
     - .slack-base-job
   script:
     - echo "Doing nothing on purpose"
+
+external-dns-test:
+  stage: test
+  image: $CI_IMAGE
+  tags: 
+    - "arch:amd64"
+  script:
+    - go test -v ./...
+
+external-dns-release:
+  stage: release
+  image: $CI_IMAGE
+  tags: 
+    - "arch:amd64"
+  script:
+    - go build -o external-dns ./cmd/external-dns
+    - go build -o external-dns-controller ./cmd/external-dns-controller
+    - go build -o external-dns-webhook ./cmd/external-dns-webhook
