@@ -29,7 +29,7 @@ default:
     VERSION=$tag;
   fi
 
-  CGO_ENABLED=0 go build -o .datadog/image/build/external-dns -v -ldflags "-X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=${VERSION} -w -s" .
+  CGO_ENABLED=0 go build -o build/external-dns -v -ldflags "-X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=${VERSION} -w -s" .
 
   METADATA_FILE=$(mktemp)
   docker buildx build \
@@ -42,7 +42,7 @@ default:
     --label ci.job_id=${CI_JOB_ID} \
     --push \
     --metadata-file ${METADATA_FILE} \
-    .datadog/image
+    -f .datadog/image/Dockerfile .
   ddsign sign registry.ddbuild.io/external-dns:${VERSION} --docker-metadata-file ${METADATA_FILE}
 
 .slack-base-script: &slack-base-script |
