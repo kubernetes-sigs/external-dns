@@ -30,8 +30,17 @@ default:
     VERSION=$tag;
   fi
 
-  make build
-  build/external-dns --version
+  CGO_ENABLED=0 go build -o build/external-dns -v -ldflags "-X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s" .
+  docker buildx build
+    --platform linux/amd64
+    --tag registry.ddbuild.io/external-dns:$VERSION
+    --label git.repository=$CI_PROJECT_NAME
+    --label git.branch=$CI_COMMIT_REF_NAME
+    --label git.commit=$CI_COMMIT_SHA
+    --label ci.pipeline_id=$CI_PIPELINE_ID
+    --label ci.job_id=$CI_JOB_ID
+    --push
+    .datadog/ci
 
 .slack-base-script: &slack-base-script |
   if [[ $GITLAB_USER_LOGIN = "gitsync" || $GITLAB_USER_LOGIN = "codesync" ]]; then EMAIL=$(git show -s --format="%ae" HEAD); else EMAIL=$GITLAB_USER_EMAIL; fi
