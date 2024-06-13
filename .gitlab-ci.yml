@@ -20,6 +20,19 @@ default:
   tags: ["arch:amd64"]
   allow_failure: true
 
+.external-dns-release-script: &external-dns-release-script |
+  commit=$(git rev-parse --short=8 --verify HEAD)
+  tag=$(git tag --points-at HEAD)
+  
+  if [[ -z $tag ]]; then
+    VERSION=$CI_PIPELINE_ID-$commit;
+  else
+    VERSION=$tag;
+  fi
+
+  make build
+  build/external-dns --version
+
 .slack-base-script: &slack-base-script |
   if [[ $GITLAB_USER_LOGIN = "gitsync" || $GITLAB_USER_LOGIN = "codesync" ]]; then EMAIL=$(git show -s --format="%ae" HEAD); else EMAIL=$GITLAB_USER_EMAIL; fi
 
@@ -110,14 +123,19 @@ external-dns-test:
   image: $CI_IMAGE
   tags: 
     - "arch:amd64"
+  when: always
   script:
     - go test -v ./...
 
 external-dns-release:
   stage: release
   image: $CI_IMAGE
-  tags: 
+  tags:
     - "arch:amd64"
-  script: |
-    make build
-    build/external-dns --version
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: on_success
+    - when: manual
+      allow_failure: true
+  script:
+    - *external-dns-release-script
