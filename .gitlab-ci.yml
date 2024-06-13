@@ -30,7 +30,7 @@ default:
     VERSION=$tag;
   fi
 
-  CGO_ENABLED=0 go build -o build/external-dns -v -ldflags "-X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=$(VERSION) -w -s" .
+  CGO_ENABLED=0 go build -o .datadog/image/build/external-dns -v -ldflags "-X sigs.k8s.io/external-dns/pkg/apis/externaldns.Version=${VERSION} -w -s" .
 
   METADATA_FILE=$(mktemp)
   docker buildx build \
