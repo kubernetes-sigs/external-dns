@@ -1,0 +1,3 @@
+{{- if .Values.deployCrd }}
+{{- .Files.Get "crds/dnsendpoint.yaml" }}
+{{- end }}

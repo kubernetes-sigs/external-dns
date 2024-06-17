@@ -94,6 +94,7 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | affinity | object | `{}` | Affinity settings for `Pod` [scheduling](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/). If an explicit label selector is not provided for pod affinity or pod anti-affinity one will be created from the pod selector labels. |
 | automountServiceAccountToken | bool | `nil` | Set this to `false` to [opt out of API credential automounting](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#opt-out-of-api-credential-automounting) for the `Pod`. |
 | commonLabels | object | `{}` | Labels to add to all chart resources. |
+| deployCrd | bool | `true` | Deploy dnsenpoint CRD |
 | deploymentAnnotations | object | `{}` | Annotations to add to the `Deployment`. |
 | deploymentStrategy | object | `{"type":"Recreate"}` | [Deployment Strategy](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy). |
 | dnsConfig | object | `nil` | [DNS config](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config) for the pod, if not set the default will be used. |
