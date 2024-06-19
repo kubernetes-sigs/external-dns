@@ -19,6 +19,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -170,9 +171,9 @@ func (p *AzurePrivateDNSProvider) ApplyChanges(ctx context.Context, changes *pla
 	}
 
 	deleted, updated := p.mapChanges(zones, changes)
-	p.deleteRecords(ctx, deleted)
-	p.updateRecords(ctx, updated)
-	return nil
+	err1 := p.deleteRecords(ctx, deleted)
+	err2 := p.updateRecords(ctx, updated)
+	return errors.Join(err1, err2)
 }
 
 func (p *AzurePrivateDNSProvider) zones(ctx context.Context) ([]privatedns.PrivateZone, error) {
@@ -241,9 +242,10 @@ func (p *AzurePrivateDNSProvider) mapChanges(zones []privatedns.PrivateZone, cha
 	return deleted, updated
 }
 
-func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azurePrivateDNSChangeMap) {
+func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azurePrivateDNSChangeMap) error {
 	log.Debugf("Records to be deleted: %d", len(deleted))
 	// Delete records first
+	var failedCount uint64
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -256,6 +258,7 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure Private DNS zone '%s'.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, privatedns.RecordType(ep.RecordType), name, nil); err != nil {
+					failedCount++
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure Private DNS zone '%s': %v",
 						ep.RecordType,
@@ -267,10 +270,17 @@ func (p *AzurePrivateDNSProvider) deleteRecords(ctx context.Context, deleted azu
 			}
 		}
 	}
+
+	if failedCount > 0 {
+		return fmt.Errorf("Failed to delete records for Azure Private DNS zone: %d", failedCount)
+	}
+
+	return nil
 }
 
-func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azurePrivateDNSChangeMap) {
+func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azurePrivateDNSChangeMap) error {
 	log.Debugf("Records to be updated: %d", len(updated))
+	var failedCount uint64
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -310,6 +320,7 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 				)
 			}
 			if err != nil {
+				failedCount++
 				log.Errorf(
 					"Failed to update %s record named '%s' to '%s' for Azure Private DNS zone '%s': %v",
 					ep.RecordType,
@@ -321,6 +332,10 @@ func (p *AzurePrivateDNSProvider) updateRecords(ctx context.Context, updated azu
 			}
 		}
 	}
+	if failedCount > 0 {
+		return fmt.Errorf("Failed to update records for Azure Private DNS zone: %d", failedCount)
+	}
+	return nil
 }
 
 func (p *AzurePrivateDNSProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {
