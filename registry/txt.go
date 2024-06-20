@@ -191,8 +191,11 @@ func (im *TXTRegistry) Records(ctx context.Context) ([]*endpoint.Endpoint, error
 			if plan.IsManagedRecord(ep.RecordType, im.managedRecordTypes, im.excludeRecordTypes) {
 				// Get desired TXT records and detect the missing ones
 				desiredTXTs := im.generateTXTRecord(ep)
-				for _, desiredTXT := range desiredTXTs {
-					if _, exists := txtRecordsMap[desiredTXT.DNSName]; !exists {
+				// Exactly two records are old- and new- style, respectively
+				if len(desiredTXTs) == 2 {
+					newTXT := desiredTXTs[1]
+					if _, exists := txtRecordsMap[newTXT.DNSName]; !exists {
+						// New-style record doesn't exist, handle forward migration
 						ep.WithProviderSpecific(providerSpecificForceUpdate, "true")
 					}
 				}
