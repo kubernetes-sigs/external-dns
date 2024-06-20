@@ -3770,3 +3770,57 @@ func BenchmarkServiceEndpoints(b *testing.B) {
 		require.NoError(b, err)
 	}
 }
+
+func TestHeadlessEndpointFilter(t *testing.T) {
+	mockHandler := &MockHandler{}
+	filter := &headlessEndpointFilter{
+		handler: mockHandler,
+	}
+
+	headlessEndpoint := &v1.Endpoints{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"service.kubernetes.io/headless": "",
+				"some":                           "label",
+			},
+		},
+	}
+
+	nonHeadlessEndpoint := &v1.Endpoints{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{
+				"some": "label",
+			},
+		},
+	}
+
+	filter.OnAdd(headlessEndpoint, false)
+	filter.OnAdd(nonHeadlessEndpoint, false)
+	filter.OnDelete(headlessEndpoint)
+	filter.OnDelete(nonHeadlessEndpoint)
+	filter.OnUpdate(headlessEndpoint, headlessEndpoint)
+	filter.OnUpdate(nonHeadlessEndpoint, nonHeadlessEndpoint) // noop
+	filter.OnUpdate(headlessEndpoint, nonHeadlessEndpoint)
+
+	require.Zero(t, mockHandler.OnAddCalledCount, "OnAdd should not be called")
+	require.Zero(t, mockHandler.OnDeleteCalledCount, "OnDelete should not be called")
+	require.EqualValues(t, 2, mockHandler.OnUpdateCalledCount, "OnUpdate should be called twice")
+}
+
+type MockHandler struct {
+	OnAddCalledCount    int
+	OnUpdateCalledCount int
+	OnDeleteCalledCount int
+}
+
+func (m *MockHandler) OnAdd(_ interface{}, _ bool) {
+	m.OnAddCalledCount++
+}
+
+func (m *MockHandler) OnUpdate(_, _ interface{}) {
+	m.OnUpdateCalledCount++
+}
+
+func (m *MockHandler) OnDelete(_ interface{}) {
+	m.OnDeleteCalledCount++
+}
