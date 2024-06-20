@@ -67,7 +67,7 @@ func testTXTRegistryNew(t *testing.T) {
 	assert.Equal(t, "owner", r.ownerID)
 	assert.Equal(t, p, r.provider)
 
-	aesKey := []byte(";k&l)nUC/33:{?d{3)54+,AD?]SX%yh^")
+	aesKey := []byte("FNj6zBS2AJ34FoHu6gHHAD0it3gzFC1dvPKbDrx1X5Q=")
 	_, err = NewTXTRegistry(p, "", "", "owner", time.Hour, "", []string{}, []string{}, false, nil)
 	require.NoError(t, err)
 
@@ -1552,11 +1552,12 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	p.ApplyChanges(ctx, &plan.Changes{
 		Create: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, ""),
-			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
+			// plainText target: "heritage=external-dns,external-dns/owner=owner"
+			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"AAAAAAAAAAAAAAAAvH4TwB_FqFti606aBF-Uom5QTJt33lPbZOpu7DynLDJ1QXXJ0Ob5OqJ31Giun8HsMuVID_tzBQa_eY2NhR-31y-bxNwa00JcPA56rWc3\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 		},
 	})
 
-	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("12345678901234567890123456789012"))
+	r, _ := NewTXTRegistry(p, "txt.", "", "owner", time.Hour, "", []string{}, []string{}, true, []byte("1WGwUWyQ-vnVIZNpAT8k3i2Vjm4_2xacplj_8FzF7K8="))
 	records, _ := r.Records(ctx)
 	changes := &plan.Changes{
 		Delete: records,
@@ -1566,7 +1567,7 @@ func TestTXTRegistryApplyChangesEncrypt(t *testing.T) {
 	expected := &plan.Changes{
 		Delete: []*endpoint.Endpoint{
 			newEndpointWithOwner("foobar.test-zone.example.org", "foobar.loadbalancer.com", endpoint.RecordTypeCNAME, "owner"),
-			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"h8UQ6jelUFUsEIn7SbFktc2MYXPx/q8lySqI4VwfVtVaIbb2nkHWV/88KKbuLtu7fJNzMir8ELVeVnRSY01KdiIuj7ledqZe5ailEjQaU5Z6uEKd5pgs6sH8\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
+			newEndpointWithOwnerAndOwnedRecord("txt.cname-foobar.test-zone.example.org", "\"AAAAAAAAAAAAAAAAvH4TwB_FqFti606aBF-Uom5QTJt33lPbZOpu7DynLDJ1QXXJ0Ob5OqJ31Giun8HsMuVID_tzBQa_eY2NhR-31y-bxNwa00JcPA56rWc3\"", endpoint.RecordTypeTXT, "", "foobar.test-zone.example.org"),
 		},
 	}
 
