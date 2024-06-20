@@ -93,6 +93,7 @@ Known providers using webhooks:
 | Netcup | https://github.com/mrueg/external-dns-netcup-webhook |
 | STACKIT | https://github.com/stackitcloud/external-dns-stackit-webhook |
 | Unifi | https://github.com/kashalls/external-dns-unifi-webhook |
+| Huawei Cloud | https://github.com/setoru/external-dns-huaweicloud-webhook |
 
 ## Status of in-tree providers
 
