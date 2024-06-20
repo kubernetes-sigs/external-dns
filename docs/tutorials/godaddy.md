@@ -20,6 +20,10 @@ You first need to create an API Key.
 
 Using the [GoDaddy documentation](https://developer.godaddy.com/getstarted) you will have your `API key` and `API secret`
 
+## Setting max page size
+
+GoDaddy API has a global limit of 1000 zone results per request. To adjust that value use `--godaddy-dns-records-per-page=1000` flag (default value is 100).
+
 ## Deploy ExternalDNS
 
 Connect your `kubectl` client to the cluster with which you want to test ExternalDNS, and then apply one of the following manifest files for deployment:
