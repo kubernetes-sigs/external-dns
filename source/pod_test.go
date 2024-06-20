@@ -116,7 +116,7 @@ func TestPodSource(t *testing.T) {
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2", "10.0.1.3"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -178,6 +178,26 @@ func TestPodSource(t *testing.T) {
 						PodIP: "10.0.1.2",
 					},
 				},
+				// non-HostNetwork pod
+				// - internal hostname annotation will use the PodIP
+				// - external hostname annotation will use the NodeExternalIP
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.3",
+					},
+				},
 			},
 		},
 		{
@@ -186,7 +206,7 @@ func TestPodSource(t *testing.T) {
 			"",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -244,6 +264,26 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "2001:DB8::2",
+					},
+				},
+				// this pod's hostname annotations (both internal and not) must not be ignored even though it's not in the host network
+				// - internal hostname annotation uses the PodIP
+				// - external hostname annotation uses the NodeInternalIP
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::3",
 					},
 				},
 			},
@@ -254,7 +294,7 @@ func TestPodSource(t *testing.T) {
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
 				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -314,6 +354,26 @@ func TestPodSource(t *testing.T) {
 						PodIP: "2001:DB8::2",
 					},
 				},
+				// this pod's hostname annotations (both internal and not) must not be ignored even though it's not in the host network
+				// - internal hostname annotation uses the PodIP
+				// - external hostname annotation uses the NodeInternalIP
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::3",
+					},
+				},
 			},
 		},
 		{
@@ -321,8 +381,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2", "208.1.2.3"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"208.1.2.1", "208.1.2.2", "208.1.2.3"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -384,6 +444,25 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "10.0.1.2",
+					},
+				},
+				// test non-HostNetwork pod
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+							targetAnnotationKey:           "208.1.2.3",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: false,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "10.0.1.3",
 					},
 				},
 			},
@@ -459,12 +538,16 @@ func TestPodSource(t *testing.T) {
 			},
 		},
 		{
-			"pods with hostNetwore=false should be ignored",
+			"hostname annotations of pods with hostNetwork=false should still be added as valid records",
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"54.10.11.1", "54.10.11.2"}, RecordType: endpoint.RecordTypeA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "100.0.1.2"}, RecordType: endpoint.RecordTypeA},
+				// this annotation is part of a comma separated hostname list in the annotation
+				{DNSName: "internal.b.foo.example.org", Targets: endpoint.Targets{"10.0.1.1"}, RecordType: endpoint.RecordTypeA},
+				// this annotation is part of a comma separated hostname list in the annotation
+				{DNSName: "internal.c.foo.example.org", Targets: endpoint.Targets{"100.0.1.2"}, RecordType: endpoint.RecordTypeA},
 			},
 			false,
 			[]*corev1.Node{
@@ -491,13 +574,14 @@ func TestPodSource(t *testing.T) {
 					},
 				},
 			},
+			// a mixed set of a host network pod and non host network pod should include both pod IPs of the internal hostname annotation in the endpoint
 			[]*corev1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "my-pod1",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							internalHostnameAnnotationKey: "internal.a.foo.example.org,internal.b.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
 						},
 					},
@@ -514,7 +598,7 @@ func TestPodSource(t *testing.T) {
 						Name:      "my-pod2",
 						Namespace: "kube-system",
 						Annotations: map[string]string{
-							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							internalHostnameAnnotationKey: "internal.a.foo.example.org,internal.c.foo.example.org",
 							hostnameAnnotationKey:         "a.foo.example.org",
 						},
 					},
