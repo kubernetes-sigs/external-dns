@@ -62,6 +62,7 @@ require (
 	github.com/vultr/govultr/v2 v2.17.2
 	go.etcd.io/etcd/api/v3 v3.5.14
 	go.etcd.io/etcd/client/v3 v3.5.14
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/ratelimit v0.3.1
 	golang.org/x/net v0.26.0
 	golang.org/x/oauth2 v0.21.0
