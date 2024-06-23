@@ -1,0 +1,4 @@
+{{- range .Values.extraObjects }}
+---
+{{ include "external-dns.render" (dict "value" . "context" $) }}
+{{- end }}

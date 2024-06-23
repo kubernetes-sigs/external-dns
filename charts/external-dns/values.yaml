@@ -283,6 +283,9 @@ provider:
 # -- Extra arguments to provide to _ExternalDNS_.
 extraArgs: []
 
+# -- Extra manifests to include in the chart.
+extraObjects: []
+
 secretConfiguration:
   # -- If `true`, create a `Secret` to store sensitive provider configuration (**DEPRECATED**).
   enabled: false

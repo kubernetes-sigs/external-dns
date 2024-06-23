@@ -93,3 +93,14 @@ The image to use for optional webhook sidecar
 {{- printf "%s:%s" .repository .tag }}
 {{- end }}
 {{- end }}
+
+{{/*
+Renders a complete tree, even values that contains template.
+*/}}
+{{- define "external-dns.render" -}}
+{{- if typeIs "string" .value }}
+{{- tpl .value .context }}
+{{ else }}
+{{- tpl (.value | toYaml) .context }}
+{{- end }}
+{{- end -}}
