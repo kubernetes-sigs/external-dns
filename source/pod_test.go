@@ -185,8 +185,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::3", "2001:DB8::4"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -196,7 +196,7 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.NodeStatus{
 						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
+							{Type: corev1.NodeExternalIP, Address: "2001:DB8::1"},
 						},
 					},
 				},
@@ -206,7 +206,18 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.NodeStatus{
 						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::2"},
+							{Type: corev1.NodeExternalIP, Address: "2001:DB8::2"},
+							{Type: corev1.NodeInternalIP, Address: "2001:DB8::3"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node3",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeInternalIP, Address: "2001:DB8::4"},
 						},
 					},
 				},
@@ -244,6 +255,40 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "2001:DB8::2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::3",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod4",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							internalHostnameAnnotationKey: "internal.a.foo.example.org",
+							hostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node3",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::4",
 					},
 				},
 			},
@@ -253,8 +298,8 @@ func TestPodSource(t *testing.T) {
 			"",
 			"kops-dns-controller",
 			[]*endpoint.Endpoint{
-				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
-				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "internal.a.foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2", "2001:DB8::3", "2001:DB8::4"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			false,
 			[]*corev1.Node{
@@ -264,7 +309,7 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.NodeStatus{
 						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
+							{Type: corev1.NodeExternalIP, Address: "2001:DB8::1"},
 						},
 					},
 				},
@@ -274,7 +319,18 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.NodeStatus{
 						Addresses: []corev1.NodeAddress{
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::2"},
+							{Type: corev1.NodeExternalIP, Address: "2001:DB8::2"},
+							{Type: corev1.NodeInternalIP, Address: "2001:DB8::3"},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "my-node3",
+					},
+					Status: corev1.NodeStatus{
+						Addresses: []corev1.NodeAddress{
+							{Type: corev1.NodeInternalIP, Address: "2001:DB8::4"},
 						},
 					},
 				},
@@ -312,6 +368,40 @@ func TestPodSource(t *testing.T) {
 					},
 					Status: corev1.PodStatus{
 						PodIP: "2001:DB8::2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod3",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node2",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::3",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "my-pod4",
+						Namespace: "kube-system",
+						Annotations: map[string]string{
+							kopsDNSControllerInternalHostnameAnnotationKey: "internal.a.foo.example.org",
+							kopsDNSControllerHostnameAnnotationKey:         "a.foo.example.org",
+						},
+					},
+					Spec: corev1.PodSpec{
+						HostNetwork: true,
+						NodeName:    "my-node3",
+					},
+					Status: corev1.PodStatus{
+						PodIP: "2001:DB8::4",
 					},
 				},
 			},
@@ -406,7 +496,7 @@ func TestPodSource(t *testing.T) {
 					Status: corev1.NodeStatus{
 						Addresses: []corev1.NodeAddress{
 							{Type: corev1.NodeExternalIP, Address: "54.10.11.1"},
-							{Type: corev1.NodeInternalIP, Address: "2001:DB8::1"},
+							{Type: corev1.NodeExternalIP, Address: "2001:DB8::1"},
 							{Type: corev1.NodeInternalIP, Address: "10.0.1.1"},
 						},
 					},

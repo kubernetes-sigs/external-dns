@@ -1690,7 +1690,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1701,7 +1701,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -1724,7 +1725,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1735,7 +1736,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -1761,7 +1763,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1772,7 +1774,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -1835,7 +1838,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1846,7 +1849,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -1879,7 +1883,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -1890,7 +1894,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2016,7 +2021,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			expected: []*endpoint.Endpoint{
 				{DNSName: "_foo._tcp.foo.example.org", Targets: endpoint.Targets{"0 50 30192 foo.example.org"}, RecordType: endpoint.RecordTypeSRV},
 				{DNSName: "foo.example.org", Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}, RecordType: endpoint.RecordTypeA},
-				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}, RecordType: endpoint.RecordTypeAAAA},
+				{DNSName: "foo.example.org", Targets: endpoint.Targets{"2001:DB8::3"}, RecordType: endpoint.RecordTypeAAAA},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2026,7 +2031,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -2037,7 +2042,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2066,7 +2072,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -2077,7 +2083,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2095,9 +2102,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1"}},
-				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
+				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::20"}},
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1"}},
-				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1"}},
+				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::20"}},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2110,7 +2117,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::20"},
 					},
 				},
 			}, {
@@ -2124,7 +2132,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2141,9 +2150,9 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 			},
 			expected: []*endpoint.Endpoint{
 				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
-				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
+				{DNSName: "internal.foo.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
 				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeA, Targets: endpoint.Targets{"10.0.1.1", "10.0.1.2"}},
-				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::1", "2001:DB8::2"}},
+				{DNSName: "internal.bar.example.org", RecordType: endpoint.RecordTypeAAAA, Targets: endpoint.Targets{"2001:DB8::3"}},
 			},
 			nodes: []*v1.Node{{
 				ObjectMeta: metav1.ObjectMeta{
@@ -2156,7 +2165,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -2170,7 +2179,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2202,7 +2212,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -2216,7 +2226,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2245,7 +2256,7 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.1"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.1"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::1"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::1"},
 					},
 				},
 			}, {
@@ -2259,7 +2270,8 @@ func TestServiceSourceNodePortServices(t *testing.T) {
 					Addresses: []v1.NodeAddress{
 						{Type: v1.NodeExternalIP, Address: "54.10.11.2"},
 						{Type: v1.NodeInternalIP, Address: "10.0.1.2"},
-						{Type: v1.NodeInternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeExternalIP, Address: "2001:DB8::2"},
+						{Type: v1.NodeInternalIP, Address: "2001:DB8::3"},
 					},
 				},
 			}},
@@ -2848,7 +2860,7 @@ func TestHeadlessServices(t *testing.T) {
 					Status: v1.NodeStatus{
 						Addresses: []v1.NodeAddress{
 							{
-								Type:    v1.NodeInternalIP,
+								Type:    v1.NodeExternalIP,
 								Address: "2001:db8::4",
 							},
 						},
@@ -2895,7 +2907,7 @@ func TestHeadlessServices(t *testing.T) {
 								Address: "1.2.3.4",
 							},
 							{
-								Type:    v1.NodeInternalIP,
+								Type:    v1.NodeExternalIP,
 								Address: "2001:db8::4",
 							},
 						},
