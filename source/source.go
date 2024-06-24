@@ -329,6 +329,76 @@ func endpointsForHostname(hostname string, targets endpoint.Targets, ttl endpoin
 	return endpoints
 }
 
+// endpointsForHostname returns the endpoint objects for each host-target combination.
+func endpointsForHostAliases(hostAliases []string, targets endpoint.Targets, ttl endpoint.TTL, providerSpecific endpoint.ProviderSpecific, setIdentifier string, resource string) []*endpoint.Endpoint {
+	var endpoints []*endpoint.Endpoint
+
+	var aTargets endpoint.Targets
+	var aaaaTargets endpoint.Targets
+	var cnameTargets endpoint.Targets
+
+	for _, t := range targets {
+		switch suitableType(t) {
+		case endpoint.RecordTypeA:
+			if isIPv6String(t) {
+				continue
+			}
+			aTargets = append(aTargets, t)
+		case endpoint.RecordTypeAAAA:
+			if !isIPv6String(t) {
+				continue
+			}
+			aaaaTargets = append(aaaaTargets, t)
+		default:
+			cnameTargets = append(cnameTargets, t)
+		}
+	}
+
+	if len(aTargets) > 0 {
+		for _, hostAlias := range hostAliases {
+			epA := endpoint.NewEndpointWithTTL(hostAlias, endpoint.RecordTypeA, ttl, aTargets...)
+			if epA != nil {
+				epA.ProviderSpecific = providerSpecific
+				epA.SetIdentifier = setIdentifier
+				if resource != "" {
+					epA.Labels[endpoint.ResourceLabelKey] = resource
+				}
+				endpoints = append(endpoints, epA)
+			}
+		}
+	}
+
+	if len(aaaaTargets) > 0 {
+		for _, hostAlias := range hostAliases {
+			epAAAA := endpoint.NewEndpointWithTTL(hostAlias, endpoint.RecordTypeAAAA, ttl, aaaaTargets...)
+			if epAAAA != nil {
+				epAAAA.ProviderSpecific = providerSpecific
+				epAAAA.SetIdentifier = setIdentifier
+				if resource != "" {
+					epAAAA.Labels[endpoint.ResourceLabelKey] = resource
+				}
+				endpoints = append(endpoints, epAAAA)
+			}
+		}
+	}
+
+	if len(cnameTargets) > 0 {
+		for _, hostAlias := range hostAliases {
+			epCNAME := endpoint.NewEndpointWithTTL(hostAlias, endpoint.RecordTypeCNAME, ttl, cnameTargets...)
+			if epCNAME != nil {
+				epCNAME.ProviderSpecific = providerSpecific
+				epCNAME.SetIdentifier = setIdentifier
+				if resource != "" {
+					epCNAME.Labels[endpoint.ResourceLabelKey] = resource
+				}
+				endpoints = append(endpoints, epCNAME)
+			}
+		}
+	}
+
+	return endpoints
+}
+
 func getLabelSelector(annotationFilter string) (labels.Selector, error) {
 	labelSelector, err := metav1.ParseToLabelSelector(annotationFilter)
 	if err != nil {
