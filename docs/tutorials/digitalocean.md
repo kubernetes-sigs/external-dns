@@ -230,3 +230,10 @@ rate limiting because of the number of API calls that external-dns must make to 
 the current DNS configuration during every reconciliation loop. If this is the case, use the 
 `--digitalocean-api-page-size` option to increase the size of the pages used when querying the DigitalOcean API.
 (Note: external-dns uses a default of 50.)
+
+### API Rate Limit
+
+If changing the API page size is not sufficient to avoid API rate limiting, use the
+`--digitalocean-api-rate-limit` option to set the maximum number of requests per minute allowed when querying
+the DigitalOcean API.
+(Note: external-dns uses a default of 200.)
