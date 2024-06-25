@@ -5,7 +5,7 @@ go 1.22.4
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.17.0
@@ -14,9 +14,9 @@ require (
 	github.com/IBM/networking-go-sdk v0.47.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.771
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.772
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.54.4
+	github.com/aws/aws-sdk-go v1.54.7
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
@@ -35,7 +35,7 @@ require (
 	github.com/gophercloud/gophercloud v1.12.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.35.0
+	github.com/linode/linodego v1.36.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.61
 	github.com/nesv/go-dynect v0.6.0
@@ -53,9 +53,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.28
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.945
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.945
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.945
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.949
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.949
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.949
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -75,7 +75,7 @@ require (
 	k8s.io/api v0.30.2
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
-	k8s.io/klog/v2 v2.130.0
+	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/gateway-api v1.1.0
 )
 
