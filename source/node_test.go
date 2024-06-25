@@ -159,7 +159,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 			title:         "node with fqdn template returns two endpoints with dual-stack IP addresses and expanded hostname",
 			fqdnTemplate:  "{{.Name}}.example.org",
 			nodeName:      "node1",
-			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeExternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1.example.org", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1.example.org", Targets: endpoint.Targets{"2001:DB8::8"}},
@@ -176,7 +176,7 @@ func testNodeSourceEndpoints(t *testing.T) {
 		{
 			title:         "node with both external, internal, and IPv6 IP returns endpoints with external IPs",
 			nodeName:      "node1",
-			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeInternalIP, Address: "2001:DB8::8"}},
+			nodeAddresses: []v1.NodeAddress{{Type: v1.NodeExternalIP, Address: "1.2.3.4"}, {Type: v1.NodeInternalIP, Address: "2.3.4.5"}, {Type: v1.NodeExternalIP, Address: "2001:DB8::8"}},
 			expected: []*endpoint.Endpoint{
 				{RecordType: "A", DNSName: "node1", Targets: endpoint.Targets{"1.2.3.4"}},
 				{RecordType: "AAAA", DNSName: "node1", Targets: endpoint.Targets{"2001:DB8::8"}},

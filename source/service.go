@@ -307,7 +307,7 @@ func (sc *serviceSource) extractHeadlessEndpoints(svc *v1.Service, hostname stri
 							return endpoints
 						}
 						for _, address := range node.Status.Addresses {
-							if address.Type == v1.NodeExternalIP || (address.Type == v1.NodeInternalIP && suitableType(address.Address) == endpoint.RecordTypeAAAA) {
+							if address.Type == v1.NodeExternalIP {
 								targets = append(targets, address.Address)
 								log.Debugf("Generating matching endpoint %s with NodeExternalIP %s", headlessDomain, address.Address)
 							}
@@ -579,7 +579,6 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 	var (
 		internalIPs endpoint.Targets
 		externalIPs endpoint.Targets
-		ipv6IPs     endpoint.Targets
 		nodes       []*v1.Node
 		err         error
 	)
@@ -650,22 +649,19 @@ func (sc *serviceSource) extractNodePortTargets(svc *v1.Service) (endpoint.Targe
 				externalIPs = append(externalIPs, address.Address)
 			case v1.NodeInternalIP:
 				internalIPs = append(internalIPs, address.Address)
-				if suitableType(address.Address) == endpoint.RecordTypeAAAA {
-					ipv6IPs = append(ipv6IPs, address.Address)
-				}
 			}
 		}
 	}
 
 	access := getAccessFromAnnotations(svc.Annotations)
 	if access == "public" {
-		return append(externalIPs, ipv6IPs...), nil
+		return externalIPs, nil
 	}
 	if access == "private" {
 		return internalIPs, nil
 	}
 	if len(externalIPs) > 0 {
-		return append(externalIPs, ipv6IPs...), nil
+		return externalIPs, nil
 	}
 	return internalIPs, nil
 }
