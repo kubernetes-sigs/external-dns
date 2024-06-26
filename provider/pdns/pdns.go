@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -156,8 +157,7 @@ func (c *PDNSAPIClient) ListZones() (zones []pgo.Zone, resp *http.Response, err 
 		return zones, resp, err
 	}
 
-	log.Errorf("Unable to fetch zones. %v", err)
-	return zones, resp, err
+	return zones, resp, provider.NewSoftError(fmt.Errorf("unable to list zones: %v", err))
 }
 
 // PartitionZones : Method returns a slice of zones that adhere to the domain filter and a slice of ones that does not adhere to the filter
@@ -190,8 +190,7 @@ func (c *PDNSAPIClient) ListZone(zoneID string) (zone pgo.Zone, resp *http.Respo
 		return zone, resp, err
 	}
 
-	log.Errorf("Unable to list zone. %v", err)
-	return zone, resp, err
+	return zone, resp, provider.NewSoftError(fmt.Errorf("unable to list zone: %v", err))
 }
 
 // PatchZone : Method used to update the contents of a particular zone from PowerDNS
@@ -208,8 +207,7 @@ func (c *PDNSAPIClient) PatchZone(zoneID string, zoneStruct pgo.Zone) (resp *htt
 		return resp, err
 	}
 
-	log.Errorf("Unable to patch zone. %v", err)
-	return resp, err
+	return resp, provider.NewSoftError(fmt.Errorf("unable to patch zone: %v", err))
 }
 
 // PDNSProvider is an implementation of the Provider interface for PowerDNS
@@ -335,7 +333,7 @@ func (p *PDNSProvider) ConvertEndpointsToZones(eps []*endpoint.Endpoint, changet
 				// DELETEs explicitly forbid a TTL, therefore only PATCHes need the TTL
 				if changetype == PdnsReplace {
 					if int64(ep.RecordTTL) > int64(math.MaxInt32) {
-						return nil, errors.New("value of record TTL overflows, limited to int32")
+						return nil, provider.NewSoftError(fmt.Errorf("value of record TTL overflows, limited to int32"))
 					}
 					if ep.RecordTTL == 0 {
 						// No TTL was specified for the record, we use the default
@@ -394,7 +392,7 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 	for _, zone := range zonelist {
 		jso, err := json.Marshal(zone)
 		if err != nil {
-			log.Errorf("JSON Marshal for zone struct failed!")
+			return provider.NewSoftError(fmt.Errorf("JSON Marshal for zone struct failed: %v", err))
 		} else {
 			log.Debugf("Struct for PatchZone:\n%s", string(jso))
 		}
@@ -418,8 +416,7 @@ func (p *PDNSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpo
 	for _, zone := range filteredZones {
 		z, _, err := p.client.ListZone(zone.Id)
 		if err != nil {
-			log.Warnf("Unable to fetch Records")
-			return nil, err
+			return nil, provider.NewSoftError(fmt.Errorf("unable to fetch records: %v", err))
 		}
 
 		for _, rr := range z.Rrsets {
