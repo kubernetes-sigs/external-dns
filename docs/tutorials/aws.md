@@ -418,7 +418,7 @@ Finally, install the ExternalDNS chart with Helm using the configuration specifi
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
 
-### Manifest (for clusters without RBAC enabled)
+### When using clusters without RBAC enabled
 
 Save the following below as `externaldns-no-rbac.yaml`.
 
