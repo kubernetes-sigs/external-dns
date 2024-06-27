@@ -501,7 +501,7 @@ extraVolumes:
       secretName: external-dns
 extraVolumeMounts:
   - name: aws-credentials
-    mountPath: /.aws
+    mountPath: /etc/aws/credentials
     readOnly: true
 ```
 
