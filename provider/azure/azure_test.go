@@ -18,6 +18,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	azcoreruntime "github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
@@ -356,6 +357,51 @@ func TestAzureApplyChanges(t *testing.T) {
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeMX, endpoint.TTL(recordTTL), "10 other.com"),
 		endpoint.NewEndpointWithTTL("mail.example.com", endpoint.RecordTypeTXT, endpoint.TTL(recordTTL), "tag"),
 	})
+}
+
+func TestAzureApplyChangesRetrunError(t *testing.T) {
+	recordsClient := mockRecordSetsClient{}
+	zonesClient := newMockZonesClient([]*dns.Zone{createMockZone("example.com", "/dnszones/example.com")})
+	provider := newAzureProvider(
+		endpoint.NewDomainFilter([]string{"foo.example.com"}),
+		endpoint.NewDomainFilter([]string{"example.com"}),
+		provider.NewZoneIDFilter([]string{""}),
+		false,
+		"group",
+		"",
+		"",
+		&zonesClient,
+		&recordsClient,
+	)
+
+	createRecords := []*endpoint.Endpoint{}
+
+	currentRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpoint("old.foo.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+		endpoint.NewEndpoint("oldcname.foo.example.com", endpoint.RecordTypeCNAME, "other.com"),
+		endpoint.NewEndpoint("old.nope.example.com", endpoint.RecordTypeA, "121.212.121.212"),
+	}
+	updatedRecords := []*endpoint.Endpoint{
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeA, 3600, "111.222.111.222"),
+		endpoint.NewEndpointWithTTL("new.foo.example.com", endpoint.RecordTypeAAAA, 3600, "2001::111:222:111:222"),
+		endpoint.NewEndpointWithTTL("newcname.foo.example.com", endpoint.RecordTypeCNAME, 10, "other.com"),
+		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeA, "222.111.222.111"),
+		endpoint.NewEndpoint("new.nope.example.com", endpoint.RecordTypeAAAA, "2001::222:111:222:111"),
+		endpoint.NewEndpoint("@.new.example.com", endpoint.RecordTypeAAAA, "aabb::222:111:222:111"),
+	}
+
+	deleteRecords := []*endpoint.Endpoint{}
+
+	changes := &plan.Changes{
+		Create:    createRecords,
+		UpdateNew: updatedRecords,
+		UpdateOld: currentRecords,
+		Delete:    deleteRecords,
+	}
+
+	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
+		t.Fatal(errors.New("ApplyChanges NotError"))
+	}
 }
 
 func TestAzureApplyChangesDryRun(t *testing.T) {
