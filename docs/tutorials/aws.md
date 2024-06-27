@@ -494,11 +494,11 @@ provider:
   name: aws
 env:
   - name: AWS_SHARED_CREDENTIALS_FILE
-    value: /etc/aws/credentials
+    value: /etc/aws/credentials/my_credentials
 extraVolumes:
   - name: aws-credentials
     secret:
-      secretName: external-dns
+      secretName: external-dns # In this example, the secret will have the data stored in a key named `my_credentials`
 extraVolumeMounts:
   - name: aws-credentials
     mountPath: /etc/aws/credentials
