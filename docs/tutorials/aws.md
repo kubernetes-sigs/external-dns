@@ -477,7 +477,7 @@ kubectl create --filename externaldns-no-rbac.yaml \
 
 ### When using clusters with RBAC enabled
 
-Update the `values.yaml` file you created earlier to include the annotations to link the Role ARN you created before.
+If you're using EKS, you can update the `values.yaml` file you created earlier to include the annotations to link the Role ARN you created before.
 
 ```yaml
 provider:
@@ -487,7 +487,25 @@ serviceAccount:
     eks.amazonaws.com/role-arn: arn:aws:iam::${ACCOUNT_ID}:role/${EXTERNALDNS_ROLE_NAME:-"external-dns"}
 ```
 
-When ready deploy, update your Helm installation:
+If you need to provide credentials directly using a secret (ie. You're not using EKS), you can change the `values.yaml` file to include volume and volume mounts.
+
+```yaml
+provider:
+  name: aws
+env:
+  - name: AWS_SHARED_CREDENTIALS_FILE
+    value: /.aws/credentials
+extraVolumes:
+  - name: aws-credentials
+    secret:
+      secretName: external-dns
+extraVolumeMounts:
+  - name: aws-credentials
+    mountPath: /.aws
+    readOnly: true
+```
+
+When ready, update your Helm installation:
 
 ```shell
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
