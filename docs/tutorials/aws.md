@@ -418,7 +418,7 @@ Finally, install the ExternalDNS chart with Helm using the configuration specifi
 helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
 
-### Manifest (for clusters without RBAC enabled)
+### When using clusters without RBAC enabled
 
 Save the following below as `externaldns-no-rbac.yaml`.
 
@@ -475,99 +475,40 @@ kubectl create --filename externaldns-no-rbac.yaml \
   --namespace ${EXTERNALDNS_NS:-"default"}
 ```
 
-### Manifest (for clusters with RBAC enabled)
+### When using clusters with RBAC enabled
 
-Save the following below as `externaldns-with-rbac.yaml`.
+If you're using EKS, you can update the `values.yaml` file you created earlier to include the annotations to link the Role ARN you created before.
 
 ```yaml
-# comment out sa if it was previously created
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: external-dns
-  labels:
-    app.kubernetes.io/name: external-dns
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: external-dns
-  labels:
-    app.kubernetes.io/name: external-dns
-rules:
-  - apiGroups: [""]
-    resources: ["services","endpoints","pods","nodes"]
-    verbs: ["get","watch","list"]
-  - apiGroups: ["extensions","networking.k8s.io"]
-    resources: ["ingresses"]
-    verbs: ["get","watch","list"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: external-dns-viewer
-  labels:
-    app.kubernetes.io/name: external-dns
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: external-dns
-subjects:
-  - kind: ServiceAccount
-    name: external-dns
-    namespace: default # change to desired namespace: externaldns, kube-addons
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: external-dns
-  labels:
-    app.kubernetes.io/name: external-dns
-spec:
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: external-dns
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: external-dns
-    spec:
-      serviceAccountName: external-dns
-      containers:
-        - name: external-dns
-          image: registry.k8s.io/external-dns/external-dns:v0.14.2
-          args:
-            - --source=service
-            - --source=ingress
-            - --domain-filter=example.com # will make ExternalDNS see only the hosted zones matching provided domain, omit to process all available hosted zones
-            - --provider=aws
-            - --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
-            - --aws-zone-type=public # only look at public hosted zones (valid values are public, private or no value for both)
-            - --registry=txt
-            - --txt-owner-id=external-dns
-          env:
-            - name: AWS_DEFAULT_REGION
-              value: us-east-1 # change to region where EKS is installed
-     # # Uncommend below if using static credentials
-     #        - name: AWS_SHARED_CREDENTIALS_FILE
-     #          value: /.aws/credentials
-     #      volumeMounts:
-     #        - name: aws-credentials
-     #          mountPath: /.aws
-     #          readOnly: true
-     #  volumes:
-     #    - name: aws-credentials
-     #      secret:
-     #        secretName: external-dns
+provider:
+  name: aws
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::${ACCOUNT_ID}:role/${EXTERNALDNS_ROLE_NAME:-"external-dns"}
 ```
 
-When ready deploy:
+If you need to provide credentials directly using a secret (ie. You're not using EKS), you can change the `values.yaml` file to include volume and volume mounts.
 
-```bash
-kubectl create --filename externaldns-with-rbac.yaml \
-  --namespace ${EXTERNALDNS_NS:-"default"}
+```yaml
+provider:
+  name: aws
+env:
+  - name: AWS_SHARED_CREDENTIALS_FILE
+    value: /etc/aws/credentials/my_credentials
+extraVolumes:
+  - name: aws-credentials
+    secret:
+      secretName: external-dns # In this example, the secret will have the data stored in a key named `my_credentials`
+extraVolumeMounts:
+  - name: aws-credentials
+    mountPath: /etc/aws/credentials
+    readOnly: true
+```
+
+When ready, update your Helm installation:
+
+```shell
+helm upgrade --install external-dns external-dns/external-dns --values values.yaml
 ```
 
 ## Arguments
