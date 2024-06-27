@@ -494,7 +494,7 @@ provider:
   name: aws
 env:
   - name: AWS_SHARED_CREDENTIALS_FILE
-    value: /.aws/credentials
+    value: /etc/aws/credentials
 extraVolumes:
   - name: aws-credentials
     secret:
