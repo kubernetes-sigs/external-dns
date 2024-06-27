@@ -19,6 +19,7 @@ package azure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -160,9 +161,9 @@ func (p *AzureProvider) ApplyChanges(ctx context.Context, changes *plan.Changes)
 	}
 
 	deleted, updated := p.mapChanges(zones, changes)
-	p.deleteRecords(ctx, deleted)
-	p.updateRecords(ctx, updated)
-	return nil
+	err1 := p.deleteRecords(ctx, deleted)
+	err2 := p.updateRecords(ctx, updated)
+	return errors.Join(err1, err2)
 }
 
 func (p *AzureProvider) zones(ctx context.Context) ([]dns.Zone, error) {
@@ -235,8 +236,9 @@ func (p *AzureProvider) mapChanges(zones []dns.Zone, changes *plan.Changes) (azu
 	return deleted, updated
 }
 
-func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) {
+func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMap) error {
 	// Delete records first
+	var failedCount uint64
 	for zone, endpoints := range deleted {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -249,6 +251,7 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 			} else {
 				log.Infof("Deleting %s record named '%s' for Azure DNS zone '%s'.", ep.RecordType, name, zone)
 				if _, err := p.recordSetsClient.Delete(ctx, p.resourceGroup, zone, name, dns.RecordType(ep.RecordType), nil); err != nil {
+					failedCount++
 					log.Errorf(
 						"Failed to delete %s record named '%s' for Azure DNS zone '%s': %v",
 						ep.RecordType,
@@ -260,9 +263,14 @@ func (p *AzureProvider) deleteRecords(ctx context.Context, deleted azureChangeMa
 			}
 		}
 	}
+	if failedCount > 0 {
+		return fmt.Errorf("Failed to delete records for Azure DNS zone: %d", failedCount)
+	}
+	return nil
 }
 
-func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) {
+func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMap) error {
+	var failedCount uint64
 	for zone, endpoints := range updated {
 		for _, ep := range endpoints {
 			name := p.recordSetNameForZone(zone, ep)
@@ -302,6 +310,7 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 				)
 			}
 			if err != nil {
+				failedCount++
 				log.Errorf(
 					"Failed to update %s record named '%s' to '%s' for DNS zone '%s': %v",
 					ep.RecordType,
@@ -313,6 +322,10 @@ func (p *AzureProvider) updateRecords(ctx context.Context, updated azureChangeMa
 			}
 		}
 	}
+	if failedCount > 0 {
+		return fmt.Errorf("Failed to update records for Azure DNS zone: %d", failedCount)
+	}
+	return nil
 }
 
 func (p *AzureProvider) recordSetNameForZone(zone string, endpoint *endpoint.Endpoint) string {
