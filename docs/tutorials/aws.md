@@ -475,7 +475,7 @@ kubectl create --filename externaldns-no-rbac.yaml \
   --namespace ${EXTERNALDNS_NS:-"default"}
 ```
 
-### Manifest (for clusters with RBAC enabled)
+### When using clusters with RBAC enabled
 
 Update the `values.yaml` file you created earlier to include the annotations to link the Role ARN you created before.
 
