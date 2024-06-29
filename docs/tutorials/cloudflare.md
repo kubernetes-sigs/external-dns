@@ -57,7 +57,7 @@ Then apply one of the following manifests file to deploy ExternalDNS.
 
 Create a values.yaml file to configure ExternalDNS to use CloudFlare as the DNS provider. This file should include the necessary environment variables:
 
-```shell
+```yaml
 provider: 
   name: cloudflare
 env:
@@ -75,7 +75,7 @@ env:
 
 Use this in your values.yaml, if you are using API Token:
 
-```shell
+```yaml
 provider: 
   name: cloudflare
 env:
@@ -120,22 +120,22 @@ spec:
         app: external-dns
     spec:
       containers:
-      - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
-        args:
-        - --source=service # ingress is also possible
-        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
-        - --provider=cloudflare
-        - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
-        - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+        - name: external-dns
+          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          args:
+            - --source=service # ingress is also possible
+            - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+            - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
+            - --provider=cloudflare
+            - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
+            - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
       env:
-       - name: CF_API_KEY
+        - name: CF_API_KEY
           valueFrom:
             secretKeyRef:
               name: cloudflare-api-key
               key: apiKey
-       - name: CF_API_EMAIL
+        - name: CF_API_EMAIL
           valueFrom:
             secretKeyRef:
               name: cloudflare-api-key
@@ -155,15 +155,15 @@ kind: ClusterRole
 metadata:
   name: external-dns
 rules:
-- apiGroups: [""]
-  resources: ["services","endpoints","pods"]
-  verbs: ["get","watch","list"]
-- apiGroups: ["extensions","networking.k8s.io"]
-  resources: ["ingresses"]
-  verbs: ["get","watch","list"]
-- apiGroups: [""]
-  resources: ["nodes"]
-  verbs: ["list", "watch"]
+  - apiGroups: [""]
+    resources: ["services","endpoints","pods"]
+    verbs: ["get","watch","list"]
+  - apiGroups: ["extensions","networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get","watch","list"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -195,26 +195,26 @@ spec:
     spec:
       serviceAccountName: external-dns
       containers:
-      - name: external-dns
-        image: registry.k8s.io/external-dns/external-dns:v0.14.2
-        args:
-        - --source=service # ingress is also possible
-        - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
-        - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
-        - --provider=cloudflare
-        - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
-        - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
-        env:
-       - name: CF_API_KEY
-        valueFrom:
-          secretKeyRef:
-            name: cloudflare-api-key
-            key: apiKey
-       - name: CF_API_EMAIL
-         valueFrom:
-           secretKeyRef:
-             name: cloudflare-api-key
-             key: email
+        - name: external-dns
+          image: registry.k8s.io/external-dns/external-dns:v0.14.2
+          args:
+            - --source=service # ingress is also possible
+            - --domain-filter=example.com # (optional) limit to only example.com domains; change to match the zone created above.
+            - --zone-id-filter=023e105f4ecef8ad9ca31a8372d0c353 # (optional) limit to a specific zone.
+            - --provider=cloudflare
+            - --cloudflare-proxied # (optional) enable the proxy feature of Cloudflare (DDOS protection, CDN...)
+            - --cloudflare-dns-records-per-page=5000 # (optional) configure how many DNS records to fetch per request
+          env:
+            - name: CF_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-key
+                  key: apiKey
+            - name: CF_API_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-api-key
+                  key: email
 ```
 
 ## Deploying an Nginx Service
@@ -270,7 +270,7 @@ will cause ExternalDNS to remove the corresponding DNS records.
 
 Create the deployment and service:
 
-```
+```shell
 $ kubectl create -f nginx.yaml
 ```
 
@@ -291,7 +291,7 @@ This should show the external IP address of the service as the A record for your
 
 Now that we have verified that ExternalDNS will automatically manage Cloudflare DNS records, we can delete the tutorial's example:
 
-```
+```shell
 $ kubectl delete -f nginx.yaml
 $ kubectl delete -f externaldns.yaml
 ```
