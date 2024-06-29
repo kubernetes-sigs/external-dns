@@ -435,10 +435,12 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				}
 
 				ep := endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...)
-				if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
-					ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
+				if ep != nil {
+					if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
+						ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
+					}
+					newEndpoints = append(newEndpoints, ep)
 				}
-				newEndpoints = append(newEndpoints, ep)
 			}
 
 			if r.AliasTarget != nil {
