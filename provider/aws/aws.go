@@ -435,12 +435,10 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				}
 
 				ep := endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...)
-				if ep != nil {
-					if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
-						ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
-					}
-					newEndpoints = append(newEndpoints, ep)
+				if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
+					ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
 				}
+				newEndpoints = append(newEndpoints, ep)
 			}
 
 			if r.AliasTarget != nil {
@@ -630,6 +628,7 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 		batchCs := append(batchChangeSet(newChanges, p.batchChangeSize, p.batchChangeSizeBytes, p.batchChangeSizeValues),
 			batchChangeSet(retriedChanges, p.batchChangeSize, p.batchChangeSizeBytes, p.batchChangeSizeValues)...)
+
 		for i, b := range batchCs {
 			if len(b) == 0 {
 				continue
