@@ -456,6 +456,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				continue
 			}
 
+			name := convertOctalToAscii(wildcardUnescape(aws.StringValue(r.Name)))
+
 			var ttl endpoint.TTL
 			if r.TTL != nil {
 				ttl = endpoint.TTL(*r.TTL)
@@ -466,8 +468,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				for idx, rr := range r.ResourceRecords {
 					targets[idx] = aws.StringValue(rr.Value)
 				}
-				escaped := convertOctalToAscii(wildcardUnescape(aws.StringValue(r.Name)))
-				ep := endpoint.NewEndpointWithTTL(escaped, aws.StringValue(r.Type), ttl, targets...)
+				ep := endpoint.NewEndpointWithTTL(name, aws.StringValue(r.Type), ttl, targets...)
 				if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
 					ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
 				}
@@ -480,7 +481,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					ttl = recordTTL
 				}
 				ep := endpoint.
-					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeA, ttl, aws.StringValue(r.AliasTarget.DNSName)).
+					NewEndpointWithTTL(name, endpoint.RecordTypeA, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
 					WithProviderSpecific(providerSpecificAlias, "true")
 				newEndpoints = append(newEndpoints, ep)
