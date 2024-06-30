@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"regexp"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -403,6 +404,38 @@ func wildcardUnescape(s string) string {
 	return strings.Replace(s, "\\052", "*", 1)
 }
 
+// See https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
+// convertOctalToAscii decodes inputs that contain octal escape sequences into their original ASCII characters.
+// The function returns converted string where any octal escape sequences have been replaced with their corresponding ASCII characters.
+func convertOctalToAscii(input string) string {
+	if !containsOctalSequence(input) {
+		return input
+	}
+	var result strings.Builder
+	for i := 0; i < len(input); i++ {
+		if input[i] == '\\' && i+3 < len(input) {
+			octalStr := input[i+1 : i+4]
+			if octal, err := strconv.ParseInt(octalStr, 8, 8); err == nil {
+				result.WriteByte(byte(octal))
+				i += 3 // Skip the next 3 characters (the octal code)
+			} else {
+				result.WriteByte(input[i])
+			}
+		} else {
+			result.WriteByte(input[i])
+		}
+	}
+	return result.String()
+}
+
+// validateDomainName checks if the domain name contains valid octal escape sequences.
+func containsOctalSequence(domain string) bool {
+	// Pattern to match valid octal escape sequences
+	octalEscapePattern := `\\[0-3][0-7]{2}`
+	octalEscapeRegex := regexp.MustCompile(octalEscapePattern)
+	return octalEscapeRegex.MatchString(domain)
+}
+
 // Records returns the list of records in a given hosted zone.
 func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoint, _ error) {
 	zones, err := p.zones(ctx)
@@ -423,6 +456,8 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				continue
 			}
 
+			name := convertOctalToAscii(wildcardUnescape(aws.StringValue(r.Name)))
+
 			var ttl endpoint.TTL
 			if r.TTL != nil {
 				ttl = endpoint.TTL(*r.TTL)
@@ -433,8 +468,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				for idx, rr := range r.ResourceRecords {
 					targets[idx] = aws.StringValue(rr.Value)
 				}
-
-				ep := endpoint.NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), aws.StringValue(r.Type), ttl, targets...)
+				ep := endpoint.NewEndpointWithTTL(name, aws.StringValue(r.Type), ttl, targets...)
 				if aws.StringValue(r.Type) == endpoint.RecordTypeCNAME {
 					ep = ep.WithProviderSpecific(providerSpecificAlias, "false")
 				}
@@ -447,7 +481,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 					ttl = recordTTL
 				}
 				ep := endpoint.
-					NewEndpointWithTTL(wildcardUnescape(aws.StringValue(r.Name)), endpoint.RecordTypeA, ttl, aws.StringValue(r.AliasTarget.DNSName)).
+					NewEndpointWithTTL(name, endpoint.RecordTypeA, ttl, aws.StringValue(r.AliasTarget.DNSName)).
 					WithProviderSpecific(providerSpecificEvaluateTargetHealth, fmt.Sprintf("%t", aws.BoolValue(r.AliasTarget.EvaluateTargetHealth))).
 					WithProviderSpecific(providerSpecificAlias, "true")
 				newEndpoints = append(newEndpoints, ep)
