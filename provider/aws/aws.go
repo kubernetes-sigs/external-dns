@@ -616,7 +616,6 @@ func (p *AWSProvider) GetDomainFilter() endpoint.DomainFilter {
 
 // ApplyChanges applies a given set of changes in a given zone.
 func (p *AWSProvider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
-	fmt.Println("586 ApplyChanges", changes)
 	zones, err := p.zones(ctx)
 	if err != nil {
 		return provider.NewSoftError(fmt.Errorf("failed to list zones, not applying changes: %w", err))

@@ -323,10 +323,8 @@ func (p coreDNSProvider) Records(ctx context.Context) ([]*endpoint.Endpoint, err
 				endpoint.RecordTypeTXT,
 				service.Text,
 			)
-			if ep != nil {
-				ep.Labels[randomPrefixLabel] = prefix
-				result = append(result, ep)
-			}
+			ep.Labels[randomPrefixLabel] = prefix
+			result = append(result, ep)
 		}
 	}
 	return result, nil
