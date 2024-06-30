@@ -143,7 +143,7 @@ func wildcardEscape(s string) string {
 	return s
 }
 
-// Route53 octal escapeshttps://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
+// Route53 octal escapes https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DomainNameFormat.html
 func specialCharactersEscape(s string) string {
 	var result strings.Builder
 	for _, char := range s {
