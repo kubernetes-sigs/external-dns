@@ -628,7 +628,6 @@ func (p *AWSProvider) submitChanges(ctx context.Context, changes Route53Changes,
 
 		batchCs := append(batchChangeSet(newChanges, p.batchChangeSize, p.batchChangeSizeBytes, p.batchChangeSizeValues),
 			batchChangeSet(retriedChanges, p.batchChangeSize, p.batchChangeSizeBytes, p.batchChangeSizeValues)...)
-
 		for i, b := range batchCs {
 			if len(b) == 0 {
 				continue
