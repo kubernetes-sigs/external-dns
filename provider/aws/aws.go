@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -412,20 +412,20 @@ func convertOctalToAscii(input string) string {
 		return input
 	}
 	var result strings.Builder
-    for i := 0; i < len(input); i++ {
-        if input[i] == '\\' && i+3 < len(input) {
-            octalStr := input[i+1 : i+4]
-            if octal, err := strconv.ParseInt(octalStr, 8, 8); err == nil {
-                result.WriteByte(byte(octal))
-                i += 3 // Skip the next 3 characters (the octal code)
-            } else {
-                result.WriteByte(input[i])
-            }
-        } else {
-            result.WriteByte(input[i])
-        }
-    }
-    return result.String()
+	for i := 0; i < len(input); i++ {
+		if input[i] == '\\' && i+3 < len(input) {
+			octalStr := input[i+1 : i+4]
+			if octal, err := strconv.ParseInt(octalStr, 8, 8); err == nil {
+				result.WriteByte(byte(octal))
+				i += 3 // Skip the next 3 characters (the octal code)
+			} else {
+				result.WriteByte(input[i])
+			}
+		} else {
+			result.WriteByte(input[i])
+		}
+	}
+	return result.String()
 }
 
 // validateDomainName checks if the domain name contains valid octal escape sequences.
