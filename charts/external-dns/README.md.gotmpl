@@ -82,6 +82,109 @@ If `namespaced` is set to `true`, please ensure that `sources` my only contains 
 | `node`                 | ❌         |                        |
 | `pod`                  | ❌         |                        |
 
+## Global mode
+
+`global.mode` can be used to deploy external-dns controller in a management cluster and serviceAccount and RBAC in a workload cluster.
+
+Usage:
+
+- Create `values-workload-cluster1.yaml`:
+
+  ```yaml
+  # values-workload-cluster1.yaml
+  global:
+    mode: workload
+  ```
+
+- Create `values-mgmt-cluster1.yaml`:
+
+  ```yaml
+  # values-mgmt-cluster1.yaml
+  global:
+    mode: management
+
+  env:
+  - name: KUBERNETES_SERVICE_HOST
+    valueFrom:
+      configMapKeyRef:
+        name: kubernetes-service
+        key: KUBERNETES_SERVICE_HOST
+  - name: KUBERNETES_SERVICE_PORT
+    valueFrom:
+      configMapKeyRef:
+        name: kubernetes-service
+        key: KUBERNETES_SERVICE_PORT
+  - name: namespace
+    valueFrom:
+      configMapKeyRef:
+        name: kubernetes-service
+        key: namespace
+
+  extraVolumeMounts:
+  - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    name: kube-api-access
+    readOnly: true
+  extraVolumes:
+  - name: kube-api-access
+    secret:
+      secretName: kube-api-access
+  ```
+
+- install on the workload cluster:
+
+```console
+$ export KUBECONFIG=cluster1.kubeconfig
+$ kubectl create namespace external-dns
+namespace/external-dns created
+$ helm upgrade --install external-dns external-dns/external-dns \
+  --namespace external-dns \
+  --values values-workload-cluster1.yaml
+NAME: external-dns
+LAST DEPLOYED: Wed May 28 15:46:42 2024
+NAMESPACE: external-dns
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+```
+
+- install on the management cluster:
+
+  ```console
+  $ export KUBECONFIG=mgmt.kubeconfig
+  $ kubectl create namespace external-dns-cluster1
+  namespace/external-dns-cluster1 created
+  $ helm upgrade --install external-dns-cluster1 external-dns/external-dns \
+    --namespace external-dns-cluster1 \
+    --values values-mgmt-cluster1.yaml
+  NAME: external-dns-cluster1
+  LAST DEPLOYED: Wed Sep 28 15:50:22 2022
+  NAMESPACE: external-dns-cluster1
+  STATUS: deployed
+  REVISION: 1
+  TEST SUITE: None
+  ```
+
+- Create `KUBECONFIG`:
+
+  ```console
+  $ export KUBECONFIG=cluster1.kubeconfig
+  $ ca_crt="$(kubectl get secret -n external-dns external-dns -ojsonpath={.data.'ca\.crt'} | base64 -d)"
+  $ token="$(kubectl get secret -n external-dns external-dns -ojsonpath={.data.token} | base64 -d)"
+  $ host_port="$(kubectl config view -ojson | jq .clusters[0].cluster.server -r | cut -d / -f3)"
+  $ KUBERNETES_SERVICE_HOST="$(echo "$host_port" | cut -d: -f1)"
+  $ KUBERNETES_SERVICE_PORT="$(echo "$host_port" | cut -d: -f2)"
+
+  $ export KUBECONFIG=cluster1.kubeconfig
+  $ kubectl create secret -n external-dns-cluster1 generic kube-api-access \
+      --from-literal="token=$token" \
+      --from-literal="ca.crt=$ca_crt" \
+      --from-literal="namespace=external-dns"
+  $ kubectl create configmap -n external-dns-cluster1 kubernetes-service \
+      --from-literal="KUBERNETES_SERVICE_HOST=$KUBERNETES_SERVICE_HOST" \
+      --from-literal="KUBERNETES_SERVICE_PORT=$KUBERNETES_SERVICE_PORT" \
+      --from-literal="namespace=external-dns"
+  ```
+
 
 {{ template "chart.requirementsSection" . }}
 

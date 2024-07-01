@@ -2,6 +2,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+global:
+  # -- One of full, management, workload. See [README](https://github.com/kubernetes-sigs/external-dns/blob/master/charts/external-dns/README.md#global-mode)
+  mode: full
+
 image:
   # -- Image repository for the `external-dns` container.
   repository: registry.k8s.io/external-dns/external-dns

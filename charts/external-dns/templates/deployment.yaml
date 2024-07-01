@@ -1,3 +1,4 @@
+{{- if ne .Values.global.mode "workload" }}
 {{- $providerName := tpl (include "external-dns.providerName" .) $ }}
 apiVersion: apps/v1
 kind: Deployment
@@ -37,14 +38,18 @@ spec:
         {{- end }}
       {{- end }}
     spec:
-    {{- if not (quote .Values.automountServiceAccountToken | empty) }}
-      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
-    {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if ne .Values.global.mode "management" }}
+        {{- if not (quote .Values.automountServiceAccountToken | empty) }}
+      automountServiceAccountToken: {{ .Values.automountServiceAccountToken }}
+        {{- end }}
       serviceAccountName: {{ include "external-dns.serviceAccountName" . }}
+      {{- else }}
+      automountServiceAccountToken: false
+      {{- end }}
       {{- with .Values.shareProcessNamespace }}
       shareProcessNamespace: {{ . }}
       {{- end }}
@@ -206,3 +211,4 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}
