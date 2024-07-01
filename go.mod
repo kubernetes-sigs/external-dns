@@ -5,18 +5,18 @@ go 1.22.4
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/dns/armdns v1.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/privatedns/armprivatedns v1.2.0
 	github.com/F5Networks/k8s-bigip-ctlr/v2 v2.17.0
 	github.com/IBM-Cloud/ibm-cloud-cli-sdk v1.4.0
-	github.com/IBM/go-sdk-core/v5 v5.17.3
+	github.com/IBM/go-sdk-core/v5 v5.17.4
 	github.com/IBM/networking-go-sdk v0.47.1
 	github.com/akamai/AkamaiOPEN-edgegrid-golang v1.2.2
 	github.com/alecthomas/kingpin/v2 v2.4.0
-	github.com/aliyun/alibaba-cloud-sdk-go v1.62.771
+	github.com/aliyun/alibaba-cloud-sdk-go v1.62.776
 	github.com/ans-group/sdk-go v1.17.0
-	github.com/aws/aws-sdk-go v1.54.4
+	github.com/aws/aws-sdk-go v1.54.11
 	github.com/bodgit/tsig v1.2.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/civo/civogo v0.3.70
@@ -35,7 +35,7 @@ require (
 	github.com/gophercloud/gophercloud v1.12.0
 	github.com/hooklift/gowsdl v0.5.0
 	github.com/linki/instrumented_http v0.3.0
-	github.com/linode/linodego v1.35.0
+	github.com/linode/linodego v1.36.0
 	github.com/maxatome/go-testdeep v1.14.0
 	github.com/miekg/dns v1.1.61
 	github.com/nesv/go-dynect v0.6.0
@@ -43,7 +43,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5
 	github.com/openshift/api v0.0.0-20230607130528-611114dca681
 	github.com/openshift/client-go v0.0.0-20230607134213-3cd0021bbee3
-	github.com/oracle/oci-go-sdk/v65 v65.67.2
+	github.com/oracle/oci-go-sdk/v65 v65.68.0
 	github.com/ovh/go-ovh v1.6.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
@@ -53,9 +53,9 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.28
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.945
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.945
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.945
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.953
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/dnspod v1.0.953
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/privatedns v1.0.953
 	github.com/transip/gotransip/v6 v6.24.0
 	github.com/ultradns/ultradns-sdk-go v1.3.7
 	github.com/vinyldns/go-vinyldns v0.9.16
@@ -67,20 +67,20 @@ require (
 	golang.org/x/oauth2 v0.21.0
 	golang.org/x/sync v0.7.0
 	golang.org/x/time v0.5.0
-	google.golang.org/api v0.185.0
+	google.golang.org/api v0.186.0
 	gopkg.in/ns1/ns1-go.v2 v2.11.0
 	gopkg.in/yaml.v2 v2.4.0
-	istio.io/api v1.22.1
-	istio.io/client-go v1.22.1
+	istio.io/api v1.22.2
+	istio.io/client-go v1.22.2
 	k8s.io/api v0.30.2
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
-	k8s.io/klog/v2 v2.130.0
+	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/gateway-api v1.1.0
 )
 
 require (
-	cloud.google.com/go/auth v0.5.1 // indirect
+	cloud.google.com/go/auth v0.6.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	code.cloudfoundry.org/gofileutils v0.0.0-20170111115228-4d0c80011a0f // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.9.0 // indirect
@@ -126,7 +126,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.5 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
