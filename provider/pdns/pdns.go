@@ -392,7 +392,7 @@ func (p *PDNSProvider) mutateRecords(endpoints []*endpoint.Endpoint, changetype 
 	for _, zone := range zonelist {
 		jso, err := json.Marshal(zone)
 		if err != nil {
-			return provider.NewSoftError(fmt.Errorf("JSON Marshal for zone struct failed: %v", err))
+			log.Errorf("JSON Marshal for zone struct failed!")
 		} else {
 			log.Debugf("Struct for PatchZone:\n%s", string(jso))
 		}
