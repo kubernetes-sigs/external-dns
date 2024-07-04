@@ -353,7 +353,7 @@ func TestAzurePrivateDNSApplyChanges(t *testing.T) {
 	})
 }
 
-func TestAzurePrivateDNSApplyChangesRetrunError(t *testing.T) {
+func TestAzurePrivateDNSApplyChangesReturnError(t *testing.T) {
 	recordsClient := mockPrivateRecordSetsClient{}
 	zones := []*privatedns.PrivateZone{
 		createMockPrivateZone("example.com", "/privateDnsZones/example.com"),
