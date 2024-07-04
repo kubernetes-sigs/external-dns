@@ -359,7 +359,7 @@ func TestAzureApplyChanges(t *testing.T) {
 	})
 }
 
-func TestAzureApplyChangesRetrunError(t *testing.T) {
+func TestAzureApplyChangesReturnError(t *testing.T) {
 	recordsClient := mockRecordSetsClient{}
 	zonesClient := newMockZonesClient([]*dns.Zone{createMockZone("example.com", "/dnszones/example.com")})
 	provider := newAzureProvider(
