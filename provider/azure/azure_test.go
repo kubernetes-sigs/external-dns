@@ -400,7 +400,7 @@ func TestAzureApplyChangesReturnError(t *testing.T) {
 	}
 
 	if err := provider.ApplyChanges(context.Background(), changes); err != nil {
-		t.Fatal(errors.New("ApplyChanges NotError"))
+		t.Fatal(errors.New("ApplyChanges Error"))
 	}
 }
 
