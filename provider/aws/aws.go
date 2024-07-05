@@ -416,10 +416,64 @@ func convertOctalToAscii(input string) string {
 		if input[i] == '\\' && i+3 < len(input) {
 			octalStr := input[i+1 : i+4]
 			if octal, err := strconv.ParseInt(octalStr, 8, 8); err == nil {
+				fmt.Println("string:", octalStr, " char:", byte(octal))
 				result.WriteByte(byte(octal))
 				i += 3 // Skip the next 3 characters (the octal code)
 			} else {
 				result.WriteByte(input[i])
+			}
+		} else {
+			result.WriteByte(input[i])
+		}
+	}
+	return result.String()
+}
+
+var octalCharTable = map[string]byte{
+	"041": byte(33), // exclamation mark
+	"042": byte(34), // double quote
+	"043": byte(35), // # number sing
+	"044": byte(36), // $ dollar
+	"045": byte(37), // % percentage
+	"046": byte(38), // & ampersand
+	"047": byte(39), // single quote
+	"050": byte(40), // ( left parenthesis
+	"051": byte(41), // ) right parenthesis
+	"052": byte(42), // * asterisk
+	"053": byte(43), // + plus
+	"054": byte(44), // , comma
+	"057": byte(47), // / forward slash
+	"072": byte(58), // : colon
+	"073": byte(59), // ; semicolon
+	"074": byte(60), // < less than sign
+	"075": byte(61), // = equal
+	"076": byte(62), // > greater than sign
+	"077": byte(63), // question mark
+	"100": byte(64), // @ at symbol
+	"133": byte(91), // [ left square bracket
+	"134": byte(92), // ] right square bracket
+	"135": byte(93), // ^ caret
+	"136": byte(94), // _ underscore
+	"140": byte(96), // ` backtick
+	"173": byte(123), // { left curly brace
+	"174": byte(124), // | vertical baar
+	"175": byte(125), // } right curly brace
+	"176": byte(126), // tilda
+}
+
+func convertOctalToAsciiWithHashTable(input string) string {
+	if !containsOctalSequence(input) {
+		return input
+	}
+	var result strings.Builder
+	for i := 0; i < len(input); i++ {
+		if input[i] == '\\' && i+3 < len(input) {
+			octalStr := input[i+1 : i+4]
+			if char, ok := octalCharTable[octalStr]; ok {
+				result.WriteByte(char)
+				i += 3 // Skip the next 3 characters (the octal code)
+			} else {
+				result.WriteString(input[i : i+4]) // Keep the entire sequence if not found
 			}
 		} else {
 			result.WriteByte(input[i])

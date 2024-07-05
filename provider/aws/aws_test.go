@@ -386,9 +386,9 @@ func TestAWSRecords(t *testing.T) {
 			ResourceRecords: []*route53.ResourceRecord{{Value: aws.String("1.2.3.4")}},
 		},
 		{
-			Name:            aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do.")),
-			Type:            aws.String(route53.RRTypeA),
-			TTL:             aws.Int64(recordTTL),
+			Name: aws.String(specialCharactersEscape("escape-%!s(<nil>)-codes-alias.zone-2.ext-dns-test-2.teapot.zalan.do.")),
+			Type: aws.String(route53.RRTypeA),
+			TTL:  aws.Int64(recordTTL),
 			AliasTarget: &route53.AliasTarget{
 				DNSName:              aws.String("escape-codes.eu-central-1.elb.amazonaws.com."),
 				EvaluateTargetHealth: aws.Bool(false),
@@ -2083,4 +2083,38 @@ func TestRequiresDeleteCreate(t *testing.T) {
 
 	assert.False(t, provider.requiresDeleteCreate(oldSetIdentifier, oldSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, oldSetIdentifier)
 	assert.True(t, provider.requiresDeleteCreate(oldSetIdentifier, newSetIdentifier), "actual and expected endpoints don't match. %+v:%+v", oldSetIdentifier, newSetIdentifier)
+}
+
+func TestConvertOctalToAscii(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Characters escaped !\"#$%&'()*+,-/:;",
+			input:    "txt-\\041\\042\\043\\044\\045\\046\\047\\050\\051\\052\\053\\054-\\057\\072\\073-test.example.com",
+			expected: "txt-!\"#$%&'()*+,-/:;-test.example.com",
+		},
+		{
+			name:     "Characters escaped <=>?@[\\]^_`{|}~",
+			input:    "txt-\\074\\075\\076\\077\\100\\133\\134\\135\\136_\\140\\173\\174\\175\\176-test2.example.com",
+			expected: "txt-<=>?@[\\]^_`{|}~-test2.example.com",
+		},
+		{
+			name:     "No escaped characters in domain",
+			input:    "txt-awesome-test3.example.com",
+			expected: "txt-awesome-test3.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// actual := convertOctalToAscii(tt.input)
+			// assert.Equal(t, tt.expected, actual)
+
+			actualv := convertOctalToAsciiWithHashTable(tt.input)
+			assert.Equal(t, tt.expected, actualv)
+		})
+	}
 }
