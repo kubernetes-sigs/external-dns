@@ -416,7 +416,6 @@ func convertOctalToAscii(input string) string {
 		if input[i] == '\\' && i+3 < len(input) {
 			octalStr := input[i+1 : i+4]
 			if octal, err := strconv.ParseInt(octalStr, 8, 8); err == nil {
-				fmt.Println("string:", octalStr, " char:", byte(octal))
 				result.WriteByte(byte(octal))
 				i += 3 // Skip the next 3 characters (the octal code)
 			} else {
