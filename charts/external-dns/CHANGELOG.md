@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [UNRELEASED]
 
+### Added
+
+- Added support for `extraObjects` argument ([#4569](https://github.com/kubernetes-sigs/external-dns/pull/4569)) _@cloudziu_
+
 ## [v1.14.5] - 2023-06-10
 
 ### Added
