@@ -17,6 +17,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -30,7 +31,7 @@ type testProviderFunc struct {
 	records             func(ctx context.Context) ([]*endpoint.Endpoint, error)
 	applyChanges        func(ctx context.Context, changes *plan.Changes) error
 	propertyValuesEqual func(name string, previous string, current string) bool
-	adjustEndpoints     func(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint
+	adjustEndpoints     func(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error)
 	getDomainFilter     func() endpoint.DomainFilterInterface
 }
 
@@ -46,7 +47,7 @@ func (p *testProviderFunc) PropertyValuesEqual(name string, previous string, cur
 	return p.propertyValuesEqual(name, previous, current)
 }
 
-func (p *testProviderFunc) AdjustEndpoints(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func (p *testProviderFunc) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 	return p.adjustEndpoints(endpoints)
 }
 
@@ -75,10 +76,10 @@ func propertyValuesEqualNotCalled(t *testing.T) func(name string, previous strin
 	}
 }
 
-func adjustEndpointsNotCalled(t *testing.T) func(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
-	return func(endpoints []*endpoint.Endpoint) []*endpoint.Endpoint {
+func adjustEndpointsNotCalled(t *testing.T) func(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
+	return func(endpoints []*endpoint.Endpoint) ([]*endpoint.Endpoint, error) {
 		t.Errorf("unexpected call to AdjustEndpoints")
-		return endpoints
+		return endpoints, errors.New("unexpected call to AdjustEndpoints")
 	}
 }
 
