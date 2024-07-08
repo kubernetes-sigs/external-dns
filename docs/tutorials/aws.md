@@ -912,6 +912,8 @@ Route53 has a [5 API requests per second per account hard quota](https://docs.aw
 Running several fast polling ExternalDNS instances in a given account can easily hit that limit. Some ways to reduce the request rate include:
 * Reduce the polling loop's synchronization interval at the possible cost of slower change propagation (but see `--events` below to reduce the impact).
   * `--interval=5m` (default `1m`)
+* Cache the results of the zone at the possible cost of slower propagation when the zone gets modified from other sources
+  * `--provider-cache-time=15m` (default `0m`)
 * Trigger the polling loop on changes to K8s objects, rather than only at `interval` and ensure a minimum of time between events, to have responsive updates with long poll intervals
   * `--events`
   * `--min-event-sync-interval=5m` (default `5s`)

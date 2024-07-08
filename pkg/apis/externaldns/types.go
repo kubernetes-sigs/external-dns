@@ -67,6 +67,7 @@ type Config struct {
 	AlwaysPublishNotReadyAddresses     bool
 	ConnectorSourceServer              string
 	Provider                           string
+	ProviderCacheTime                  int
 	GoogleProject                      string
 	GoogleBatchChangeSize              int
 	GoogleBatchChangeInterval          time.Duration
@@ -239,6 +240,7 @@ var defaultConfig = &Config{
 	PublishHostIP:               false,
 	ConnectorSourceServer:       "localhost:8080",
 	Provider:                    "",
+	ProviderCacheTime:           0,
 	GoogleProject:               "",
 	GoogleBatchChangeSize:       1000,
 	GoogleBatchChangeInterval:   time.Second,
@@ -456,6 +458,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	// Flags related to providers
 	providers := []string{"akamai", "alibabacloud", "aws", "aws-sd", "azure", "azure-dns", "azure-private-dns", "bluecat", "civo", "cloudflare", "coredns", "designate", "digitalocean", "dnsimple", "dyn", "exoscale", "gandi", "godaddy", "google", "ibmcloud", "inmemory", "linode", "ns1", "oci", "ovh", "pdns", "pihole", "plural", "rcodezero", "rdns", "rfc2136", "safedns", "scaleway", "skydns", "tencentcloud", "transip", "ultradns", "vinyldns", "vultr", "webhook"}
 	app.Flag("provider", "The DNS provider where the DNS records will be created (required, options: "+strings.Join(providers, ", ")+")").Required().PlaceHolder("provider").EnumVar(&cfg.Provider, providers...)
+	app.Flag("provider-cache-time", "The time to cache the DNS provider record list requests.").Default(defaultConfig.ProviderCacheTime.String()).DurationVar(&cfg.ProviderCacheTime)
 	app.Flag("domain-filter", "Limit possible target zones by a domain suffix; specify multiple times for multiple domains (optional)").Default("").StringsVar(&cfg.DomainFilter)
 	app.Flag("exclude-domains", "Exclude subdomains (optional)").Default("").StringsVar(&cfg.ExcludeDomains)
 	app.Flag("regex-domain-filter", "Limit possible domains and target zones by a Regex filter; Overrides domain-filter (optional)").Default(defaultConfig.RegexDomainFilter.String()).RegexpVar(&cfg.RegexDomainFilter)
