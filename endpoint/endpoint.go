@@ -203,6 +203,7 @@ type EndpointKey struct {
 }
 
 // Endpoint is a high-level way of a connection between a service and an IP
+// +kubebuilder:object:generate=true
 type Endpoint struct {
 	// The hostname of the DNS record
 	DNSName string `json:"dnsName,omitempty"`
@@ -336,6 +337,7 @@ func FilterEndpointsByOwnerID(ownerID string, eps []*Endpoint) []*Endpoint {
 }
 
 // DNSEndpointSpec defines the desired state of DNSEndpoint
+// +kubebuilder:object:generate=true
 type DNSEndpointSpec struct {
 	Endpoints []*Endpoint `json:"endpoints,omitempty"`
 }
