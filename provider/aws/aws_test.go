@@ -2112,9 +2112,6 @@ func TestConvertOctalToAscii(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := convertOctalToAscii(tt.input)
 			assert.Equal(t, tt.expected, actual)
-
-			actualv := convertOctalToAsciiWithHashTable(tt.input)
-			assert.Equal(t, tt.expected, actualv)
 		})
 	}
 }
