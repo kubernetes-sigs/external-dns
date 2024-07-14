@@ -5,10 +5,25 @@ It is meant to supplement the other provider-specific setup tutorials.
 
 ## Supported API Versions
 
-As the Gateway API is still in an experimental phase, ExternalDNS makes no backwards
-compatibilty guarantees regarding its support. However, it currently supports a mixture of
-v1alpha2, v1beta1, v1 APIs. Gateways and HTTPRoutes are supported using the v1 and v1beta1 API (which is converted to v1 when using the latest CRDs).
-GRPCRoutes, TLSRoutes, TCPRoutes, and UDPRoutes are supported using the v1alpha2 API.
+ExternalDNS currently supports a mixture of v1alpha2, v1beta1, v1 APIs.
+
+Gateway API has two release channels: Standard and Experimental.
+The Experimental channel includes v1alpha2, v1beta2, and v1 APIs.
+The Standard channel only includes v1beta2 and v1 APIs, not v1alpha2.
+
+TCPRoutes, TLSRoutes, and UDPRoutes only exist in v1alpha2 and continued support for
+these versions is NOT guaranteed. At some time in the future, Gateway API will graduate
+these Routes to v1. ExternalDNS will likely follow that upgrade and move to the v1 API,
+where they will be available in the Standard release channel. This will be a breaking
+change if your Experimental CRDs are not updated to include the new v1 API.
+
+Gateways and HTTPRoutes are available in v1alpha2, v1beta1, and v1 APIs.
+However, some notable environments are behind in upgrading their CRDs to include the v1 API.
+For compatibility reasons Gateways and HTTPRoutes use the v1beta1 API.
+
+GRPCRoutes are available in v1alpha2 and v1 APIs, not v1beta2.
+Therefore, GRPCRoutes use the v1 API which is available in both release channels.
+Unfortunately, this means they will not be available in environments with old CRDs.
 
 ## Hostnames
 
