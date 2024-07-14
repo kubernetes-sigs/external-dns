@@ -994,6 +994,8 @@ Running several fast polling ExternalDNS instances in a given account can easily
   * `--aws-batch-change-size=4000` (default `1000`)
 * Increase the interval between changes
   * `--aws-batch-change-interval=10s` (default `1s`)
+* Increase the interval between paging through records (ListResourceRecordSet)
+  * `--aws-paging-interval=500` in milliseconds (default 0)
 * Introducing some jitter to the pod initialization, so that when multiple instances of ExternalDNS are updated at the same time they do not make their requests on the same second.
 
 A simple way to implement randomised startup is with an init container:
