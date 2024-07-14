@@ -276,6 +276,7 @@ type AWSConfig struct {
 	PreferCNAME           bool
 	DryRun                bool
 	ZoneCacheDuration     time.Duration
+	PagingInterval        time.Duration
 }
 
 // NewAWSProvider initializes a new AWS Route53 based Provider.
@@ -295,6 +296,7 @@ func NewAWSProvider(awsConfig AWSConfig, clients map[string]Route53API) (*AWSPro
 		preferCNAME:           awsConfig.PreferCNAME,
 		dryRun:                awsConfig.DryRun,
 		zonesCache:            &zonesListCache{duration: awsConfig.ZoneCacheDuration},
+		pagingInterval         awsConfig.PagingInterval,
 		failedChangesQueue:    make(map[string]Route53Changes),
 	}
 
@@ -413,8 +415,15 @@ func (p *AWSProvider) Records(ctx context.Context) (endpoints []*endpoint.Endpoi
 	return p.records(ctx, zones)
 }
 
-func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZone) ([]*endpoint.Endpoint, error) {
+func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZone, pagingInterval time.Duration) ([]*endpoint.Endpoint, error) {
 	endpoints := make([]*endpoint.Endpoint, 0)
+	pagingInterval := 0 * time.Second // default paging value
+	if p.awsPagingInterval != "" {
+		interval, err := time.ParseDuration(p.awsPagingInterval)
+		if err == nil {
+			pagingInterval = interval
+		}
+	}
 	f := func(resp *route53.ListResourceRecordSetsOutput, lastPage bool) (shouldContinue bool) {
 		for _, r := range resp.ResourceRecordSets {
 			newEndpoints := make([]*endpoint.Endpoint, 0)
@@ -488,7 +497,7 @@ func (p *AWSProvider) records(ctx context.Context, zones map[string]*profiledZon
 				endpoints = append(endpoints, ep)
 			}
 		}
-
+		time.Sleep(pagingInterval) // Added sleep interval between paging
 		return true
 	}
 
