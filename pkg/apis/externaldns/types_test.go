@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"sigs.k8s.io/external-dns/endpoint"
+	"sigs.k8s.io/external-dns/registry"
 
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -97,6 +98,7 @@ var (
 		TXTOwnerID:                  "default",
 		TXTPrefix:                   "",
 		TXTCacheInterval:            0,
+		TXTFormat:                   registry.TXTFormatTransition.String(),
 		Interval:                    time.Minute,
 		MinEventSyncInterval:        5 * time.Second,
 		Once:                        false,
@@ -202,6 +204,7 @@ var (
 		TXTOwnerID:                  "owner-1",
 		TXTPrefix:                   "associated-txt-record",
 		TXTCacheInterval:            12 * time.Hour,
+		TXTFormat:                   registry.TXTFormatOnlyMetadata.String(),
 		Interval:                    10 * time.Minute,
 		MinEventSyncInterval:        50 * time.Second,
 		Once:                        true,
@@ -338,6 +341,7 @@ func TestParseFlags(t *testing.T) {
 				"--txt-owner-id=owner-1",
 				"--txt-prefix=associated-txt-record",
 				"--txt-cache-interval=12h",
+				"--txt-format=only-metadata",
 				"--dynamodb-table=custom-table",
 				"--interval=10m",
 				"--min-event-sync-interval=50s",
@@ -451,6 +455,7 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_TXT_OWNER_ID":                    "owner-1",
 				"EXTERNAL_DNS_TXT_PREFIX":                      "associated-txt-record",
 				"EXTERNAL_DNS_TXT_CACHE_INTERVAL":              "12h",
+				"EXTERNAL_DNS_TXT_FORMAT":                      "only-metadata",
 				"EXTERNAL_DNS_INTERVAL":                        "10m",
 				"EXTERNAL_DNS_MIN_EVENT_SYNC_INTERVAL":         "50s",
 				"EXTERNAL_DNS_ONCE":                            "1",
