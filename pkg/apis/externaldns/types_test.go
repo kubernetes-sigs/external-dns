@@ -131,6 +131,8 @@ var (
 		WebhookProviderURL:          "http://localhost:8888",
 		WebhookProviderReadTimeout:  5 * time.Second,
 		WebhookProviderWriteTimeout: 10 * time.Second,
+		TraefikDisableLegacy:        false,
+		TraefikDisableNew:           false,
 	}
 
 	overriddenConfig = &Config{
@@ -243,6 +245,8 @@ var (
 		WebhookProviderURL:          "http://localhost:8888",
 		WebhookProviderReadTimeout:  5 * time.Second,
 		WebhookProviderWriteTimeout: 10 * time.Second,
+		TraefikDisableLegacy:        true,
+		TraefikDisableNew:           true,
 	}
 )
 
@@ -385,6 +389,8 @@ func TestParseFlags(t *testing.T) {
 				"--ibmcloud-config-file=ibmcloud.json",
 				"--tencent-cloud-config-file=tencent-cloud.json",
 				"--tencent-cloud-zone-type=private",
+				"--traefik-disable-legacy",
+				"--traefik-disable-new",
 			},
 			envVars:  map[string]string{},
 			expected: overriddenConfig,
@@ -500,6 +506,8 @@ func TestParseFlags(t *testing.T) {
 				"EXTERNAL_DNS_IBMCLOUD_CONFIG_FILE":            "ibmcloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_CONFIG_FILE":       "tencent-cloud.json",
 				"EXTERNAL_DNS_TENCENT_CLOUD_ZONE_TYPE":         "private",
+				"EXTERNAL_DNS_TRAEFIK_DISABLE_LEGACY":          "1",
+				"EXTERNAL_DNS_TRAEFIK_DISABLE_NEW":             "1",
 			},
 			expected: overriddenConfig,
 		},
