@@ -3,7 +3,9 @@
 This tutorial describes how to configure ExternalDNS to use the Traefik Proxy source.
 It is meant to supplement the other provider-specific setup tutorials.
 
-## Manifest (for clusters without RBAC enabled)
+# Using Manifest 
+
+## Without RBAC enabled
 
 ```yaml
 apiVersion: apps/v1
@@ -30,9 +32,11 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
+        # use this flag when using Traefik helm chart >= v28
+        - --traefik-disable-legacy 
 ```
 
-## Manifest (for clusters with RBAC enabled)
+## With RBAC enabled
 
 ```yaml
 apiVersion: v1
@@ -51,7 +55,7 @@ rules:
 - apiGroups: [""]
   resources: ["nodes"]
   verbs: ["list","watch"]
-- apiGroups: ["traefik.containo.us","traefik.io"]
+- apiGroups: ["traefik.io"]
   resources: ["ingressroutes", "ingressroutetcps", "ingressrouteudps"]
   verbs: ["get","watch","list"]
 ---
@@ -93,10 +97,27 @@ spec:
         - --provider=aws
         - --registry=txt
         - --txt-owner-id=my-identifier
+        # use this flag when using Traefik helm chart >= v28
+        - --traefik-disable-legacy 
 ```
 
-## Deploying a Traefik IngressRoute
-Create a IngressRoute file called 'traefik-ingress.yaml' with the following contents:
+# Using Helm chart
+
+## With RBAC enabled
+
+```yaml
+rbac:
+  create: true
+sources:
+  - traefik-proxy-v3
+extraArgs:
+  - traefik-disable-legacy 
+```
+
+# Deploying a Traefik IngressRoute
+
+Create an IngressRoute file called 'traefik-ingress.yaml' with the following contents:
+
 ```yaml
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -118,7 +139,7 @@ spec:
           port: port
 ```
 
-Note the annotation on the IngressRoute (`external-dns.alpha.kubernetes.io/target`); use the same hostname as the traefik DNS.
+Note the annotation on the IngressRoute (`external-dns.alpha.kubernetes.io/target`); use the same hostname as the Traefik DNS.
 
 ExternalDNS uses this annotation to determine what services should be registered with DNS.
 
@@ -128,7 +149,7 @@ Create the IngressRoute:
 $ kubectl create -f traefik-ingress.yaml
 ```
 
-Depending where you run your IngressRoute it can take a little while for ExternalDNS synchronize the DNS record.
+Depending on where you run your IngressRoute it can take a little while for ExternalDNS to synchronize the DNS record.
 
 ## Cleanup
 
@@ -145,6 +166,31 @@ $ kubectl delete -f externaldns.yaml
 | --- | --- |
 | --traefik-disable-legacy | Disable listeners on Resources under traefik.containo.us |
 | --traefik-disable-new | Disable listeners on Resources under traefik.io |
+
+Example:
+
+1. Manifest
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  ...
+  template:
+    ...
+    spec:
+      ...
+      args:
+        ...
+        - --traefik-disable-legacy
+```
+
+2. Helm chart
+```yaml
+sources:
+  - traefik-proxy-v3
+extraArgs:
+  - traefik-disable-legacy 
+```
 
 ### Disabling Resource Listeners
 
