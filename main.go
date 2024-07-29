@@ -25,8 +25,7 @@ import (
 	"syscall"
 	"time"
 
-	awsSDK "github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/route53"
 	sd "github.com/aws/aws-sdk-go/service/servicediscovery"
 	"github.com/go-logr/logr"
@@ -383,11 +382,15 @@ func main() {
 	var r registry.Registry
 	switch cfg.Registry {
 	case "dynamodb":
-		config := awsSDK.NewConfig()
+		var dynamodbOpts []func(*dynamodb.Options)
 		if cfg.AWSDynamoDBRegion != "" {
-			config = config.WithRegion(cfg.AWSDynamoDBRegion)
+			dynamodbOpts = []func(*dynamodb.Options){
+				func(opts *dynamodb.Options) {
+					opts.Region = cfg.AWSDynamoDBRegion
+				},
+			}
 		}
-		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.New(aws.CreateDefaultSession(cfg), config), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
+		r, err = registry.NewDynamoDBRegistry(p, cfg.TXTOwnerID, dynamodb.NewFromConfig(aws.CreateDefaultV2Config(cfg), dynamodbOpts...), cfg.AWSDynamoDBTable, cfg.TXTPrefix, cfg.TXTSuffix, cfg.TXTWildcardReplacement, cfg.ManagedDNSRecordTypes, cfg.ExcludeDNSRecordTypes, []byte(cfg.TXTEncryptAESKey), cfg.TXTCacheInterval)
 	case "noop":
 		r, err = registry.NewNoopRegistry(p)
 	case "txt":
