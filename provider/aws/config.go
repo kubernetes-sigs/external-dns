@@ -27,10 +27,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/linki/instrumented_http"
 	"github.com/sirupsen/logrus"
 
@@ -81,92 +77,6 @@ func CreateV2Configs(cfg *externaldns.Config) map[string]awsv2.Config {
 		}
 	}
 	return result
-}
-
-func CreateDefaultSession(cfg *externaldns.Config) *session.Session {
-	result, err := newSession(
-		AWSSessionConfig{
-			AssumeRole:           cfg.AWSAssumeRole,
-			AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-			APIRetries:           cfg.AWSAPIRetries,
-		},
-	)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	return result
-}
-
-func CreateSessions(cfg *externaldns.Config) map[string]*session.Session {
-	result := make(map[string]*session.Session)
-
-	if len(cfg.AWSProfiles) == 0 || (len(cfg.AWSProfiles) == 1 && cfg.AWSProfiles[0] == "") {
-		session, err := newSession(
-			AWSSessionConfig{
-				AssumeRole:           cfg.AWSAssumeRole,
-				AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-				APIRetries:           cfg.AWSAPIRetries,
-			},
-		)
-		if err != nil {
-			logrus.Fatal(err)
-		}
-		result[defaultAWSProfile] = session
-	} else {
-		for _, profile := range cfg.AWSProfiles {
-			session, err := newSession(
-				AWSSessionConfig{
-					AssumeRole:           cfg.AWSAssumeRole,
-					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
-					APIRetries:           cfg.AWSAPIRetries,
-					Profile:              profile,
-				},
-			)
-			if err != nil {
-				logrus.Fatal(err)
-			}
-			result[profile] = session
-		}
-	}
-	return result
-}
-
-func newSession(awsConfig AWSSessionConfig) (*session.Session, error) {
-	config := aws.NewConfig().WithMaxRetries(awsConfig.APIRetries)
-
-	config.WithHTTPClient(
-		instrumented_http.NewClient(config.HTTPClient, &instrumented_http.Callbacks{
-			PathProcessor: func(path string) string {
-				parts := strings.Split(path, "/")
-				return parts[len(parts)-1]
-			},
-		}),
-	)
-
-	session, err := session.NewSessionWithOptions(session.Options{
-		Config:            *config,
-		SharedConfigState: session.SharedConfigEnable,
-		Profile:           awsConfig.Profile,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("instantiating AWS session: %w", err)
-	}
-
-	if awsConfig.AssumeRole != "" {
-		if awsConfig.AssumeRoleExternalID != "" {
-			logrus.Infof("Assuming role: %s with external id %s", awsConfig.AssumeRole, awsConfig.AssumeRoleExternalID)
-			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole, func(p *stscreds.AssumeRoleProvider) {
-				p.ExternalID = &awsConfig.AssumeRoleExternalID
-			}))
-		} else {
-			logrus.Infof("Assuming role: %s", awsConfig.AssumeRole)
-			session.Config.WithCredentials(stscreds.NewCredentials(session, awsConfig.AssumeRole))
-		}
-	}
-
-	session.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler("ExternalDNS", externaldns.Version))
-
-	return session, nil
 }
 
 func newV2Config(awsConfig AWSSessionConfig) (awsv2.Config, error) {

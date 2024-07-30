@@ -25,45 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newSession(t *testing.T) {
-	t.Run("should use profile from credentials file", func(t *testing.T) {
-		// setup
-		credsFile, err := prepareCredentialsFile(t)
-		defer os.Remove(credsFile.Name())
-		require.NoError(t, err)
-		os.Setenv("AWS_SHARED_CREDENTIALS_FILE", credsFile.Name())
-		defer os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE")
-
-		// when
-		s, err := newSession(AWSSessionConfig{Profile: "profile2"})
-		require.NoError(t, err)
-		creds, err := s.Config.Credentials.Get()
-
-		// then
-		assert.NoError(t, err)
-		assert.Equal(t, "AKID2345", creds.AccessKeyID)
-		assert.Equal(t, "SECRET2", creds.SecretAccessKey)
-	})
-
-	t.Run("should respect env variables without profile", func(t *testing.T) {
-		// setup
-		os.Setenv("AWS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
-		os.Setenv("AWS_SECRET_ACCESS_KEY", "topsecret")
-		defer os.Unsetenv("AWS_ACCESS_KEY_ID")
-		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
-
-		// when
-		s, err := newSession(AWSSessionConfig{})
-		require.NoError(t, err)
-		creds, err := s.Config.Credentials.Get()
-
-		// then
-		assert.NoError(t, err)
-		assert.Equal(t, "AKIAIOSFODNN7EXAMPLE", creds.AccessKeyID)
-		assert.Equal(t, "topsecret", creds.SecretAccessKey)
-	})
-}
-
 func Test_newV2Config(t *testing.T) {
 	t.Run("should use profile from credentials file", func(t *testing.T) {
 		// setup
