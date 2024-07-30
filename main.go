@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/route53"
 	sd "github.com/aws/aws-sdk-go-v2/service/servicediscovery"
-	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -205,10 +205,10 @@ func main() {
 	case "alibabacloud":
 		p, err = alibabacloud.NewAlibabaCloudProvider(cfg.AlibabaCloudConfigFile, domainFilter, zoneIDFilter, cfg.AlibabaCloudZoneType, cfg.DryRun)
 	case "aws":
-		sessions := aws.CreateSessions(cfg)
-		clients := make(map[string]aws.Route53API, len(sessions))
-		for profile, session := range sessions {
-			clients[profile] = route53.New(session)
+		configs := aws.CreateV2Configs(cfg)
+		clients := make(map[string]aws.Route53API, len(configs))
+		for profile, config := range configs {
+			clients[profile] = route53.NewFromConfig(config)
 		}
 
 		p, err = aws.NewAWSProvider(

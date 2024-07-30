@@ -59,6 +59,30 @@ func CreateDefaultV2Config(cfg *externaldns.Config) awsv2.Config {
 	return result
 }
 
+func CreateV2Configs(cfg *externaldns.Config) map[string]awsv2.Config {
+	result := make(map[string]awsv2.Config)
+	if len(cfg.AWSProfiles) == 0 || (len(cfg.AWSProfiles) == 1 && cfg.AWSProfiles[0] == "") {
+		cfg := CreateDefaultV2Config(cfg)
+		result[defaultAWSProfile] = cfg
+	} else {
+		for _, profile := range cfg.AWSProfiles {
+			cfg, err := newV2Config(
+				AWSSessionConfig{
+					AssumeRole:           cfg.AWSAssumeRole,
+					AssumeRoleExternalID: cfg.AWSAssumeRoleExternalID,
+					APIRetries:           cfg.AWSAPIRetries,
+					Profile:              profile,
+				},
+			)
+			if err != nil {
+				logrus.Fatal(err)
+			}
+			result[profile] = cfg
+		}
+	}
+	return result
+}
+
 func CreateDefaultSession(cfg *externaldns.Config) *session.Session {
 	result, err := newSession(
 		AWSSessionConfig{
