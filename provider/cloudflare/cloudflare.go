@@ -126,12 +126,14 @@ type CloudFlareProvider struct {
 	proxiedByDefault  bool
 	DryRun            bool
 	DNSRecordsPerPage int
+	RegionKey		  string
 }
 
 // cloudFlareChange differentiates between ChangActions
 type cloudFlareChange struct {
-	Action         string
-	ResourceRecord cloudflare.DNSRecord
+	Action           string
+	ResourceRecord	 cloudflare.DNSRecord
+	RegionalHostname cloudflare.RegionalHostname
 }
 
 // RecordParamsTypes is a typeset of the possible Record Params that can be passed to cloudflare-go library
@@ -150,6 +152,14 @@ func getUpdateDNSRecordParam(cfc cloudFlareChange) cloudflare.UpdateDNSRecordPar
 	}
 }
 
+// getUpdateDataLocalizationRegionalHostnameParams is a function that returns the appropriate RegionalHostname Param based on the cloudFlareChange passed in
+func getUpdateDataLocalizationRegionalHostnameParams(cfc cloudFlareChange) cloudflare.UpdateDataLocalizationRegionalHostnameParams {
+	return cloudflare.UpdateDataLocalizationRegionalHostnameParams{
+		Hostname:  cfc.RegionalHostname.Hostname,
+		RegionKey: cfc.RegionalHostname.RegionKey,
+	}
+}
+
 // getCreateDNSRecordParam is a function that returns the appropriate Record Param based on the cloudFlareChange passed in
 func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordParams {
 	return cloudflare.CreateDNSRecordParams{
@@ -161,8 +171,23 @@ func getCreateDNSRecordParam(cfc cloudFlareChange) cloudflare.CreateDNSRecordPar
 	}
 }
 
+// func resourceCloudflareRegionalHostnameCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+// 	client := meta.(*cloudflare.API)
+// 	zoneID := cloudflare.ZoneIdentifier(d.Get(consts.ZoneIDSchemaKey).(string))
+// 	newHostname := cloudflare.CreateDataLocalizationRegionalHostnameParams{
+// 		Hostname:  d.Get("hostname").(string),
+// 		RegionKey: d.Get("region_key").(string),
+// 	}
+
+// 	r, err := cloudflare.CreateDataLocalizationRegionalHostname(ctx, zoneID, newHostname)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to update region: %v", err)
+// 	}
+// 	return nil
+// }
+
 // NewCloudFlareProvider initializes a new CloudFlare DNS based Provider.
-func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int) (*CloudFlareProvider, error) {
+func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter provider.ZoneIDFilter, proxiedByDefault bool, dryRun bool, dnsRecordsPerPage int, regionKey string) (*CloudFlareProvider, error) {
 	// initialize via chosen auth method and returns new API object
 	var (
 		config *cloudflare.API
@@ -192,6 +217,7 @@ func NewCloudFlareProvider(domainFilter endpoint.DomainFilter, zoneIDFilter prov
 		proxiedByDefault:  proxiedByDefault,
 		DryRun:            dryRun,
 		DNSRecordsPerPage: dnsRecordsPerPage,
+		RegionKey: 		   regionKey,
 	}
 	return provider, nil
 }
@@ -404,6 +430,29 @@ func (p *CloudFlareProvider) AdjustEndpoints(endpoints []*endpoint.Endpoint) ([]
 	}
 	return adjustedEndpoints, nil
 }
+
+func (p *CloudFlareProvider) updateRegionalHostname(ctx context.Context, zoneID string) ([]cloudflare.DNSRecord, error) {
+	var records []cloudflare.DNSRecord
+	resultInfo := cloudflare.ResultInfo{PerPage: p.DNSRecordsPerPage, Page: 1}
+	params := cloudflare.ListDNSRecordsParams{ResultInfo: resultInfo}
+	for {
+		pageRecords, resultInfo, err := p.Client.ListDNSRecords(ctx, cloudflare.ZoneIdentifier(zoneID), params)
+		if err != nil {
+			var apiErr *cloudflare.Error
+			if errors.As(err, &apiErr) {
+				if apiErr.ClientRateLimited() {
+					// Handle rate limit error as a soft error
+					return nil, provider.NewSoftError(err)
+				}
+			}
+			return nil, err
+		}
+		regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
+
+	}
+	return records, nil
+}
+
 
 // changesByZone separates a multi-zone change into a single change per zone.
 func (p *CloudFlareProvider) changesByZone(zones []cloudflare.Zone, changeSet []*cloudFlareChange) map[string][]*cloudFlareChange {

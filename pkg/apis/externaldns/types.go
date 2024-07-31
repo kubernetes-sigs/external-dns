@@ -113,6 +113,7 @@ type Config struct {
 	BluecatSkipTLSVerify               bool
 	CloudflareProxied                  bool
 	CloudflareDNSRecordsPerPage        int
+	CloudflareRegionKey				   string
 	CoreDNSPrefix                      string
 	RcodezeroTXTEncrypt                bool
 	AkamaiServiceConsumerDomain        string
@@ -274,6 +275,7 @@ var defaultConfig = &Config{
 	BluecatDNSDeployType:        "no-deploy",
 	CloudflareProxied:           false,
 	CloudflareDNSRecordsPerPage: 100,
+	CloudflareRegionKey:		 ""
 	CoreDNSPrefix:               "/skydns/",
 	RcodezeroTXTEncrypt:         false,
 	AkamaiServiceConsumerDomain: "",
