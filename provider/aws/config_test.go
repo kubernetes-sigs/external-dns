@@ -17,6 +17,7 @@ limitations under the License.
 package aws
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -24,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_newSession(t *testing.T) {
+func Test_newV2Config(t *testing.T) {
 	t.Run("should use profile from credentials file", func(t *testing.T) {
 		// setup
 		credsFile, err := prepareCredentialsFile(t)
@@ -34,9 +35,9 @@ func Test_newSession(t *testing.T) {
 		defer os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE")
 
 		// when
-		s, err := newSession(AWSSessionConfig{Profile: "profile2"})
+		cfg, err := newV2Config(AWSSessionConfig{Profile: "profile2"})
 		require.NoError(t, err)
-		creds, err := s.Config.Credentials.Get()
+		creds, err := cfg.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)
@@ -52,9 +53,9 @@ func Test_newSession(t *testing.T) {
 		defer os.Unsetenv("AWS_SECRET_ACCESS_KEY")
 
 		// when
-		s, err := newSession(AWSSessionConfig{})
+		cfg, err := newV2Config(AWSSessionConfig{})
 		require.NoError(t, err)
-		creds, err := s.Config.Credentials.Get()
+		creds, err := cfg.Credentials.Retrieve(context.Background())
 
 		// then
 		assert.NoError(t, err)

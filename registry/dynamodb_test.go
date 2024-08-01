@@ -22,9 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	dynamodbtypes "github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -69,40 +70,40 @@ func TestDynamoDBRegistryNew(t *testing.T) {
 func TestDynamoDBRegistryRecordsBadTable(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
-		setup    func(desc *dynamodb.TableDescription)
+		setup    func(desc *dynamodbtypes.TableDescription)
 		expected string
 	}{
 		{
 			name: "missing attribute k",
-			setup: func(desc *dynamodb.TableDescription) {
+			setup: func(desc *dynamodbtypes.TableDescription) {
 				desc.AttributeDefinitions[0].AttributeName = aws.String("wrong")
 			},
 			expected: "table \"test-table\" must have attribute \"k\" of type \"S\"",
 		},
 		{
 			name: "wrong attribute type",
-			setup: func(desc *dynamodb.TableDescription) {
-				desc.AttributeDefinitions[0].AttributeType = aws.String("SS")
+			setup: func(desc *dynamodbtypes.TableDescription) {
+				desc.AttributeDefinitions[0].AttributeType = "SS"
 			},
 			expected: "table \"test-table\" attribute \"k\" must have type \"S\"",
 		},
 		{
 			name: "wrong key",
-			setup: func(desc *dynamodb.TableDescription) {
+			setup: func(desc *dynamodbtypes.TableDescription) {
 				desc.KeySchema[0].AttributeName = aws.String("wrong")
 			},
 			expected: "table \"test-table\" must have hash key \"k\"",
 		},
 		{
 			name: "has range key",
-			setup: func(desc *dynamodb.TableDescription) {
-				desc.AttributeDefinitions = append(desc.AttributeDefinitions, &dynamodb.AttributeDefinition{
+			setup: func(desc *dynamodbtypes.TableDescription) {
+				desc.AttributeDefinitions = append(desc.AttributeDefinitions, dynamodbtypes.AttributeDefinition{
 					AttributeName: aws.String("o"),
-					AttributeType: aws.String("S"),
+					AttributeType: dynamodbtypes.ScalarAttributeTypeS,
 				})
-				desc.KeySchema = append(desc.KeySchema, &dynamodb.KeySchemaElement{
+				desc.KeySchema = append(desc.KeySchema, dynamodbtypes.KeySchemaElement{
 					AttributeName: aws.String("o"),
-					KeyType:       aws.String("RANGE"),
+					KeyType:       dynamodbtypes.KeyTypeRange,
 				})
 			},
 			expected: "table \"test-table\" must not have a range key",
@@ -559,8 +560,8 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 			},
 			stubConfig: DynamoDBStubConfig{
-				ExpectInsertError: map[string]string{
-					"new.test-zone.example.org#CNAME#set-new": "DuplicateItem",
+				ExpectInsertError: map[string]dynamodbtypes.BatchStatementErrorCodeEnum{
+					"new.test-zone.example.org#CNAME#set-new": dynamodbtypes.BatchStatementErrorCodeEnumDuplicateItem,
 				},
 				ExpectDelete: sets.New("quux.test-zone.example.org#A#set-2"),
 			},
@@ -620,7 +621,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 			},
 			stubConfig: DynamoDBStubConfig{
-				ExpectInsertError: map[string]string{
+				ExpectInsertError: map[string]dynamodbtypes.BatchStatementErrorCodeEnum{
 					"new.test-zone.example.org#CNAME#set-new": "TestingError",
 				},
 			},
@@ -928,7 +929,7 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 				},
 			},
 			stubConfig: DynamoDBStubConfig{
-				ExpectUpdateError: map[string]string{
+				ExpectUpdateError: map[string]dynamodbtypes.BatchStatementErrorCodeEnum{
 					"bar.test-zone.example.org#CNAME#": "TestingError",
 				},
 			},
@@ -1073,15 +1074,15 @@ func TestDynamoDBRegistryApplyChanges(t *testing.T) {
 type DynamoDBStub struct {
 	t                *testing.T
 	stubConfig       *DynamoDBStubConfig
-	tableDescription dynamodb.TableDescription
+	tableDescription dynamodbtypes.TableDescription
 	changesApplied   bool
 }
 
 type DynamoDBStubConfig struct {
 	ExpectInsert      map[string]map[string]string
-	ExpectInsertError map[string]string
+	ExpectInsertError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
 	ExpectUpdate      map[string]map[string]string
-	ExpectUpdateError map[string]string
+	ExpectUpdateError map[string]dynamodbtypes.BatchStatementErrorCodeEnum
 	ExpectDelete      sets.Set[string]
 }
 
@@ -1100,17 +1101,17 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	stub := &DynamoDBStub{
 		t:          t,
 		stubConfig: stubConfig,
-		tableDescription: dynamodb.TableDescription{
-			AttributeDefinitions: []*dynamodb.AttributeDefinition{
+		tableDescription: dynamodbtypes.TableDescription{
+			AttributeDefinitions: []dynamodbtypes.AttributeDefinition{
 				{
 					AttributeName: aws.String("k"),
-					AttributeType: aws.String("S"),
+					AttributeType: dynamodbtypes.ScalarAttributeTypeS,
 				},
 			},
-			KeySchema: []*dynamodb.KeySchemaElement{
+			KeySchema: []dynamodbtypes.KeySchemaElement{
 				{
 					AttributeName: aws.String("k"),
-					KeyType:       aws.String("HASH"),
+					KeyType:       dynamodbtypes.KeyTypeHash,
 				},
 			},
 		},
@@ -1131,7 +1132,7 @@ func newDynamoDBAPIStub(t *testing.T, stubConfig *DynamoDBStubConfig) (*DynamoDB
 	}
 }
 
-func (r *DynamoDBStub) DescribeTableWithContext(ctx aws.Context, input *dynamodb.DescribeTableInput, opts ...request.Option) (*dynamodb.DescribeTableOutput, error) {
+func (r *DynamoDBStub) DescribeTable(ctx context.Context, input *dynamodb.DescribeTableInput, opts ...func(*dynamodb.Options)) (*dynamodb.DescribeTableOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	return &dynamodb.DescribeTableOutput{
@@ -1139,75 +1140,80 @@ func (r *DynamoDBStub) DescribeTableWithContext(ctx aws.Context, input *dynamodb
 	}, nil
 }
 
-func (r *DynamoDBStub) ScanPagesWithContext(ctx aws.Context, input *dynamodb.ScanInput, fn func(*dynamodb.ScanOutput, bool) bool, opts ...request.Option) error {
+func (r *DynamoDBStub) Scan(ctx context.Context, input *dynamodb.ScanInput, opts ...func(*dynamodb.Options)) (*dynamodb.ScanOutput, error) {
 	assert.NotNil(r.t, ctx)
 	assert.Equal(r.t, "test-table", *input.TableName, "table name")
 	assert.Equal(r.t, "o = :ownerval", *input.FilterExpression)
 	assert.Len(r.t, input.ExpressionAttributeValues, 1)
-	assert.Equal(r.t, "test-owner", *input.ExpressionAttributeValues[":ownerval"].S)
+	var owner string
+	assert.Nil(r.t, attributevalue.Unmarshal(input.ExpressionAttributeValues[":ownerval"], &owner))
+	assert.Equal(r.t, "test-owner", owner)
 	assert.Equal(r.t, "k,l", *input.ProjectionExpression)
 	assert.True(r.t, *input.ConsistentRead)
-	fn(&dynamodb.ScanOutput{
-		Items: []map[string]*dynamodb.AttributeValue{
+	return &dynamodb.ScanOutput{
+		Items: []map[string]dynamodbtypes.AttributeValue{
 			{
-				"k": &dynamodb.AttributeValue{S: aws.String("bar.test-zone.example.org#CNAME#")},
-				"l": &dynamodb.AttributeValue{M: map[string]*dynamodb.AttributeValue{
-					endpoint.ResourceLabelKey: {S: aws.String("ingress/default/my-ingress")},
+				"k": &dynamodbtypes.AttributeValueMemberS{Value: "bar.test-zone.example.org#CNAME#"},
+				"l": &dynamodbtypes.AttributeValueMemberM{Value: map[string]dynamodbtypes.AttributeValue{
+					endpoint.ResourceLabelKey: &dynamodbtypes.AttributeValueMemberS{Value: "ingress/default/my-ingress"},
 				}},
 			},
 			{
-				"k": &dynamodb.AttributeValue{S: aws.String("baz.test-zone.example.org#A#set-1")},
-				"l": &dynamodb.AttributeValue{M: map[string]*dynamodb.AttributeValue{
-					endpoint.ResourceLabelKey: {S: aws.String("ingress/default/my-ingress")},
+				"k": &dynamodbtypes.AttributeValueMemberS{Value: "baz.test-zone.example.org#A#set-1"},
+				"l": &dynamodbtypes.AttributeValueMemberM{Value: map[string]dynamodbtypes.AttributeValue{
+					endpoint.ResourceLabelKey: &dynamodbtypes.AttributeValueMemberS{Value: "ingress/default/my-ingress"},
 				}},
 			},
 			{
-				"k": &dynamodb.AttributeValue{S: aws.String("baz.test-zone.example.org#A#set-2")},
-				"l": &dynamodb.AttributeValue{M: map[string]*dynamodb.AttributeValue{
-					endpoint.ResourceLabelKey: {S: aws.String("ingress/default/other-ingress")},
+				"k": &dynamodbtypes.AttributeValueMemberS{Value: "baz.test-zone.example.org#A#set-2"},
+				"l": &dynamodbtypes.AttributeValueMemberM{Value: map[string]dynamodbtypes.AttributeValue{
+					endpoint.ResourceLabelKey: &dynamodbtypes.AttributeValueMemberS{Value: "ingress/default/other-ingress"},
 				}},
 			},
 			{
-				"k": &dynamodb.AttributeValue{S: aws.String("quux.test-zone.example.org#A#set-2")},
-				"l": &dynamodb.AttributeValue{M: map[string]*dynamodb.AttributeValue{
-					endpoint.ResourceLabelKey: {S: aws.String("ingress/default/quux-ingress")},
+				"k": &dynamodbtypes.AttributeValueMemberS{Value: "quux.test-zone.example.org#A#set-2"},
+				"l": &dynamodbtypes.AttributeValueMemberM{Value: map[string]dynamodbtypes.AttributeValue{
+					endpoint.ResourceLabelKey: &dynamodbtypes.AttributeValueMemberS{Value: "ingress/default/quux-ingress"},
 				}},
 			},
 		},
-	}, true)
-	return nil
+	}, nil
 }
 
-func (r *DynamoDBStub) BatchExecuteStatementWithContext(context aws.Context, input *dynamodb.BatchExecuteStatementInput, option ...request.Option) (*dynamodb.BatchExecuteStatementOutput, error) {
+func (r *DynamoDBStub) BatchExecuteStatement(context context.Context, input *dynamodb.BatchExecuteStatementInput, option ...func(*dynamodb.Options)) (*dynamodb.BatchExecuteStatementOutput, error) {
 	assert.NotNil(r.t, context)
-	hasDelete := strings.HasPrefix(strings.ToLower(aws.StringValue(input.Statements[0].Statement)), "delete")
+	hasDelete := strings.HasPrefix(strings.ToLower(*input.Statements[0].Statement), "delete")
 	assert.Equal(r.t, hasDelete, r.changesApplied, "delete after provider changes, everything else before")
 	assert.LessOrEqual(r.t, len(input.Statements), 25)
-	responses := make([]*dynamodb.BatchStatementResponse, 0, len(input.Statements))
+	responses := make([]dynamodbtypes.BatchStatementResponse, 0, len(input.Statements))
 
 	for _, statement := range input.Statements {
-		assert.Equal(r.t, hasDelete, strings.HasPrefix(strings.ToLower(aws.StringValue(statement.Statement)), "delete"))
-		switch aws.StringValue(statement.Statement) {
+		assert.Equal(r.t, hasDelete, strings.HasPrefix(strings.ToLower(*statement.Statement), "delete"))
+		switch *statement.Statement {
 		case "DELETE FROM \"test-table\" WHERE \"k\"=? AND \"o\"=?":
 			assert.True(r.t, r.changesApplied, "unexpected delete before provider changes")
 
-			key := aws.StringValue(statement.Parameters[0].S)
+			var key string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
 			assert.True(r.t, r.stubConfig.ExpectDelete.Has(key), "unexpected delete for key %q", key)
 			r.stubConfig.ExpectDelete.Delete(key)
 
-			assert.Equal(r.t, "test-owner", aws.StringValue(statement.Parameters[1].S))
+			var testOwner string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
+			assert.Equal(r.t, "test-owner", testOwner)
 
-			responses = append(responses, &dynamodb.BatchStatementResponse{})
+			responses = append(responses, dynamodbtypes.BatchStatementResponse{})
 
 		case "INSERT INTO \"test-table\" VALUE {'k':?, 'o':?, 'l':?}":
 			assert.False(r.t, r.changesApplied, "unexpected insert after provider changes")
 
-			key := aws.StringValue(statement.Parameters[0].S)
+			var key string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[0], &key))
 			if code, exists := r.stubConfig.ExpectInsertError[key]; exists {
 				delete(r.stubConfig.ExpectInsertError, key)
-				responses = append(responses, &dynamodb.BatchStatementResponse{
-					Error: &dynamodb.BatchStatementError{
-						Code:    aws.String(code),
+				responses = append(responses, dynamodbtypes.BatchStatementResponse{
+					Error: &dynamodbtypes.BatchStatementError{
+						Code:    code,
 						Message: aws.String("testing error"),
 					},
 				})
@@ -1218,10 +1224,15 @@ func (r *DynamoDBStub) BatchExecuteStatementWithContext(context aws.Context, inp
 			assert.True(r.t, found, "unexpected insert for key %q", key)
 			delete(r.stubConfig.ExpectInsert, key)
 
-			assert.Equal(r.t, "test-owner", aws.StringValue(statement.Parameters[1].S))
+			var testOwner string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[1], &testOwner))
+			assert.Equal(r.t, "test-owner", testOwner)
 
-			for label, attribute := range statement.Parameters[2].M {
-				value := aws.StringValue(attribute.S)
+			var labels map[string]string
+			err := attributevalue.Unmarshal(statement.Parameters[2], &labels)
+			assert.Nil(r.t, err)
+
+			for label, value := range labels {
 				expectedValue, found := expectedLabels[label]
 				assert.True(r.t, found, "insert for key %q has unexpected label %q", key, label)
 				delete(expectedLabels, label)
@@ -1232,17 +1243,18 @@ func (r *DynamoDBStub) BatchExecuteStatementWithContext(context aws.Context, inp
 				r.t.Errorf("insert for key %q did not get expected label %q", key, label)
 			}
 
-			responses = append(responses, &dynamodb.BatchStatementResponse{})
+			responses = append(responses, dynamodbtypes.BatchStatementResponse{})
 
 		case "UPDATE \"test-table\" SET \"l\"=? WHERE \"k\"=?":
 			assert.False(r.t, r.changesApplied, "unexpected update after provider changes")
 
-			key := aws.StringValue(statement.Parameters[1].S)
+			var key string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[1], &key))
 			if code, exists := r.stubConfig.ExpectUpdateError[key]; exists {
 				delete(r.stubConfig.ExpectInsertError, key)
-				responses = append(responses, &dynamodb.BatchStatementResponse{
-					Error: &dynamodb.BatchStatementError{
-						Code:    aws.String(code),
+				responses = append(responses, dynamodbtypes.BatchStatementResponse{
+					Error: &dynamodbtypes.BatchStatementError{
+						Code:    code,
 						Message: aws.String("testing error"),
 					},
 				})
@@ -1253,8 +1265,10 @@ func (r *DynamoDBStub) BatchExecuteStatementWithContext(context aws.Context, inp
 			assert.True(r.t, found, "unexpected update for key %q", key)
 			delete(r.stubConfig.ExpectUpdate, key)
 
-			for label, attribute := range statement.Parameters[0].M {
-				value := aws.StringValue(attribute.S)
+			var labels map[string]string
+			assert.Nil(r.t, attributevalue.Unmarshal(statement.Parameters[0], &labels))
+
+			for label, value := range labels {
 				expectedValue, found := expectedLabels[label]
 				assert.True(r.t, found, "update for key %q has unexpected label %q", key, label)
 				delete(expectedLabels, label)
@@ -1265,10 +1279,10 @@ func (r *DynamoDBStub) BatchExecuteStatementWithContext(context aws.Context, inp
 				r.t.Errorf("update for key %q did not get expected label %q", key, label)
 			}
 
-			responses = append(responses, &dynamodb.BatchStatementResponse{})
+			responses = append(responses, dynamodbtypes.BatchStatementResponse{})
 
 		default:
-			r.t.Errorf("unexpected statement: %s", aws.StringValue(statement.Statement))
+			r.t.Errorf("unexpected statement: %s", *statement.Statement)
 		}
 	}
 
