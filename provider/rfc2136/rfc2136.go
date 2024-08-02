@@ -161,6 +161,8 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		r.tsigSecretAlg = secretAlgChecked
 	}
 
+	r.counter = 0
+
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
 	return r, nil
 }
@@ -190,10 +192,24 @@ func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gs
 
 // Records returns the list of records.
 func (r rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
+	// Create a context key for counter
+	type contextKey string
+	const counterKey contextKey = "counter"
+
+	// Get or initialize the counter from context
+	counter, ok := ctx.Value(counterKey).(int)
+	if !ok {
+		counter = 0
+	}
+	r.counter = counter
+
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
 	}
+
+	log.Debugf("Context counter=%d", counter)
+	log.Debugf("Provider counter=%d", r.counter)
 
 	var eps []*endpoint.Endpoint
 
@@ -248,6 +264,11 @@ OuterLoop:
 
 		eps = append(eps, ep)
 	}
+
+	// Update the counter and set it back to the context
+	counter = r.counter
+	_ = context.WithValue(ctx, counterKey, counter)
+	log.Debugf("Context counter=%d", counter)
 
 	return eps, nil
 }

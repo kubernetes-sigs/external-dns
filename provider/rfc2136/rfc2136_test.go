@@ -371,6 +371,9 @@ ouB5ZN+05DzKCQhBekMnygQ=
 		client, err := makeClient(*rawProvider, ns)
 		assert.NoError(t, err)
 
+		// strip port from ns
+		ns = strings.Split(ns, ":")[0]
+
 		assert.Equal(t, "tcp-tls", client.Net)
 		assert.Equal(t, false, client.TLSConfig.InsecureSkipVerify)
 		assert.Equal(t, ns, client.TLSConfig.ServerName)
