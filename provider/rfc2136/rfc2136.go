@@ -72,7 +72,7 @@ type rfc2136Provider struct {
 	dryRun       bool
 	actions      rfc2136Actions
 
-	// Counter for round-robin selection
+	// Counter for load balancing, and error handling
 	counter int
 	mu      sync.Mutex // Mutex for thread-safe counter
 
