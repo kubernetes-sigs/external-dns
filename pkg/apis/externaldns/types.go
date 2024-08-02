@@ -163,7 +163,7 @@ type Config struct {
 	CFUsername                         string
 	CFPassword                         string
 	ResolveServiceLoadBalancerHostname bool
-	RFC2136Host                        string
+	RFC2136Host                        []string
 	RFC2136Port                        int
 	RFC2136Zone                        []string
 	RFC2136Insecure                    bool
@@ -177,6 +177,7 @@ type Config struct {
 	RFC2136TSIGSecretAlg               string
 	RFC2136TAXFR                       bool
 	RFC2136MinTTL                      time.Duration
+	RFC2136LoadBalancingStrategy       string
 	RFC2136BatchChangeSize             int
 	RFC2136UseTLS                      bool
 	RFC2136SkipTLSVerify               bool
@@ -556,7 +557,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("exoscale-apisecret", "Provide your API Secret for the Exoscale provider").Default(defaultConfig.ExoscaleAPISecret).StringVar(&cfg.ExoscaleAPISecret)
 
 	// Flags related to RFC2136 provider
-	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server").Default(defaultConfig.RFC2136Host).StringVar(&cfg.RFC2136Host)
+	app.Flag("rfc2136-host", "When using the RFC2136 provider, specify the host of the DNS server").Default(defaultConfig.RFC2136Host[0]).StringsVar(&cfg.RFC2136Host)
 	app.Flag("rfc2136-port", "When using the RFC2136 provider, specify the port of the DNS server").Default(strconv.Itoa(defaultConfig.RFC2136Port)).IntVar(&cfg.RFC2136Port)
 	app.Flag("rfc2136-zone", "When using the RFC2136 provider, specify zone entries of the DNS server to use").StringsVar(&cfg.RFC2136Zone)
 	app.Flag("rfc2136-create-ptr", "When using the RFC2136 provider, enable PTR management").Default(strconv.FormatBool(defaultConfig.RFC2136CreatePTR)).BoolVar(&cfg.RFC2136CreatePTR)
@@ -573,6 +574,7 @@ func App(cfg *Config) *kingpin.Application {
 	app.Flag("rfc2136-batch-change-size", "When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.RFC2136BatchChangeSize)).IntVar(&cfg.RFC2136BatchChangeSize)
 	app.Flag("rfc2136-use-tls", "When using the RFC2136 provider, communicate with name server over tls").BoolVar(&cfg.RFC2136UseTLS)
 	app.Flag("rfc2136-skip-tls-verify", "When using TLS with the RFC2136 provider, disable verification of any TLS certificates").BoolVar(&cfg.RFC2136SkipTLSVerify)
+	app.Flag("rfc2136-load-balancing-strategy", "When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled)").Default(defaultConfig.RFC2136LoadBalancingStrategy).EnumVar(&cfg.RFC2136LoadBalancingStrategy, "random", "round-robin", "disabled")
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)
