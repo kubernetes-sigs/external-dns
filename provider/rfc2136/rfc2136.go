@@ -1,3 +1,16 @@
+/*
+Copyright 2017 The Kubernetes Authors.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package rfc2136
 
 import (
@@ -58,8 +71,8 @@ type rfc2136Provider struct {
 	// Counter for round-robin selection
 	counter int
 
-	// Load balancing strategy
-	loadBalancingStrategy string // "round-robin", "random", or "failover"
+	// Load balancing strategy "round-robin", "random", or "disabled"
+	loadBalancingStrategy string
 
 	// Random number generator for random load balancing
 	randGen *rand.Rand

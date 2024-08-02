@@ -322,7 +322,7 @@ var defaultConfig = &Config{
 	CFAPIEndpoint:                "",
 	CFUsername:                   "",
 	CFPassword:                   "",
-	RFC2136Host:                  []string{},
+	RFC2136Host:                  []string{""},
 	RFC2136Port:                  0,
 	RFC2136Zone:                  []string{},
 	RFC2136Insecure:              false,
@@ -338,7 +338,7 @@ var defaultConfig = &Config{
 	RFC2136BatchChangeSize:       50,
 	RFC2136UseTLS:                false,
 	RFC2136SkipTLSVerify:         false,
-	RFC2136LoadBalancingStrategy: "failover",
+	RFC2136LoadBalancingStrategy: "disabled",
 	NS1Endpoint:                  "",
 	NS1IgnoreSSL:                 false,
 	TransIPAccountName:           "",
@@ -568,7 +568,7 @@ func (cfg *Config) ParseFlags(args []string) error {
 	app.Flag("rfc2136-batch-change-size", "When using the RFC2136 provider, set the maximum number of changes that will be applied in each batch.").Default(strconv.Itoa(defaultConfig.RFC2136BatchChangeSize)).IntVar(&cfg.RFC2136BatchChangeSize)
 	app.Flag("rfc2136-use-tls", "When using the RFC2136 provider, communicate with name server over tls").BoolVar(&cfg.RFC2136UseTLS)
 	app.Flag("rfc2136-skip-tls-verify", "When using TLS with the RFC2136 provider, disable verification of any TLS certificates").BoolVar(&cfg.RFC2136SkipTLSVerify)
-	app.Flag("rfc2136-load-balancing-strategy", "When using the RFC2136 provider, specify the load balancing strategy (optional, options: random, round-robin, failover)").Default(defaultConfig.RFC2136LoadBalancingStrategy).EnumVar(&cfg.RFC2136LoadBalancingStrategy, "random", "round-robin", "failover")
+	app.Flag("rfc2136-load-balancing-strategy", "When using the RFC2136 provider, specify the load balancing strategy (default: disabled, options: random, round-robin, disabled)").Default(defaultConfig.RFC2136LoadBalancingStrategy).EnumVar(&cfg.RFC2136LoadBalancingStrategy, "random", "round-robin", "disabled")
 
 	// Flags related to TransIP provider
 	app.Flag("transip-account", "When using the TransIP provider, specify the account name (required when --provider=transip)").Default(defaultConfig.TransIPAccountName).StringVar(&cfg.TransIPAccountName)

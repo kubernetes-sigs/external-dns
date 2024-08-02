@@ -39,42 +39,54 @@ import (
 )
 
 type rfc2136Stub struct {
-	output         []*dns.Envelope
-	updateMsgs     []*dns.Msg
-	createMsgs     []*dns.Msg
-	nameservers    []string
-	counter        int
-	randGen        *rand.Rand
-	lastNameserver string
-	strategy       string
+	output                []*dns.Envelope
+	updateMsgs            []*dns.Msg
+	createMsgs            []*dns.Msg
+	nameservers           []string
+	counter               int
+	randGen               *rand.Rand
+	lastNameserver        string
+	loadBalancingStrategy string
 }
 
 func newStub() *rfc2136Stub {
 	return &rfc2136Stub{
-		output:      make([]*dns.Envelope, 0),
-		updateMsgs:  make([]*dns.Msg, 0),
-		createMsgs:  make([]*dns.Msg, 0),
-		nameservers: []string{""},
-		randGen:     rand.New(rand.NewSource(time.Now().UnixNano())),
-		strategy:    "round-robin",
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           []string{""},
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: "round-robin",
 	}
 }
 
 func newStubLB(strategy string, nameservers []string) *rfc2136Stub {
 	return &rfc2136Stub{
-		output:      make([]*dns.Envelope, 0),
-		updateMsgs:  make([]*dns.Msg, 0),
-		createMsgs:  make([]*dns.Msg, 0),
-		nameservers: nameservers,
-		randGen:     rand.New(rand.NewSource(time.Now().UnixNano())),
-		strategy:    strategy,
+		output:                make([]*dns.Envelope, 0),
+		updateMsgs:            make([]*dns.Msg, 0),
+		createMsgs:            make([]*dns.Msg, 0),
+		nameservers:           nameservers,
+		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
+		loadBalancingStrategy: strategy,
 	}
 }
 
 func (r *rfc2136Stub) getNextNameserver() string {
-	nameserver := r.nameservers[r.counter]
-	r.counter = (r.counter + 1) % len(r.nameservers)
-	return nameserver
+	if len(r.nameservers) == 1 {
+		return r.nameservers[0]
+	}
+
+	switch r.loadBalancingStrategy {
+	case "random":
+		return r.nameservers[r.randGen.Intn(len(r.nameservers))]
+	case "round-robin":
+		nameserver := r.nameservers[r.counter]
+		r.counter = (r.counter + 1) % len(r.nameservers)
+
+		return nameserver
+	default:
+		return r.nameservers[0]
+	}
 }
 
 func getSortedChanges(msgs []*dns.Msg) []string {
@@ -873,25 +885,6 @@ func contains(arr []*endpoint.Endpoint, name string) bool {
 
 // TestRoundRobinLoadBalancing tests the round-robin load balancing strategy.
 func TestRoundRobinLoadBalancing(t *testing.T) {
-	stub := newStubLB("round-robin", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
-	_, err := createRfc2136StubProviderWithHosts(stub)
-	assert.NoError(t, err)
-
-	m := new(dns.Msg)
-	m.SetUpdate("foo.com.")
-	rr, err := dns.NewRR(fmt.Sprintf("%s %d %s %s", "v1.foo.com.", 0, "A", "1.2.3.4"))
-	m.Insert([]dns.RR{rr})
-
-	for i := 0; i < 10; i++ {
-		err := stub.SendMessage(m)
-		assert.NoError(t, err)
-		expectedNameserver := "rfc2136-host" + strconv.Itoa((i%3)+1)
-		assert.Equal(t, expectedNameserver, stub.lastNameserver)
-	}
-}
-
-// TestRoundRobinLoadBalancing tests the round-robin load balancing strategy.
-func TestRoundRobinLoadBalancingProvider(t *testing.T) {
 	stub := newStubLB("round-robin", []string{"rfc2136-host1", "rfc2136-host2", "rfc2136-host3"})
 	_, err := createRfc2136StubProviderWithHosts(stub)
 	assert.NoError(t, err)
