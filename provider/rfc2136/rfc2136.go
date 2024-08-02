@@ -560,9 +560,11 @@ func (r *rfc2136Provider) getNextNameserver() string {
 		nameserver = r.nameservers[r.counter]
 		r.counter = (r.counter + 1) % len(r.nameservers)
 	default:
-		nameserver = r.nameservers[r.counter]
 		if r.lastErr != nil {
 			r.counter = (r.counter + 1) % len(r.nameservers)
+			nameserver = r.nameservers[r.counter]
+		} else {
+			nameserver = r.nameservers[r.counter]
 		}
 	}
 
