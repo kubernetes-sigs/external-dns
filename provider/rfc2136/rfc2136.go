@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bodgit/tsig"
@@ -70,6 +71,7 @@ type rfc2136Provider struct {
 
 	// Counter for round-robin selection
 	counter int
+	mu      sync.Mutex // Mutex for thread-safe counter
 
 	// Load balancing strategy "round-robin", "random", or "disabled"
 	loadBalancingStrategy string
@@ -81,7 +83,7 @@ type rfc2136Provider struct {
 	credentials map[string]*gss.Client
 
 	// Last error encountered
-	lastErr bool
+	lastErr error
 }
 
 // TLSConfig is comprised of the TLS-related fields necessary if we are using DNS over TLS
@@ -148,6 +150,8 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		loadBalancingStrategy: loadBalancingStrategy,
 		randGen:               rand.New(rand.NewSource(time.Now().UnixNano())),
 		credentials:           make(map[string]*gss.Client),
+		counter:               0,
+		lastErr:               nil,
 	}
 	if actions != nil {
 		r.actions = actions
@@ -160,8 +164,6 @@ func NewRfc2136Provider(hosts []string, port int, zoneNames []string, insecure b
 		r.tsigSecret = secret
 		r.tsigSecretAlg = secretAlgChecked
 	}
-
-	r.counter = 0
 
 	log.Infof("Configured RFC2136 with zones '%v' and nameservers '%v'", r.zoneNames, hosts)
 	return r, nil
@@ -191,25 +193,11 @@ func (r *rfc2136Provider) KeyData(nameserver string) (keyName string, handle *gs
 }
 
 // Records returns the list of records.
-func (r rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
-	// Create a context key for counter
-	type contextKey string
-	const counterKey contextKey = "counter"
-
-	// Get or initialize the counter from context
-	counter, ok := ctx.Value(counterKey).(int)
-	if !ok {
-		counter = 0
-	}
-	r.counter = counter
-
+func (r *rfc2136Provider) Records(ctx context.Context) ([]*endpoint.Endpoint, error) {
 	rrs, err := r.List()
 	if err != nil {
 		return nil, err
 	}
-
-	log.Debugf("Context counter=%d", counter)
-	log.Debugf("Provider counter=%d", r.counter)
 
 	var eps []*endpoint.Endpoint
 
@@ -265,15 +253,10 @@ OuterLoop:
 		eps = append(eps, ep)
 	}
 
-	// Update the counter and set it back to the context
-	counter = r.counter
-	_ = context.WithValue(ctx, counterKey, counter)
-	log.Debugf("Context counter=%d", counter)
-
 	return eps, nil
 }
 
-func (r rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error) {
+func (r *rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (env chan *dns.Envelope, err error) {
 	t := new(dns.Transfer)
 	if !r.insecure && !r.gssTsig {
 		t.TsigSecret = map[string]string{r.tsigKeyName: r.tsigSecret}
@@ -291,7 +274,7 @@ func (r rfc2136Provider) IncomeTransfer(m *dns.Msg, nameserver string) (env chan
 	return t.In(m, nameserver)
 }
 
-func (r rfc2136Provider) List() ([]dns.RR, error) {
+func (r *rfc2136Provider) List() ([]dns.RR, error) {
 	if !r.axfr {
 		log.Debug("axfr is disabled")
 		return make([]dns.RR, 0), nil
@@ -315,7 +298,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 			env, err := r.actions.IncomeTransfer(m, nameserver)
 			if err != nil {
 				lastErr = fmt.Errorf("failed to fetch records via AXFR: %w", err)
-				r.lastErr = true
+				r.lastErr = lastErr
 				continue
 			}
 
@@ -337,7 +320,7 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 		}
 
 		if lastErr != nil {
-			r.lastErr = true
+			r.lastErr = lastErr
 			return nil, lastErr
 		}
 	}
@@ -345,17 +328,17 @@ func (r rfc2136Provider) List() ([]dns.RR, error) {
 	return records, nil
 }
 
-func (r rfc2136Provider) AddReverseRecord(ip string, hostname string) error {
+func (r *rfc2136Provider) AddReverseRecord(ip string, hostname string) error {
 	changes := r.GenerateReverseRecord(ip, hostname)
 	return r.ApplyChanges(context.Background(), &plan.Changes{Create: changes})
 }
 
-func (r rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
+func (r *rfc2136Provider) RemoveReverseRecord(ip string, hostname string) error {
 	changes := r.GenerateReverseRecord(ip, hostname)
 	return r.ApplyChanges(context.Background(), &plan.Changes{Delete: changes})
 }
 
-func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
+func (r *rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*endpoint.Endpoint {
 	// Find the zone for the PTR record
 	// zone := findMsgZone(&endpoint.Endpoint{DNSName: ip}, p.ptrZoneNames)
 	// Generate PTR notation record starting from the IP address
@@ -375,7 +358,7 @@ func (r rfc2136Provider) GenerateReverseRecord(ip string, hostname string) []*en
 }
 
 // ApplyChanges applies a given set of changes in a given zone.
-func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
+func (r *rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes) error {
 	log.Debugf("ApplyChanges (Create: %d, UpdateOld: %d, UpdateNew: %d, Delete: %d)", len(changes.Create), len(changes.UpdateOld), len(changes.UpdateNew), len(changes.Delete))
 
 	var errors []error
@@ -501,7 +484,7 @@ func (r rfc2136Provider) ApplyChanges(ctx context.Context, changes *plan.Changes
 	return nil
 }
 
-func (r rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
+func (r *rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newEp *endpoint.Endpoint) error {
 	err := r.RemoveRecord(m, oldEp)
 	if err != nil {
 		return err
@@ -510,7 +493,7 @@ func (r rfc2136Provider) UpdateRecord(m *dns.Msg, oldEp *endpoint.Endpoint, newE
 	return r.AddRecord(m, newEp)
 }
 
-func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
+func (r *rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("AddRecord.ep=%s", ep)
 
 	ttl := int64(r.minTTL.Seconds())
@@ -533,7 +516,7 @@ func (r rfc2136Provider) AddRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	return nil
 }
 
-func (r rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
+func (r *rfc2136Provider) RemoveRecord(m *dns.Msg, ep *endpoint.Endpoint) error {
 	log.Debugf("RemoveRecord.ep=%s", ep)
 	for _, target := range ep.Targets {
 		newRR := fmt.Sprintf("%s %d %s %s", ep.DNSName, ep.RecordTTL, ep.RecordType, target)
@@ -555,28 +538,40 @@ func (r *rfc2136Provider) getNextNameserver() string {
 		return r.nameservers[0]
 	}
 
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if r.lastErr != nil {
+		log.Warnf("Last operation failed for nameserver %s", r.nameservers[r.counter])
+		log.Warnf("Last operation error message: %v", r.lastErr)
+	}
+
+	var nameserver string
 	switch r.loadBalancingStrategy {
 	case "random":
-		return r.nameservers[r.randGen.Intn(len(r.nameservers))]
-	case "round-robin":
-		nameserver := r.nameservers[r.counter]
-		r.counter = (r.counter + 1) % len(r.nameservers)
-
-		return nameserver
-	default:
-		if r.lastErr {
-			nameserver := r.nameservers[r.counter]
-			r.counter = (r.counter + 1) % len(r.nameservers)
-			r.lastErr = false
-
-			return nameserver
+		for {
+			nameserver = r.nameservers[r.randGen.Intn(len(r.nameservers))]
+			// Ensure that we don't get the same nameserver as the last one
+			if nameserver != r.nameservers[r.counter] {
+				break
+			}
 		}
-
-		return r.nameservers[r.counter]
+	case "round-robin":
+		nameserver = r.nameservers[r.counter]
+		r.counter = (r.counter + 1) % len(r.nameservers)
+	default:
+		nameserver = r.nameservers[r.counter]
+		if r.lastErr != nil {
+			r.counter = (r.counter + 1) % len(r.nameservers)
+		}
 	}
+
+	// Last error has been logged, reset it for the next operation
+	r.lastErr = nil
+	return nameserver
 }
 
-func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
+func (r *rfc2136Provider) SendMessage(msg *dns.Msg) error {
 	if r.dryRun {
 		log.Debugf("SendMessage.skipped")
 		return nil
@@ -591,7 +586,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 		c, err := makeClient(r, nameserver)
 		if err != nil {
 			lastErr = fmt.Errorf("error setting up TLS: %w", err)
-			r.lastErr = true
+			r.lastErr = lastErr
 			continue
 		}
 
@@ -600,7 +595,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 				keyName, handle, err := r.KeyData(nameserver)
 				if err != nil {
 					lastErr = err
-					r.lastErr = true
+					r.lastErr = lastErr
 					continue
 				}
 				defer handle.Close()
@@ -620,18 +615,18 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 			if resp != nil && resp.Rcode != dns.RcodeSuccess {
 				log.Infof("error in dns.Client.Exchange: %s", err)
 				lastErr = err
-				r.lastErr = true
+				r.lastErr = lastErr
 				continue
 			}
 			log.Warnf("warn in dns.Client.Exchange: %s", err)
 			lastErr = err
-			r.lastErr = true
+			r.lastErr = lastErr
 			continue
 		}
 		if resp != nil && resp.Rcode != dns.RcodeSuccess {
 			log.Infof("Bad dns.Client.Exchange response: %s", resp)
 			lastErr = fmt.Errorf("bad return code: %s", dns.RcodeToString[resp.Rcode])
-			r.lastErr = true
+			r.lastErr = lastErr
 			continue
 		}
 
@@ -639,7 +634,7 @@ func (r rfc2136Provider) SendMessage(msg *dns.Msg) error {
 		return nil
 	}
 
-	r.lastErr = true
+	r.lastErr = lastErr
 	return lastErr
 }
 
@@ -670,7 +665,7 @@ func findMsgZone(ep *endpoint.Endpoint, zoneNames []string) string {
 	return dns.Fqdn(".")
 }
 
-func makeClient(r rfc2136Provider, nameserver string) (*dns.Client, error) {
+func makeClient(r *rfc2136Provider, nameserver string) (*dns.Client, error) {
 	c := new(dns.Client)
 
 	// Remove port from nameserver

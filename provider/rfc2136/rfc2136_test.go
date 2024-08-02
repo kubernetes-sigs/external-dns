@@ -327,7 +327,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider, rawProvider.nameservers[0])
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
@@ -368,7 +368,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 	rawProvider := provider.(*rfc2136Provider)
 
 	for _, ns := range rawProvider.nameservers {
-		client, err := makeClient(*rawProvider, ns)
+		client, err := makeClient(rawProvider, ns)
 		assert.NoError(t, err)
 
 		// strip port from ns
@@ -412,7 +412,7 @@ ouB5ZN+05DzKCQhBekMnygQ=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider, rawProvider.nameservers[0])
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	assert.NoError(t, err)
 
 	assert.Equal(t, "tcp-tls", client.Net)
@@ -481,7 +481,7 @@ hl6aAPCe16pwvljB7yImxLJ+ytWk7OV/s10cmlaczrEtNeUjV1X9MTM=
 
 	rawProvider := provider.(*rfc2136Provider)
 
-	client, err := makeClient(*rawProvider, rawProvider.nameservers[0])
+	client, err := makeClient(rawProvider, rawProvider.nameservers[0])
 	log.Infof("client, err is: %v", client)
 	log.Infof("client, err is: %s", err)
 	assert.NoError(t, err)
