@@ -447,7 +447,7 @@ func (p *CloudFlareProvider) updateRegionalHostname(ctx context.Context, zoneID 
 			}
 			return nil, err
 		}
-		regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
+		// regionalHostnameParam := getUpdateDataLocalizationRegionalHostnameParams(*change)
 
 	}
 	return records, nil

@@ -82,7 +82,7 @@ var (
 		BluecatSkipTLSVerify:        false,
 		CloudflareProxied:           false,
 		CloudflareDNSRecordsPerPage: 100,
-		CloudflareRegionKey:		 "",
+		CloudflareRegionKey:		 "earth",
 		CoreDNSPrefix:               "/skydns/",
 		AkamaiServiceConsumerDomain: "",
 		AkamaiClientToken:           "",
