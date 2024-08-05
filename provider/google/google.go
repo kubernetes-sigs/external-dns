@@ -144,7 +144,7 @@ func NewGoogleProvider(ctx context.Context, project string, domainFilter endpoin
 	}
 
 	if project == "" {
-		mProject, mErr := metadata.ProjectID()
+		mProject, mErr := metadata.ProjectIDWithContext(ctx)
 		if mErr != nil {
 			return nil, fmt.Errorf("failed to auto-detect the project id: %w", mErr)
 		}
